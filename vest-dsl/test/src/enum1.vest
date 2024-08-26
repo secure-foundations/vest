@@ -1,0 +1,25 @@
+msg1 = {
+  const a: u8 = 1,
+  b: [u8; 32],
+}
+
+msg2 = {
+  const a: u8 = 2,
+  b: [u8; 32],
+}
+
+msg = choose {
+  Msg1(msg1),
+  Msg2(msg2),
+}
+
+msg_ = choose {
+  Msg1 {
+    const a: u8 = 1,
+    b: [u8; 32],
+  },
+  Msg2 {
+    const a: u8 = 2,
+    b: [u8; 32],
+  },
+}

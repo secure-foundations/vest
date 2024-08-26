@@ -1,0 +1,43 @@
+msg1 = {
+  a: u8,
+  b: u16,
+  c: [u8; 3],
+  d: Tail,
+}
+
+msg2 = {
+  a: u8,
+  b: u16,
+  c: u32,
+}
+
+// msg3 = {
+//   a: [u8; 6],
+// }
+msg3 = [u8; 6]
+
+a_type = enum {
+  A = 0,
+  B = 1,
+  C = 2,
+}
+
+msg4 = {
+//  a: [u8; 2],
+//  b: [u8; 3],
+  // a: u16,
+  // b: u32,
+  @t: a_type,
+  v: choose(@t) {
+    A => msg1,
+    B => msg2,
+    C => msg3,
+  },
+  // tail: Tail,
+}
+
+// msg4_v(@t: a_type) = choose(@t) {
+//   A => msg1,
+//   B => msg2,
+//   C => msg3,
+// }

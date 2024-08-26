@@ -1,0 +1,30 @@
+msg_d = {
+  f1: u8,
+}
+
+msg_b = {
+  f1: msg_d,
+}
+
+msg_a = {
+  f1: msg_b,
+  f2: Tail,
+}
+
+content_type = enum {
+  C0 = 0,
+  C1 = 1,
+  C2 = 2,
+}
+
+msg_c = {
+  @f2: content_type,
+  @f3: u8,
+  f4: [u8; @f3] >>= choose(@f2) {
+    C0 => content_0(@f3),
+    C1 => u16,
+    C2 => u32,
+  },
+}
+
+content_0(@num: u8) = [u8; @num]

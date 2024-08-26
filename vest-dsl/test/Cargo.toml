@@ -1,0 +1,13 @@
+[package]
+name = "test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
+# builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
+# vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
+vest = { path = "../../vest" }
+
+[package.metadata.verus.ide]
+extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern vest=../../vest/libvest.rlib src/lib.rs --rlimit=20"

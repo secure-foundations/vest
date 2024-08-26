@@ -1,0 +1,62 @@
+label = {
+  @length: u8 | 1..64,
+  label: [u8; @length],
+}
+labels = wrap(Vec<label>, u8 = 0)
+compressed = {
+   let $decompressed = dnscompress($current),
+   domain: apply($decompressed, labels),
+}
+dnspacket = {
+  id: u16,
+  qr: u1,
+  opcode: u4,
+  aa: u1,
+  tc: u1,
+  rd: u1,
+  ra: u1,
+  const pad: u3 = 0, // constant parser
+  rcode: u4,
+  @qc: u16,
+  @ac: u16,
+  @ns: u16,
+  @ar: u16,
+  questions: [question; @qc],
+  responses: [answer; @ac],
+  authority: [answer; @ns],
+  additional: [answer; @ar],
+}
+question = {
+  labels: compressed,
+  qtype: u16 | 1..16,
+  qclass: u16 | {1, 255},
+}
+answer = {
+  label: compressed,
+  rtype: u16 | 1..16,
+  class: u16 | 1,
+  ttl: u32,
+  @rlength: u16,
+  rdata: [u8; @rlength],
+}
+
+const WHITE: Vec<choose {
+  Space(u8 = ' '),
+  Newline(u8 = '\x2f'),
+}>
+number = Vec<u8 | '0'..'9'>
+ipaddr = Vec1<number> | u8 = '.'
+alnum = u8 | {'a'..'z', '0'..'9'}
+domain = Vec1<Vec1<alnum>> | u8 = '.'
+definition = {
+  const white: WHITE,
+  hostname: domain,
+  rr: choose {
+    NS(wrap([u8; 2] = "NS", domain)),
+    CNAME(wrap([u8; 4] = "CNAME", domain)),
+    MX(wrap([u8; 2] = "MX", domain)),
+    A(wrap(u8 = 'A', ipaddr)),
+  },
+}
+
+zone = wrap(Vec1<definition>, WHITE)

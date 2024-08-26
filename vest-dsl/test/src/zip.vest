@@ -1,0 +1,93 @@
+!LITTLE_ENDIAN
+// ported from https://github.com/jbangert/nail/blob/4bd9cc29c4092abe7a77f8294aff2337bba02ec5/examples/zip/zip.nail
+// https://users.cs.jmu.edu/buchhofp/forensics/formats/pkzip.html
+file_flags = {
+             encrypted:          u1 | {0},
+             compression1:       u1 | {0},
+             compression2:       u1 | {0},
+             datadesc:           u1 | {0},
+             enhanced_deflation: u1 | {0},
+             compressed_patch:   u1 | {0},
+             strong_encrypted:   u1 | {0},
+             u4 = 0,
+             utf8:               u1,
+             u1 = 0,
+             maskheader:         u1 | {0},
+             u2 = 0,
+}
+internal_attr = {
+              ascii:   u1,
+              u1  = 0,
+              control: u1 | {0},
+              u13 = 0,
+}
+
+fileentry(@crc32: u32, @compression_method: u16, @compressed_size: u32, @uncompressed_size: u32) = {
+                 u32 = 0x04034b50,
+                 version: u16,
+                 flags: file_flags,
+                 @compression_method_local: u16,
+                 mtime: u16, //TODO: Extend dependencies for duplicated data
+                 mdate: u16,
+                 @crc32_local: u32,
+                 @compressed_size_local: u32,
+                 @uncompressed_size_local: u32,
+                 @filename_len: u16,
+                 @extra_len: u16,
+                 filename: [u8; @filename_len],
+                 extra: [u8; @extra_len],
+
+                 let $compressed = size_u32($current, @compressed_size),
+                 let $uncompressed = zip_compression($compressed, @compression_method, @uncompressed_size),
+                 crc_32($uncompressed, @crc32),
+                 contents: apply($uncompressed, Vec<u8>),
+                 
+                 u16_depend(@compression_method_local, @compression_method),
+                 u32_depend(@crc32_local, @crc32),
+                 u32_depend(@compressed_size_local, @compressed_size),
+                 u32_depend(@uncompressed_size_local, @uncompressed_size),
+}
+dir_fileheader($filestream) = {  //TODO: we need to make the filename depend 
+               u32 = 0x02014b50,
+               os: u16,
+               pkzip_version: u16,
+               flags: file_flags,
+               @compression_method: u16,
+               mtime: u16,
+               mdate: u16,
+               @crc32: u32,
+               @compressed_size: u32,
+               @uncompressed_size: u32,
+               @file_name_len: u16,
+               @extra_len: u16,
+               @comment_len: u16,
+               disk: u16 | {0}, // TODO: We need to do multidisk,
+               internal: internal_attr,
+               external_attr: u32,
+               @off: u32,
+               filename: [u8; @file_name_len],
+               extra_field: [u8; @extra_len],
+               comment: [u8; @comment_len],
+               let $contentstream = offset_u32($filestream, @off),
+               contents: apply($contentstream, fileentry(@crc32, @compression_method, @compressed_size, @uncompressed_size)),
+}
+
+end_of_directory($filestream) = { 
+                 u32 = 0x06054b50,
+                 disks: u16 | {0},
+                 directory_disk: u16 | {0},
+                 @this_disk_directory_records: u16,
+                 @total_directory_records: u16,
+                 @directory_size: u32, // Byte size
+                 @directory_start: u32,
+                 let $dirstr1 = offset_u32($filestream, @directory_start), //TODO: how can we get the offset properly
+                 let $directory_stream = size_u32($dirstr1, @directory_size),
+                 @comment_length: u16,
+                 comment: [u8; @comment_length],
+                 files: apply($directory_stream, [dir_fileheader($filestream); @total_directory_records]),
+                 u16_depend(@this_disk_directory_records, @total_directory_records),
+}
+zip_file = { 
+         let $filestream, $end_directory = zip_end_of_directory($current),
+         contents: apply($end_directory, end_of_directory($filestream)),
+}

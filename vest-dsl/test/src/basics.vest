@@ -1,0 +1,58 @@
+// endianess definition
+// !LITTLE_ENDIAN
+
+// const_parser definition
+const HELLO_WORLD: [u8; 13] = "Hello, world!"
+const BANG: u8 = '!'
+const ZERO: u8 = 0x0
+const ONE_TWO: [u8; 2] = [1, 2]
+const ASCII_A: u8 = '\x41'
+const ASCII_A_ALIAS: ASCII_A
+const VEC_A: Vec<ASCII_A>
+const VEC_OF_ALL_OF_ABOVE: Vec<{
+  HELLO_WORLD,
+  BANG,
+  ZERO,
+  ONE_TWO,
+  ASCII_A,
+  u8 = 1,
+}>
+
+// parser definition
+one_to_ten = u8 | 1..10
+set_of_magic = u8 | {0, 1, 5..10, 'a'..'z', '\x00'.., ..'\x2f', ..}
+packet($current, @depenent: u32) = {
+  a: {
+    aa: u8,
+    bb: u16,
+    cc: some_other_parser($current, @depenent),
+  },
+  const pad: u16 = 32768,
+  b: u4,
+  @c: u16,
+  d: [header; @c],
+  let $offset_stream, $size_stream = trans_func($current, @c),
+  e: wrap(Vec<u8 = 0>, i32, [u8; 2] = [0x1f, 0xbd]),
+  f: Vec<u8 | 2..10>,
+  g: Vec1<one_to_ten> | u8 = ';',
+  h: apply($offset_stream, Vec<set_of_magic>), // better syntax maybe?
+  i: apply($size_stream, Option<[footer; @depenent]>),
+}
+some_other_parser($current, @depenent: u32) = {
+  a: u8,
+  b: u16,
+  c: [u8; @depenent],
+}
+header = {
+  a: u8,
+  b: u16,
+}
+footer = {
+  a: u8,
+  b: u16,
+}
+// secret sec_msg = {
+//   s1: [u8; 32],
+//   s2: Tail,
+// }
+

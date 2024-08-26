@@ -1,0 +1,70 @@
+two_u8s = {
+  const a: u8 = 255,
+  b: u8,
+}
+
+triple = {
+  a: u8,
+  const b: [u16; 2] = [55, 77], 
+  c: u64,
+}
+quadruple = {
+  a: u8,
+  b: [u8; 8],
+  const c: u64 = 88888888888,
+  d: [u8; 256],
+}
+
+quintuple = {
+  a: u8,
+  const b: u16 = 100,
+  const c: [u8; 5] = [1,2,3,4,5],
+  d: u32,
+  e: [u8; 256],
+}
+
+sextuple = {
+  a: u64,
+  const b: u16 = 100,
+  const c: [u16; 3] = [0,1,2],
+  d: u8,
+  e: [u16; 100],
+  f: Tail,
+}
+
+secret sec_msg = {
+  m1: [u8; 64],
+  m2: [u8; 32],
+  mt: Tail,
+}
+
+secret sec_msg2 = {
+  m1: [u8; 64],
+  m2: [u8; 256],
+}
+// nested = {
+//   a: {
+//     aa: u8,
+//     bb: {
+//       aaa: {
+//         aaaa: u16,
+//         bbbb: u16,
+//       },
+//       bbb: u8,
+//     },
+//     cc: {
+//       aaa: u8,
+//       bbb: u8,
+//     },
+//     dd: {
+//       aaa: u8,
+//     },
+//     ee: {
+//       aaa: u32,
+//     },
+//   },
+//   b: {
+//       aa: u8,
+//       bb: u8,
+//   },
+// }
