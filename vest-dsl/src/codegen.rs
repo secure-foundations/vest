@@ -1,6 +1,8 @@
 // tempararily disable dead code warning
 #![allow(dead_code)]
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
@@ -25,6 +27,12 @@ fn snake_to_upper_caml(s: &str) -> String {
         }
     }
     result
+}
+
+fn compute_hash<T: Hash>(data: &T) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    data.hash(&mut hasher);
+    hasher.finish()
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -228,7 +236,7 @@ impl<'a> CodegenCtx<'a> {
 
 trait Codegen {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String;
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String;
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String); // (combinator type, additional code)
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String;
 }
 
@@ -242,30 +250,33 @@ impl Codegen for Combinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         let name = &snake_to_upper_caml(name);
         if let Some(and_then) = &self.and_then {
+            let (comb_type, additional_code) = self.inner.gen_combinator_type(name, ctx); // must be `Bytes` or `Tail`
+            let (and_then_comb_type, and_then_additional_code) =
+                and_then.gen_combinator_type(name, ctx);
             if name.is_empty() {
-                format!(
-                    "AndThen<{}, {}>",
-                    self.inner.gen_combinator_type(name, ctx), // must be `Bytes` or `Tail`
-                    and_then.gen_combinator_type(name, ctx)
+                (
+                    format!("AndThen<{}, {}>", comb_type, and_then_comb_type),
+                    additional_code + &and_then_additional_code,
                 )
             } else {
-                format!(
-                    "pub type {}Combinator = AndThen<{}, {}>;\n",
-                    name,
-                    self.inner.gen_combinator_type(name, ctx), // must be `Bytes` or `Tail`
-                    and_then.inner.gen_combinator_type(name, ctx)
+                (
+                    format!(
+                        "pub type {}Combinator = AndThen<{}, {}>;\n",
+                        name, comb_type, and_then_comb_type
+                    ),
+                    additional_code + &and_then_additional_code,
                 )
             }
         } else if name.is_empty() {
             self.inner.gen_combinator_type(name, ctx)
         } else {
-            format!(
-                "pub type {}Combinator = {};\n",
-                name,
-                self.inner.gen_combinator_type(name, ctx)
+            let (combinator_type, additional_code) = self.inner.gen_combinator_type(name, ctx);
+            (
+                format!("pub type {}Combinator = {};\n", name, combinator_type),
+                additional_code,
             )
         }
     }
@@ -302,7 +313,7 @@ impl Codegen for CombinatorInner {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         match self {
             CombinatorInner::ConstraintInt(p) => p.gen_combinator_type(name, ctx),
             CombinatorInner::Bytes(p) => p.gen_combinator_type(name, ctx),
@@ -349,15 +360,114 @@ impl Codegen for ConstraintIntCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
-        match &self.combinator {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
+        fn gen_constraints(c: &IntConstraint) -> String {
+            match c {
+                IntConstraint::Single(constraint_elem) => gen_constraint_elem(constraint_elem),
+                IntConstraint::Set(cs) => cs
+                    .iter()
+                    .map(gen_constraint_elem)
+                    .collect::<Vec<_>>()
+                    .join(" || "),
+                IntConstraint::Neg(c) => {
+                    format!("!({})", gen_constraints(c))
+                }
+            }
+        }
+        fn gen_constraint_elem(c: &ConstraintElem) -> String {
+            match c {
+                ConstraintElem::Single(n) => format!("(i == {})", n),
+                ConstraintElem::Range { start, end } => {
+                    if let Some(start) = start {
+                        if let Some(end) = end {
+                            format!("(i >= {} && i <= {})", start, end)
+                        } else {
+                            format!("(i >= {})", start)
+                        }
+                    } else if let Some(end) = end {
+                        format!("(i <= {})", end)
+                    } else {
+                        panic!("a range constraint must have at least one bound")
+                    }
+                }
+            }
+        }
+        let int_type = match &self.combinator {
             IntCombinator::Unsigned(t) => format!("U{}", t),
             IntCombinator::Signed(..) => unimplemented!(),
+        };
+        if let Some(constraint) = &self.constraint {
+            let hash = compute_hash(constraint);
+            let pred_defn = format!("pub struct Predicate{};\n", hash);
+            // reflexive view for the predicate
+            let impl_view = format!(
+                r#"impl View for Predicate{hash} {{
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+"#
+            );
+            // impl SpecPred
+            let input_type = format!("{}", self.combinator);
+            let constraints = gen_constraints(constraint);
+            let impl_spec_pred = format!(
+                r#"impl SpecPred for Predicate{hash} {{
+    type Input = {input_type};
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
+        let i = *i;
+        if {constraints} {{
+            true
+        }} else {{
+            false
+        }}
+    }}
+}}
+"#
+            );
+            let impl_exec_pred = format!(
+                r#"impl Pred for Predicate{hash} {{
+    type Input<'a> = {input_type};
+    type InputOwned = {input_type};
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {{
+        let i = *i;
+        if {constraints} {{
+            true
+        }} else {{
+            false
+        }}
+    }}
+}}
+"#
+            );
+
+            (
+                format!("Refined<{}, Predicate{}>", int_type, hash),
+                pred_defn + &impl_view + &impl_spec_pred + &impl_exec_pred,
+            )
+        } else {
+            (int_type, "".to_string())
         }
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        self.gen_combinator_type(name, ctx)
+        let int_type = match &self.combinator {
+            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Signed(..) => unimplemented!(),
+        };
+        if let Some(constraint) = &self.constraint {
+            format!(
+                "Refined {{ inner: {}, predicate: Predicate{} }}",
+                int_type,
+                compute_hash(constraint)
+            )
+        } else {
+            int_type
+        }
     }
 }
 
@@ -381,10 +491,10 @@ impl Codegen for BytesCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         match &self.len {
-            LengthSpecifier::Const(len) => format!("BytesN<{}>", len),
-            LengthSpecifier::Dependent(..) => "Bytes".to_string(),
+            LengthSpecifier::Const(len) => (format!("BytesN<{}>", len), "".to_string()),
+            LengthSpecifier::Dependent(..) => ("Bytes".to_string(), "".to_string()),
         }
     }
 
@@ -409,9 +519,9 @@ impl Codegen for TailCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         if name.is_empty() {
-            "Tail".to_string()
+            ("Tail".to_string(), "".to_string())
         } else {
             panic!("`Tail` should not be a top-level definition")
         }
@@ -455,9 +565,9 @@ impl Codegen for CombinatorInvocation {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         let invocked = snake_to_upper_caml(&self.func);
-        format!("{}Combinator", invocked)
+        (format!("{}Combinator", invocked), "".to_string())
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
@@ -735,7 +845,7 @@ impl Codegen for StructCombinator {
     }
 
     /// assuming all structs are top-level definitions
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         let (fst, snd) = self.split_at_last_dependent();
         let combinator_type_from_field = |field: &StructField| match field {
             StructField::Ordinary { combinator, .. }
@@ -744,12 +854,22 @@ impl Codegen for StructCombinator {
         };
         if fst.is_empty() {
             // no dependent fields
-            let snd = snd
+            let snd_comb_types = snd
                 .iter()
                 .map(combinator_type_from_field)
+                .map(|(t, _)| t)
                 .collect::<Vec<_>>();
-            let inner = fmt_in_pairs(&snd, "", Bracket::Parentheses);
-            format!("Mapped<{}, {}Mapper>", inner, name)
+            let inner = fmt_in_pairs(&snd_comb_types, "", Bracket::Parentheses);
+            let additional_code = snd
+                .iter()
+                .map(combinator_type_from_field)
+                .map(|(_, code)| code)
+                .collect::<Vec<_>>()
+                .join("\n");
+            (
+                format!("Mapped<{}, {}Mapper>", inner, name),
+                additional_code,
+            )
         } else {
             let (fst, snd) = (
                 fst.iter()
@@ -759,12 +879,29 @@ impl Codegen for StructCombinator {
                     .map(combinator_type_from_field)
                     .collect::<Vec<_>>(),
             );
-            let inner = format!(
-                "SpecDepend<{}, {}>",
-                fmt_in_pairs(&fst, "", Bracket::Parentheses),
-                fmt_in_pairs(&snd, "", Bracket::Parentheses)
+            let (fst_comb_type, snd_comb_types) = (
+                fmt_in_pairs(
+                    &fst.iter().map(|(t, _)| t).collect::<Vec<_>>(),
+                    "",
+                    Bracket::Parentheses,
+                ),
+                fmt_in_pairs(
+                    &snd.iter().map(|(t, _)| t).collect::<Vec<_>>(),
+                    "",
+                    Bracket::Parentheses,
+                ),
             );
-            format!("Mapped<{}, {}Mapper>", inner, name)
+            let inner = format!("SpecDepend<{}, {}>", fst_comb_type, snd_comb_types);
+            let additional_code = fst
+                .iter()
+                .chain(snd.iter())
+                .map(|(_, code)| code.to_string())
+                .collect::<Vec<_>>()
+                .join("\n");
+            (
+                format!("Mapped<{}, {}Mapper>", inner, name),
+                additional_code,
+            )
         }
     }
 
@@ -775,10 +912,13 @@ impl Codegen for StructCombinator {
             let snd = snd
                 .iter()
                 .map(|field| match field {
-                    StructField::Ordinary { combinator, .. }
-                    | StructField::Dependent { combinator, .. } => {
-                        combinator.gen_combinator_expr("", mode, ctx)
-                    }
+                    StructField::Ordinary { combinator, label }
+                    | StructField::Dependent { combinator, label } => combinator
+                        .gen_combinator_expr(
+                            &snake_to_upper_caml(&(name.to_owned() + label)),
+                            mode,
+                            ctx,
+                        ),
                     _ => todo!(),
                 })
                 .collect::<Vec<_>>();
@@ -809,10 +949,10 @@ impl Codegen for EnumCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         let inferred = infer_enum_type(&self.enums);
         match inferred {
-            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Unsigned(t) => (format!("U{}", t), "".to_string()),
             IntCombinator::Signed(..) => unimplemented!(),
         }
     }
@@ -987,7 +1127,7 @@ impl Codegen for ChoiceCombinator {
         code
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         if let Some(depend_id) = &self.depend_id {
             // find the corresponding combinator of `depend_id`
             let combinator = ctx
@@ -1016,17 +1156,24 @@ impl Codegen for ChoiceCombinator {
                     })
                     .collect::<Vec<_>>();
                 let inferred = infer_enum_type(&enums);
-                let combinator_types = match &self.choices {
+                let (combinator_types, additional_code): (Vec<String>, Vec<String>) = match &self
+                    .choices
+                {
                     Choices::Enums(enums) => enums
                         .iter()
                         .map(|(_, combinator)| combinator.gen_combinator_type("", ctx))
-                        .map(|t| format!("Cond<{}, {}, {}>", inferred, inferred, t))
-                        .collect::<Vec<_>>(),
+                        .map(|(t, code)| (format!("Cond<{}, {}, {}>", inferred, inferred, t), code))
+                        .unzip(),
+                    // .collect::<Vec<(String, String)>>()
                     Choices::Ints(..) => todo!(),
                     Choices::Arrays(..) => todo!(),
                 };
+
                 let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
-                format!("Mapped<{}, {}Mapper>", inner, name)
+                (
+                    format!("Mapped<{}, {}Mapper>", inner, name),
+                    additional_code.join("\n"),
+                )
             } else {
                 panic!("unexpected combinator type for dependent id: {}. Maybe something wrong with type checking 🙀", depend_id)
             }
@@ -1053,17 +1200,17 @@ impl Codegen for ChoiceCombinator {
                 func: enum_name, ..
             }) = &combinator
             {
-                let ints = ctx
-                    .enums
-                    .get(enum_name.as_str())
-                    .unwrap()
-                    .iter()
-                    .map(|(_, &value)| value)
-                    .collect::<Vec<_>>();
                 let combinator_exprs = match &self.choices {
-                    Choices::Enums(enums) => std::iter::zip(enums, ints)
-                        .map(|((_, combinator), i)| {
+                    Choices::Enums(enums) => enums
+                        .iter()
+                        .map(|(variant, combinator)| {
                             let inner = combinator.gen_combinator_expr("", mode, ctx);
+                            let i = ctx
+                                .enums
+                                .get(enum_name.as_str())
+                                .unwrap()
+                                .get(variant.as_str())
+                                .unwrap();
                             format!(
                                 "Cond {{ lhs: {}, rhs: {}, inner: {} }}",
                                 depend_id, i, inner
@@ -1128,7 +1275,7 @@ impl Codegen for ArrayCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1142,7 +1289,7 @@ impl Codegen for VecCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1156,7 +1303,7 @@ impl Codegen for SepByCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1170,7 +1317,7 @@ impl Codegen for WrapCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1184,7 +1331,7 @@ impl Codegen for ApplyCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1198,7 +1345,7 @@ impl Codegen for OptionCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> String {
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
         todo!()
     }
 
@@ -1227,6 +1374,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::regular::bytes_n::*;\n"
         + "use vest::regular::depend::*;\n"
         + "use vest::regular::and_then::*;\n"
+        + "use vest::regular::refined::*;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }
 
@@ -1283,7 +1431,9 @@ fn gen_combinator_type_for_definition(defn: &Definition, code: &mut String, ctx:
             param_defns,
         } => {
             ctx.param_defns = param_defns.clone();
-            code.push_str(&combinator.gen_combinator_type(name, ctx));
+            let (combinator_type, additional_code) = combinator.gen_combinator_type(name, ctx);
+            code.push_str(&additional_code);
+            code.push_str(&combinator_type);
         }
         Definition::ConstCombinator {
             name,
@@ -1526,7 +1676,7 @@ fn gen_parser_and_serializer_for_definition(
                             .map(|field| match field {
                                 StructField::Ordinary { combinator, .. }
                                 | StructField::Dependent { combinator, .. } => (
-                                    combinator.gen_combinator_type("", ctx),
+                                    combinator.gen_combinator_type("", ctx).0,
                                     (
                                         combinator.gen_combinator_expr("", exec_mode, ctx),
                                         combinator.gen_combinator_expr("", Mode::Spec, ctx),
