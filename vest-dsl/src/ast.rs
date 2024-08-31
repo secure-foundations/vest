@@ -183,7 +183,7 @@ pub struct ArrayCombinator {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LengthSpecifier {
-    Const(i128),
+    Const(usize),
     Dependent(String),
 }
 
@@ -224,13 +224,13 @@ pub enum ConstCombinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstArrayCombinator {
     pub combinator: IntCombinator,
-    pub len: i128,
+    pub len: usize,
     pub values: ConstArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstBytesCombinator {
-    pub len: i128,
+    pub len: usize,
     pub values: ConstArray,
 }
 
@@ -238,6 +238,7 @@ pub struct ConstBytesCombinator {
 pub enum ConstArray {
     Char(Vec<u8>),
     Int(Vec<i128>),
+    Repeat(i128, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -424,7 +425,7 @@ impl Display for ConstArrayCombinator {
 
 impl Display for ConstBytesCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}]", self.values)
+        write!(f, "{}", self.values)
     }
 }
 
@@ -440,11 +441,15 @@ impl Display for ConstArray {
             }
             ConstArray::Int(ints) => {
                 write!(f, "[")?;
-                for int in ints {
-                    write!(f, "{},", int)?;
+                for (i, int) in ints.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", int)?;
                 }
                 write!(f, "]")
             }
+            ConstArray::Repeat(value, count) => write!(f, "[{}; {}]", value, count),
         }
     }
 }
@@ -833,7 +838,13 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let comb = parse_combinator(inner_rules.next().unwrap());
             let next_rule = inner_rules.next().unwrap();
             let len = match next_rule.as_rule() {
-                Rule::const_int => LengthSpecifier::Const(parse_const_int(next_rule)),
+                Rule::const_int => {
+                    let len = parse_const_int(next_rule);
+                    let len: usize = len
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("Array length {} does not fit into usize", len));
+                    LengthSpecifier::Const(len)
+                }
                 Rule::depend_id => LengthSpecifier::Dependent(
                     next_rule.as_str().strip_prefix('@').unwrap().to_string(),
                 ),
@@ -1102,6 +1113,9 @@ fn parse_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
             let mut inner_rules = rule.into_inner();
             let combinator = parse_int_combinator(inner_rules.next().unwrap());
             let len = parse_const_int(inner_rules.next().unwrap());
+            let len: usize = len
+                .try_into()
+                .unwrap_or_else(|_| panic!("length {} does not fit into usize", len));
             let values = parse_const_array(inner_rules.next().unwrap());
             // check for special case of `[u8; ...] = [...]` ==> ConstBytes
             match combinator {
@@ -1149,7 +1163,25 @@ fn parse_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
             let str = &str[1..str.len() - 1];
             ConstArray::Char(str.as_bytes().to_vec())
         }
-        Rule::const_int_array => ConstArray::Int(rule.into_inner().map(parse_const_int).collect()),
+        Rule::const_int_array => {
+            let mut inner_rules = rule.into_inner();
+            let next_rule = inner_rules.next().unwrap();
+            match next_rule.as_rule() {
+                Rule::int_array_expr => {
+                    ConstArray::Int(next_rule.into_inner().map(parse_const_int).collect())
+                }
+                Rule::repeat_int_array_expr => {
+                    let mut inner_rules = next_rule.into_inner();
+                    let value = parse_const_int(inner_rules.next().unwrap());
+                    let count = parse_const_int(inner_rules.next().unwrap());
+                    let count: usize = count
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("length {} does not fit into usize", count));
+                    ConstArray::Repeat(value, count)
+                }
+                _ => unreachable!(),
+            }
+        }
         _ => unreachable!(),
     }
 }

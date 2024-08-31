@@ -142,19 +142,28 @@ fn check_const_struct_combinator(
     });
 }
 
-fn check_const_array_combinator(combinator: &IntCombinator, len: &i128, values: &ConstArray) {
+fn check_const_array_combinator(combinator: &IntCombinator, len: &usize, values: &ConstArray) {
     match values {
-        ConstArray::Int(int_values) => {
-            if int_values.len() as i128 != *len {
+        ConstArray::Int(int_vals) => {
+            if int_vals.len() != *len {
                 panic!(
                     "Length of array does not match the specified length (expected {}, got {})",
                     len,
-                    int_values.len()
+                    int_vals.len()
                 );
             }
-            int_values
+            int_vals
                 .iter()
                 .for_each(|value| check_const_int_combinator(combinator, value));
+        }
+        ConstArray::Repeat(int_val, n) => {
+            if *n != *len {
+                panic!(
+                    "Length of array does not match the specified length (expected {}, got {})",
+                    len, n
+                );
+            }
+            check_const_int_combinator(combinator, int_val);
         }
         ConstArray::Char(_) => panic!("Char array literals should be of type `[u8; N]`"),
     }
@@ -182,19 +191,35 @@ fn check_const_choice_combinator(
         });
 }
 
-fn check_const_bytes_combinator(len: &i128, values: &ConstArray) {
+fn check_const_bytes_combinator(len: &usize, values: &ConstArray) {
     match values {
-        ConstArray::Int(int_values) => {
-            if int_values.len() as i128 != *len {
+        ConstArray::Int(int_vals) => {
+            if int_vals.len() != *len {
                 panic!(
                     "Length of array does not match the specified length (expected {}, got {})",
                     len,
-                    int_values.len()
+                    int_vals.len()
                 );
+            }
+            int_vals.iter().for_each(|value| {
+                if *value < u8::MIN.into() || *value > u8::MAX.into() {
+                    panic!("Value {} is out of range for u8", value);
+                }
+            });
+        }
+        ConstArray::Repeat(int_val, n) => {
+            if *n != *len {
+                panic!(
+                    "Length of array does not match the specified length (expected {}, got {})",
+                    len, n
+                );
+            }
+            if *int_val < u8::MIN.into() || *int_val > u8::MAX.into() {
+                panic!("Value {} is out of range for u8", int_val);
             }
         }
         ConstArray::Char(char_values) => {
-            if char_values.len() as i128 != *len {
+            if char_values.len() != *len {
                 panic!(
                     "Length of array does not match the specified length (expected {}, got {})",
                     len,
@@ -409,11 +434,8 @@ fn check_bytes_combinator(
     _global_ctx: &GlobalCtx,
 ) {
     match len {
-        LengthSpecifier::Const(int) => {
-            infer_enum_type(&[Enum {
-                name: "".to_owned(),
-                value: *int,
-            }]);
+        LengthSpecifier::Const(..) => {
+            // nothing to check
         }
         LengthSpecifier::Dependent(depend_id) => {
             let combinator = local_ctx

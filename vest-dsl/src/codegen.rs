@@ -29,6 +29,12 @@ fn snake_to_upper_caml(s: &str) -> String {
     result
 }
 
+/// convert lower snake case to upper snake case
+/// e.g. `foo_bar` -> `FOO_BAR`
+fn lower_snake_to_upper_snake(s: &str) -> String {
+    s.to_ascii_uppercase()
+}
+
 fn compute_hash<T: Hash>(data: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     data.hash(&mut hasher);
@@ -128,6 +134,7 @@ impl<'a> CodegenCtx<'a> {
                 Struct(StructCombinator(fields)) => fields.iter().any(|field| match field {
                     StructField::Ordinary { combinator, .. } => need_lifetime(combinator),
                     StructField::Dependent { combinator, .. } => need_lifetime(combinator),
+                    StructField::Const { combinator, .. } => need_lifetime_const(combinator),
                     _ => false,
                 }),
                 Wrap(WrapCombinator {
@@ -170,7 +177,7 @@ impl<'a> CodegenCtx<'a> {
         fn need_lifetime_const(const_combinator: &ConstCombinator) -> bool {
             match const_combinator {
                 ConstCombinator::ConstArray(_) => true, // TODO: can be more fine-grained
-                ConstCombinator::ConstBytes(ConstBytesCombinator { len, .. }) => *len > 16, // TODO: adjust this threshold
+                ConstCombinator::ConstBytes(_) => true, // TODO: can be more fine-grained
                 ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => {
                     fields.iter().any(need_lifetime_const)
                 }
@@ -255,7 +262,7 @@ impl Codegen for Combinator {
         if let Some(and_then) = &self.and_then {
             let (comb_type, additional_code) = self.inner.gen_combinator_type(name, ctx); // must be `Bytes` or `Tail`
             let (and_then_comb_type, and_then_additional_code) =
-                and_then.gen_combinator_type(name, ctx);
+                and_then.inner.gen_combinator_type(name, ctx);
             if name.is_empty() {
                 (
                     format!("AndThen<{}, {}>", comb_type, and_then_comb_type),
@@ -644,7 +651,9 @@ impl Codegen for StructCombinator {
                     fields.push((FieldKind::Dependent, label.to_string(), field_type));
                 }
                 StructField::Const { label, combinator } => {
-                    todo!()
+                    let field_type = combinator.gen_msg_type("", mode, ctx);
+                    code.push_str(&format!("    pub {}: {},\n", label, &field_type));
+                    fields.push((FieldKind::Ordinary, label.to_string(), field_type));
                 }
                 _ => todo!(),
             }
@@ -850,6 +859,10 @@ impl Codegen for StructCombinator {
         let combinator_type_from_field = |field: &StructField| match field {
             StructField::Ordinary { combinator, .. }
             | StructField::Dependent { combinator, .. } => combinator.gen_combinator_type("", ctx),
+            StructField::Const { label, combinator } => {
+                let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+                combinator.gen_combinator_type(name, ctx)
+            }
             _ => todo!(),
         };
         if fst.is_empty() {
@@ -915,10 +928,14 @@ impl Codegen for StructCombinator {
                     StructField::Ordinary { combinator, label }
                     | StructField::Dependent { combinator, label } => combinator
                         .gen_combinator_expr(
-                            &snake_to_upper_caml(&(name.to_owned() + label)),
+                            &snake_to_upper_caml(&(name.to_owned() + "_" + label)),
                             mode,
                             ctx,
                         ),
+                    StructField::Const { label, combinator } => {
+                        let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+                        combinator.gen_combinator_expr(name, mode, ctx)
+                    }
                     _ => todo!(),
                 })
                 .collect::<Vec<_>>();
@@ -1354,6 +1371,165 @@ impl Codegen for OptionCombinator {
     }
 }
 
+impl Codegen for ConstCombinator {
+    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        match &self {
+            ConstCombinator::ConstInt(c) => c.gen_msg_type(name, mode, ctx),
+            ConstCombinator::ConstBytes(c) => c.gen_msg_type(name, mode, ctx),
+            ConstCombinator::ConstArray(..) => todo!(),
+            ConstCombinator::Vec(..) => todo!(),
+            ConstCombinator::ConstStruct(..) => todo!(),
+            ConstCombinator::ConstChoice(..) => todo!(),
+            ConstCombinator::ConstCombinatorInvocation(..) => todo!(),
+        }
+    }
+
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
+        match &self {
+            ConstCombinator::ConstInt(c) => c.gen_combinator_type(name, ctx),
+            ConstCombinator::ConstBytes(c) => c.gen_combinator_type(name, ctx),
+            ConstCombinator::ConstArray(..) => todo!(),
+            ConstCombinator::Vec(..) => todo!(),
+            ConstCombinator::ConstStruct(..) => todo!(),
+            ConstCombinator::ConstChoice(..) => todo!(),
+            ConstCombinator::ConstCombinatorInvocation(..) => todo!(),
+        }
+    }
+
+    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        match &self {
+            ConstCombinator::ConstInt(c) => c.gen_combinator_expr(name, mode, ctx),
+            ConstCombinator::ConstBytes(c) => c.gen_combinator_expr(name, mode, ctx),
+            ConstCombinator::ConstArray(..) => todo!(),
+            ConstCombinator::Vec(..) => todo!(),
+            ConstCombinator::ConstStruct(..) => todo!(),
+            ConstCombinator::ConstChoice(..) => todo!(),
+            ConstCombinator::ConstCombinatorInvocation(..) => todo!(),
+        }
+    }
+}
+
+impl Codegen for ConstIntCombinator {
+    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        format!("{}", self.combinator)
+    }
+
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
+        let (comb_type, tag_type) = match &self.combinator {
+            IntCombinator::Unsigned(t) => (format!("U{}", t), format!("u{}", t)),
+            IntCombinator::Signed(..) => unimplemented!(),
+        };
+        let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
+        let value = self.value;
+        let predicate = format!(
+            r#"pub struct IntIs{value};
+impl View for IntIs{value} {{
+    type V = Self;
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+impl SpecPred for IntIs{value} {{
+    type Input = {tag_type};
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
+        *i == {value}
+    }}
+}}
+impl Pred for IntIs{value} {{
+    type Input<'a> = {tag_type};
+    type InputOwned = {tag_type};
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {{
+        *i == {value}
+    }}
+}}
+        "#
+        );
+        (
+            format!("Refined<{}, IntIs{}>", comb_type, self.value),
+            const_decl + &predicate,
+        )
+    }
+
+    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        let int_type = match &self.combinator {
+            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Signed(..) => unimplemented!(),
+        };
+        format!(
+            "Refined {{ inner: {}, predicate: IntIs{} }}",
+            int_type, self.value
+        )
+    }
+}
+
+impl Codegen for ConstBytesCombinator {
+    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        match mode {
+            Mode::Spec => "Seq<u8>".to_string(),
+            Mode::Exec(LifetimeAnn::Some) => "&'a [u8]".to_string(),
+            _ => "Vec<u8>".to_string(),
+        }
+    }
+
+    fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
+        let len = self.len;
+        let arr_val = format!("{}", self.values);
+        let spec_const_decl = format!("pub spec const SPEC_{}: Seq<u8> = seq!{};", name, arr_val);
+        let exec_const_decl = format!(
+            r#"pub exec const {name}: [u8; {len}]
+    ensures {name}@ == SPEC_{name},
+{{
+    let arr: [u8; {len}] = {arr_val};
+    assert(arr@ == SPEC_{name});
+    arr
+}}
+    
+    "#
+        );
+        let hash = compute_hash(&format!("{}", self.values));
+        let predicate = format!(
+            r#"pub struct BytesPredicate{hash};
+impl View for BytesPredicate{hash} {{
+    type V = Self;
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+impl SpecPred for BytesPredicate{hash} {{
+    type Input = Seq<u8>;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
+        i == &SPEC_{name}
+    }}
+}}
+impl Pred for BytesPredicate{hash} {{
+    type Input<'a> = &'a [u8];
+    type InputOwned = Vec<u8>;
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {{
+        compare_slice(i, {name}.as_slice())
+    }}
+}}
+
+"#,
+        );
+        (
+            format!("Refined<BytesN<{}>, BytesPredicate{}>", len, hash),
+            spec_const_decl + &exec_const_decl + &predicate,
+        )
+    }
+
+    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        format!(
+            "Refined {{ inner: BytesN::<{}>, predicate: BytesPredicate{} }}",
+            self.len,
+            compute_hash(&format!("{}", self.values))
+        )
+    }
+}
+
 pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
     let mut codegen_ctx = CodegenCtx::with_ast(ast, ctx);
     let mut code = String::new();
@@ -1410,7 +1586,7 @@ fn gen_msg_type_definition(
             name,
             const_combinator,
         } => {
-            todo!()
+            unimplemented!("Top-level const format is not supported yet");
         }
         _ => unimplemented!(),
     }
@@ -1439,7 +1615,7 @@ fn gen_combinator_type_for_definition(defn: &Definition, code: &mut String, ctx:
             name,
             const_combinator,
         } => {
-            todo!()
+            unimplemented!("Top-level const format is not supported yet");
         }
         _ => unimplemented!(),
     }
@@ -1563,7 +1739,7 @@ fn gen_combinator_expr_for_definition(defn: &Definition, code: &mut String, ctx:
             name,
             const_combinator,
         } => {
-            todo!()
+            unimplemented!("Top-level const format is not supported yet");
         }
         _ => unimplemented!(),
     }
@@ -1781,6 +1957,12 @@ pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, po
     {exec_body}.serialize(msg, data, pos)
 }}
 "#));
+        }
+        Definition::ConstCombinator {
+            name,
+            const_combinator,
+        } => {
+            unimplemented!("Top-level const format is not supported yet");
         }
         _ => unimplemented!(),
     }
