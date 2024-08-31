@@ -98,7 +98,9 @@ const_combinator = {
 const_array_combinator =  { "[" ~ int_combinator ~ ";" ~ const_int ~ "]" ~ "=" ~ const_array }
 const_array            =  { const_char_array | const_int_array }
 const_char_array       = ${ "\"" ~ (!"\"" ~ char)* ~ "\"" }
-const_int_array        =  { "[" ~ const_int ~ ("," ~ const_int)* ~ "]" }
+const_int_array        =  { int_array_expr | repeat_int_array_expr }
+int_array_expr         =  { "[" ~ const_int ~ ("," ~ const_int)* ~ "]" }
+repeat_int_array_expr  =  { "[" ~ const_int ~ ";" ~ const_int ~ "]" }
 
 const_int_combinator = { int_combinator ~ "=" ~ const_int }
 
