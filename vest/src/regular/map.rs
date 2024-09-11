@@ -440,12 +440,6 @@ impl View for FieldLess {
     }
 }
 
-impl SpecCompare<FieldLess> for FieldLess {
-    open spec fn spec_compare(&self, other: &FieldLess) -> bool {
-        *self == *other
-    }
-}
-
 impl Compare<FieldLess> for FieldLess {
     fn compare(&self, other: &FieldLess) -> bool {
         *self == *other
