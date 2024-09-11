@@ -1,4 +1,6 @@
 extern crate alloc;
+// use std::convert::Infallible;
+
 use vstd::prelude::*;
 use vstd::slice::slice_index_get;
 
@@ -65,6 +67,86 @@ impl<const N: usize, 'a, 'b> From<&'a [u8; N]> for &'b [u8] where 'a: 'b {
         v.as_slice()
     }
 }
+
+/// Spec version of [`TryFrom`].
+pub trait SpecTryFrom<T>: Sized {
+    /// The type returned in the event of a conversion error.
+    type Error;
+
+    /// Performs the conversion.
+    spec fn spec_try_from(value: T) -> Result<Self, Self::Error>;
+}
+
+/// Spec version of [`TryInto`].
+pub trait SpecTryInto<T>: Sized {
+    /// The type returned in the event of a conversion error.
+    type Error;
+
+    /// Performs the conversion.
+    spec fn spec_try_into(self) -> Result<T, Self::Error>;
+}
+
+impl<T, U> SpecTryInto<U> for T where U: SpecTryFrom<T> {
+    type Error = U::Error;
+
+    open spec fn spec_try_into(self) -> Result<U, U::Error> {
+        U::spec_try_from(self)
+    }
+}
+
+// impl<T, U> SpecTryFrom<U> for T where U: SpecInto<T> {
+//     type Error = Infallible;
+//
+//     open spec fn spec_try_from(value: U) -> Result<Self, Self::Error> {
+//         Ok(U::spec_into(value))
+//     }
+// }
+
+/// Vest equivalent of [`std::convert::TryFrom`].
+pub trait TryFrom<T> where T: View, Self: View + Sized, Self::V: SpecTryFrom<T::V> {
+    type Error;
+
+    /// Vest equivalent of [`std::convert::TryFrom::try_from`].
+    fn ex_try_from(t: T) -> (res: Result<Self, Self::Error>)
+        ensures
+            res matches Ok(v) ==> {
+                &&& Self::V::spec_try_from(t@) is Ok
+                &&& Self::V::spec_try_from(t@) matches Ok(v_) && v@ == v_
+            },
+            res matches Err(e) ==> Self::V::spec_try_from(t@) is Err,
+    ;
+}
+
+/// Vest equivalent of [`std::convert::TryInto`].
+pub trait TryInto<T> where T: View, Self: View + Sized, Self::V: SpecTryInto<T::V> {
+    type Error;
+
+    /// Vest equivalent of [`std::convert::TryInto::try_into`].
+    fn ex_try_into(self) -> (res: Result<T, Self::Error>)
+        ensures
+            res matches Ok(v) ==> {
+                &&& self@.spec_try_into() is Ok
+                &&& self@.spec_try_into() matches Ok(v_) && v@ == v_
+            },
+            res matches Err(e) ==> self@.spec_try_into() is Err,
+    ;
+}
+
+impl<T, U> TryInto<U> for T where T: View, U: View, U: TryFrom<T>, U::V: SpecTryFrom<T::V> {
+    type Error = U::Error;
+
+    fn ex_try_into(self) -> Result<U, U::Error> {
+        U::ex_try_from(self)
+    }
+}
+
+// impl<T, U> TryFrom<U> for T where T: View, U: View, U: Into<T>, U::V: SpecInto<T::V> {
+//     type Error = Infallible;
+//         
+//     fn ex_try_from(value: U) -> Result<T, Infallible> {
+//         Ok(U::ex_into(value))
+//     }
+// }
 
 /// A helper trait for two different types that can be compared.
 pub trait Compare<Other> where Self: View, Other: View<V = Self::V> {
@@ -183,7 +265,7 @@ macro_rules! declare_identity_view_reflex {
                 proof fn reflex(&self) {}
             }
         }
-};
+    };
 }
 
 declare_identity_view_reflex!(());

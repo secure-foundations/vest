@@ -209,4 +209,470 @@ impl<Inner, M> Combinator for Mapped<Inner, M> where
     }
 }
 
+pub trait SpecTryFromInto {
+    type Src: SpecTryFrom<Self::Dst>;
+
+    type Dst: SpecTryFrom<Self::Src>;
+
+    open spec fn spec_apply(s: Self::Src) -> Result<Self::Dst, <Self::Dst as SpecTryFrom<Self::Src>>::Error> {
+        Self::Dst::spec_try_from(s)
+    }
+
+    open spec fn spec_rev_apply(s: Self::Dst) -> Result<Self::Src, <Self::Src as SpecTryFrom<Self::Dst>>::Error> {
+        Self::Src::spec_try_from(s)
+    }
+
+    proof fn spec_iso(s: Self::Src)
+        ensures
+            Self::spec_apply(s) matches Ok(v) ==> {
+                &&& Self::spec_rev_apply(v) is Ok
+                &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+            }
+    ;
+
+    proof fn spec_iso_rev(s: Self::Dst)
+        ensures
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+                &&& Self::spec_apply(v) is Ok
+                &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+            }
+    ;
+}
+
+pub trait TryFromInto: View where
+    Self::V: SpecTryFromInto<Src = <Self::SrcOwned as View>::V, Dst = <Self::DstOwned as View>::V>,
+    <Self::SrcOwned as View>::V: SpecTryFrom<<Self::DstOwned as View>::V>,
+    <Self::DstOwned as View>::V: SpecTryFrom<<Self::SrcOwned as View>::V>,
+ {
+    type Src<'a>: View<V = <Self::SrcOwned as View>::V> + TryFrom<Self::Dst<'a>>;
+
+    type Dst<'a>: View<V = <Self::DstOwned as View>::V> + TryFrom<Self::Src<'a>>;
+
+    type SrcOwned: View + TryFrom<Self::DstOwned>;
+
+    type DstOwned: View + TryFrom<Self::SrcOwned>;
+
+    fn apply(s: Self::Src<'_>) -> (res: Result<Self::Dst<'_>, <Self::Dst<'_> as TryFrom<Self::Src<'_>>>::Error>)
+        ensures
+            res matches Ok(v) ==> {
+                &&& Self::V::spec_apply(s@) is Ok
+                &&& Self::V::spec_apply(s@) matches Ok(v_) && v@ == v_
+            },
+            res matches Err(e) ==> Self::V::spec_apply(s@) is Err,
+    {
+        assert(Self::V::spec_apply(s@) == <Self::Dst<'_> as View>::V::spec_try_from(s@))
+            by (compute_only);
+        Self::Dst::ex_try_from(s)
+    }
+
+    fn rev_apply(s: Self::Dst<'_>) -> (res: Result<Self::Src<'_>, <Self::Src<'_> as TryFrom<Self::Dst<'_>>>::Error>)
+        ensures
+            res matches Ok(v) ==> {
+                &&& Self::V::spec_rev_apply(s@) is Ok
+                &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
+            },
+            res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
+    {
+        assert(Self::V::spec_rev_apply(s@) == <Self::Src<'_> as View>::V::spec_try_from(s@))
+            by (compute_only);
+        Self::Src::ex_try_from(s)
+    }
+}
+
+pub struct TryMap<Inner, M> {
+    pub inner: Inner,
+    pub mapper: M,
+}
+
+impl<Inner: View, M: View> View for TryMap<Inner, M> {
+    type V = TryMap<Inner::V, M::V>;
+
+    open spec fn view(&self) -> Self::V {
+        TryMap { inner: self.inner@, mapper: self.mapper@ }
+    }
+}
+
+impl<Inner, M> SpecCombinator for TryMap<Inner, M>
+where
+    Inner: SpecCombinator,
+    M: SpecTryFromInto<Src = Inner::SpecResult>,
+    Inner::SpecResult: SpecTryFrom<M::Dst>,
+    M::Dst: SpecTryFrom<Inner::SpecResult>,
+{
+    type SpecResult = M::Dst;
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        match self.inner.spec_parse(s) {
+            Err(e) => Err(e),
+            Ok((n, v)) => match M::spec_apply(v) {
+                Ok(v) => Ok((n, v)),
+                Err(_) => Err(()),
+            },
+        }
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.inner.spec_parse_wf(s);
+        if let Ok((n, v)) = self.inner.spec_parse(s) {
+            M::spec_iso(v);
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        match M::spec_rev_apply(v) {
+            Ok(v) => self.inner.spec_serialize(v),
+            Err(_) => Err(()),
+        }
+    }
+}
+
+impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M>
+where
+    Inner: SecureSpecCombinator,
+    M: SpecTryFromInto<Src = Inner::SpecResult>,
+    Inner::SpecResult: SpecTryFrom<M::Dst>,
+    M::Dst: SpecTryFrom<Inner::SpecResult>,
+{
+    open spec fn spec_is_prefix_secure() -> bool {
+        Inner::spec_is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        if let Ok(v_) = M::spec_rev_apply(v) {
+            M::spec_iso_rev(v);
+            self.inner.theorem_serialize_parse_roundtrip(v_);
+        }
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.inner.spec_parse_wf(buf);
+        self.inner.theorem_parse_serialize_roundtrip(buf);
+        if let Ok((n, v)) = self.inner.spec_parse(buf) {
+            M::spec_iso(v)
+        }
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.inner.lemma_prefix_secure(s1, s2);
+        if let Ok((n, v)) = self.inner.spec_parse(s1) {
+            self.inner.spec_parse_wf(s1);
+            M::spec_iso(v)
+        }
+    }
+}
+
+impl<Inner, M> Combinator for TryMap<Inner, M> where
+    Inner: Combinator,
+    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
+    for <'a> M: TryFromInto<Src<'a> = Inner::Result<'a>, SrcOwned = Inner::Owned>,
+    for <'a>Inner::Result<'a>: TryFrom<M::Dst<'a>> + View,
+    for <'a>M::Dst<'a>: TryFrom<Inner::Result<'a>> + View,
+    M::V: SpecTryFromInto<Src = <Inner::Owned as View>::V, Dst = <M::DstOwned as View>::V>,
+    <Inner::Owned as View>::V: SpecTryFrom<<M::DstOwned as View>::V>,
+    <M::DstOwned as View>::V: SpecTryFrom<<Inner::Owned as View>::V>,
+{
+    type Result<'a> = M::Dst<'a>;
+
+    type Owned = M::DstOwned;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        self.inner.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.inner.length()
+    }
+
+    fn exec_is_prefix_secure() -> (res: bool) {
+        Inner::exec_is_prefix_secure()
+    }
+
+    open spec fn parse_requires(&self) -> bool {
+        self.inner.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+        match self.inner.parse(s) {
+            Err(e) => Err(e),
+            Ok((n, v)) => match M::apply(v) {
+                Ok(v) => Ok((n, v)),
+                Err(_) => Err(()),
+            },
+        }
+    }
+
+    open spec fn serialize_requires(&self) -> bool {
+        self.inner.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+        match M::rev_apply(v) {
+            Ok(v) => self.inner.serialize(v, data, pos),
+            Err(_) => Err(()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+use super::*;
+use super::super::uints::*;
+
+verus! {
+
+// exhaustive enum
+
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub enum FieldLess {
+    A = 0,
+    B = 1,
+    C = 2,
+}
+
+pub type FieldLessInner = u8;
+
+impl View for FieldLess {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecCompare<FieldLess> for FieldLess {
+    open spec fn spec_compare(&self, other: &FieldLess) -> bool {
+        *self == *other
+    }
+}
+
+impl Compare<FieldLess> for FieldLess {
+    fn compare(&self, other: &FieldLess) -> bool {
+        *self == *other
+    }
+}
+impl SpecTryFrom<FieldLessInner> for FieldLess {
+    type Error = ();
+
+    open spec fn spec_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
+        match v {
+            0u8 => Ok(FieldLess::A),
+            1u8 => Ok(FieldLess::B),
+            2u8 => Ok(FieldLess::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<FieldLess> for FieldLessInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
+        match v {
+            FieldLess::A => Ok(0u8),
+            FieldLess::B => Ok(1u8),
+            FieldLess::C => Ok(2u8),
+        }
+    }
+}
+
+impl TryFrom<FieldLessInner> for FieldLess {
+    type Error = ();
+
+    fn ex_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
+        match v {
+            0u8 => Ok(FieldLess::A),
+            1u8 => Ok(FieldLess::B),
+            2u8 => Ok(FieldLess::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<FieldLess> for FieldLessInner {
+    type Error = ();
+
+    fn ex_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
+        match v {
+            FieldLess::A => Ok(0u8),
+            FieldLess::B => Ok(1u8),
+            FieldLess::C => Ok(2u8),
+        }
+    }
+}
+
+struct FieldLessMapper;
+
+impl View for FieldLessMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for FieldLessMapper {
+    type Src = FieldLessInner;
+    type Dst = FieldLess;
+
+    proof fn spec_iso(s: Self::Src) {}
+
+    proof fn spec_iso_rev(s: Self::Dst) {}
+}
+
+impl TryFromInto for FieldLessMapper {
+    type Src<'a> = FieldLessInner;
+    type Dst<'a> = FieldLess;
+
+    type SrcOwned = FieldLessInner;
+    type DstOwned = FieldLess;
+}
+
+type FieldLessCombinator = TryMap<U8, FieldLessMapper>;
+
+spec fn spec_field_less() -> FieldLessCombinator {
+    TryMap { inner: U8, mapper: FieldLessMapper }
+}
+
+fn field_less() -> (o: FieldLessCombinator)
+    ensures o@ == spec_field_less(),
+{
+    TryMap { inner: U8, mapper: FieldLessMapper }
+}
+
+spec fn parse_spec_field_less(i: Seq<u8>) -> Result<(usize, FieldLess), ()> {
+    spec_field_less().spec_parse(i)
+}
+
+spec fn serialize_spec_field_less(msg: FieldLess) -> Result<Seq<u8>, ()> {
+    spec_field_less().spec_serialize(msg)
+}
+
+fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ()>)
+    ensures
+        o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
+{
+    field_less().parse(i)
+}
+
+fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    ensures
+        o matches Ok(n) ==> {
+            &&& serialize_spec_field_less(msg@) matches Ok(buf)
+            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
+        },
+{
+    field_less().serialize(msg, data, pos)
+}
+
+// non-exhaustive enum
+// NOTE: It turns out that the following encoding creates an anbiguous format, e.g. both
+// `NonExhaustive::X` and `NonExhaustive::Unknown(0)` would be serialized to `0x00`, which could
+// lead to format confusion attacks (though it's not immediately clear how). Interestingly,
+// [rustls](https://github.com/rustls/rustls/blob/main/rustls/src/msgs/macros.rs#L68) uses a
+// similar encoding for all its enums.
+//
+// For security, we should just use primitive uint combinators for non-exhaustive enums.
+
+// #[non_exhaustive]
+// #[repr(u8)]
+// pub enum NonExhaustive {
+//     X = 0,
+//     Y = 1,
+//     Z = 2,
+//     Unknown(u8),
+// }
+//
+// pub type NonExhaustiveInner = u8;
+//
+// impl View for NonExhaustive {
+//     type V = Self;
+//
+//     open spec fn view(&self) -> Self::V {
+//         *self
+//     }
+// }
+//
+// impl SpecFrom<NonExhaustiveInner> for NonExhaustive {
+//     open spec fn spec_from(v: NonExhaustiveInner) -> NonExhaustive {
+//         match v {
+//             0u8 => NonExhaustive::X,
+//             1u8 => NonExhaustive::Y,
+//             2u8 => NonExhaustive::Z,
+//             _ => NonExhaustive::Unknown(v),
+//         }
+//     }
+// }
+//
+// impl SpecFrom<NonExhaustive> for NonExhaustiveInner {
+//     open spec fn spec_from(v: NonExhaustive) -> NonExhaustiveInner {
+//         match v {
+//             NonExhaustive::X => 0u8,
+//             NonExhaustive::Y => 1u8,
+//             NonExhaustive::Z => 2u8,
+//             NonExhaustive::Unknown(v) => v,
+//         }
+//     }
+// }
+//
+// impl From<NonExhaustiveInner> for NonExhaustive {
+//     fn ex_from(v: NonExhaustiveInner) -> NonExhaustive {
+//         match v {
+//             0u8 => NonExhaustive::X,
+//             1u8 => NonExhaustive::Y,
+//             2u8 => NonExhaustive::Z,
+//             _ => NonExhaustive::Unknown(v),
+//         }
+//     }
+// }
+//
+// impl From<NonExhaustive> for NonExhaustiveInner {
+//     fn ex_from(v: NonExhaustive) -> NonExhaustiveInner {
+//         match v {
+//             NonExhaustive::X => 0u8,
+//             NonExhaustive::Y => 1u8,
+//             NonExhaustive::Z => 2u8,
+//             NonExhaustive::Unknown(v) => v,
+//         }
+//     }
+// }
+//
+// struct NonExhaustiveMapper;
+//
+// impl View for NonExhaustiveMapper {
+//     type V = Self;
+//
+//     open spec fn view(&self) -> Self::V {
+//         *self
+//     }
+// }
+//
+// impl SpecIso for NonExhaustiveMapper {
+//     type Src = NonExhaustiveInner;
+//     type Dst = NonExhaustive;
+//
+//     proof fn spec_iso(s: Self::Src) {
+//     }
+//
+//     proof fn spec_iso_rev(s: Self::Dst) {
+//         // would fail because of the ambiguity in the encoding
+//     }
+// }
+//
+// impl Iso for NonExhaustiveMapper {
+//     type Src<'a> = NonExhaustiveInner;
+//     type Dst<'a> = NonExhaustive;
+//
+//     type SrcOwned = NonExhaustiveInner;
+//     type DstOwned = NonExhaustive;
+// }
+
+
+
+
+}
+
+}
+
+
 } // verus!
