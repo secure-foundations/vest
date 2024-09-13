@@ -3,30 +3,25 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Combinator that checks if `Lhs` is equal to `Rhs` and then delegates to the `Inner`
-/// combinator.
-pub struct Cond<Lhs, Rhs, Inner> {
-    /// The left-hand side of the comparison.
-    pub lhs: Lhs,
-    /// The right-hand side of the comparison.
-    pub rhs: Rhs,
-    /// The inner combinator.
+/// Combinator that checks if `cond` is true and then delegates to the `inner` combinator.
+pub struct Cond<Inner> {
+    pub cond: bool,
     pub inner: Inner,
 }
 
-impl<Lhs: View, Rhs: View, Inner: View> View for Cond<Lhs, Rhs, Inner> {
-    type V = Cond<Lhs::V, Rhs::V, Inner::V>;
+impl<Inner: View> View for Cond<Inner> {
+    type V = Cond<Inner::V>;
 
     open spec fn view(&self) -> Self::V {
-        Cond { lhs: self.lhs@, rhs: self.rhs@, inner: self.inner@ }
+        Cond { cond: self.cond, inner: self.inner@ }
     }
 }
 
-impl<T, Inner> SpecCombinator for Cond<T, T, Inner> where Inner: SpecCombinator {
+impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
     type SpecResult = Inner::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.spec_parse(s)
         } else {
             Err(())
@@ -34,13 +29,13 @@ impl<T, Inner> SpecCombinator for Cond<T, T, Inner> where Inner: SpecCombinator 
     }
 
     proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.spec_parse_wf(s);
         }
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.spec_serialize(v)
         } else {
             Err(())
@@ -48,15 +43,15 @@ impl<T, Inner> SpecCombinator for Cond<T, T, Inner> where Inner: SpecCombinator 
     }
 }
 
-impl<T, Inner> SecureSpecCombinator for Cond<T, T, Inner> where Inner: SecureSpecCombinator {
+impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.theorem_serialize_parse_roundtrip(v);
         }
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.theorem_parse_serialize_roundtrip(buf);
         }
     }
@@ -66,16 +61,13 @@ impl<T, Inner> SecureSpecCombinator for Cond<T, T, Inner> where Inner: SecureSpe
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        if self.lhs == self.rhs {
+        if self.cond {
             self.inner.lemma_prefix_secure(s1, s2);
         }
     }
 }
 
-impl<Lhs, Rhs, Inner> Combinator for Cond<Lhs, Rhs, Inner> where
-    Lhs: Compare<Rhs> + View,
-    Rhs: View<V = Lhs::V>,
-    Inner: Combinator,
+impl<Inner: Combinator> Combinator for Cond<Inner> where
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
  {
     type Result<'a> = Inner::Result<'a>;
@@ -83,7 +75,7 @@ impl<Lhs, Rhs, Inner> Combinator for Cond<Lhs, Rhs, Inner> where
     type Owned = Inner::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
-        if self.lhs@ == self.rhs@ {
+        if self.cond@ {
             self.inner.spec_length()
         } else {
             None
@@ -91,7 +83,7 @@ impl<Lhs, Rhs, Inner> Combinator for Cond<Lhs, Rhs, Inner> where
     }
 
     fn length(&self) -> Option<usize> {
-        if self.lhs.compare(&self.rhs) {
+        if self.cond {
             self.inner.length()
         } else {
             None
@@ -107,7 +99,7 @@ impl<Lhs, Rhs, Inner> Combinator for Cond<Lhs, Rhs, Inner> where
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ()> {
-        if self.lhs.compare(&self.rhs) {
+        if self.cond {
             self.inner.parse(s)
         } else {
             Err(())
@@ -119,7 +111,7 @@ impl<Lhs, Rhs, Inner> Combinator for Cond<Lhs, Rhs, Inner> where
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
-        if self.lhs.compare(&self.rhs) {
+        if self.cond {
             self.inner.serialize(v, data, pos)
         } else {
             Err(())
@@ -815,8 +807,8 @@ pub type MsgCF4Combinator = AndThen<
     Bytes,
     Mapped<
         OrdChoice<
-            OrdChoice<Cond<u8, u8, Content0Combinator>, Cond<u8, u8, U16>>,
-            Cond<u8, u8, U32>,
+            OrdChoice<Cond<Content0Combinator>, Cond<U16>>,
+            Cond<U32>,
         >,
         MsgCF4Mapper,
     >,
@@ -900,10 +892,10 @@ pub open spec fn spec_msg_c_f4(f2: SpecContentType, f3: u8) -> MsgCF4Combinator 
         Mapped {
             inner: OrdChoice(
                 OrdChoice(
-                    Cond { lhs: f2, rhs: 0, inner: spec_content_0(f3) },
-                    Cond { lhs: f2, rhs: 1, inner: U16 },
+                    Cond { cond: f2 == 0, inner: spec_content_0(f3) },
+                    Cond { cond: f2 == 1, inner: U16 },
                 ),
-                Cond { lhs: f2, rhs: 2, inner: U32 },
+                Cond { cond: f2 == 2, inner: U32 },
             ),
             mapper: MsgCF4Mapper,
         },
@@ -919,10 +911,10 @@ pub fn msg_c_f4<'a>(f2: ContentType, f3: u8) -> (o: MsgCF4Combinator)
         Mapped {
             inner: OrdChoice(
                 OrdChoice(
-                    Cond { lhs: f2, rhs: 0, inner: content_0(f3) },
-                    Cond { lhs: f2, rhs: 1, inner: U16 },
+                    Cond { cond: f2 == 0, inner: content_0(f3) },
+                    Cond { cond: f2 == 1, inner: U16 },
                 ),
-                Cond { lhs: f2, rhs: 2, inner: U32 },
+                Cond { cond: f2 == 2, inner: U32 },
             ),
             mapper: MsgCF4Mapper,
         },
@@ -1249,5 +1241,4 @@ pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Res
     //
 
 }
-
 } // verus!

@@ -866,10 +866,7 @@ mod test {
     type TlvContentCombinator = AndThen<
         Bytes,
         Mapped<
-            OrdChoice<
-                OrdChoice<Cond<u8, u8, Msg1Combinator>, Cond<u8, u8, Msg2Combinator>>,
-                Cond<u8, u8, Msg3Combinator>,
-            >,
+            OrdChoice<OrdChoice<Cond<Msg1Combinator>, Cond<Msg2Combinator>>, Cond<Msg3Combinator>>,
             TlvContentMapper,
         >,
     >;
@@ -895,10 +892,10 @@ mod test {
             Mapped {
                 inner: OrdChoice(
                     OrdChoice(
-                        Cond { lhs: tag, rhs: 1, inner: spec_msg1() },
-                        Cond { lhs: tag, rhs: 2, inner: spec_msg2() },
+                        Cond { cond: tag == 1, inner: spec_msg1() },
+                        Cond { cond: tag == 2, inner: spec_msg2() },
                     ),
-                    Cond { lhs: tag, rhs: 3, inner: spec_msg3() },
+                    Cond { cond: tag == 3, inner: spec_msg3() },
                 ),
                 mapper: TlvContentMapper,
             },
@@ -945,10 +942,10 @@ mod test {
             Mapped {
                 inner: OrdChoice(
                     OrdChoice(
-                        Cond { lhs: tag, rhs: 1, inner: msg1() },
-                        Cond { lhs: tag, rhs: 2, inner: msg2() },
+                        Cond { cond: tag == 1, inner: msg1() },
+                        Cond { cond: tag == 2, inner: msg2() },
                     ),
-                    Cond { lhs: tag, rhs: 3, inner: msg3() },
+                    Cond { cond: tag == 3, inner: msg3() },
                 ),
                 mapper: TlvContentMapper,
             },

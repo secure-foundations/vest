@@ -15,7 +15,7 @@ pub trait SpecCombinator {
 
     /// The specification of [`Combinator::serialize`].
     spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>;
-    
+
     /// A helper fact to ensure that the result of parsing is within the input bounds.
     proof fn spec_parse_wf(&self, s: Seq<u8>)
         ensures
@@ -52,8 +52,9 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             s1.len() + s2.len() <= usize::MAX,
         ensures
-            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
-                == self.spec_parse(s1),
+            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+                s1.add(s2),
+            ) == self.spec_parse(s1),
     ;
 }
 
