@@ -34,3 +34,5 @@ pub mod tag;
 pub mod tail;
 /// Uints combinator
 pub mod uints;
+/// Repeat combinator
+pub mod repeat;
