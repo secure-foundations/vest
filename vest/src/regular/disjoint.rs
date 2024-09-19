@@ -334,4 +334,16 @@ impl<Lhs, Rhs, Inner1, Inner2> DisjointFrom<Cond<Lhs, Rhs, Inner2>> for Cond<Lhs
     }
 }
 
+impl<'a, T1, T2> DisjointFrom<&'a T1> for &'a T2 where
+    T1: Combinator,
+    T2: Combinator + DisjointFrom<T1>,
+    T1::V: SecureSpecCombinator<SpecResult = <T1::Owned as View>::V>,
+    T2::V: SecureSpecCombinator<SpecResult = <T2::Owned as View>::V>,
+    T2::V: SpecDisjointFrom<T1::V>,
+{
+    fn disjoint_from(&self, other: &&T1) -> bool {
+        (*self).disjoint_from(*other)
+    }
+}
+
 } // verus!

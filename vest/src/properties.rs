@@ -125,6 +125,41 @@ pub trait Combinator: View where
     ;
 }
 
+impl<C: Combinator> Combinator for &C where
+    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+{
+    type Result<'a> = C::Result<'a>;
+    type Owned = C::Owned;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        (*self).spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        (*self).length()
+    }
+
+    fn exec_is_prefix_secure() -> bool {
+        C::exec_is_prefix_secure()
+    }
+
+    open spec fn parse_requires(&self) -> bool {
+        (*self).parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+        (*self).parse(s)
+    }
+
+    open spec fn serialize_requires(&self) -> bool {
+        (*self).serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+        (*self).serialize(v, data, pos)
+    }
+}
+
 // The following is an attempt to support `Fn`s as combinators.
 // I started implementing it because Verus doesn't support existential types (impl Trait) yet,
 // which is required to be able to put `Depend` combinator in the function's return type,
