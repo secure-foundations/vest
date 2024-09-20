@@ -1,0 +1,27 @@
+a_closed_enum = enum {
+  A = 0,
+  B = 1,
+  C = 2,
+}
+
+a_regular_choose(@e: a_closed_enum) = choose(@e) {
+  A => u8,
+  B => u16,
+  C => u32,
+}
+
+
+an_open_enum = enum {
+  A = 0,
+  B = 1,
+  C = 2,
+  ...
+}
+
+a_choose_with_default(@e: an_open_enum) = choose(@e) {
+  A => u8,
+  B => u16,
+  C => u32,
+  _ => Tail,
+}
+
