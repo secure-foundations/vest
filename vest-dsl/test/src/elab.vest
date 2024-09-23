@@ -16,6 +16,7 @@ content_type = enum {
   C0 = 0,
   C1 = 1,
   C2 = 2,
+  ...
 }
 
 msg_c = {
@@ -25,6 +26,7 @@ msg_c = {
     C0 => content_0(@f3),
     C1 => u16,
     C2 => u32,
+    _ => Tail,
   },
 }
 

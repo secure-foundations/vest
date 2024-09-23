@@ -28,7 +28,7 @@ pub broadcast proof fn size_of_facts()
 }
 
 /// Combinator for parsing and serializing unsigned u8 integers.
-/// 
+///
 /// > **Note**: Currently, little-endian byte order is used for serialization and parsing.
 pub struct U8;
 

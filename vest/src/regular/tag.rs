@@ -325,7 +325,7 @@ mod test {
     {
         let tag1 = Tag::new(U8, 0x42);
         let tag2 = Tag::new(U8, 0x43);
-        let ord = OrdChoice::new(tag1, tag2);
+        let ord = OrdChoice(tag1, tag2);
         if let Ok((n, v)) = ord.parse(s) {
             let mut buf = Vec::new();
             buf.push(0);
@@ -340,7 +340,7 @@ mod test {
         let b2 = [1u8, 0, 0];
         let tag3 = Tag::new(Bytes(3), b1.as_slice());
         let tag4 = Tag::new(Bytes(3), b2.as_slice());
-        let ord2 = OrdChoice::new(tag3, tag4);
+        let ord2 = OrdChoice(tag3, tag4);
         if let Ok((n, v)) = ord2.parse(s) {
             let mut buf = Vec::new();
             buf.push(0);

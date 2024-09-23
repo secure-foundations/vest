@@ -6,7 +6,7 @@ use std::iter::zip;
 pub struct GlobalCtx<'a> {
     pub combinators: HashSet<CombinatorSig<'a>>,
     pub const_combinators: HashSet<&'a str>,
-    pub enums: HashMap<&'a str, HashMap<&'a str, i128>>, // enum name -> variant name -> value
+    pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
 }
 
 pub struct LocalCtx {
@@ -52,21 +52,13 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
                 if let Definition::Combinator {
                     combinator:
                         Combinator {
-                            inner: CombinatorInner::Enum(EnumCombinator { enums }),
+                            inner: CombinatorInner::Enum(enum_combinator),
                             ..
                         },
                     ..
                 } = defn
                 {
-                    let mut enum_map = HashMap::new();
-                    for Enum {
-                        name: variant,
-                        value,
-                    } in enums
-                    {
-                        enum_map.insert(variant.as_str(), *value);
-                    }
-                    global_ctx.enums.insert(name, enum_map);
+                    global_ctx.enums.insert(name, enum_combinator.clone());
                 }
             }
             Definition::ConstCombinator { name, .. } => {
@@ -318,7 +310,9 @@ fn check_combinator_inner(
             combinator,
             post,
         }) => check_wrap_combinator(prior, combinator, post, param_defns, local_ctx, global_ctx),
-        Enum(EnumCombinator { enums }) => check_enum_combinator(enums, local_ctx, global_ctx),
+        Enum(EnumCombinator::Exhaustive { enums } | EnumCombinator::NonExhaustive { enums }) => {
+            check_enum_combinator(enums, local_ctx, global_ctx)
+        }
         Choice(ChoiceCombinator { depend_id, choices }) => check_choice_combinator(
             depend_id.as_ref(),
             choices,
@@ -529,22 +523,39 @@ fn check_choice_combinator(
                 // check if `combinator` is defined as an enum
                 if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) = &combinator
                 {
-                    let enum_variants = global_ctx.enums.get(func.as_str()).unwrap_or_else(|| {
+                    let enum_ = global_ctx.enums.get(func.as_str()).unwrap_or_else(|| {
                         panic!("Enum `{}` is not defined", func);
                     });
+                    let (enum_variants, is_non_exhaustive) = match enum_ {
+                        EnumCombinator::Exhaustive { enums } => (enums, false),
+                        EnumCombinator::NonExhaustive { enums } => (enums, true),
+                    };
                     // check for well-formed variants
                     let mut variants = HashSet::new();
-                    enums.iter().for_each(|(variant, combinator)| {
-                        if !enum_variants.contains_key(variant.as_str()) {
+                    for (variant, combinator) in enums {
+                        if variant == "_" {
+                            if !is_non_exhaustive {
+                                panic!("Wildcard `_` is not allowed in an exhaustive choice");
+                            } else {
+                                continue;
+                            }
+                        } else if !enum_variants
+                            .iter()
+                            .any(|Enum { name, .. }| name == variant)
+                        {
                             panic!("Enum variant `{}` is not defined", variant);
                         }
+
                         if !variants.insert(variant.as_str()) {
                             panic!("Duplicate variant `{}` in dependent choice", variant);
                         }
                         check_combinator(combinator, param_defns, local_ctx, global_ctx);
-                    });
+                    }
                     // check for exhaustiveness
-                    let defined_variants: HashSet<&str> = enum_variants.keys().copied().collect();
+                    let defined_variants: HashSet<&str> = enum_variants
+                        .iter()
+                        .map(|Enum { name, .. }| name.as_str())
+                        .collect();
                     if defined_variants != variants {
                         let missing_variants: Vec<&str> =
                             defined_variants.difference(&variants).copied().collect();

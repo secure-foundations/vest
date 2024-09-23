@@ -7,6 +7,7 @@ use vest::regular::choice::*;
 use vest::regular::tag::*;
 use vest::regular::tail::Tail;
 use vest::regular::uints::*;
+use vest::regular::cond::Cond;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
 
@@ -14,34 +15,19 @@ verus! {
 
 broadcast use vest::regular::uints::size_of_facts;
 
-exec fn disjoint_example() {
-    let i1 = U8;
-    let i2 = U16;
-    let c1 = Tag::new(U32, 32000);
-    let c2 = Tag::new(U32, 32001);
-    let c3 = Tag::new(U8, 0);
-    let c4 = Tag::new(U8, 1);
-    let c5 = Tag::new(U8, 2);
-    let c6 = Tag::new(U8, 3);
-    // let ord_choice1 = OrdChoice::new(c1, i1); // err: DisjointSpecCombinator not implemented
-    // let ord_choice2 = OrdChoice::new(c1.clone(), c1.clone()); // err: not disjoint
-    let ord_choice3 = OrdChoice::new(Tag::new(U8, 1), Tag::new(U8, 2));  // ok
-    let ord_choice4 = OrdChoice::new(Tag::new(U16, 1234), Tag::new(U16, 4321));  // ok
-    // let ord_choice5 = OrdChoice::new((c1, i1), (Tag::new(U32, 32000), i2)); // err: not disjoint
-    let ord_choice6 = OrdChoice::new((c1.clone(), i1.clone()), (c2.clone(), i2.clone()));  // ok
-    let ord_choice7 = OrdChoice::new(
-        ((c1.clone(), i1.clone()), U32),
-        ((c2.clone(), i2.clone()), U16),
-    );  // ok
-    let ord_choice8 = OrdChoice::new(
-        (c1.clone(), (i1.clone(), U32)),
-        (c2.clone(), (i2.clone(), U16)),
-    );  // ok
-    // let ord_choice9 = OrdChoice::new(OrdChoice::new(OrdChoice::new(c5.clone(), c4.clone()), c5.clone()), c6.clone()); // err: not disjoint
-    let ord_choice10 = OrdChoice::new(
-        OrdChoice::new(OrdChoice::new(c3.clone(), c4.clone()), c5.clone()),
-        c6.clone(),
-    );  // ok
+exec fn disjoint_examples(a: u32, b: u8) -> Result<(), ()> {
+    let c1 = Cond { cond: a == 0 && b == 1, inner: U8 };
+    let c2 = Cond { cond: 0 < a && a < 5 && b == 2, inner: U16 };
+    let c3 = Cond { cond: a >= 5 && b == 2, inner: U32 };
+
+    let choice = OrdChoice(OrdChoice(c1, c2), c3);
+
+    let mut data = my_vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let (n, val) = choice.parse(data.as_slice())?;
+    let len = choice.serialize(val, &mut s, 0)?;
+
+    Ok(())
 }
 
 //////////////////////////////////////
@@ -56,9 +42,8 @@ exec fn choice_parse_serialize() -> Result<(), ()> {
     let g2 = (U32, (U16, U8));
     let g3 = (Tag::new(U8, 10), U32);
     let g4 = (BytesN::<12>, (U16, (U8, U8)));
-    // let ord_choice0 = OrdChoice::new(c1.clone(), OrdChoice::new(c2.clone(), OrdChoice::new(c3.clone(), c4.clone())));
-    let ord_choice1 = OrdChoice::new(
-        OrdChoice::new(OrdChoice::new((c1, g1), (c2, g2)), (c3, g3)),
+    let ord_choice1 = OrdChoice(
+        OrdChoice(OrdChoice((c1, g1), (c2, g2)), (c3, g3)),
         (c4, g4),
     );
     let mut data1 =
@@ -127,8 +112,8 @@ exec fn choice_serialize_parse() -> Result<(), ()> {
     let g2 = (U32, (U16, U8));
     let g3 = (Tag::new(U8, 10), U32);
     let g4 = (BytesN::<12>, (U16, (U8, U8)));
-    let ord_choice1 = OrdChoice::new(
-        OrdChoice::new(OrdChoice::new((c1, g1), (c2, g2)), (c3, g3)),
+    let ord_choice1 = OrdChoice(
+        OrdChoice(OrdChoice((c1, g1), (c2, g2)), (c3, g3)),
         (c4, g4),
     );
     let vec1 = my_vec![0x10u8, 0x11u8, 0x12u8, 0x13u8];

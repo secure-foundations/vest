@@ -140,8 +140,9 @@ pub struct WrapCombinator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct EnumCombinator {
-    pub enums: Vec<Enum>,
+pub enum EnumCombinator {
+    Exhaustive { enums: Vec<Enum> },
+    NonExhaustive { enums: Vec<Enum> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -518,8 +519,15 @@ impl Display for WrapCombinator {
 impl Display for EnumCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "enum {{")?;
-        for enum_ in &self.enums {
-            writeln!(f, "{},", enum_)?;
+        match self {
+            EnumCombinator::Exhaustive { enums } | EnumCombinator::NonExhaustive { enums } => {
+                for enum_ in enums {
+                    writeln!(f, "{},", enum_)?;
+                }
+            }
+        }
+        if let EnumCombinator::NonExhaustive { .. } = self {
+            writeln!(f, "...")?;
         }
         write!(f, "}}")
     }
@@ -797,8 +805,20 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             })
         }
         Rule::enum_combinator => {
-            let enums = rule.into_inner().map(parse_enum).collect();
-            CombinatorInner::Enum(EnumCombinator { enums })
+            let rule = rule.into_inner().next().unwrap();
+            match rule.as_rule() {
+                Rule::exhaustive_enum => {
+                    let enums = rule.into_inner().map(parse_enum).collect();
+                    CombinatorInner::Enum(EnumCombinator::Exhaustive { enums })
+                }
+                Rule::non_exhaustive_enum => {
+                    let enums = rule.into_inner().map(parse_enum).collect();
+                    CombinatorInner::Enum(EnumCombinator::NonExhaustive { enums })
+                }
+                _ => unreachable!(),
+            }
+            // let enums = rule.into_inner().map(parse_enum).collect();
+            // CombinatorInner::Enum(EnumCombinator { enums })
         }
         Rule::choice_combinator => {
             let mut inner_rules = rule.into_inner();

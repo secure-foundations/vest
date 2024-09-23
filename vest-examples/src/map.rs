@@ -592,7 +592,7 @@ fn parse_serialize4() -> Result<(), ()> {
     let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
-    let msg_inner = OrdChoice::new(OrdChoice::new(msg1, msg2), msg3);
+    let msg_inner = OrdChoice(OrdChoice(msg1, msg2), msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -625,7 +625,7 @@ fn serialize_parse4() -> Result<(), ()> {
     let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
-    let msg_inner = OrdChoice::new(OrdChoice::new(msg1, msg2), msg3);
+    let msg_inner = OrdChoice(OrdChoice(msg1, msg2), msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];

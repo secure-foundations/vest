@@ -15,7 +15,7 @@ pub trait SpecCombinator {
 
     /// The specification of [`Combinator::serialize`].
     spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>;
-    
+
     /// A helper fact to ensure that the result of parsing is within the input bounds.
     proof fn spec_parse_wf(&self, s: Seq<u8>)
         ensures
@@ -52,8 +52,9 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             s1.len() + s2.len() <= usize::MAX,
         ensures
-            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
-                == self.spec_parse(s1),
+            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+                s1.add(s2),
+            ) == self.spec_parse(s1),
     ;
 }
 
@@ -123,6 +124,75 @@ pub trait Combinator: View where
                 }
             },
     ;
+}
+
+impl<C: SpecCombinator> SpecCombinator for &C {
+    type SpecResult = C::SpecResult;
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        (*self).spec_parse(s)
+    }
+
+    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        (*self).spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        (*self).spec_parse_wf(s)
+    }
+}
+
+impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
+    open spec fn spec_is_prefix_secure() -> bool {
+        C::spec_is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        (*self).theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        (*self).theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        (*self).lemma_prefix_secure(s1, s2)
+    }
+}
+
+impl<C: Combinator> Combinator for &C where
+    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+{
+    type Result<'a> = C::Result<'a>;
+    type Owned = C::Owned;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        (*self).spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        (*self).length()
+    }
+
+    fn exec_is_prefix_secure() -> bool {
+        C::exec_is_prefix_secure()
+    }
+
+    open spec fn parse_requires(&self) -> bool {
+        (*self).parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+        (*self).parse(s)
+    }
+
+    open spec fn serialize_requires(&self) -> bool {
+        (*self).serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+        (*self).serialize(v, data, pos)
+    }
 }
 
 // The following is an attempt to support `Fn`s as combinators.

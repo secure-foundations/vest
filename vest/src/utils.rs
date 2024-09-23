@@ -101,7 +101,6 @@ impl<T, U> SpecTryInto<U> for T where U: SpecTryFrom<T> {
 //         Ok(U::spec_into(value))
 //     }
 // }
-
 /// Vest equivalent of [`std::convert::TryFrom`].
 pub trait TryFrom<T> where T: View, Self: View + Sized, Self::V: SpecTryFrom<T::V> {
     type Error;
@@ -142,12 +141,11 @@ impl<T, U> TryInto<U> for T where T: View, U: View, U: TryFrom<T>, U::V: SpecTry
 
 // impl<T, U> TryFrom<U> for T where T: View, U: View, U: Into<T>, U::V: SpecInto<T::V> {
 //     type Error = Infallible;
-//         
+//
 //     fn ex_try_from(value: U) -> Result<T, Infallible> {
 //         Ok(U::ex_into(value))
 //     }
 // }
-
 /// A helper trait for two different types that can be compared.
 pub trait Compare<Other> where Self: View, Other: View<V = Self::V> {
     /// Compare a value of `Self` with a value of `Other`.
@@ -265,7 +263,7 @@ macro_rules! declare_identity_view_reflex {
                 proof fn reflex(&self) {}
             }
         }
-    };
+};
 }
 
 declare_identity_view_reflex!(());
