@@ -24,6 +24,8 @@ pub mod clone;
 /// Depend combinator
 pub mod depend;
 // pub mod dependent;
+/// Same as Depend but uses a Continuation trait instead of Fn
+pub mod depend_cont;
 /// Disjointness for OrdChoice combinator
 pub mod disjoint;
 /// Preceded combinator
