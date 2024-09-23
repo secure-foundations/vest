@@ -193,14 +193,20 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
 }
 
 impl<'a, T1, T2> DisjointFrom<&'a T1> for &'a T2 where
-    T1: Combinator,
-    T2: Combinator + DisjointFrom<T1>,
-    T1::V: SecureSpecCombinator<SpecResult = <T1::Owned as View>::V>,
-    T2::V: SecureSpecCombinator<SpecResult = <T2::Owned as View>::V>,
-    T2::V: SpecDisjointFrom<T1::V>,
+    T1: SpecCombinator,
+    T2: SpecCombinator + DisjointFrom<T1>,
+    // T1: Combinator,
+    // T2: Combinator + DisjointFrom<T1>,
+    // T1::V: SecureSpecCombinator<SpecResult = <T1::Owned as View>::V>,
+    // T2::V: SecureSpecCombinator<SpecResult = <T2::Owned as View>::V>,
+    // T2::V: SpecDisjointFrom<T1::V>,
 {
-    fn disjoint_from(&self, other: &&T1) -> bool {
+    open spec fn disjoint_from(&self, other: &&T1) -> bool {
         (*self).disjoint_from(*other)
+    }
+
+    proof fn parse_disjoint_on(&self, other: &&T1, buf: Seq<u8>) {
+        (*self).parse_disjoint_on(*other, buf)
     }
 }
 
