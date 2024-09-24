@@ -1,41 +1,9 @@
 pub use crate::utils::*;
+pub use crate::errors::*;
 use vstd::prelude::*;
 use vstd::*;
 
 verus! {
-
-/// Parser errors
-pub enum ParseError {
-    /// The second combinator of AndThen did not consume all bytes
-    AndThenUnusedBytes,
-    BuilderError,
-    UnexpectedEndOfInput,
-    OrdChoiceNoMatch,
-    CondFailed,
-    DependFstNotPrefixSecure,
-    PairFstNotPrefixSecure,
-    PrecededFstNotPrefixSecure,
-    SizeOverflow,
-    TryMapFailed,
-    RefinedPredicateFailed,
-    RepeatEmptyElement,
-    Other(String),
-}
-
-/// Serializer errors
-pub enum SerializeError {
-    InsufficientBuffer,
-    AndThenUnusedBytes,
-    CondFailed,
-    DependFstNotPrefixSecure,
-    PairFstNotPrefixSecure,
-    PrecededFstNotPrefixSecure,
-    SizeOverflow,
-    TryMapFailed,
-    RefinedPredicateFailed,
-    RepeatEmptyElement,
-	Other(String),
-}
 
 /// Specification for parser and serializer [`Combinator`]s. All Vest combinators must implement this
 /// trait.
