@@ -4,6 +4,39 @@ use vstd::*;
 
 verus! {
 
+/// Parser errors
+pub enum ParseError {
+    /// The second combinator of AndThen did not consume all bytes
+    AndThenUnusedBytes,
+    BuilderError,
+    UnexpectedEndOfInput,
+    OrdChoiceNoMatch,
+    CondFailed,
+    DependFstNotPrefixSecure,
+    PairFstNotPrefixSecure,
+    PrecededFstNotPrefixSecure,
+    SizeOverflow,
+    TryMapFailed,
+    RefinedPredicateFailed,
+    RepeatEmptyElement,
+    Other(String),
+}
+
+/// Serializer errors
+pub enum SerializeError {
+    InsufficientBuffer,
+    AndThenUnusedBytes,
+    CondFailed,
+    DependFstNotPrefixSecure,
+    PairFstNotPrefixSecure,
+    PrecededFstNotPrefixSecure,
+    SizeOverflow,
+    TryMapFailed,
+    RefinedPredicateFailed,
+    RepeatEmptyElement,
+	Other(String),
+}
+
 /// Specification for parser and serializer [`Combinator`]s. All Vest combinators must implement this
 /// trait.
 pub trait SpecCombinator {
@@ -92,7 +125,7 @@ pub trait Combinator: View where
     }
 
     /// The parsing function.
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>)
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
         requires
             self.parse_requires(),
         ensures
@@ -111,7 +144,7 @@ pub trait Combinator: View where
     /// The serialization function.
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >)
         requires
             self.serialize_requires(),
@@ -182,7 +215,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         (*self).parse(s)
     }
 
@@ -190,7 +223,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         (*self).serialize(v, data, pos)
     }
 }

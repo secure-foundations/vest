@@ -185,7 +185,7 @@ impl<Inner, M> Combinator for Mapped<Inner, M> where
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => {
@@ -203,7 +203,7 @@ impl<Inner, M> Combinator for Mapped<Inner, M> where
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         self.inner.serialize(M::rev_apply(v), data, pos)
     }
@@ -391,12 +391,12 @@ impl<Inner, M> Combinator for TryMap<Inner, M> where
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => match M::apply(v) {
                 Ok(v) => Ok((n, v)),
-                Err(_) => Err(()),
+                Err(_) => Err(ParseError::TryMapFailed),
             },
         }
     }
@@ -405,10 +405,10 @@ impl<Inner, M> Combinator for TryMap<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         match M::rev_apply(v) {
             Ok(v) => self.inner.serialize(v, data, pos),
-            Err(_) => Err(()),
+            Err(_) => Err(SerializeError::TryMapFailed),
         }
     }
 }
@@ -542,14 +542,14 @@ spec fn serialize_spec_field_less(msg: FieldLess) -> Result<Seq<u8>, ()> {
     spec_field_less().spec_serialize(msg)
 }
 
-fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ()>)
+fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
 {
     field_less().parse(i)
 }
 
-fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_field_less(msg@) matches Ok(buf)

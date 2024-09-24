@@ -109,13 +109,13 @@ impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
         self.1.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ()> {
+    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
         let (n, v1) = self.0.parse(s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {
             Ok((n, v2))
         } else {
-            Err(())
+            Err(ParseError::AndThenUnusedBytes)
         }
     }
 
@@ -123,12 +123,12 @@ impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         let n = self.1.serialize(v, data, pos)?;
         if n == self.0.0 {
             Ok(n)
         } else {
-            Err(())
+            Err(SerializeError::AndThenUnusedBytes)
         }
     }
 }

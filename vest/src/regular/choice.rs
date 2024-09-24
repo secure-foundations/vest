@@ -148,14 +148,14 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
         self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if let Ok((n, v)) = self.0.parse(s) {
             Ok((n, Either::Left(v)))
         } else {
             if let Ok((n, v)) = self.1.parse(s) {
                 Ok((n, Either::Right(v)))
             } else {
-                Err(())
+                Err(ParseError::OrdChoiceNoMatch)
             }
         }
     }
@@ -168,7 +168,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         match v {
             Either::Left(v) => {
@@ -176,7 +176,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
                 if n <= usize::MAX - pos && n + pos <= data.len() {
                     Ok(n)
                 } else {
-                    Err(())
+                    Err(SerializeError::InsufficientBuffer)
                 }
             },
             Either::Right(v) => {
@@ -184,7 +184,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
                 if n <= usize::MAX - pos && n + pos <= data.len() {
                     Ok(n)
                 } else {
-                    Err(())
+                    Err(SerializeError::InsufficientBuffer)
                 }
             },
         }

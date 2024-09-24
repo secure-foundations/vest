@@ -98,11 +98,11 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ()> {
+    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
         if self.cond {
             self.inner.parse(s)
         } else {
-            Err(())
+            Err(ParseError::CondFailed)
         }
     }
 
@@ -110,11 +110,11 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {
-            Err(())
+            Err(SerializeError::CondFailed)
         }
     }
 }
@@ -943,14 +943,14 @@ pub open spec fn serialize_spec_msg_d(msg: SpecMsgD) -> Result<Seq<u8>, ()> {
     spec_msg_d().spec_serialize(msg)
 }
 
-pub fn parse_msg_d(i: &[u8]) -> (o: Result<(usize, MsgD<'_>), ()>)
+pub fn parse_msg_d(i: &[u8]) -> (o: Result<(usize, MsgD<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_d(i@) matches Ok(r_) && r@ == r_,
 {
     msg_d().parse(i)
 }
 
-pub fn serialize_msg_d(msg: MsgD<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+pub fn serialize_msg_d(msg: MsgD<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_msg_d(msg@) matches Ok(buf)
@@ -968,7 +968,7 @@ pub open spec fn serialize_spec_content_type(msg: SpecContentType) -> Result<Seq
     spec_content_type().spec_serialize(msg)
 }
 
-pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ()>)
+pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_content_type(i@) matches Ok(r_) && r@ == r_,
 {
@@ -977,7 +977,7 @@ pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ()>)
 
 pub fn serialize_content_type(msg: ContentType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
     usize,
-    (),
+    SerializeError,
 >)
     ensures
         o matches Ok(n) ==> {
@@ -996,7 +996,7 @@ pub open spec fn serialize_spec_content_0(msg: SpecContent0, num: u8) -> Result<
     spec_content_0(num).spec_serialize(msg)
 }
 
-pub fn parse_content_0(i: &[u8], num: u8) -> (o: Result<(usize, Content0<'_>), ()>)
+pub fn parse_content_0(i: &[u8], num: u8) -> (o: Result<(usize, Content0<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_content_0(i@, num@) matches Ok(r_) && r@ == r_,
 {
@@ -1004,7 +1004,7 @@ pub fn parse_content_0(i: &[u8], num: u8) -> (o: Result<(usize, Content0<'_>), (
 }
 
 pub fn serialize_content_0(msg: Content0<'_>, data: &mut Vec<u8>, pos: usize, num: u8) -> (o:
-    Result<usize, ()>)
+    Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_content_0(msg@, num@) matches Ok(buf)
@@ -1028,7 +1028,7 @@ pub open spec fn serialize_spec_msg_c_f4(msg: SpecMsgCF4, f3: u8, f2: SpecConten
     spec_msg_c_f4(f3, f2).spec_serialize(msg)
 }
 
-pub fn parse_msg_c_f4(i: &[u8], f3: u8, f2: ContentType) -> (o: Result<(usize, MsgCF4<'_>), ()>)
+pub fn parse_msg_c_f4(i: &[u8], f3: u8, f2: ContentType) -> (o: Result<(usize, MsgCF4<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_c_f4(i@, f3@, f2@) matches Ok(r_) && r@ == r_,
 {
@@ -1041,7 +1041,7 @@ pub fn serialize_msg_c_f4(
     pos: usize,
     f3: u8,
     f2: ContentType,
-) -> (o: Result<usize, ()>)
+) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_msg_c_f4(msg@, f3@, f2@) matches Ok(buf)
@@ -1059,14 +1059,14 @@ pub open spec fn serialize_spec_msg_b(msg: SpecMsgB) -> Result<Seq<u8>, ()> {
     spec_msg_b().spec_serialize(msg)
 }
 
-pub fn parse_msg_b(i: &[u8]) -> (o: Result<(usize, MsgB<'_>), ()>)
+pub fn parse_msg_b(i: &[u8]) -> (o: Result<(usize, MsgB<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_b(i@) matches Ok(r_) && r@ == r_,
 {
     msg_b().parse(i)
 }
 
-pub fn serialize_msg_b(msg: MsgB<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+pub fn serialize_msg_b(msg: MsgB<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_msg_b(msg@) matches Ok(buf)
@@ -1084,14 +1084,14 @@ pub open spec fn serialize_spec_msg_a(msg: SpecMsgA) -> Result<Seq<u8>, ()> {
     spec_msg_a().spec_serialize(msg)
 }
 
-pub fn parse_msg_a(i: &[u8]) -> (o: Result<(usize, MsgA<'_>), ()>)
+pub fn parse_msg_a(i: &[u8]) -> (o: Result<(usize, MsgA<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_a(i@) matches Ok(r_) && r@ == r_,
 {
     msg_a().parse(i)
 }
 
-pub fn serialize_msg_a(msg: MsgA<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+pub fn serialize_msg_a(msg: MsgA<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_msg_a(msg@) matches Ok(buf)
@@ -1121,7 +1121,7 @@ pub open spec fn serialize_spec_msg_c(msg: SpecMsgC) -> Result<Seq<u8>, ()> {
     Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }.spec_serialize(msg)
 }
 
-pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ()>)
+pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_c(i@) matches Ok(r_) && r@ == r_,
 {
@@ -1141,7 +1141,7 @@ pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ()>)
     Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: MsgCMapper }.parse(i)
 }
 
-pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {
             &&& serialize_spec_msg_c(msg@) matches Ok(buf)

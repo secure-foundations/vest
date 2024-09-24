@@ -97,18 +97,18 @@ impl Combinator for Bytes {
         true
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if self.0 <= s.len() {
             let s_ = slice_subrange(s, 0, self.0);
             Ok((self.0, s_))
         } else {
-            Err(())
+            Err(ParseError::UnexpectedEndOfInput)
         }
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == self.0 && pos <= data.len() - v.len() {
             set_range(data, pos, v);
@@ -117,7 +117,7 @@ impl Combinator for Bytes {
             ).unwrap());
             Ok(self.0)
         } else {
-            Err(())
+            Err(SerializeError::InsufficientBuffer)
         }
     }
 }

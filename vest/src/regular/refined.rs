@@ -124,10 +124,15 @@ impl<Inner, P> Combinator for Refined<Inner, P> where
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ()> {
+    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
         match self.inner.parse(s) {
-            Ok((n, v)) if self.predicate.apply(&v) => Ok((n, v)),
-            _ => Err(()),
+            Ok((n, v)) =>
+                if self.predicate.apply(&v) {
+                    Ok((n, v))
+                } else {
+                    Err(ParseError::RefinedPredicateFailed)
+                },
+            Err(e) => Err(e),
         }
     }
 
@@ -135,11 +140,11 @@ impl<Inner, P> Combinator for Refined<Inner, P> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         if self.predicate.apply(&v) {
             self.inner.serialize(v, data, pos)
         } else {
-            Err(())
+            Err(SerializeError::RefinedPredicateFailed)
         }
     }
 }

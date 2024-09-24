@@ -186,7 +186,7 @@ impl<Fst, Snd> Combinator for Preceded<
         self.0.parse_requires() && self.1.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if Fst::exec_is_prefix_secure() {
             let (n, ()): (usize, ()) = self.0.parse(s)?;
             let s_ = slice_subrange(s, n, s.len());
@@ -194,10 +194,10 @@ impl<Fst, Snd> Combinator for Preceded<
             if n <= usize::MAX - m {
                 Ok(((n + m), v))
             } else {
-                Err(())
+                Err(ParseError::SizeOverflow)
             }
         } else {
-            Err(())
+            Err(ParseError::PrecededFstNotPrefixSecure)
         }
     }
 
@@ -207,7 +207,7 @@ impl<Fst, Snd> Combinator for Preceded<
 
     fn serialize<'b>(&self, v: Self::Result<'_>, data: &'b mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         if Fst::exec_is_prefix_secure() {
             let n = self.0.serialize((), data, pos)?;
@@ -220,13 +220,13 @@ impl<Fst, Snd> Combinator for Preceded<
                     assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
                     Ok(n + m)
                 } else {
-                    Err(())
+                    Err(SerializeError::SizeOverflow)
                 }
             } else {
-                Err(())
+                Err(SerializeError::InsufficientBuffer)
             }
         } else {
-            Err(())
+            Err(SerializeError::PrecededFstNotPrefixSecure)
         }
     }
 }

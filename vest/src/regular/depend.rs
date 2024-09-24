@@ -206,7 +206,7 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
         &&& forall|i, snd| (self.snd).ensures((i,), snd) ==> snd.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if Fst::exec_is_prefix_secure() {
             let (n, v1) = self.fst.parse(s)?;
             let s_ = slice_subrange(s, n, s.len());
@@ -215,10 +215,10 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
             if n <= usize::MAX - m {
                 Ok(((n + m), (v1, v2)))
             } else {
-                Err(())
+                Err(ParseError::SizeOverflow)
             }
         } else {
-            Err(())
+            Err(ParseError::DependFstNotPrefixSecure)
         }
     }
 
@@ -230,7 +230,7 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         if Fst::exec_is_prefix_secure() {
             let n = self.fst.serialize(v.0, data, pos)?;
@@ -244,13 +244,13 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
                     assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
                     Ok(n + m)
                 } else {
-                    Err(())
+                    Err(SerializeError::SizeOverflow)
                 }
             } else {
-                Err(())
+                Err(SerializeError::InsufficientBuffer)
             }
         } else {
-            Err(())
+            Err(SerializeError::DependFstNotPrefixSecure)
         }
     }
 }
@@ -998,14 +998,14 @@ mod test {
         spec_tlv().spec_serialize(msg)
     }
 
-    pub fn msg1_parse(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ()>)
+    pub fn msg1_parse(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg1_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg1().parse(i)
     }
 
-    pub fn msg1_serialize(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg1_serialize(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg1_serialize(msg@) matches Ok(buf)
@@ -1015,14 +1015,14 @@ mod test {
         msg1().serialize(msg, data, pos)
     }
 
-    pub fn msg2_parse(i: &[u8]) -> (o: Result<(usize, Msg2), ()>)
+    pub fn msg2_parse(i: &[u8]) -> (o: Result<(usize, Msg2), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg2_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg2().parse(i)
     }
 
-    pub fn msg2_serialize(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg2_serialize(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg2_serialize(msg@) matches Ok(buf)
@@ -1032,14 +1032,14 @@ mod test {
         msg2().serialize(msg, data, pos)
     }
 
-    pub fn msg3_parse(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ()>)
+    pub fn msg3_parse(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg3_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg3().parse(i)
     }
 
-    pub fn msg3_serialize(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg3_serialize(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg3_serialize(msg@) matches Ok(buf)
@@ -1049,7 +1049,7 @@ mod test {
         msg3().serialize(msg, data, pos)
     }
 
-    fn tlv_content_parse(i: &[u8], tag: u8, len: u8) -> (o: Result<(usize, TlvContent<'_>), ()>)
+    fn tlv_content_parse(i: &[u8], tag: u8, len: u8) -> (o: Result<(usize, TlvContent<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_tlv_content_parse(i@, tag@, len@) matches Ok(r_) && r@ == r_,
     {
@@ -1062,7 +1062,7 @@ mod test {
         pos: usize,
         tag: u8,
         len: u8,
-    ) -> (o: Result<usize, ()>)
+    ) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_tlv_content_serialize(msg@, tag@, len@) matches Ok(buf)
@@ -1072,7 +1072,7 @@ mod test {
         tlv_content(tag, len).serialize(msg, data, pos)
     }
 
-    pub fn tlv_parse(i: &[u8]) -> (o: Result<(usize, Tlv<'_>), ()>)
+    pub fn tlv_parse(i: &[u8]) -> (o: Result<(usize, Tlv<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_tlv_parse(i@) matches Ok(r_) && r@ == r_,
     {
@@ -1092,7 +1092,7 @@ mod test {
         Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: TlvMapper }.parse(i)
     }
 
-    pub fn tlv_serialize(msg: Tlv<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn tlv_serialize(msg: Tlv<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_tlv_serialize(msg@) matches Ok(buf)
