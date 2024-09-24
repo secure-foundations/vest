@@ -280,10 +280,10 @@ impl SpecFrom<SpecMsgCF4> for SpecMsgCF4Inner {
 impl SpecFrom<SpecMsgCF4Inner> for SpecMsgCF4 {
     open spec fn spec_from(m: SpecMsgCF4Inner) -> SpecMsgCF4 {
         match m {
-            inj_ord_choice_result!(m, *, *, *) => SpecMsgCF4::C0(m),
-            inj_ord_choice_result!(*, m, *, *) => SpecMsgCF4::C1(m),
-            inj_ord_choice_result!(*, *, m, *) => SpecMsgCF4::C2(m),
-            inj_ord_choice_result!(*, *, *, m) => SpecMsgCF4::Unrecognized(m),
+            inj_ord_choice_pat!(m, *, *, *) => SpecMsgCF4::C0(m),
+            inj_ord_choice_pat!(*, m, *, *) => SpecMsgCF4::C1(m),
+            inj_ord_choice_pat!(*, *, m, *) => SpecMsgCF4::C2(m),
+            inj_ord_choice_pat!(*, *, *, m) => SpecMsgCF4::Unrecognized(m),
         }
     }
 }
@@ -324,10 +324,10 @@ impl<'a> From<MsgCF4<'a>> for MsgCF4Inner<'a> {
 impl<'a> From<MsgCF4Inner<'a>> for MsgCF4<'a> {
     fn ex_from(m: MsgCF4Inner<'a>) -> MsgCF4<'a> {
         match m {
-            inj_ord_choice_result!(m, *, *, *) => MsgCF4::C0(m),
-            inj_ord_choice_result!(*, m, *, *) => MsgCF4::C1(m),
-            inj_ord_choice_result!(*, *, m, *) => MsgCF4::C2(m),
-            inj_ord_choice_result!(*, *, *, m) => MsgCF4::Unrecognized(m),
+            inj_ord_choice_pat!(m, *, *, *) => MsgCF4::C0(m),
+            inj_ord_choice_pat!(*, m, *, *) => MsgCF4::C1(m),
+            inj_ord_choice_pat!(*, *, m, *) => MsgCF4::C2(m),
+            inj_ord_choice_pat!(*, *, *, m) => MsgCF4::Unrecognized(m),
         }
     }
 }
@@ -400,10 +400,10 @@ impl From<MsgCF4Owned> for MsgCF4OwnedInner {
 impl From<MsgCF4OwnedInner> for MsgCF4Owned {
     fn ex_from(m: MsgCF4OwnedInner) -> MsgCF4Owned {
         match m {
-            inj_ord_choice_result!(m, *, *, *) => MsgCF4Owned::C0(m),
-            inj_ord_choice_result!(*, m, *, *) => MsgCF4Owned::C1(m),
-            inj_ord_choice_result!(*, *, m, *) => MsgCF4Owned::C2(m),
-            inj_ord_choice_result!(*, *, *, m) => MsgCF4Owned::Unrecognized(m),
+            inj_ord_choice_pat!(m, *, *, *) => MsgCF4Owned::C0(m),
+            inj_ord_choice_pat!(*, m, *, *) => MsgCF4Owned::C1(m),
+            inj_ord_choice_pat!(*, *, m, *) => MsgCF4Owned::C2(m),
+            inj_ord_choice_pat!(*, *, *, m) => MsgCF4Owned::Unrecognized(m),
         }
     }
 }

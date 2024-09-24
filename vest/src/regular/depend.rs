@@ -662,9 +662,9 @@ mod test {
     impl SpecFrom<SpecTlvContentInner> for SpecTlvContent {
         open spec fn spec_from(e: SpecTlvContentInner) -> SpecTlvContent {
             match e {
-                inj_ord_choice_result!(m, *, *) => SpecTlvContent::M1(m),
-                inj_ord_choice_result!(*, m, *) => SpecTlvContent::M2(m),
-                inj_ord_choice_result!(*, *, m) => SpecTlvContent::M3(m),
+                inj_ord_choice_pat!(m, *, *) => SpecTlvContent::M1(m),
+                inj_ord_choice_pat!(*, m, *) => SpecTlvContent::M2(m),
+                inj_ord_choice_pat!(*, *, m) => SpecTlvContent::M3(m),
             }
         }
     }
@@ -682,9 +682,9 @@ mod test {
     impl<'a> From<TlvContentInner<'a>> for TlvContent<'a> {
         fn ex_from(e: TlvContentInner) -> (res: TlvContent) {
             match e {
-                inj_ord_choice_result!(m, *, *) => TlvContent::M1(m),
-                inj_ord_choice_result!(*, m, *) => TlvContent::M2(m),
-                inj_ord_choice_result!(*, *, m) => TlvContent::M3(m),
+                inj_ord_choice_pat!(m, *, *) => TlvContent::M1(m),
+                inj_ord_choice_pat!(*, m, *) => TlvContent::M2(m),
+                inj_ord_choice_pat!(*, *, m) => TlvContent::M3(m),
             }
         }
     }
@@ -702,9 +702,9 @@ mod test {
     impl From<TlvContentOwnedInner> for TlvContentOwned {
         fn ex_from(e: TlvContentOwnedInner) -> (res: TlvContentOwned) {
             match e {
-                inj_ord_choice_result!(m, *, *) => TlvContentOwned::M1(m),
-                inj_ord_choice_result!(*, m, *) => TlvContentOwned::M2(m),
-                inj_ord_choice_result!(*, *, m) => TlvContentOwned::M3(m),
+                inj_ord_choice_pat!(m, *, *) => TlvContentOwned::M1(m),
+                inj_ord_choice_pat!(*, m, *) => TlvContentOwned::M2(m),
+                inj_ord_choice_pat!(*, *, m) => TlvContentOwned::M3(m),
             }
         }
     }

@@ -2,7 +2,6 @@ use crate::my_vec;
 use vest::properties::*;
 use vest::regular::bytes::*;
 use vest::regular::bytes_n::*;
-use vest::regular::choice::OrdChoice;
 use vest::regular::choice::*;
 use vest::regular::map::*;
 use vest::regular::preceded::*;
@@ -448,7 +447,7 @@ pub enum SpecMsg4 {
     M3(SpecMsg3),
 }
 
-pub type SpecMsg4Inner = Either<Either<SpecMsg1, Msg2>, SpecMsg3>;
+pub type SpecMsg4Inner = ord_choice_result!(SpecMsg1, Msg2, SpecMsg3);
 
 pub enum Msg4<'a> {
     M1(Msg1<'a>),
@@ -462,9 +461,8 @@ pub enum Msg4Owned {
     M3(Msg3Owned),
 }
 
-pub type Msg4Inner<'a> = Either<Either<Msg1<'a>, Msg2>, Msg3<'a>>;
-
-pub type Msg4InnerOwned = Either<Either<Msg1Owned, Msg2>, Msg3Owned>;
+pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
+pub type Msg4InnerOwned = ord_choice_result!(Msg1Owned, Msg2, Msg3Owned);
 
 impl View for Msg4<'_> {
     type V = SpecMsg4;
@@ -493,9 +491,9 @@ impl View for Msg4Owned {
 impl SpecFrom<SpecMsg4> for SpecMsg4Inner {
     open spec fn spec_from(e: SpecMsg4) -> SpecMsg4Inner {
         match e {
-            SpecMsg4::M1(m) => Either::Left(Either::Left(m)),
-            SpecMsg4::M2(m) => Either::Left(Either::Right(m)),
-            SpecMsg4::M3(m) => Either::Right(m),
+            SpecMsg4::M1(m) => inj_ord_choice_result!(m, *, *),
+            SpecMsg4::M2(m) => inj_ord_choice_result!(*, m, *),
+            SpecMsg4::M3(m) => inj_ord_choice_result!(*, *, m),
         }
     }
 }
@@ -503,9 +501,9 @@ impl SpecFrom<SpecMsg4> for SpecMsg4Inner {
 impl SpecFrom<SpecMsg4Inner> for SpecMsg4 {
     open spec fn spec_from(e: SpecMsg4Inner) -> SpecMsg4 {
         match e {
-            Either::Left(Either::Left(m)) => SpecMsg4::M1(m),
-            Either::Left(Either::Right(m)) => SpecMsg4::M2(m),
-            Either::Right(m) => SpecMsg4::M3(m),
+            inj_ord_choice_pat!(m, *, *) => SpecMsg4::M1(m),
+            inj_ord_choice_pat!(*, m, *) => SpecMsg4::M2(m),
+            inj_ord_choice_pat!(*, *, m) => SpecMsg4::M3(m),
         }
     }
 }
@@ -513,9 +511,9 @@ impl SpecFrom<SpecMsg4Inner> for SpecMsg4 {
 impl<'a> From<Msg4<'a>> for Msg4Inner<'a> {
     fn ex_from(e: Msg4) -> (res: Msg4Inner) {
         match e {
-            Msg4::M1(m) => Either::Left(Either::Left(m)),
-            Msg4::M2(m) => Either::Left(Either::Right(m)),
-            Msg4::M3(m) => Either::Right(m),
+            Msg4::M1(m) => inj_ord_choice_result!(m, *, *),
+            Msg4::M2(m) => inj_ord_choice_result!(*, m, *),
+            Msg4::M3(m) => inj_ord_choice_result!(*, *, m),
         }
     }
 }
@@ -523,9 +521,9 @@ impl<'a> From<Msg4<'a>> for Msg4Inner<'a> {
 impl<'a> From<Msg4Inner<'a>> for Msg4<'a> {
     fn ex_from(e: Msg4Inner) -> (res: Msg4) {
         match e {
-            Either::Left(Either::Left(m)) => Msg4::M1(m),
-            Either::Left(Either::Right(m)) => Msg4::M2(m),
-            Either::Right(m) => Msg4::M3(m),
+            inj_ord_choice_pat!(m, *, *) => Msg4::M1(m),
+            inj_ord_choice_pat!(*, m, *) => Msg4::M2(m),
+            inj_ord_choice_pat!(*, *, m) => Msg4::M3(m),
         }
     }
 }
@@ -533,9 +531,9 @@ impl<'a> From<Msg4Inner<'a>> for Msg4<'a> {
 impl From<Msg4Owned> for Msg4InnerOwned {
     fn ex_from(e: Msg4Owned) -> (res: Msg4InnerOwned) {
         match e {
-            Msg4Owned::M1(m) => Either::Left(Either::Left(m)),
-            Msg4Owned::M2(m) => Either::Left(Either::Right(m)),
-            Msg4Owned::M3(m) => Either::Right(m),
+            Msg4Owned::M1(m) => inj_ord_choice_result!(m, *, *),
+            Msg4Owned::M2(m) => inj_ord_choice_result!(*, m, *),
+            Msg4Owned::M3(m) => inj_ord_choice_result!(*, *, m),
         }
     }
 }
@@ -543,9 +541,9 @@ impl From<Msg4Owned> for Msg4InnerOwned {
 impl From<Msg4InnerOwned> for Msg4Owned {
     fn ex_from(e: Msg4InnerOwned) -> (res: Msg4Owned) {
         match e {
-            Either::Left(Either::Left(m)) => Msg4Owned::M1(m),
-            Either::Left(Either::Right(m)) => Msg4Owned::M2(m),
-            Either::Right(m) => Msg4Owned::M3(m),
+            inj_ord_choice_pat!(m, *, *) => Msg4Owned::M1(m),
+            inj_ord_choice_pat!(*, m, *) => Msg4Owned::M2(m),
+            inj_ord_choice_pat!(*, *, m) => Msg4Owned::M3(m),
         }
     }
 }
@@ -592,7 +590,7 @@ fn parse_serialize4() -> Result<(), Error> {
     let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
-    let msg_inner = OrdChoice(OrdChoice(msg1, msg2), msg3);
+    let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -625,7 +623,7 @@ fn serialize_parse4() -> Result<(), Error> {
     let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
-    let msg_inner = OrdChoice(OrdChoice(msg1, msg2), msg3);
+    let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];

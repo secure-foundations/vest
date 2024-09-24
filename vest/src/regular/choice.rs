@@ -194,6 +194,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
 /// This macro constructs a nested OrdChoice combinator
 /// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
 #[allow(unused_macros)]
+#[macro_export]
 macro_rules! ord_choice {
     ($c:expr $(,)?) => {
         $c
@@ -203,10 +204,11 @@ macro_rules! ord_choice {
         OrdChoice($c, ord_choice!($($rest),*))
     };
 }
-pub(crate) use ord_choice;
+pub use ord_choice;
 
 /// Build a type for the `ord_choice!` macro
 #[allow(unused_macros)]
+#[macro_export]
 macro_rules! ord_choice_type {
     ($c:ty $(,)?) => {
         $c
@@ -216,10 +218,11 @@ macro_rules! ord_choice_type {
         OrdChoice<$c, ord_choice_type!($($rest),*)>
     };
 }
-pub(crate) use ord_choice_type;
+pub use ord_choice_type;
 
 /// Build a type for the result of `ord_choice!`
 #[allow(unused_macros)]
+#[macro_export]
 macro_rules! ord_choice_result {
     ($c:ty $(,)?) => {
         $c
@@ -229,24 +232,43 @@ macro_rules! ord_choice_result {
         Either<$c, ord_choice_result!($($rest),*)>
     };
 }
-pub(crate) use ord_choice_result;
+pub use ord_choice_result;
 
 /// Maps x:Ti to ord_choice_result!(T1, ..., Tn)
 #[allow(unused_macros)]
+#[macro_export]
 macro_rules! inj_ord_choice_result {
     (*, $($rest:tt),* $(,)?) => {
         Either::Right(inj_ord_choice_result!($($rest),*))
     };
 
-    ($x:ident $(,)?) => {
+    ($x:expr $(,)?) => {
         $x
     };
 
-    ($x:ident, $(*),* $(,)?) => {
+    ($x:expr, $(*),* $(,)?) => {
         Either::Left($x)
     };
 }
-pub(crate) use inj_ord_choice_result;
+pub use inj_ord_choice_result;
+
+/// Same as above but for patterns
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! inj_ord_choice_pat {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_pat!($($rest),*))
+    };
+
+    ($x:pat $(,)?) => {
+        $x
+    };
+
+    ($x:pat, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+pub use inj_ord_choice_pat;
 
 // what would it look like if we manually implemented the match combinator?
 //
