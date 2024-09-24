@@ -36,7 +36,7 @@ pub enum SerializeError {
     TryMapFailed,
     RefinedPredicateFailed,
     RepeatEmptyElement,
-	Other(String),
+    Other(String),
 }
 
 }
