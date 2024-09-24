@@ -39,9 +39,13 @@ pub enum SerializeError {
     Other(String),
 }
 
+/// Sum of both parse and serialize errors
 #[derive(Debug)]
 pub enum Error {
+    /// Parser error
     Parse(ParseError),
+
+    /// Serializer error
     Serialize(SerializeError),
 }
 
