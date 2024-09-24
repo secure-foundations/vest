@@ -262,7 +262,7 @@ mod test {
         and_then::AndThen,
         bytes::Bytes,
         bytes_n::BytesN,
-        choice::{Either, OrdChoice},
+        choice::*,
         cond::Cond,
         depend::{Depend, SpecDepend},
         map::*,
@@ -608,7 +608,7 @@ mod test {
         M3(SpecMsg3),
     }
 
-    pub type SpecTlvContentInner = Either<Either<SpecMsg1, Msg2>, SpecMsg3>;
+    pub type SpecTlvContentInner = ord_choice_result!(SpecMsg1, Msg2, SpecMsg3);
 
     pub enum TlvContent<'a> {
         M1(Msg1<'a>),
@@ -622,9 +622,8 @@ mod test {
         M3(Msg3Owned),
     }
 
-    pub type TlvContentInner<'a> = Either<Either<Msg1<'a>, Msg2>, Msg3<'a>>;
-
-    pub type TlvContentOwnedInner = Either<Either<Msg1Owned, Msg2>, Msg3Owned>;
+    pub type TlvContentInner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
+    pub type TlvContentOwnedInner = ord_choice_result!(Msg1Owned, Msg2, Msg3Owned);
 
     impl View for TlvContent<'_> {
         type V = SpecTlvContent;
@@ -653,9 +652,9 @@ mod test {
     impl SpecFrom<SpecTlvContent> for SpecTlvContentInner {
         open spec fn spec_from(e: SpecTlvContent) -> SpecTlvContentInner {
             match e {
-                SpecTlvContent::M1(m) => Either::Left(Either::Left(m)),
-                SpecTlvContent::M2(m) => Either::Left(Either::Right(m)),
-                SpecTlvContent::M3(m) => Either::Right(m),
+                SpecTlvContent::M1(m) => inj_ord_choice_result!(m, *, *),
+                SpecTlvContent::M2(m) => inj_ord_choice_result!(*, m, *),
+                SpecTlvContent::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -663,9 +662,9 @@ mod test {
     impl SpecFrom<SpecTlvContentInner> for SpecTlvContent {
         open spec fn spec_from(e: SpecTlvContentInner) -> SpecTlvContent {
             match e {
-                Either::Left(Either::Left(m)) => SpecTlvContent::M1(m),
-                Either::Left(Either::Right(m)) => SpecTlvContent::M2(m),
-                Either::Right(m) => SpecTlvContent::M3(m),
+                inj_ord_choice_result!(m, *, *) => SpecTlvContent::M1(m),
+                inj_ord_choice_result!(*, m, *) => SpecTlvContent::M2(m),
+                inj_ord_choice_result!(*, *, m) => SpecTlvContent::M3(m),
             }
         }
     }
@@ -673,9 +672,9 @@ mod test {
     impl<'a> From<TlvContent<'a>> for TlvContentInner<'a> {
         fn ex_from(e: TlvContent) -> (res: TlvContentInner) {
             match e {
-                TlvContent::M1(m) => Either::Left(Either::Left(m)),
-                TlvContent::M2(m) => Either::Left(Either::Right(m)),
-                TlvContent::M3(m) => Either::Right(m),
+                TlvContent::M1(m) => inj_ord_choice_result!(m, *, *),
+                TlvContent::M2(m) => inj_ord_choice_result!(*, m, *),
+                TlvContent::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -683,9 +682,9 @@ mod test {
     impl<'a> From<TlvContentInner<'a>> for TlvContent<'a> {
         fn ex_from(e: TlvContentInner) -> (res: TlvContent) {
             match e {
-                Either::Left(Either::Left(m)) => TlvContent::M1(m),
-                Either::Left(Either::Right(m)) => TlvContent::M2(m),
-                Either::Right(m) => TlvContent::M3(m),
+                inj_ord_choice_result!(m, *, *) => TlvContent::M1(m),
+                inj_ord_choice_result!(*, m, *) => TlvContent::M2(m),
+                inj_ord_choice_result!(*, *, m) => TlvContent::M3(m),
             }
         }
     }
@@ -693,9 +692,9 @@ mod test {
     impl From<TlvContentOwned> for TlvContentOwnedInner {
         fn ex_from(e: TlvContentOwned) -> (res: TlvContentOwnedInner) {
             match e {
-                TlvContentOwned::M1(m) => Either::Left(Either::Left(m)),
-                TlvContentOwned::M2(m) => Either::Left(Either::Right(m)),
-                TlvContentOwned::M3(m) => Either::Right(m),
+                TlvContentOwned::M1(m) => inj_ord_choice_result!(m, *, *),
+                TlvContentOwned::M2(m) => inj_ord_choice_result!(*, m, *),
+                TlvContentOwned::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -703,9 +702,9 @@ mod test {
     impl From<TlvContentOwnedInner> for TlvContentOwned {
         fn ex_from(e: TlvContentOwnedInner) -> (res: TlvContentOwned) {
             match e {
-                Either::Left(Either::Left(m)) => TlvContentOwned::M1(m),
-                Either::Left(Either::Right(m)) => TlvContentOwned::M2(m),
-                Either::Right(m) => TlvContentOwned::M3(m),
+                inj_ord_choice_result!(m, *, *) => TlvContentOwned::M1(m),
+                inj_ord_choice_result!(*, m, *) => TlvContentOwned::M2(m),
+                inj_ord_choice_result!(*, *, m) => TlvContentOwned::M3(m),
             }
         }
     }
@@ -866,7 +865,7 @@ mod test {
     type TlvContentCombinator = AndThen<
         Bytes,
         Mapped<
-            OrdChoice<OrdChoice<Cond<Msg1Combinator>, Cond<Msg2Combinator>>, Cond<Msg3Combinator>>,
+            ord_choice_type!(Cond<Msg1Combinator>, Cond<Msg2Combinator>, Cond<Msg3Combinator>),
             TlvContentMapper,
         >,
     >;
@@ -890,11 +889,9 @@ mod test {
         AndThen(
             Bytes(len as usize),
             Mapped {
-                inner: OrdChoice(
-                    OrdChoice(
-                        Cond { cond: tag == 1, inner: spec_msg1() },
-                        Cond { cond: tag == 2, inner: spec_msg2() },
-                    ),
+                inner: ord_choice!(
+                    Cond { cond: tag == 1, inner: spec_msg1() },
+                    Cond { cond: tag == 2, inner: spec_msg2() },
                     Cond { cond: tag == 3, inner: spec_msg3() },
                 ),
                 mapper: TlvContentMapper,
@@ -940,11 +937,9 @@ mod test {
         AndThen(
             Bytes(len as usize),
             Mapped {
-                inner: OrdChoice(
-                    OrdChoice(
-                        Cond { cond: tag == 1, inner: msg1() },
-                        Cond { cond: tag == 2, inner: msg2() },
-                    ),
+                inner: ord_choice!(
+                    Cond { cond: tag == 1, inner: msg1() },
+                    Cond { cond: tag == 2, inner: msg2() },
                     Cond { cond: tag == 3, inner: msg3() },
                 ),
                 mapper: TlvContentMapper,

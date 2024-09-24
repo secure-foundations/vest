@@ -118,48 +118,26 @@ impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
     }
 }
 
-/// if `S3` is disjoint from both `S1` and `S2`, then `S3` is disjoint from `OrdChoice<S1, S2>`,
-/// where `S2` is disjoint from `S1`
+/// if `S1` and `S2` are both disjoint from `S3`, and `S2` is disjoint from `S1`,
+/// then `OrdChoice<S1, S2>` is disjoint from `S3`,
 ///
-/// this allows composition of the form `OrdChoice(OrdChoice(OrcChoice(...), ...), ...)`
-impl<U1, U2, U3> DisjointFrom<OrdChoice<U1, U2>> for U3 where
-    U2: DisjointFrom<U1>,
-    U3: DisjointFrom<U1> + DisjointFrom<U2>,
-    U1: SpecCombinator,
- {
-    open spec fn disjoint_from(&self, other: &OrdChoice<U1, U2>) -> bool {
-        self.disjoint_from(&other.0) && self.disjoint_from(&other.1)
+/// this allows composition of the form `OrdChoice(..., OrdChoice(..., OrcChoice(...)))`
+impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2>
+where
+    S1: SpecCombinator + DisjointFrom<S3>,
+    S2: SpecCombinator + DisjointFrom<S1> + DisjointFrom<S3>,
+    S3: SpecCombinator,
+{
+    open spec fn disjoint_from(&self, other: &S3) -> bool {
+        self.0.disjoint_from(other) && self.1.disjoint_from(other)
     }
 
-    proof fn parse_disjoint_on(&self, other: &OrdChoice<U1, U2>, buf: Seq<u8>) {
-        self.parse_disjoint_on(&other.0, buf);
-        self.parse_disjoint_on(&other.1, buf);
+    proof fn parse_disjoint_on(&self, other: &S3, buf: Seq<u8>) {
+        self.0.parse_disjoint_on(other, buf);
+        self.1.parse_disjoint_on(other, buf);
     }
 }
 
-/*
-    the following impl is very similar to the previous one, but it states things a bit differently:
-    if `S1` and `S2` are both disjoint from `S3`, then `OrdChoice<S1, S2>` is disjoint from `S3`
-    this allows composition of the form `OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))`
-    unfortunately, this creates conflicting implementations with the previous one
-    */
-
-// impl<S1, S2, S3> DisjointFrom<S3> for OrdChoiceS1, S2>
-// where
-//     S1: SpecCombinator + DisjointFrom<S3>,
-//     S2: SpecCombinator + DisjointFrom<S1> + DisjointFrom<S3>,
-//     S3: SpecCombinator,
-// {
-//    open spec fn disjoint_from(&self, other: &S3) -> bool {
-//        self.disjoint_from(other.0) && self.disjoint_from(other.1)
-//    }
-//
-//    proof fn parse_disjoint_on(&self, other: &S3, buf: Seq<u8>) {
-//        self.parse_disjoint_on(other.0, buf);
-//        self.parse_disjoint_on(other.1, buf);
-//    }
-//
-// }
 impl<U1, U2, M1, M2> DisjointFrom<Mapped<U2, M2>> for Mapped<U1, M1> where
     U1: DisjointFrom<U2>,
     U2: SpecCombinator,

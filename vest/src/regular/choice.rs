@@ -191,6 +191,63 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
     }
 }
 
+/// This macro constructs a nested OrdChoice combinator
+/// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
+#[allow(unused_macros)]
+macro_rules! ord_choice {
+    ($c:expr $(,)?) => {
+        $c
+    };
+
+    ($c:expr, $($rest:expr),* $(,)?) => {
+        OrdChoice($c, ord_choice!($($rest),*))
+    };
+}
+pub(crate) use ord_choice;
+
+/// Build a type for the `ord_choice!` macro
+#[allow(unused_macros)]
+macro_rules! ord_choice_type {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        OrdChoice<$c, ord_choice_type!($($rest),*)>
+    };
+}
+pub(crate) use ord_choice_type;
+
+/// Build a type for the result of `ord_choice!`
+#[allow(unused_macros)]
+macro_rules! ord_choice_result {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        Either<$c, ord_choice_result!($($rest),*)>
+    };
+}
+pub(crate) use ord_choice_result;
+
+/// Maps x:Ti to ord_choice_result!(T1, ..., Tn)
+#[allow(unused_macros)]
+macro_rules! inj_ord_choice_result {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_result!($($rest),*))
+    };
+
+    ($x:ident $(,)?) => {
+        $x
+    };
+
+    ($x:ident, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+pub(crate) use inj_ord_choice_result;
+
 // what would it look like if we manually implemented the match combinator?
 //
 // use super::uints::*;

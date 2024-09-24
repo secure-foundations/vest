@@ -264,15 +264,15 @@ pub enum SpecMsgCF4 {
     Unrecognized(Seq<u8>),
 }
 
-pub type SpecMsgCF4Inner = Either<Either<Either<SpecContent0, u16>, u32>, Seq<u8>>;
+pub type SpecMsgCF4Inner = ord_choice_result!(SpecContent0, u16, u32, Seq<u8>);
 
 impl SpecFrom<SpecMsgCF4> for SpecMsgCF4Inner {
     open spec fn spec_from(m: SpecMsgCF4) -> SpecMsgCF4Inner {
         match m {
-            SpecMsgCF4::C0(m) => Either::Left(Either::Left(Either::Left(m))),
-            SpecMsgCF4::C1(m) => Either::Left(Either::Left(Either::Right(m))),
-            SpecMsgCF4::C2(m) => Either::Left(Either::Right(m)),
-            SpecMsgCF4::Unrecognized(m) => Either::Right(m),
+            SpecMsgCF4::C0(m) => inj_ord_choice_result!(m, *, *, *),
+            SpecMsgCF4::C1(m) => inj_ord_choice_result!(*, m, *, *),
+            SpecMsgCF4::C2(m) => inj_ord_choice_result!(*, *, m, *),
+            SpecMsgCF4::Unrecognized(m) => inj_ord_choice_result!(*, *, *, m),
         }
     }
 }
@@ -280,10 +280,10 @@ impl SpecFrom<SpecMsgCF4> for SpecMsgCF4Inner {
 impl SpecFrom<SpecMsgCF4Inner> for SpecMsgCF4 {
     open spec fn spec_from(m: SpecMsgCF4Inner) -> SpecMsgCF4 {
         match m {
-            Either::Left(Either::Left(Either::Left(m))) => SpecMsgCF4::C0(m),
-            Either::Left(Either::Left(Either::Right(m))) => SpecMsgCF4::C1(m),
-            Either::Left(Either::Right(m)) => SpecMsgCF4::C2(m),
-            Either::Right(m) => SpecMsgCF4::Unrecognized(m),
+            inj_ord_choice_result!(m, *, *, *) => SpecMsgCF4::C0(m),
+            inj_ord_choice_result!(*, m, *, *) => SpecMsgCF4::C1(m),
+            inj_ord_choice_result!(*, *, m, *) => SpecMsgCF4::C2(m),
+            inj_ord_choice_result!(*, *, *, m) => SpecMsgCF4::Unrecognized(m),
         }
     }
 }
@@ -295,7 +295,7 @@ pub enum MsgCF4<'a> {
     Unrecognized(&'a [u8]),
 }
 
-pub type MsgCF4Inner<'a> = Either<Either<Either<Content0<'a>, u16>, u32>, &'a [u8]>;
+pub type MsgCF4Inner<'a> = ord_choice_result!(Content0<'a>, u16, u32, &'a [u8]);
 
 impl View for MsgCF4<'_> {
     type V = SpecMsgCF4;
@@ -313,10 +313,10 @@ impl View for MsgCF4<'_> {
 impl<'a> From<MsgCF4<'a>> for MsgCF4Inner<'a> {
     fn ex_from(m: MsgCF4<'a>) -> MsgCF4Inner<'a> {
         match m {
-            MsgCF4::C0(m) => Either::Left(Either::Left(Either::Left(m))),
-            MsgCF4::C1(m) => Either::Left(Either::Left(Either::Right(m))),
-            MsgCF4::C2(m) => Either::Left(Either::Right(m)),
-            MsgCF4::Unrecognized(m) => Either::Right(m),
+            MsgCF4::C0(m) => inj_ord_choice_result!(m, *, *, *),
+            MsgCF4::C1(m) => inj_ord_choice_result!(*, m, *, *),
+            MsgCF4::C2(m) => inj_ord_choice_result!(*, *, m, *),
+            MsgCF4::Unrecognized(m) => inj_ord_choice_result!(*, *, *, m),
         }
     }
 }
@@ -324,10 +324,10 @@ impl<'a> From<MsgCF4<'a>> for MsgCF4Inner<'a> {
 impl<'a> From<MsgCF4Inner<'a>> for MsgCF4<'a> {
     fn ex_from(m: MsgCF4Inner<'a>) -> MsgCF4<'a> {
         match m {
-            Either::Left(Either::Left(Either::Left(m))) => MsgCF4::C0(m),
-            Either::Left(Either::Left(Either::Right(m))) => MsgCF4::C1(m),
-            Either::Left(Either::Right(m)) => MsgCF4::C2(m),
-            Either::Right(m) => MsgCF4::Unrecognized(m),
+            inj_ord_choice_result!(m, *, *, *) => MsgCF4::C0(m),
+            inj_ord_choice_result!(*, m, *, *) => MsgCF4::C1(m),
+            inj_ord_choice_result!(*, *, m, *) => MsgCF4::C2(m),
+            inj_ord_choice_result!(*, *, *, m) => MsgCF4::Unrecognized(m),
         }
     }
 }
@@ -371,7 +371,7 @@ pub enum MsgCF4Owned {
     Unrecognized(Vec<u8>),
 }
 
-pub type MsgCF4OwnedInner = Either<Either<Either<Content0Owned, u16>, u32>, Vec<u8>>;
+pub type MsgCF4OwnedInner = ord_choice_result!(Content0Owned, u16, u32, Vec<u8>);
 
 impl View for MsgCF4Owned {
     type V = SpecMsgCF4;
@@ -389,10 +389,10 @@ impl View for MsgCF4Owned {
 impl From<MsgCF4Owned> for MsgCF4OwnedInner {
     fn ex_from(m: MsgCF4Owned) -> MsgCF4OwnedInner {
         match m {
-            MsgCF4Owned::C0(m) => Either::Left(Either::Left(Either::Left(m))),
-            MsgCF4Owned::C1(m) => Either::Left(Either::Left(Either::Right(m))),
-            MsgCF4Owned::C2(m) => Either::Left(Either::Right(m)),
-            MsgCF4Owned::Unrecognized(m) => Either::Right(m),
+            MsgCF4Owned::C0(m) => inj_ord_choice_result!(m, *, *, *),
+            MsgCF4Owned::C1(m) => inj_ord_choice_result!(*, m, *, *),
+            MsgCF4Owned::C2(m) => inj_ord_choice_result!(*, *, m, *),
+            MsgCF4Owned::Unrecognized(m) => inj_ord_choice_result!(*, *, *, m),
         }
     }
 }
@@ -400,10 +400,10 @@ impl From<MsgCF4Owned> for MsgCF4OwnedInner {
 impl From<MsgCF4OwnedInner> for MsgCF4Owned {
     fn ex_from(m: MsgCF4OwnedInner) -> MsgCF4Owned {
         match m {
-            Either::Left(Either::Left(Either::Left(m))) => MsgCF4Owned::C0(m),
-            Either::Left(Either::Left(Either::Right(m))) => MsgCF4Owned::C1(m),
-            Either::Left(Either::Right(m)) => MsgCF4Owned::C2(m),
-            Either::Right(m) => MsgCF4Owned::Unrecognized(m),
+            inj_ord_choice_result!(m, *, *, *) => MsgCF4Owned::C0(m),
+            inj_ord_choice_result!(*, m, *, *) => MsgCF4Owned::C1(m),
+            inj_ord_choice_result!(*, *, m, *) => MsgCF4Owned::C2(m),
+            inj_ord_choice_result!(*, *, *, m) => MsgCF4Owned::Unrecognized(m),
         }
     }
 }
@@ -813,7 +813,7 @@ pub type Content0Combinator = Bytes;
 pub type MsgCF4Combinator = AndThen<
     Bytes,
     Mapped<
-        OrdChoice<OrdChoice<OrdChoice<Cond<Content0Combinator>, Cond<U16>>, Cond<U32>>, Cond<Tail>>,
+        ord_choice_type!(Cond<Content0Combinator>, Cond<U16>, Cond<U32>, Cond<Tail>),
         MsgCF4Mapper,
     >,
 >;
@@ -876,14 +876,10 @@ pub open spec fn spec_msg_c_f4(f3: u8, f2: SpecContentType) -> MsgCF4Combinator 
     AndThen(
         Bytes(f3 as usize),
         Mapped {
-            inner: OrdChoice(
-                OrdChoice(
-                    OrdChoice(
-                        Cond { cond: f2 == 0, inner: spec_content_0(f3) },
-                        Cond { cond: f2 == 1, inner: U16 },
-                    ),
-                    Cond { cond: f2 == 2, inner: U32 },
-                ),
+            inner: ord_choice!(
+                Cond { cond: f2 == 0, inner: spec_content_0(f3) },
+                Cond { cond: f2 == 1, inner: U16 },
+                Cond { cond: f2 == 2, inner: U32 },
                 Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: Tail },
             ),
             mapper: MsgCF4Mapper,
@@ -898,14 +894,10 @@ pub fn msg_c_f4<'a>(f3: u8, f2: ContentType) -> (o: MsgCF4Combinator)
     AndThen(
         Bytes(f3 as usize),
         Mapped {
-            inner: OrdChoice(
-                OrdChoice(
-                    OrdChoice(
-                        Cond { cond: f2 == 0, inner: content_0(f3) },
-                        Cond { cond: f2 == 1, inner: U16 },
-                    ),
-                    Cond { cond: f2 == 2, inner: U32 },
-                ),
+            inner: ord_choice!(
+                Cond { cond: f2 == 0, inner: content_0(f3) },
+                Cond { cond: f2 == 1, inner: U16 },
+                Cond { cond: f2 == 2, inner: U32 },
                 Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: Tail },
             ),
             mapper: MsgCF4Mapper,
