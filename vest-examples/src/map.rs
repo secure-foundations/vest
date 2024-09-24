@@ -148,7 +148,7 @@ impl Iso for Msg1Mapper {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-fn parse_serialize() -> Result<(), ()> {
+fn parse_serialize() -> Result<(), Error> {
     let msg_inner = (U8, (U16, (Bytes(3), Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
@@ -166,7 +166,7 @@ fn parse_serialize() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-fn serialize_parse() -> Result<(), ()> {
+fn serialize_parse() -> Result<(), Error> {
     let msg_inner = (U8, (U16, (Bytes(3), Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
@@ -263,7 +263,7 @@ impl Iso for Msg2Mapper {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-fn parse_serialize2() -> Result<(), ()> {
+fn parse_serialize2() -> Result<(), Error> {
     let msg_inner = (U8, (U16, U32));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
@@ -281,7 +281,7 @@ fn parse_serialize2() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-fn serialize_parse2() -> Result<(), ()> {
+fn serialize_parse2() -> Result<(), Error> {
     let msg_inner = (U8, (U16, U32));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let val = Msg2 { a: 1, b: 123, c: 1 };
@@ -404,7 +404,7 @@ impl Iso for Msg3Mapper {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-fn parse_serialize3() -> Result<(), ()> {
+fn parse_serialize3() -> Result<(), Error> {
     let msg_inner = BytesN::<6>;
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
     let mut data = my_vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
@@ -423,7 +423,7 @@ fn parse_serialize3() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-fn serialize_parse3() -> Result<(), ()> {
+fn serialize_parse3() -> Result<(), Error> {
     let msg_inner = BytesN::<6>;
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
     let bytes: [u8; 6] = [1, 2, 3, 4, 5, 6];
@@ -585,7 +585,7 @@ impl Iso for Msg4Mapper {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-fn parse_serialize4() -> Result<(), ()> {
+fn parse_serialize4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);
@@ -618,7 +618,7 @@ fn parse_serialize4() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-fn serialize_parse4() -> Result<(), ()> {
+fn serialize_parse4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);

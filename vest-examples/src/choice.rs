@@ -15,7 +15,7 @@ verus! {
 
 broadcast use vest::regular::uints::size_of_facts;
 
-exec fn disjoint_examples(a: u32, b: u8) -> Result<(), ()> {
+exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
     let c1 = Cond { cond: a == 0 && b == 1, inner: U8 };
     let c2 = Cond { cond: 0 < a && a < 5 && b == 2, inner: U16 };
     let c3 = Cond { cond: a >= 5 && b == 2, inner: U32 };
@@ -33,7 +33,7 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), ()> {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-exec fn choice_parse_serialize() -> Result<(), ()> {
+exec fn choice_parse_serialize() -> Result<(), Error> {
     let c1 = Tag::new(U8, 1);
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);
@@ -103,7 +103,7 @@ exec fn choice_parse_serialize() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-exec fn choice_serialize_parse() -> Result<(), ()> {
+exec fn choice_serialize_parse() -> Result<(), Error> {
     let c1 = Tag::new(U8, 1);
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);

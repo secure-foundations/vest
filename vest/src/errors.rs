@@ -39,4 +39,24 @@ pub enum SerializeError {
     Other(String),
 }
 
+#[derive(Debug)]
+pub enum Error {
+    Parse(ParseError),
+    Serialize(SerializeError),
 }
+
+impl std::convert::From<ParseError> for Error {
+    fn from(e: ParseError) -> Self {
+        Error::Parse(e)
+    }
+}
+
+impl std::convert::From<SerializeError> for Error {
+    fn from(e: SerializeError) -> Self {
+        Error::Serialize(e)
+    }
+}
+
+}
+
+
