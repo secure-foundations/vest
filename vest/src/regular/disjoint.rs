@@ -1,8 +1,8 @@
 use super::bytes::Bytes;
 use super::bytes_n::BytesN;
 use super::choice::OrdChoice;
-use super::fail::Fail;
 use super::cond::Cond;
+use super::fail::Fail;
 use super::map::{Mapped, SpecIso};
 use super::preceded::Preceded;
 use super::tag::Tag;
@@ -123,12 +123,11 @@ impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
 /// then `OrdChoice<S1, S2>` is disjoint from `S3`,
 ///
 /// this allows composition of the form `OrdChoice(..., OrdChoice(..., OrcChoice(...)))`
-impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2>
-where
+impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2> where
     S1: SpecCombinator + DisjointFrom<S3>,
     S2: SpecCombinator + DisjointFrom<S1> + DisjointFrom<S3>,
     S3: SpecCombinator,
-{
+ {
     open spec fn disjoint_from(&self, other: &S3) -> bool {
         self.0.disjoint_from(other) && self.1.disjoint_from(other)
     }
@@ -174,7 +173,7 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
 impl<'a, T1, T2> DisjointFrom<&'a T1> for &'a T2 where
     T1: SpecCombinator,
     T2: SpecCombinator + DisjointFrom<T1>,
-{
+ {
     open spec fn disjoint_from(&self, other: &&T1) -> bool {
         (*self).disjoint_from(*other)
     }
@@ -184,14 +183,13 @@ impl<'a, T1, T2> DisjointFrom<&'a T1> for &'a T2 where
     }
 }
 
-impl<T> DisjointFrom<T> for Fail where
-    T: SpecCombinator,
-{
+impl<T> DisjointFrom<T> for Fail where T: SpecCombinator {
     open spec fn disjoint_from(&self, c: &T) -> bool {
         true
     }
 
-    proof fn parse_disjoint_on(&self, c: &T, buf: Seq<u8>) {}
+    proof fn parse_disjoint_on(&self, c: &T, buf: Seq<u8>) {
+    }
 }
 
 } // verus!

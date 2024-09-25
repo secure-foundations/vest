@@ -26,15 +26,15 @@ pub mod depend;
 // pub mod dependent;
 /// Disjointness for OrdChoice combinator
 pub mod disjoint;
+/// Error combinator
+pub mod fail;
 /// Preceded combinator
 pub mod preceded;
+/// Repeat combinator
+pub mod repeat;
 /// Tag combinator
 pub mod tag;
 /// Tail combinator
 pub mod tail;
 /// Uints combinator
 pub mod uints;
-/// Repeat combinator
-pub mod repeat;
-/// Error combinator
-pub mod fail;

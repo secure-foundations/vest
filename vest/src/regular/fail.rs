@@ -25,21 +25,28 @@ impl SpecCombinator for Fail {
         Err(())
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    }
 }
 
 impl SecureSpecCombinator for Fail {
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         true
     }
 
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {}
-    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {}
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
+    }
 }
 
 impl Combinator for Fail {
     type Result<'a> = ();
+
     type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -48,10 +55,6 @@ impl Combinator for Fail {
 
     fn length(&self) -> Option<usize> {
         Some(0)
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        true
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
@@ -66,4 +69,4 @@ impl Combinator for Fail {
     }
 }
 
-}
+} // verus!

@@ -46,7 +46,6 @@ pub enum SerializeError {
 pub enum Error {
     /// Parser error
     Parse(ParseError),
-
     /// Serializer error
     Serialize(SerializeError),
 }
@@ -63,6 +62,4 @@ impl std::convert::From<SerializeError> for Error {
     }
 }
 
-}
-
-
+} // verus!

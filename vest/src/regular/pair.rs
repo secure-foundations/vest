@@ -8,7 +8,7 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
     type SpecResult = (Fst::SpecResult, Snd::SpecResult);
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if Fst::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() {
             if let Ok((n, v1)) = self.0.spec_parse(s) {
                 if let Ok((m, v2)) = self.1.spec_parse(s.subrange(n as int, s.len() as int)) {
                     if n <= usize::MAX - m {
@@ -37,7 +37,7 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if Fst::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() {
             if let Ok(buf1) = self.0.spec_serialize(v.0) {
                 if let Ok(buf2) = self.1.spec_serialize(v.1) {
                     if buf1.len() + buf2.len() <= usize::MAX {
@@ -87,12 +87,12 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
         }
     }
 
-    open spec fn spec_is_prefix_secure() -> bool {
-        Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
-        if Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
             if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
                 let (n, _) = self.0.spec_parse(buf).unwrap();
                 self.0.spec_parse_wf(buf);
@@ -154,55 +154,43 @@ impl<Fst, Snd> Combinator for (Fst, Snd) where
         }
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        Fst::exec_is_prefix_secure() && Snd::exec_is_prefix_secure()
-    }
-
     open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires() && self.1.parse_requires()
+        self.0.parse_requires() && self.1.parse_requires() && Fst::V::is_prefix_secure()
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        if Fst::exec_is_prefix_secure() {
-            let (n, v1) = self.0.parse(s)?;
-            let s_ = slice_subrange(s, n, s.len());
-            let (m, v2) = self.1.parse(s_)?;
-            if n <= usize::MAX - m {
-                Ok(((n + m), (v1, v2)))
-            } else {
-                Err(ParseError::SizeOverflow)
-            }
+        let (n, v1) = self.0.parse(s)?;
+        let s_ = slice_subrange(s, n, s.len());
+        let (m, v2) = self.1.parse(s_)?;
+        if n <= usize::MAX - m {
+            Ok(((n + m), (v1, v2)))
         } else {
-            Err(ParseError::PairFstNotPrefixSecure)
+            Err(ParseError::SizeOverflow)
         }
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires() && self.1.serialize_requires()
+        self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        if Fst::exec_is_prefix_secure() {
-            let n = self.0.serialize(v.0, data, pos)?;
-            if n <= usize::MAX - pos && n + pos <= data.len() {
-                let m = self.1.serialize(v.1, data, pos + n)?;
-                if m <= usize::MAX - n {
-                    assert(data@.subrange(pos as int, pos + n + m as int) == self@.spec_serialize(
-                        v@,
-                    ).unwrap());
-                    assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
-                    Ok(n + m)
-                } else {
-                    Err(SerializeError::SizeOverflow)
-                }
+        let n = self.0.serialize(v.0, data, pos)?;
+        if n <= usize::MAX - pos && n + pos <= data.len() {
+            let m = self.1.serialize(v.1, data, pos + n)?;
+            if m <= usize::MAX - n {
+                assert(data@.subrange(pos as int, pos + n + m as int) == self@.spec_serialize(
+                    v@,
+                ).unwrap());
+                assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+                Ok(n + m)
             } else {
-                Err(SerializeError::InsufficientBuffer)
+                Err(SerializeError::SizeOverflow)
             }
         } else {
-            Err(SerializeError::PairFstNotPrefixSecure)
+            Err(SerializeError::InsufficientBuffer)
         }
     }
 }

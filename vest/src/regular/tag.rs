@@ -103,8 +103,8 @@ impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> 
 }
 
 impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Tag<Inner, T> {
-    open spec fn spec_is_prefix_secure() -> bool {
-        Inner::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Inner::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
@@ -117,18 +117,16 @@ impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Ta
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2);
-        assert(Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+        assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
             s1.add(s2),
         ) == self.spec_parse(s1));
     }
 }
 
-impl<Inner, T> Combinator for Tag<
-    Inner,
-    T,
-> where
-Inner: for <'a>Combinator<Result<'a> = T, Owned = T>,
-Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes {
+impl<Inner, T> Combinator for Tag<Inner, T> where
+    Inner: for <'a>Combinator<Result<'a> = T, Owned = T>,
+    Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
+ {
     type Result<'a> = ();
 
     type Owned = ();
@@ -139,10 +137,6 @@ Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes {
 
     fn length(&self) -> Option<usize> {
         self.0.length()
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        Inner::exec_is_prefix_secure()
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -158,17 +152,18 @@ Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }
 
-impl<Inner, const N: usize> Combinator for Tag<
-    Inner,
-    [u8; N],
-> where
-Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
+impl<Inner, const N: usize> Combinator for Tag<Inner, [u8; N]> where
+    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
+    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
+ {
     type Result<'b> = ();
 
     type Owned = ();
@@ -179,10 +174,6 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
 
     fn length(&self) -> Option<usize> {
         self.0.length()
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        Inner::exec_is_prefix_secure()
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -198,17 +189,18 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         self.0.serialize(self.0.predicate.0.as_slice(), data, pos)
     }
 }
 
-impl<Inner, 'a> Combinator for Tag<
-    Inner,
-    &'a [u8],
-> where
-Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
+impl<Inner, 'a> Combinator for Tag<Inner, &'a [u8]> where
+    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
+    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
+ {
     type Result<'b> = ();
 
     type Owned = ();
@@ -219,10 +211,6 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
 
     fn length(&self) -> Option<usize> {
         self.0.length()
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        Inner::exec_is_prefix_secure()
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -238,7 +226,10 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }
@@ -597,5 +588,4 @@ mod test {
 //     }
 //
 // }
-
 } // verus!

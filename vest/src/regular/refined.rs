@@ -13,9 +13,7 @@ pub trait SpecPred {
 }
 
 /// All predicates to be used in [`Refined`] combinator must implement this trait.
-pub trait Pred: View where
-    Self::V: SpecPred<Input = <Self::InputOwned as View>::V>,
- {
+pub trait Pred: View where Self::V: SpecPred<Input = <Self::InputOwned as View>::V> {
     /// The input type of the predicate.
     type Input<'a>: View<V = <Self::InputOwned as View>::V>;
 
@@ -38,8 +36,7 @@ pub struct Refined<Inner, P> {
     pub predicate: P,
 }
 
-impl<Inner: View, P: View> View for Refined<Inner, P> where
- {
+impl<Inner: View, P: View> View for Refined<Inner, P> where  {
     type V = Refined<Inner::V, P::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -50,7 +47,7 @@ impl<Inner: View, P: View> View for Refined<Inner, P> where
 impl<Inner, P> SpecCombinator for Refined<Inner, P> where
     Inner: SpecCombinator,
     P: SpecPred<Input = Inner::SpecResult>,
-{
+ {
     type SpecResult = Inner::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -76,9 +73,9 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
 impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     Inner: SecureSpecCombinator,
     P: SpecPred<Input = Inner::SpecResult>,
-{
-    open spec fn spec_is_prefix_secure() -> bool {
-        Inner::spec_is_prefix_secure()
+ {
+    open spec fn is_prefix_secure() -> bool {
+        Inner::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
@@ -91,19 +88,21 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
-            assert(
-                Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
-                == self.spec_parse(s1)
-            );
+        assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+            s1.add(s2),
+        ) == self.spec_parse(s1));
     }
 }
 
-impl<Inner, P> Combinator for Refined<Inner, P> where
+impl<Inner, P> Combinator for Refined<
+    Inner,
+    P,
+> where
     Inner: Combinator,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
     P: for <'a>Pred<Input<'a> = Inner::Result<'a>, InputOwned = Inner::Owned>,
     P::V: SpecPred<Input = <Inner::Owned as View>::V>,
-{
+ {
     type Result<'a> = Inner::Result<'a>;
 
     type Owned = Inner::Owned;
@@ -116,22 +115,17 @@ impl<Inner, P> Combinator for Refined<Inner, P> where
         self.inner.length()
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        Inner::exec_is_prefix_secure()
-    }
-
     open spec fn parse_requires(&self) -> bool {
         self.inner.parse_requires()
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
         match self.inner.parse(s) {
-            Ok((n, v)) =>
-                if self.predicate.apply(&v) {
-                    Ok((n, v))
-                } else {
-                    Err(ParseError::RefinedPredicateFailed)
-                },
+            Ok((n, v)) => if self.predicate.apply(&v) {
+                Ok((n, v))
+            } else {
+                Err(ParseError::RefinedPredicateFailed)
+            },
             Err(e) => Err(e),
         }
     }
@@ -140,7 +134,10 @@ impl<Inner, P> Combinator for Refined<Inner, P> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         if self.predicate.apply(&v) {
             self.inner.serialize(v, data, pos)
         } else {
@@ -149,4 +146,4 @@ impl<Inner, P> Combinator for Refined<Inner, P> where
     }
 }
 
-}
+} // verus!

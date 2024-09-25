@@ -45,7 +45,7 @@ impl SecureSpecCombinator for Tail {
         assert(buf.subrange(0, buf.len() as int) == buf);
     }
 
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         false
     }
 
@@ -64,10 +64,6 @@ impl Combinator for Tail {
 
     fn length(&self) -> Option<usize> {
         None
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        false
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {

@@ -73,7 +73,7 @@ impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
 }
 
 impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         false
     }
 
@@ -103,10 +103,6 @@ impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Build
         None
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        false
-    }
-
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, ()), ParseError>) {
         let v = self.0.into_vec();
         proof {
@@ -119,7 +115,10 @@ impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Build
         }
     }
 
-    fn serialize(&self, v: (), data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: (), data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
         if self.0.length() <= data.len() && pos <= data.len() - self.0.length() {
             self.0.into_mut_vec(data, pos);
             assert(pos + self.0.value().len() <= data@.len());

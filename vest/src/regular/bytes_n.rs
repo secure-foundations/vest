@@ -39,7 +39,7 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
 }
 
 impl<const N: usize> SecureSpecCombinator for BytesN<N> {
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         true
     }
 
@@ -72,10 +72,6 @@ impl<const N: usize> Combinator for BytesN<N> {
 
     fn length(&self) -> Option<usize> {
         Some(N)
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        true
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {

@@ -56,8 +56,8 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
         }
     }
 
-    open spec fn spec_is_prefix_secure() -> bool {
-        Inner::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Inner::is_prefix_secure()
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
@@ -90,10 +90,6 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         }
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        Inner::exec_is_prefix_secure()
-    }
-
     open spec fn parse_requires(&self) -> bool {
         self.inner.parse_requires()
     }
@@ -110,7 +106,10 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {
@@ -121,21 +120,24 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
 
 #[cfg(test)]
 mod test {
-#![allow(unused_imports)]
-use crate::properties::*;
-use crate::regular::and_then::*;
-use crate::regular::bytes::*;
-use crate::regular::bytes_n::*;
-use crate::regular::choice::*;
-use crate::regular::cond::*;
-use crate::regular::depend::*;
-use crate::regular::map::*;
-use crate::regular::refined::*;
-use crate::regular::tail::*;
-use crate::regular::uints::*;
-use crate::utils::*;
-use vstd::prelude::*;
-verus! {
+    #![allow(unused_imports)]
+
+
+    use crate::properties::*;
+    use crate::regular::and_then::*;
+    use crate::regular::bytes::*;
+    use crate::regular::bytes_n::*;
+    use crate::regular::choice::*;
+    use crate::regular::cond::*;
+    use crate::regular::depend::*;
+    use crate::regular::map::*;
+    use crate::regular::refined::*;
+    use crate::regular::tail::*;
+    use crate::regular::uints::*;
+    use crate::utils::*;
+    use vstd::prelude::*;
+
+    verus! {
 
 
 pub type SpecContent0 = Seq<u8>;
@@ -1187,7 +1189,7 @@ pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Res
 
 
 
-} // verus!
+}  // verus!
     // use crate::regular::{
     //     choice::{OrdChoice, Either},
     //     bytes_n::BytesN,
@@ -1270,5 +1272,7 @@ pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Res
     // }
     //
 
+
 }
+
 } // verus!

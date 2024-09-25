@@ -80,15 +80,15 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     Fst: SecureSpecCombinator,
     Snd: SecureSpecCombinator + DisjointFrom<Fst>,
  {
-    open spec fn spec_is_prefix_secure() -> bool {
-        Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         if self.1.disjoint_from(&self.0) {
             // must also explicitly state that parser1 will fail on anything that parser2 will succeed on
             self.1.parse_disjoint_on(&self.0, s1.add(s2));
-            if Self::spec_is_prefix_secure() {
+            if Self::is_prefix_secure() {
                 self.0.lemma_prefix_secure(s1, s2);
                 self.1.lemma_prefix_secure(s1, s2);
             }
@@ -138,10 +138,6 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
 
     fn length(&self) -> Option<usize> {
         None
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        Fst::exec_is_prefix_secure() && Snd::exec_is_prefix_secure()
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -204,6 +200,7 @@ macro_rules! ord_choice {
         OrdChoice($c, ord_choice!($($rest),*))
     };
 }
+
 pub use ord_choice;
 
 /// Build a type for the `ord_choice!` macro
@@ -218,6 +215,7 @@ macro_rules! ord_choice_type {
         OrdChoice<$c, ord_choice_type!($($rest),*)>
     };
 }
+
 pub use ord_choice_type;
 
 /// Build a type for the result of `ord_choice!`
@@ -232,6 +230,7 @@ macro_rules! ord_choice_result {
         Either<$c, ord_choice_result!($($rest),*)>
     };
 }
+
 pub use ord_choice_result;
 
 /// Maps x:Ti to ord_choice_result!(T1, ..., Tn)
@@ -250,6 +249,7 @@ macro_rules! inj_ord_choice_result {
         Either::Left($x)
     };
 }
+
 pub use inj_ord_choice_result;
 
 /// Same as above but for patterns
@@ -268,6 +268,7 @@ macro_rules! inj_ord_choice_pat {
         Either::Left($x)
     };
 }
+
 pub use inj_ord_choice_pat;
 
 // what would it look like if we manually implemented the match combinator?

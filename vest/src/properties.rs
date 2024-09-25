@@ -1,5 +1,5 @@
-pub use crate::utils::*;
 pub use crate::errors::*;
+pub use crate::utils::*;
 use vstd::prelude::*;
 use vstd::*;
 
@@ -26,8 +26,8 @@ pub trait SpecCombinator {
 
 /// Theorems and lemmas that must be proven for a combinator to be considered correct and secure.
 pub trait SecureSpecCombinator: SpecCombinator {
-    /// Spec version of [`Combinator::exec_is_prefix_secure`].
-    spec fn spec_is_prefix_secure() -> bool;
+    /// Like an associated constant, denotes whether the combinator is prefix-secure.
+    spec fn is_prefix_secure() -> bool;
 
     /// One of the top-level roundtrip properties
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -53,9 +53,8 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             s1.len() + s2.len() <= usize::MAX,
         ensures
-            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
-                s1.add(s2),
-            ) == self.spec_parse(s1),
+            Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
+                == self.spec_parse(s1),
     ;
 }
 
@@ -79,12 +78,6 @@ pub trait Combinator: View where
     fn length(&self) -> (res: Option<usize>)
         ensures
             res == self.spec_length(),
-    ;
-
-    /// Like an associated constant, denotes whether the combinator is prefix-secure.
-    fn exec_is_prefix_secure() -> (res: bool)
-        ensures
-            res == Self::V::spec_is_prefix_secure(),
     ;
 
     /// Pre-condition for parsing.
@@ -144,8 +137,8 @@ impl<C: SpecCombinator> SpecCombinator for &C {
 }
 
 impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
-    open spec fn spec_is_prefix_secure() -> bool {
-        C::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        C::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
@@ -163,8 +156,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 
 impl<C: Combinator> Combinator for &C where
     C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
-{
+ {
     type Result<'a> = C::Result<'a>;
+
     type Owned = C::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -173,10 +167,6 @@ impl<C: Combinator> Combinator for &C where
 
     fn length(&self) -> Option<usize> {
         (*self).length()
-    }
-
-    fn exec_is_prefix_secure() -> bool {
-        C::exec_is_prefix_secure()
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -191,7 +181,10 @@ impl<C: Combinator> Combinator for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
         (*self).serialize(v, data, pos)
     }
 }

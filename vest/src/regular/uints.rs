@@ -102,7 +102,7 @@ macro_rules! impl_combinator_for_int_type {
             }
 
             impl SecureSpecCombinator for $combinator {
-                open spec fn spec_is_prefix_secure() -> bool {
+                open spec fn is_prefix_secure() -> bool {
                     true
                 }
 
@@ -137,10 +137,6 @@ macro_rules! impl_combinator_for_int_type {
 
                 fn length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
-                }
-
-                fn exec_is_prefix_secure() -> bool {
-                    true
                 }
 
                 fn parse(&self, s: &[u8]) -> (res: Result<(usize, $int_type), ParseError>) {
