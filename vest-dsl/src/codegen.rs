@@ -49,33 +49,38 @@ enum Bracket {
 }
 
 /// format a vector into pairs of tuples, optionally prepended by `prepend`
-/// e.g. `["R1", "R2", "R3", "R4"] ==> "prepend(prepend(prepend(R1, R2), R3), R4)"`
+/// e.g. `["R1", "R2", "R3", "R4"] ==> "prepend(R1, prepend(R2, prepend(R3, R4)))"`
 fn fmt_in_pairs<T: Display>(tuples: &[T], prepend: &str, bracket: Bracket) -> String {
     let (left, right) = match bracket {
         Bracket::Parentheses => ("(", ")"),
         Bracket::Angle => ("<", ">"),
         Bracket::Square => ("[", "]"),
     };
-    tuples.iter().skip(1).fold(tuples[0].to_string(), |acc, t| {
-        format!("{}{}{}, {}{}", prepend, left, acc, t, right)
-    })
+    match tuples.split_last() {
+        None => String::new(),
+        Some((last, rest)) => rest.iter().rfold(last.to_string(), |acc, t| {
+            format!("{prepend}{left}{t}, {acc}{right}")
+        }),
+    }
 }
 
 /// generate nested `Either`s based on the number of variants and a variable name
+/// (right-associative)
 /// - The [`num_of_variants`] should be at least 2
 ///
 /// ## Examples
-/// ==== `gen_nested_eithers(0, "m")` ====
+/// ==== `gen_nested_eithers(2, "m")` ====
 /// Either::Left(m)
 /// Either::Right(m)
-/// ==== `gen_nested_eithers(1, "m")` ====
-/// Either::Left(Either::Left(m))
-/// Either::Left(Either::Right(m))
-/// Either::Right(m)
-/// ==== `gen_nested_eithers(2, "m")` ====
-/// Either::Left(Either::Left(Either::Left(m)))
-/// Either::Left(Either::Left(Either::Right(m)))
-/// Either::Left(Either::Right(m))
+/// ==== `gen_nested_eithers(3, "m")` ====
+/// Either::Left(m)
+/// Either::Right(Either::Left(m))
+/// Either::Right(Either::Right(m))
+/// ==== `gen_nested_eithers(4, "m")` ====
+/// Either::Left(m)
+/// Either::Right(Either::Left(m))
+/// Either::Right(Either::Right(Either::Left(m)))
+/// Either::Right(Either::Right(Either::Right(m)))
 fn gen_nested_eithers(num_of_variants: usize, var_name: &str) -> Vec<String> {
     if num_of_variants == 2 {
         vec![
@@ -83,10 +88,12 @@ fn gen_nested_eithers(num_of_variants: usize, var_name: &str) -> Vec<String> {
             format!("Either::Right({})", var_name),
         ]
     } else {
-        gen_nested_eithers(num_of_variants - 1, var_name)
-            .iter()
-            .map(|nested| format!("Either::Left({})", nested))
-            .chain(std::iter::once(format!("Either::Right({})", var_name)))
+        std::iter::once(format!("Either::Left({})", var_name))
+            .chain(
+                gen_nested_eithers(num_of_variants - 1, var_name)
+                    .iter()
+                    .map(|nested| format!("Either::Right({})", nested)),
+            )
             .collect()
     }
 }
@@ -2093,14 +2100,14 @@ pub open spec fn serialize_spec_{name}(msg: Spec{upper_caml_name}{spec_params}) 
 "#));
             // exec
             code.push_str(&format!(
-                r#"pub fn parse_{name}(i: &[u8]{exec_params}) -> (o: Result<(usize, {upper_caml_name}{lifetime}), ()>)
+                r#"pub fn parse_{name}(i: &[u8]{exec_params}) -> (o: Result<(usize, {upper_caml_name}{lifetime}), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_{name}(i@{args_view}) matches Ok(r_) && r@ == r_,
 {{
     {exec_body}.parse(i)
 }}
 
-pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, pos: usize{exec_params}) -> (o: Result<usize, ()>)
+pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, pos: usize{exec_params}) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {{
             &&& serialize_spec_{name}(msg@{args_view}) matches Ok(buf)
