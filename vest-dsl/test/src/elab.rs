@@ -8,11 +8,18 @@ use vest::regular::cond::*;
 use vest::regular::depend::*;
 use vest::regular::map::*;
 use vest::regular::refined::*;
+use vest::regular::tag::*;
 use vest::regular::tail::*;
 use vest::regular::uints::*;
 use vest::utils::*;
 use vstd::prelude::*;
 verus! {
+
+pub type SpecContentType = u8;
+
+pub type ContentType = u8;
+
+pub type ContentTypeOwned = u8;
 
 pub type SpecContent0 = Seq<u8>;
 
@@ -168,6 +175,117 @@ impl From<MsgCF4OwnedInner> for MsgCF4Owned {
             Either::Right(Either::Right(Either::Left(m))) => MsgCF4Owned::C2(m),
             Either::Right(Either::Right(Either::Right(m))) => MsgCF4Owned::Unrecognized(m),
         }
+    }
+}
+
+pub struct SpecMsgC {
+    pub f2: SpecContentType,
+    pub f3: u8,
+    pub f4: SpecMsgCF4,
+}
+
+pub type SpecMsgCInner = ((SpecContentType, u8), SpecMsgCF4);
+
+impl SpecFrom<SpecMsgC> for SpecMsgCInner {
+    open spec fn spec_from(m: SpecMsgC) -> SpecMsgCInner {
+        ((m.f2, m.f3), m.f4)
+    }
+}
+
+impl SpecFrom<SpecMsgCInner> for SpecMsgC {
+    open spec fn spec_from(m: SpecMsgCInner) -> SpecMsgC {
+        let ((f2, f3), f4) = m;
+        SpecMsgC { f2, f3, f4 }
+    }
+}
+
+pub struct MsgC<'a> {
+    pub f2: ContentType,
+    pub f3: u8,
+    pub f4: MsgCF4<'a>,
+}
+
+pub type MsgCInner<'a> = ((ContentType, u8), MsgCF4<'a>);
+
+impl View for MsgC<'_> {
+    type V = SpecMsgC;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMsgC { f2: self.f2@, f3: self.f3@, f4: self.f4@ }
+    }
+}
+
+impl<'a> From<MsgC<'a>> for MsgCInner<'a> {
+    fn ex_from(m: MsgC<'a>) -> MsgCInner<'a> {
+        ((m.f2, m.f3), m.f4)
+    }
+}
+
+impl<'a> From<MsgCInner<'a>> for MsgC<'a> {
+    fn ex_from(m: MsgCInner<'a>) -> MsgC<'a> {
+        let ((f2, f3), f4) = m;
+        MsgC { f2, f3, f4 }
+    }
+}
+
+pub struct MsgCMapper;
+
+impl View for MsgCMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecIso for MsgCMapper {
+    type Src = SpecMsgCInner;
+
+    type Dst = SpecMsgC;
+
+    proof fn spec_iso(s: Self::Src) {
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+
+impl Iso for MsgCMapper {
+    type Src<'a> = MsgCInner<'a>;
+
+    type Dst<'a> = MsgC<'a>;
+
+    type SrcOwned = MsgCOwnedInner;
+
+    type DstOwned = MsgCOwned;
+}
+
+pub struct MsgCOwned {
+    pub f2: ContentTypeOwned,
+    pub f3: u8,
+    pub f4: MsgCF4Owned,
+}
+
+pub type MsgCOwnedInner = ((ContentTypeOwned, u8), MsgCF4Owned);
+
+impl View for MsgCOwned {
+    type V = SpecMsgC;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMsgC { f2: self.f2@, f3: self.f3@, f4: self.f4@ }
+    }
+}
+
+impl From<MsgCOwned> for MsgCOwnedInner {
+    fn ex_from(m: MsgCOwned) -> MsgCOwnedInner {
+        ((m.f2, m.f3), m.f4)
+    }
+}
+
+impl From<MsgCOwnedInner> for MsgCOwned {
+    fn ex_from(m: MsgCOwnedInner) -> MsgCOwned {
+        let ((f2, f3), f4) = m;
+        MsgCOwned { f2, f3, f4 }
     }
 }
 
@@ -492,122 +610,7 @@ impl From<MsgAOwnedInner> for MsgAOwned {
     }
 }
 
-pub type SpecContentType = u8;
-
-pub type ContentType = u8;
-
-pub type ContentTypeOwned = u8;
-
-pub struct SpecMsgC {
-    pub f2: SpecContentType,
-    pub f3: u8,
-    pub f4: SpecMsgCF4,
-}
-
-pub type SpecMsgCInner = ((SpecContentType, u8), SpecMsgCF4);
-
-impl SpecFrom<SpecMsgC> for SpecMsgCInner {
-    open spec fn spec_from(m: SpecMsgC) -> SpecMsgCInner {
-        ((m.f2, m.f3), m.f4)
-    }
-}
-
-impl SpecFrom<SpecMsgCInner> for SpecMsgC {
-    open spec fn spec_from(m: SpecMsgCInner) -> SpecMsgC {
-        let ((f2, f3), f4) = m;
-        SpecMsgC { f2, f3, f4 }
-    }
-}
-
-pub struct MsgC<'a> {
-    pub f2: ContentType,
-    pub f3: u8,
-    pub f4: MsgCF4<'a>,
-}
-
-pub type MsgCInner<'a> = ((ContentType, u8), MsgCF4<'a>);
-
-impl View for MsgC<'_> {
-    type V = SpecMsgC;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgC { f2: self.f2@, f3: self.f3@, f4: self.f4@ }
-    }
-}
-
-impl<'a> From<MsgC<'a>> for MsgCInner<'a> {
-    fn ex_from(m: MsgC<'a>) -> MsgCInner<'a> {
-        ((m.f2, m.f3), m.f4)
-    }
-}
-
-impl<'a> From<MsgCInner<'a>> for MsgC<'a> {
-    fn ex_from(m: MsgCInner<'a>) -> MsgC<'a> {
-        let ((f2, f3), f4) = m;
-        MsgC { f2, f3, f4 }
-    }
-}
-
-pub struct MsgCMapper;
-
-impl View for MsgCMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecIso for MsgCMapper {
-    type Src = SpecMsgCInner;
-
-    type Dst = SpecMsgC;
-
-    proof fn spec_iso(s: Self::Src) {
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-
-impl Iso for MsgCMapper {
-    type Src<'a> = MsgCInner<'a>;
-
-    type Dst<'a> = MsgC<'a>;
-
-    type SrcOwned = MsgCOwnedInner;
-
-    type DstOwned = MsgCOwned;
-}
-
-pub struct MsgCOwned {
-    pub f2: ContentTypeOwned,
-    pub f3: u8,
-    pub f4: MsgCF4Owned,
-}
-
-pub type MsgCOwnedInner = ((ContentTypeOwned, u8), MsgCF4Owned);
-
-impl View for MsgCOwned {
-    type V = SpecMsgC;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgC { f2: self.f2@, f3: self.f3@, f4: self.f4@ }
-    }
-}
-
-impl From<MsgCOwned> for MsgCOwnedInner {
-    fn ex_from(m: MsgCOwned) -> MsgCOwnedInner {
-        ((m.f2, m.f3), m.f4)
-    }
-}
-
-impl From<MsgCOwnedInner> for MsgCOwned {
-    fn ex_from(m: MsgCOwnedInner) -> MsgCOwned {
-        let ((f2, f3), f4) = m;
-        MsgCOwned { f2, f3, f4 }
-    }
-}
+pub type ContentTypeCombinator = U8;
 
 pub type Content0Combinator = Bytes;
 
@@ -617,6 +620,11 @@ pub type MsgCF4Combinator = AndThen<
         OrdChoice<Cond<Content0Combinator>, OrdChoice<Cond<U16>, OrdChoice<Cond<U32>, Cond<Tail>>>>,
         MsgCF4Mapper,
     >,
+>;
+
+pub type MsgCCombinator = Mapped<
+    SpecDepend<(ContentTypeCombinator, U8), MsgCF4Combinator>,
+    MsgCMapper,
 >;
 
 pub spec const SPEC_MSGD_F1: Seq<u8> = seq![1; 4];
@@ -660,36 +668,8 @@ impl Pred for BytesPredicate16235736133663645624 {
 
 pub const MSGD_F2: u16 = 4660;
 
-pub struct IntIs4660;
-
-impl View for IntIs4660 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecPred for IntIs4660 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        *i == 4660
-    }
-}
-
-impl Pred for IntIs4660 {
-    type Input<'a> = u16;
-
-    type InputOwned = u16;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        *i == 4660
-    }
-}
-
 pub type MsgDCombinator = Mapped<
-    (Refined<BytesN<4>, BytesPredicate16235736133663645624>, Refined<U16, IntIs4660>),
+    (Refined<BytesN<4>, BytesPredicate16235736133663645624>, Refined<U16, TagPred<u16>>),
     MsgDMapper,
 >;
 
@@ -697,12 +677,16 @@ pub type MsgBCombinator = Mapped<MsgDCombinator, MsgBMapper>;
 
 pub type MsgACombinator = Mapped<(MsgBCombinator, Tail), MsgAMapper>;
 
-pub type ContentTypeCombinator = U8;
+pub open spec fn spec_content_type() -> ContentTypeCombinator {
+    U8
+}
 
-pub type MsgCCombinator = Mapped<
-    SpecDepend<(ContentTypeCombinator, U8), MsgCF4Combinator>,
-    MsgCMapper,
->;
+pub fn content_type() -> (o: ContentTypeCombinator)
+    ensures
+        o@ == spec_content_type(),
+{
+    U8
+}
 
 pub open spec fn spec_content_0(num: u8) -> Content0Combinator {
     Bytes(num as usize)
@@ -760,7 +744,7 @@ pub open spec fn spec_msg_d() -> MsgDCombinator {
     Mapped {
         inner: (
             Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624 },
-            Refined { inner: U16, predicate: IntIs4660 },
+            Refined { inner: U16, predicate: TagPred(MSGD_F2) },
         ),
         mapper: MsgDMapper,
     }
@@ -773,7 +757,7 @@ pub fn msg_d() -> (o: MsgDCombinator)
     Mapped {
         inner: (
             Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624 },
-            Refined { inner: U16, predicate: IntIs4660 },
+            Refined { inner: U16, predicate: TagPred(MSGD_F2) },
         ),
         mapper: MsgDMapper,
     }
@@ -801,15 +785,32 @@ pub fn msg_a() -> (o: MsgACombinator)
     Mapped { inner: (msg_b(), Tail), mapper: MsgAMapper }
 }
 
-pub open spec fn spec_content_type() -> ContentTypeCombinator {
-    U8
+pub open spec fn parse_spec_content_type(i: Seq<u8>) -> Result<(usize, SpecContentType), ()> {
+    spec_content_type().spec_parse(i)
 }
 
-pub fn content_type() -> (o: ContentTypeCombinator)
+pub open spec fn serialize_spec_content_type(msg: SpecContentType) -> Result<Seq<u8>, ()> {
+    spec_content_type().spec_serialize(msg)
+}
+
+pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ParseError>)
     ensures
-        o@ == spec_content_type(),
+        o matches Ok(r) ==> parse_spec_content_type(i@) matches Ok(r_) && r@ == r_,
 {
-    U8
+    content_type().parse(i)
+}
+
+pub fn serialize_content_type(msg: ContentType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    usize,
+    SerializeError,
+>)
+    ensures
+        o matches Ok(n) ==> {
+            &&& serialize_spec_content_type(msg@) matches Ok(buf)
+            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
+        },
+{
+    content_type().serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_content_0(i: Seq<u8>, num: u8) -> Result<(usize, SpecContent0), ()> {
@@ -876,6 +877,76 @@ pub fn serialize_msg_c_f4(
         },
 {
     msg_c_f4(f3, f2).serialize(msg, data, pos)
+}
+
+pub open spec fn parse_spec_msg_c(i: Seq<u8>) -> Result<(usize, SpecMsgC), ()> {
+    let fst = (spec_content_type(), U8);
+    let snd = |deps|
+        {
+            let (f2, f3) = deps;
+            spec_msg_c_f4(f3, f2)
+        };
+    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }.spec_parse(i)
+}
+
+pub open spec fn serialize_spec_msg_c(msg: SpecMsgC) -> Result<Seq<u8>, ()> {
+    let fst = (spec_content_type(), U8);
+    let snd = |deps|
+        {
+            let (f2, f3) = deps;
+            spec_msg_c_f4(f3, f2)
+        };
+    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }.spec_serialize(msg)
+}
+
+pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ParseError>)
+    ensures
+        o matches Ok(r) ==> parse_spec_msg_c(i@) matches Ok(r_) && r@ == r_,
+{
+    let ghost spec_snd = |deps|
+        {
+            let (f2, f3) = deps;
+            spec_msg_c_f4(f3, f2)
+        };
+    let fst = (content_type(), U8);
+    let snd = |deps: (ContentType, u8)| -> (o: MsgCF4Combinator)
+        ensures
+            o@ == spec_snd(deps@),
+        {
+            let (f2, f3) = deps;
+            msg_c_f4(f3, f2)
+        };
+    Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: MsgCMapper }.parse(i)
+}
+
+pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    usize,
+    SerializeError,
+>)
+    ensures
+        o matches Ok(n) ==> {
+            &&& serialize_spec_msg_c(msg@) matches Ok(buf)
+            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
+        },
+{
+    let ghost spec_snd = |deps|
+        {
+            let (f2, f3) = deps;
+            spec_msg_c_f4(f3, f2)
+        };
+    let fst = (content_type(), U8);
+    let snd = |deps: (ContentType, u8)| -> (o: MsgCF4Combinator)
+        ensures
+            o@ == spec_snd(deps@),
+        {
+            let (f2, f3) = deps;
+            msg_c_f4(f3, f2)
+        };
+    Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: MsgCMapper }.serialize(
+        msg,
+        data,
+        pos,
+    )
 }
 
 pub open spec fn parse_spec_msg_d(i: Seq<u8>) -> Result<(usize, SpecMsgD), ()> {
@@ -960,104 +1031,6 @@ pub fn serialize_msg_a(msg: MsgA<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Res
         },
 {
     msg_a().serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_content_type(i: Seq<u8>) -> Result<(usize, SpecContentType), ()> {
-    spec_content_type().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_content_type(msg: SpecContentType) -> Result<Seq<u8>, ()> {
-    spec_content_type().spec_serialize(msg)
-}
-
-pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_content_type(i@) matches Ok(r_) && r@ == r_,
-{
-    content_type().parse(i)
-}
-
-pub fn serialize_content_type(msg: ContentType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_content_type(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    content_type().serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_msg_c(i: Seq<u8>) -> Result<(usize, SpecMsgC), ()> {
-    let fst = (spec_content_type(), U8);
-    let snd = |deps|
-        {
-            let (f2, f3) = deps;
-            spec_msg_c_f4(f3, f2)
-        };
-    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }.spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg_c(msg: SpecMsgC) -> Result<Seq<u8>, ()> {
-    let fst = (spec_content_type(), U8);
-    let snd = |deps|
-        {
-            let (f2, f3) = deps;
-            spec_msg_c_f4(f3, f2)
-        };
-    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }.spec_serialize(msg)
-}
-
-pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg_c(i@) matches Ok(r_) && r@ == r_,
-{
-    let ghost spec_snd = |deps|
-        {
-            let (f2, f3) = deps;
-            spec_msg_c_f4(f3, f2)
-        };
-    let fst = (content_type(), U8);
-    let snd = |deps: (ContentType, u8)| -> (o: MsgCF4Combinator)
-        ensures
-            o@ == spec_snd(deps@),
-        {
-            let (f2, f3) = deps;
-            msg_c_f4(f3, f2)
-        };
-    Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: MsgCMapper }.parse(i)
-}
-
-pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg_c(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let ghost spec_snd = |deps|
-        {
-            let (f2, f3) = deps;
-            spec_msg_c_f4(f3, f2)
-        };
-    let fst = (content_type(), U8);
-    let snd = |deps: (ContentType, u8)| -> (o: MsgCF4Combinator)
-        ensures
-            o@ == spec_snd(deps@),
-        {
-            let (f2, f3) = deps;
-            msg_c_f4(f3, f2)
-        };
-    Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: MsgCMapper }.serialize(
-        msg,
-        data,
-        pos,
-    )
 }
 
 } // verus!

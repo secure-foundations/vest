@@ -1580,35 +1580,9 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Signed(..) => unimplemented!(),
         };
         let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
-        let value = self.value;
-        let predicate = format!(
-            r#"pub struct IntIs{value};
-impl View for IntIs{value} {{
-    type V = Self;
-    open spec fn view(&self) -> Self::V {{
-        *self
-    }}
-}}
-impl SpecPred for IntIs{value} {{
-    type Input = {tag_type};
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
-        *i == {value}
-    }}
-}}
-impl Pred for IntIs{value} {{
-    type Input<'a> = {tag_type};
-    type InputOwned = {tag_type};
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {{
-        *i == {value}
-    }}
-}}
-        "#
-        );
         (
-            format!("Refined<{}, IntIs{}>", comb_type, self.value),
-            const_decl + &predicate,
+            format!("Refined<{}, TagPred<{}>>", comb_type, tag_type),
+            const_decl,
         )
     }
 
@@ -1618,8 +1592,8 @@ impl Pred for IntIs{value} {{
             IntCombinator::Signed(..) => unimplemented!(),
         };
         format!(
-            "Refined {{ inner: {}, predicate: IntIs{} }}",
-            int_type, self.value
+            "Refined {{ inner: {}, predicate: TagPred({}) }}",
+            int_type, name
         )
     }
 }
@@ -1702,6 +1676,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::properties::*;\n"
         + "use vest::utils::*;\n"
         + "use vest::regular::map::*;\n"
+        + "use vest::regular::tag::*;\n"
         + "use vest::regular::choice::*;\n"
         + "use vest::regular::cond::*;\n"
         + "use vest::regular::uints::*;\n"
