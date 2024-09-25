@@ -4,17 +4,17 @@ use vstd::prelude::*;
 verus! {
 
 /// Combinator used for custom error message
-pub struct CustomError(pub String);
+pub struct Fail(pub String);
 
-impl View for CustomError {
-    type V = CustomError;
+impl View for Fail {
+    type V = Fail;
 
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
 
-impl SpecCombinator for CustomError {
+impl SpecCombinator for Fail {
     type SpecResult = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -28,7 +28,7 @@ impl SpecCombinator for CustomError {
     proof fn spec_parse_wf(&self, s: Seq<u8>) {}
 }
 
-impl SecureSpecCombinator for CustomError {
+impl SecureSpecCombinator for Fail {
     open spec fn spec_is_prefix_secure() -> bool {
         true
     }
@@ -38,7 +38,7 @@ impl SecureSpecCombinator for CustomError {
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for CustomError {
+impl Combinator for Fail {
     type Result<'a> = ();
     type Owned = ();
 

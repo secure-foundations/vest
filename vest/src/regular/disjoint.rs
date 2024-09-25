@@ -1,7 +1,7 @@
 use super::bytes::Bytes;
 use super::bytes_n::BytesN;
 use super::choice::OrdChoice;
-use super::error::CustomError;
+use super::fail::Fail;
 use super::cond::Cond;
 use super::map::{Mapped, SpecIso};
 use super::preceded::Preceded;
@@ -184,7 +184,7 @@ impl<'a, T1, T2> DisjointFrom<&'a T1> for &'a T2 where
     }
 }
 
-impl<T> DisjointFrom<T> for CustomError where
+impl<T> DisjointFrom<T> for Fail where
     T: SpecCombinator,
 {
     open spec fn disjoint_from(&self, c: &T) -> bool {

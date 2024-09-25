@@ -37,4 +37,4 @@ pub mod uints;
 /// Repeat combinator
 pub mod repeat;
 /// Error combinator
-pub mod error;
+pub mod fail;
