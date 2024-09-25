@@ -64,7 +64,8 @@ pub type ParseResult<'a, Output> = Result<(Stream<'a>, usize, Output), ParseErro
 pub type SpecParseResult<Output> = Result<(SpecStream, nat, Output), ParseError>;
 
 pub type SerializeResult = Result<(usize, usize), SerializeError>;
-  // (new start position, number of bytes written)
+
+// (new start position, number of bytes written)
 pub type SpecSerializeResult = Result<(SpecStream, nat), SerializeError>;
 
 /// opaque type abstraction over raw bytes
@@ -4385,7 +4386,7 @@ pub exec fn sec_parse_pair<P1, P2, R1, R2>(
             res,
             spec_parse_pair(spec_parser1, spec_parser2),
         ),
-        // prop_parse_exec_spec_equiv(parse_pair(exec_parser1, exec_parser2, spec_parser1, spec_parser2), spec_parse_pair(spec_parser1, spec_parser2))
+// prop_parse_exec_spec_equiv(parse_pair(exec_parser1, exec_parser2, spec_parser1, spec_parser2), spec_parse_pair(spec_parser1, spec_parser2))
 
 {
     proof {
