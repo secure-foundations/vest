@@ -6,6 +6,7 @@ verus! {
 
 /// Parser errors
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum ParseError {
     /// The second combinator of AndThen did not consume all bytes
     AndThenUnusedBytes,
@@ -25,6 +26,7 @@ pub enum ParseError {
 
 /// Serializer errors
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum SerializeError {
     InsufficientBuffer,
     AndThenUnusedBytes,
