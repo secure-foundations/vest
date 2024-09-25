@@ -1,4 +1,5 @@
 pub use crate::utils::*;
+pub use crate::errors::*;
 use vstd::prelude::*;
 use vstd::*;
 
@@ -92,7 +93,7 @@ pub trait Combinator: View where
     }
 
     /// The parsing function.
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>)
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
         requires
             self.parse_requires(),
         ensures
@@ -111,7 +112,7 @@ pub trait Combinator: View where
     /// The serialization function.
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >)
         requires
             self.serialize_requires(),
@@ -182,7 +183,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         (*self).parse(s)
     }
 
@@ -190,7 +191,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         (*self).serialize(v, data, pos)
     }
 }

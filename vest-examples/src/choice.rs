@@ -15,12 +15,12 @@ verus! {
 
 broadcast use vest::regular::uints::size_of_facts;
 
-exec fn disjoint_examples(a: u32, b: u8) -> Result<(), ()> {
+exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
     let c1 = Cond { cond: a == 0 && b == 1, inner: U8 };
     let c2 = Cond { cond: 0 < a && a < 5 && b == 2, inner: U16 };
     let c3 = Cond { cond: a >= 5 && b == 2, inner: U32 };
 
-    let choice = OrdChoice(OrdChoice(c1, c2), c3);
+    let choice = ord_choice!(c1, c2, c3);
 
     let mut data = my_vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -33,7 +33,7 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), ()> {
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
-exec fn choice_parse_serialize() -> Result<(), ()> {
+exec fn choice_parse_serialize() -> Result<(), Error> {
     let c1 = Tag::new(U8, 1);
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);
@@ -42,8 +42,10 @@ exec fn choice_parse_serialize() -> Result<(), ()> {
     let g2 = (U32, (U16, U8));
     let g3 = (Tag::new(U8, 10), U32);
     let g4 = (BytesN::<12>, (U16, (U8, U8)));
-    let ord_choice1 = OrdChoice(
-        OrdChoice(OrdChoice((c1, g1), (c2, g2)), (c3, g3)),
+    let ord_choice1 = ord_choice!(
+        (c1, g1),
+        (c2, g2),
+        (c3, g3),
         (c4, g4),
     );
     let mut data1 =
@@ -103,7 +105,7 @@ exec fn choice_parse_serialize() -> Result<(), ()> {
 //////////////////////////////////////
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
-exec fn choice_serialize_parse() -> Result<(), ()> {
+exec fn choice_serialize_parse() -> Result<(), Error> {
     let c1 = Tag::new(U8, 1);
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);
@@ -112,13 +114,15 @@ exec fn choice_serialize_parse() -> Result<(), ()> {
     let g2 = (U32, (U16, U8));
     let g3 = (Tag::new(U8, 10), U32);
     let g4 = (BytesN::<12>, (U16, (U8, U8)));
-    let ord_choice1 = OrdChoice(
-        OrdChoice(OrdChoice((c1, g1), (c2, g2)), (c3, g3)),
+    let ord_choice1 = ord_choice!(
+        (c1, g1),
+        (c2, g2),
+        (c3, g3),
         (c4, g4),
     );
     let vec1 = my_vec![0x10u8, 0x11u8, 0x12u8, 0x13u8];
     let vec2 = my_vec![0x14u8, 0x15u8, 0x16u8, 0x17u8, 0x18u8];
-    let val1 = Either::Left(Either::Left(Either::Left(((), (vec1.as_slice(), vec2.as_slice())))));
+    let val1 = inj_ord_choice_result!(((), (vec1.as_slice(), vec2.as_slice())), *, *, *);
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len1 = ord_choice1.serialize(val1, &mut s1, 0)?;
     let (n1, val1_) = ord_choice1.parse(slice_subrange(s1.as_slice(), 0, len1))?;
@@ -136,7 +140,7 @@ exec fn choice_serialize_parse() -> Result<(), ()> {
         // }
     }
     let vec3 = my_vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    let val2 = Either::Right(((), (vec3.as_slice(), (32000u16, (0u8, 0u8)))));
+    let val2 = inj_ord_choice_result!(*, *, *, ((), (vec3.as_slice(), (32000u16, (0u8, 0u8)))));
     let mut s2 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len2 = ord_choice1.serialize(val2, &mut s2, 0)?;
     let (n2, val2_) = ord_choice1.parse(slice_subrange(s2.as_slice(), 0, len2))?;

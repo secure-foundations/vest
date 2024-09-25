@@ -148,14 +148,14 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
         self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if let Ok((n, v)) = self.0.parse(s) {
             Ok((n, Either::Left(v)))
         } else {
             if let Ok((n, v)) = self.1.parse(s) {
                 Ok((n, Either::Right(v)))
             } else {
-                Err(())
+                Err(ParseError::OrdChoiceNoMatch)
             }
         }
     }
@@ -168,7 +168,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         match v {
             Either::Left(v) => {
@@ -176,7 +176,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
                 if n <= usize::MAX - pos && n + pos <= data.len() {
                     Ok(n)
                 } else {
-                    Err(())
+                    Err(SerializeError::InsufficientBuffer)
                 }
             },
             Either::Right(v) => {
@@ -184,12 +184,91 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
                 if n <= usize::MAX - pos && n + pos <= data.len() {
                     Ok(n)
                 } else {
-                    Err(())
+                    Err(SerializeError::InsufficientBuffer)
                 }
             },
         }
     }
 }
+
+/// This macro constructs a nested OrdChoice combinator
+/// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice {
+    ($c:expr $(,)?) => {
+        $c
+    };
+
+    ($c:expr, $($rest:expr),* $(,)?) => {
+        OrdChoice($c, ord_choice!($($rest),*))
+    };
+}
+pub use ord_choice;
+
+/// Build a type for the `ord_choice!` macro
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice_type {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        OrdChoice<$c, ord_choice_type!($($rest),*)>
+    };
+}
+pub use ord_choice_type;
+
+/// Build a type for the result of `ord_choice!`
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice_result {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        Either<$c, ord_choice_result!($($rest),*)>
+    };
+}
+pub use ord_choice_result;
+
+/// Maps x:Ti to ord_choice_result!(T1, ..., Tn)
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! inj_ord_choice_result {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_result!($($rest),*))
+    };
+
+    ($x:expr $(,)?) => {
+        $x
+    };
+
+    ($x:expr, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+pub use inj_ord_choice_result;
+
+/// Same as above but for patterns
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! inj_ord_choice_pat {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_pat!($($rest),*))
+    };
+
+    ($x:pat $(,)?) => {
+        $x
+    };
+
+    ($x:pat, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+pub use inj_ord_choice_pat;
 
 // what would it look like if we manually implemented the match combinator?
 //

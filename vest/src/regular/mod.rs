@@ -36,3 +36,5 @@ pub mod tail;
 pub mod uints;
 /// Repeat combinator
 pub mod repeat;
+/// Error combinator
+pub mod fail;

@@ -97,3 +97,5 @@ pub mod regular;
 pub mod utils;
 //// Constant-time parser and serializer combinators.
 // mod secret;
+/// Error types
+pub mod errors;

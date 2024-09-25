@@ -174,68 +174,71 @@ impl<C: Combinator> Repeat<C> where
 
     /// Helper function for parse()
     /// TODO: Recursion is not ideal, but hopefully tail call opt will kick in
-    fn parse_helper<'a>(&self, s: &'a [u8], res: &mut Vec<C::Result<'a>>) -> (suc: bool)
+    fn parse_helper<'a>(&self, s: &'a [u8], res: &mut Vec<C::Result<'a>>) -> (r: Result<(), ParseError>)
         requires
             self.0.parse_requires(),
             <C as View>::V::spec_is_prefix_secure(),
 
         ensures
-            suc ==> {
+            r is Ok ==> {
                 &&& self@.spec_parse(s@) is Ok
                 &&& self@.spec_parse(s@) matches Ok((n, v)) ==>
                     RepeatResult::<C>(*res)@ =~= RepeatResult::<C>(*old(res))@ + v
             },
-            !suc ==> self@.spec_parse(s@) is Err
+            r is Err ==> self@.spec_parse(s@) is Err
     {
         if s.len() == 0 {
-            return true;
+            return Ok(());
         }
 
-        if let Ok((n, v)) = self.0.parse(s) {
-            if n > 0 {
-                res.push(v);
-                return self.parse_helper(slice_subrange(s, n, s.len()), res);
-            }
-        }
+        let (n, v) = self.0.parse(s)?;
 
-        return false;
+        if n > 0 {
+            res.push(v);
+            self.parse_helper(slice_subrange(s, n, s.len()), res)
+        } else {
+            Err(ParseError::RepeatEmptyElement)
+        }
     }
 
-    fn serialize_helper(&self, v: &mut RepeatResult<'_, C>, data: &mut Vec<u8>, pos: usize, len: usize) -> (res: Option<usize>)
+    fn serialize_helper(&self, v: &mut RepeatResult<'_, C>, data: &mut Vec<u8>, pos: usize, len: usize)
+        -> (res: Result<usize, SerializeError>)
         requires
             self.0.serialize_requires(),
             <C as View>::V::spec_is_prefix_secure(),
 
         ensures
             data@.len() == old(data)@.len(),
-            res matches Some(n) ==> {
+            res matches Ok(n) ==> {
                 &&& self@.spec_serialize(old(v)@) is Ok
                 &&& self@.spec_serialize(old(v)@) matches Ok(s) ==>
                     n == (len + s.len()) && data@ =~= seq_splice(old(data)@, (pos + len) as usize, s)
             },
     {
         if pos > usize::MAX - len || pos + len >= data.len() {
-            return None;
+            return Err(SerializeError::InsufficientBuffer);
         }
 
         if v.0.len() == 0 {
             assert(data@ =~= seq_splice(old(data)@, pos, seq![]));
-            return Some(len);
+            return Ok(len);
         }
 
-        if let Ok(n1) = self.0.serialize(v.0.remove(0), data, pos + len) {
-            assert(v@ =~= old(v)@.drop_first());
+        let n1 = self.0.serialize(v.0.remove(0), data, pos + len)?;
 
-            if n1 != 0 {
-                let ghost data2 = data@;
+        assert(v@ =~= old(v)@.drop_first());
 
-                if let Some(next_len) = len.checked_add(n1) {
-                    return self.serialize_helper(v, data, pos, next_len);
-                }
+        if n1 > 0 {
+            let ghost data2 = data@;
+
+            if let Some(next_len) = len.checked_add(n1) {
+                self.serialize_helper(v, data, pos, next_len)
+            } else {
+                Err(SerializeError::SizeOverflow)
             }
+        } else {
+            Err(SerializeError::RepeatEmptyElement)
         }
-
-        None
     }
 }
 
@@ -262,14 +265,10 @@ impl<C: Combinator> Combinator for Repeat<C> where
         &&& self.0.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         let mut res = Vec::new();
-
-        if self.parse_helper(s, &mut res) {
-            Ok((s.len(), RepeatResult(res)))
-        } else {
-            Err(())
-        }
+        self.parse_helper(s, &mut res)?;
+        Ok((s.len(), RepeatResult(res)))
     }
 
     open spec fn serialize_requires(&self) -> bool {
@@ -277,13 +276,10 @@ impl<C: Combinator> Combinator for Repeat<C> where
         &&& self.0.serialize_requires()
     }
 
-    fn serialize(&self, mut v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
-        if let Some(n) = self.serialize_helper(&mut v, data, pos, 0) {
-            assert(v@.skip(0) == v@);
-            Ok(n)
-        } else {
-            Err(())
-        }
+    fn serialize(&self, mut v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        let n = self.serialize_helper(&mut v, data, pos, 0)?;
+        assert(v@.skip(0) == v@);
+        Ok(n)
     }
 }
 

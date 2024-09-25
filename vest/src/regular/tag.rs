@@ -149,19 +149,16 @@ Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes {
         self.0.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ()> {
-        if let Ok((n, _)) = self.0.parse(s) {
-            Ok((n, ()))
-        } else {
-            Err(())
-        }
+    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
+        let (n, _) = self.0.parse(s)?;
+        Ok((n, ()))
     }
 
     open spec fn serialize_requires(&self) -> bool {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }
@@ -192,19 +189,16 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
         self.0.parse_requires()
     }
 
-    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ()> {
-        if let Ok((n, _)) = self.0.parse(s) {
-            Ok((n, ()))
-        } else {
-            Err(())
-        }
+    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ParseError> {
+        let (n, _) = self.0.parse(s)?;
+        Ok((n, ()))
     }
 
     open spec fn serialize_requires(&self) -> bool {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         self.0.serialize(self.0.predicate.0.as_slice(), data, pos)
     }
 }
@@ -235,19 +229,16 @@ Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>> {
         self.0.parse_requires()
     }
 
-    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ()> {
-        if let Ok((n, _)) = self.0.parse(s) {
-            Ok((n, ()))
-        } else {
-            Err(())
-        }
+    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ParseError> {
+        let (n, _) = self.0.parse(s)?;
+        Ok((n, ()))
     }
 
     open spec fn serialize_requires(&self) -> bool {
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, ()> {
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }
