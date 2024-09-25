@@ -5,7 +5,9 @@ verus! {
 
 /// Combinator that checks if `cond` is true and then delegates to the `inner` combinator.
 pub struct Cond<Inner> {
+    /// The condition to check before parsing or serializing.
     pub cond: bool,
+    /// The combinator to delegate to if `cond` is true.
     pub inner: Inner,
 }
 

@@ -103,6 +103,7 @@ impl<T, U> SpecTryInto<U> for T where U: SpecTryFrom<T> {
 // }
 /// Vest equivalent of [`std::convert::TryFrom`].
 pub trait TryFrom<T> where T: View, Self: View + Sized, Self::V: SpecTryFrom<T::V> {
+    /// The type returned in the event of a conversion error.
     type Error;
 
     /// Vest equivalent of [`std::convert::TryFrom::try_from`].
@@ -118,6 +119,7 @@ pub trait TryFrom<T> where T: View, Self: View + Sized, Self::V: SpecTryFrom<T::
 
 /// Vest equivalent of [`std::convert::TryInto`].
 pub trait TryInto<T> where T: View, Self: View + Sized, Self::V: SpecTryInto<T::V> {
+    /// The type returned in the event of a conversion error.
     type Error;
 
     /// Vest equivalent of [`std::convert::TryInto::try_into`].

@@ -169,6 +169,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
 impl<C: Combinator> Repeat<C> where
     <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
  {
+    /// Get the deep view of RepeatResult
     pub open spec fn deep_view<'a>(v: &'a [C::Result<'a>]) -> Seq<<C::Owned as View>::V> {
         Seq::new(v.len() as nat, |i: int| v@[i]@)
     }

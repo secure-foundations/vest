@@ -208,11 +208,15 @@ impl<Inner, M> Combinator for Mapped<
     }
 }
 
+/// Spec version of [`TryFromInto`].
 pub trait SpecTryFromInto {
+    /// The source type
     type Src: SpecTryFrom<Self::Dst>;
 
+    /// The destination type
     type Dst: SpecTryFrom<Self::Src>;
 
+    /// Applies the faillible conversion to the source type.
     open spec fn spec_apply(s: Self::Src) -> Result<
         Self::Dst,
         <Self::Dst as SpecTryFrom<Self::Src>>::Error,
@@ -220,6 +224,7 @@ pub trait SpecTryFromInto {
         Self::Dst::spec_try_from(s)
     }
 
+    /// Applies the reverse faillible conversion to the destination type.
     open spec fn spec_rev_apply(s: Self::Dst) -> Result<
         Self::Src,
         <Self::Src as SpecTryFrom<Self::Dst>>::Error,
@@ -227,6 +232,7 @@ pub trait SpecTryFromInto {
         Self::Src::spec_try_from(s)
     }
 
+    /// One direction of the isomorphism when the conversion is successful.
     proof fn spec_iso(s: Self::Src)
         ensures
             Self::spec_apply(s) matches Ok(v) ==> {
@@ -235,6 +241,7 @@ pub trait SpecTryFromInto {
             },
     ;
 
+    /// The other direction of the isomorphism when the conversion is successful.
     proof fn spec_iso_rev(s: Self::Dst)
         ensures
             Self::spec_rev_apply(s) matches Ok(v) ==> {
@@ -244,19 +251,25 @@ pub trait SpecTryFromInto {
     ;
 }
 
+/// Faillible version of [`Iso`].
 pub trait TryFromInto: View where
     Self::V: SpecTryFromInto<Src = <Self::SrcOwned as View>::V, Dst = <Self::DstOwned as View>::V>,
     <Self::SrcOwned as View>::V: SpecTryFrom<<Self::DstOwned as View>::V>,
     <Self::DstOwned as View>::V: SpecTryFrom<<Self::SrcOwned as View>::V>,
  {
+    /// The source type 
     type Src<'a>: View<V = <Self::SrcOwned as View>::V> + TryFrom<Self::Dst<'a>>;
 
+    /// The destination type
     type Dst<'a>: View<V = <Self::DstOwned as View>::V> + TryFrom<Self::Src<'a>>;
 
+    /// The owned version of the source type.
     type SrcOwned: View + TryFrom<Self::DstOwned>;
 
+    /// The owned version of the destination type.
     type DstOwned: View + TryFrom<Self::SrcOwned>;
 
+    /// Applies the faillible conversion to the source type.
     fn apply(s: Self::Src<'_>) -> (res: Result<
         Self::Dst<'_>,
         <Self::Dst<'_> as TryFrom<Self::Src<'_>>>::Error,
@@ -273,6 +286,7 @@ pub trait TryFromInto: View where
         Self::Dst::ex_try_from(s)
     }
 
+    /// Applies the reverse faillible conversion to the destination type.
     fn rev_apply(s: Self::Dst<'_>) -> (res: Result<
         Self::Src<'_>,
         <Self::Src<'_> as TryFrom<Self::Dst<'_>>>::Error,
@@ -290,8 +304,12 @@ pub trait TryFromInto: View where
     }
 }
 
+/// Combinator that maps the result of an `inner` combinator with a faillible conversion
+/// that implements [`TryFromInto`].
 pub struct TryMap<Inner, M> {
+    /// The inner combinator.
     pub inner: Inner,
+    /// The faillible conversion.
     pub mapper: M,
 }
 
