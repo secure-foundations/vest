@@ -19,7 +19,7 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
     type SpecResult = (Fst::SpecResult, Snd::SpecResult);
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if Fst::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() {
             if let Ok((n, v1)) = self.fst.spec_parse(s) {
                 let snd = (self.snd)(v1);
                 if let Ok((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
@@ -50,7 +50,7 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if Fst::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() {
             if let Ok(buf1) = self.fst.spec_serialize(v.0) {
                 let snd = (self.snd)(v.0);
                 if let Ok(buf2) = snd.spec_serialize(v.1) {
@@ -103,12 +103,12 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
         }
     }
 
-    open spec fn spec_is_prefix_secure() -> bool {
-        Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
-        if Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure() {
+        if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
             if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
                 let (n, _) = self.fst.spec_parse(buf).unwrap();
                 self.fst.spec_parse_wf(buf);
@@ -196,18 +196,14 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
         None
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        Fst::exec_is_prefix_secure() && Snd::exec_is_prefix_secure()
-    }
-
     open spec fn parse_requires(&self) -> bool {
         &&& self.wf()
         &&& self.fst.parse_requires()
+        &&& Fst::V::is_prefix_secure()
         &&& forall|i, snd| (self.snd).ensures((i,), snd) ==> snd.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
-        if Fst::exec_is_prefix_secure() {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
             let (n, v1) = self.fst.parse(s)?;
             let s_ = slice_subrange(s, n, s.len());
             let snd = (self.snd)(v1);
@@ -215,24 +211,21 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
             if n <= usize::MAX - m {
                 Ok(((n + m), (v1, v2)))
             } else {
-                Err(())
+                Err(ParseError::SizeOverflow)
             }
-        } else {
-            Err(())
-        }
     }
 
     open spec fn serialize_requires(&self) -> bool {
         &&& self.wf()
         &&& self.fst.serialize_requires()
+        &&& Fst::V::is_prefix_secure()
         &&& forall|i, snd| (self.snd).ensures((i,), snd) ==> snd.serialize_requires()
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
-        if Fst::exec_is_prefix_secure() {
             let n = self.fst.serialize(v.0, data, pos)?;
             if n <= usize::MAX - pos && n + pos <= data.len() {
                 let snd = (self.snd)(v.0);
@@ -244,14 +237,11 @@ impl<Fst, Snd, F> Combinator for Depend<Fst, Snd, F> where
                     assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
                     Ok(n + m)
                 } else {
-                    Err(())
+                    Err(SerializeError::SizeOverflow)
                 }
             } else {
-                Err(())
+                Err(SerializeError::InsufficientBuffer)
             }
-        } else {
-            Err(())
-        }
     }
 }
 
@@ -262,7 +252,7 @@ mod test {
         and_then::AndThen,
         bytes::Bytes,
         bytes_n::BytesN,
-        choice::{Either, OrdChoice},
+        choice::*,
         cond::Cond,
         depend::{Depend, SpecDepend},
         map::*,
@@ -608,7 +598,7 @@ mod test {
         M3(SpecMsg3),
     }
 
-    pub type SpecTlvContentInner = Either<Either<SpecMsg1, Msg2>, SpecMsg3>;
+    pub type SpecTlvContentInner = ord_choice_result!(SpecMsg1, Msg2, SpecMsg3);
 
     pub enum TlvContent<'a> {
         M1(Msg1<'a>),
@@ -622,9 +612,8 @@ mod test {
         M3(Msg3Owned),
     }
 
-    pub type TlvContentInner<'a> = Either<Either<Msg1<'a>, Msg2>, Msg3<'a>>;
-
-    pub type TlvContentOwnedInner = Either<Either<Msg1Owned, Msg2>, Msg3Owned>;
+    pub type TlvContentInner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
+    pub type TlvContentOwnedInner = ord_choice_result!(Msg1Owned, Msg2, Msg3Owned);
 
     impl View for TlvContent<'_> {
         type V = SpecTlvContent;
@@ -653,9 +642,9 @@ mod test {
     impl SpecFrom<SpecTlvContent> for SpecTlvContentInner {
         open spec fn spec_from(e: SpecTlvContent) -> SpecTlvContentInner {
             match e {
-                SpecTlvContent::M1(m) => Either::Left(Either::Left(m)),
-                SpecTlvContent::M2(m) => Either::Left(Either::Right(m)),
-                SpecTlvContent::M3(m) => Either::Right(m),
+                SpecTlvContent::M1(m) => inj_ord_choice_result!(m, *, *),
+                SpecTlvContent::M2(m) => inj_ord_choice_result!(*, m, *),
+                SpecTlvContent::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -663,9 +652,9 @@ mod test {
     impl SpecFrom<SpecTlvContentInner> for SpecTlvContent {
         open spec fn spec_from(e: SpecTlvContentInner) -> SpecTlvContent {
             match e {
-                Either::Left(Either::Left(m)) => SpecTlvContent::M1(m),
-                Either::Left(Either::Right(m)) => SpecTlvContent::M2(m),
-                Either::Right(m) => SpecTlvContent::M3(m),
+                inj_ord_choice_pat!(m, *, *) => SpecTlvContent::M1(m),
+                inj_ord_choice_pat!(*, m, *) => SpecTlvContent::M2(m),
+                inj_ord_choice_pat!(*, *, m) => SpecTlvContent::M3(m),
             }
         }
     }
@@ -673,9 +662,9 @@ mod test {
     impl<'a> From<TlvContent<'a>> for TlvContentInner<'a> {
         fn ex_from(e: TlvContent) -> (res: TlvContentInner) {
             match e {
-                TlvContent::M1(m) => Either::Left(Either::Left(m)),
-                TlvContent::M2(m) => Either::Left(Either::Right(m)),
-                TlvContent::M3(m) => Either::Right(m),
+                TlvContent::M1(m) => inj_ord_choice_result!(m, *, *),
+                TlvContent::M2(m) => inj_ord_choice_result!(*, m, *),
+                TlvContent::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -683,9 +672,9 @@ mod test {
     impl<'a> From<TlvContentInner<'a>> for TlvContent<'a> {
         fn ex_from(e: TlvContentInner) -> (res: TlvContent) {
             match e {
-                Either::Left(Either::Left(m)) => TlvContent::M1(m),
-                Either::Left(Either::Right(m)) => TlvContent::M2(m),
-                Either::Right(m) => TlvContent::M3(m),
+                inj_ord_choice_pat!(m, *, *) => TlvContent::M1(m),
+                inj_ord_choice_pat!(*, m, *) => TlvContent::M2(m),
+                inj_ord_choice_pat!(*, *, m) => TlvContent::M3(m),
             }
         }
     }
@@ -693,9 +682,9 @@ mod test {
     impl From<TlvContentOwned> for TlvContentOwnedInner {
         fn ex_from(e: TlvContentOwned) -> (res: TlvContentOwnedInner) {
             match e {
-                TlvContentOwned::M1(m) => Either::Left(Either::Left(m)),
-                TlvContentOwned::M2(m) => Either::Left(Either::Right(m)),
-                TlvContentOwned::M3(m) => Either::Right(m),
+                TlvContentOwned::M1(m) => inj_ord_choice_result!(m, *, *),
+                TlvContentOwned::M2(m) => inj_ord_choice_result!(*, m, *),
+                TlvContentOwned::M3(m) => inj_ord_choice_result!(*, *, m),
             }
         }
     }
@@ -703,9 +692,9 @@ mod test {
     impl From<TlvContentOwnedInner> for TlvContentOwned {
         fn ex_from(e: TlvContentOwnedInner) -> (res: TlvContentOwned) {
             match e {
-                Either::Left(Either::Left(m)) => TlvContentOwned::M1(m),
-                Either::Left(Either::Right(m)) => TlvContentOwned::M2(m),
-                Either::Right(m) => TlvContentOwned::M3(m),
+                inj_ord_choice_pat!(m, *, *) => TlvContentOwned::M1(m),
+                inj_ord_choice_pat!(*, m, *) => TlvContentOwned::M2(m),
+                inj_ord_choice_pat!(*, *, m) => TlvContentOwned::M3(m),
             }
         }
     }
@@ -866,10 +855,7 @@ mod test {
     type TlvContentCombinator = AndThen<
         Bytes,
         Mapped<
-            OrdChoice<
-                OrdChoice<Cond<u8, u8, Msg1Combinator>, Cond<u8, u8, Msg2Combinator>>,
-                Cond<u8, u8, Msg3Combinator>,
-            >,
+            ord_choice_type!(Cond<Msg1Combinator>, Cond<Msg2Combinator>, Cond<Msg3Combinator>),
             TlvContentMapper,
         >,
     >;
@@ -893,12 +879,10 @@ mod test {
         AndThen(
             Bytes(len as usize),
             Mapped {
-                inner: OrdChoice(
-                    OrdChoice(
-                        Cond { lhs: tag, rhs: 1, inner: spec_msg1() },
-                        Cond { lhs: tag, rhs: 2, inner: spec_msg2() },
-                    ),
-                    Cond { lhs: tag, rhs: 3, inner: spec_msg3() },
+                inner: ord_choice!(
+                    Cond { cond: tag == 1, inner: spec_msg1() },
+                    Cond { cond: tag == 2, inner: spec_msg2() },
+                    Cond { cond: tag == 3, inner: spec_msg3() },
                 ),
                 mapper: TlvContentMapper,
             },
@@ -943,12 +927,10 @@ mod test {
         AndThen(
             Bytes(len as usize),
             Mapped {
-                inner: OrdChoice(
-                    OrdChoice(
-                        Cond { lhs: tag, rhs: 1, inner: msg1() },
-                        Cond { lhs: tag, rhs: 2, inner: msg2() },
-                    ),
-                    Cond { lhs: tag, rhs: 3, inner: msg3() },
+                inner: ord_choice!(
+                    Cond { cond: tag == 1, inner: msg1() },
+                    Cond { cond: tag == 2, inner: msg2() },
+                    Cond { cond: tag == 3, inner: msg3() },
                 ),
                 mapper: TlvContentMapper,
             },
@@ -1001,14 +983,14 @@ mod test {
         spec_tlv().spec_serialize(msg)
     }
 
-    pub fn msg1_parse(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ()>)
+    pub fn msg1_parse(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg1_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg1().parse(i)
     }
 
-    pub fn msg1_serialize(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg1_serialize(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg1_serialize(msg@) matches Ok(buf)
@@ -1018,14 +1000,14 @@ mod test {
         msg1().serialize(msg, data, pos)
     }
 
-    pub fn msg2_parse(i: &[u8]) -> (o: Result<(usize, Msg2), ()>)
+    pub fn msg2_parse(i: &[u8]) -> (o: Result<(usize, Msg2), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg2_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg2().parse(i)
     }
 
-    pub fn msg2_serialize(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg2_serialize(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg2_serialize(msg@) matches Ok(buf)
@@ -1035,14 +1017,14 @@ mod test {
         msg2().serialize(msg, data, pos)
     }
 
-    pub fn msg3_parse(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ()>)
+    pub fn msg3_parse(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_msg3_parse(i@) matches Ok(r_) && r@ == r_,
     {
         msg3().parse(i)
     }
 
-    pub fn msg3_serialize(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn msg3_serialize(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_msg3_serialize(msg@) matches Ok(buf)
@@ -1052,7 +1034,7 @@ mod test {
         msg3().serialize(msg, data, pos)
     }
 
-    fn tlv_content_parse(i: &[u8], tag: u8, len: u8) -> (o: Result<(usize, TlvContent<'_>), ()>)
+    fn tlv_content_parse(i: &[u8], tag: u8, len: u8) -> (o: Result<(usize, TlvContent<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_tlv_content_parse(i@, tag@, len@) matches Ok(r_) && r@ == r_,
     {
@@ -1065,7 +1047,7 @@ mod test {
         pos: usize,
         tag: u8,
         len: u8,
-    ) -> (o: Result<usize, ()>)
+    ) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_tlv_content_serialize(msg@, tag@, len@) matches Ok(buf)
@@ -1075,7 +1057,7 @@ mod test {
         tlv_content(tag, len).serialize(msg, data, pos)
     }
 
-    pub fn tlv_parse(i: &[u8]) -> (o: Result<(usize, Tlv<'_>), ()>)
+    pub fn tlv_parse(i: &[u8]) -> (o: Result<(usize, Tlv<'_>), ParseError>)
         ensures
             o matches Ok(r) ==> spec_tlv_parse(i@) matches Ok(r_) && r@ == r_,
     {
@@ -1095,7 +1077,7 @@ mod test {
         Mapped { inner: Depend { fst, snd, spec_snd: Ghost(spec_snd) }, mapper: TlvMapper }.parse(i)
     }
 
-    pub fn tlv_serialize(msg: Tlv<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, ()>)
+    pub fn tlv_serialize(msg: Tlv<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
         ensures
             o matches Ok(n) ==> {
                 &&& spec_tlv_serialize(msg@) matches Ok(buf)

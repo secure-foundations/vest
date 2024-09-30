@@ -1,3 +1,4 @@
+pub use crate::errors::*;
 pub use crate::utils::*;
 use vstd::prelude::*;
 use vstd::*;
@@ -15,7 +16,7 @@ pub trait SpecCombinator {
 
     /// The specification of [`Combinator::serialize`].
     spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>;
-    
+
     /// A helper fact to ensure that the result of parsing is within the input bounds.
     proof fn spec_parse_wf(&self, s: Seq<u8>)
         ensures
@@ -25,8 +26,8 @@ pub trait SpecCombinator {
 
 /// Theorems and lemmas that must be proven for a combinator to be considered correct and secure.
 pub trait SecureSpecCombinator: SpecCombinator {
-    /// Spec version of [`Combinator::exec_is_prefix_secure`].
-    spec fn spec_is_prefix_secure() -> bool;
+    /// Like an associated constant, denotes whether the combinator is prefix-secure.
+    spec fn is_prefix_secure() -> bool;
 
     /// One of the top-level roundtrip properties
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -52,7 +53,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             s1.len() + s2.len() <= usize::MAX,
         ensures
-            Self::spec_is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
+            Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
                 == self.spec_parse(s1),
     ;
 }
@@ -79,19 +80,13 @@ pub trait Combinator: View where
             res == self.spec_length(),
     ;
 
-    /// Like an associated constant, denotes whether the combinator is prefix-secure.
-    fn exec_is_prefix_secure() -> (res: bool)
-        ensures
-            res == Self::V::spec_is_prefix_secure(),
-    ;
-
     /// Pre-condition for parsing.
     open spec fn parse_requires(&self) -> bool {
         true
     }
 
     /// The parsing function.
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>)
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
         requires
             self.parse_requires(),
         ensures
@@ -110,7 +105,7 @@ pub trait Combinator: View where
     /// The serialization function.
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >)
         requires
             self.serialize_requires(),
@@ -123,6 +118,75 @@ pub trait Combinator: View where
                 }
             },
     ;
+}
+
+impl<C: SpecCombinator> SpecCombinator for &C {
+    type SpecResult = C::SpecResult;
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        (*self).spec_parse(s)
+    }
+
+    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        (*self).spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        (*self).spec_parse_wf(s)
+    }
+}
+
+impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
+    open spec fn is_prefix_secure() -> bool {
+        C::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        (*self).theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        (*self).theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        (*self).lemma_prefix_secure(s1, s2)
+    }
+}
+
+impl<C: Combinator> Combinator for &C where
+    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+ {
+    type Result<'a> = C::Result<'a>;
+
+    type Owned = C::Owned;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        (*self).spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        (*self).length()
+    }
+
+    open spec fn parse_requires(&self) -> bool {
+        (*self).parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        (*self).parse(s)
+    }
+
+    open spec fn serialize_requires(&self) -> bool {
+        (*self).serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
+        (*self).serialize(v, data, pos)
+    }
 }
 
 // The following is an attempt to support `Fn`s as combinators.

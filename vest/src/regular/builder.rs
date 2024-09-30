@@ -73,7 +73,7 @@ impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
 }
 
 impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         false
     }
 
@@ -103,11 +103,7 @@ impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Build
         None
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        false
-    }
-
-    fn parse(&self, s: &[u8]) -> (res: Result<(usize, ()), ()>) {
+    fn parse(&self, s: &[u8]) -> (res: Result<(usize, ()), ParseError>) {
         let v = self.0.into_vec();
         proof {
             self.0.value_wf();
@@ -115,11 +111,14 @@ impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Build
         if compare_slice(s, v.as_slice()) {
             Ok((s.len(), ()))
         } else {
-            Err(())
+            Err(ParseError::BuilderError)
         }
     }
 
-    fn serialize(&self, v: (), data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+    fn serialize(&self, v: (), data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
         if self.0.length() <= data.len() && pos <= data.len() - self.0.length() {
             self.0.into_mut_vec(data, pos);
             assert(pos + self.0.value().len() <= data@.len());
@@ -127,7 +126,7 @@ impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Build
             assert(data@.subrange(pos as int, pos + self.0.value().len() as int) == self.0.value());
             Ok(self.0.length())
         } else {
-            Err(())
+            Err(SerializeError::InsufficientBuffer)
         }
     }
 }

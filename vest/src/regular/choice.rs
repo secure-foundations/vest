@@ -1,4 +1,4 @@
-use super::disjoint::{DisjointFrom, SpecDisjointFrom};
+use super::disjoint::DisjointFrom;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -24,30 +24,7 @@ impl<A: View, B: View> View for Either<A, B> {
 /// Combinator that tries the `Fst` combinator and if it fails, tries the `Snd` combinator.
 pub struct OrdChoice<Fst, Snd>(pub Fst, pub Snd);
 
-impl<Fst, Snd> OrdChoice<Fst, Snd> where
-    Fst: Combinator,
-    Snd: Combinator + DisjointFrom<Fst>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V> + SpecDisjointFrom<Fst::V>,
- {
-    /// Creates a new `OrdChoice` combinator.
-    /// > **Note**: The `Snd` parser must be disjoint from the `Fst` parser.
-    pub fn new(parser1: Fst, parser2: Snd) -> (o: Self)
-        requires
-            parser2@.spec_disjoint_from(&parser1@),
-        ensures
-            o.0 == parser1 && o.1 == parser2,
-    {
-        OrdChoice(parser1, parser2)
-    }
-}
-
-impl<Fst, Snd> View for OrdChoice<Fst, Snd> where
-    Fst: Combinator,
-    Snd: Combinator + DisjointFrom<Fst>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V> + SpecDisjointFrom<Fst::V>,
- {
+impl<Fst: View, Snd: View> View for OrdChoice<Fst, Snd> where  {
     type V = OrdChoice<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -57,12 +34,12 @@ impl<Fst, Snd> View for OrdChoice<Fst, Snd> where
 
 impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     Fst: SpecCombinator,
-    Snd: SpecCombinator + SpecDisjointFrom<Fst>,
+    Snd: SpecCombinator + DisjointFrom<Fst>,
  {
     type SpecResult = Either<Fst::SpecResult, Snd::SpecResult>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if self.1.spec_disjoint_from(&self.0) {
+        if self.1.disjoint_from(&self.0) {
             if let Ok((n, v)) = self.0.spec_parse(s) {
                 Ok((n, Either::Left(v)))
             } else {
@@ -88,7 +65,7 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if self.1.spec_disjoint_from(&self.0) {
+        if self.1.disjoint_from(&self.0) {
             match v {
                 Either::Left(v) => self.0.spec_serialize(v),
                 Either::Right(v) => self.1.spec_serialize(v),
@@ -101,17 +78,17 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
 
 impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     Fst: SecureSpecCombinator,
-    Snd: SecureSpecCombinator + SpecDisjointFrom<Fst>,
+    Snd: SecureSpecCombinator + DisjointFrom<Fst>,
  {
-    open spec fn spec_is_prefix_secure() -> bool {
-        Fst::spec_is_prefix_secure() && Snd::spec_is_prefix_secure()
+    open spec fn is_prefix_secure() -> bool {
+        Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        if self.1.spec_disjoint_from(&self.0) {
+        if self.1.disjoint_from(&self.0) {
             // must also explicitly state that parser1 will fail on anything that parser2 will succeed on
-            self.1.spec_parse_disjoint_on(&self.0, s1.add(s2));
-            if Self::spec_is_prefix_secure() {
+            self.1.parse_disjoint_on(&self.0, s1.add(s2));
+            if Self::is_prefix_secure() {
                 self.0.lemma_prefix_secure(s1, s2);
                 self.1.lemma_prefix_secure(s1, s2);
             }
@@ -126,8 +103,8 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
             Either::Right(v) => {
                 self.1.theorem_serialize_parse_roundtrip(v);
                 let buf = self.1.spec_serialize(v).unwrap();
-                if self.1.spec_disjoint_from(&self.0) {
-                    self.1.spec_parse_disjoint_on(&self.0, buf);
+                if self.1.disjoint_from(&self.0) {
+                    self.1.parse_disjoint_on(&self.0, buf);
                 }
             },
         }
@@ -146,9 +123,10 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
 
 impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
     Fst: Combinator,
-    Snd: Combinator + DisjointFrom<Fst>,
+    Snd: Combinator,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V> + SpecDisjointFrom<Fst::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+    Snd::V: DisjointFrom<Fst::V>,
  {
     type Result<'a> = Either<Fst::Result<'a>, Snd::Result<'a>>;
 
@@ -162,62 +140,136 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
         None
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        Fst::exec_is_prefix_secure() && Snd::exec_is_prefix_secure()
-    }
-
     open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires() && self.1.parse_requires()
+        self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
-        if self.1.disjoint_from(&self.0) {
-            if let Ok((n, v)) = self.0.parse(s) {
-                Ok((n, Either::Left(v)))
-            } else {
-                if let Ok((n, v)) = self.1.parse(s) {
-                    Ok((n, Either::Right(v)))
-                } else {
-                    Err(())
-                }
-            }
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        if let Ok((n, v)) = self.0.parse(s) {
+            Ok((n, Either::Left(v)))
         } else {
-            Err(())
+            if let Ok((n, v)) = self.1.parse(s) {
+                Ok((n, Either::Right(v)))
+            } else {
+                Err(ParseError::OrdChoiceNoMatch)
+            }
         }
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires() && self.1.serialize_requires()
+        self.0.serialize_requires() && self.1.serialize_requires() && self@.1.disjoint_from(
+            &self@.0,
+        )
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
-        if self.1.disjoint_from(&self.0) {
-            match v {
-                Either::Left(v) => {
-                    let n = self.0.serialize(v, data, pos)?;
-                    if n <= usize::MAX - pos && n + pos <= data.len() {
-                        Ok(n)
-                    } else {
-                        Err(())
-                    }
-                },
-                Either::Right(v) => {
-                    let n = self.1.serialize(v, data, pos)?;
-                    if n <= usize::MAX - pos && n + pos <= data.len() {
-                        Ok(n)
-                    } else {
-                        Err(())
-                    }
-                },
-            }
-        } else {
-            Err(())
+        match v {
+            Either::Left(v) => {
+                let n = self.0.serialize(v, data, pos)?;
+                if n <= usize::MAX - pos && n + pos <= data.len() {
+                    Ok(n)
+                } else {
+                    Err(SerializeError::InsufficientBuffer)
+                }
+            },
+            Either::Right(v) => {
+                let n = self.1.serialize(v, data, pos)?;
+                if n <= usize::MAX - pos && n + pos <= data.len() {
+                    Ok(n)
+                } else {
+                    Err(SerializeError::InsufficientBuffer)
+                }
+            },
         }
     }
 }
+
+/// This macro constructs a nested OrdChoice combinator
+/// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice {
+    ($c:expr $(,)?) => {
+        $c
+    };
+
+    ($c:expr, $($rest:expr),* $(,)?) => {
+        OrdChoice($c, ord_choice!($($rest),*))
+    };
+}
+
+pub use ord_choice;
+
+/// Build a type for the `ord_choice!` macro
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice_type {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        OrdChoice<$c, ord_choice_type!($($rest),*)>
+    };
+}
+
+pub use ord_choice_type;
+
+/// Build a type for the result of `ord_choice!`
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ord_choice_result {
+    ($c:ty $(,)?) => {
+        $c
+    };
+
+    ($c:ty, $($rest:ty),* $(,)?) => {
+        Either<$c, ord_choice_result!($($rest),*)>
+    };
+}
+
+pub use ord_choice_result;
+
+/// Maps x:Ti to ord_choice_result!(T1, ..., Tn)
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! inj_ord_choice_result {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_result!($($rest),*))
+    };
+
+    ($x:expr $(,)?) => {
+        $x
+    };
+
+    ($x:expr, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+
+pub use inj_ord_choice_result;
+
+/// Same as above but for patterns
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! inj_ord_choice_pat {
+    (*, $($rest:tt),* $(,)?) => {
+        Either::Right(inj_ord_choice_pat!($($rest),*))
+    };
+
+    ($x:pat $(,)?) => {
+        $x
+    };
+
+    ($x:pat, $(*),* $(,)?) => {
+        Either::Left($x)
+    };
+}
+
+pub use inj_ord_choice_pat;
 
 // what would it look like if we manually implemented the match combinator?
 //
@@ -551,5 +603,4 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
 //         }
 //     }
 // }
-
 } // verus!

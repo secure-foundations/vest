@@ -49,33 +49,38 @@ enum Bracket {
 }
 
 /// format a vector into pairs of tuples, optionally prepended by `prepend`
-/// e.g. `["R1", "R2", "R3", "R4"] ==> "prepend(prepend(prepend(R1, R2), R3), R4)"`
+/// e.g. `["R1", "R2", "R3", "R4"] ==> "prepend(R1, prepend(R2, prepend(R3, R4)))"`
 fn fmt_in_pairs<T: Display>(tuples: &[T], prepend: &str, bracket: Bracket) -> String {
     let (left, right) = match bracket {
         Bracket::Parentheses => ("(", ")"),
         Bracket::Angle => ("<", ">"),
         Bracket::Square => ("[", "]"),
     };
-    tuples.iter().skip(1).fold(tuples[0].to_string(), |acc, t| {
-        format!("{}{}{}, {}{}", prepend, left, acc, t, right)
-    })
+    match tuples.split_last() {
+        None => String::new(),
+        Some((last, rest)) => rest.iter().rfold(last.to_string(), |acc, t| {
+            format!("{prepend}{left}{t}, {acc}{right}")
+        }),
+    }
 }
 
 /// generate nested `Either`s based on the number of variants and a variable name
+/// (right-associative)
 /// - The [`num_of_variants`] should be at least 2
 ///
 /// ## Examples
-/// ==== `gen_nested_eithers(0, "m")` ====
+/// ==== `gen_nested_eithers(2, "m")` ====
 /// Either::Left(m)
 /// Either::Right(m)
-/// ==== `gen_nested_eithers(1, "m")` ====
-/// Either::Left(Either::Left(m))
-/// Either::Left(Either::Right(m))
-/// Either::Right(m)
-/// ==== `gen_nested_eithers(2, "m")` ====
-/// Either::Left(Either::Left(Either::Left(m)))
-/// Either::Left(Either::Left(Either::Right(m)))
-/// Either::Left(Either::Right(m))
+/// ==== `gen_nested_eithers(3, "m")` ====
+/// Either::Left(m)
+/// Either::Right(Either::Left(m))
+/// Either::Right(Either::Right(m))
+/// ==== `gen_nested_eithers(4, "m")` ====
+/// Either::Left(m)
+/// Either::Right(Either::Left(m))
+/// Either::Right(Either::Right(Either::Left(m)))
+/// Either::Right(Either::Right(Either::Right(m)))
 fn gen_nested_eithers(num_of_variants: usize, var_name: &str) -> Vec<String> {
     if num_of_variants == 2 {
         vec![
@@ -83,10 +88,12 @@ fn gen_nested_eithers(num_of_variants: usize, var_name: &str) -> Vec<String> {
             format!("Either::Right({})", var_name),
         ]
     } else {
-        gen_nested_eithers(num_of_variants - 1, var_name)
-            .iter()
-            .map(|nested| format!("Either::Left({})", nested))
-            .chain(std::iter::once(format!("Either::Right({})", var_name)))
+        std::iter::once(format!("Either::Left({})", var_name))
+            .chain(
+                gen_nested_eithers(num_of_variants - 1, var_name)
+                    .iter()
+                    .map(|nested| format!("Either::Right({})", nested)),
+            )
             .collect()
     }
 }
@@ -106,14 +113,14 @@ pub enum LifetimeAnn {
 
 pub struct CodegenCtx<'a> {
     pub format_lifetimes: HashMap<String, LifetimeAnn>,
-    pub enums: HashMap<&'a str, HashMap<&'a str, i128>>, // enum name -> variant name -> value
+    pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
     pub param_defns: Vec<ParamDefn>,
 }
 
 impl<'a> CodegenCtx<'a> {
     pub fn new(
         format_lifetimes: HashMap<String, LifetimeAnn>,
-        enums: HashMap<&'a str, HashMap<&'a str, i128>>,
+        enums: HashMap<&'a str, EnumCombinator>,
     ) -> Self {
         Self {
             format_lifetimes,
@@ -952,33 +959,187 @@ impl Codegen for StructCombinator {
 
 impl Codegen for EnumCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, _ctx: &CodegenCtx) -> String {
-        let inferred = infer_enum_type(&self.enums);
-        if name.is_empty() {
-            format!("{}", inferred)
-        } else {
-            // alias to the inferred type
-            let alias_name = match mode {
-                Mode::Spec => format!("Spec{}", name),
-                Mode::Exec(..) => name.to_string(),
-                Mode::ExecOwned => format!("{}Owned", name),
-            };
-            format!("pub type {} = {};\n", alias_name, inferred)
+        match &self {
+            EnumCombinator::NonExhaustive { enums } => {
+                let inferred = infer_enum_type(enums);
+                if name.is_empty() {
+                    panic!("`Enum` should be a top-level definition")
+                } else {
+                    // alias to the inferred type
+                    let alias_name = match mode {
+                        Mode::Spec => format!("Spec{}", name),
+                        Mode::Exec(..) => name.to_string(),
+                        Mode::ExecOwned => format!("{}Owned", name),
+                    };
+                    format!("pub type {} = {};\n", alias_name, inferred)
+                }
+            }
+            EnumCombinator::Exhaustive { enums } => {
+                // since the spec, exec, and exec_owned types are the same, we only need to
+                // generate one of them
+                if let Mode::Spec = mode {
+                    let inferred = infer_enum_type(enums);
+                    if name.is_empty() {
+                        panic!("`Enum` should be a top-level definition")
+                    } else {
+                        let msg_type_name = name;
+                        let enum_variants = enums
+                            .iter()
+                            .map(|e| format!("{e}"))
+                            .collect::<Vec<_>>()
+                            .join(",\n");
+                        let try_from_int_match_arms = enums
+                            .iter()
+                            .map(|Enum { name, value }| {
+                                format!("{}{} => Ok({}::{}),", value, inferred, msg_type_name, name)
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n            ");
+                        let try_from_enum_match_arms = enums
+                            .iter()
+                            .map(|Enum { name, value }| {
+                                format!("{}::{} => Ok({}{}),", msg_type_name, name, value, inferred)
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n            ");
+                        format!(
+                            r#"
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub enum {msg_type_name} {{
+    {enum_variants}
+}}
+pub type Spec{msg_type_name} = {msg_type_name};
+pub type {msg_type_name}Owned = {msg_type_name};
+
+pub type {msg_type_name}Inner = {inferred};
+
+impl View for {msg_type_name} {{
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+
+impl SpecTryFrom<{msg_type_name}Inner> for {msg_type_name} {{
+    type Error = ();
+
+    open spec fn spec_try_from(v: {msg_type_name}Inner) -> Result<{msg_type_name}, ()> {{
+        match v {{
+            {try_from_int_match_arms}
+            _ => Err(()),
+        }}
+    }}
+}}
+
+impl SpecTryFrom<{msg_type_name}> for {msg_type_name}Inner {{
+    type Error = ();
+
+    open spec fn spec_try_from(v: {msg_type_name}) -> Result<{msg_type_name}Inner, ()> {{
+        match v {{
+            {try_from_enum_match_arms}
+        }}
+    }}
+}}
+
+impl TryFrom<{msg_type_name}Inner> for {msg_type_name} {{
+    type Error = ();
+
+    fn ex_try_from(v: {msg_type_name}Inner) -> Result<{msg_type_name}, ()> {{
+        match v {{
+            {try_from_int_match_arms}
+            _ => Err(()),
+        }}
+    }}
+}}
+
+impl TryFrom<{msg_type_name}> for {msg_type_name}Inner {{
+    type Error = ();
+
+    fn ex_try_from(v: {msg_type_name}) -> Result<{msg_type_name}Inner, ()> {{
+        match v {{
+            {try_from_enum_match_arms}
+        }}
+    }}
+}}
+
+pub struct {msg_type_name}Mapper;
+
+impl View for {msg_type_name}Mapper {{
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+
+impl SpecTryFromInto for {msg_type_name}Mapper {{
+    type Src = {msg_type_name}Inner;
+    type Dst = {msg_type_name};
+
+    proof fn spec_iso(s: Self::Src) {{}}
+
+    proof fn spec_iso_rev(s: Self::Dst) {{}}
+}}
+
+impl TryFromInto for {msg_type_name}Mapper {{
+    type Src<'a> = {msg_type_name}Inner;
+    type Dst<'a> = {msg_type_name};
+
+    type SrcOwned = {msg_type_name}Inner;
+    type DstOwned = {msg_type_name};
+}}
+
+                    "#
+                        )
+                    }
+                } else {
+                    "".to_string()
+                }
+            }
         }
     }
 
     fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
-        let inferred = infer_enum_type(&self.enums);
-        match inferred {
-            IntCombinator::Unsigned(t) => (format!("U{}", t), "".to_string()),
-            IntCombinator::Signed(..) => unimplemented!(),
+        match &self {
+            EnumCombinator::Exhaustive { enums } => {
+                let inferred = infer_enum_type(enums);
+                let int_type = match inferred {
+                    IntCombinator::Unsigned(t) => format!("U{}", t),
+                    IntCombinator::Signed(..) => unimplemented!(),
+                };
+                (
+                    format!("TryMap<{}, {}Mapper>", int_type, name),
+                    "".to_string(),
+                )
+            }
+            EnumCombinator::NonExhaustive { enums } => {
+                let inferred = infer_enum_type(enums);
+                match inferred {
+                    IntCombinator::Unsigned(t) => (format!("U{}", t), "".to_string()),
+                    IntCombinator::Signed(..) => unimplemented!(),
+                }
+            }
         }
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        let inferred = infer_enum_type(&self.enums);
-        match inferred {
-            IntCombinator::Unsigned(t) => format!("U{}", t),
-            IntCombinator::Signed(..) => unimplemented!(),
+        match &self {
+            EnumCombinator::Exhaustive { enums } => {
+                let inferred = infer_enum_type(enums);
+                let int_type = match inferred {
+                    IntCombinator::Unsigned(t) => format!("U{}", t),
+                    IntCombinator::Signed(..) => unimplemented!(),
+                };
+                format!("TryMap {{ inner: {}, mapper: {}Mapper }}", int_type, name)
+            }
+            EnumCombinator::NonExhaustive { enums } => {
+                let inferred = infer_enum_type(enums);
+                match inferred {
+                    IntCombinator::Unsigned(t) => format!("U{}", t),
+                    IntCombinator::Signed(..) => unimplemented!(),
+                }
+            }
         }
     }
 }
@@ -1002,6 +1163,7 @@ impl Codegen for ChoiceCombinator {
                 let mut variants = Vec::new();
                 for (label, combinator) in enums {
                     let variant_type = combinator.gen_msg_type("", mode, ctx);
+                    let label = if label == "_" { "Unrecognized" } else { label };
                     code.push_str(&format!("    {}({}),\n", label, variant_type));
                     variants.push((label.to_string(), variant_type));
                 }
@@ -1145,55 +1307,24 @@ impl Codegen for ChoiceCombinator {
     }
 
     fn gen_combinator_type(&self, name: &str, ctx: &CodegenCtx) -> (String, String) {
-        if let Some(depend_id) = &self.depend_id {
-            // find the corresponding combinator of `depend_id`
-            let combinator = ctx
-                .param_defns
-                .iter()
-                .find_map(|param_defn| match param_defn {
-                    ParamDefn::Dependent { name, combinator } if name == depend_id => {
-                        Some(combinator)
-                    }
-                    _ => None,
-                })
-                .unwrap();
-            // must be an invocation to an enum
-            if let CombinatorInner::Invocation(CombinatorInvocation {
-                func: enum_name, ..
-            }) = &combinator
-            {
-                let enums = ctx
-                    .enums
-                    .get(enum_name.as_str())
-                    .unwrap()
-                    .iter()
-                    .map(|(&name, &value)| Enum {
-                        name: name.to_string(),
-                        value,
-                    })
-                    .collect::<Vec<_>>();
-                let inferred = infer_enum_type(&enums);
-                let (combinator_types, additional_code): (Vec<String>, Vec<String>) = match &self
-                    .choices
-                {
+        if self.depend_id.is_some() {
+            let (combinator_types, additional_code): (Vec<String>, Vec<String>) =
+                match &self.choices {
                     Choices::Enums(enums) => enums
                         .iter()
                         .map(|(_, combinator)| combinator.gen_combinator_type("", ctx))
-                        .map(|(t, code)| (format!("Cond<{}, {}, {}>", inferred, inferred, t), code))
+                        .map(|(t, code)| (format!("Cond<{}>", t), code))
                         .unzip(),
                     // .collect::<Vec<(String, String)>>()
                     Choices::Ints(..) => todo!(),
                     Choices::Arrays(..) => todo!(),
                 };
 
-                let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
-                (
-                    format!("Mapped<{}, {}Mapper>", inner, name),
-                    additional_code.join("\n"),
-                )
-            } else {
-                panic!("unexpected combinator type for dependent id: {}. Maybe something wrong with type checking 🙀", depend_id)
-            }
+            let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
+            (
+                format!("Mapped<{}, {}Mapper>", inner, name),
+                additional_code.join("\n"),
+            )
         } else {
             unimplemented!()
         }
@@ -1222,22 +1353,51 @@ impl Codegen for ChoiceCombinator {
                         .iter()
                         .map(|(variant, combinator)| {
                             let inner = combinator.gen_combinator_expr("", mode, ctx);
-                            let i = ctx
-                                .enums
-                                .get(enum_name.as_str())
-                                .unwrap()
-                                .get(variant.as_str())
-                                .unwrap();
-                            format!(
-                                "Cond {{ lhs: {}, rhs: {}, inner: {} }}",
-                                depend_id, i, inner
-                            )
+                            let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap() {
+                                EnumCombinator::NonExhaustive { enums } => {
+                                    if variant == "_" {
+                                        // default case; the negation of all other cases
+                                        let other_variants = enums
+                                            .iter()
+                                            .filter_map(|Enum { name, value }| {
+                                                if name == "_" {
+                                                    None
+                                                } else {
+                                                    Some(format!("{} == {}", depend_id, value))
+                                                }
+                                            })
+                                            .collect::<Vec<_>>();
+                                        format!("!({})", other_variants.join(" || "))
+                                    } else {
+                                        let value = enums
+                                            .iter()
+                                            .find_map(|Enum { name, value }| {
+                                                if name == variant {
+                                                    Some(value.to_string())
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .unwrap();
+                                        format!("{} == {}", depend_id, value)
+                                    }
+                                }
+                                EnumCombinator::Exhaustive { .. } => {
+                                    let upper_caml_name = snake_to_upper_caml(enum_name);
+                                    format!("{} == {}::{}", depend_id, upper_caml_name, variant)
+                                }
+                            };
+                            format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner)
                         })
                         .collect::<Vec<_>>(),
                     Choices::Ints(..) => todo!(),
                     Choices::Arrays(..) => todo!(),
                 };
-                let inner = fmt_in_pairs(&combinator_exprs, "OrdChoice", Bracket::Parentheses);
+                let constructor = match mode {
+                    Mode::Spec => "OrdChoice",
+                    _ => "OrdChoice",
+                };
+                let inner = fmt_in_pairs(&combinator_exprs, constructor, Bracket::Parentheses);
                 format!("Mapped {{ inner: {}, mapper: {}Mapper }}", inner, name)
             } else {
                 panic!("unexpected combinator type for dependent id: {}. Maybe something wrong with type checking 🙀", depend_id)
@@ -1420,35 +1580,9 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Signed(..) => unimplemented!(),
         };
         let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
-        let value = self.value;
-        let predicate = format!(
-            r#"pub struct IntIs{value};
-impl View for IntIs{value} {{
-    type V = Self;
-    open spec fn view(&self) -> Self::V {{
-        *self
-    }}
-}}
-impl SpecPred for IntIs{value} {{
-    type Input = {tag_type};
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
-        *i == {value}
-    }}
-}}
-impl Pred for IntIs{value} {{
-    type Input<'a> = {tag_type};
-    type InputOwned = {tag_type};
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {{
-        *i == {value}
-    }}
-}}
-        "#
-        );
         (
-            format!("Refined<{}, IntIs{}>", comb_type, self.value),
-            const_decl + &predicate,
+            format!("Refined<{}, TagPred<{}>>", comb_type, tag_type),
+            const_decl,
         )
     }
 
@@ -1458,8 +1592,8 @@ impl Pred for IntIs{value} {{
             IntCombinator::Signed(..) => unimplemented!(),
         };
         format!(
-            "Refined {{ inner: {}, predicate: IntIs{} }}",
-            int_type, self.value
+            "Refined {{ inner: {}, predicate: TagPred({}) }}",
+            int_type, name
         )
     }
 }
@@ -1542,6 +1676,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::properties::*;\n"
         + "use vest::utils::*;\n"
         + "use vest::regular::map::*;\n"
+        + "use vest::regular::tag::*;\n"
         + "use vest::regular::choice::*;\n"
         + "use vest::regular::cond::*;\n"
         + "use vest::regular::uints::*;\n"
@@ -1940,14 +2075,14 @@ pub open spec fn serialize_spec_{name}(msg: Spec{upper_caml_name}{spec_params}) 
 "#));
             // exec
             code.push_str(&format!(
-                r#"pub fn parse_{name}(i: &[u8]{exec_params}) -> (o: Result<(usize, {upper_caml_name}{lifetime}), ()>)
+                r#"pub fn parse_{name}(i: &[u8]{exec_params}) -> (o: Result<(usize, {upper_caml_name}{lifetime}), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_{name}(i@{args_view}) matches Ok(r_) && r@ == r_,
 {{
     {exec_body}.parse(i)
 }}
 
-pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, pos: usize{exec_params}) -> (o: Result<usize, ()>)
+pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, pos: usize{exec_params}) -> (o: Result<usize, SerializeError>)
     ensures
         o matches Ok(n) ==> {{
             &&& serialize_spec_{name}(msg@{args_view}) matches Ok(buf)

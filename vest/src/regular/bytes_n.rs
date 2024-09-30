@@ -39,7 +39,7 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
 }
 
 impl<const N: usize> SecureSpecCombinator for BytesN<N> {
-    open spec fn spec_is_prefix_secure() -> bool {
+    open spec fn is_prefix_secure() -> bool {
         true
     }
 
@@ -74,29 +74,25 @@ impl<const N: usize> Combinator for BytesN<N> {
         Some(N)
     }
 
-    fn exec_is_prefix_secure() -> bool {
-        true
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ()>) {
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if N <= s.len() {
             let s_ = slice_subrange(s, 0, N);
             Ok((N, s_))
         } else {
-            Err(())
+            Err(ParseError::UnexpectedEndOfInput)
         }
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
-        (),
+        SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
             set_range(data, pos, v);
             assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
             Ok(N)
         } else {
-            Err(())
+            Err(SerializeError::InsufficientBuffer)
         }
     }
 }

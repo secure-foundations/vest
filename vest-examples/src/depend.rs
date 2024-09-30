@@ -57,7 +57,7 @@ pub open spec fn spec_parse_msg1(data: Seq<u8>) -> Result<
     }.spec_parse(data)
 }
 
-pub fn parse_msg1<'a>(data: &'a [u8]) -> (o: Result<(usize, ((u8, u16), (&'a [u8], &'a [u8]))), ()>)
+pub fn parse_msg1<'a>(data: &'a [u8]) -> (o: Result<(usize, ((u8, u16), (&'a [u8], &'a [u8]))), ParseError>)
     ensures
         o is Ok ==> o.unwrap()@ == spec_parse_msg1(data@).unwrap(),
         o is Err ==> spec_parse_msg1(data@) is Err,
@@ -93,7 +93,7 @@ pub open spec fn spec_serialize_msg1(v: ((u8, u16), (Seq<u8>, Seq<u8>))) -> Resu
 
 pub fn serialize_msg1(v: ((u8, u16), (&[u8], &[u8])), data: &mut Vec<u8>, pos: usize) -> (o: Result<
     usize,
-    (),
+    SerializeError,
 >)
     ensures
         o is Ok ==> o.unwrap() == spec_serialize_msg1(v@).unwrap().len() && data@ == seq_splice(

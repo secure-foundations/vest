@@ -28,7 +28,7 @@ pub broadcast proof fn size_of_facts()
 }
 
 /// Combinator for parsing and serializing unsigned u8 integers.
-/// 
+///
 /// > **Note**: Currently, little-endian byte order is used for serialization and parsing.
 pub struct U8;
 
@@ -102,7 +102,7 @@ macro_rules! impl_combinator_for_int_type {
             }
 
             impl SecureSpecCombinator for $combinator {
-                open spec fn spec_is_prefix_secure() -> bool {
+                open spec fn is_prefix_secure() -> bool {
                     true
                 }
 
@@ -139,11 +139,7 @@ macro_rules! impl_combinator_for_int_type {
                     Some(size_of::<$int_type>())
                 }
 
-                fn exec_is_prefix_secure() -> bool {
-                    true
-                }
-
-                fn parse(&self, s: &[u8]) -> (res: Result<(usize, $int_type), ()>) {
+                fn parse(&self, s: &[u8]) -> (res: Result<(usize, $int_type), ParseError>) {
                     if s.len() >= size_of::<$int_type>() {
                         let s_ = slice_subrange(s, 0, size_of::<$int_type>());
                         let v = $int_type::ex_from_le_bytes(s_);
@@ -157,11 +153,11 @@ macro_rules! impl_combinator_for_int_type {
                         }
                         Ok((size_of::<$int_type>(), v))
                     } else {
-                        Err(())
+                        Err(ParseError::UnexpectedEndOfInput)
                     }
                 }
 
-                fn serialize(&self, v: $int_type, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, ()>) {
+                fn serialize(&self, v: $int_type, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
                     if pos <= data.len() {
                         if size_of::<$int_type>() <= data.len() - pos {
                             $int_type::ex_to_le_bytes(&v, data, pos);
@@ -172,10 +168,10 @@ macro_rules! impl_combinator_for_int_type {
                             }
                             Ok(size_of::<$int_type>())
                         } else {
-                            Err(())
+                            Err(SerializeError::InsufficientBuffer)
                         }
                     } else {
-                        Err(())
+                        Err(SerializeError::InsufficientBuffer)
                     }
                 }
             }

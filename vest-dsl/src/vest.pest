@@ -56,8 +56,12 @@ wrap_prior      = { (const_combinator ~ ",")* }
 wrap_post       = { ("," ~ const_combinator)* }
 
 /// enum `combinator` for primitive types
-enum_combinator = { enum ~ "{" ~ enum_field+ ~ "}" }
-enum_field      = { variant_id ~ "=" ~ const_int ~ "," }
+// enum_combinator = { enum ~ "{" ~ enum_field+ ~ non_exhaustive_marker? ~ "}" }
+enum_combinator       =  { enum ~ "{" ~ (non_exhaustive_enum | exhaustive_enum) ~ "}" }
+exhaustive_enum       =  { enum_field+ }
+non_exhaustive_enum   =  { enum_field+ ~ non_exhaustive_marker }
+enum_field            =  { variant_id ~ "=" ~ const_int ~ "," }
+non_exhaustive_marker = _{ "..." }
 
 /// ordered choice `combinator`
 choice_combinator = { choose ~ ("(" ~ depend_id ~ ")")? ~ "{" ~ choice+ ~ "}" }
@@ -122,7 +126,7 @@ char  =  { '\u{00}'..'\u{FF}' }
 
 var_id     = @{ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
 const_id   = @{ ASCII_ALPHA_UPPER ~ (ASCII_DIGIT | ASCII_ALPHA_UPPER | "_")* }
-variant_id = @{ ASCII_ALPHA_UPPER ~ (ASCII_DIGIT | ASCII_ALPHA | "_")* }
+variant_id = @{ (ASCII_ALPHA_UPPER ~ (ASCII_DIGIT | ASCII_ALPHA | "_")*) | "_" }
 stream_id  = @{ "$" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
 depend_id  = @{ "@" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
 

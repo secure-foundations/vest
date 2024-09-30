@@ -28,8 +28,12 @@ pub mod depend;
 pub mod depend_cont;
 /// Disjointness for OrdChoice combinator
 pub mod disjoint;
+/// Error combinator
+pub mod fail;
 /// Preceded combinator
 pub mod preceded;
+/// Repeat combinator
+pub mod repeat;
 /// Tag combinator
 pub mod tag;
 /// Tail combinator
