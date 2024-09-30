@@ -2,7 +2,9 @@ msg1 = {
   a: u8 | { 0..10, 32, 100.. },
   b: u16,
   c: [u8; 3],
-  d: Tail,
+  // if `d` is included, msg4 would be insecure
+  // and Vest would (correctly) reject it!!!
+  // d: Tail,
 }
 
 msg2 = {
@@ -23,17 +25,13 @@ a_type = enum {
 }
 
 msg4 = {
-//  a: [u8; 2],
-//  b: [u8; 3],
-  // a: u16,
-  // b: u32,
   @t: a_type,
   v: choose(@t) {
     A => msg1,
     B => msg2,
     C => msg3,
   },
-  // tail: Tail,
+  tail: Tail,
 }
 
 // msg4_v(@t: a_type) = choose(@t) {
