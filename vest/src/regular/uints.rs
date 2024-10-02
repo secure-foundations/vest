@@ -4,7 +4,7 @@ use vstd::prelude::*;
 use vstd::seq_lib::*;
 use vstd::slice::*;
 
-use super::bytes::Bytes;
+use super::bytes_n::BytesN;
 
 verus! {
 
@@ -596,7 +596,7 @@ impl SpecCombinator for U24 {
     type SpecResult = u24;
     
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
-        match Bytes(3).spec_parse(s) {
+        match BytesN::<3>.spec_parse(s) {
             Ok((n, bytes)) => Ok((n, u24([bytes[0], bytes[1], bytes[2]]))),
             _ => Err(()),
         }
@@ -607,7 +607,7 @@ impl SpecCombinator for U24 {
 
     open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
         let bytes = v.0;
-        Bytes(3).spec_serialize(bytes@)
+        BytesN::<3>.spec_serialize(bytes@)
     }
 }
 
@@ -617,14 +617,14 @@ impl SecureSpecCombinator for U24 {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        Bytes(3).lemma_prefix_secure(s1, s2);
+        BytesN::<3>.lemma_prefix_secure(s1, s2);
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
-        Bytes(3).theorem_serialize_parse_roundtrip(v.0@);
-        match Bytes(3).spec_serialize(v.0@) {
+        BytesN::<3>.theorem_serialize_parse_roundtrip(v.0@);
+        match BytesN::<3>.spec_serialize(v.0@) {
             Ok(buf) => {
-                match Bytes(3).spec_parse(buf) {
+                match BytesN::<3>.spec_parse(buf) {
                     Ok((n, bytes)) => {
                         bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
                     }
@@ -636,8 +636,8 @@ impl SecureSpecCombinator for U24 {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
-        Bytes(3).theorem_parse_serialize_roundtrip(s);
-        match Bytes(3).spec_parse(s) {
+        BytesN::<3>.theorem_parse_serialize_roundtrip(s);
+        match BytesN::<3>.spec_parse(s) {
             Ok((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
             }
@@ -670,12 +670,12 @@ impl Combinator for U24 {
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
-        let (n, bytes) = Bytes(3).parse(s)?;
+        let (n, bytes) = BytesN::<3>.parse(s)?;
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 
     fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        Bytes(3).serialize(v.0.as_slice(), data, pos)
+        BytesN::<3>.serialize(v.0.as_slice(), data, pos)
     }
 }
 
