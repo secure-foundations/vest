@@ -4,6 +4,8 @@ use vstd::prelude::*;
 use vstd::seq_lib::*;
 use vstd::slice::*;
 
+use super::bytes::Bytes;
+
 verus! {
 
 global size_of u8 == 1;
@@ -482,6 +484,198 @@ impl FromToBytes for u64 {
 
     fn eq(&self, other: &u64) -> (res: bool) {
         *self == *other
+    }
+}
+
+impl SpecFrom<u8> for usize {
+    open spec fn spec_from(t: u8) -> usize {
+        t as usize
+    }
+}
+
+impl SpecFrom<u16> for usize {
+    open spec fn spec_from(t: u16) -> usize {
+        t as usize
+    }
+}
+
+impl SpecFrom<u32> for usize {
+    open spec fn spec_from(t: u32) -> usize {
+        t as usize
+    }
+}
+
+impl SpecFrom<u64> for usize {
+    open spec fn spec_from(t: u64) -> usize {
+        t as usize
+    }
+}
+
+impl SpecFrom<u24> for usize {
+    open spec fn spec_from(t: u24) -> usize {
+        t.spec_to_u32() as usize
+    }
+}
+
+impl From<u8> for usize {
+    fn ex_from(t: u8) -> usize {
+        t as usize
+    }
+}
+
+impl From<u16> for usize {
+    fn ex_from(t: u16) -> usize {
+        t as usize
+    }
+}
+
+impl From<u32> for usize {
+    fn ex_from(t: u32) -> usize {
+        t as usize
+    }
+}
+
+impl From<u64> for usize {
+    fn ex_from(t: u64) -> usize {
+        t as usize
+    }
+}
+
+impl From<u24> for usize {
+    fn ex_from(t: u24) -> usize {
+        t.to_u32() as usize
+    }
+}
+
+/// Vest's u24 (3-byte unsigned integer) type.
+#[allow(non_camel_case_types)]
+pub struct u24(pub [u8; 3]);
+
+impl View for u24 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl u24 {
+    /// Converts the `u24` to a `u32`.
+    pub open spec fn spec_to_u32(&self) -> u32 {
+        let s = self.0;
+        (s[0] as u32) | (s[1] as u32) << 8 | (s[2] as u32) << 16
+    }
+
+    /// Converts the `u24` to a `u32`.
+    #[verifier::external_body]
+    pub fn to_u32(&self) -> (o: u32)
+        ensures
+            o == self.spec_to_u32(),
+    {
+        let mut bytes = [0; 4];
+        bytes[..3].copy_from_slice(&self.0);
+        u32::from_le_bytes(bytes)
+    }
+}
+
+
+/// Combinator for parsing and serializing unsigned u24 integers.
+///
+/// > **Note**: Currently, little-endian byte order is used for serialization and parsing.
+pub struct U24;
+
+impl View for U24 {
+    type V = U24;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecCombinator for U24 {
+    type SpecResult = u24;
+    
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
+        match Bytes(3).spec_parse(s) {
+            Ok((n, bytes)) => Ok((n, u24([bytes[0], bytes[1], bytes[2]]))),
+            _ => Err(()),
+        }
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    }
+
+    open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
+        let bytes = v.0;
+        Bytes(3).spec_serialize(bytes@)
+    }
+}
+
+impl SecureSpecCombinator for U24 {
+    open spec fn is_prefix_secure() -> bool {
+        true
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        Bytes(3).lemma_prefix_secure(s1, s2);
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
+        Bytes(3).theorem_serialize_parse_roundtrip(v.0@);
+        match Bytes(3).spec_serialize(v.0@) {
+            Ok(buf) => {
+                match Bytes(3).spec_parse(buf) {
+                    Ok((n, bytes)) => {
+                        bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
+        Bytes(3).theorem_parse_serialize_roundtrip(s);
+        match Bytes(3).spec_parse(s) {
+            Ok((n, bytes)) => {
+                assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
+            }
+            _ => {}
+        }
+    }
+    
+}
+
+proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
+    requires
+        a@ =~= b@,
+    ensures
+        a == b,
+{
+    admit();
+}
+
+impl Combinator for U24 {
+    type Result<'a> = u24;
+
+    type Owned = u24;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        Some(3)
+    }
+
+    fn length(&self) -> Option<usize> {
+        Some(3)
+    }
+
+    fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
+        let (n, bytes) = Bytes(3).parse(s)?;
+        Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
+    }
+
+    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        Bytes(3).serialize(v.0.as_slice(), data, pos)
     }
 }
 
