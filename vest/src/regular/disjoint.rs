@@ -2,13 +2,13 @@ use super::bytes::Bytes;
 use super::bytes_n::BytesN;
 use super::choice::OrdChoice;
 use super::cond::Cond;
+use super::depend::SpecDepend;
 use super::fail::Fail;
 use super::map::{Mapped, SpecIso};
 use super::preceded::Preceded;
 use super::refined::Refined;
-use super::depend::SpecDepend;
 use super::tag::{Tag, TagPred};
-use super::uints::{U16, U32, U64, U8};
+use super::uints::*;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -67,19 +67,39 @@ macro_rules! impl_disjoint_for_refined_int {
 
 impl_disjoint_for_int_tag!(Tag<U8, u8>);
 
-impl_disjoint_for_int_tag!(Tag<U16, u16>);
+impl_disjoint_for_int_tag!(Tag<U16Le, u16>);
 
-impl_disjoint_for_int_tag!(Tag<U32, u32>);
+impl_disjoint_for_int_tag!(Tag<U24Le, u24>);
 
-impl_disjoint_for_int_tag!(Tag<U64, u64>);
+impl_disjoint_for_int_tag!(Tag<U32Le, u32>);
+
+impl_disjoint_for_int_tag!(Tag<U64Le, u64>);
+
+impl_disjoint_for_int_tag!(Tag<U16Be, u16>);
+
+impl_disjoint_for_int_tag!(Tag<U24Be, u24>);
+
+impl_disjoint_for_int_tag!(Tag<U32Be, u32>);
+
+impl_disjoint_for_int_tag!(Tag<U64Be, u64>);
 
 impl_disjoint_for_refined_int!(Refined<U8, TagPred<u8>>);
 
-impl_disjoint_for_refined_int!(Refined<U16, TagPred<u16>>);
+impl_disjoint_for_refined_int!(Refined<U16Le, TagPred<u16>>);
 
-impl_disjoint_for_refined_int!(Refined<U32, TagPred<u32>>);
+impl_disjoint_for_refined_int!(Refined<U24Le, TagPred<u24>>);
 
-impl_disjoint_for_refined_int!(Refined<U64, TagPred<u64>>);
+impl_disjoint_for_refined_int!(Refined<U32Le, TagPred<u32>>);
+
+impl_disjoint_for_refined_int!(Refined<U64Le, TagPred<u64>>);
+
+impl_disjoint_for_refined_int!(Refined<U16Be, TagPred<u16>>);
+
+impl_disjoint_for_refined_int!(Refined<U24Be, TagPred<u24>>);
+
+impl_disjoint_for_refined_int!(Refined<U32Be, TagPred<u32>>);
+
+impl_disjoint_for_refined_int!(Refined<U64Be, TagPred<u64>>);
 
 // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
 impl<const N: usize> DisjointFrom<Tag<BytesN<N>, Seq<u8>>> for Tag<BytesN<N>, Seq<u8>> {
@@ -102,7 +122,10 @@ impl DisjointFrom<Tag<Bytes, Seq<u8>>> for Tag<Bytes, Seq<u8>> {
     }
 }
 
-impl<const N: usize> DisjointFrom<Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refined<BytesN<N>, TagPred<Seq<u8>>> {
+impl<const N: usize> DisjointFrom<Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refined<
+    BytesN<N>,
+    TagPred<Seq<u8>>,
+> {
     open spec fn disjoint_from(&self, other: &Refined<BytesN<N>, TagPred<Seq<u8>>>) -> bool {
         self.predicate.0 != other.predicate.0
     }

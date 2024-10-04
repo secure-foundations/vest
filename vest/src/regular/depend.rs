@@ -137,10 +137,14 @@ pub trait Continuation<Input> {
 
     /// The actual continuation function
     fn apply(&self, i: Input) -> (o: Self::Output)
-        requires self.requires(i)
-        ensures self.ensures(i, o);
+        requires
+            self.requires(i),
+        ensures
+            self.ensures(i, o),
+    ;
 
     spec fn requires(&self, i: Input) -> bool;
+
     spec fn ensures(&self, i: Input, o: Self::Output) -> bool;
 }
 
@@ -219,7 +223,7 @@ impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
         &&& self.wf()
         &&& self.fst.parse_requires()
         &&& Fst::V::is_prefix_secure()
-        &&& forall |i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires()
+        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires()
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
@@ -238,7 +242,7 @@ impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
         &&& self.wf()
         &&& self.fst.serialize_requires()
         &&& Fst::V::is_prefix_secure()
-        &&& forall |i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
+        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
@@ -264,4 +268,4 @@ impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
     }
 }
 
-}
+} // verus!
