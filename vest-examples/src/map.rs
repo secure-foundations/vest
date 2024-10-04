@@ -148,7 +148,7 @@ impl Iso for Msg1Mapper {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 fn parse_serialize() -> Result<(), Error> {
-    let msg_inner = (U8, (U16, (Bytes(3), Tail)));
+    let msg_inner = (U8, (U16Le, (Bytes(3), Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -166,7 +166,7 @@ fn parse_serialize() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 fn serialize_parse() -> Result<(), Error> {
-    let msg_inner = (U8, (U16, (Bytes(3), Tail)));
+    let msg_inner = (U8, (U16Le, (Bytes(3), Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
@@ -263,7 +263,7 @@ impl Iso for Msg2Mapper {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 fn parse_serialize2() -> Result<(), Error> {
-    let msg_inner = (U8, (U16, U32));
+    let msg_inner = (U8, (U16Le, U32Le));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -281,7 +281,7 @@ fn parse_serialize2() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 fn serialize_parse2() -> Result<(), Error> {
-    let msg_inner = (U8, (U16, U32));
+    let msg_inner = (U8, (U16Le, U32Le));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let val = Msg2 { a: 1, b: 123, c: 1 };
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -587,8 +587,8 @@ fn parse_serialize4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);
-    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
-    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
+    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper });
+    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
@@ -620,8 +620,8 @@ fn serialize_parse4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);
-    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16, (Bytes(3), Tail))), mapper: Msg1Mapper });
-    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper });
+    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper });
+    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
