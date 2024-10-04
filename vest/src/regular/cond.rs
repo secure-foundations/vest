@@ -120,9 +120,7 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
     }
 }
 
-}
-
-
+} // verus!
 #[cfg(test)]
 mod test {
     #![allow(unused_imports)]
@@ -143,6 +141,7 @@ mod test {
     use vstd::prelude::*;
 
     verus! {
+
 pub type SpecMsg3 = Seq<u8>;
 
 pub type Msg3<'a> = &'a [u8];
@@ -747,7 +746,7 @@ impl SpecPred for Predicate5821512137558126895 {
 }
 
 pub type SpecMsg1Combinator = Mapped<
-    (Refined<U8, Predicate5821512137558126895>, (U16, BytesN<3>)),
+    (Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)),
     Msg1Mapper,
 >;
 
@@ -777,13 +776,13 @@ impl Pred for Predicate5821512137558126895 {
 }
 
 pub type Msg1Combinator = Mapped<
-    (Refined<U8, Predicate5821512137558126895>, (U16, BytesN<3>)),
+    (Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)),
     Msg1Mapper,
 >;
 
-pub type SpecMsg2Combinator = Mapped<(U8, (U16, U32)), Msg2Mapper>;
+pub type SpecMsg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
 
-pub type Msg2Combinator = Mapped<(U8, (U16, U32)), Msg2Mapper>;
+pub type Msg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
 
 pub type SpecMsg4VCombinator = Mapped<
     OrdChoice<
@@ -834,7 +833,7 @@ pub fn a_type() -> (o: ATypeCombinator)
 
 pub open spec fn spec_msg1() -> SpecMsg1Combinator {
     Mapped {
-        inner: (Refined { inner: U8, predicate: Predicate5821512137558126895 }, (U16, BytesN::<3>)),
+        inner: (Refined { inner: U8, predicate: Predicate5821512137558126895 }, (U16Le, BytesN::<3>)),
         mapper: Msg1Mapper,
     }
 }
@@ -844,20 +843,20 @@ pub fn msg1() -> (o: Msg1Combinator)
         o@ == spec_msg1(),
 {
     Mapped {
-        inner: (Refined { inner: U8, predicate: Predicate5821512137558126895 }, (U16, BytesN::<3>)),
+        inner: (Refined { inner: U8, predicate: Predicate5821512137558126895 }, (U16Le, BytesN::<3>)),
         mapper: Msg1Mapper,
     }
 }
 
 pub open spec fn spec_msg2() -> SpecMsg2Combinator {
-    Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper }
+    Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper }
 }
 
 pub fn msg2() -> (o: Msg2Combinator)
     ensures
         o@ == spec_msg2(),
 {
-    Mapped { inner: (U8, (U16, U32)), mapper: Msg2Mapper }
+    Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper }
 }
 
 pub open spec fn spec_msg4_v(t: SpecAType) -> SpecMsg4VCombinator {
@@ -1095,8 +1094,5 @@ pub fn serialize_msg4(msg: Msg4<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Resu
     msg4().serialize(msg, data, pos)
 }
 
-
+} // verus!
 }
-
-}
-

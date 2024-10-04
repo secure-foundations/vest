@@ -2,7 +2,7 @@ use super::bytes::Bytes;
 use super::bytes_n::BytesN;
 use super::tag::Tag;
 use super::tail::Tail;
-use super::uints::{U16, U32, U64, U8};
+use super::uints::{U16Le, U32Le, U64Le, U8};
 use vstd::prelude::*;
 
 verus! {
@@ -24,7 +24,7 @@ macro_rules! impl_reflexive_clone {
     };
 }
 
-impl_reflexive_clone!(U8, U16, U32, U64, Tail);
+impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 
 macro_rules! impl_clone_for_int_tags {
     ($($combinator:ty),*) => {
@@ -43,7 +43,7 @@ macro_rules! impl_clone_for_int_tags {
     };
 }
 
-impl_clone_for_int_tags!(Tag<U8, u8>, Tag<U16, u16>, Tag<U32, u32>, Tag<U64, u64>);
+impl_clone_for_int_tags!(Tag<U8, u8>, Tag<U16Le, u16>, Tag<U32Le, u32>, Tag<U64Le, u64>);
 
 // impl<T: FromToBytes + Copy> Clone for Tag<Int<T>, T> {
 //     fn clone(&self) -> (out: Self)
