@@ -17,8 +17,8 @@ broadcast use vest::regular::uints::size_of_facts;
 
 exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
     let c1 = Cond { cond: a == 0 && b == 1, inner: U8 };
-    let c2 = Cond { cond: 0 < a && a < 5 && b == 2, inner: U16 };
-    let c3 = Cond { cond: a >= 5 && b == 2, inner: U32 };
+    let c2 = Cond { cond: 0 < a && a < 5 && b == 2, inner: U16Le };
+    let c3 = Cond { cond: a >= 5 && b == 2, inner: U32Le };
 
     let choice = ord_choice!(c1, c2, c3);
 
@@ -39,9 +39,9 @@ exec fn choice_parse_serialize() -> Result<(), Error> {
     let c3 = Tag::new(U8, 3);
     let c4 = Tag::new(U8, 4);
     let g1 = (Bytes(4), Tail);
-    let g2 = (U32, (U16, U8));
-    let g3 = (Tag::new(U8, 10), U32);
-    let g4 = (BytesN::<12>, (U16, (U8, U8)));
+    let g2 = (U32Le, (U16Le, U8));
+    let g3 = (Tag::new(U8, 10), U32Le);
+    let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
     let ord_choice1 = ord_choice!(
         (c1, g1),
         (c2, g2),
@@ -111,9 +111,9 @@ exec fn choice_serialize_parse() -> Result<(), Error> {
     let c3 = Tag::new(U8, 3);
     let c4 = Tag::new(U8, 4);
     let g1 = (Bytes(4), Tail);
-    let g2 = (U32, (U16, U8));
-    let g3 = (Tag::new(U8, 10), U32);
-    let g4 = (BytesN::<12>, (U16, (U8, U8)));
+    let g2 = (U32Le, (U16Le, U8));
+    let g3 = (Tag::new(U8, 10), U32Le);
+    let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
     let ord_choice1 = ord_choice!(
         (c1, g1),
         (c2, g2),

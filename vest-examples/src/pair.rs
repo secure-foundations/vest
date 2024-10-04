@@ -12,7 +12,7 @@ verus! {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 exec fn parse_serialize() -> Result<(), Error> {
-    let msg1 = ((Tag::new(U8, 1), U32), Bytes(3));
+    let msg1 = ((Tag::new(U8, 1), U32Le), Bytes(3));
     let mut data1 = my_vec![1u8, 0x40u8, 0xE2u8, 0x01u8, 0x00u8, 0u8, 0u8, 1u8, 0u8, 0u8, 0u8, 0u8];
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n1, val1) = msg1.parse(data1.as_slice())?;
@@ -38,7 +38,7 @@ exec fn parse_serialize() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 exec fn serialize_parse() -> Result<(), Error> {
-    let msg1 = ((Tag::new(U8, 1), U32), Bytes(3));
+    let msg1 = ((Tag::new(U8, 1), U32Le), Bytes(3));
     let mut bytes = my_vec![0u8, 0u8, 1u8];
     let val1 = (((), 123456u32), bytes.as_slice());
     assert(bytes@ == seq![0u8, 0u8, 1u8]);

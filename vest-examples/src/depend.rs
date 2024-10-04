@@ -7,9 +7,9 @@ use vstd::prelude::*;
 
 verus! {
 
-pub open spec fn msg1() -> SpecDepend<(U8, U24), (Bytes, Bytes)> {
+pub open spec fn msg1() -> SpecDepend<(U8, U24Be), (Bytes, Bytes)> {
     SpecDepend {
-        fst: (U8, U24),
+        fst: (U8, U24Be),
         snd: |deps| msg1_snd(deps),
     }
 }
@@ -40,7 +40,7 @@ impl Continuation<(u8, u24)> for Msg1Snd {
 }
 
 pub fn mk_msg1() -> (o: Depend<
-    (U8, U24),
+    (U8, U24Be),
     (Bytes, Bytes),
     Msg1Snd,
     >)
@@ -48,7 +48,7 @@ pub fn mk_msg1() -> (o: Depend<
         o@ == msg1(),
 {
     Depend {
-        fst: (U8, U24),
+        fst: (U8, U24Be),
         snd: Msg1Snd,
         spec_snd: Ghost(|deps| msg1_snd(deps)),
     }
