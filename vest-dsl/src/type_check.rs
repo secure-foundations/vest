@@ -64,6 +64,7 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
             Definition::ConstCombinator { name, .. } => {
                 global_ctx.const_combinators.insert(name);
             }
+            Definition::Endianess(_) => {}
             _ => unimplemented!(),
         }
     }
@@ -89,6 +90,7 @@ fn check_defn(defn: &Definition, local_ctx: &mut LocalCtx, global_ctx: &GlobalCt
         } => {
             check_const_combinator(const_combinator, local_ctx, global_ctx);
         }
+        Definition::Endianess(_) => {}
         _ => unimplemented!(),
     }
 }
@@ -264,7 +266,7 @@ fn check_const_int_combinator(combinator: &IntCombinator, value: &i128) {
                 panic!("Value {} is out of range for u64", value);
             }
         }
-        _ => panic!("Unsupported int combinator"),
+        _ => panic!("Unsupported const int combinator"),
     }
 }
 

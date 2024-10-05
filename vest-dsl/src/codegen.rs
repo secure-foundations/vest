@@ -132,17 +132,20 @@ pub struct CodegenCtx<'a> {
     pub format_lifetimes: HashMap<String, LifetimeAnn>,
     pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
     pub param_defns: Vec<ParamDefn>,
+    pub endianess: Endianess,
 }
 
 impl<'a> CodegenCtx<'a> {
     pub fn new(
         format_lifetimes: HashMap<String, LifetimeAnn>,
         enums: HashMap<&'a str, EnumCombinator>,
+        endianness: Endianess,
     ) -> Self {
         Self {
             format_lifetimes,
             enums,
             param_defns: Vec::new(),
+            endianess: endianness,
         }
     }
 
@@ -215,15 +218,21 @@ impl<'a> CodegenCtx<'a> {
             }
         }
         // init the format lifetimes with None
-        let mut format_lifetimes: HashMap<String, LifetimeAnn> = ast
-            .iter()
-            .map(|defn| match defn {
-                Definition::Combinator { name, .. } => (name.to_string(), LifetimeAnn::None),
-                Definition::ConstCombinator { name, .. } => (name.to_string(), LifetimeAnn::None),
-                _ => unimplemented!(),
-            })
-            .collect();
+        let mut format_lifetimes: HashMap<String, LifetimeAnn> = HashMap::new();
+        for defn in ast {
+            match defn {
+                Definition::Combinator { name, .. } => {
+                    format_lifetimes.insert(name.to_string(), LifetimeAnn::None);
+                }
+                Definition::ConstCombinator { name, .. } => {
+                    format_lifetimes.insert(name.to_string(), LifetimeAnn::None);
+                }
+                _ => {}
+            }
+        }
 
+        // default endianness is little
+        let mut endianness = Endianess::Little;
         let call_graph = build_call_graph(ast);
         // NOTE: by now ast should already be topologically sorted
         ast.iter().for_each(|defn| match defn {
@@ -258,10 +267,13 @@ impl<'a> CodegenCtx<'a> {
                 };
                 format_lifetimes.insert(name.to_string(), lifetime);
             }
+            Definition::Endianess(end) => {
+                endianness = *end;
+            }
             _ => {}
         });
 
-        Self::new(format_lifetimes, ctx.enums.clone())
+        Self::new(format_lifetimes, ctx.enums.clone(), endianness)
     }
 }
 
@@ -437,8 +449,13 @@ impl Codegen for ConstraintIntCombinator {
                 }
             }
         }
+        let endianness = match ctx.endianess {
+            Endianess::Little => "Le",
+            Endianess::Big => "Be",
+        };
         let int_type = match &self.combinator {
-            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
+            IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -503,8 +520,13 @@ impl Codegen for ConstraintIntCombinator {
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let endianess = match ctx.endianess {
+            Endianess::Little => "Le",
+            Endianess::Big => "Be",
+        };
         let int_type = match &self.combinator {
-            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
+            IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -550,10 +572,14 @@ impl Codegen for BytesCombinator {
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let into = match mode {
+            Mode::Spec => ".spec_into()",
+            _ => ".ex_into()",
+        };
         match &self.len {
             LengthSpecifier::Const(len) => (format!("BytesN::<{}>", len), "".to_string()),
             LengthSpecifier::Dependent(depend_id) => {
-                (format!("Bytes({} as usize)", depend_id), "".to_string())
+                (format!("Bytes({}{})", depend_id, into), "".to_string())
             }
         }
     }
@@ -1744,8 +1770,13 @@ impl Codegen for ConstIntCombinator {
     }
 
     fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let endianess = match ctx.endianess {
+            Endianess::Big => "Be",
+            Endianess::Little => "Le",
+        };
         let (comb_type, tag_type) = match &self.combinator {
-            IntCombinator::Unsigned(t) => (format!("U{}", t), format!("u{}", t)),
+            IntCombinator::Unsigned(t) if *t == 8 => ("U8".to_string(), "u8".to_string()),
+            IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianess), format!("u{}", t)),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
@@ -1760,8 +1791,13 @@ impl Codegen for ConstIntCombinator {
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let endianess = match ctx.endianess {
+            Endianess::Big => "Be",
+            Endianess::Little => "Le",
+        };
         let int_type = match &self.combinator {
-            IntCombinator::Unsigned(t) => format!("U{}", t),
+            IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
+            IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         (
@@ -1850,10 +1886,11 @@ impl Pred for BytesPredicate{hash} {{
 pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
     let mut codegen_ctx = CodegenCtx::with_ast(ast, ctx);
     let mut code = String::new();
-    gen_msg_type(ast, &mut code, &codegen_ctx);
-    gen_combinator_type(ast, &mut code, &mut codegen_ctx);
-    gen_combinator_expr(ast, &mut code, &mut codegen_ctx);
-    gen_parser_and_serializer(ast, &mut code, &codegen_ctx);
+    let ast = filter_endianess(ast);
+    gen_msg_type(&ast, &mut code, &codegen_ctx);
+    gen_combinator_type(&ast, &mut code, &mut codegen_ctx);
+    gen_combinator_expr(&ast, &mut code, &mut codegen_ctx);
+    gen_parser_and_serializer(&ast, &mut code, &codegen_ctx);
     "#![allow(unused_imports)]\n".to_string()
         + "use vstd::prelude::*;\n"
         + "use vest::properties::*;\n"
@@ -1870,6 +1907,13 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::regular::and_then::*;\n"
         + "use vest::regular::refined::*;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
+}
+
+fn filter_endianess(ast: &[Definition]) -> Vec<Definition> {
+    ast.iter()
+        .filter(|&defn| !matches!(defn, Definition::Endianess(_)))
+        .cloned()
+        .collect::<Vec<_>>()
 }
 
 fn gen_msg_type(ast: &[Definition], code: &mut String, ctx: &CodegenCtx) {
@@ -1940,6 +1984,7 @@ fn gen_combinator_type_for_definition(defn: &Definition, code: &mut String, ctx:
         } => {
             unimplemented!("Top-level const format is not supported yet");
         }
+        Definition::Endianess(_) => {}
         _ => unimplemented!(),
     }
     code.push('\n');
@@ -2066,6 +2111,7 @@ fn gen_combinator_expr_for_definition(defn: &Definition, code: &mut String, ctx:
         } => {
             unimplemented!("Top-level const format is not supported yet");
         }
+        Definition::Endianess(_) => {}
         _ => unimplemented!(),
     }
     code.push('\n');
