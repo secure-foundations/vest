@@ -16,14 +16,19 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
         .map(|sorted| {
             // reorder the definitions
             ast.sort_by_cached_key(|defn| {
-                sorted
-                    .iter()
-                    .position(|name_| match defn {
-                        Definition::Combinator { name, .. } => name == name_,
-                        Definition::ConstCombinator { name, .. } => name == name_,
-                        _ => false,
-                    })
-                    .unwrap()
+                // skip the endianness definition
+                if let Definition::Endianess(_) = defn {
+                    0
+                } else {
+                    sorted
+                        .iter()
+                        .position(|name_| match defn {
+                            Definition::Combinator { name, .. } => name == name_,
+                            Definition::ConstCombinator { name, .. } => name == name_,
+                            _ => false,
+                        })
+                        .unwrap()
+                }
             });
         })
         .unwrap_or_else(|_| {
