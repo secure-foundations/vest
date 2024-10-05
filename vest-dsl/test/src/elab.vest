@@ -1,3 +1,5 @@
+!BIG_ENDIAN
+
 msg_d = {
   const f1: [u8; 4] = [1; 4],
   const f2: u16 = 0x1234,
@@ -21,7 +23,7 @@ content_type = enum {
 
 msg_c = {
   @f2: content_type,
-  @f3: u8,
+  @f3: u24,
   f4: [u8; @f3] >>= choose(@f2) {
     C0 => content_0(@f3),
     C1 => u16,
@@ -30,4 +32,4 @@ msg_c = {
   },
 }
 
-content_0(@num: u8) = [u8; @num]
+content_0(@num: u24) = [u8; @num]
