@@ -90,7 +90,7 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<T> Combinator for BuilderCombinator<T> where T: Builder + View, T::V: Builder {
+impl<T> Combinator for BuilderCombinator<T> where T: Builder + View {
     type Result<'a> = ();
 
     type Owned = ();
