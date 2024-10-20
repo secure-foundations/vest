@@ -1,10 +1,9 @@
 mod choice;
 mod depend;
-// mod dependent;
 mod enums;
 mod map;
 mod pair;
-// mod tlv;
+mod tlv;
 mod wireguard;
 
 macro_rules! my_vec {
