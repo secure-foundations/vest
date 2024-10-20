@@ -143,8 +143,10 @@ pub trait Continuation<Input> {
             self.ensures(i, o),
     ;
 
+    /// The precondition of the continuation
     spec fn requires(&self, i: Input) -> bool;
 
+    /// The postcondition of the continuation
     spec fn ensures(&self, i: Input, o: Self::Output) -> bool;
 }
 

@@ -5,6 +5,7 @@ pub mod bytes;
 /// BytesN combinator
 pub mod bytes_n;
 /// OrdChoice combinator
+#[allow(missing_docs)]
 pub mod choice;
 /// Cond combinator
 pub mod cond;
