@@ -408,12 +408,18 @@ impl Codegen for CombinatorInner {
 }
 
 impl Codegen for ConstraintIntCombinator {
-    fn gen_msg_type(&self, name: &str, _mode: Mode, _ctx: &CodegenCtx) -> String {
+    fn gen_msg_type(&self, name: &str, mode: Mode, _ctx: &CodegenCtx) -> String {
         let int_type = format!("{}", self.combinator);
         if name.is_empty() {
             int_type
         } else {
-            format!("pub type {} = {};\n", name, int_type)
+            let type_alias_name = match mode {
+                Mode::Spec => &format!("Spec{}", name),
+                Mode::Exec(_) => name,
+                Mode::ExecOwned => &format!("{}Owned", name),
+            };
+
+            format!("pub type {} = {};\n", type_alias_name, int_type)
         }
     }
 
@@ -1668,15 +1674,45 @@ impl Codegen for ArrayCombinator {
 
 impl Codegen for VecCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        todo!()
+        let inner = match self {
+            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+                combinator.gen_msg_type("", mode, ctx)
+            }
+        };
+
+        let type_name = match mode {
+            Mode::Spec => format!("Seq<{}>", inner),
+            _ => format!("RepeatResult<{}>", inner),
+        };
+        if name.is_empty() {
+            type_name
+        } else {
+            let type_alias_name = match mode {
+                Mode::Spec => &format!("Spec{}", name),
+                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
+                Mode::Exec(LifetimeAnn::None) => name,
+                Mode::ExecOwned => &format!("{}Owned", name),
+            };
+            format!("pub type {} = {};\n", type_alias_name, type_name)
+        }
     }
 
     fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
+        let inner = match self {
+            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+                combinator.gen_combinator_type("", mode, ctx)
+            }
+        };
+        (format!("Repeat<{}>", inner.0), inner.1)
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
+        let inner = match self {
+            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+                combinator.gen_combinator_expr("", mode, ctx)
+            }
+        };
+        (format!("Repeat({})", inner.0), inner.1)
     }
 }
 
@@ -1916,6 +1952,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::regular::depend::*;\n"
         + "use vest::regular::and_then::*;\n"
         + "use vest::regular::refined::*;\n"
+        + "use vest::regular::repeat::*;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }
 
