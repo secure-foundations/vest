@@ -14,12 +14,6 @@ pub struct Repeat<C>(pub C);
 #[derive(Debug)]
 pub struct RepeatResult<T>(pub Vec<T>);
 
-// /// Owned version of RepeatResult
-// #[derive(Debug)]
-// pub struct RepeatResultOwned<C: Combinator>(pub Vec<C::Owned>) where
-//     <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
-// ;
-
 impl<C: View> View for Repeat<C> {
     type V = Repeat<<C as View>::V>;
 
@@ -28,16 +22,6 @@ impl<C: View> View for Repeat<C> {
     }
 }
 
-// impl<C: Combinator> View for RepeatResultOwned<C> where
-//     <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
-//  {
-//     type V = Seq<<C::Owned as View>::V>;
-//
-//     open spec fn view(&self) -> Self::V {
-//         Seq::new(self.0.len() as nat, |i: int| self.0@[i]@)
-//     }
-// }
-
 impl<T: View> View for RepeatResult<T> {
     type V = Seq<T::V>;
 
@@ -45,16 +29,6 @@ impl<T: View> View for RepeatResult<T> {
         Seq::new(self.0.len() as nat, |i: int| self.0@[i]@)
     }
 }
-
-// impl<'a, C: Combinator> View for RepeatResult<'a, C> where
-//     <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
-//  {
-//     type V = Seq<<C::Owned as View>::V>;
-//
-//     open spec fn view(&self) -> Self::V {
-//         Seq::new(self.0.len() as nat, |i: int| self.0@[i]@)
-//     }
-// }
 
 impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
     type SpecResult = Seq<C::SpecResult>;
