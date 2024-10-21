@@ -256,6 +256,11 @@ fn check_const_int_combinator(combinator: &IntCombinator, value: &i128) {
                 panic!("Value {} is out of range for u16", value);
             }
         }
+        IntCombinator::Unsigned(24) => {
+            if *value < 0 || *value > 0xFFFFFF {
+                panic!("Value {} is out of range for u24", value);
+            }
+        }
         IntCombinator::Unsigned(32) => {
             if *value < u32::MIN.into() || *value > u32::MAX.into() {
                 panic!("Value {} is out of range for u32", value);

@@ -474,13 +474,18 @@ impl Codegen for ConstraintIntCombinator {
             );
             // impl SpecPred
             let input_type = format!("{}", self.combinator);
+            let (spec_as_u32, as_u32) = if input_type == "u24" {
+                (".spec_as_u32()", ".as_u32()")
+            } else {
+                ("", "")
+            };
             let constraints = gen_constraints(constraint);
             let impl_spec_pred = format!(
                 r#"impl SpecPred for Predicate{hash} {{
     type Input = {input_type};
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
-        let i = *i;
+        let i = (*i){spec_as_u32};
         if {constraints} {{
             true
         }} else {{
@@ -496,7 +501,7 @@ impl Codegen for ConstraintIntCombinator {
     type InputOwned = {input_type};
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {{
-        let i = *i;
+        let i = (*i){as_u32};
         if {constraints} {{
             true
         }} else {{
