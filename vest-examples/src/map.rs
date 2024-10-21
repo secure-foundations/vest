@@ -462,6 +462,7 @@ pub enum Msg4Owned {
 }
 
 pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
+
 pub type Msg4InnerOwned = ord_choice_result!(Msg1Owned, Msg2, Msg3Owned);
 
 impl View for Msg4<'_> {
@@ -587,7 +588,10 @@ fn parse_serialize4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);
-    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper });
+    let msg1 = Preceded(
+        tag1,
+        Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper },
+    );
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
@@ -620,7 +624,10 @@ fn serialize_parse4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1);
     let tag2 = Tag::new(U8, 2);
     let tag3 = Tag::new(U8, 3);
-    let msg1 = Preceded(tag1, Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper });
+    let msg1 = Preceded(
+        tag1,
+        Mapped { inner: (U8, (U16Le, (Bytes(3), Tail))), mapper: Msg1Mapper },
+    );
     let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
     let msg3 = Preceded(tag3, Mapped { inner: BytesN::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);

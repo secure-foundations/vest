@@ -1,3 +1,4 @@
 mod codegen;
 mod elab;
-mod test;
+mod enums;
+mod repeat;

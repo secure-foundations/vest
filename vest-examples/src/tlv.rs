@@ -1,4 +1,3 @@
-
 #![allow(unused_imports)]
 
 use vest::properties::*;
@@ -1065,7 +1064,5 @@ pub fn serialize_msg_a(msg: MsgA<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Res
 {
     msg_a().serialize(msg, data, pos)
 }
-
-
 
 } // verus!
