@@ -642,6 +642,11 @@ impl Codegen for CombinatorInvocation {
         if name.is_empty() {
             format!("{}{}", invocked, lifetime)
         } else {
+            let name = match mode {
+                Mode::Spec => format!("Spec{}", name),
+                Mode::Exec(_) => name.to_owned(),
+                Mode::ExecOwned => format!("{}Owned", name),
+            };
             format!(
                 "pub type {}{} = {}{};\n",
                 name, lifetime, invocked, lifetime
