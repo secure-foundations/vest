@@ -32,6 +32,30 @@ impl LocalCtx {
 pub struct CombinatorSig<'a> {
     pub name: &'a str,
     pub param_defns: &'a [ParamDefn],
+    /// Fully resolved combinator for a top-level combinator definition
+    /// We need to resolve for two reasons:
+    ///
+    /// * Combinator invocations (aliases) will need to be resolved to the actual combinator
+    /// * TODO: Combinators that contains `>>=` (and_then) will need to be resolved to whatever the
+    ///   `and_then` combinator is. For example, if we have a combinator `a` that is defined as
+    ///   `b >>= c`, the return type of `a` will be the return type of `c`.
+    pub resolved_combinator: &'a CombinatorInner,
+}
+
+impl<'a> GlobalCtx<'a> {
+    fn resolve(&'a self, combinator: &'a CombinatorInner) -> &'a CombinatorInner {
+        match combinator {
+            CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
+                let combinator_sig = self
+                    .combinators
+                    .iter()
+                    .find(|sig| sig.name == func)
+                    .unwrap_or_else(|| panic!("Combinator `{}` is not defined", func));
+                combinator_sig.resolved_combinator
+            }
+            combinator => combinator,
+        }
+    }
 }
 
 pub fn check(ast: &[Definition]) -> GlobalCtx {
@@ -44,19 +68,35 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
     for defn in ast {
         match defn {
             Definition::Combinator {
-                name, param_defns, ..
+                name,
+                param_defns,
+                combinator,
             } => {
-                global_ctx
-                    .combinators
-                    .insert(CombinatorSig { name, param_defns });
-                if let Definition::Combinator {
-                    combinator:
-                        Combinator {
-                            inner: CombinatorInner::Enum(enum_combinator),
-                            ..
-                        },
+                // Check for combinator invocations and resolve them
+                let resolved: &CombinatorInner = match &combinator.inner {
+                    CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
+                        let combinator_sig = global_ctx
+                            .combinators
+                            .iter()
+                            .find(|sig| sig.name == func)
+                            .unwrap_or_else(|| panic!("Combinator `{}` is not defined", func));
+                        combinator_sig.resolved_combinator
+                    }
+                    combinator => combinator,
+                };
+
+                if !global_ctx.combinators.insert(CombinatorSig {
+                    name,
+                    param_defns,
+                    resolved_combinator: resolved,
+                }) {
+                    panic!("Duplicate combinator definition `{}`", name);
+                }
+
+                if let Combinator {
+                    inner: CombinatorInner::Enum(enum_combinator),
                     ..
-                } = defn
+                } = combinator
                 {
                     global_ctx.enums.insert(name, enum_combinator.clone());
                 }
@@ -410,7 +450,7 @@ fn check_combinator_invocation(
                         _ => unreachable!(),
                     }
                 });
-            if arg_combinator != combinator {
+            if global_ctx.resolve(arg_combinator) != global_ctx.resolve(combinator) {
                 panic!("Argument type mismatch");
             }
         }
@@ -432,7 +472,7 @@ fn check_bytes_combinator(
     len: &LengthSpecifier,
     param_defns: &[ParamDefn],
     local_ctx: &mut LocalCtx,
-    _global_ctx: &GlobalCtx,
+    global_ctx: &GlobalCtx,
 ) {
     match len {
         LengthSpecifier::Const(..) => {
@@ -458,7 +498,7 @@ fn check_bytes_combinator(
                         _ => unreachable!(),
                     }
                 });
-            match combinator {
+            match global_ctx.resolve(combinator) {
                 CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                     combinator: IntCombinator::Unsigned(_),
                     ..
