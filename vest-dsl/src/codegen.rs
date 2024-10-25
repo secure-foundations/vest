@@ -1302,11 +1302,16 @@ impl TryFromInto for {msg_type_name}Mapper {{
     }
 
     fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let endianness = match ctx.endianess {
+            Endianess::Little => "Le",
+            Endianess::Big => "Be",
+        };
         match &self {
             EnumCombinator::Exhaustive { enums } => {
                 let inferred = infer_enum_type(enums);
                 let int_type = match inferred {
-                    IntCombinator::Unsigned(t) => format!("U{}", t),
+                    IntCombinator::Unsigned(8) => "U8".to_string(),
+                    IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
                 };
                 (
@@ -1317,7 +1322,8 @@ impl TryFromInto for {msg_type_name}Mapper {{
             EnumCombinator::NonExhaustive { enums } => {
                 let inferred = infer_enum_type(enums);
                 match inferred {
-                    IntCombinator::Unsigned(t) => (format!("U{}", t), "".to_string()),
+                    IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
+                    IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
                     IntCombinator::Signed(..) => unimplemented!(),
                 }
             }
@@ -1325,11 +1331,16 @@ impl TryFromInto for {msg_type_name}Mapper {{
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let endianness = match ctx.endianess {
+            Endianess::Little => "Le",
+            Endianess::Big => "Be",
+        };
         match &self {
             EnumCombinator::Exhaustive { enums } => {
                 let inferred = infer_enum_type(enums);
                 let int_type = match inferred {
-                    IntCombinator::Unsigned(t) => format!("U{}", t),
+                    IntCombinator::Unsigned(8) => "U8".to_string(),
+                    IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
                 };
                 (
@@ -1340,7 +1351,8 @@ impl TryFromInto for {msg_type_name}Mapper {{
             EnumCombinator::NonExhaustive { enums } => {
                 let inferred = infer_enum_type(enums);
                 match inferred {
-                    IntCombinator::Unsigned(t) => (format!("U{}", t), "".to_string()),
+                    IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
+                    IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
                     IntCombinator::Signed(..) => unimplemented!(),
                 }
             }
@@ -1426,6 +1438,9 @@ impl Codegen for ChoiceCombinator {
                     Mode::Spec => "spec_from",
                     _ => "ex_from",
                 };
+                if variants.len() < 2 {
+                    panic!("`Choice` should have at least two variants")
+                }
                 let nested_eithers = gen_nested_eithers(variants.len(), "m");
                 code.push_str(&format!(
                     "impl{} {}<{}{}> for {}{} {{\n",
