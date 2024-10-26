@@ -1,5 +1,6 @@
 // tempararily disable dead code warning
 #![allow(dead_code)]
+#![allow(unused_variables)]
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -153,16 +154,18 @@ impl<'a> CodegenCtx<'a> {
         // first we need to determine which formats' types need lifetime annotations
 
         /// helper function to determine if a format needs lifetime annotations
-        fn need_lifetime(combinator: &Combinator) -> bool {
+        fn need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
             use CombinatorInner::*;
-            match &combinator.inner {
+            let resolved = ctx.resolve(combinator);
+            // after resolving, we don't need to consider `and_then` or `invocation` anymore
+            match resolved {
                 Bytes(_) => true,
                 Tail(_) => true,
                 Struct(StructCombinator(fields)) => fields.iter().any(|field| match field {
-                    StructField::Ordinary { combinator, .. } => need_lifetime(combinator),
-                    StructField::Dependent { combinator, .. } => need_lifetime(combinator),
+                    StructField::Ordinary { combinator, .. } => need_lifetime(combinator, ctx),
+                    StructField::Dependent { combinator, .. } => need_lifetime(combinator, ctx),
                     StructField::Const { combinator, .. } => need_lifetime_const(combinator),
-                    _ => false,
+                    _ => unimplemented!(),
                 }),
                 Wrap(WrapCombinator {
                     prior,
@@ -170,33 +173,34 @@ impl<'a> CodegenCtx<'a> {
                     post,
                 }) => {
                     prior.iter().any(need_lifetime_const)
-                        || need_lifetime(combinator)
+                        || need_lifetime(combinator, ctx)
                         || post.iter().any(need_lifetime_const)
                 }
                 Choice(ChoiceCombinator { choices, .. }) => match choices {
                     Choices::Enums(enums) => enums
                         .iter()
-                        .any(|(_, combinator)| need_lifetime(combinator)),
-                    Choices::Ints(ints) => {
-                        ints.iter().any(|(_, combinator)| need_lifetime(combinator))
-                    }
+                        .any(|(_, combinator)| need_lifetime(combinator, ctx)),
+                    Choices::Ints(ints) => ints
+                        .iter()
+                        .any(|(_, combinator)| need_lifetime(combinator, ctx)),
                     Choices::Arrays(arrays) => arrays
                         .iter()
-                        .any(|(_, combinator)| need_lifetime(combinator)),
+                        .any(|(_, combinator)| need_lifetime(combinator, ctx)),
                 },
                 SepBy(SepByCombinator { combinator, sep }) => {
                     let combinator = Combinator {
                         inner: Vec(combinator.clone()),
                         and_then: None,
                     };
-                    need_lifetime(&combinator) || need_lifetime_const(sep)
+                    need_lifetime(&combinator, ctx) || need_lifetime_const(sep)
                 }
                 Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
-                    need_lifetime(combinator)
+                    need_lifetime(combinator, ctx)
                 }
-                Array(ArrayCombinator { combinator, .. }) => need_lifetime(combinator),
-                Option(OptionCombinator(combinator)) => need_lifetime(combinator),
-                ConstraintInt(_) | Enum(_) | Apply(_) | Invocation(_) => false,
+                Array(ArrayCombinator { combinator, .. }) => need_lifetime(combinator, ctx),
+                Option(OptionCombinator(combinator)) => need_lifetime(combinator, ctx),
+                ConstraintInt(_) | Enum(_) | Apply(_) => false,
+                Invocation(_) => unreachable!("invocation should be resolved by now"),
             }
         }
 
@@ -239,12 +243,8 @@ impl<'a> CodegenCtx<'a> {
             Definition::Combinator {
                 name, combinator, ..
             } => {
-                let invocations = call_graph.get(name).unwrap();
-                let lifetime = if invocations
-                    .iter()
-                    .any(|name| format_lifetimes.get(name).unwrap() == &LifetimeAnn::Some)
-                    || need_lifetime(combinator)
-                {
+                // let invocations = call_graph.get(name).unwrap();
+                let lifetime = if need_lifetime(combinator, ctx) {
                     LifetimeAnn::Some
                 } else {
                     LifetimeAnn::None
