@@ -1,0 +1,769 @@
+!BIG_ENDIAN
+
+uint_0_ff = u8
+uint_1_ff = u8 | { 1..0xff }
+uint_0_ffff = u16
+uint_1_ffff = u16 | { 1..0xffff }
+uint_2_ffff = u16 | { 2..0xffff }
+uint_0_fffe = u16 | { 0..0xfffe }
+uint_2_fffe = u16 | { 2..0xfffe }
+
+// opaque XXX<0..2^8-1>
+opaque_0_ff = {
+  @l: uint_0_ff,
+  data: [u8; @l],
+}
+
+opaque_1_ff = {
+  @l: uint_1_ff,
+  data: [u8; @l],
+}
+
+opaque_0_ffff = {
+  @l: uint_0_ffff,
+  data: [u8; @l],
+}
+
+opaque_1_ffff = {
+  @l: uint_1_ffff,
+  data: [u8; @l],
+}
+
+opaque_2_ffff = {
+  @l: uint_2_ffff,
+  data: [u8; @l],
+}
+
+opaque_0_ffffff = {
+  @l: u24,
+  data: [u8; @l],
+}
+
+opaque_1_ffffff = {
+  @l: u24 | { 1..0xffffff },
+  data: [u8; @l],
+}
+
+protocol_version = enum {
+  SSLv3 = 0x0300,
+  TLSv1_0 = 0x0301,
+  TLSv1_1 = 0x0302,
+  TLSv1_2 = 0x0303,
+  TLSv1_3 = 0x0304,
+  ...
+}
+
+extension_type = enum {
+  ServerName = 0,
+  MaxFragmentLength = 1,
+  StatusRequest = 5,
+  SupportedGroups = 10,
+  ECPointFormats = 11,
+  SignatureAlgorithms = 13,
+  UseSRTP = 14,
+  Heartbeat = 15,
+  ApplicationLayerProtocolNegotiation = 16,
+  SigedCertificateTimestamp = 18,
+  ClientCertificateType = 19,
+  ServerCertificateType = 20,
+  Padding = 21,
+  EncryptThenMac = 22,
+  ExtendedMasterSecret = 23,
+  SessionTicket = 35,
+  PreSharedKey = 41,
+  EarlyData = 42,
+  SupportedVersions = 43,
+  Cookie = 44,
+  PskKeyExchangeModes = 45,
+  CertificateAuthorities = 47,
+  OidFilters = 48,
+  PostHandshakeAuth = 49,
+  SignatureAlgorithmsCert = 50,
+  KeyShare = 51,
+  ...
+}
+
+name_type = enum {
+  HostName = 0,
+  ...
+}
+
+host_name = opaque_1_ffff
+
+unknown_name = opaque_1_ffff
+
+server_name = {
+  @name_type: name_type,
+  name: choose(@name_type) {
+    HostName => host_name,
+    _ => unknown_name,
+  },
+}
+
+server_name_list = {
+  @l: uint_1_ffff,
+  list: [u8; @l] >>= Vec<server_name>,
+}
+
+max_fragment_length = enum {
+  Pow2_9 = 1,
+  Pow2_10 = 2,
+  Pow2_11 = 3,
+  Pow2_12 = 4,
+  ...
+}
+
+// certificate_status_type = enum {
+//   OCSP = 1,
+// }
+
+responder_id = opaque_1_ffff
+ocsp_extensions = opaque_0_ffff
+
+responder_id_list = {
+  @l: uint_0_ffff,
+  list: [u8; @l] >>= Vec<responder_id>,
+}
+
+oscp_status_request = {
+  responder_id_list: responder_id_list,
+  extensions: ocsp_extensions,
+}
+
+certificate_status_request = {
+  const status_type: u8 = 1,
+  request: oscp_status_request,
+  // @status_type: certificate_status_type,
+  // request: choose(@status_type) {
+  //   OCSP => oscp_status_request,
+  // },
+}
+
+ocsp_response = opaque_1_ffffff
+
+certificate_status = {
+  const status_type: u8 = 1,
+  response: ocsp_response,
+  // @status_type: certificate_status_type,
+  // response: choose(@status_type) {
+  //   OCSP => ocsp_response,
+  // },
+}
+
+named_group = enum {
+  // Old curves (RFC 4492)
+  Sect163k1 = 1, Sect163r1 = 2, Sect163r2 = 3,
+  Sect193r1 = 4, Sect193r2 = 5, Sect233k1 = 6,
+  Sect233r1 = 7, Sect239k1 = 8, Sect283k1 = 9,
+  Sect283r1 = 10, Sect409k1 = 11, Sect409r1 = 12,
+  Sect571k1 = 13, Sect571r1 = 14, Secp160k1 = 15,
+  Secp160r1 = 16, Secp160r2 = 17, Secp192k1 = 18,
+  Secp192r1 = 19, Secp224k1 = 20, Secp224r1 = 21,
+  Secp256k1 = 22,  
+
+  // Elliptic Curve Groups (ECDHE)
+  Secp256r1 = 0x0017, Secp384r1 = 0x0018, Secp521r1 = 0x0019,
+  X25519 = 0x001D, X448 = 0x001E,
+
+  // Finite Field Groups (DHE)
+  Ffdhe2048 = 0x0100, Ffdhe3072 = 0x0101, Ffdhe4096 = 0x0102,
+  Ffdhe6144 = 0x0103, Ffdhe8192 = 0x0104,
+
+  // Reserved Code Points, USE plain int to parse
+  // ffdhe_private_use = 0x01FC..0x01FF,
+  // ecdhe_private_use = 0xFE00..0xFEFF,
+  ...
+}
+
+named_group_list = {
+  @l: uint_2_ffff,
+  list: [u8; @l] >>= Vec<named_group>,
+}
+
+ec_point_format = enum {
+  Uncompressed = 0,
+  AnsiX962CompressedPrime = 1,
+  AnsiX962CompressedChar2 = 2,
+  ...
+}
+
+ec_point_format_list = {
+  @l: uint_1_ff,
+  list: [u8; @l] >>= Vec<ec_point_format>,
+}
+
+signature_scheme = enum {
+  // Legacy schemes
+  RSA_PKCS1_MD5 = 0x0101,
+  RSA_PKCS1_SHA1 = 0x0201,
+  ECDSA_MD5 = 0x0103,
+  ECDSA_SHA1 = 0x0203,
+
+  // RSASSA-PKCS1-v1_5 algorithms
+  RSA_PKCS1_SHA256 = 0x0401,
+  RSA_PKCS1_SHA384 = 0x0501,
+  RSA_PKCS1_SHA512 = 0x0601,
+
+  // ECDSA algorithms
+  ECDSA_SECP256R1_SHA256 = 0x0403,
+  ECDSA_SECP384R1_SHA384 = 0x0503,
+  ECDSA_SECP521R1_SHA512 = 0x0603,
+
+  // RSASSA-PSS algorithms with public key OID rsaEncryption
+  RSA_PSS_RSAE_SHA256 = 0x0804,
+  RSA_PSS_RSAE_SHA384 = 0x0805,
+  RSA_PSS_RSAE_SHA512 = 0x0806,
+
+  // EdDSA algorithms
+  ED25519 = 0x0807,
+  ED448 = 0x0808,
+
+  // RSASSA-PSS algorithms with public key OID RSASSA-PSS
+  RSA_PSS_PSS_SHA256 = 0x0809,
+  RSA_PSS_PSS_SHA384 = 0x080A,
+  RSA_PSS_PSS_SHA512 = 0x080B,
+
+  // Reserved Code Points
+  ...
+}
+
+// struct {
+//   SignatureScheme supported_signature_algorithms<2..2^16-2>;
+// } SignatureSchemeList;
+signature_scheme_list = {
+  @l: uint_2_fffe,
+  list: [u8; @l] >>= Vec<signature_scheme>,
+}
+
+srtp_protection_profile = [u8; 2]
+srtp_protection_profiles = {
+  @l: uint_2_ffff,
+  list: [u8; @l] >>= Vec<srtp_protection_profile>,
+}
+
+use_srtp_data = {
+  profiles: srtp_protection_profiles,
+  srtp_mki: opaque_0_ff,
+}
+
+heartbeat_mode = enum {
+  PeerAllowedToSend = 1,
+  PeerNotAllowedToSend = 2,
+  ...
+}
+
+heartbeat_extension = {
+  mode: heartbeat_mode,
+}
+
+protocol_name = opaque_1_ff
+protocol_name_list = {
+  @l: uint_2_ffff,
+  list: [u8; @l] >>= Vec<protocol_name>,
+}
+
+serialized_sct = opaque_1_ffff
+signed_certificate_timestamp_list = {
+  @l: uint_1_ffff,
+  list: [u8; @l] >>= Vec<serialized_sct>,
+}
+
+certificate_type = enum {
+  X509 = 0,
+  RawPublicKey = 2,
+  ...
+}
+
+client_cert_type_client_extension = {
+  @l: uint_1_ff,
+  types: [u8; @l] >>= Vec<certificate_type>,
+}
+
+client_cert_type_server_extension = {
+  client_certificate_type: certificate_type,
+}
+
+server_cert_type_client_extension = {
+  @l: uint_1_ff,
+  types: [u8; @l] >>= Vec<certificate_type>,
+}
+
+server_cert_type_server_extension = {
+  server_certificate_type: certificate_type,
+}
+
+zero_byte = {
+  const zero: u8 = 0,
+}
+
+padding_extension = {
+  @l: uint_0_ffff,
+  padding: [u8; @l] >>= Vec<zero_byte>,
+}
+
+// struct {
+//   opaque ticket_data<0..2^16-1>;
+// } SessionTicket;
+session_ticket = opaque_0_ffff
+
+psk_identity = {
+  identity: opaque_1_ffff,
+  obfuscated_ticket_age: u32,
+}
+
+psk_binder_entry = {
+  @l: u8 | { 32..255 },
+  entries: [u8; @l],
+}
+
+psk_identities = {
+  @l: u16 | { 7..0xffff },
+  identities: [u8; @l] >>= Vec<psk_identity>,
+}
+
+psk_binder_entries = {
+  @l: u16 | { 33..0xffff },
+  binders: [u8; @l] >>= Vec<psk_binder_entry>,
+}
+
+offered_psks = {
+  identities: psk_identities,
+  binders: psk_binder_entries,
+}
+
+pre_shared_key_client_extension = {
+  offers: offered_psks,
+}
+
+pre_shared_key_server_extension = {
+  selected_identity: u16,
+}
+
+early_data_indication_new_session_ticket = {
+  max_early_data_size: u32,
+}
+
+supported_versions_client = {
+  @l: u8 | { 2..254 },
+  versions: [u8; @l] >>= Vec<protocol_version>,
+}
+
+supported_versions_server = {
+  selected_version: protocol_version,
+}
+
+// struct {
+//   opaque cookie<1..2^16-1>;
+// } Cookie;
+cookie = opaque_1_ffff
+
+psk_key_exchange_mode = enum {
+  PSK_KE = 0,
+  PSK_DHE_KE = 1,
+  ...
+}
+
+psk_key_exchange_modes = {
+  @l: uint_1_ff,
+  modes: [u8; @l] >>= Vec<psk_key_exchange_mode>,
+}
+
+distinguished_name = opaque_1_ffff
+
+certificate_authorities_extension = {
+  @l: u16 | { 3..0xffff },
+  authorities: [u8; @l] >>= Vec<distinguished_name>,
+}
+
+oid_filter = {
+  certificate_extension_oid: opaque_1_ff,
+  certificate_extension_values: opaque_0_ffff,
+}
+
+oid_filter_extension = {
+  @l: uint_0_ffff,
+  filters: [u8; @l] >>= Vec<oid_filter>,
+}
+
+uncompressed_point_representation32 = {
+  const legacy_form: u8 = 4, 
+  x: [u8; 32],
+  y: [u8; 32],
+}
+
+uncompressed_point_representation48 = {
+  const legacy_form: u8 = 4,
+  x: [u8; 48],
+  y: [u8; 48],
+}
+
+uncompressed_point_representation66 = {
+  const legacy_form: u8 = 4,
+  x: [u8; 66],
+  y: [u8; 66],
+}
+
+montgomery_point32 = {
+  const legacy_form: u8 = 4,
+  point: [u8; 32],
+}
+
+montgomery_form56 = {
+  const legacy_form: u8 = 4,
+  point: [u8; 56],
+}
+
+sever_dh_params = {
+  dh_p: opaque_1_ffff,
+  dh_g: opaque_1_ffff,
+  dh_ys: opaque_1_ffff,
+}
+
+key_exchange_data = opaque_1_ffff
+
+key_share_entry = {
+  @group: named_group,
+  key_exchange: choose(@group) {
+    Secp256r1 => uncompressed_point_representation32,
+    Secp384r1 => uncompressed_point_representation48,
+    Secp521r1 => uncompressed_point_representation66,
+
+    X25519 => montgomery_point32,
+    X448 => montgomery_form56,
+
+    Ffdhe2048 => sever_dh_params,
+    Ffdhe3072 => sever_dh_params,
+    Ffdhe4096 => sever_dh_params,
+    Ffdhe6144 => sever_dh_params,
+    Ffdhe8192 => sever_dh_params,
+
+    _ => key_exchange_data,
+  },
+}
+
+key_share_client_hello = {
+  @l: uint_0_ffff,
+  client_shares: [u8; @l] >>= Vec<key_share_entry>,
+}
+
+unknown_extension = opaque_0_ffff
+
+empty = [u8; 0]
+
+client_hello_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    ServerName => empty,
+    MaxFragmentLength => max_fragment_length,
+    StatusRequest => empty,
+    ECPointFormats => ec_point_format_list,
+    UseSRTP => use_srtp_data,
+    Heartbeat => heartbeat_mode,
+    ApplicationLayerProtocolNegotiation => protocol_name_list,
+    SigedCertificateTimestamp => signed_certificate_timestamp_list,
+    ClientCertificateType => client_cert_type_client_extension,
+    ServerCertificateType => server_cert_type_client_extension,
+    Padding => padding_extension,
+    EncryptThenMac => empty,
+    ExtendedMasterSecret => empty,
+    // SessionTicket => session_ticket,
+    // PreSharedKey => pre_shared_key_client_extension,
+    // EarlyData => empty,
+    // SupportedVersions => supported_versions_client,
+    // Cookie => cookie,
+    // PskKeyExchangeModes => psk_key_exchange_modes,
+    // CertificateAuthorities => certificate_authorities_extension,
+    // OidFilters => oid_filter_extension,
+    // PostHandshakeAuth => empty,
+    // SignatureAlgorithmsCert => signature_scheme_list,
+    // KeyShare => key_share_client_hello,
+    _ => unknown_extension,
+  },
+}
+
+sever_hello_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    ServerName => server_name_list,
+    MaxFragmentLength => max_fragment_length,
+    StatusRequest => certificate_status_request,
+    SupportedGroups => named_group_list,
+    ECPointFormats => ec_point_format_list,
+    SignatureAlgorithms => signature_scheme_list,
+    UseSRTP => srtp_protection_profiles,
+    Heartbeat => heartbeat_mode,
+    ApplicationLayerProtocolNegotiation => protocol_name_list,
+    SigedCertificateTimestamp => signed_certificate_timestamp_list,
+    ClientCertificateType => client_cert_type_client_extension,
+    ServerCertificateType => server_cert_type_client_extension,
+    Padding => padding_extension,
+    EncryptThenMac => empty,
+    ExtendedMasterSecret => empty,
+    // SessionTicket => session_ticket,
+    // PreSharedKey => pre_shared_key_client_extension,
+    // EarlyData => empty,
+    // SupportedVersions => supported_versions_client,
+    // Cookie => cookie,
+    // PskKeyExchangeModes => psk_key_exchange_modes,
+    // CertificateAuthorities => certificate_authorities_extension,
+    // OidFilters => oid_filter_extension,
+    // PostHandshakeAuth => empty,
+    // SignatureAlgorithmsCert => signature_scheme_list,
+    // KeyShare => key_share_client_hello,
+    _ => unknown_extension,
+  },
+}
+
+extension = {
+  extension_type: extension_type,
+  extension_data: opaque_0_ffff,
+}
+
+alert_level = enum {
+  Warning = 1,
+  Fatal = 2,
+}
+
+alert_description = enum {
+  CloseNotify = 0,
+  UnexpectedMessage = 10,
+  BadRecordMac = 20,
+  RecordOverflow = 22,
+  HandshakeFailure = 40,
+  BadCertificate = 42,
+  UnsupportedCertificate = 43,
+  CertificateRevoked = 44,
+  CertificateExpired = 45,
+  CertificateUnknown = 46,
+  IllegalParameter = 47,
+  UnknownCA = 48,
+  AccessDenied = 49,
+  DecodeError = 50,
+  DecryptError = 51,
+  ProtocolVersion = 70,
+  InsufficientSecurity = 71,
+  InternalError = 80,
+  InappropriateFallback = 86,
+  UserCanceled = 90,
+  MissingExtension = 109,
+  UnsupportedExtension = 110,
+  UnrecognizedName = 112,
+  BadCertificateStatusResponse = 113,
+  UnknownPSKIdentity = 115,
+  CertificateRequired = 116,
+  NoApplicationProtocol = 120,
+}
+
+alert = {
+  level: alert_level,
+  description: alert_description,
+}
+
+content_type = enum {
+  Invalid = 0,
+  ChangeCipherSpec = 20,
+  Alert = 21,
+  Handshake = 22,
+  ApplicationData = 23,
+}
+
+tls_plaintext = {
+  content_type: content_type,
+  legacy_record_version: protocol_version,
+  fragment: opaque_0_ffff,
+}
+
+tls_ciphertext = {
+  opaque_type: content_type,
+  version: protocol_version,
+  encrypted_record: opaque_0_ffff,
+}
+
+random = [u8; 32]
+
+cipher_suite = enum {
+  TLS_AES_128_GCM_SHA256 = 0x1301,
+  TLS_AES_256_GCM_SHA384 = 0x1302,
+  TLS_CHACHA20_POLY1305_SHA256 = 0x1303,
+  TLS_AES_128_CCM_SHA256 = 0x1304,
+  TLS_AES_128_CCM_8_SHA256 = 0x1305,
+  ...
+}
+
+client_hello = {
+  legacy_version: protocol_version,
+  random: random,
+  legacy_session_id: session_id,
+  cipher_suites: cipher_suite_list,
+  legacy_compression_methods: opaque_1_ff,
+  extensions: client_extensions,
+}
+
+server_hello = {
+  legacy_version: protocol_version,
+  random: random,
+  legacy_session_id_echo: session_id,
+  cipher_suite: cipher_suite,
+  const legacy_compression_method: u8 = 0,
+  extensions: server_extensions,
+}
+
+cipher_suite_list = {
+  @l: uint_2_fffe,
+  list: [u8; @l] >>= Vec<cipher_suite>,
+}
+
+session_id = {
+  @l: u8 | { 0..32 },
+  id: [u8; @l],
+}
+
+client_extensions = {
+  @l: u16 | { 8..0xffff },
+  extensions: [u8; @l] >>= Vec<extension>,
+}
+
+server_extensions = {
+  @l: u16 | { 6..0xffff },
+  extensions: [u8; @l] >>= Vec<extension>,
+}
+
+certificate_request_extensions = {
+  @l: uint_2_ffff,
+  extensions: [u8; @l] >>= Vec<extension>,
+}
+
+encrypted_extensions = {
+  @l: uint_0_ffff,
+  extensions: [u8; @l] >>= Vec<extension>,
+}
+
+new_session_ticket_extensions = {
+  @l: uint_0_fffe,
+  extensions: [u8; @l] >>= Vec<extension>,
+}
+
+certificate_extensions = encrypted_extensions
+
+certificate_request = {
+  certificate_request_context: opaque_0_ff,
+  extensions: certificate_request_extensions,
+}
+
+// struct {
+//     select (certificate_type) {
+//         case RawPublicKey:
+//           /* From RFC 7250 ASN.1_subjectPublicKeyInfo */
+//           opaque ASN1_subjectPublicKeyInfo<1..2^24-1>;
+// 
+//         case X509:
+//           opaque cert_data<1..2^24-1>;
+//     };
+//     Extension extensions<0..2^16-1>;
+// } CertificateEntry;
+certificate_entry = {
+  cert_data: opaque_1_ffffff,
+  extensions: certificate_extensions,
+}
+
+certificate_list = {
+  @l: u24,
+  list: [u8; @l] >>= Vec<certificate_entry>,
+}
+
+certificate = {
+  certificate_request_context: opaque_0_ff,
+  certificate_list: certificate_list,
+}
+
+certificate_verify = {
+  signature_scheme: signature_scheme,
+  signature: opaque_0_ffff,
+}
+
+// struct {
+//     opaque verify_data[Hash.length];
+// } Finished;
+finished(@digest_size: u24) = [u8; @digest_size]
+
+new_session_ticket = {
+  ticket_lifetime: u32,
+  ticket_age_add: u32,
+  ticket_nonce: opaque_0_ff,
+  ticket: opaque_1_ffff,
+  extensions: new_session_ticket_extensions,
+}
+
+key_update_request = enum {
+  UpdateNotRequested = 0,
+  UpdateRequested = 1,
+}
+
+key_update = {
+  request_update: key_update_request,
+}
+
+// enum {
+//       hello_request_RESERVED(0),
+//       client_hello(1),
+//       server_hello(2),
+//       hello_verify_request_RESERVED(3),
+//       new_session_ticket(4),
+//       end_of_early_data(5),
+//       hello_retry_request_RESERVED(6),
+//       encrypted_extensions(8),
+//       certificate(11),
+//       server_key_exchange_RESERVED(12),
+//       certificate_request(13),
+//       server_hello_done_RESERVED(14),
+//       certificate_verify(15),
+//       client_key_exchange_RESERVED(16),
+//       finished(20),
+//       certificate_url_RESERVED(21),
+//       certificate_status_RESERVED(22),
+//       supplemental_data_RESERVED(23),
+//       key_update(24),
+//       message_hash(254),
+//       (255)
+//   } HandshakeType;
+handshake_type = enum {
+  // HelloRequest = 0,
+  ClientHello = 1,
+  ServerHello = 2,
+  // HelloVerifyRequest = 3,
+  NewSessionTicket = 4,
+  EndOfEarlyData = 5,
+  // HelloRetryRequest = 6,
+  EncryptedExtensions = 8,
+  Certificate = 11,
+  // ServerKeyExchange = 12,
+  CertificateRequest = 13,
+  // ServerHelloDone = 14,
+  CertificateVerify = 15,
+  // ClientKeyExchange = 16,
+  Finished = 20,
+  // CertificateUrl = 21,
+  // CertificateStatus = 22,
+  // SupplementalData = 23,
+  KeyUpdate = 24,
+  // MessageHash = 254,
+}
+
+handshake = {
+  @msg_type: handshake_type,
+  @length: u24,
+  msg: [u8; @length] >>= choose(@msg_type) {
+    ClientHello => client_hello,
+    ServerHello => server_hello,
+    NewSessionTicket => new_session_ticket,
+    EndOfEarlyData => empty,
+    EncryptedExtensions => encrypted_extensions,
+    Certificate => certificate,
+    CertificateRequest => certificate_request,
+    CertificateVerify => certificate_verify,
+    Finished => finished(@length),
+    KeyUpdate => key_update,
+  },
+}
