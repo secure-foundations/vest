@@ -26,8 +26,10 @@ pub mod clone;
 pub mod depend;
 /// Disjointness for OrdChoice combinator
 pub mod disjoint;
-/// Error combinator
+/// Fail combinator
 pub mod fail;
+/// Success combinator
+pub mod success;
 /// Preceded combinator
 pub mod preceded;
 /// Repeat combinator
