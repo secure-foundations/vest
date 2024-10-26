@@ -617,18 +617,20 @@ fn check_choice_combinator(
                         }
                         check_combinator(combinator, param_defns, local_ctx, global_ctx);
                     }
-                    // check for exhaustiveness
-                    let defined_variants: HashSet<&str> = enum_variants
-                        .iter()
-                        .map(|Enum { name, .. }| name.as_str())
-                        .collect();
-                    if defined_variants != variants {
-                        let missing_variants: Vec<&str> =
-                            defined_variants.difference(&variants).copied().collect();
-                        panic!(
-                            "Missing variants in dependent choice: {}",
-                            missing_variants.join(", ")
-                        );
+                    if !is_non_exhaustive {
+                        // check for exhaustiveness
+                        let defined_variants: HashSet<&str> = enum_variants
+                            .iter()
+                            .map(|Enum { name, .. }| name.as_str())
+                            .collect();
+                        if defined_variants != variants {
+                            let missing_variants: Vec<&str> =
+                                defined_variants.difference(&variants).copied().collect();
+                            panic!(
+                                "Missing variants in dependent choice: {}",
+                                missing_variants.join(", ")
+                            );
+                        }
                     }
                 } else {
                     panic!("Dependent field must be an enum");
