@@ -95,6 +95,11 @@ pub trait Combinator: View where
                 &&& self@.spec_parse(s@) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
             },
             res is Err ==> self@.spec_parse(s@) is Err,
+            self@.spec_parse(s@) matches Ok((m, w)) ==> {
+                &&& res is Ok
+                &&& res matches Ok((n, v)) ==> m == n && w == v@
+            },
+            self@.spec_parse(s@) is Err ==> res is Err,
     ;
 
     /// Pre-condition for serialization.
