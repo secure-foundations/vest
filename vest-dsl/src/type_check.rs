@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::zip;
 
+#[derive(Debug, Clone)]
 pub struct GlobalCtx<'a> {
     pub combinators: HashSet<CombinatorSig<'a>>,
     pub const_combinators: HashSet<&'a str>,
@@ -36,14 +37,21 @@ pub struct CombinatorSig<'a> {
     /// We need to resolve for two reasons:
     ///
     /// * Combinator invocations (aliases) will need to be resolved to the actual combinator
-    /// * TODO: Combinators that contains `>>=` (and_then) will need to be resolved to whatever the
+    /// * Combinators that contains `>>=` (and_then) will need to be resolved to whatever the
     ///   `and_then` combinator is. For example, if we have a combinator `a` that is defined as
     ///   `b >>= c`, the return type of `a` will be the return type of `c`.
-    pub resolved_combinator: &'a CombinatorInner,
+    pub resolved_combinator: CombinatorInner,
 }
 
 impl<'a> GlobalCtx<'a> {
-    fn resolve(&'a self, combinator: &'a CombinatorInner) -> &'a CombinatorInner {
+    pub fn resolve(&'a self, combinator: &'a Combinator) -> &'a CombinatorInner {
+        if let Some(and_then) = &combinator.and_then {
+            self.resolve(and_then)
+        } else {
+            self.resolve_alias(&combinator.inner)
+        }
+    }
+    pub fn resolve_alias(&'a self, combinator: &'a CombinatorInner) -> &'a CombinatorInner {
         match combinator {
             CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
                 let combinator_sig = self
@@ -51,7 +59,7 @@ impl<'a> GlobalCtx<'a> {
                     .iter()
                     .find(|sig| sig.name == func)
                     .unwrap_or_else(|| panic!("Combinator `{}` is not defined", func));
-                combinator_sig.resolved_combinator
+                &combinator_sig.resolved_combinator
             }
             combinator => combinator,
         }
@@ -72,23 +80,13 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
                 param_defns,
                 combinator,
             } => {
-                // Check for combinator invocations and resolve them
-                let resolved: &CombinatorInner = match &combinator.inner {
-                    CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-                        let combinator_sig = global_ctx
-                            .combinators
-                            .iter()
-                            .find(|sig| sig.name == func)
-                            .unwrap_or_else(|| panic!("Combinator `{}` is not defined", func));
-                        combinator_sig.resolved_combinator
-                    }
-                    combinator => combinator,
-                };
+                // Check for combinator invocations and `and_then`s and resolve them
+                let resolved_combinator = global_ctx.resolve(combinator).to_owned();
 
                 if !global_ctx.combinators.insert(CombinatorSig {
                     name,
                     param_defns,
-                    resolved_combinator: resolved,
+                    resolved_combinator,
                 }) {
                     panic!("Duplicate combinator definition `{}`", name);
                 }
@@ -431,27 +429,41 @@ fn check_combinator_invocation(
     zip(args, combinator_sig.param_defns).for_each(|(arg, param_defn)| match (arg, param_defn) {
         (Param::Stream(_), ParamDefn::Stream { .. }) => {}
         (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
-            let arg_combinator = local_ctx
-                .dependent_fields
-                .get(depend_id)
-                .map(|combinator| &combinator.inner)
-                .unwrap_or_else(|| {
-                    let param_defn = param_defns
-                        .iter()
-                        .find(|param_defn| match param_defn {
-                            ParamDefn::Dependent { name, .. } => name == depend_id,
-                            _ => false,
-                        })
-                        .unwrap_or_else(|| {
-                            panic!("`{}` is not defined as a dependent field", depend_id);
-                        });
-                    match param_defn {
-                        ParamDefn::Dependent { combinator, .. } => combinator,
-                        _ => unreachable!(),
+            // 1. try to find `depend_id` in local_ctx
+            if let Some(arg_combinator) = local_ctx.dependent_fields.get(depend_id) {
+                if global_ctx.resolve(arg_combinator) != global_ctx.resolve_alias(combinator) {
+                    panic!(
+                        "Argument type mismatch: expected {}, got {}",
+                        combinator, arg_combinator
+                    );
+                }
+            } else {
+                // 2. try to find `depend_id` in param_defns
+                let param_defn = param_defns
+                    .iter()
+                    .find(|param_defn| match param_defn {
+                        ParamDefn::Dependent { name, .. } => name == depend_id,
+                        _ => false,
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("`{}` is not found in current scope", depend_id);
+                    });
+                match param_defn {
+                    ParamDefn::Dependent {
+                        combinator: combinator_,
+                        ..
+                    } => {
+                        if global_ctx.resolve_alias(combinator_)
+                            != global_ctx.resolve_alias(combinator)
+                        {
+                            panic!(
+                                "Argument type mismatch: expected {}, got {}",
+                                combinator, combinator_
+                            );
+                        }
                     }
-                });
-            if global_ctx.resolve(arg_combinator) != global_ctx.resolve(combinator) {
-                panic!("Argument type mismatch");
+                    _ => unreachable!(),
+                }
             }
         }
         _ => panic!("Argument type mismatch"),
@@ -479,31 +491,38 @@ fn check_bytes_combinator(
             // nothing to check
         }
         LengthSpecifier::Dependent(depend_id) => {
-            let combinator = local_ctx
-                .dependent_fields
-                .get(depend_id)
-                .map(|combinator| &combinator.inner)
-                .unwrap_or_else(|| {
-                    let param_defn = param_defns
-                        .iter()
-                        .find(|param_defn| match param_defn {
-                            ParamDefn::Dependent { name, .. } => name == depend_id,
-                            _ => false,
-                        })
-                        .unwrap_or_else(|| {
-                            panic!("`{}` is not defined as a dependent field", depend_id);
-                        });
-                    match param_defn {
-                        ParamDefn::Dependent { combinator, .. } => combinator,
-                        _ => unreachable!(),
+            // 1. try to find `depend_id` in local_ctx
+            if let Some(combinator) = local_ctx.dependent_fields.get(depend_id) {
+                match global_ctx.resolve(combinator) {
+                    CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                        combinator: IntCombinator::Unsigned(_),
+                        ..
+                    }) => {}
+                    _ => panic!("Length specifier must be an unsigned int"),
+                }
+            } else {
+                // 2. try to find `depend_id` in param_defns
+                let param_defn = param_defns
+                    .iter()
+                    .find(|param_defn| match param_defn {
+                        ParamDefn::Dependent { name, .. } => name == depend_id,
+                        _ => false,
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("`{}` is not found in current scope", depend_id);
+                    });
+                match param_defn {
+                    ParamDefn::Dependent { combinator, .. } => {
+                        match global_ctx.resolve_alias(combinator) {
+                            CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                                combinator: IntCombinator::Unsigned(_),
+                                ..
+                            }) => {}
+                            _ => panic!("Length specifier must be an unsigned int"),
+                        }
                     }
-                });
-            match global_ctx.resolve(combinator) {
-                CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                    combinator: IntCombinator::Unsigned(_),
-                    ..
-                }) => {}
-                _ => panic!("Length specifier must be an unsigned int"),
+                    _ => unreachable!(),
+                }
             }
         }
     }
