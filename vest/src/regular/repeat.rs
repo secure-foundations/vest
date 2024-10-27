@@ -11,7 +11,7 @@ verus! {
 pub struct Repeat<C>(pub C);
 
 /// Wrappers around Vec so that their View's can be implemented as DeepView
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RepeatResult<T>(pub Vec<T>);
 
 impl<C: View> View for Repeat<C> {

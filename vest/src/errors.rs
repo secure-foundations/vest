@@ -55,3 +55,52 @@ impl std::convert::From<SerializeError> for Error {
 }
 
 } // verus!
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ParseError::AndThenUnusedBytes => {
+                write!(f, "`AndThen` combinator did not consume all bytes")
+            }
+            ParseError::BuilderError => write!(f, "Builder combinator failed"),
+            ParseError::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),
+            ParseError::OrdChoiceNoMatch => {
+                write!(f, "`OrdChoice` combinator did not match any of its options")
+            }
+            ParseError::CondFailed => write!(f, "`Cond` combinator failed"),
+            ParseError::SizeOverflow => write!(f, "Arithmetic overflow"),
+            ParseError::TryMapFailed => write!(f, "`TryMap` combinator failed"),
+            ParseError::RefinedPredicateFailed => {
+                write!(f, "`Refined` combinator predicate failed")
+            }
+            ParseError::RepeatEmptyElement => write!(f, "`Repeat` combinator could not terminate"),
+            ParseError::Other(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl std::fmt::Display for SerializeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            SerializeError::InsufficientBuffer => write!(f, "Insufficient buffer"),
+            SerializeError::AndThenUnusedBytes => write!(
+                f,
+                "`AndThen` combinator did not serialize expected number of bytes"
+            ),
+            SerializeError::CondFailed => write!(f, "`Cond` combinator failed"),
+            SerializeError::SizeOverflow => write!(f, "Arithmetic overflow"),
+            SerializeError::TryMapFailed => write!(f, "`TryMap` combinator failed"),
+            SerializeError::RefinedPredicateFailed => {
+                write!(f, "`Refined` combinator predicate failed")
+            }
+            SerializeError::RepeatEmptyElement => {
+                write!(f, "`Repeat` combinator could not terminate")
+            }
+            SerializeError::Other(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl std::error::Error for ParseError {}
+
+impl std::error::Error for SerializeError {}

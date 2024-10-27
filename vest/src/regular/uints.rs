@@ -919,7 +919,7 @@ impl From<u24> for usize {
 /// Vest's u24 (3-byte unsigned integer) type.
 /// For simplicity, this type always stores the integer in big-endian byte order.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct u24(pub [u8; 3]);
 
 impl View for u24 {
