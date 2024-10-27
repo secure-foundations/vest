@@ -202,7 +202,7 @@ impl<C: Combinator> Repeat<C> where
                     =~= seq_splice(old(data)@, (pos + len) as usize, s)
             },
     {
-        if pos > usize::MAX - len || pos + len >= data.len() {
+        if pos > usize::MAX - len || pos + len > data.len() {
             return Err(SerializeError::InsufficientBuffer);
         }
         if v.0.len() == 0 {
