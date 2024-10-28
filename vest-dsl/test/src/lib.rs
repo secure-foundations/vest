@@ -1,5 +1,5 @@
-// mod codegen;
-// mod elab;
-// mod enums;
-// mod repeat;
-mod tls;
+// pub mod codegen;
+// pub mod elab;
+// pub mod enums;
+// pub mod repeat;
+pub mod tls;
