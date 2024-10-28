@@ -36,6 +36,7 @@ impl SpecFrom<SpecOpaqueU161Inner> for SpecOpaqueU161 {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpaqueU161<'a> {
     pub l: u16,
     pub data: &'a [u8],
@@ -156,6 +157,7 @@ impl SpecFrom<SpecResponderIdListInner> for SpecResponderIdList {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResponderIdList<'a> {
     pub l: u16,
     pub list: ResponderIdListList<'a>,

@@ -724,10 +724,14 @@ impl Codegen for StructCombinator {
             Mode::Exec(LifetimeAnn::Some) => "<'a>",
             _ => "",
         };
+        let derive = match mode {
+            Mode::Exec(_) => "#[derive(Debug, Clone, PartialEq, Eq)]\n",
+            _ => "",
+        };
         // generate the struct
         code.push_str(&format!(
-            "pub struct {}{} {{\n",
-            msg_type_name, lifetime_ann
+            "{}pub struct {}{} {{\n",
+            derive, msg_type_name, lifetime_ann
         ));
         let mut fields = Vec::new();
         for field in &self.0 {
@@ -1205,7 +1209,7 @@ impl Codegen for EnumCombinator {
                             .join("\n            ");
                         format!(
                             r#"
-#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum {msg_type_name} {{
     {enum_variants}
 }}
@@ -1374,8 +1378,15 @@ impl Codegen for ChoiceCombinator {
                     Mode::Exec(LifetimeAnn::Some) => "<'a>",
                     _ => "",
                 };
+                let derive = match mode {
+                    Mode::Exec(_) => "#[derive(Debug, Clone, PartialEq, Eq)]\n",
+                    _ => "",
+                };
                 // generate the enum
-                code.push_str(&format!("pub enum {}{} {{\n", msg_type_name, lifetime_ann));
+                code.push_str(&format!(
+                    "{}pub enum {}{} {{\n",
+                    derive, msg_type_name, lifetime_ann
+                ));
                 let mut variants = Vec::new();
                 for (label, combinator) in enums {
                     let variant_type = combinator.gen_msg_type("", mode, ctx);
