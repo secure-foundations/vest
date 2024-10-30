@@ -39,7 +39,9 @@ pub trait SecureSpecCombinator: SpecCombinator {
     /// This property can be understood as
     /// 1. injectivity of serialization: different values should serialize to different byte
     ///    sequences
-    /// 2. correctness of parsing: given a correct serializer that produces some byte sequence from
+    /// 2. surjectivity of parsing: every valid high-level value should associate with at least one
+    ///    low-level representation.
+    /// 3. correctness of parsing: given a correct serializer that produces some byte sequence from
     ///   a value, the corresponding parser should be able to parse the byte sequence back to the
     ///   same value (can lead to format-confusion attacks if not satisfied).
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -48,6 +50,19 @@ pub trait SecureSpecCombinator: SpecCombinator {
                 (b.len() as usize, v),
             ),
     ;
+
+    /// Followed from `theorem_serialize_parse_roundtrip`
+    proof fn corollary_parse_surjective(&self, v: Self::SpecResult)
+        requires
+            self.spec_serialize(v) is Ok,
+        ensures
+            exists |b: Seq<u8>| {
+                &&& self.spec_parse(b) is Ok
+                &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
+            }
+    {
+        self.theorem_serialize_parse_roundtrip(v);
+    }
 
     /// Followed from `theorem_serialize_parse_roundtrip`
     proof fn corollary_serialize_injective(&self, v1: Self::SpecResult, v2: Self::SpecResult)
