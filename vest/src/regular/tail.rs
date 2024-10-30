@@ -67,11 +67,7 @@ impl Combinator for Tail {
     }
 
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        if s.len() <= usize::MAX {
-            Ok(((s.len()), s))
-        } else {
-            Err(ParseError::SizeOverflow)
-        }
+        Ok(((s.len()), s))
     }
 
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
