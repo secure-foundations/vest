@@ -20,7 +20,7 @@ pub trait SpecCombinator {
     /// A helper fact to ensure that the result of parsing is within the input bounds.
     proof fn spec_parse_wf(&self, s: Seq<u8>)
         ensures
-            self.spec_parse(s).is_ok() ==> self.spec_parse(s).unwrap().0 <= s.len(),
+            self.spec_parse(s) matches Ok((n, _)) ==> n <= s.len(),
     ;
 }
 
@@ -30,6 +30,18 @@ pub trait SecureSpecCombinator: SpecCombinator {
     spec fn is_prefix_secure() -> bool;
 
     /// One of the top-level roundtrip properties
+    /// It reads "if we successfully serialize a value, then parsing the serialized bytes should
+    /// give us the same value back."
+    /// If we somehow get a different value, it means that different high-level values can
+    /// correspond to the same low-level representation, or put differently, the same byte
+    /// sequences can be parsed into different values.
+    ///
+    /// This property can be understood as
+    /// 1. injectivity of serialization: different values should serialize to different byte
+    ///    sequences
+    /// 2. correctness of parsing: given a correct serializer that produces some byte sequence from
+    ///   a value, the corresponding parser should be able to parse the byte sequence back to the
+    ///   same value (can lead to format-confusion attacks if not satisfied).
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
         ensures
             self.spec_serialize(v) matches Ok(b) ==> self.spec_parse(b) == Ok::<_, ()>(
@@ -37,7 +49,29 @@ pub trait SecureSpecCombinator: SpecCombinator {
             ),
     ;
 
+    /// Followed from `theorem_serialize_parse_roundtrip`
+    proof fn corollary_serialize_injective(&self, v1: Self::SpecResult, v2: Self::SpecResult)
+        ensures
+            self.spec_serialize(v1) matches Ok(b1) ==> self.spec_serialize(v2) matches Ok(b2) ==> b1
+                == b2 ==> v1 == v2,
+    {
+        self.theorem_serialize_parse_roundtrip(v1);
+        self.theorem_serialize_parse_roundtrip(v2);
+    }
+
     /// One of the top-level roundtrip properties
+    /// It reads "if we successfully parse a byte sequence, then serializing the parsed value should
+    /// give us the same byte sequence back."
+    /// If we somehow get a different byte sequence, it means that different low-level representations
+    /// can correspond to the same high-level value, or put differently, the same value can be
+    /// serialized into different byte sequences.
+    ///
+    /// This property can be understood as
+    /// 1. injectivity of parsing: different byte sequences should parse to different values (can
+    ///    lead to parser mallability attacks if not satisfied)
+    /// 2. correctness of serialization: given a correct parser that produces some value from a byte
+    ///   sequence, the corresponding serializer should be able to serialize the value back to the same
+    ///   byte sequence.
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
         requires
             buf.len() <= usize::MAX,
@@ -46,6 +80,20 @@ pub trait SecureSpecCombinator: SpecCombinator {
                 buf.subrange(0, n as int),
             ),
     ;
+
+    /// Followed from `theorem_parse_serialize_roundtrip`
+    proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
+        requires
+            buf1.len() <= usize::MAX,
+            buf2.len() <= usize::MAX,
+        ensures
+            self.spec_parse(buf1) matches Ok((n1, v1)) ==> self.spec_parse(buf2) matches Ok(
+                (n2, v2),
+            ) ==> v1 == v2 ==> buf1.subrange(0, n1 as int) == buf2.subrange(0, n2 as int),
+    {
+        self.theorem_parse_serialize_roundtrip(buf1);
+        self.theorem_parse_serialize_roundtrip(buf2);
+    }
 
     /// This prefix-secure lemma is used in the proof of the roundtrip properties for sequencing
     /// combinators.
