@@ -1,3 +1,6 @@
+#![allow(unused)]
+
+use vest::properties::{Combinator, SpecCombinator};
 use vest::regular::bytes::*;
 use vest::regular::depend::SpecDepend;
 use vest::regular::depend::{Continuation, Depend};
@@ -7,7 +10,7 @@ use vstd::prelude::*;
 
 verus! {
 
-pub open spec fn msg1() -> SpecDepend<(U8, U24Be), (Bytes, Bytes)> {
+pub open spec fn msg1<'a>() -> SpecDepend<(U8, U24Be), (Bytes, Bytes), (u8, u24)> {
     SpecDepend { fst: (U8, U24Be), snd: |deps| msg1_snd(deps) }
 }
 
@@ -35,7 +38,7 @@ impl Continuation<(u8, u24)> for Msg1Snd {
     }
 }
 
-pub fn mk_msg1() -> (o: Depend<(U8, U24Be), (Bytes, Bytes), Msg1Snd>)
+pub fn mk_msg1<'a>() -> (o: Depend<(U8, U24Be), (Bytes, Bytes), (u8, u24), Msg1Snd>)
     ensures
         o@ == msg1(),
 {

@@ -32,7 +32,6 @@ verus! {
 //   list: [u8; @l] >>= Vec<responder_id>,
 // }
 // ```
-
 pub struct SpecOpaqueU161 {
     pub l: u16,
     pub data: Seq<u8>,
@@ -91,7 +90,7 @@ impl View for OpaqueU161Mapper {
     }
 }
 
-impl SpecIso for OpaqueU161Mapper {
+impl SpecIso<'_> for OpaqueU161Mapper {
     type Src = SpecOpaqueU161Inner;
 
     type Dst = SpecOpaqueU161;
@@ -107,51 +106,15 @@ impl Iso for OpaqueU161Mapper {
     type Src<'a> = OpaqueU161Inner<'a>;
 
     type Dst<'a> = OpaqueU161<'a>;
-
-    type SrcOwned = OpaqueU161OwnedInner;
-
-    type DstOwned = OpaqueU161Owned;
-}
-
-pub struct OpaqueU161Owned {
-    pub l: u16,
-    pub data: Vec<u8>,
-}
-
-pub type OpaqueU161OwnedInner = (u16, Vec<u8>);
-
-impl View for OpaqueU161Owned {
-    type V = SpecOpaqueU161;
-
-    open spec fn view(&self) -> Self::V {
-        SpecOpaqueU161 { l: self.l@, data: self.data@ }
-    }
-}
-
-impl From<OpaqueU161Owned> for OpaqueU161OwnedInner {
-    fn ex_from(m: OpaqueU161Owned) -> OpaqueU161OwnedInner {
-        (m.l, m.data)
-    }
-}
-
-impl From<OpaqueU161OwnedInner> for OpaqueU161Owned {
-    fn ex_from(m: OpaqueU161OwnedInner) -> OpaqueU161Owned {
-        let (l, data) = m;
-        OpaqueU161Owned { l, data }
-    }
 }
 
 pub type SpecResponderId = SpecOpaqueU161;
 
 pub type ResponderId<'a> = OpaqueU161<'a>;
 
-pub type ResponderIdOwned = OpaqueU161Owned;
-
 pub type SpecResponderIdListList = Seq<SpecResponderId>;
 
 pub type ResponderIdListList<'a> = RepeatResult<ResponderId<'a>>;
-
-pub type ResponderIdListListOwned = RepeatResult<ResponderIdOwned>;
 
 pub struct SpecResponderIdList {
     pub l: u16,
@@ -211,7 +174,7 @@ impl View for ResponderIdListMapper {
     }
 }
 
-impl SpecIso for ResponderIdListMapper {
+impl SpecIso<'_> for ResponderIdListMapper {
     type Src = SpecResponderIdListInner;
 
     type Dst = SpecResponderIdList;
@@ -227,41 +190,9 @@ impl Iso for ResponderIdListMapper {
     type Src<'a> = ResponderIdListInner<'a>;
 
     type Dst<'a> = ResponderIdList<'a>;
-
-    type SrcOwned = ResponderIdListOwnedInner;
-
-    type DstOwned = ResponderIdListOwned;
 }
 
-pub struct ResponderIdListOwned {
-    pub l: u16,
-    pub list: ResponderIdListListOwned,
-}
-
-pub type ResponderIdListOwnedInner = (u16, ResponderIdListListOwned);
-
-impl View for ResponderIdListOwned {
-    type V = SpecResponderIdList;
-
-    open spec fn view(&self) -> Self::V {
-        SpecResponderIdList { l: self.l@, list: self.list@ }
-    }
-}
-
-impl From<ResponderIdListOwned> for ResponderIdListOwnedInner {
-    fn ex_from(m: ResponderIdListOwned) -> ResponderIdListOwnedInner {
-        (m.l, m.list)
-    }
-}
-
-impl From<ResponderIdListOwnedInner> for ResponderIdListOwned {
-    fn ex_from(m: ResponderIdListOwnedInner) -> ResponderIdListOwned {
-        let (l, list) = m;
-        ResponderIdListOwned { l, list }
-    }
-}
-
-impl SpecPred for Predicate11955646336730306823 {
+impl SpecPred<'_> for Predicate11955646336730306823 {
     type Input = u16;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
@@ -275,7 +206,7 @@ impl SpecPred for Predicate11955646336730306823 {
 }
 
 pub type SpecOpaqueU161Combinator = Mapped<
-    SpecDepend<Refined<U16Le, Predicate11955646336730306823>, Bytes>,
+    SpecDepend<Refined<U16Le, Predicate11955646336730306823>, Bytes, u16>,
     OpaqueU161Mapper,
 >;
 
@@ -292,8 +223,6 @@ impl View for Predicate11955646336730306823 {
 impl Pred for Predicate11955646336730306823 {
     type Input<'a> = u16;
 
-    type InputOwned = u16;
-
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         let i = (*i);
         if (i >= 1 && i <= 65535) {
@@ -307,7 +236,7 @@ impl Pred for Predicate11955646336730306823 {
 pub struct OpaqueU161Cont;
 
 pub type OpaqueU161Combinator = Mapped<
-    Depend<Refined<U16Le, Predicate11955646336730306823>, Bytes, OpaqueU161Cont>,
+    Depend<Refined<U16Le, Predicate11955646336730306823>, Bytes, u16, OpaqueU161Cont>,
     OpaqueU161Mapper,
 >;
 
@@ -319,7 +248,7 @@ pub type SpecResponderIdListListCombinator = AndThen<Bytes, Repeat<SpecResponder
 
 pub type ResponderIdListListCombinator = AndThen<Bytes, Repeat<ResponderIdCombinator>>;
 
-impl SpecPred for Predicate6556550293019859977 {
+impl SpecPred<'_> for Predicate6556550293019859977 {
     type Input = u16;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
@@ -333,7 +262,11 @@ impl SpecPred for Predicate6556550293019859977 {
 }
 
 pub type SpecResponderIdListCombinator = Mapped<
-    SpecDepend<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
+    SpecDepend<
+        Refined<U16Le, Predicate6556550293019859977>,
+        SpecResponderIdListListCombinator,
+        u16,
+    >,
     ResponderIdListMapper,
 >;
 
@@ -349,8 +282,6 @@ impl View for Predicate6556550293019859977 {
 
 impl Pred for Predicate6556550293019859977 {
     type Input<'a> = u16;
-
-    type InputOwned = u16;
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         let i = (*i);
@@ -368,6 +299,7 @@ pub type ResponderIdListCombinator = Mapped<
     Depend<
         Refined<U16Le, Predicate6556550293019859977>,
         ResponderIdListListCombinator,
+        u16,
         ResponderIdListCont,
     >,
     ResponderIdListMapper,
@@ -594,4 +526,5 @@ pub fn serialize_responder_id_list(msg: ResponderIdList<'_>, data: &mut Vec<u8>,
 {
     responder_id_list().serialize(msg, data, pos)
 }
+
 } // verus!

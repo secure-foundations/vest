@@ -122,7 +122,7 @@ impl View for Msg1Mapper {
     }
 }
 
-impl SpecIso for Msg1Mapper {
+impl SpecIso<'_> for Msg1Mapper {
     type Src = SpecMsg1Inner;
 
     type Dst = SpecMsg1;
@@ -138,10 +138,6 @@ impl Iso for Msg1Mapper {
     type Src<'a> = Msg1Inner<'a>;
 
     type Dst<'a> = Msg1<'a>;
-
-    type SrcOwned = Msg1InnerOwned;
-
-    type DstOwned = Msg1Owned;
 }
 
 //////////////////////////////////////
@@ -237,7 +233,7 @@ impl View for Msg2Mapper {
     }
 }
 
-impl SpecIso for Msg2Mapper {
+impl SpecIso<'_> for Msg2Mapper {
     type Src = Msg2Inner;
 
     type Dst = Msg2;
@@ -253,10 +249,6 @@ impl Iso for Msg2Mapper {
     type Src<'a> = Msg2Inner;
 
     type Dst<'a> = Msg2;
-
-    type SrcOwned = Msg2Inner;
-
-    type DstOwned = Msg2;
 }
 
 //////////////////////////////////////
@@ -378,7 +370,7 @@ impl View for Msg3Mapper {
     }
 }
 
-impl SpecIso for Msg3Mapper {
+impl SpecIso<'_> for Msg3Mapper {
     type Src = SpecMsg3Inner;
 
     type Dst = SpecMsg3;
@@ -394,10 +386,6 @@ impl Iso for Msg3Mapper {
     type Src<'a> = Msg3Inner<'a>;
 
     type Dst<'a> = Msg3<'a>;
-
-    type SrcOwned = Msg3InnerOwned;
-
-    type DstOwned = Msg3Owned;
 }
 
 //////////////////////////////////////
@@ -559,7 +547,7 @@ impl View for Msg4Mapper {
     }
 }
 
-impl SpecIso for Msg4Mapper {
+impl SpecIso<'_> for Msg4Mapper {
     type Src = SpecMsg4Inner;
 
     type Dst = SpecMsg4;
@@ -575,10 +563,6 @@ impl Iso for Msg4Mapper {
     type Src<'a> = Msg4Inner<'a>;
 
     type Dst<'a> = Msg4<'a>;
-
-    type SrcOwned = Msg4InnerOwned;
-
-    type DstOwned = Msg4Owned;
 }
 
 //////////////////////////////////////
