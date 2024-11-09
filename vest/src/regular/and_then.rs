@@ -16,7 +16,7 @@ impl<Prev: View, Next: View> View for AndThen<Prev, Next> {
     }
 }
 
-impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
+impl<'a, Next: SpecCombinator<'a>> SpecCombinator<'a> for AndThen<Bytes, Next> {
     type SpecResult = Next::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -53,7 +53,7 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
     }
 }
 
-impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
+impl<'a, Next: SecureSpecCombinator<'a>> SecureSpecCombinator<'a> for AndThen<Bytes, Next> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.1.theorem_serialize_parse_roundtrip(v);
@@ -87,11 +87,9 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
 }
 
 impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
-    Next::V: SecureSpecCombinator<SpecResult = <Next::Owned as View>::V>,
+    Next::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Next::Result<'spec> as View>::V>,
  {
     type Result<'a> = Next::Result<'a>;
-
-    type Owned = Next::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()

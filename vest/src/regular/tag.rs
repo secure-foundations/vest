@@ -16,7 +16,7 @@ impl<T: View> View for TagPred<T> {
     }
 }
 
-impl<T> SpecPred for TagPred<T> {
+impl<T> SpecPred<'_> for TagPred<T> {
     type Input = T;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
@@ -27,8 +27,6 @@ impl<T> SpecPred for TagPred<T> {
 impl<T: FromToBytes> Pred for TagPred<T> {
     type Input<'a> = T;
 
-    type InputOwned = T;
-
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         self.0.eq(i)
     }
@@ -37,8 +35,6 @@ impl<T: FromToBytes> Pred for TagPred<T> {
 impl<const N: usize> Pred for TagPred<[u8; N]> {
     type Input<'b> = &'b [u8];
 
-    type InputOwned = Vec<u8>;
-
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         compare_slice(self.0.as_slice(), *i)
     }
@@ -46,8 +42,6 @@ impl<const N: usize> Pred for TagPred<[u8; N]> {
 
 impl<'a> Pred for TagPred<&'a [u8]> {
     type Input<'b> = &'b [u8];
-
-    type InputOwned = Vec<u8>;
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         compare_slice(self.0, *i)
@@ -82,7 +76,7 @@ impl<Inner: View, T: View> View for Tag<Inner, T> {
     }
 }
 
-impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> {
+impl<'a, Inner: SpecCombinator<'a, SpecResult = T>, T> SpecCombinator<'a> for Tag<Inner, T> {
     type SpecResult = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -102,7 +96,10 @@ impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> 
     }
 }
 
-impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Tag<Inner, T> {
+impl<'a, Inner: SecureSpecCombinator<'a, SpecResult = T>, T> SecureSpecCombinator<'a> for Tag<
+    Inner,
+    T,
+> {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
@@ -123,13 +120,13 @@ impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Ta
     }
 }
 
-impl<Inner, T> Combinator for Tag<Inner, T> where
-    Inner: for <'a>Combinator<Result<'a> = T, Owned = T>,
-    Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
- {
+impl<Inner, T> Combinator for Tag<
+    Inner,
+    T,
+> where
+Inner: for <'a>Combinator<Result<'a> = T>,
+Inner::V: for <'a>SecureSpecCombinator<'a, SpecResult = T::V>, T: FromToBytes {
     type Result<'a> = ();
-
-    type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -160,13 +157,13 @@ impl<Inner, T> Combinator for Tag<Inner, T> where
     }
 }
 
-impl<Inner, const N: usize> Combinator for Tag<Inner, [u8; N]> where
-    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
- {
+impl<Inner, const N: usize> Combinator for Tag<
+    Inner,
+    [u8; N],
+> where
+Inner: for <'b>Combinator<Result<'b> = &'b [u8]>,
+Inner::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = Seq<u8>> {
     type Result<'b> = ();
-
-    type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -197,13 +194,13 @@ impl<Inner, const N: usize> Combinator for Tag<Inner, [u8; N]> where
     }
 }
 
-impl<Inner, 'a> Combinator for Tag<Inner, &'a [u8]> where
-    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
- {
+impl<Inner, 'a> Combinator for Tag<
+    Inner,
+    &'a [u8],
+> where
+Inner: for <'b>Combinator<Result<'b> = &'b [u8]>,
+Inner::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = Seq<u8>> {
     type Result<'b> = ();
-
-    type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()

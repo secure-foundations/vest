@@ -53,7 +53,7 @@ impl<T> View for BuilderCombinator<T> {
     }
 }
 
-impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
+impl<'a, T: Builder> SpecCombinator<'a> for BuilderCombinator<T> {
     type SpecResult = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, ()), ()> {
@@ -72,7 +72,7 @@ impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
+impl<'a, T: Builder> SecureSpecCombinator<'a> for BuilderCombinator<T> {
     open spec fn is_prefix_secure() -> bool {
         false
     }
@@ -92,8 +92,6 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
 
 impl<T> Combinator for BuilderCombinator<T> where T: Builder + View {
     type Result<'a> = ();
-
-    type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

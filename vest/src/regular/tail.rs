@@ -14,7 +14,7 @@ impl View for Tail {
     }
 }
 
-impl SpecCombinator for Tail {
+impl SpecCombinator<'_> for Tail {
     type SpecResult = Seq<u8>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -37,7 +37,7 @@ impl SpecCombinator for Tail {
     }
 }
 
-impl SecureSpecCombinator for Tail {
+impl SecureSpecCombinator<'_> for Tail {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
     }
 
@@ -55,8 +55,6 @@ impl SecureSpecCombinator for Tail {
 
 impl Combinator for Tail {
     type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

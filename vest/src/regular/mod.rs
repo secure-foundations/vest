@@ -1,3 +1,10 @@
+/// Refined combinator
+pub mod refined;
+// pub mod preser;
+// mod repeat_n;
+// mod repeat_n_const;
+/// AndThen combinator
+pub mod and_then;
 /// Builder combinator
 pub mod builder;
 /// Bytes combinator
@@ -7,33 +14,26 @@ pub mod bytes_n;
 /// OrdChoice combinator
 #[allow(missing_docs)]
 pub mod choice;
-/// Cond combinator
-pub mod cond;
-/// Mapped combinator
-pub mod map;
-/// Pair combinator
-pub mod pair;
-/// Refined combinator
-pub mod refined;
-// pub mod preser;
-// mod repeat_n;
-// mod repeat_n_const;
-/// AndThen combinator
-pub mod and_then;
 /// impl Clone for some combinators
 pub mod clone;
+/// Cond combinator
+pub mod cond;
 /// Depend combinator
 pub mod depend;
 /// Disjointness for OrdChoice combinator
 pub mod disjoint;
 /// Fail combinator
 pub mod fail;
-/// Success combinator
-pub mod success;
+/// Mapped combinator
+pub mod map;
+/// Pair combinator
+pub mod pair;
 /// Preceded combinator
 pub mod preceded;
 /// Repeat combinator
 pub mod repeat;
+/// Success combinator
+pub mod success;
 /// Tag combinator
 pub mod tag;
 /// Tail combinator

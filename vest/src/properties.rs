@@ -7,7 +7,7 @@ verus! {
 
 /// Specification for parser and serializer [`Combinator`]s. All Vest combinators must implement this
 /// trait.
-pub trait SpecCombinator {
+pub trait SpecCombinator<'a> {
     /// The view of [`Combinator::Result`].
     type SpecResult;
 
@@ -25,7 +25,7 @@ pub trait SpecCombinator {
 }
 
 /// Theorems and lemmas that must be proven for a combinator to be considered correct and secure.
-pub trait SecureSpecCombinator: SpecCombinator {
+pub trait SecureSpecCombinator<'a>: SpecCombinator<'a> {
     /// Like an associated constant, denotes whether the combinator is prefix-secure.
     spec fn is_prefix_secure() -> bool;
 
@@ -56,10 +56,11 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             self.spec_serialize(v) is Ok,
         ensures
-            exists |b: Seq<u8>| {
-                &&& self.spec_parse(b) is Ok
-                &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
-            }
+            exists|b: Seq<u8>|
+                {
+                    &&& self.spec_parse(b) is Ok
+                    &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
+                },
     {
         self.theorem_serialize_parse_roundtrip(v);
     }
@@ -124,15 +125,14 @@ pub trait SecureSpecCombinator: SpecCombinator {
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator: View where
-    Self::V: SecureSpecCombinator<SpecResult = <Self::Owned as View>::V>,
+    Self::V: for <'a>SecureSpecCombinator<'a, SpecResult = <Self::Result<'a> as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
-    type Result<'a>: View<V = <Self::Owned as View>::V>;
+    type Result<'a>: View;
 
     /// The owned parsed type. This is currently a hack to avoid lifetime bindings in [`SpecCombinator::SpecResult`]
     /// , but it can be useful if we want to have functions that return owned values (e.g. [`Vec<T>`]).
-    type Owned: View;
-
+    // type Owned: View;
     /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
 
@@ -188,7 +188,7 @@ pub trait Combinator: View where
     ;
 }
 
-impl<C: SpecCombinator> SpecCombinator for &C {
+impl<'a, C: SpecCombinator<'a>> SpecCombinator<'a> for &C {
     type SpecResult = C::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -204,7 +204,7 @@ impl<C: SpecCombinator> SpecCombinator for &C {
     }
 }
 
-impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
+impl<'a, C: SecureSpecCombinator<'a>> SecureSpecCombinator<'a> for &C {
     open spec fn is_prefix_secure() -> bool {
         C::is_prefix_secure()
     }
@@ -223,11 +223,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 }
 
 impl<C: Combinator> Combinator for &C where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+    C::V: for <'a>SecureSpecCombinator<'a, SpecResult = <C::Result<'a> as View>::V>,
  {
     type Result<'a> = C::Result<'a>;
-
-    type Owned = C::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (*self).spec_length()

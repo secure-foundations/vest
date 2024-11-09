@@ -7,15 +7,7 @@ verus! {
 /// Combinator that sequentially applies two combinators and returns the result of the second one.
 pub struct Preceded<Fst, Snd>(pub Fst, pub Snd);
 
-impl<Fst, Snd> View for Preceded<
-    Fst,
-    Snd,
-> where
-    Fst: for<'a> Combinator<Result<'a> = (), Owned = ()>,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = ()>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
- {
+impl<Fst: View, Snd: View> View for Preceded<Fst, Snd> {
     type V = Preceded<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -23,10 +15,9 @@ impl<Fst, Snd> View for Preceded<
     }
 }
 
-impl<Fst: SecureSpecCombinator<SpecResult = ()>, Snd: SpecCombinator> SpecCombinator for Preceded<
-    Fst,
-    Snd,
-> {
+impl<'a, Fst: SecureSpecCombinator<'a, SpecResult = ()>, Snd: SpecCombinator<'a>> SpecCombinator<
+    'a,
+> for Preceded<Fst, Snd> {
     type SpecResult = Snd::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -76,9 +67,10 @@ impl<Fst: SecureSpecCombinator<SpecResult = ()>, Snd: SpecCombinator> SpecCombin
 }
 
 impl<
-    Fst: SecureSpecCombinator<SpecResult = ()>,
-    Snd: SecureSpecCombinator,
-> SecureSpecCombinator for Preceded<Fst, Snd> {
+    'a,
+    Fst: SecureSpecCombinator<'a, SpecResult = ()>,
+    Snd: SecureSpecCombinator<'a>,
+> SecureSpecCombinator<'a> for Preceded<Fst, Snd> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
         if let Ok((buf)) = self.spec_serialize(v) {
             let buf0 = self.0.spec_serialize(()).unwrap();
@@ -137,14 +129,12 @@ impl<Fst, Snd> Combinator for Preceded<
     Fst,
     Snd,
 > where
-    Fst: for<'a> Combinator<Result<'a> = (), Owned = ()>,
+    Fst: for<'a> Combinator<Result<'a> = ()>,
     Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = ()>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+    Fst::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = ()>,
+    Snd::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Snd::Result<'spec> as View>::V>,
  {
     type Result<'a> = Snd::Result<'a>;
-
-    type Owned = Snd::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {

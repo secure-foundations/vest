@@ -5,16 +5,17 @@ use vstd::slice::slice_subrange;
 verus! {
 
 /// Spec version of [`Depend`].
-pub struct SpecDepend<Fst, Snd> where Fst: SecureSpecCombinator, Snd: SpecCombinator {
+#[verifier::reject_recursive_types(FstResult)]
+pub struct SpecDepend<Fst, Snd, FstResult> {
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
-    pub snd: spec_fn(Fst::SpecResult) -> Snd,
+    pub snd: spec_fn(FstResult) -> Snd,
 }
 
-impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
-    Fst: SecureSpecCombinator,
-    Snd: SpecCombinator,
+impl<'a, Fst, Snd, FstResult> SpecCombinator<'a> for SpecDepend<Fst, Snd, FstResult> where
+    Fst: SecureSpecCombinator<'a, SpecResult = FstResult>,
+    Snd: SpecCombinator<'a>,
  {
     type SpecResult = (Fst::SpecResult, Snd::SpecResult);
 
@@ -71,9 +72,9 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
     }
 }
 
-impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
-    Fst: SecureSpecCombinator,
-    Snd: SecureSpecCombinator,
+impl<'a, Fst, Snd, FstResult> SecureSpecCombinator<'a> for SpecDepend<Fst, Snd, FstResult> where
+    Fst: SecureSpecCombinator<'a, SpecResult = FstResult>,
+    Snd: SecureSpecCombinator<'a>,
  {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
         if let Ok((buf)) = self.spec_serialize(v) {
@@ -153,28 +154,28 @@ pub trait Continuation<Input> {
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
-pub struct Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
- {
+pub struct Depend<Fst, Snd, FstResult, Cont> where Fst: View, Snd: View, FstResult: View {
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
     // Replaces `for <'a>fn(Fst::Result<'a>) -> Snd` in Depend,
-    pub snd: C,
+    pub snd: Cont,
     /// spec closure for well-formedness
-    pub spec_snd: Ghost<spec_fn(<Fst::Owned as View>::V) -> Snd::V>,
+    pub spec_snd: Ghost<spec_fn(FstResult::V) -> Snd::V>,
 }
 
-impl<Fst, Snd, C> Depend<Fst, Snd, C> where
-    Fst: Combinator,
+impl<Fst, Snd, FstResult, Cont> Depend<
+    Fst,
+    Snd,
+    FstResult,
+    Cont,
+> where
+    Fst: for<'a>Combinator<Result<'a> = FstResult>,
     Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+    Fst::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Fst::Result<'spec> as View>::V>,
+    Snd::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Snd::Result<'spec> as View>::V>,
+    Cont: Continuation<FstResult, Output = Snd>,
+    FstResult: View,
  {
     /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
     pub open spec fn wf(&self) -> bool {
@@ -185,14 +186,12 @@ impl<Fst, Snd, C> Depend<Fst, Snd, C> where
 }
 
 /// Same [`View`] as [`Depend`]
-impl<Fst, Snd, C> View for Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+impl<Fst, Snd, FstResult, Cont> View for Depend<Fst, Snd, FstResult, Cont> where
+    Fst: View,
+    Snd: View,
+    FstResult: View,
  {
-    type V = SpecDepend<Fst::V, Snd::V>;
+    type V = SpecDepend<Fst::V, Snd::V, FstResult::V>;
 
     open spec fn view(&self) -> Self::V {
         let Ghost(spec_snd) = self.spec_snd;
@@ -201,17 +200,21 @@ impl<Fst, Snd, C> View for Depend<Fst, Snd, C> where
 }
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
-    Fst: Combinator,
+impl<Fst, Snd, FstResult, Cont> Combinator for Depend<
+    Fst,
+    Snd,
+    FstResult,
+    Cont,
+> where
+    Fst: for<'a>Combinator<Result<'a> = FstResult>,
     Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+    Fst::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Fst::Result<'spec> as View>::V>,
+    Snd::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Snd::Result<'spec> as View>::V>,
+    Cont: Continuation<FstResult, Output = Snd>,
     for <'a>Fst::Result<'a>: Copy,
+    FstResult: View,
  {
     type Result<'a> = (Fst::Result<'a>, Snd::Result<'a>);
-
-    type Owned = (Fst::Owned, Snd::Owned);
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

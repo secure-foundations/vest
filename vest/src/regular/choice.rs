@@ -32,9 +32,9 @@ impl<Fst: View, Snd: View> View for OrdChoice<Fst, Snd> where  {
     }
 }
 
-impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
-    Fst: SpecCombinator,
-    Snd: SpecCombinator + DisjointFrom<Fst>,
+impl<'a, Fst, Snd> SpecCombinator<'a> for OrdChoice<Fst, Snd> where
+    Fst: SpecCombinator<'a>,
+    Snd: SpecCombinator<'a> + DisjointFrom<'a, Fst>,
  {
     type SpecResult = Either<Fst::SpecResult, Snd::SpecResult>;
 
@@ -76,9 +76,9 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
-    Fst: SecureSpecCombinator,
-    Snd: SecureSpecCombinator + DisjointFrom<Fst>,
+impl<'a, Fst, Snd> SecureSpecCombinator<'a> for OrdChoice<Fst, Snd> where
+    Fst: SecureSpecCombinator<'a>,
+    Snd: SecureSpecCombinator<'a> + DisjointFrom<'a, Fst>,
  {
     open spec fn is_prefix_secure() -> bool {
         Fst::is_prefix_secure() && Snd::is_prefix_secure()
@@ -124,13 +124,11 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
 impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
     Fst: Combinator,
     Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    Snd::V: DisjointFrom<Fst::V>,
+    Fst::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Fst::Result<'spec> as View>::V>,
+    Snd::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Snd::Result<'spec> as View>::V>,
+    Snd::V: for <'spec>DisjointFrom<'spec, Fst::V>,
  {
     type Result<'a> = Either<Fst::Result<'a>, Snd::Result<'a>>;
-
-    type Owned = Either<Fst::Owned, Snd::Owned>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

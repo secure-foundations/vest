@@ -19,7 +19,7 @@ impl<Inner: View> View for Cond<Inner> {
     }
 }
 
-impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
+impl<'a, Inner: SpecCombinator<'a>> SpecCombinator<'a> for Cond<Inner> {
     type SpecResult = Inner::SpecResult;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -45,7 +45,7 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
     }
 }
 
-impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
+impl<'a, Inner: SecureSpecCombinator<'a>> SecureSpecCombinator<'a> for Cond<Inner> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
         if self.cond {
             self.inner.theorem_serialize_parse_roundtrip(v);
@@ -70,11 +70,12 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
 }
 
 impl<Inner: Combinator> Combinator for Cond<Inner> where
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
+    Inner::V: for <'spec>SecureSpecCombinator<
+        'spec,
+        SpecResult = <Inner::Result<'spec> as View>::V,
+    >,
  {
     type Result<'a> = Inner::Result<'a>;
-
-    type Owned = Inner::Owned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {

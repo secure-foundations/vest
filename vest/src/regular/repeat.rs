@@ -30,7 +30,7 @@ impl<T: View> View for RepeatResult<T> {
     }
 }
 
-impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
+impl<'a, C: SpecCombinator<'a> + SecureSpecCombinator<'a>> SpecCombinator<'a> for Repeat<C> {
     type SpecResult = Seq<C::SpecResult>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>
@@ -85,7 +85,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
     }
 }
 
-impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
+impl<'a, C: SecureSpecCombinator<'a>> SecureSpecCombinator<'a> for Repeat<C> {
     /// Prepending bytes to the buffer may result in more items parsed
     /// so Repeat is not prefix secure
     open spec fn is_prefix_secure() -> bool {
@@ -147,10 +147,13 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
 }
 
 impl<C: Combinator> Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+    <C as View>::V: for <'spec>SecureSpecCombinator<
+        'spec,
+        SpecResult = <C::Result<'spec> as View>::V,
+    >,
  {
     /// Get the deep view of RepeatResult
-    pub open spec fn deep_view<'a>(v: &'a [C::Result<'a>]) -> Seq<<C::Owned as View>::V> {
+    pub open spec fn deep_view<'a>(v: &'a [C::Result<'a>]) -> Seq<<C::Result<'a> as View>::V> {
         Seq::new(v.len() as nat, |i: int| v@[i]@)
     }
 
@@ -228,11 +231,12 @@ impl<C: Combinator> Repeat<C> where
 }
 
 impl<C: Combinator> Combinator for Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+    <C as View>::V: for <'spec>SecureSpecCombinator<
+        'spec,
+        SpecResult = <C::Result<'spec> as View>::V,
+    >,
  {
     type Result<'a> = RepeatResult<C::Result<'a>>;
-
-    type Owned = RepeatResult<C::Owned>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

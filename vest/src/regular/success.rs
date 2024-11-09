@@ -14,7 +14,7 @@ impl View for Success {
     }
 }
 
-impl SpecCombinator for Success {
+impl SpecCombinator<'_> for Success {
     type SpecResult = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -29,7 +29,7 @@ impl SpecCombinator for Success {
     }
 }
 
-impl SecureSpecCombinator for Success {
+impl SecureSpecCombinator<'_> for Success {
     open spec fn is_prefix_secure() -> bool {
         true
     }
@@ -47,8 +47,6 @@ impl SecureSpecCombinator for Success {
 
 impl Combinator for Success {
     type Result<'a> = ();
-
-    type Owned = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(0)

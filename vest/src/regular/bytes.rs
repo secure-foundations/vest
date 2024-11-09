@@ -19,13 +19,19 @@ impl View for Bytes {
 
 impl Bytes {
     /// Spec version of [`Self::and_then`]
-    pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<Bytes, Next> {
+    pub open spec fn spec_and_then<Next: for <'spec>SpecCombinator<'spec>>(
+        self,
+        next: Next,
+    ) -> AndThen<Bytes, Next> {
         AndThen(self, next)
     }
 
     /// Chains this combinator with another combinator.
     pub fn and_then<Next: Combinator>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
-        Next::V: SecureSpecCombinator<SpecResult = <Next::Owned as View>::V>,
+        Next::V: for <'spec>SecureSpecCombinator<
+            'spec,
+            SpecResult = <Next::Result<'spec> as View>::V,
+        >,
 
         ensures
             o@ == self@.spec_and_then(next@),
@@ -34,7 +40,7 @@ impl Bytes {
     }
 }
 
-impl SpecCombinator for Bytes {
+impl SpecCombinator<'_> for Bytes {
     type SpecResult = Seq<u8>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -57,7 +63,7 @@ impl SpecCombinator for Bytes {
     }
 }
 
-impl SecureSpecCombinator for Bytes {
+impl SecureSpecCombinator<'_> for Bytes {
     open spec fn is_prefix_secure() -> bool {
         true
     }
@@ -82,8 +88,6 @@ impl SecureSpecCombinator for Bytes {
 
 impl Combinator for Bytes {
     type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)

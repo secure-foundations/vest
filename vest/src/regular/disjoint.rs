@@ -15,7 +15,7 @@ use vstd::prelude::*;
 verus! {
 
 /// A helper trait for [`OrdChoice`] combinator.
-pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator {
+pub trait DisjointFrom<'a, Other> where Self: SpecCombinator<'a>, Other: SpecCombinator<'a> {
     /// pre-condition that must be held for [`Self`] and [`Other`] to be disjoint
     spec fn disjoint_from(&self, other: &Other) -> bool;
 
@@ -36,7 +36,7 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
 macro_rules! impl_disjoint_for_int_tag {
     ($combinator:ty) => {
         ::builtin_macros::verus! {
-            impl DisjointFrom<$combinator> for $combinator {
+            impl DisjointFrom<'_, $combinator> for $combinator {
                 // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
                 open spec fn disjoint_from(&self, other: &$combinator) -> bool {
                     self.0.predicate.0 != other.0.predicate.0
@@ -52,7 +52,7 @@ macro_rules! impl_disjoint_for_int_tag {
 macro_rules! impl_disjoint_for_refined_int {
     ($combinator:ty) => {
         ::builtin_macros::verus! {
-            impl DisjointFrom<$combinator> for $combinator {
+            impl DisjointFrom<'_, $combinator> for $combinator {
                 // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
                 open spec fn disjoint_from(&self, other: &$combinator) -> bool {
                     self.predicate.0 != other.predicate.0
@@ -102,7 +102,7 @@ impl_disjoint_for_refined_int!(Refined<U32Be, TagPred<u32>>);
 impl_disjoint_for_refined_int!(Refined<U64Be, TagPred<u64>>);
 
 // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-impl<const N: usize> DisjointFrom<Tag<BytesN<N>, Seq<u8>>> for Tag<BytesN<N>, Seq<u8>> {
+impl<const N: usize> DisjointFrom<'_, Tag<BytesN<N>, Seq<u8>>> for Tag<BytesN<N>, Seq<u8>> {
     open spec fn disjoint_from(&self, other: &Tag<BytesN<N>, Seq<u8>>) -> bool {
         self.0.predicate.0 != other.0.predicate.0
     }
@@ -112,7 +112,7 @@ impl<const N: usize> DisjointFrom<Tag<BytesN<N>, Seq<u8>>> for Tag<BytesN<N>, Se
 }
 
 // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-impl DisjointFrom<Tag<Bytes, Seq<u8>>> for Tag<Bytes, Seq<u8>> {
+impl DisjointFrom<'_, Tag<Bytes, Seq<u8>>> for Tag<Bytes, Seq<u8>> {
     open spec fn disjoint_from(&self, other: &Tag<Bytes, Seq<u8>>) -> bool {
         // must also say that two `Bytes` combinators are of the same length
         self.0.predicate.0 != other.0.predicate.0 && self.0.inner.0 == other.0.inner.0
@@ -122,7 +122,7 @@ impl DisjointFrom<Tag<Bytes, Seq<u8>>> for Tag<Bytes, Seq<u8>> {
     }
 }
 
-impl<const N: usize> DisjointFrom<Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refined<
+impl<const N: usize> DisjointFrom<'_, Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refined<
     BytesN<N>,
     TagPred<Seq<u8>>,
 > {
@@ -134,7 +134,7 @@ impl<const N: usize> DisjointFrom<Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refi
     }
 }
 
-impl DisjointFrom<Refined<Bytes, TagPred<Seq<u8>>>> for Refined<Bytes, TagPred<Seq<u8>>> {
+impl DisjointFrom<'_, Refined<Bytes, TagPred<Seq<u8>>>> for Refined<Bytes, TagPred<Seq<u8>>> {
     open spec fn disjoint_from(&self, other: &Refined<Bytes, TagPred<Seq<u8>>>) -> bool {
         self.predicate.0 != other.predicate.0 && self.inner.0 == other.inner.0
     }
@@ -144,12 +144,12 @@ impl DisjointFrom<Refined<Bytes, TagPred<Seq<u8>>>> for Refined<Bytes, TagPred<S
 }
 
 // if `U1` and `U2` are disjoint, then `(U1, V1)` and `(U2, V2)` are disjoint
-impl<U1, U2, V1, V2> DisjointFrom<(U2, V2)> for (U1, V1) where
-    U1: DisjointFrom<U2>,
-    U1: SecureSpecCombinator,
-    U2: SecureSpecCombinator,
-    V1: SpecCombinator,
-    V2: SpecCombinator,
+impl<'a, U1, U2, V1, V2> DisjointFrom<'a, (U2, V2)> for (U1, V1) where
+    U1: DisjointFrom<'a, U2>,
+    U1: SecureSpecCombinator<'a>,
+    U2: SecureSpecCombinator<'a>,
+    V1: SpecCombinator<'a>,
+    V2: SpecCombinator<'a>,
  {
     open spec fn disjoint_from(&self, other: &(U2, V2)) -> bool {
         self.0.disjoint_from(&other.0)
@@ -161,12 +161,12 @@ impl<U1, U2, V1, V2> DisjointFrom<(U2, V2)> for (U1, V1) where
 }
 
 // if `U1` and `U2` are disjoint, then `preceded(U1, V1)` and `preceded(U2, V2)` are disjoint
-impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
-    U1: DisjointFrom<U2>,
-    U1: SecureSpecCombinator<SpecResult = ()>,
-    U2: SecureSpecCombinator<SpecResult = ()>,
-    V1: SpecCombinator,
-    V2: SpecCombinator,
+impl<'a, U1, U2, V1, V2> DisjointFrom<'a, Preceded<U2, V2>> for Preceded<U1, V1> where
+    U1: DisjointFrom<'a, U2>,
+    U1: SecureSpecCombinator<'a, SpecResult = ()>,
+    U2: SecureSpecCombinator<'a, SpecResult = ()>,
+    V1: SpecCombinator<'a>,
+    V2: SpecCombinator<'a>,
  {
     open spec fn disjoint_from(&self, other: &Preceded<U2, V2>) -> bool {
         self.0.disjoint_from(&other.0)
@@ -177,18 +177,22 @@ impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
     }
 }
 
-impl<U1, U2, V1, V2> DisjointFrom<SpecDepend<U2, V2>> for SpecDepend<U1, V1> where
-    U1: DisjointFrom<U2>,
-    U1: SecureSpecCombinator,
-    U2: SecureSpecCombinator,
-    V1: SpecCombinator,
-    V2: SpecCombinator,
+impl<'a, U1, U2, V1, V2> DisjointFrom<'a, SpecDepend<U2, V2, U2::SpecResult>> for SpecDepend<
+    U1,
+    V1,
+    U1::SpecResult,
+> where
+    U1: DisjointFrom<'a, U2>,
+    U1: SecureSpecCombinator<'a>,
+    U2: SecureSpecCombinator<'a>,
+    V1: SpecCombinator<'a>,
+    V2: SpecCombinator<'a>,
  {
-    open spec fn disjoint_from(&self, other: &SpecDepend<U2, V2>) -> bool {
+    open spec fn disjoint_from(&self, other: &SpecDepend<U2, V2, U2::SpecResult>) -> bool {
         self.fst.disjoint_from(&other.fst)
     }
 
-    proof fn parse_disjoint_on(&self, other: &SpecDepend<U2, V2>, buf: Seq<u8>) {
+    proof fn parse_disjoint_on(&self, other: &SpecDepend<U2, V2, U2::SpecResult>, buf: Seq<u8>) {
         self.fst.parse_disjoint_on(&other.fst, buf)
     }
 }
@@ -197,10 +201,10 @@ impl<U1, U2, V1, V2> DisjointFrom<SpecDepend<U2, V2>> for SpecDepend<U1, V1> whe
 // then `OrdChoice<S1, S2>` is disjoint from `S3`,
 //
 // this allows composition of the form `OrdChoice(..., OrdChoice(..., OrcChoice(...)))`
-impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2> where
-    S1: SpecCombinator + DisjointFrom<S3>,
-    S2: SpecCombinator + DisjointFrom<S1> + DisjointFrom<S3>,
-    S3: SpecCombinator,
+impl<'a, S1, S2, S3> DisjointFrom<'a, S3> for OrdChoice<S1, S2> where
+    S1: SpecCombinator<'a> + DisjointFrom<'a, S3>,
+    S2: SpecCombinator<'a> + DisjointFrom<'a, S1> + DisjointFrom<'a, S3>,
+    S3: SpecCombinator<'a>,
  {
     open spec fn disjoint_from(&self, other: &S3) -> bool {
         self.0.disjoint_from(other) && self.1.disjoint_from(other)
@@ -212,11 +216,11 @@ impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2> where
     }
 }
 
-impl<U1, U2, M1, M2> DisjointFrom<Mapped<U2, M2>> for Mapped<U1, M1> where
-    U1: DisjointFrom<U2>,
-    U2: SpecCombinator,
-    M1: SpecIso<Src = U1::SpecResult>,
-    M2: SpecIso<Src = U2::SpecResult>,
+impl<'a, U1, U2, M1, M2> DisjointFrom<'a, Mapped<U2, M2>> for Mapped<U1, M1> where
+    U1: DisjointFrom<'a, U2>,
+    U2: SpecCombinator<'a>,
+    M1: SpecIso<'a, Src = U1::SpecResult>,
+    M2: SpecIso<'a, Src = U2::SpecResult>,
     U1::SpecResult: SpecFrom<M1::Dst>,
     U2::SpecResult: SpecFrom<M2::Dst>,
     M1::Dst: SpecFrom<U1::SpecResult>,
@@ -232,9 +236,9 @@ impl<U1, U2, M1, M2> DisjointFrom<Mapped<U2, M2>> for Mapped<U1, M1> where
 }
 
 // if `self.cond` implies `!other.cond`, then `self` is disjoint from `other`
-impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
-    Inner1: SpecCombinator,
-    Inner2: SpecCombinator,
+impl<'a, Inner1, Inner2> DisjointFrom<'a, Cond<Inner2>> for Cond<Inner1> where
+    Inner1: SpecCombinator<'a>,
+    Inner2: SpecCombinator<'a>,
  {
     open spec fn disjoint_from(&self, other: &Cond<Inner2>) -> bool {
         self.cond ==> !other.cond
@@ -244,9 +248,9 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
     }
 }
 
-impl<'a, 'b, T1, T2> DisjointFrom<&'a T1> for &'b T2 where
-    T1: SpecCombinator,
-    T2: SpecCombinator + DisjointFrom<T1>,
+impl<'spec, 'a, 'b, T1, T2> DisjointFrom<'spec, &'a T1> for &'b T2 where
+    T1: SpecCombinator<'spec>,
+    T2: SpecCombinator<'spec> + DisjointFrom<'spec, T1>,
  {
     open spec fn disjoint_from(&self, other: &&T1) -> bool {
         (*self).disjoint_from(*other)
@@ -258,7 +262,7 @@ impl<'a, 'b, T1, T2> DisjointFrom<&'a T1> for &'b T2 where
 }
 
 // `[Fail]` is disjoint from any other combinator
-impl<T> DisjointFrom<T> for Fail where T: SpecCombinator {
+impl<'a, T> DisjointFrom<'a, T> for Fail where T: SpecCombinator<'a> {
     open spec fn disjoint_from(&self, c: &T) -> bool {
         true
     }

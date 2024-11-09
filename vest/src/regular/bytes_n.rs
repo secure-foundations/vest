@@ -15,7 +15,7 @@ impl<const N: usize> View for BytesN<N> {
     }
 }
 
-impl<const N: usize> SpecCombinator for BytesN<N> {
+impl<const N: usize> SpecCombinator<'_> for BytesN<N> {
     type SpecResult = Seq<u8>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -38,7 +38,7 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
     }
 }
 
-impl<const N: usize> SecureSpecCombinator for BytesN<N> {
+impl<const N: usize> SecureSpecCombinator<'_> for BytesN<N> {
     open spec fn is_prefix_secure() -> bool {
         true
     }
@@ -63,8 +63,6 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
 
 impl<const N: usize> Combinator for BytesN<N> {
     type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)

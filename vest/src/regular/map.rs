@@ -6,33 +6,23 @@ verus! {
 
 /// Spec version of [`Iso`].
 /// It mandates that the isomorphism is bijective.
-pub trait SpecIso {
+pub trait SpecIso<'a> {
     /// The source type of the isomorphism.
     type Src: SpecFrom<Self::Dst>;
 
     /// The destination type of the isomorphism.
     type Dst: SpecFrom<Self::Src>;
 
-    /// Applies the isomorphism to the source type.
-    open spec fn spec_apply(s: Self::Src) -> Self::Dst {
-        Self::Dst::spec_from(s)
-    }
-
-    /// Applies the reverse isomorphism to the destination type.
-    open spec fn spec_rev_apply(s: Self::Dst) -> Self::Src {
-        Self::Src::spec_from(s)
-    }
-
     /// One direction of the isomorphism.
     proof fn spec_iso(s: Self::Src)
         ensures
-            Self::spec_rev_apply(Self::spec_apply(s)) == s,
+            Self::Src::spec_from(Self::Dst::spec_from(s)) == s,
     ;
 
     /// The other direction of the isomorphism.
     proof fn spec_iso_rev(s: Self::Dst)
         ensures
-            Self::spec_apply(Self::spec_rev_apply(s)) == s,
+            Self::Dst::spec_from(Self::Src::spec_from(s)) == s,
     ;
 }
 
@@ -40,41 +30,19 @@ pub trait SpecIso {
 /// [`Self::apply`] and [`Self::rev_apply`] must be inverses of each other.
 /// See [`SpecIso::spec_iso`] and [`SpecIso::spec_iso_rev`] for more details.
 pub trait Iso: View where
-    Self::V: SpecIso<Src = <Self::SrcOwned as View>::V, Dst = <Self::DstOwned as View>::V>,
-    <Self::SrcOwned as View>::V: SpecFrom<<Self::DstOwned as View>::V>,
-    <Self::DstOwned as View>::V: SpecFrom<<Self::SrcOwned as View>::V>,
+    Self::V: for <'spec>SpecIso<
+        'spec,
+        Src = <Self::Src<'spec> as View>::V,
+        Dst = <Self::Dst<'spec> as View>::V,
+    >,
+    for <'spec><Self::Src<'spec> as View>::V: SpecFrom<<Self::Dst<'spec> as View>::V>,
+    for <'spec><Self::Dst<'spec> as View>::V: SpecFrom<<Self::Src<'spec> as View>::V>,
  {
     /// The source type of the isomorphism.
-    type Src<'a>: View<V = <Self::SrcOwned as View>::V> + From<Self::Dst<'a>>;
+    type Src<'a>: View + From<Self::Dst<'a>>;
 
     /// The destination type of the isomorphism.
-    type Dst<'a>: View<V = <Self::DstOwned as View>::V> + From<Self::Src<'a>>;
-
-    /// The owned version of the source type.
-    type SrcOwned: View + From<Self::DstOwned>;
-
-    /// The owned version of the destination type.
-    type DstOwned: View + From<Self::SrcOwned>;
-
-    /// Applies the isomorphism to the source type.
-    fn apply(s: Self::Src<'_>) -> (res: Self::Dst<'_>)
-        ensures
-            res@ == Self::V::spec_apply(s@),
-    {
-        assert(Self::V::spec_apply(s@) == <Self::Dst<'_> as View>::V::spec_from(s@))
-            by (compute_only);
-        Self::Dst::ex_from(s)
-    }
-
-    /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply(s: Self::Dst<'_>) -> (res: Self::Src<'_>)
-        ensures
-            res@ == Self::V::spec_rev_apply(s@),
-    {
-        assert(Self::V::spec_rev_apply(s@) == <Self::Src<'_> as View>::V::spec_from(s@))
-            by (compute_only);
-        Self::Src::ex_from(s)
-    }
+    type Dst<'a>: View + From<Self::Src<'a>>;
 }
 
 /// Combinator that maps the result of an `inner` combinator with an isomorphism that implements
@@ -94,9 +62,9 @@ impl<Inner: View, M: View> View for Mapped<Inner, M> {
     }
 }
 
-impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
-    Inner: SpecCombinator,
-    M: SpecIso<Src = Inner::SpecResult>,
+impl<'a, Inner, M> SpecCombinator<'a> for Mapped<Inner, M> where
+    Inner: SpecCombinator<'a>,
+    M: SpecIso<'a, Src = Inner::SpecResult>,
     Inner::SpecResult: SpecFrom<M::Dst>,
     M::Dst: SpecFrom<Inner::SpecResult>,
  {
@@ -105,7 +73,7 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         match self.inner.spec_parse(s) {
             Err(e) => Err(e),
-            Ok((n, v)) => Ok((n, M::spec_apply(v))),
+            Ok((n, v)) => Ok((n, v.spec_into()))
         }
     }
 
@@ -117,13 +85,13 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.inner.spec_serialize(M::spec_rev_apply(v))
+        self.inner.spec_serialize(v.spec_into())
     }
 }
 
-impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
-    Inner: SecureSpecCombinator,
-    M: SpecIso<Src = Inner::SpecResult>,
+impl<'a, Inner, M> SecureSpecCombinator<'a> for Mapped<Inner, M> where
+    Inner: SecureSpecCombinator<'a>,
+    M: SpecIso<'a, Src = Inner::SpecResult>,
     Inner::SpecResult: SpecFrom<M::Dst>,
     M::Dst: SpecFrom<Inner::SpecResult>,
  {
@@ -132,9 +100,9 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(buf) = self.inner.spec_serialize(M::spec_rev_apply(v)) {
+        if let Ok(buf) = self.inner.spec_serialize(v.spec_into()) {
             M::spec_iso_rev(v);
-            self.inner.theorem_serialize_parse_roundtrip(M::spec_rev_apply(v))
+            self.inner.theorem_serialize_parse_roundtrip(v.spec_into());
         }
     }
 
@@ -155,22 +123,21 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> Combinator for Mapped<
-    Inner,
-    M,
-> where
+impl<Inner, M> Combinator for Mapped<Inner, M> where
     Inner: Combinator,
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
-    for <'a> M: Iso<Src<'a> = Inner::Result<'a>, SrcOwned = Inner::Owned>,
+    Inner::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Inner::Result<'spec> as View>::V>,
+    for <'a> M: Iso<Src<'a> = Inner::Result<'a>>,
     for <'a>Inner::Result<'a>: From<M::Dst<'a>> + View,
     for <'a>M::Dst<'a>: From<Inner::Result<'a>> + View,
-    M::V: SpecIso<Src = <Inner::Owned as View>::V, Dst = <M::DstOwned as View>::V>,
-    <Inner::Owned as View>::V: SpecFrom<<M::DstOwned as View>::V>,
-    <M::DstOwned as View>::V: SpecFrom<<Inner::Owned as View>::V>,
+    M::V: for <'spec>SpecIso<
+        'spec,
+        Src = <Inner::Result<'spec> as View>::V,
+        Dst = <M::Dst<'spec> as View>::V,
+    >,
+    for <'spec><Inner::Result<'spec> as View>::V: SpecFrom<<M::Dst<'spec> as View>::V>,
+    for <'spec><M::Dst<'spec> as View>::V: SpecFrom<<Inner::Result<'spec> as View>::V>,
  {
     type Result<'a> = M::Dst<'a>;
-
-    type Owned = M::DstOwned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -191,7 +158,7 @@ impl<Inner, M> Combinator for Mapped<
                 proof {
                     M::V::spec_iso(v@);
                 }
-                Ok((n, M::apply(v)))
+                Ok((n, v.ex_into()))
             },
         }
     }
@@ -204,104 +171,60 @@ impl<Inner, M> Combinator for Mapped<
         usize,
         SerializeError,
     >) {
-        self.inner.serialize(M::rev_apply(v), data, pos)
+        self.inner.serialize(v.ex_into(), data, pos)
     }
 }
 
 /// Spec version of [`TryFromInto`].
-pub trait SpecTryFromInto {
+pub trait SpecTryFromInto<'a> {
     /// The source type
     type Src: SpecTryFrom<Self::Dst>;
 
     /// The destination type
     type Dst: SpecTryFrom<Self::Src>;
 
-    /// Applies the faillible conversion to the source type.
-    open spec fn spec_apply(s: Self::Src) -> Result<
-        Self::Dst,
-        <Self::Dst as SpecTryFrom<Self::Src>>::Error,
-    > {
-        Self::Dst::spec_try_from(s)
-    }
-
-    /// Applies the reverse faillible conversion to the destination type.
-    open spec fn spec_rev_apply(s: Self::Dst) -> Result<
-        Self::Src,
-        <Self::Src as SpecTryFrom<Self::Dst>>::Error,
-    > {
-        Self::Src::spec_try_from(s)
-    }
-
     /// One direction of the isomorphism when the conversion is successful.
     proof fn spec_iso(s: Self::Src)
         ensures
-            Self::spec_apply(s) matches Ok(v) ==> {
-                &&& Self::spec_rev_apply(v) is Ok
-                &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+            Self::Dst::spec_try_from(s) matches Ok(v) ==> {
+                &&& Self::Src::spec_try_from(v) is Ok
+                &&& Self::Src::spec_try_from(v) matches Ok(s_) && s == s_
             },
+            // Self::spec_apply(s) matches Ok(v) ==> {
+            //     &&& Self::spec_rev_apply(v) is Ok
+            //     &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+            // },
     ;
 
     /// The other direction of the isomorphism when the conversion is successful.
     proof fn spec_iso_rev(s: Self::Dst)
         ensures
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-                &&& Self::spec_apply(v) is Ok
-                &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+            Self::Src::spec_try_from(s) matches Ok(v) ==> {
+                &&& Self::Dst::spec_try_from(v) is Ok
+                &&& Self::Dst::spec_try_from(v) matches Ok(s_) && s == s_
             },
+            // Self::spec_rev_apply(s) matches Ok(v) ==> {
+            //     &&& Self::spec_apply(v) is Ok
+            //     &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+            // },
     ;
 }
 
 /// Faillible version of [`Iso`].
 pub trait TryFromInto: View where
-    Self::V: SpecTryFromInto<Src = <Self::SrcOwned as View>::V, Dst = <Self::DstOwned as View>::V>,
-    <Self::SrcOwned as View>::V: SpecTryFrom<<Self::DstOwned as View>::V>,
-    <Self::DstOwned as View>::V: SpecTryFrom<<Self::SrcOwned as View>::V>,
+    Self::V: for <'spec>SpecTryFromInto<
+        'spec,
+        Src = <Self::Src<'spec> as View>::V,
+        Dst = <Self::Dst<'spec> as View>::V,
+    >,
+    for <'spec><Self::Src<'spec> as View>::V: SpecTryFrom<<Self::Dst<'spec> as View>::V>,
+    for <'spec><Self::Dst<'spec> as View>::V: SpecTryFrom<<Self::Src<'spec> as View>::V>,
  {
-    /// The source type 
-    type Src<'a>: View<V = <Self::SrcOwned as View>::V> + TryFrom<Self::Dst<'a>>;
+    /// The source type
+    type Src<'a>: View + TryFrom<Self::Dst<'a>>;
 
     /// The destination type
-    type Dst<'a>: View<V = <Self::DstOwned as View>::V> + TryFrom<Self::Src<'a>>;
-
-    /// The owned version of the source type.
-    type SrcOwned: View + TryFrom<Self::DstOwned>;
-
-    /// The owned version of the destination type.
-    type DstOwned: View + TryFrom<Self::SrcOwned>;
-
-    /// Applies the faillible conversion to the source type.
-    fn apply(s: Self::Src<'_>) -> (res: Result<
-        Self::Dst<'_>,
-        <Self::Dst<'_> as TryFrom<Self::Src<'_>>>::Error,
-    >)
-        ensures
-            res matches Ok(v) ==> {
-                &&& Self::V::spec_apply(s@) is Ok
-                &&& Self::V::spec_apply(s@) matches Ok(v_) && v@ == v_
-            },
-            res matches Err(e) ==> Self::V::spec_apply(s@) is Err,
-    {
-        assert(Self::V::spec_apply(s@) == <Self::Dst<'_> as View>::V::spec_try_from(s@))
-            by (compute_only);
-        Self::Dst::ex_try_from(s)
-    }
-
-    /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::Dst<'_>) -> (res: Result<
-        Self::Src<'_>,
-        <Self::Src<'_> as TryFrom<Self::Dst<'_>>>::Error,
-    >)
-        ensures
-            res matches Ok(v) ==> {
-                &&& Self::V::spec_rev_apply(s@) is Ok
-                &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
-            },
-            res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
-    {
-        assert(Self::V::spec_rev_apply(s@) == <Self::Src<'_> as View>::V::spec_try_from(s@))
-            by (compute_only);
-        Self::Src::ex_try_from(s)
-    }
+    type Dst<'a>: View + TryFrom<Self::Src<'a>>;
 }
 
 /// Combinator that maps the result of an `inner` combinator with a faillible conversion
@@ -321,9 +244,9 @@ impl<Inner: View, M: View> View for TryMap<Inner, M> {
     }
 }
 
-impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
-    Inner: SpecCombinator,
-    M: SpecTryFromInto<Src = Inner::SpecResult>,
+impl<'a, Inner, M> SpecCombinator<'a> for TryMap<Inner, M> where
+    Inner: SpecCombinator<'a>,
+    M: SpecTryFromInto<'a, Src = Inner::SpecResult>,
     Inner::SpecResult: SpecTryFrom<M::Dst>,
     M::Dst: SpecTryFrom<Inner::SpecResult>,
  {
@@ -332,7 +255,7 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         match self.inner.spec_parse(s) {
             Err(e) => Err(e),
-            Ok((n, v)) => match M::spec_apply(v) {
+            Ok((n, v)) => match v.spec_try_into() {
                 Ok(v) => Ok((n, v)),
                 Err(_) => Err(()),
             },
@@ -347,16 +270,16 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        match M::spec_rev_apply(v) {
+        match v.spec_try_into() {
             Ok(v) => self.inner.spec_serialize(v),
             Err(_) => Err(()),
         }
     }
 }
 
-impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
-    Inner: SecureSpecCombinator,
-    M: SpecTryFromInto<Src = Inner::SpecResult>,
+impl<'a, Inner, M> SecureSpecCombinator<'a> for TryMap<Inner, M> where
+    Inner: SecureSpecCombinator<'a>,
+    M: SpecTryFromInto<'a, Src = Inner::SpecResult>,
     Inner::SpecResult: SpecTryFrom<M::Dst>,
     M::Dst: SpecTryFrom<Inner::SpecResult>,
  {
@@ -365,7 +288,7 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(v_) = M::spec_rev_apply(v) {
+        if let Ok(v_) = v.spec_try_into() {
             M::spec_iso_rev(v);
             self.inner.theorem_serialize_parse_roundtrip(v_);
         }
@@ -388,22 +311,24 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 }
 
-impl<Inner, M> Combinator for TryMap<
-    Inner,
-    M,
-> where
+impl<Inner, M> Combinator for TryMap<Inner, M> where
     Inner: Combinator,
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
-    for <'a> M: TryFromInto<Src<'a> = Inner::Result<'a>, SrcOwned = Inner::Owned>,
+    Inner::V: for <'spec>SecureSpecCombinator<
+        'spec,
+        SpecResult = <Inner::Result<'spec> as View>::V,
+    >,
+    for <'a> M: TryFromInto<Src<'a> = Inner::Result<'a>>,
     for <'a>Inner::Result<'a>: TryFrom<M::Dst<'a>> + View,
     for <'a>M::Dst<'a>: TryFrom<Inner::Result<'a>> + View,
-    M::V: SpecTryFromInto<Src = <Inner::Owned as View>::V, Dst = <M::DstOwned as View>::V>,
-    <Inner::Owned as View>::V: SpecTryFrom<<M::DstOwned as View>::V>,
-    <M::DstOwned as View>::V: SpecTryFrom<<Inner::Owned as View>::V>,
+    M::V: for <'spec>SpecTryFromInto<
+        'spec,
+        Src = <Inner::Result<'spec> as View>::V,
+        Dst = <M::Dst<'spec> as View>::V,
+    >,
+    for <'spec><Inner::Result<'spec> as View>::V: SpecTryFrom<<M::Dst<'spec> as View>::V>,
+    for <'spec><M::Dst<'spec> as View>::V: SpecTryFrom<<Inner::Result<'spec> as View>::V>,
  {
     type Result<'a> = M::Dst<'a>;
-
-    type Owned = M::DstOwned;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -420,7 +345,7 @@ impl<Inner, M> Combinator for TryMap<
     fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
-            Ok((n, v)) => match M::apply(v) {
+            Ok((n, v)) => match v.ex_try_into() {
                 Ok(v) => Ok((n, v)),
                 Err(_) => Err(ParseError::TryMapFailed),
             },
@@ -435,7 +360,7 @@ impl<Inner, M> Combinator for TryMap<
         usize,
         SerializeError,
     >) {
-        match M::rev_apply(v) {
+        match v.ex_try_into() {
             Ok(v) => self.inner.serialize(v, data, pos),
             Err(_) => Err(SerializeError::TryMapFailed),
         }
@@ -533,7 +458,7 @@ impl View for FieldLessMapper {
     }
 }
 
-impl SpecTryFromInto for FieldLessMapper {
+impl SpecTryFromInto<'_> for FieldLessMapper {
     type Src = FieldLessInner;
     type Dst = FieldLess;
 
@@ -545,9 +470,6 @@ impl SpecTryFromInto for FieldLessMapper {
 impl TryFromInto for FieldLessMapper {
     type Src<'a> = FieldLessInner;
     type Dst<'a> = FieldLess;
-
-    type SrcOwned = FieldLessInner;
-    type DstOwned = FieldLess;
 }
 
 type FieldLessCombinator = TryMap<U8, FieldLessMapper>;

@@ -4,7 +4,7 @@ use vstd::slice::slice_subrange;
 
 verus! {
 
-impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Snd) {
+impl<'a, Fst: SecureSpecCombinator<'a>, Snd: SpecCombinator<'a>> SpecCombinator<'a> for (Fst, Snd) {
     type SpecResult = (Fst::SpecResult, Snd::SpecResult);
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
@@ -57,7 +57,9 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
     }
 }
 
-impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator for (Fst, Snd) {
+impl<'a, Fst: SecureSpecCombinator<'a>, Snd: SecureSpecCombinator<'a>> SecureSpecCombinator<
+    'a,
+> for (Fst, Snd) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
         if let Ok((buf)) = self.spec_serialize(v) {
             let buf0 = self.0.spec_serialize(v.0).unwrap();
@@ -115,12 +117,10 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
 impl<Fst, Snd> Combinator for (Fst, Snd) where
     Fst: Combinator,
     Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+    Fst::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Fst::Result<'spec> as View>::V>,
+    Snd::V: for <'spec>SecureSpecCombinator<'spec, SpecResult = <Snd::Result<'spec> as View>::V>,
  {
     type Result<'a> = (Fst::Result<'a>, Snd::Result<'a>);
-
-    type Owned = (Fst::Owned, Snd::Owned);
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
