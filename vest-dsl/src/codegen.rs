@@ -120,7 +120,6 @@ fn gen_nested_eithers(num_of_variants: usize, var_name: &str) -> Vec<String> {
 pub enum Mode {
     Spec,
     Exec(LifetimeAnn),
-    ExecOwned,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -416,7 +415,6 @@ impl Codegen for ConstraintIntCombinator {
             let type_alias_name = match mode {
                 Mode::Spec => &format!("Spec{}", name),
                 Mode::Exec(_) => name,
-                Mode::ExecOwned => &format!("{}Owned", name),
             };
 
             format!("pub type {} = {};\n", type_alias_name, int_type)
@@ -487,7 +485,7 @@ impl Codegen for ConstraintIntCombinator {
             };
             let constraints = gen_constraints(constraint);
             let impl_spec_pred = format!(
-                r#"impl SpecPred for Predicate{hash} {{
+                r#"impl SpecPred<'_> for Predicate{hash} {{
     type Input = {input_type};
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
@@ -504,7 +502,6 @@ impl Codegen for ConstraintIntCombinator {
             let impl_exec_pred = format!(
                 r#"impl Pred for Predicate{hash} {{
     type Input<'a> = {input_type};
-    type InputOwned = {input_type};
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {{
         let i = (*i){as_u32};
@@ -569,7 +566,6 @@ impl Codegen for BytesCombinator {
                 Mode::Spec => &format!("Spec{}", name),
                 Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
                 Mode::Exec(LifetimeAnn::None) => name,
-                Mode::ExecOwned => &format!("{}Owned", name),
             };
             format!("pub type {} = {};\n", type_alias_name, type_name)
         }
@@ -628,7 +624,6 @@ impl Codegen for CombinatorInvocation {
         let invocked = match mode {
             Mode::Spec => format!("Spec{}", invocked),
             Mode::Exec(_) => invocked.to_owned(),
-            Mode::ExecOwned => format!("{}Owned", invocked),
         };
         let lifetime = match mode {
             Mode::Exec(LifetimeAnn::Some) => {
@@ -651,7 +646,6 @@ impl Codegen for CombinatorInvocation {
             let name = match mode {
                 Mode::Spec => format!("Spec{}", name),
                 Mode::Exec(_) => name.to_owned(),
-                Mode::ExecOwned => format!("{}Owned", name),
             };
             format!(
                 "pub type {}{} = {}{};\n",
@@ -673,7 +667,6 @@ impl Codegen for CombinatorInvocation {
         let invocked = match mode {
             Mode::Spec => format!("spec_{}", &self.func),
             Mode::Exec(_) => self.func.to_owned(),
-            _ => unreachable!(),
         };
         let args = &self
             .args
@@ -718,7 +711,6 @@ impl Codegen for StructCombinator {
         let msg_type_name = match mode {
             Mode::Spec => format!("Spec{}", name),
             Mode::Exec(_) => name.to_string(),
-            Mode::ExecOwned => format!("{}Owned", name),
         };
         let lifetime_ann = match mode {
             Mode::Exec(LifetimeAnn::Some) => "<'a>",
@@ -801,11 +793,10 @@ impl Codegen for StructCombinator {
 
         // impl View for exec struct(s)
         match mode {
-            Mode::Exec(_) | Mode::ExecOwned => {
+            Mode::Exec(_) => {
                 let lifetime = match mode {
                     Mode::Exec(LifetimeAnn::Some) => "<'_>",
                     Mode::Exec(LifetimeAnn::None) => "",
-                    Mode::ExecOwned => "",
                     _ => unreachable!(),
                 };
                 code.push_str(&format!(
@@ -982,7 +973,19 @@ impl Codegen for StructCombinator {
                 additional_code,
             )
         } else {
-            let (fst, snd) = (
+            let fst_msg_types = fst
+                .iter()
+                .map(|field| match field {
+                    StructField::Ordinary { combinator, .. }
+                    | StructField::Dependent { combinator, .. } => {
+                        combinator.gen_msg_type("", mode, ctx)
+                    }
+                    StructField::Const { combinator, .. } => combinator.gen_msg_type("", mode, ctx),
+                    _ => todo!(),
+                })
+                .collect::<Vec<_>>();
+            let fst_msg_type = fmt_in_pairs(&fst_msg_types, "", Bracket::Parentheses);
+            let (fst_comb_types, snd_comb_types) = (
                 fst.iter()
                     .map(combinator_type_from_field)
                     .collect::<Vec<_>>(),
@@ -990,29 +993,33 @@ impl Codegen for StructCombinator {
                     .map(combinator_type_from_field)
                     .collect::<Vec<_>>(),
             );
-            let (fst_comb_type, snd_comb_types) = (
+            let (fst_comb_type, snd_comb_type) = (
                 fmt_in_pairs(
-                    &fst.iter().map(|(t, _)| t).collect::<Vec<_>>(),
+                    &fst_comb_types.iter().map(|(t, _)| t).collect::<Vec<_>>(),
                     "",
                     Bracket::Parentheses,
                 ),
                 fmt_in_pairs(
-                    &snd.iter().map(|(t, _)| t).collect::<Vec<_>>(),
+                    &snd_comb_types.iter().map(|(t, _)| t).collect::<Vec<_>>(),
                     "",
                     Bracket::Parentheses,
                 ),
             );
             let inner = match mode {
-                Mode::Spec => format!("SpecDepend<{fst_comb_type}, {snd_comb_types}>"),
-                _ => format!("Depend<{fst_comb_type}, {snd_comb_types}, {name}Cont>"),
+                Mode::Spec => {
+                    format!("SpecDepend<{fst_comb_type}, {snd_comb_type}, {fst_msg_type}>")
+                }
+                _ => {
+                    format!("Depend<{fst_comb_type}, {snd_comb_type}, {fst_msg_type}, {name}Cont>")
+                }
             };
             let cont_struct = match mode {
                 Mode::Spec => "".to_string(),
                 _ => format!("pub struct {}Cont;", name),
             };
-            let additional_code = fst
+            let additional_code = fst_comb_types
                 .iter()
-                .chain(snd.iter())
+                .chain(snd_comb_types.iter())
                 .map(|(_, code)| code.to_string())
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -1174,14 +1181,12 @@ impl Codegen for EnumCombinator {
                     let alias_name = match mode {
                         Mode::Spec => format!("Spec{}", name),
                         Mode::Exec(..) => name.to_string(),
-                        Mode::ExecOwned => format!("{}Owned", name),
                     };
                     format!("pub type {} = {};\n", alias_name, inferred)
                 }
             }
             EnumCombinator::Exhaustive { enums } => {
-                // since the spec, exec, and exec_owned types are the same, we only need to
-                // generate one of them
+                // since the spec and exec types are the same, we only need to generate one of them
                 if let Mode::Spec = mode {
                     let inferred = infer_enum_type(enums);
                     if name.is_empty() {
@@ -1214,7 +1219,6 @@ pub enum {msg_type_name} {{
     {enum_variants}
 }}
 pub type Spec{msg_type_name} = {msg_type_name};
-pub type {msg_type_name}Owned = {msg_type_name};
 
 pub type {msg_type_name}Inner = {inferred};
 
@@ -1278,7 +1282,7 @@ impl View for {msg_type_name}Mapper {{
     }}
 }}
 
-impl SpecTryFromInto for {msg_type_name}Mapper {{
+impl SpecTryFromInto<'_> for {msg_type_name}Mapper {{
     type Src = {msg_type_name}Inner;
     type Dst = {msg_type_name};
 
@@ -1290,9 +1294,6 @@ impl SpecTryFromInto for {msg_type_name}Mapper {{
 impl TryFromInto for {msg_type_name}Mapper {{
     type Src<'a> = {msg_type_name}Inner;
     type Dst<'a> = {msg_type_name};
-
-    type SrcOwned = {msg_type_name}Inner;
-    type DstOwned = {msg_type_name};
 }}
 
                     "#
@@ -1372,7 +1373,6 @@ impl Codegen for ChoiceCombinator {
                 let msg_type_name = match mode {
                     Mode::Spec => format!("Spec{}", name),
                     Mode::Exec(_) => name.to_string(),
-                    Mode::ExecOwned => format!("{}Owned", name),
                 };
                 let lifetime_ann = match mode {
                     Mode::Exec(LifetimeAnn::Some) => "<'a>",
@@ -1414,11 +1414,10 @@ impl Codegen for ChoiceCombinator {
 
                 // impl View for exec enums
                 match mode {
-                    Mode::Exec(_) | Mode::ExecOwned => {
+                    Mode::Exec(_) => {
                         let lifetime = match mode {
                             Mode::Exec(LifetimeAnn::Some) => "<'_>",
                             Mode::Exec(LifetimeAnn::None) => "",
-                            Mode::ExecOwned => "",
                             _ => unreachable!(),
                         };
                         code.push_str(&format!(
@@ -1647,40 +1646,26 @@ impl Codegen for ChoiceCombinator {
 
 fn gen_mapper(name: &str, msg_type_name: &str, lifetime_ann: &str) -> String {
     format!(
-        r#"pub struct {}Mapper;
-impl View for {}Mapper {{
+        r#"pub struct {name}Mapper;
+impl View for {name}Mapper {{
     type V = Self;
     open spec fn view(&self) -> Self::V {{
         *self
     }}
 }}
-impl SpecIso for {}Mapper {{
-    type Src = Spec{}Inner;
-    type Dst = Spec{};
+impl SpecIso<'_> for {name}Mapper {{
+    type Src = Spec{name}Inner;
+    type Dst = Spec{name};
     proof fn spec_iso(s: Self::Src) {{
     }}
     proof fn spec_iso_rev(s: Self::Dst) {{
     }}
 }}
-impl Iso for {}Mapper {{
-    type Src<'a> = {}Inner{};
-    type Dst<'a> = {}{};
-    type SrcOwned = {}OwnedInner;
-    type DstOwned = {}Owned;
+impl Iso for {name}Mapper {{
+    type Src<'a> = {msg_type_name}Inner{lifetime_ann};
+    type Dst<'a> = {msg_type_name}{lifetime_ann};
 }}
-"#,
-        name,
-        name,
-        name,
-        name,
-        name,
-        name,
-        msg_type_name,
-        lifetime_ann,
-        msg_type_name,
-        lifetime_ann,
-        name,
-        name
+"#
     )
 }
 
@@ -1717,7 +1702,6 @@ impl Codegen for VecCombinator {
                 Mode::Spec => &format!("Spec{}", name),
                 Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
                 Mode::Exec(LifetimeAnn::None) => name,
-                Mode::ExecOwned => &format!("{}Owned", name),
             };
             format!("pub type {} = {};\n", type_alias_name, type_name)
         }
@@ -1915,7 +1899,7 @@ impl View for BytesPredicate{hash} {{
         *self
     }}
 }}
-impl SpecPred for BytesPredicate{hash} {{
+impl SpecPred<'_> for BytesPredicate{hash} {{
     type Input = Seq<u8>;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
@@ -1924,7 +1908,6 @@ impl SpecPred for BytesPredicate{hash} {{
 }}
 impl Pred for BytesPredicate{hash} {{
     type Input<'a> = &'a [u8];
-    type InputOwned = Vec<u8>;
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {{
         compare_slice(i, {name}.as_slice())
@@ -2015,7 +1998,6 @@ fn gen_msg_type_definition(
         } => {
             code.push_str(&combinator.gen_msg_type(name, Mode::Spec, ctx));
             code.push_str(&combinator.gen_msg_type(name, Mode::Exec(lifetime_ann), ctx));
-            code.push_str(&combinator.gen_msg_type(name, Mode::ExecOwned, ctx));
         }
         Definition::ConstCombinator {
             name,
