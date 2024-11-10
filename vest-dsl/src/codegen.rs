@@ -2291,7 +2291,9 @@ pub open spec fn serialize_spec_{name}(msg: Spec{upper_caml_name}{spec_params}) 
     ensures
         o matches Ok(r) ==> parse_spec_{name}(i@{args_view}) matches Ok(r_) && r@ == r_,
 {{
-    {exec_body}.parse(i)
+    let c = {exec_body};
+    assert(c.parse_requires());
+    c.parse(i)
 }}
 
 pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, pos: usize{exec_params}) -> (o: Result<usize, SerializeError>)
@@ -2301,7 +2303,9 @@ pub fn serialize_{name}(msg: {upper_caml_name}{lifetime}, data: &mut Vec<u8>, po
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         }},
 {{
-    {exec_body}.serialize(msg, data, pos)
+    let c = {exec_body};
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }}
 "#));
         }
