@@ -65,9 +65,19 @@ impl<'a> From<MsgDInner<'a>> for MsgD<'a> {
     }
 }
 
-pub struct MsgDMapper;
+pub struct MsgDMapper<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for MsgDMapper {
+impl<'a> MsgDMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for MsgDMapper<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -75,7 +85,7 @@ impl View for MsgDMapper {
     }
 }
 
-impl SpecIso for MsgDMapper {
+impl SpecIso for MsgDMapper<'_> {
     type Src = SpecMsgDInner;
 
     type Dst = SpecMsgD;
@@ -87,42 +97,10 @@ impl SpecIso for MsgDMapper {
     }
 }
 
-impl Iso for MsgDMapper {
-    type Src<'a> = MsgDInner<'a>;
+impl<'a> Iso for MsgDMapper<'a> {
+    type Src = MsgDInner<'a>;
 
-    type Dst<'a> = MsgD<'a>;
-
-    type SrcOwned = MsgDOwnedInner;
-
-    type DstOwned = MsgDOwned;
-}
-
-pub struct MsgDOwned {
-    pub f1: Vec<u8>,
-    pub f2: u16,
-}
-
-pub type MsgDOwnedInner = (Vec<u8>, u16);
-
-impl View for MsgDOwned {
-    type V = SpecMsgD;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgD { f1: self.f1@, f2: self.f2@ }
-    }
-}
-
-impl From<MsgDOwned> for MsgDOwnedInner {
-    fn ex_from(m: MsgDOwned) -> MsgDOwnedInner {
-        (m.f1, m.f2)
-    }
-}
-
-impl From<MsgDOwnedInner> for MsgDOwned {
-    fn ex_from(m: MsgDOwnedInner) -> MsgDOwned {
-        let (f1, f2) = m;
-        MsgDOwned { f1, f2 }
-    }
+    type Dst = MsgD<'a>;
 }
 
 pub struct SpecMsgB {
@@ -171,9 +149,19 @@ impl<'a> From<MsgBInner<'a>> for MsgB<'a> {
     }
 }
 
-pub struct MsgBMapper;
+pub struct MsgBMapper<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for MsgBMapper {
+impl<'a> MsgBMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for MsgBMapper<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -181,7 +169,7 @@ impl View for MsgBMapper {
     }
 }
 
-impl SpecIso for MsgBMapper {
+impl SpecIso for MsgBMapper<'_> {
     type Src = SpecMsgBInner;
 
     type Dst = SpecMsgB;
@@ -193,54 +181,19 @@ impl SpecIso for MsgBMapper {
     }
 }
 
-impl Iso for MsgBMapper {
-    type Src<'a> = MsgBInner<'a>;
+impl<'a> Iso for MsgBMapper<'a> {
+    type Src = MsgBInner<'a>;
 
-    type Dst<'a> = MsgB<'a>;
-
-    type SrcOwned = MsgBOwnedInner;
-
-    type DstOwned = MsgBOwned;
-}
-
-pub struct MsgBOwned {
-    pub f1: MsgDOwned,
-}
-
-pub type MsgBOwnedInner = MsgDOwned;
-
-impl View for MsgBOwned {
-    type V = SpecMsgB;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgB { f1: self.f1@ }
-    }
-}
-
-impl From<MsgBOwned> for MsgBOwnedInner {
-    fn ex_from(m: MsgBOwned) -> MsgBOwnedInner {
-        m.f1
-    }
-}
-
-impl From<MsgBOwnedInner> for MsgBOwned {
-    fn ex_from(m: MsgBOwnedInner) -> MsgBOwned {
-        let f1 = m;
-        MsgBOwned { f1 }
-    }
+    type Dst = MsgB<'a>;
 }
 
 pub type SpecContent0 = Seq<u8>;
 
 pub type Content0<'a> = &'a [u8];
 
-pub type Content0Owned = Vec<u8>;
-
 pub type SpecContentType = u8;
 
 pub type ContentType = u8;
-
-pub type ContentTypeOwned = u8;
 
 pub enum SpecMsgCF4 {
     C0(SpecContent0),
@@ -317,9 +270,19 @@ impl<'a> From<MsgCF4Inner<'a>> for MsgCF4<'a> {
     }
 }
 
-pub struct MsgCF4Mapper;
+pub struct MsgCF4Mapper<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for MsgCF4Mapper {
+impl<'a> MsgCF4Mapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for MsgCF4Mapper<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -327,7 +290,7 @@ impl View for MsgCF4Mapper {
     }
 }
 
-impl SpecIso for MsgCF4Mapper {
+impl SpecIso for MsgCF4Mapper<'_> {
     type Src = SpecMsgCF4Inner;
 
     type Dst = SpecMsgCF4;
@@ -339,58 +302,10 @@ impl SpecIso for MsgCF4Mapper {
     }
 }
 
-impl Iso for MsgCF4Mapper {
-    type Src<'a> = MsgCF4Inner<'a>;
+impl<'a> Iso for MsgCF4Mapper<'a> {
+    type Src = MsgCF4Inner<'a>;
 
-    type Dst<'a> = MsgCF4<'a>;
-
-    type SrcOwned = MsgCF4OwnedInner;
-
-    type DstOwned = MsgCF4Owned;
-}
-
-pub enum MsgCF4Owned {
-    C0(Content0Owned),
-    C1(u16),
-    C2(u32),
-    Unrecognized(Vec<u8>),
-}
-
-pub type MsgCF4OwnedInner = Either<Content0Owned, Either<u16, Either<u32, Vec<u8>>>>;
-
-impl View for MsgCF4Owned {
-    type V = SpecMsgCF4;
-
-    open spec fn view(&self) -> Self::V {
-        match self {
-            MsgCF4Owned::C0(m) => SpecMsgCF4::C0(m@),
-            MsgCF4Owned::C1(m) => SpecMsgCF4::C1(m@),
-            MsgCF4Owned::C2(m) => SpecMsgCF4::C2(m@),
-            MsgCF4Owned::Unrecognized(m) => SpecMsgCF4::Unrecognized(m@),
-        }
-    }
-}
-
-impl From<MsgCF4Owned> for MsgCF4OwnedInner {
-    fn ex_from(m: MsgCF4Owned) -> MsgCF4OwnedInner {
-        match m {
-            MsgCF4Owned::C0(m) => Either::Left(m),
-            MsgCF4Owned::C1(m) => Either::Right(Either::Left(m)),
-            MsgCF4Owned::C2(m) => Either::Right(Either::Right(Either::Left(m))),
-            MsgCF4Owned::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-}
-
-impl From<MsgCF4OwnedInner> for MsgCF4Owned {
-    fn ex_from(m: MsgCF4OwnedInner) -> MsgCF4Owned {
-        match m {
-            Either::Left(m) => MsgCF4Owned::C0(m),
-            Either::Right(Either::Left(m)) => MsgCF4Owned::C1(m),
-            Either::Right(Either::Right(Either::Left(m))) => MsgCF4Owned::C2(m),
-            Either::Right(Either::Right(Either::Right(m))) => MsgCF4Owned::Unrecognized(m),
-        }
-    }
+    type Dst = MsgCF4<'a>;
 }
 
 pub struct SpecMsgC {
@@ -443,9 +358,19 @@ impl<'a> From<MsgCInner<'a>> for MsgC<'a> {
     }
 }
 
-pub struct MsgCMapper;
+pub struct MsgCMapper<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for MsgCMapper {
+impl<'a> MsgCMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for MsgCMapper<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -453,7 +378,7 @@ impl View for MsgCMapper {
     }
 }
 
-impl SpecIso for MsgCMapper {
+impl SpecIso for MsgCMapper<'_> {
     type Src = SpecMsgCInner;
 
     type Dst = SpecMsgC;
@@ -465,43 +390,10 @@ impl SpecIso for MsgCMapper {
     }
 }
 
-impl Iso for MsgCMapper {
-    type Src<'a> = MsgCInner<'a>;
+impl<'a> Iso for MsgCMapper<'a> {
+    type Src = MsgCInner<'a>;
 
-    type Dst<'a> = MsgC<'a>;
-
-    type SrcOwned = MsgCOwnedInner;
-
-    type DstOwned = MsgCOwned;
-}
-
-pub struct MsgCOwned {
-    pub f2: ContentTypeOwned,
-    pub f3: u24,
-    pub f4: MsgCF4Owned,
-}
-
-pub type MsgCOwnedInner = ((ContentTypeOwned, u24), MsgCF4Owned);
-
-impl View for MsgCOwned {
-    type V = SpecMsgC;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgC { f2: self.f2@, f3: self.f3@, f4: self.f4@ }
-    }
-}
-
-impl From<MsgCOwned> for MsgCOwnedInner {
-    fn ex_from(m: MsgCOwned) -> MsgCOwnedInner {
-        ((m.f2, m.f3), m.f4)
-    }
-}
-
-impl From<MsgCOwnedInner> for MsgCOwned {
-    fn ex_from(m: MsgCOwnedInner) -> MsgCOwned {
-        let ((f2, f3), f4) = m;
-        MsgCOwned { f2, f3, f4 }
-    }
+    type Dst = MsgC<'a>;
 }
 
 pub struct SpecMsgA {
@@ -552,9 +444,19 @@ impl<'a> From<MsgAInner<'a>> for MsgA<'a> {
     }
 }
 
-pub struct MsgAMapper;
+pub struct MsgAMapper<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for MsgAMapper {
+impl<'a> MsgAMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for MsgAMapper<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -562,7 +464,7 @@ impl View for MsgAMapper {
     }
 }
 
-impl SpecIso for MsgAMapper {
+impl SpecIso for MsgAMapper<'_> {
     type Src = SpecMsgAInner;
 
     type Dst = SpecMsgA;
@@ -574,42 +476,10 @@ impl SpecIso for MsgAMapper {
     }
 }
 
-impl Iso for MsgAMapper {
-    type Src<'a> = MsgAInner<'a>;
+impl<'a> Iso for MsgAMapper<'a> {
+    type Src = MsgAInner<'a>;
 
-    type Dst<'a> = MsgA<'a>;
-
-    type SrcOwned = MsgAOwnedInner;
-
-    type DstOwned = MsgAOwned;
-}
-
-pub struct MsgAOwned {
-    pub f1: MsgBOwned,
-    pub f2: Vec<u8>,
-}
-
-pub type MsgAOwnedInner = (MsgBOwned, Vec<u8>);
-
-impl View for MsgAOwned {
-    type V = SpecMsgA;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMsgA { f1: self.f1@, f2: self.f2@ }
-    }
-}
-
-impl From<MsgAOwned> for MsgAOwnedInner {
-    fn ex_from(m: MsgAOwned) -> MsgAOwnedInner {
-        (m.f1, m.f2)
-    }
-}
-
-impl From<MsgAOwnedInner> for MsgAOwned {
-    fn ex_from(m: MsgAOwnedInner) -> MsgAOwned {
-        let (f1, f2) = m;
-        MsgAOwned { f1, f2 }
-    }
+    type Dst = MsgA<'a>;
 }
 
 pub spec const SPEC_MSGD_F1: Seq<u8> = seq![1; 4];
@@ -617,8 +487,8 @@ pub spec const SPEC_MSGD_F1: Seq<u8> = seq![1; 4];
 pub const MSGD_F2: u16 = 4660;
 
 pub type SpecMsgDCombinator = Mapped<
-    (Refined<BytesN<4>, BytesPredicate16235736133663645624>, Refined<U16Be, TagPred<u16>>),
-    MsgDMapper,
+    (Refined<BytesN<4>, BytesPredicate16235736133663645624<'static>>, Refined<U16Be, TagPred<u16>>),
+    MsgDMapper<'static>,
 >;
 
 pub exec const MSGD_F1: [u8; 4]
@@ -630,9 +500,19 @@ pub exec const MSGD_F1: [u8; 4]
     arr
 }
 
-pub struct BytesPredicate16235736133663645624;
+pub struct BytesPredicate16235736133663645624<'a>(std::marker::PhantomData<&'a ()>);
 
-impl View for BytesPredicate16235736133663645624 {
+impl<'a> BytesPredicate16235736133663645624<'a> {
+    pub closed spec fn spec_new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl View for BytesPredicate16235736133663645624<'_> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -640,7 +520,7 @@ impl View for BytesPredicate16235736133663645624 {
     }
 }
 
-impl SpecPred for BytesPredicate16235736133663645624 {
+impl SpecPred for BytesPredicate16235736133663645624<'_> {
     type Input = Seq<u8>;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
@@ -648,24 +528,22 @@ impl SpecPred for BytesPredicate16235736133663645624 {
     }
 }
 
-impl Pred for BytesPredicate16235736133663645624 {
-    type Input<'a> = &'a [u8];
+impl<'a> Pred for BytesPredicate16235736133663645624<'a> {
+    type Input = &'a [u8];
 
-    type InputOwned = Vec<u8>;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         compare_slice(i, MSGD_F1.as_slice())
     }
 }
 
-pub type MsgDCombinator = Mapped<
-    (Refined<BytesN<4>, BytesPredicate16235736133663645624>, Refined<U16Be, TagPred<u16>>),
-    MsgDMapper,
+pub type MsgDCombinator<'a> = Mapped<
+    (Refined<BytesN<4>, BytesPredicate16235736133663645624<'a>>, Refined<U16Be, TagPred<u16>>),
+    MsgDMapper<'a>,
 >;
 
-pub type SpecMsgBCombinator = Mapped<SpecMsgDCombinator, MsgBMapper>;
+pub type SpecMsgBCombinator = Mapped<SpecMsgDCombinator, MsgBMapper<'static>>;
 
-pub type MsgBCombinator = Mapped<MsgDCombinator, MsgBMapper>;
+pub type MsgBCombinator<'a> = Mapped<MsgDCombinator<'a>, MsgBMapper<'a>>;
 
 pub type SpecContent0Combinator = Bytes;
 
@@ -682,69 +560,72 @@ pub type SpecMsgCF4Combinator = AndThen<
             Cond<SpecContent0Combinator>,
             OrdChoice<Cond<U16Be>, OrdChoice<Cond<U32Be>, Cond<Tail>>>,
         >,
-        MsgCF4Mapper,
+        MsgCF4Mapper<'static>,
     >,
 >;
 
-pub type MsgCF4Combinator = AndThen<
+pub type MsgCF4Combinator<'a> = AndThen<
     Bytes,
     Mapped<
         OrdChoice<
             Cond<Content0Combinator>,
             OrdChoice<Cond<U16Be>, OrdChoice<Cond<U32Be>, Cond<Tail>>>,
         >,
-        MsgCF4Mapper,
+        MsgCF4Mapper<'a>,
     >,
 >;
 
 pub type SpecMsgCCombinator = Mapped<
     SpecDepend<(SpecContentTypeCombinator, U24Be), SpecMsgCF4Combinator>,
-    MsgCMapper,
+    MsgCMapper<'static>,
 >;
 
-pub struct MsgCCont;
+pub struct MsgCCont<'a>(std::marker::PhantomData<&'a ()>);
 
-pub type MsgCCombinator = Mapped<
-    Depend<(ContentTypeCombinator, U24Be), MsgCF4Combinator, MsgCCont>,
-    MsgCMapper,
+pub type MsgCCombinator<'a> = Mapped<
+    Depend<'a, (ContentTypeCombinator, U24Be), MsgCF4Combinator<'a>, MsgCCont<'a>>,
+    MsgCMapper<'a>,
 >;
 
-pub type SpecMsgACombinator = Mapped<(SpecMsgBCombinator, Tail), MsgAMapper>;
+pub type SpecMsgACombinator = Mapped<(SpecMsgBCombinator, Tail), MsgAMapper<'static>>;
 
-pub type MsgACombinator = Mapped<(MsgBCombinator, Tail), MsgAMapper>;
+pub type MsgACombinator<'a> = Mapped<(MsgBCombinator<'a>, Tail), MsgAMapper<'a>>;
 
 pub open spec fn spec_msg_d() -> SpecMsgDCombinator {
     Mapped {
         inner: (
-            Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624 },
+            Refined {
+                inner: BytesN::<4>,
+                predicate: BytesPredicate16235736133663645624::spec_new(),
+            },
             Refined { inner: U16Be, predicate: TagPred(MSGD_F2) },
         ),
-        mapper: MsgDMapper,
+        mapper: MsgDMapper::spec_new(),
     }
 }
 
-pub fn msg_d() -> (o: MsgDCombinator)
+pub fn msg_d<'a>() -> (o: MsgDCombinator<'a>)
     ensures
         o@ == spec_msg_d(),
 {
     Mapped {
         inner: (
-            Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624 },
+            Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624::new() },
             Refined { inner: U16Be, predicate: TagPred(MSGD_F2) },
         ),
-        mapper: MsgDMapper,
+        mapper: MsgDMapper::new(),
     }
 }
 
 pub open spec fn spec_msg_b() -> SpecMsgBCombinator {
-    Mapped { inner: spec_msg_d(), mapper: MsgBMapper }
+    Mapped { inner: spec_msg_d(), mapper: MsgBMapper::spec_new() }
 }
 
-pub fn msg_b() -> (o: MsgBCombinator)
+pub fn msg_b<'a>() -> (o: MsgBCombinator<'a>)
     ensures
         o@ == spec_msg_b(),
 {
-    Mapped { inner: msg_d(), mapper: MsgBMapper }
+    Mapped { inner: msg_d(), mapper: MsgBMapper::new() }
 }
 
 pub open spec fn spec_content_0(num: u24) -> SpecContent0Combinator {
@@ -783,12 +664,12 @@ pub open spec fn spec_msg_c_f4(f2: SpecContentType, f3: u24) -> SpecMsgCF4Combin
                     ),
                 ),
             ),
-            mapper: MsgCF4Mapper,
+            mapper: MsgCF4Mapper::spec_new(),
         },
     )
 }
 
-pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator)
+pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator<'a>)
     ensures
         o@ == spec_msg_c_f4(f2@, f3@),
 {
@@ -805,7 +686,7 @@ pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator)
                     ),
                 ),
             ),
-            mapper: MsgCF4Mapper,
+            mapper: MsgCF4Mapper::new(),
         },
     )
 }
@@ -813,7 +694,7 @@ pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator)
 pub open spec fn spec_msg_c() -> SpecMsgCCombinator {
     let fst = (spec_content_type(), U24Be);
     let snd = |deps| spec_msg_c_cont(deps);
-    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper }
+    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper::spec_new() }
 }
 
 pub open spec fn spec_msg_c_cont(deps: (SpecContentType, u24)) -> SpecMsgCF4Combinator {
@@ -821,18 +702,18 @@ pub open spec fn spec_msg_c_cont(deps: (SpecContentType, u24)) -> SpecMsgCF4Comb
     spec_msg_c_f4(f2, f3)
 }
 
-pub fn msg_c() -> (o: MsgCCombinator)
+pub fn msg_c<'a>() -> (o: MsgCCombinator<'a>)
     ensures
         o@ == spec_msg_c(),
 {
     let fst = (content_type(), U24Be);
-    let snd = MsgCCont;
+    let snd = MsgCCont(std::marker::PhantomData);
     let spec_snd = Ghost(|deps| spec_msg_c_cont(deps));
-    Mapped { inner: Depend { fst, snd, spec_snd }, mapper: MsgCMapper }
+    Mapped { inner: Depend { fst, snd, spec_snd }, mapper: MsgCMapper::new() }
 }
 
-impl Continuation<(ContentType, u24)> for MsgCCont {
-    type Output = MsgCF4Combinator;
+impl<'a> Continuation<(ContentType, u24)> for MsgCCont<'a> {
+    type Output = MsgCF4Combinator<'a>;
 
     open spec fn requires(&self, deps: (ContentType, u24)) -> bool {
         true
@@ -849,14 +730,14 @@ impl Continuation<(ContentType, u24)> for MsgCCont {
 }
 
 pub open spec fn spec_msg_a() -> SpecMsgACombinator {
-    Mapped { inner: (spec_msg_b(), Tail), mapper: MsgAMapper }
+    Mapped { inner: (spec_msg_b(), Tail), mapper: MsgAMapper::spec_new() }
 }
 
-pub fn msg_a() -> (o: MsgACombinator)
+pub fn msg_a<'a>() -> (o: MsgACombinator<'a>)
     ensures
         o@ == spec_msg_a(),
 {
-    Mapped { inner: (msg_b(), Tail), mapper: MsgAMapper }
+    Mapped { inner: (msg_b(), Tail), mapper: MsgAMapper::new() }
 }
 
 pub open spec fn parse_spec_msg_d(i: Seq<u8>) -> Result<(usize, SpecMsgD), ()> {

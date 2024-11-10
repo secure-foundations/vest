@@ -35,7 +35,7 @@ impl Continuation<(u8, u24)> for Msg1Snd {
     }
 }
 
-pub fn mk_msg1() -> (o: Depend<(U8, U24Be), (Bytes, Bytes), Msg1Snd>)
+pub fn mk_msg1() -> (o: Depend<'static, (U8, U24Be), (Bytes, Bytes), Msg1Snd>)
     ensures
         o@ == msg1(),
 {
