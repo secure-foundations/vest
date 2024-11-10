@@ -13,15 +13,12 @@ pub trait SpecPred {
 }
 
 /// All predicates to be used in [`Refined`] combinator must implement this trait.
-pub trait Pred: View where Self::V: SpecPred<Input = <Self::InputOwned as View>::V> {
+pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
     /// The input type of the predicate.
-    type Input<'a>: View<V = <Self::InputOwned as View>::V>;
-
-    /// The owned version of the input type.
-    type InputOwned: View;
+    type Input: View + ?Sized;
 
     /// Applies the predicate to the input.
-    fn apply(&self, i: &Self::Input<'_>) -> (res: bool)
+    fn apply(&self, i: &Self::Input) -> (res: bool)
         ensures
             res == self@.spec_apply(&i@),
     ;
@@ -94,18 +91,16 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<Inner, P> Combinator for Refined<
+impl<'a, Inner, P> Combinator<&'a [u8]> for Refined<
     Inner,
     P,
 > where
-    Inner: Combinator,
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
-    P: for <'a>Pred<Input<'a> = Inner::Result<'a>, InputOwned = Inner::Owned>,
-    P::V: SpecPred<Input = <Inner::Owned as View>::V>,
+    Inner: Combinator<&'a [u8]>,
+    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
+    P: Pred<Input = Inner::Result>,
+    P::V: SpecPred<Input = <Inner::Result as View>::V>,
  {
-    type Result<'a> = Inner::Result<'a>;
-
-    type Owned = Inner::Owned;
+    type Result = Inner::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -119,7 +114,7 @@ impl<Inner, P> Combinator for Refined<
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
+    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
         match self.inner.parse(s) {
             Ok((n, v)) => if self.predicate.apply(&v) {
                 Ok((n, v))
@@ -134,7 +129,7 @@ impl<Inner, P> Combinator for Refined<
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

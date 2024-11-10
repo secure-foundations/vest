@@ -121,16 +121,14 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+impl<'a, Fst, Snd> Combinator<&'a [u8]> for OrdChoice<Fst, Snd> where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
  {
-    type Result<'a> = Either<Fst::Result<'a>, Snd::Result<'a>>;
-
-    type Owned = Either<Fst::Owned, Snd::Owned>;
+    type Result = Either<Fst::Result, Snd::Result>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -144,7 +142,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
         self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         if let Ok((n, v)) = self.0.parse(s) {
             Ok((n, Either::Left(v)))
         } else {
@@ -162,7 +160,7 @@ impl<Fst, Snd> Combinator for OrdChoice<Fst, Snd> where
         )
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -312,7 +310,7 @@ pub use inj_ord_choice_pat;
 //     Default(&'a [u8]),
 // }
 //
-// pub enum MsgOwnedMatchU8With123 {
+// pub enum MsgMatchU8With123 {
 //     Arm1(u8),
 //     Arm2(u16),
 //     Arm3(u32),
@@ -332,15 +330,15 @@ pub use inj_ord_choice_pat;
 //     }
 // }
 //
-// impl View for MsgOwnedMatchU8With123 {
+// impl View for MsgMatchU8With123 {
 //     type V = SpecMsgMatchU8With123;
 //
 //     open spec fn view(&self) -> Self::V {
 //         match self {
-//             MsgOwnedMatchU8With123::Arm1(v) => SpecMsgMatchU8With123::Arm1(v@),
-//             MsgOwnedMatchU8With123::Arm2(v) => SpecMsgMatchU8With123::Arm2(v@),
-//             MsgOwnedMatchU8With123::Arm3(v) => SpecMsgMatchU8With123::Arm3(v@),
-//             MsgOwnedMatchU8With123::Default(v) => SpecMsgMatchU8With123::Default(v@),
+//             MsgMatchU8With123::Arm1(v) => SpecMsgMatchU8With123::Arm1(v@),
+//             MsgMatchU8With123::Arm2(v) => SpecMsgMatchU8With123::Arm2(v@),
+//             MsgMatchU8With123::Arm3(v) => SpecMsgMatchU8With123::Arm3(v@),
+//             MsgMatchU8With123::Default(v) => SpecMsgMatchU8With123::Default(v@),
 //         }
 //     }
 // }
@@ -509,7 +507,7 @@ pub use inj_ord_choice_pat;
 // impl Combinator for MatchU8With123 {
 //     type Result<'a> = MsgMatchU8With123<'a>;
 //
-//     type Owned = MsgOwnedMatchU8With123;
+//     type  = MsgMatchU8With123;
 //
 //     open spec fn spec_length(&self) -> Option<usize> {
 //         None

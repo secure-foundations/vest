@@ -153,10 +153,8 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
             }
 
-            impl Combinator for $combinator {
-                type Result<'a> = $int_type;
-
-                type Owned = $int_type;
+            impl Combinator<&[u8]> for $combinator {
+                type Result = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -253,10 +251,8 @@ macro_rules! impl_combinator_for_be_uint_type {
                 }
             }
 
-            impl Combinator for $combinator {
-                type Result<'a> = $int_type;
-
-                type Owned = $int_type;
+            impl Combinator<&[u8]> for $combinator {
+                type Result = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -607,7 +603,7 @@ impl FromToBytes for u32 {
             ((self >> 24) & 0xff) as u8,
         ]
     }
-    
+
     open spec fn spec_from_be_bytes(s: Seq<u8>) -> Self {
         (s[0] as u32) << 24 | (s[1] as u32) << 16 | (s[2] as u32) << 8 | (s[3] as u32)
     }
@@ -964,7 +960,7 @@ impl View for U24Le {
 
 impl SpecCombinator for U24Le {
     type SpecResult = u24;
-    
+
     // To parse a u24 in little-endian byte order, we simply reverse the 3 bytes parsed by the
     // `BytesN<3>` combinator.
     // Later when this `u24` is used, it's converted to a `u32` in big-endian byte order.
@@ -1020,10 +1016,8 @@ impl SecureSpecCombinator for U24Le {
     }
 }
 
-impl Combinator for U24Le {
-    type Result<'a> = u24;
-
-    type Owned = u24;
+impl Combinator<&[u8]> for U24Le {
+    type Result = u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
@@ -1057,7 +1051,7 @@ impl View for U24Be {
 
 impl SpecCombinator for U24Be {
     type SpecResult = u24;
-    
+
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
         match BytesN::<3>.spec_parse(s) {
             Ok((n, bytes)) => Ok((n, u24([bytes[0], bytes[1], bytes[2]]))),
@@ -1107,7 +1101,7 @@ impl SecureSpecCombinator for U24Be {
             _ => {}
         }
     }
-    
+
 }
 
 proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
@@ -1119,10 +1113,8 @@ proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
     admit();
 }
 
-impl Combinator for U24Be {
-    type Result<'a> = u24;
-
-    type Owned = u24;
+impl Combinator<&[u8]> for U24Be {
+    type Result = u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)

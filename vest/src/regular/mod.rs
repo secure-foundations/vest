@@ -15,9 +15,6 @@ pub mod map;
 pub mod pair;
 /// Refined combinator
 pub mod refined;
-// pub mod preser;
-// mod repeat_n;
-// mod repeat_n_const;
 /// AndThen combinator
 pub mod and_then;
 /// impl Clone for some combinators

@@ -123,15 +123,12 @@ pub trait SecureSpecCombinator: SpecCombinator {
 
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
-pub trait Combinator: View where
-    Self::V: SecureSpecCombinator<SpecResult = <Self::Owned as View>::V>,
+pub trait Combinator<I>: View where
+    I: View<V = Seq<u8>>,
+    Self::V: SecureSpecCombinator<SpecResult = <Self::Result as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
-    type Result<'a>: View<V = <Self::Owned as View>::V>;
-
-    /// The owned parsed type. This is currently a hack to avoid lifetime bindings in [`SpecCombinator::SpecResult`]
-    /// , but it can be useful if we want to have functions that return owned values (e.g. [`Vec<T>`]).
-    type Owned: View;
+    type Result: View;
 
     /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
@@ -149,7 +146,7 @@ pub trait Combinator: View where
     }
 
     /// The parsing function.
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>)
         requires
             self.parse_requires(),
         ensures
@@ -171,7 +168,7 @@ pub trait Combinator: View where
     }
 
     /// The serialization function.
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >)
@@ -222,12 +219,11 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
     }
 }
 
-impl<C: Combinator> Combinator for &C where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<I, C: Combinator<I>> Combinator<I> for &C where
+    I: View<V = Seq<u8>>,
+    C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
  {
-    type Result<'a> = C::Result<'a>;
-
-    type Owned = C::Owned;
+    type Result = C::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (*self).spec_length()
@@ -241,7 +237,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         (*self).parse(s)
     }
 
@@ -249,7 +245,7 @@ impl<C: Combinator> Combinator for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

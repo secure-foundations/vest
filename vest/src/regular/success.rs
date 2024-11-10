@@ -45,10 +45,8 @@ impl SecureSpecCombinator for Success {
     }
 }
 
-impl Combinator for Success {
-    type Result<'a> = ();
-
-    type Owned = ();
+impl Combinator<&[u8]> for Success {
+    type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(0)
@@ -58,11 +56,11 @@ impl Combinator for Success {
         Some(0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &[u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         Ok((0, ()))
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

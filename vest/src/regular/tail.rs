@@ -53,10 +53,8 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl Combinator for Tail {
-    type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
+impl<'a> Combinator<&'a [u8]> for Tail {
+    type Result = &'a [u8];
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -66,11 +64,11 @@ impl Combinator for Tail {
         None
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         Ok(((s.len()), s))
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

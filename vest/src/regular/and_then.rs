@@ -86,12 +86,10 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
     }
 }
 
-impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
-    Next::V: SecureSpecCombinator<SpecResult = <Next::Owned as View>::V>,
+impl<'a, Next: Combinator<&'a [u8]>> Combinator<&'a [u8]> for AndThen<Bytes, Next> where
+    Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
  {
-    type Result<'a> = Next::Result<'a>;
-
-    type Owned = Next::Owned;
+    type Result = Next::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -105,7 +103,7 @@ impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
         self.1.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
+    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
         let (n, v1) = self.0.parse(s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {
@@ -119,7 +117,7 @@ impl<Next: Combinator> Combinator for AndThen<Bytes, Next> where
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

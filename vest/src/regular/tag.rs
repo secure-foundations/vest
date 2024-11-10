@@ -25,32 +25,10 @@ impl<T> SpecPred for TagPred<T> {
 }
 
 impl<T: FromToBytes> Pred for TagPred<T> {
-    type Input<'a> = T;
+    type Input = T;
 
-    type InputOwned = T;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         self.0.eq(i)
-    }
-}
-
-impl<const N: usize> Pred for TagPred<[u8; N]> {
-    type Input<'b> = &'b [u8];
-
-    type InputOwned = Vec<u8>;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        compare_slice(self.0.as_slice(), *i)
-    }
-}
-
-impl<'a> Pred for TagPred<&'a [u8]> {
-    type Input<'b> = &'b [u8];
-
-    type InputOwned = Vec<u8>;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        compare_slice(self.0, *i)
     }
 }
 
@@ -123,13 +101,11 @@ impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Ta
     }
 }
 
-impl<Inner, T> Combinator for Tag<Inner, T> where
-    Inner: for <'a>Combinator<Result<'a> = T, Owned = T>,
+impl<'a, Inner, T> Combinator<&'a [u8]> for Tag<Inner, T> where
+    Inner: Combinator<&'a [u8], Result = T>,
     Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
  {
-    type Result<'a> = ();
-
-    type Owned = ();
+    type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -143,7 +119,7 @@ impl<Inner, T> Combinator for Tag<Inner, T> where
         self.0.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
+    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
         let (n, _) = self.0.parse(s)?;
         Ok((n, ()))
     }
@@ -152,7 +128,7 @@ impl<Inner, T> Combinator for Tag<Inner, T> where
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
         usize,
         SerializeError,
     > {
@@ -160,86 +136,12 @@ impl<Inner, T> Combinator for Tag<Inner, T> where
     }
 }
 
-impl<Inner, const N: usize> Combinator for Tag<Inner, [u8; N]> where
-    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
- {
-    type Result<'b> = ();
-
-    type Owned = ();
-
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ParseError> {
-        let (n, _) = self.0.parse(s)?;
-        Ok((n, ()))
-    }
-
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
-        self.0.serialize(self.0.predicate.0.as_slice(), data, pos)
-    }
-}
-
-impl<Inner, 'a> Combinator for Tag<Inner, &'a [u8]> where
-    Inner: for <'b>Combinator<Result<'b> = &'b [u8], Owned = Vec<u8>>,
-    Inner::V: SecureSpecCombinator<SpecResult = Seq<u8>>
- {
-    type Result<'b> = ();
-
-    type Owned = ();
-
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'b>(&self, s: &'b [u8]) -> Result<(usize, Self::Result<'b>), ParseError> {
-        let (n, _) = self.0.parse(s)?;
-        Ok((n, ()))
-    }
-
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
-        self.0.serialize(self.0.predicate.0, data, pos)
-    }
-}
 
 #[cfg(test)]
 mod test {
     use crate::regular::choice::OrdChoice;
     use super::*;
     use super::super::uints::{U8};
-    use super::super::bytes::Bytes;
     use super::super::bytes_n::BytesN;
 
     proof fn test(s: Seq<u8>)
@@ -251,28 +153,6 @@ mod test {
             if let Ok(buf) = tag.spec_serialize(v) {
                 tag.theorem_parse_serialize_roundtrip(s);
                 assert(buf == s.subrange(0, n as int));
-            }
-        }
-    }
-
-    fn test1(s: &[u8])
-        requires
-            s@.len() <= usize::MAX,
-    {
-        let bytes = [0u8, 0, 0];
-        let tag = Tag::new(BytesN::<3>, bytes.as_slice());
-        proof {
-            let spec_tag = Tag::spec_new(BytesN::<3>, bytes@);
-            assert(tag@ == spec_tag);
-        }
-        if let Ok((n, v)) = tag.parse(s) {
-            let mut buf = Vec::new();
-            buf.push(0);
-            if let Ok(m) = tag.serialize(v, &mut buf, 0) {
-                proof {
-                    tag@.theorem_parse_serialize_roundtrip(s@);
-                }
-                assert(buf@ == s@.subrange(0, n as int));
             }
         }
     }
@@ -301,41 +181,6 @@ mod test {
         }
     }
 
-    fn test4(s: &[u8])
-        requires
-            s@.len() <= usize::MAX,
-    {
-        let tag1 = Tag::new(U8, 0x42);
-        let tag2 = Tag::new(U8, 0x43);
-        let ord = OrdChoice(tag1, tag2);
-        if let Ok((n, v)) = ord.parse(s) {
-            let mut buf = Vec::new();
-            buf.push(0);
-            if let Ok(m) = ord.serialize(v, &mut buf, 0) {
-                proof {
-                    ord@.theorem_parse_serialize_roundtrip(s@);
-                }
-                assert(buf@ == s@.subrange(0, n as int));
-            }
-        }
-        let b1 = [0u8, 0, 0];
-        let b2 = [1u8, 0, 0];
-        let tag3 = Tag::new(Bytes(3), b1.as_slice());
-        let tag4 = Tag::new(Bytes(3), b2.as_slice());
-        let ord2 = OrdChoice(tag3, tag4);
-        if let Ok((n, v)) = ord2.parse(s) {
-            let mut buf = Vec::new();
-            buf.push(0);
-            buf.push(0);
-            buf.push(0);
-            if let Ok(m) = ord2.serialize(v, &mut buf, 0) {
-                proof {
-                    ord2@.theorem_parse_serialize_roundtrip(s@);
-                }
-                assert(buf@ == s@.subrange(0, n as int));
-            }
-        }
-    }
 
 }
 
@@ -522,14 +367,14 @@ mod test {
 //         Bytes::exec_is_prefix_secure()
 //     }
 //
-//     fn parse(&self, s: &[u8]) -> (res: Result<(usize, Self::Result<'_>), ()>) {
+//     fn parse(&self, s: &[u8]) -> (res: Result<(usize, Self::Result), ()>) {
 //         match self.0.parse(s) {
 //             Ok((n, v)) if compare_slice(v, self.1) => Ok((n, ())),
 //             _ => Err(()),
 //         }
 //     }
 //
-//     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+//     fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
 //         usize,
 //         (),
 //     >) {

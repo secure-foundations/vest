@@ -112,15 +112,13 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 }
 
-impl<Fst, Snd> Combinator for (Fst, Snd) where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+impl<'a, Fst, Snd> Combinator<&'a [u8]> for (Fst, Snd) where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
  {
-    type Result<'a> = (Fst::Result<'a>, Snd::Result<'a>);
-
-    type Owned = (Fst::Owned, Snd::Owned);
+    type Result = (Fst::Result, Snd::Result);
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
@@ -158,7 +156,7 @@ impl<Fst, Snd> Combinator for (Fst, Snd) where
         self.0.parse_requires() && self.1.parse_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         let (n, v1) = self.0.parse(s)?;
         let s_ = slice_subrange(s, n, s.len());
         let (m, v2) = self.1.parse(s_)?;
@@ -173,7 +171,7 @@ impl<Fst, Snd> Combinator for (Fst, Snd) where
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

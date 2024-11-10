@@ -69,12 +69,10 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<Inner: Combinator> Combinator for Cond<Inner> where
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Owned as View>::V>,
+impl<'a, Inner: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Cond<Inner> where
+    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
  {
-    type Result<'a> = Inner::Result<'a>;
-
-    type Owned = Inner::Owned;
+    type Result = Inner::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {
@@ -96,7 +94,7 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         self.inner.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> Result<(usize, Self::Result<'a>), ParseError> {
+    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
         if self.cond {
             self.inner.parse(s)
         } else {
@@ -108,7 +106,7 @@ impl<Inner: Combinator> Combinator for Cond<Inner> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

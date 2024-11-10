@@ -153,28 +153,28 @@ pub trait Continuation<Input> {
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
-pub struct Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+pub struct Depend<'a, Fst, Snd, C> where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    C: Continuation<Fst::Result, Output = Snd>,
  {
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
-    // Replaces `for <'a>fn(Fst::Result<'a>) -> Snd` in Depend,
+    // Replaces `for fn(Fst::Result) -> Snd` in Depend,
     pub snd: C,
     /// spec closure for well-formedness
-    pub spec_snd: Ghost<spec_fn(<Fst::Owned as View>::V) -> Snd::V>,
+    pub spec_snd: Ghost<spec_fn(<Fst::Result as View>::V) -> Snd::V>,
 }
 
-impl<Fst, Snd, C> Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+impl<'a, Fst, Snd, C> Depend<'a, Fst, Snd, C> where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    C: Continuation<Fst::Result, Output = Snd>,
  {
     /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
     pub open spec fn wf(&self) -> bool {
@@ -185,12 +185,12 @@ impl<Fst, Snd, C> Depend<Fst, Snd, C> where
 }
 
 /// Same [`View`] as [`Depend`]
-impl<Fst, Snd, C> View for Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
+impl<'a, Fst, Snd, C> View for Depend<'a, Fst, Snd, C> where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    C: Continuation<Fst::Result, Output = Snd>,
  {
     type V = SpecDepend<Fst::V, Snd::V>;
 
@@ -201,17 +201,15 @@ impl<Fst, Snd, C> View for Depend<Fst, Snd, C> where
 }
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
-    Fst: Combinator,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Owned as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
-    C: for <'a>Continuation<Fst::Result<'a>, Output = Snd>,
-    for <'a>Fst::Result<'a>: Copy,
+impl<'a, Fst, Snd, C> Combinator<&'a [u8]> for Depend<'a, Fst, Snd, C> where
+    Fst: Combinator<&'a [u8]>,
+    Snd: Combinator<&'a [u8]>,
+    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    C: Continuation<Fst::Result, Output = Snd>,
+    Fst::Result: Copy,
  {
-    type Result<'a> = (Fst::Result<'a>, Snd::Result<'a>);
-
-    type Owned = (Fst::Owned, Snd::Owned);
+    type Result = (Fst::Result, Snd::Result);
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -228,7 +226,7 @@ impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
         &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         let (n, v1) = self.fst.parse(s)?;
         let s_ = slice_subrange(s, n, s.len());
         let snd = self.snd.apply(v1);
@@ -247,7 +245,7 @@ impl<Fst, Snd, C> Combinator for Depend<Fst, Snd, C> where
         &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

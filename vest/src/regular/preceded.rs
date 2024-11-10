@@ -7,15 +7,7 @@ verus! {
 /// Combinator that sequentially applies two combinators and returns the result of the second one.
 pub struct Preceded<Fst, Snd>(pub Fst, pub Snd);
 
-impl<Fst, Snd> View for Preceded<
-    Fst,
-    Snd,
-> where
-    Fst: for<'a> Combinator<Result<'a> = (), Owned = ()>,
-    Snd: Combinator,
-    Fst::V: SecureSpecCombinator<SpecResult = ()>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
- {
+impl<Fst: View, Snd: View> View for Preceded<Fst, Snd>{
     type V = Preceded<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -133,18 +125,16 @@ impl<
     }
 }
 
-impl<Fst, Snd> Combinator for Preceded<
+impl<'a, Fst, Snd> Combinator<&'a [u8]> for Preceded<
     Fst,
     Snd,
 > where
-    Fst: for<'a> Combinator<Result<'a> = (), Owned = ()>,
-    Snd: Combinator,
+    Fst: Combinator<&'a [u8], Result = ()>,
+    Snd: Combinator<&'a [u8]>,
     Fst::V: SecureSpecCombinator<SpecResult = ()>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Owned as View>::V>,
+    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
  {
-    type Result<'a> = Snd::Result<'a>;
-
-    type Owned = Snd::Owned;
+    type Result = Snd::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
@@ -182,7 +172,7 @@ impl<Fst, Snd> Combinator for Preceded<
         self.0.parse_requires() && self.1.parse_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         let (n, ()): (usize, ()) = self.0.parse(s)?;
         let s_ = slice_subrange(s, n, s.len());
         let (m, v) = self.1.parse(s_)?;
@@ -197,7 +187,7 @@ impl<Fst, Snd> Combinator for Preceded<
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize<'b>(&self, v: Self::Result<'_>, data: &'b mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize<'b>(&self, v: Self::Result, data: &'b mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

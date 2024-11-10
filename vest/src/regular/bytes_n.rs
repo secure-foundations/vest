@@ -61,10 +61,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
     }
 }
 
-impl<const N: usize> Combinator for BytesN<N> {
-    type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
+impl<'a, const N: usize> Combinator<&'a[u8]> for BytesN<N> {
+    type Result = &'a [u8];
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)
@@ -74,7 +72,7 @@ impl<const N: usize> Combinator for BytesN<N> {
         Some(N)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         if N <= s.len() {
             let s_ = slice_subrange(s, 0, N);
             Ok((N, s_))
@@ -83,7 +81,7 @@ impl<const N: usize> Combinator for BytesN<N> {
         }
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

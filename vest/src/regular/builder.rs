@@ -90,10 +90,8 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<T> Combinator for BuilderCombinator<T> where T: Builder + View {
-    type Result<'a> = ();
-
-    type Owned = ();
+impl<T> Combinator<&[u8]> for BuilderCombinator<T> where T: Builder + View {
+    type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

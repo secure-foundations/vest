@@ -24,8 +24,8 @@ impl Bytes {
     }
 
     /// Chains this combinator with another combinator.
-    pub fn and_then<Next: Combinator>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
-        Next::V: SecureSpecCombinator<SpecResult = <Next::Owned as View>::V>,
+    pub fn and_then<'a, Next: Combinator<&'a [u8]>>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
+        Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
 
         ensures
             o@ == self@.spec_and_then(next@),
@@ -80,10 +80,8 @@ impl SecureSpecCombinator for Bytes {
     }
 }
 
-impl Combinator for Bytes {
-    type Result<'a> = &'a [u8];
-
-    type Owned = Vec<u8>;
+impl<'a> Combinator<&'a [u8]> for Bytes {
+    type Result = &'a [u8];
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)
@@ -93,7 +91,7 @@ impl Combinator for Bytes {
         Some(self.0)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
         if self.0 <= s.len() {
             let s_ = slice_subrange(s, 0, self.0);
             Ok((self.0, s_))
@@ -102,7 +100,7 @@ impl Combinator for Bytes {
         }
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
