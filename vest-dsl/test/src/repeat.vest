@@ -1,9 +1,9 @@
-opaque_u16_1 = {
+opaque_u16 = {
   @l: u16 | { 1..0xffff },
   data: [u8; @l],
 }
 
-responder_id = opaque_u16_1
+responder_id = opaque_u16
 
 responder_id_list = {
   @l: u16 | { 0..0xffff },
