@@ -16,109 +16,6 @@ use vest::utils::*;
 use vstd::prelude::*;
 verus! {
 
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AType {
-    A = 0,
-    B = 1,
-    C = 2,
-}
-
-pub type SpecAType = AType;
-
-pub type ATypeOwned = AType;
-
-pub type ATypeInner = u8;
-
-impl View for AType {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<ATypeInner> for AType {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ATypeInner) -> Result<AType, ()> {
-        match v {
-            0u8 => Ok(AType::A),
-            1u8 => Ok(AType::B),
-            2u8 => Ok(AType::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<AType> for ATypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AType) -> Result<ATypeInner, ()> {
-        match v {
-            AType::A => Ok(0u8),
-            AType::B => Ok(1u8),
-            AType::C => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<ATypeInner> for AType {
-    type Error = ();
-
-    fn ex_try_from(v: ATypeInner) -> Result<AType, ()> {
-        match v {
-            0u8 => Ok(AType::A),
-            1u8 => Ok(AType::B),
-            2u8 => Ok(AType::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<AType> for ATypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: AType) -> Result<ATypeInner, ()> {
-        match v {
-            AType::A => Ok(0u8),
-            AType::B => Ok(1u8),
-            AType::C => Ok(2u8),
-        }
-    }
-}
-
-pub struct ATypeMapper;
-
-impl View for ATypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for ATypeMapper {
-    type Src = ATypeInner;
-
-    type Dst = AType;
-
-    proof fn spec_iso(s: Self::Src) {
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-
-impl TryFromInto for ATypeMapper {
-    type Src<'a> = ATypeInner;
-
-    type Dst<'a> = AType;
-
-    type SrcOwned = ATypeInner;
-
-    type DstOwned = AType;
-}
-
 pub struct SpecMsg1 {
     pub a: u8,
     pub b: u16,
@@ -229,6 +126,109 @@ impl From<Msg1OwnedInner> for Msg1Owned {
         let (a, (b, c)) = m;
         Msg1Owned { a, b, c }
     }
+}
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AType {
+    A = 0,
+    B = 1,
+    C = 2,
+}
+
+pub type SpecAType = AType;
+
+pub type ATypeOwned = AType;
+
+pub type ATypeInner = u8;
+
+impl View for AType {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<ATypeInner> for AType {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ATypeInner) -> Result<AType, ()> {
+        match v {
+            0u8 => Ok(AType::A),
+            1u8 => Ok(AType::B),
+            2u8 => Ok(AType::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<AType> for ATypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AType) -> Result<ATypeInner, ()> {
+        match v {
+            AType::A => Ok(0u8),
+            AType::B => Ok(1u8),
+            AType::C => Ok(2u8),
+        }
+    }
+}
+
+impl TryFrom<ATypeInner> for AType {
+    type Error = ();
+
+    fn ex_try_from(v: ATypeInner) -> Result<AType, ()> {
+        match v {
+            0u8 => Ok(AType::A),
+            1u8 => Ok(AType::B),
+            2u8 => Ok(AType::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<AType> for ATypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: AType) -> Result<ATypeInner, ()> {
+        match v {
+            AType::A => Ok(0u8),
+            AType::B => Ok(1u8),
+            AType::C => Ok(2u8),
+        }
+    }
+}
+
+pub struct ATypeMapper;
+
+impl View for ATypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for ATypeMapper {
+    type Src = ATypeInner;
+
+    type Dst = AType;
+
+    proof fn spec_iso(s: Self::Src) {
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+
+impl TryFromInto for ATypeMapper {
+    type Src<'a> = ATypeInner;
+
+    type Dst<'a> = AType;
+
+    type SrcOwned = ATypeInner;
+
+    type DstOwned = AType;
 }
 
 pub struct SpecMsg2 {
@@ -602,10 +602,6 @@ impl From<Msg4OwnedInner> for Msg4Owned {
     }
 }
 
-pub type SpecATypeCombinator = TryMap<U8, ATypeMapper>;
-
-pub type ATypeCombinator = TryMap<U8, ATypeMapper>;
-
 impl SpecPred for Predicate5821512137558126895 {
     type Input = u8;
 
@@ -654,6 +650,10 @@ pub type Msg1Combinator = Mapped<
     Msg1Mapper,
 >;
 
+pub type SpecATypeCombinator = TryMap<U8, ATypeMapper>;
+
+pub type ATypeCombinator = TryMap<U8, ATypeMapper>;
+
 pub type SpecMsg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
 
 pub type Msg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
@@ -687,17 +687,6 @@ pub type Msg4Combinator = Mapped<
     Msg4Mapper,
 >;
 
-pub open spec fn spec_a_type() -> SpecATypeCombinator {
-    TryMap { inner: U8, mapper: ATypeMapper }
-}
-
-pub fn a_type() -> (o: ATypeCombinator)
-    ensures
-        o@ == spec_a_type(),
-{
-    TryMap { inner: U8, mapper: ATypeMapper }
-}
-
 pub open spec fn spec_msg1() -> SpecMsg1Combinator {
     Mapped {
         inner: (
@@ -719,6 +708,17 @@ pub fn msg1() -> (o: Msg1Combinator)
         ),
         mapper: Msg1Mapper,
     }
+}
+
+pub open spec fn spec_a_type() -> SpecATypeCombinator {
+    TryMap { inner: U8, mapper: ATypeMapper }
+}
+
+pub fn a_type() -> (o: ATypeCombinator)
+    ensures
+        o@ == spec_a_type(),
+{
+    TryMap { inner: U8, mapper: ATypeMapper }
 }
 
 pub open spec fn spec_msg2() -> SpecMsg2Combinator {
@@ -810,34 +810,6 @@ impl Continuation<AType> for Msg4Cont {
     }
 }
 
-pub open spec fn parse_spec_a_type(i: Seq<u8>) -> Result<(usize, SpecAType), ()> {
-    spec_a_type().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_a_type(msg: SpecAType) -> Result<Seq<u8>, ()> {
-    spec_a_type().spec_serialize(msg)
-}
-
-pub fn parse_a_type(i: &[u8]) -> (o: Result<(usize, AType), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_a_type(i@) matches Ok(r_) && r@ == r_,
-{
-    a_type().parse(i)
-}
-
-pub fn serialize_a_type(msg: AType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_a_type(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    a_type().serialize(msg, data, pos)
-}
-
 pub open spec fn parse_spec_msg1(i: Seq<u8>) -> Result<(usize, SpecMsg1), ()> {
     spec_msg1().spec_parse(i)
 }
@@ -850,7 +822,9 @@ pub fn parse_msg1(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg1(i@) matches Ok(r_) && r@ == r_,
 {
-    msg1().parse(i)
+    let c = msg1();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_msg1(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -863,7 +837,41 @@ pub fn serialize_msg1(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Resu
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    msg1().serialize(msg, data, pos)
+    let c = msg1();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
+}
+
+pub open spec fn parse_spec_a_type(i: Seq<u8>) -> Result<(usize, SpecAType), ()> {
+    spec_a_type().spec_parse(i)
+}
+
+pub open spec fn serialize_spec_a_type(msg: SpecAType) -> Result<Seq<u8>, ()> {
+    spec_a_type().spec_serialize(msg)
+}
+
+pub fn parse_a_type(i: &[u8]) -> (o: Result<(usize, AType), ParseError>)
+    ensures
+        o matches Ok(r) ==> parse_spec_a_type(i@) matches Ok(r_) && r@ == r_,
+{
+    let c = a_type();
+    assert(c.parse_requires());
+    c.parse(i)
+}
+
+pub fn serialize_a_type(msg: AType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    usize,
+    SerializeError,
+>)
+    ensures
+        o matches Ok(n) ==> {
+            &&& serialize_spec_a_type(msg@) matches Ok(buf)
+            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
+        },
+{
+    let c = a_type();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_msg2(i: Seq<u8>) -> Result<(usize, SpecMsg2), ()> {
@@ -878,7 +886,9 @@ pub fn parse_msg2(i: &[u8]) -> (o: Result<(usize, Msg2), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg2(i@) matches Ok(r_) && r@ == r_,
 {
-    msg2().parse(i)
+    let c = msg2();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_msg2(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -891,7 +901,9 @@ pub fn serialize_msg2(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    msg2().serialize(msg, data, pos)
+    let c = msg2();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_msg3(i: Seq<u8>) -> Result<(usize, SpecMsg3), ()> {
@@ -906,7 +918,9 @@ pub fn parse_msg3(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg3(i@) matches Ok(r_) && r@ == r_,
 {
-    msg3().parse(i)
+    let c = msg3();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_msg3(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -919,7 +933,9 @@ pub fn serialize_msg3(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Resu
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    msg3().serialize(msg, data, pos)
+    let c = msg3();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_msg4_v(i: Seq<u8>, t: SpecAType) -> Result<(usize, SpecMsg4V), ()> {
@@ -934,7 +950,9 @@ pub fn parse_msg4_v(i: &[u8], t: AType) -> (o: Result<(usize, Msg4V<'_>), ParseE
     ensures
         o matches Ok(r) ==> parse_spec_msg4_v(i@, t@) matches Ok(r_) && r@ == r_,
 {
-    msg4_v(t).parse(i)
+    let c = msg4_v(t);
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_msg4_v(msg: Msg4V<'_>, data: &mut Vec<u8>, pos: usize, t: AType) -> (o: Result<
@@ -947,7 +965,9 @@ pub fn serialize_msg4_v(msg: Msg4V<'_>, data: &mut Vec<u8>, pos: usize, t: AType
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    msg4_v(t).serialize(msg, data, pos)
+    let c = msg4_v(t);
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_msg4(i: Seq<u8>) -> Result<(usize, SpecMsg4), ()> {
@@ -962,7 +982,9 @@ pub fn parse_msg4(i: &[u8]) -> (o: Result<(usize, Msg4<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg4(i@) matches Ok(r_) && r@ == r_,
 {
-    msg4().parse(i)
+    let c = msg4();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_msg4(msg: Msg4<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -975,7 +997,9 @@ pub fn serialize_msg4(msg: Msg4<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Resu
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    msg4().serialize(msg, data, pos)
+    let c = msg4();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 } // verus!

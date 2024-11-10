@@ -468,7 +468,9 @@ pub fn parse_opaque_u16_1(i: &[u8]) -> (o: Result<(usize, OpaqueU161<'_>), Parse
     ensures
         o matches Ok(r) ==> parse_spec_opaque_u16_1(i@) matches Ok(r_) && r@ == r_,
 {
-    opaque_u16_1().parse(i)
+    let c = opaque_u16_1();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_opaque_u16_1(msg: OpaqueU161<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -481,7 +483,9 @@ pub fn serialize_opaque_u16_1(msg: OpaqueU161<'_>, data: &mut Vec<u8>, pos: usiz
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    opaque_u16_1().serialize(msg, data, pos)
+    let c = opaque_u16_1();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_responder_id(i: Seq<u8>) -> Result<(usize, SpecResponderId), ()> {
@@ -496,7 +500,9 @@ pub fn parse_responder_id(i: &[u8]) -> (o: Result<(usize, ResponderId<'_>), Pars
     ensures
         o matches Ok(r) ==> parse_spec_responder_id(i@) matches Ok(r_) && r@ == r_,
 {
-    responder_id().parse(i)
+    let c = responder_id();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_responder_id(msg: ResponderId<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -509,7 +515,9 @@ pub fn serialize_responder_id(msg: ResponderId<'_>, data: &mut Vec<u8>, pos: usi
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    responder_id().serialize(msg, data, pos)
+    let c = responder_id();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_responder_id_list_list(i: Seq<u8>, l: u16) -> Result<
@@ -533,7 +541,9 @@ pub fn parse_responder_id_list_list(i: &[u8], l: u16) -> (o: Result<
     ensures
         o matches Ok(r) ==> parse_spec_responder_id_list_list(i@, l@) matches Ok(r_) && r@ == r_,
 {
-    responder_id_list_list(l).parse(i)
+    let c = responder_id_list_list(l);
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_responder_id_list_list(
@@ -548,7 +558,9 @@ pub fn serialize_responder_id_list_list(
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    responder_id_list_list(l).serialize(msg, data, pos)
+    let c = responder_id_list_list(l);
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 pub open spec fn parse_spec_responder_id_list(i: Seq<u8>) -> Result<
@@ -566,7 +578,9 @@ pub fn parse_responder_id_list(i: &[u8]) -> (o: Result<(usize, ResponderIdList<'
     ensures
         o matches Ok(r) ==> parse_spec_responder_id_list(i@) matches Ok(r_) && r@ == r_,
 {
-    responder_id_list().parse(i)
+    let c = responder_id_list();
+    assert(c.parse_requires());
+    c.parse(i)
 }
 
 pub fn serialize_responder_id_list(msg: ResponderIdList<'_>, data: &mut Vec<u8>, pos: usize) -> (o:
@@ -577,7 +591,9 @@ pub fn serialize_responder_id_list(msg: ResponderIdList<'_>, data: &mut Vec<u8>,
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    responder_id_list().serialize(msg, data, pos)
+    let c = responder_id_list();
+    assert(c.serialize_requires());
+    c.serialize(msg, data, pos)
 }
 
 } // verus!
