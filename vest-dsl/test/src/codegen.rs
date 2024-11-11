@@ -16,6 +16,115 @@ use vest::utils::*;
 use vstd::prelude::*;
 verus! {
 
+pub type SpecMsg3 = Seq<u8>;
+
+pub type Msg3<'a> = &'a [u8];
+
+pub type Msg3Owned = Vec<u8>;
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AType {
+    A = 0,
+    B = 1,
+    C = 2,
+}
+
+pub type SpecAType = AType;
+
+pub type ATypeOwned = AType;
+
+pub type ATypeInner = u8;
+
+impl View for AType {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<ATypeInner> for AType {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ATypeInner) -> Result<AType, ()> {
+        match v {
+            0u8 => Ok(AType::A),
+            1u8 => Ok(AType::B),
+            2u8 => Ok(AType::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<AType> for ATypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AType) -> Result<ATypeInner, ()> {
+        match v {
+            AType::A => Ok(0u8),
+            AType::B => Ok(1u8),
+            AType::C => Ok(2u8),
+        }
+    }
+}
+
+impl TryFrom<ATypeInner> for AType {
+    type Error = ();
+
+    fn ex_try_from(v: ATypeInner) -> Result<AType, ()> {
+        match v {
+            0u8 => Ok(AType::A),
+            1u8 => Ok(AType::B),
+            2u8 => Ok(AType::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<AType> for ATypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: AType) -> Result<ATypeInner, ()> {
+        match v {
+            AType::A => Ok(0u8),
+            AType::B => Ok(1u8),
+            AType::C => Ok(2u8),
+        }
+    }
+}
+
+pub struct ATypeMapper;
+
+impl View for ATypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for ATypeMapper {
+    type Src = ATypeInner;
+
+    type Dst = AType;
+
+    proof fn spec_iso(s: Self::Src) {
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+
+impl TryFromInto for ATypeMapper {
+    type Src<'a> = ATypeInner;
+
+    type Dst<'a> = AType;
+
+    type SrcOwned = ATypeInner;
+
+    type DstOwned = AType;
+}
+
 pub struct SpecMsg1 {
     pub a: u8,
     pub b: u16,
@@ -126,109 +235,6 @@ impl From<Msg1OwnedInner> for Msg1Owned {
         let (a, (b, c)) = m;
         Msg1Owned { a, b, c }
     }
-}
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AType {
-    A = 0,
-    B = 1,
-    C = 2,
-}
-
-pub type SpecAType = AType;
-
-pub type ATypeOwned = AType;
-
-pub type ATypeInner = u8;
-
-impl View for AType {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<ATypeInner> for AType {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ATypeInner) -> Result<AType, ()> {
-        match v {
-            0u8 => Ok(AType::A),
-            1u8 => Ok(AType::B),
-            2u8 => Ok(AType::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<AType> for ATypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AType) -> Result<ATypeInner, ()> {
-        match v {
-            AType::A => Ok(0u8),
-            AType::B => Ok(1u8),
-            AType::C => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<ATypeInner> for AType {
-    type Error = ();
-
-    fn ex_try_from(v: ATypeInner) -> Result<AType, ()> {
-        match v {
-            0u8 => Ok(AType::A),
-            1u8 => Ok(AType::B),
-            2u8 => Ok(AType::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<AType> for ATypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: AType) -> Result<ATypeInner, ()> {
-        match v {
-            AType::A => Ok(0u8),
-            AType::B => Ok(1u8),
-            AType::C => Ok(2u8),
-        }
-    }
-}
-
-pub struct ATypeMapper;
-
-impl View for ATypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for ATypeMapper {
-    type Src = ATypeInner;
-
-    type Dst = AType;
-
-    proof fn spec_iso(s: Self::Src) {
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-
-impl TryFromInto for ATypeMapper {
-    type Src<'a> = ATypeInner;
-
-    type Dst<'a> = AType;
-
-    type SrcOwned = ATypeInner;
-
-    type DstOwned = AType;
 }
 
 pub struct SpecMsg2 {
@@ -342,12 +348,6 @@ impl From<Msg2OwnedInner> for Msg2Owned {
         Msg2Owned { a, b, c }
     }
 }
-
-pub type SpecMsg3 = Seq<u8>;
-
-pub type Msg3<'a> = &'a [u8];
-
-pub type Msg3Owned = Vec<u8>;
 
 pub enum SpecMsg4V {
     A(SpecMsg1),
@@ -602,6 +602,172 @@ impl From<Msg4OwnedInner> for Msg4Owned {
     }
 }
 
+pub struct SpecMsg3Combinator(BytesN<6>);
+
+impl SpecCombinator for SpecMsg3Combinator {
+    type SpecResult = SpecMsg3;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg3Combinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg3CombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg3CombinatorAlias = BytesN<6>;
+
+pub struct Msg3Combinator(BytesN<6>);
+
+impl View for Msg3Combinator {
+    type V = SpecMsg3Combinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg3Combinator(self.0@)
+    }
+}
+
+impl Combinator for Msg3Combinator {
+    type Result<'a> = Msg3<'a>;
+
+    type Owned = Msg3Owned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg3CombinatorAlias = BytesN<6>;
+
+pub struct SpecATypeCombinator(TryMap<U8, ATypeMapper>);
+
+impl SpecCombinator for SpecATypeCombinator {
+    type SpecResult = SpecAType;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecATypeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecATypeCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
+
+pub struct ATypeCombinator(TryMap<U8, ATypeMapper>);
+
+impl View for ATypeCombinator {
+    type V = SpecATypeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecATypeCombinator(self.0@)
+    }
+}
+
+impl Combinator for ATypeCombinator {
+    type Result<'a> = AType;
+
+    type Owned = ATypeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type ATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
+
 impl SpecPred for Predicate5821512137558126895 {
     type Input = u8;
 
@@ -733,89 +899,6 @@ pub type Msg1CombinatorAlias = Mapped<
     Msg1Mapper,
 >;
 
-pub struct SpecATypeCombinator(TryMap<U8, ATypeMapper>);
-
-impl SpecCombinator for SpecATypeCombinator {
-    type SpecResult = SpecAType;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
-}
-
-impl SecureSpecCombinator for SpecATypeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecATypeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-pub type SpecATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
-
-pub struct ATypeCombinator(TryMap<U8, ATypeMapper>);
-
-impl View for ATypeCombinator {
-    type V = SpecATypeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecATypeCombinator(self.0@)
-    }
-}
-
-impl Combinator for ATypeCombinator {
-    type Result<'a> = AType;
-
-    type Owned = ATypeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-        usize,
-        SerializeError,
-    >) {
-        self.0.serialize(v, data, pos)
-    }
-}
-
-pub type ATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
-
 pub struct SpecMsg2Combinator(Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>);
 
 impl SpecCombinator for SpecMsg2Combinator {
@@ -898,89 +981,6 @@ impl Combinator for Msg2Combinator {
 }
 
 pub type Msg2CombinatorAlias = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
-
-pub struct SpecMsg3Combinator(BytesN<6>);
-
-impl SpecCombinator for SpecMsg3Combinator {
-    type SpecResult = SpecMsg3;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
-}
-
-impl SecureSpecCombinator for SpecMsg3Combinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecMsg3CombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-pub type SpecMsg3CombinatorAlias = BytesN<6>;
-
-pub struct Msg3Combinator(BytesN<6>);
-
-impl View for Msg3Combinator {
-    type V = SpecMsg3Combinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecMsg3Combinator(self.0@)
-    }
-}
-
-impl Combinator for Msg3Combinator {
-    type Result<'a> = Msg3<'a>;
-
-    type Owned = Msg3Owned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-        usize,
-        SerializeError,
-    >) {
-        self.0.serialize(v, data, pos)
-    }
-}
-
-pub type Msg3CombinatorAlias = BytesN<6>;
 
 pub struct SpecMsg4VCombinator(
     Mapped<
@@ -1182,6 +1182,28 @@ pub type Msg4CombinatorAlias = Mapped<
     Msg4Mapper,
 >;
 
+pub closed spec fn spec_msg3() -> SpecMsg3Combinator {
+    SpecMsg3Combinator(BytesN::<6>)
+}
+
+pub fn msg3() -> (o: Msg3Combinator)
+    ensures
+        o@ == spec_msg3(),
+{
+    Msg3Combinator(BytesN::<6>)
+}
+
+pub closed spec fn spec_a_type() -> SpecATypeCombinator {
+    SpecATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
+}
+
+pub fn a_type() -> (o: ATypeCombinator)
+    ensures
+        o@ == spec_a_type(),
+{
+    ATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
+}
+
 pub closed spec fn spec_msg1() -> SpecMsg1Combinator {
     SpecMsg1Combinator(
         Mapped {
@@ -1209,17 +1231,6 @@ pub fn msg1() -> (o: Msg1Combinator)
     )
 }
 
-pub closed spec fn spec_a_type() -> SpecATypeCombinator {
-    SpecATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
-}
-
-pub fn a_type() -> (o: ATypeCombinator)
-    ensures
-        o@ == spec_a_type(),
-{
-    ATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
-}
-
 pub closed spec fn spec_msg2() -> SpecMsg2Combinator {
     SpecMsg2Combinator(Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper })
 }
@@ -1229,17 +1240,6 @@ pub fn msg2() -> (o: Msg2Combinator)
         o@ == spec_msg2(),
 {
     Msg2Combinator(Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper })
-}
-
-pub closed spec fn spec_msg3() -> SpecMsg3Combinator {
-    SpecMsg3Combinator(BytesN::<6>)
-}
-
-pub fn msg3() -> (o: Msg3Combinator)
-    ensures
-        o@ == spec_msg3(),
-{
-    Msg3Combinator(BytesN::<6>)
 }
 
 pub closed spec fn spec_msg4_v(t: SpecAType) -> SpecMsg4VCombinator {
@@ -1276,9 +1276,12 @@ pub fn msg4_v<'a>(t: AType) -> (o: Msg4VCombinator)
 }
 
 pub closed spec fn spec_msg4() -> SpecMsg4Combinator {
-    let fst = spec_a_type();
-    let snd = |deps| spec_msg4_cont(deps);
-    SpecMsg4Combinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Msg4Mapper })
+    SpecMsg4Combinator(
+        Mapped {
+            inner: SpecDepend { fst: spec_a_type(), snd: |deps| spec_msg4_cont(deps) },
+            mapper: Msg4Mapper,
+        },
+    )
 }
 
 pub open spec fn spec_msg4_cont(deps: SpecAType) -> (SpecMsg4VCombinator, Tail) {
@@ -1290,10 +1293,16 @@ pub fn msg4() -> (o: Msg4Combinator)
     ensures
         o@ == spec_msg4(),
 {
-    let fst = a_type();
-    let snd = Msg4Cont;
-    let spec_snd = Ghost(|deps| spec_msg4_cont(deps));
-    Msg4Combinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Msg4Mapper })
+    Msg4Combinator(
+        Mapped {
+            inner: Depend {
+                fst: a_type(),
+                snd: Msg4Cont,
+                spec_snd: Ghost(|deps| spec_msg4_cont(deps)),
+            },
+            mapper: Msg4Mapper,
+        },
+    )
 }
 
 impl Continuation<AType> for Msg4Cont {
