@@ -615,7 +615,45 @@ impl SpecPred for Predicate5821512137558126895 {
     }
 }
 
-pub type SpecMsg1Combinator = Mapped<
+pub struct SpecMsg1Combinator(
+    Mapped<(Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)), Msg1Mapper>,
+);
+
+impl SpecCombinator for SpecMsg1Combinator {
+    type SpecResult = SpecMsg1;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg1Combinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg1CombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg1CombinatorAlias = Mapped<
     (Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)),
     Msg1Mapper,
 >;
@@ -645,24 +683,350 @@ impl Pred for Predicate5821512137558126895 {
     }
 }
 
-pub type Msg1Combinator = Mapped<
+pub struct Msg1Combinator(
+    Mapped<(Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)), Msg1Mapper>,
+);
+
+impl View for Msg1Combinator {
+    type V = SpecMsg1Combinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg1Combinator(self.0@)
+    }
+}
+
+impl Combinator for Msg1Combinator {
+    type Result<'a> = Msg1<'a>;
+
+    type Owned = Msg1Owned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg1CombinatorAlias = Mapped<
     (Refined<U8, Predicate5821512137558126895>, (U16Le, BytesN<3>)),
     Msg1Mapper,
 >;
 
-pub type SpecATypeCombinator = TryMap<U8, ATypeMapper>;
+pub struct SpecATypeCombinator(TryMap<U8, ATypeMapper>);
 
-pub type ATypeCombinator = TryMap<U8, ATypeMapper>;
+impl SpecCombinator for SpecATypeCombinator {
+    type SpecResult = SpecAType;
 
-pub type SpecMsg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
 
-pub type Msg2Combinator = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
 
-pub type SpecMsg3Combinator = BytesN<6>;
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
 
-pub type Msg3Combinator = BytesN<6>;
+impl SecureSpecCombinator for SpecATypeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecATypeCombinatorAlias::is_prefix_secure()
+    }
 
-pub type SpecMsg4VCombinator = Mapped<
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
+
+pub struct ATypeCombinator(TryMap<U8, ATypeMapper>);
+
+impl View for ATypeCombinator {
+    type V = SpecATypeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecATypeCombinator(self.0@)
+    }
+}
+
+impl Combinator for ATypeCombinator {
+    type Result<'a> = AType;
+
+    type Owned = ATypeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type ATypeCombinatorAlias = TryMap<U8, ATypeMapper>;
+
+pub struct SpecMsg2Combinator(Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>);
+
+impl SpecCombinator for SpecMsg2Combinator {
+    type SpecResult = SpecMsg2;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg2Combinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg2CombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg2CombinatorAlias = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
+
+pub struct Msg2Combinator(Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>);
+
+impl View for Msg2Combinator {
+    type V = SpecMsg2Combinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg2Combinator(self.0@)
+    }
+}
+
+impl Combinator for Msg2Combinator {
+    type Result<'a> = Msg2;
+
+    type Owned = Msg2Owned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg2CombinatorAlias = Mapped<(U8, (U16Le, U32Le)), Msg2Mapper>;
+
+pub struct SpecMsg3Combinator(BytesN<6>);
+
+impl SpecCombinator for SpecMsg3Combinator {
+    type SpecResult = SpecMsg3;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg3Combinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg3CombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg3CombinatorAlias = BytesN<6>;
+
+pub struct Msg3Combinator(BytesN<6>);
+
+impl View for Msg3Combinator {
+    type V = SpecMsg3Combinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg3Combinator(self.0@)
+    }
+}
+
+impl Combinator for Msg3Combinator {
+    type Result<'a> = Msg3<'a>;
+
+    type Owned = Msg3Owned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg3CombinatorAlias = BytesN<6>;
+
+pub struct SpecMsg4VCombinator(
+    Mapped<
+        OrdChoice<
+            Cond<SpecMsg1Combinator>,
+            OrdChoice<Cond<SpecMsg2Combinator>, Cond<SpecMsg3Combinator>>,
+        >,
+        Msg4VMapper,
+    >,
+);
+
+impl SpecCombinator for SpecMsg4VCombinator {
+    type SpecResult = SpecMsg4V;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg4VCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg4VCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg4VCombinatorAlias = Mapped<
     OrdChoice<
         Cond<SpecMsg1Combinator>,
         OrdChoice<Cond<SpecMsg2Combinator>, Cond<SpecMsg3Combinator>>,
@@ -670,112 +1034,251 @@ pub type SpecMsg4VCombinator = Mapped<
     Msg4VMapper,
 >;
 
-pub type Msg4VCombinator = Mapped<
+pub struct Msg4VCombinator(
+    Mapped<
+        OrdChoice<Cond<Msg1Combinator>, OrdChoice<Cond<Msg2Combinator>, Cond<Msg3Combinator>>>,
+        Msg4VMapper,
+    >,
+);
+
+impl View for Msg4VCombinator {
+    type V = SpecMsg4VCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg4VCombinator(self.0@)
+    }
+}
+
+impl Combinator for Msg4VCombinator {
+    type Result<'a> = Msg4V<'a>;
+
+    type Owned = Msg4VOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg4VCombinatorAlias = Mapped<
     OrdChoice<Cond<Msg1Combinator>, OrdChoice<Cond<Msg2Combinator>, Cond<Msg3Combinator>>>,
     Msg4VMapper,
 >;
 
-pub type SpecMsg4Combinator = Mapped<
+pub struct SpecMsg4Combinator(
+    Mapped<SpecDepend<SpecATypeCombinator, (SpecMsg4VCombinator, Tail)>, Msg4Mapper>,
+);
+
+impl SpecCombinator for SpecMsg4Combinator {
+    type SpecResult = SpecMsg4;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+        self.0.spec_parse_wf(s)
+    }
+}
+
+impl SecureSpecCombinator for SpecMsg4Combinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecMsg4CombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+pub type SpecMsg4CombinatorAlias = Mapped<
     SpecDepend<SpecATypeCombinator, (SpecMsg4VCombinator, Tail)>,
     Msg4Mapper,
 >;
 
 pub struct Msg4Cont;
 
-pub type Msg4Combinator = Mapped<
+pub struct Msg4Combinator(
+    Mapped<Depend<ATypeCombinator, (Msg4VCombinator, Tail), Msg4Cont>, Msg4Mapper>,
+);
+
+impl View for Msg4Combinator {
+    type V = SpecMsg4Combinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecMsg4Combinator(self.0@)
+    }
+}
+
+impl Combinator for Msg4Combinator {
+    type Result<'a> = Msg4<'a>;
+
+    type Owned = Msg4Owned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+        usize,
+        SerializeError,
+    >) {
+        self.0.serialize(v, data, pos)
+    }
+}
+
+pub type Msg4CombinatorAlias = Mapped<
     Depend<ATypeCombinator, (Msg4VCombinator, Tail), Msg4Cont>,
     Msg4Mapper,
 >;
 
-pub open spec fn spec_msg1() -> SpecMsg1Combinator {
-    Mapped {
-        inner: (
-            Refined { inner: U8, predicate: Predicate5821512137558126895 },
-            (U16Le, BytesN::<3>),
-        ),
-        mapper: Msg1Mapper,
-    }
+pub closed spec fn spec_msg1() -> SpecMsg1Combinator {
+    SpecMsg1Combinator(
+        Mapped {
+            inner: (
+                Refined { inner: U8, predicate: Predicate5821512137558126895 },
+                (U16Le, BytesN::<3>),
+            ),
+            mapper: Msg1Mapper,
+        },
+    )
 }
 
 pub fn msg1() -> (o: Msg1Combinator)
     ensures
         o@ == spec_msg1(),
 {
-    Mapped {
-        inner: (
-            Refined { inner: U8, predicate: Predicate5821512137558126895 },
-            (U16Le, BytesN::<3>),
-        ),
-        mapper: Msg1Mapper,
-    }
+    Msg1Combinator(
+        Mapped {
+            inner: (
+                Refined { inner: U8, predicate: Predicate5821512137558126895 },
+                (U16Le, BytesN::<3>),
+            ),
+            mapper: Msg1Mapper,
+        },
+    )
 }
 
-pub open spec fn spec_a_type() -> SpecATypeCombinator {
-    TryMap { inner: U8, mapper: ATypeMapper }
+pub closed spec fn spec_a_type() -> SpecATypeCombinator {
+    SpecATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
 }
 
 pub fn a_type() -> (o: ATypeCombinator)
     ensures
         o@ == spec_a_type(),
 {
-    TryMap { inner: U8, mapper: ATypeMapper }
+    ATypeCombinator(TryMap { inner: U8, mapper: ATypeMapper })
 }
 
-pub open spec fn spec_msg2() -> SpecMsg2Combinator {
-    Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper }
+pub closed spec fn spec_msg2() -> SpecMsg2Combinator {
+    SpecMsg2Combinator(Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper })
 }
 
 pub fn msg2() -> (o: Msg2Combinator)
     ensures
         o@ == spec_msg2(),
 {
-    Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper }
+    Msg2Combinator(Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper })
 }
 
-pub open spec fn spec_msg3() -> SpecMsg3Combinator {
-    BytesN::<6>
+pub closed spec fn spec_msg3() -> SpecMsg3Combinator {
+    SpecMsg3Combinator(BytesN::<6>)
 }
 
 pub fn msg3() -> (o: Msg3Combinator)
     ensures
         o@ == spec_msg3(),
 {
-    BytesN::<6>
+    Msg3Combinator(BytesN::<6>)
 }
 
-pub open spec fn spec_msg4_v(t: SpecAType) -> SpecMsg4VCombinator {
-    Mapped {
-        inner: OrdChoice(
-            Cond { cond: t == AType::A, inner: spec_msg1() },
-            OrdChoice(
-                Cond { cond: t == AType::B, inner: spec_msg2() },
-                Cond { cond: t == AType::C, inner: spec_msg3() },
+pub closed spec fn spec_msg4_v(t: SpecAType) -> SpecMsg4VCombinator {
+    SpecMsg4VCombinator(
+        Mapped {
+            inner: OrdChoice(
+                Cond { cond: t == AType::A, inner: spec_msg1() },
+                OrdChoice(
+                    Cond { cond: t == AType::B, inner: spec_msg2() },
+                    Cond { cond: t == AType::C, inner: spec_msg3() },
+                ),
             ),
-        ),
-        mapper: Msg4VMapper,
-    }
+            mapper: Msg4VMapper,
+        },
+    )
 }
 
 pub fn msg4_v<'a>(t: AType) -> (o: Msg4VCombinator)
     ensures
         o@ == spec_msg4_v(t@),
 {
-    Mapped {
-        inner: OrdChoice(
-            Cond { cond: t == AType::A, inner: msg1() },
-            OrdChoice(
-                Cond { cond: t == AType::B, inner: msg2() },
-                Cond { cond: t == AType::C, inner: msg3() },
+    Msg4VCombinator(
+        Mapped {
+            inner: OrdChoice(
+                Cond { cond: t == AType::A, inner: msg1() },
+                OrdChoice(
+                    Cond { cond: t == AType::B, inner: msg2() },
+                    Cond { cond: t == AType::C, inner: msg3() },
+                ),
             ),
-        ),
-        mapper: Msg4VMapper,
-    }
+            mapper: Msg4VMapper,
+        },
+    )
 }
 
-pub open spec fn spec_msg4() -> SpecMsg4Combinator {
+pub closed spec fn spec_msg4() -> SpecMsg4Combinator {
     let fst = spec_a_type();
     let snd = |deps| spec_msg4_cont(deps);
-    Mapped { inner: SpecDepend { fst, snd }, mapper: Msg4Mapper }
+    SpecMsg4Combinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Msg4Mapper })
 }
 
 pub open spec fn spec_msg4_cont(deps: SpecAType) -> (SpecMsg4VCombinator, Tail) {
@@ -790,7 +1293,7 @@ pub fn msg4() -> (o: Msg4Combinator)
     let fst = a_type();
     let snd = Msg4Cont;
     let spec_snd = Ghost(|deps| spec_msg4_cont(deps));
-    Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Msg4Mapper }
+    Msg4Combinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Msg4Mapper })
 }
 
 impl Continuation<AType> for Msg4Cont {
@@ -808,198 +1311,6 @@ impl Continuation<AType> for Msg4Cont {
         let t = deps;
         (msg4_v(t), Tail)
     }
-}
-
-pub open spec fn parse_spec_msg1(i: Seq<u8>) -> Result<(usize, SpecMsg1), ()> {
-    spec_msg1().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg1(msg: SpecMsg1) -> Result<Seq<u8>, ()> {
-    spec_msg1().spec_serialize(msg)
-}
-
-pub fn parse_msg1(i: &[u8]) -> (o: Result<(usize, Msg1<'_>), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg1(i@) matches Ok(r_) && r@ == r_,
-{
-    let c = msg1();
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_msg1(msg: Msg1<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg1(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = msg1();
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_a_type(i: Seq<u8>) -> Result<(usize, SpecAType), ()> {
-    spec_a_type().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_a_type(msg: SpecAType) -> Result<Seq<u8>, ()> {
-    spec_a_type().spec_serialize(msg)
-}
-
-pub fn parse_a_type(i: &[u8]) -> (o: Result<(usize, AType), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_a_type(i@) matches Ok(r_) && r@ == r_,
-{
-    let c = a_type();
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_a_type(msg: AType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_a_type(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = a_type();
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_msg2(i: Seq<u8>) -> Result<(usize, SpecMsg2), ()> {
-    spec_msg2().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg2(msg: SpecMsg2) -> Result<Seq<u8>, ()> {
-    spec_msg2().spec_serialize(msg)
-}
-
-pub fn parse_msg2(i: &[u8]) -> (o: Result<(usize, Msg2), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg2(i@) matches Ok(r_) && r@ == r_,
-{
-    let c = msg2();
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_msg2(msg: Msg2, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg2(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = msg2();
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_msg3(i: Seq<u8>) -> Result<(usize, SpecMsg3), ()> {
-    spec_msg3().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg3(msg: SpecMsg3) -> Result<Seq<u8>, ()> {
-    spec_msg3().spec_serialize(msg)
-}
-
-pub fn parse_msg3(i: &[u8]) -> (o: Result<(usize, Msg3<'_>), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg3(i@) matches Ok(r_) && r@ == r_,
-{
-    let c = msg3();
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_msg3(msg: Msg3<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg3(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = msg3();
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_msg4_v(i: Seq<u8>, t: SpecAType) -> Result<(usize, SpecMsg4V), ()> {
-    spec_msg4_v(t).spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg4_v(msg: SpecMsg4V, t: SpecAType) -> Result<Seq<u8>, ()> {
-    spec_msg4_v(t).spec_serialize(msg)
-}
-
-pub fn parse_msg4_v(i: &[u8], t: AType) -> (o: Result<(usize, Msg4V<'_>), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg4_v(i@, t@) matches Ok(r_) && r@ == r_,
-{
-    let c = msg4_v(t);
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_msg4_v(msg: Msg4V<'_>, data: &mut Vec<u8>, pos: usize, t: AType) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg4_v(msg@, t@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = msg4_v(t);
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
-}
-
-pub open spec fn parse_spec_msg4(i: Seq<u8>) -> Result<(usize, SpecMsg4), ()> {
-    spec_msg4().spec_parse(i)
-}
-
-pub open spec fn serialize_spec_msg4(msg: SpecMsg4) -> Result<Seq<u8>, ()> {
-    spec_msg4().spec_serialize(msg)
-}
-
-pub fn parse_msg4(i: &[u8]) -> (o: Result<(usize, Msg4<'_>), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_msg4(i@) matches Ok(r_) && r@ == r_,
-{
-    let c = msg4();
-    assert(c.parse_requires());
-    c.parse(i)
-}
-
-pub fn serialize_msg4(msg: Msg4<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
-    usize,
-    SerializeError,
->)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_msg4(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    let c = msg4();
-    assert(c.serialize_requires());
-    c.serialize(msg, data, pos)
 }
 
 } // verus!
