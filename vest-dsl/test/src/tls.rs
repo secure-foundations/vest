@@ -15,321 +15,127 @@ use vest::regular::and_then::*;
 use vest::regular::refined::*;
 use vest::regular::repeat::*;
 verus!{
+pub type SpecUint1Ffff = u16;
+pub type Uint1Ffff = u16;
+pub type Uint1FfffOwned = u16;
 
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AlertDescription {
-    CloseNotify = 0,
-UnexpectedMessage = 10,
-BadRecordMac = 20,
-RecordOverflow = 22,
-HandshakeFailure = 40,
-BadCertificate = 42,
-UnsupportedCertificate = 43,
-CertificateRevoked = 44,
-CertificateExpired = 45,
-CertificateUnknown = 46,
-IllegalParameter = 47,
-UnknownCA = 48,
-AccessDenied = 49,
-DecodeError = 50,
-DecryptError = 51,
-ProtocolVersion = 70,
-InsufficientSecurity = 71,
-InternalError = 80,
-InappropriateFallback = 86,
-UserCanceled = 90,
-MissingExtension = 109,
-UnsupportedExtension = 110,
-UnrecognizedName = 112,
-BadCertificateStatusResponse = 113,
-UnknownPSKIdentity = 115,
-CertificateRequired = 116,
-NoApplicationProtocol = 120
+pub type SpecUint2Ffff = u16;
+pub type Uint2Ffff = u16;
+pub type Uint2FfffOwned = u16;
+
+pub type SpecUint0Ffff = u16;
+pub type Uint0Ffff = u16;
+pub type Uint0FfffOwned = u16;
+
+pub struct SpecOpaque0Ffff {
+    pub l: SpecUint0Ffff,
+    pub data: Seq<u8>,
 }
-pub type SpecAlertDescription = AlertDescription;
-pub type AlertDescriptionOwned = AlertDescription;
-
-pub type AlertDescriptionInner = u8;
-
-impl View for AlertDescription {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
+pub type SpecOpaque0FfffInner = (SpecUint0Ffff, Seq<u8>);
+impl SpecFrom<SpecOpaque0Ffff> for SpecOpaque0FfffInner {
+    open spec fn spec_from(m: SpecOpaque0Ffff) -> SpecOpaque0FfffInner {
+        (m.l, m.data)
     }
 }
-
-impl SpecTryFrom<AlertDescriptionInner> for AlertDescription {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AlertDescriptionInner) -> Result<AlertDescription, ()> {
-        match v {
-            0u8 => Ok(AlertDescription::CloseNotify),
-            10u8 => Ok(AlertDescription::UnexpectedMessage),
-            20u8 => Ok(AlertDescription::BadRecordMac),
-            22u8 => Ok(AlertDescription::RecordOverflow),
-            40u8 => Ok(AlertDescription::HandshakeFailure),
-            42u8 => Ok(AlertDescription::BadCertificate),
-            43u8 => Ok(AlertDescription::UnsupportedCertificate),
-            44u8 => Ok(AlertDescription::CertificateRevoked),
-            45u8 => Ok(AlertDescription::CertificateExpired),
-            46u8 => Ok(AlertDescription::CertificateUnknown),
-            47u8 => Ok(AlertDescription::IllegalParameter),
-            48u8 => Ok(AlertDescription::UnknownCA),
-            49u8 => Ok(AlertDescription::AccessDenied),
-            50u8 => Ok(AlertDescription::DecodeError),
-            51u8 => Ok(AlertDescription::DecryptError),
-            70u8 => Ok(AlertDescription::ProtocolVersion),
-            71u8 => Ok(AlertDescription::InsufficientSecurity),
-            80u8 => Ok(AlertDescription::InternalError),
-            86u8 => Ok(AlertDescription::InappropriateFallback),
-            90u8 => Ok(AlertDescription::UserCanceled),
-            109u8 => Ok(AlertDescription::MissingExtension),
-            110u8 => Ok(AlertDescription::UnsupportedExtension),
-            112u8 => Ok(AlertDescription::UnrecognizedName),
-            113u8 => Ok(AlertDescription::BadCertificateStatusResponse),
-            115u8 => Ok(AlertDescription::UnknownPSKIdentity),
-            116u8 => Ok(AlertDescription::CertificateRequired),
-            120u8 => Ok(AlertDescription::NoApplicationProtocol),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<AlertDescription> for AlertDescriptionInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AlertDescription) -> Result<AlertDescriptionInner, ()> {
-        match v {
-            AlertDescription::CloseNotify => Ok(0u8),
-            AlertDescription::UnexpectedMessage => Ok(10u8),
-            AlertDescription::BadRecordMac => Ok(20u8),
-            AlertDescription::RecordOverflow => Ok(22u8),
-            AlertDescription::HandshakeFailure => Ok(40u8),
-            AlertDescription::BadCertificate => Ok(42u8),
-            AlertDescription::UnsupportedCertificate => Ok(43u8),
-            AlertDescription::CertificateRevoked => Ok(44u8),
-            AlertDescription::CertificateExpired => Ok(45u8),
-            AlertDescription::CertificateUnknown => Ok(46u8),
-            AlertDescription::IllegalParameter => Ok(47u8),
-            AlertDescription::UnknownCA => Ok(48u8),
-            AlertDescription::AccessDenied => Ok(49u8),
-            AlertDescription::DecodeError => Ok(50u8),
-            AlertDescription::DecryptError => Ok(51u8),
-            AlertDescription::ProtocolVersion => Ok(70u8),
-            AlertDescription::InsufficientSecurity => Ok(71u8),
-            AlertDescription::InternalError => Ok(80u8),
-            AlertDescription::InappropriateFallback => Ok(86u8),
-            AlertDescription::UserCanceled => Ok(90u8),
-            AlertDescription::MissingExtension => Ok(109u8),
-            AlertDescription::UnsupportedExtension => Ok(110u8),
-            AlertDescription::UnrecognizedName => Ok(112u8),
-            AlertDescription::BadCertificateStatusResponse => Ok(113u8),
-            AlertDescription::UnknownPSKIdentity => Ok(115u8),
-            AlertDescription::CertificateRequired => Ok(116u8),
-            AlertDescription::NoApplicationProtocol => Ok(120u8),
-        }
-    }
-}
-
-impl TryFrom<AlertDescriptionInner> for AlertDescription {
-    type Error = ();
-
-    fn ex_try_from(v: AlertDescriptionInner) -> Result<AlertDescription, ()> {
-        match v {
-            0u8 => Ok(AlertDescription::CloseNotify),
-            10u8 => Ok(AlertDescription::UnexpectedMessage),
-            20u8 => Ok(AlertDescription::BadRecordMac),
-            22u8 => Ok(AlertDescription::RecordOverflow),
-            40u8 => Ok(AlertDescription::HandshakeFailure),
-            42u8 => Ok(AlertDescription::BadCertificate),
-            43u8 => Ok(AlertDescription::UnsupportedCertificate),
-            44u8 => Ok(AlertDescription::CertificateRevoked),
-            45u8 => Ok(AlertDescription::CertificateExpired),
-            46u8 => Ok(AlertDescription::CertificateUnknown),
-            47u8 => Ok(AlertDescription::IllegalParameter),
-            48u8 => Ok(AlertDescription::UnknownCA),
-            49u8 => Ok(AlertDescription::AccessDenied),
-            50u8 => Ok(AlertDescription::DecodeError),
-            51u8 => Ok(AlertDescription::DecryptError),
-            70u8 => Ok(AlertDescription::ProtocolVersion),
-            71u8 => Ok(AlertDescription::InsufficientSecurity),
-            80u8 => Ok(AlertDescription::InternalError),
-            86u8 => Ok(AlertDescription::InappropriateFallback),
-            90u8 => Ok(AlertDescription::UserCanceled),
-            109u8 => Ok(AlertDescription::MissingExtension),
-            110u8 => Ok(AlertDescription::UnsupportedExtension),
-            112u8 => Ok(AlertDescription::UnrecognizedName),
-            113u8 => Ok(AlertDescription::BadCertificateStatusResponse),
-            115u8 => Ok(AlertDescription::UnknownPSKIdentity),
-            116u8 => Ok(AlertDescription::CertificateRequired),
-            120u8 => Ok(AlertDescription::NoApplicationProtocol),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<AlertDescription> for AlertDescriptionInner {
-    type Error = ();
-
-    fn ex_try_from(v: AlertDescription) -> Result<AlertDescriptionInner, ()> {
-        match v {
-            AlertDescription::CloseNotify => Ok(0u8),
-            AlertDescription::UnexpectedMessage => Ok(10u8),
-            AlertDescription::BadRecordMac => Ok(20u8),
-            AlertDescription::RecordOverflow => Ok(22u8),
-            AlertDescription::HandshakeFailure => Ok(40u8),
-            AlertDescription::BadCertificate => Ok(42u8),
-            AlertDescription::UnsupportedCertificate => Ok(43u8),
-            AlertDescription::CertificateRevoked => Ok(44u8),
-            AlertDescription::CertificateExpired => Ok(45u8),
-            AlertDescription::CertificateUnknown => Ok(46u8),
-            AlertDescription::IllegalParameter => Ok(47u8),
-            AlertDescription::UnknownCA => Ok(48u8),
-            AlertDescription::AccessDenied => Ok(49u8),
-            AlertDescription::DecodeError => Ok(50u8),
-            AlertDescription::DecryptError => Ok(51u8),
-            AlertDescription::ProtocolVersion => Ok(70u8),
-            AlertDescription::InsufficientSecurity => Ok(71u8),
-            AlertDescription::InternalError => Ok(80u8),
-            AlertDescription::InappropriateFallback => Ok(86u8),
-            AlertDescription::UserCanceled => Ok(90u8),
-            AlertDescription::MissingExtension => Ok(109u8),
-            AlertDescription::UnsupportedExtension => Ok(110u8),
-            AlertDescription::UnrecognizedName => Ok(112u8),
-            AlertDescription::BadCertificateStatusResponse => Ok(113u8),
-            AlertDescription::UnknownPSKIdentity => Ok(115u8),
-            AlertDescription::CertificateRequired => Ok(116u8),
-            AlertDescription::NoApplicationProtocol => Ok(120u8),
-        }
-    }
-}
-
-pub struct AlertDescriptionMapper;
-
-impl View for AlertDescriptionMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for AlertDescriptionMapper {
-    type Src = AlertDescriptionInner;
-    type Dst = AlertDescription;
-
-    proof fn spec_iso(s: Self::Src) {}
-
-    proof fn spec_iso_rev(s: Self::Dst) {}
-}
-
-impl TryFromInto for AlertDescriptionMapper {
-    type Src<'a> = AlertDescriptionInner;
-    type Dst<'a> = AlertDescription;
-
-    type SrcOwned = AlertDescriptionInner;
-    type DstOwned = AlertDescription;
-}
-
-                    
-pub struct SpecSessionId {
-    pub l: u8,
-    pub id: Seq<u8>,
-}
-pub type SpecSessionIdInner = (u8, Seq<u8>);
-impl SpecFrom<SpecSessionId> for SpecSessionIdInner {
-    open spec fn spec_from(m: SpecSessionId) -> SpecSessionIdInner {
-        (m.l, m.id)
-    }
-}
-impl SpecFrom<SpecSessionIdInner> for SpecSessionId {
-    open spec fn spec_from(m: SpecSessionIdInner) -> SpecSessionId {
-        let (l, id) = m;
-        SpecSessionId {
+impl SpecFrom<SpecOpaque0FfffInner> for SpecOpaque0Ffff {
+    open spec fn spec_from(m: SpecOpaque0FfffInner) -> SpecOpaque0Ffff {
+        let (l, data) = m;
+        SpecOpaque0Ffff {
             l,
-            id,
+            data,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SessionId<'a> {
-    pub l: u8,
-    pub id: &'a [u8],
+pub struct Opaque0Ffff<'a> {
+    pub l: Uint0Ffff,
+    pub data: &'a [u8],
 }
-pub type SessionIdInner<'a> = (u8, &'a [u8]);
-impl View for SessionId<'_> {
-    type V = SpecSessionId;
+pub type Opaque0FfffInner<'a> = (Uint0Ffff, &'a [u8]);
+impl View for Opaque0Ffff<'_> {
+    type V = SpecOpaque0Ffff;
     open spec fn view(&self) -> Self::V {
-        SpecSessionId {
+        SpecOpaque0Ffff {
             l: self.l@,
-            id: self.id@,
+            data: self.data@,
         }
     }
 }
-impl<'a> From<SessionId<'a>> for SessionIdInner<'a> {
-    fn ex_from(m: SessionId<'a>) -> SessionIdInner<'a> {
-        (m.l, m.id)
+impl<'a> From<Opaque0Ffff<'a>> for Opaque0FfffInner<'a> {
+    fn ex_from(m: Opaque0Ffff<'a>) -> Opaque0FfffInner<'a> {
+        (m.l, m.data)
     }
 }
-impl<'a> From<SessionIdInner<'a>> for SessionId<'a> {
-    fn ex_from(m: SessionIdInner<'a>) -> SessionId<'a> {
-        let (l, id) = m;
-        SessionId {
+impl<'a> From<Opaque0FfffInner<'a>> for Opaque0Ffff<'a> {
+    fn ex_from(m: Opaque0FfffInner<'a>) -> Opaque0Ffff<'a> {
+        let (l, data) = m;
+        Opaque0Ffff {
             l,
-            id,
+            data,
         }
     }
 }
-pub struct SessionIdMapper;
-impl View for SessionIdMapper {
+pub struct Opaque0FfffMapper;
+impl View for Opaque0FfffMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for SessionIdMapper {
-    type Src = SpecSessionIdInner;
-    type Dst = SpecSessionId;
+impl SpecIso for Opaque0FfffMapper {
+    type Src = SpecOpaque0FfffInner;
+    type Dst = SpecOpaque0Ffff;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for SessionIdMapper {
-    type Src<'a> = SessionIdInner<'a>;
-    type Dst<'a> = SessionId<'a>;
-    type SrcOwned = SessionIdOwnedInner;
-    type DstOwned = SessionIdOwned;
+impl Iso for Opaque0FfffMapper {
+    type Src<'a> = Opaque0FfffInner<'a>;
+    type Dst<'a> = Opaque0Ffff<'a>;
+    type SrcOwned = Opaque0FfffOwnedInner;
+    type DstOwned = Opaque0FfffOwned;
 }
-pub struct SessionIdOwned {
-    pub l: u8,
-    pub id: Vec<u8>,
+pub struct Opaque0FfffOwned {
+    pub l: Uint0FfffOwned,
+    pub data: Vec<u8>,
 }
-pub type SessionIdOwnedInner = (u8, Vec<u8>);
-impl View for SessionIdOwned {
-    type V = SpecSessionId;
+pub type Opaque0FfffOwnedInner = (Uint0FfffOwned, Vec<u8>);
+impl View for Opaque0FfffOwned {
+    type V = SpecOpaque0Ffff;
     open spec fn view(&self) -> Self::V {
-        SpecSessionId {
+        SpecOpaque0Ffff {
             l: self.l@,
-            id: self.id@,
+            data: self.data@,
         }
     }
 }
-impl From<SessionIdOwned> for SessionIdOwnedInner {
-    fn ex_from(m: SessionIdOwned) -> SessionIdOwnedInner {
-        (m.l, m.id)
+impl From<Opaque0FfffOwned> for Opaque0FfffOwnedInner {
+    fn ex_from(m: Opaque0FfffOwned) -> Opaque0FfffOwnedInner {
+        (m.l, m.data)
     }
 }
-impl From<SessionIdOwnedInner> for SessionIdOwned {
-    fn ex_from(m: SessionIdOwnedInner) -> SessionIdOwned {
-        let (l, id) = m;
-        SessionIdOwned {
+impl From<Opaque0FfffOwnedInner> for Opaque0FfffOwned {
+    fn ex_from(m: Opaque0FfffOwnedInner) -> Opaque0FfffOwned {
+        let (l, data) = m;
+        Opaque0FfffOwned {
             l,
-            id,
+            data,
         }
     }
 }
+
+pub type SpecUnknownExtension = SpecOpaque0Ffff;
+pub type UnknownExtension<'a> = Opaque0Ffff<'a>;
+pub type UnknownExtensionOwned = Opaque0FfffOwned;
+
+pub type SpecProtocolVersion = u16;
+pub type ProtocolVersion = u16;
+pub type ProtocolVersionOwned = u16;
+
+pub type SpecSupportedVersionsClientVersions = Seq<SpecProtocolVersion>;
+pub type SupportedVersionsClientVersions = RepeatResult<ProtocolVersion>;
+pub type SupportedVersionsClientVersionsOwned = RepeatResult<ProtocolVersionOwned>;
 
 pub struct SpecUncompressedPointRepresentation32 {
     pub legacy_form: u8,
@@ -845,10 +651,6 @@ impl From<MontgomeryForm56OwnedInner> for MontgomeryForm56Owned {
     }
 }
 
-pub type SpecUint1Ffff = u16;
-pub type Uint1Ffff = u16;
-pub type Uint1FfffOwned = u16;
-
 pub struct SpecOpaque1Ffff {
     pub l: SpecUint1Ffff,
     pub data: Seq<u8>,
@@ -1260,331 +1062,1326 @@ impl From<KeyShareEntryKeyExchangeOwnedInner> for KeyShareEntryKeyExchangeOwned 
     }
 }
 
-pub type SpecUint0Ffff = u16;
-pub type Uint0Ffff = u16;
-pub type Uint0FfffOwned = u16;
+pub type SpecUint0Ff = u8;
+pub type Uint0Ff = u8;
+pub type Uint0FfOwned = u8;
 
-pub struct SpecOpaque0Ffff {
-    pub l: SpecUint0Ffff,
+pub struct SpecOpaque0Ff {
+    pub l: SpecUint0Ff,
     pub data: Seq<u8>,
 }
-pub type SpecOpaque0FfffInner = (SpecUint0Ffff, Seq<u8>);
-impl SpecFrom<SpecOpaque0Ffff> for SpecOpaque0FfffInner {
-    open spec fn spec_from(m: SpecOpaque0Ffff) -> SpecOpaque0FfffInner {
+pub type SpecOpaque0FfInner = (SpecUint0Ff, Seq<u8>);
+impl SpecFrom<SpecOpaque0Ff> for SpecOpaque0FfInner {
+    open spec fn spec_from(m: SpecOpaque0Ff) -> SpecOpaque0FfInner {
         (m.l, m.data)
     }
 }
-impl SpecFrom<SpecOpaque0FfffInner> for SpecOpaque0Ffff {
-    open spec fn spec_from(m: SpecOpaque0FfffInner) -> SpecOpaque0Ffff {
+impl SpecFrom<SpecOpaque0FfInner> for SpecOpaque0Ff {
+    open spec fn spec_from(m: SpecOpaque0FfInner) -> SpecOpaque0Ff {
         let (l, data) = m;
-        SpecOpaque0Ffff {
+        SpecOpaque0Ff {
             l,
             data,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Opaque0Ffff<'a> {
-    pub l: Uint0Ffff,
+pub struct Opaque0Ff<'a> {
+    pub l: Uint0Ff,
     pub data: &'a [u8],
 }
-pub type Opaque0FfffInner<'a> = (Uint0Ffff, &'a [u8]);
-impl View for Opaque0Ffff<'_> {
-    type V = SpecOpaque0Ffff;
+pub type Opaque0FfInner<'a> = (Uint0Ff, &'a [u8]);
+impl View for Opaque0Ff<'_> {
+    type V = SpecOpaque0Ff;
     open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ffff {
+        SpecOpaque0Ff {
             l: self.l@,
             data: self.data@,
         }
     }
 }
-impl<'a> From<Opaque0Ffff<'a>> for Opaque0FfffInner<'a> {
-    fn ex_from(m: Opaque0Ffff<'a>) -> Opaque0FfffInner<'a> {
+impl<'a> From<Opaque0Ff<'a>> for Opaque0FfInner<'a> {
+    fn ex_from(m: Opaque0Ff<'a>) -> Opaque0FfInner<'a> {
         (m.l, m.data)
     }
 }
-impl<'a> From<Opaque0FfffInner<'a>> for Opaque0Ffff<'a> {
-    fn ex_from(m: Opaque0FfffInner<'a>) -> Opaque0Ffff<'a> {
+impl<'a> From<Opaque0FfInner<'a>> for Opaque0Ff<'a> {
+    fn ex_from(m: Opaque0FfInner<'a>) -> Opaque0Ff<'a> {
         let (l, data) = m;
-        Opaque0Ffff {
+        Opaque0Ff {
             l,
             data,
         }
     }
 }
-pub struct Opaque0FfffMapper;
-impl View for Opaque0FfffMapper {
+pub struct Opaque0FfMapper;
+impl View for Opaque0FfMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for Opaque0FfffMapper {
-    type Src = SpecOpaque0FfffInner;
-    type Dst = SpecOpaque0Ffff;
+impl SpecIso for Opaque0FfMapper {
+    type Src = SpecOpaque0FfInner;
+    type Dst = SpecOpaque0Ff;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for Opaque0FfffMapper {
-    type Src<'a> = Opaque0FfffInner<'a>;
-    type Dst<'a> = Opaque0Ffff<'a>;
-    type SrcOwned = Opaque0FfffOwnedInner;
-    type DstOwned = Opaque0FfffOwned;
+impl Iso for Opaque0FfMapper {
+    type Src<'a> = Opaque0FfInner<'a>;
+    type Dst<'a> = Opaque0Ff<'a>;
+    type SrcOwned = Opaque0FfOwnedInner;
+    type DstOwned = Opaque0FfOwned;
 }
-pub struct Opaque0FfffOwned {
-    pub l: Uint0FfffOwned,
+pub struct Opaque0FfOwned {
+    pub l: Uint0FfOwned,
     pub data: Vec<u8>,
 }
-pub type Opaque0FfffOwnedInner = (Uint0FfffOwned, Vec<u8>);
-impl View for Opaque0FfffOwned {
-    type V = SpecOpaque0Ffff;
+pub type Opaque0FfOwnedInner = (Uint0FfOwned, Vec<u8>);
+impl View for Opaque0FfOwned {
+    type V = SpecOpaque0Ff;
     open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ffff {
+        SpecOpaque0Ff {
             l: self.l@,
             data: self.data@,
         }
     }
 }
-impl From<Opaque0FfffOwned> for Opaque0FfffOwnedInner {
-    fn ex_from(m: Opaque0FfffOwned) -> Opaque0FfffOwnedInner {
+impl From<Opaque0FfOwned> for Opaque0FfOwnedInner {
+    fn ex_from(m: Opaque0FfOwned) -> Opaque0FfOwnedInner {
         (m.l, m.data)
     }
 }
-impl From<Opaque0FfffOwnedInner> for Opaque0FfffOwned {
-    fn ex_from(m: Opaque0FfffOwnedInner) -> Opaque0FfffOwned {
+impl From<Opaque0FfOwnedInner> for Opaque0FfOwned {
+    fn ex_from(m: Opaque0FfOwnedInner) -> Opaque0FfOwned {
         let (l, data) = m;
-        Opaque0FfffOwned {
+        Opaque0FfOwned {
             l,
             data,
         }
     }
 }
 
-pub type SpecOcspExtensions = SpecOpaque0Ffff;
-pub type OcspExtensions<'a> = Opaque0Ffff<'a>;
-pub type OcspExtensionsOwned = Opaque0FfffOwned;
-
-pub struct SpecPskIdentity {
-    pub identity: SpecOpaque1Ffff,
-    pub obfuscated_ticket_age: u32,
+pub struct SpecOpaque1Ffffff {
+    pub l: u24,
+    pub data: Seq<u8>,
 }
-pub type SpecPskIdentityInner = (SpecOpaque1Ffff, u32);
-impl SpecFrom<SpecPskIdentity> for SpecPskIdentityInner {
-    open spec fn spec_from(m: SpecPskIdentity) -> SpecPskIdentityInner {
-        (m.identity, m.obfuscated_ticket_age)
+pub type SpecOpaque1FfffffInner = (u24, Seq<u8>);
+impl SpecFrom<SpecOpaque1Ffffff> for SpecOpaque1FfffffInner {
+    open spec fn spec_from(m: SpecOpaque1Ffffff) -> SpecOpaque1FfffffInner {
+        (m.l, m.data)
     }
 }
-impl SpecFrom<SpecPskIdentityInner> for SpecPskIdentity {
-    open spec fn spec_from(m: SpecPskIdentityInner) -> SpecPskIdentity {
-        let (identity, obfuscated_ticket_age) = m;
-        SpecPskIdentity {
-            identity,
-            obfuscated_ticket_age,
+impl SpecFrom<SpecOpaque1FfffffInner> for SpecOpaque1Ffffff {
+    open spec fn spec_from(m: SpecOpaque1FfffffInner) -> SpecOpaque1Ffffff {
+        let (l, data) = m;
+        SpecOpaque1Ffffff {
+            l,
+            data,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PskIdentity<'a> {
-    pub identity: Opaque1Ffff<'a>,
-    pub obfuscated_ticket_age: u32,
+pub struct Opaque1Ffffff<'a> {
+    pub l: u24,
+    pub data: &'a [u8],
 }
-pub type PskIdentityInner<'a> = (Opaque1Ffff<'a>, u32);
-impl View for PskIdentity<'_> {
-    type V = SpecPskIdentity;
+pub type Opaque1FfffffInner<'a> = (u24, &'a [u8]);
+impl View for Opaque1Ffffff<'_> {
+    type V = SpecOpaque1Ffffff;
     open spec fn view(&self) -> Self::V {
-        SpecPskIdentity {
-            identity: self.identity@,
-            obfuscated_ticket_age: self.obfuscated_ticket_age@,
+        SpecOpaque1Ffffff {
+            l: self.l@,
+            data: self.data@,
         }
     }
 }
-impl<'a> From<PskIdentity<'a>> for PskIdentityInner<'a> {
-    fn ex_from(m: PskIdentity<'a>) -> PskIdentityInner<'a> {
-        (m.identity, m.obfuscated_ticket_age)
+impl<'a> From<Opaque1Ffffff<'a>> for Opaque1FfffffInner<'a> {
+    fn ex_from(m: Opaque1Ffffff<'a>) -> Opaque1FfffffInner<'a> {
+        (m.l, m.data)
     }
 }
-impl<'a> From<PskIdentityInner<'a>> for PskIdentity<'a> {
-    fn ex_from(m: PskIdentityInner<'a>) -> PskIdentity<'a> {
-        let (identity, obfuscated_ticket_age) = m;
-        PskIdentity {
-            identity,
-            obfuscated_ticket_age,
+impl<'a> From<Opaque1FfffffInner<'a>> for Opaque1Ffffff<'a> {
+    fn ex_from(m: Opaque1FfffffInner<'a>) -> Opaque1Ffffff<'a> {
+        let (l, data) = m;
+        Opaque1Ffffff {
+            l,
+            data,
         }
     }
 }
-pub struct PskIdentityMapper;
-impl View for PskIdentityMapper {
+pub struct Opaque1FfffffMapper;
+impl View for Opaque1FfffffMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for PskIdentityMapper {
-    type Src = SpecPskIdentityInner;
-    type Dst = SpecPskIdentity;
+impl SpecIso for Opaque1FfffffMapper {
+    type Src = SpecOpaque1FfffffInner;
+    type Dst = SpecOpaque1Ffffff;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for PskIdentityMapper {
-    type Src<'a> = PskIdentityInner<'a>;
-    type Dst<'a> = PskIdentity<'a>;
-    type SrcOwned = PskIdentityOwnedInner;
-    type DstOwned = PskIdentityOwned;
+impl Iso for Opaque1FfffffMapper {
+    type Src<'a> = Opaque1FfffffInner<'a>;
+    type Dst<'a> = Opaque1Ffffff<'a>;
+    type SrcOwned = Opaque1FfffffOwnedInner;
+    type DstOwned = Opaque1FfffffOwned;
 }
-pub struct PskIdentityOwned {
-    pub identity: Opaque1FfffOwned,
-    pub obfuscated_ticket_age: u32,
+pub struct Opaque1FfffffOwned {
+    pub l: u24,
+    pub data: Vec<u8>,
 }
-pub type PskIdentityOwnedInner = (Opaque1FfffOwned, u32);
-impl View for PskIdentityOwned {
-    type V = SpecPskIdentity;
+pub type Opaque1FfffffOwnedInner = (u24, Vec<u8>);
+impl View for Opaque1FfffffOwned {
+    type V = SpecOpaque1Ffffff;
     open spec fn view(&self) -> Self::V {
-        SpecPskIdentity {
-            identity: self.identity@,
-            obfuscated_ticket_age: self.obfuscated_ticket_age@,
+        SpecOpaque1Ffffff {
+            l: self.l@,
+            data: self.data@,
         }
     }
 }
-impl From<PskIdentityOwned> for PskIdentityOwnedInner {
-    fn ex_from(m: PskIdentityOwned) -> PskIdentityOwnedInner {
-        (m.identity, m.obfuscated_ticket_age)
+impl From<Opaque1FfffffOwned> for Opaque1FfffffOwnedInner {
+    fn ex_from(m: Opaque1FfffffOwned) -> Opaque1FfffffOwnedInner {
+        (m.l, m.data)
     }
 }
-impl From<PskIdentityOwnedInner> for PskIdentityOwned {
-    fn ex_from(m: PskIdentityOwnedInner) -> PskIdentityOwned {
-        let (identity, obfuscated_ticket_age) = m;
-        PskIdentityOwned {
-            identity,
-            obfuscated_ticket_age,
+impl From<Opaque1FfffffOwnedInner> for Opaque1FfffffOwned {
+    fn ex_from(m: Opaque1FfffffOwnedInner) -> Opaque1FfffffOwned {
+        let (l, data) = m;
+        Opaque1FfffffOwned {
+            l,
+            data,
         }
     }
 }
 
-pub type SpecPskIdentitiesIdentities = Seq<SpecPskIdentity>;
-pub type PskIdentitiesIdentities<'a> = RepeatResult<PskIdentity<'a>>;
-pub type PskIdentitiesIdentitiesOwned = RepeatResult<PskIdentityOwned>;
+pub type SpecExtensionType = u8;
+pub type ExtensionType = u8;
+pub type ExtensionTypeOwned = u8;
+
+pub struct SpecExtension {
+    pub extension_type: SpecExtensionType,
+    pub extension_data: SpecOpaque0Ffff,
+}
+pub type SpecExtensionInner = (SpecExtensionType, SpecOpaque0Ffff);
+impl SpecFrom<SpecExtension> for SpecExtensionInner {
+    open spec fn spec_from(m: SpecExtension) -> SpecExtensionInner {
+        (m.extension_type, m.extension_data)
+    }
+}
+impl SpecFrom<SpecExtensionInner> for SpecExtension {
+    open spec fn spec_from(m: SpecExtensionInner) -> SpecExtension {
+        let (extension_type, extension_data) = m;
+        SpecExtension {
+            extension_type,
+            extension_data,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Extension<'a> {
+    pub extension_type: ExtensionType,
+    pub extension_data: Opaque0Ffff<'a>,
+}
+pub type ExtensionInner<'a> = (ExtensionType, Opaque0Ffff<'a>);
+impl View for Extension<'_> {
+    type V = SpecExtension;
+    open spec fn view(&self) -> Self::V {
+        SpecExtension {
+            extension_type: self.extension_type@,
+            extension_data: self.extension_data@,
+        }
+    }
+}
+impl<'a> From<Extension<'a>> for ExtensionInner<'a> {
+    fn ex_from(m: Extension<'a>) -> ExtensionInner<'a> {
+        (m.extension_type, m.extension_data)
+    }
+}
+impl<'a> From<ExtensionInner<'a>> for Extension<'a> {
+    fn ex_from(m: ExtensionInner<'a>) -> Extension<'a> {
+        let (extension_type, extension_data) = m;
+        Extension {
+            extension_type,
+            extension_data,
+        }
+    }
+}
+pub struct ExtensionMapper;
+impl View for ExtensionMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExtensionMapper {
+    type Src = SpecExtensionInner;
+    type Dst = SpecExtension;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for ExtensionMapper {
+    type Src<'a> = ExtensionInner<'a>;
+    type Dst<'a> = Extension<'a>;
+    type SrcOwned = ExtensionOwnedInner;
+    type DstOwned = ExtensionOwned;
+}
+pub struct ExtensionOwned {
+    pub extension_type: ExtensionTypeOwned,
+    pub extension_data: Opaque0FfffOwned,
+}
+pub type ExtensionOwnedInner = (ExtensionTypeOwned, Opaque0FfffOwned);
+impl View for ExtensionOwned {
+    type V = SpecExtension;
+    open spec fn view(&self) -> Self::V {
+        SpecExtension {
+            extension_type: self.extension_type@,
+            extension_data: self.extension_data@,
+        }
+    }
+}
+impl From<ExtensionOwned> for ExtensionOwnedInner {
+    fn ex_from(m: ExtensionOwned) -> ExtensionOwnedInner {
+        (m.extension_type, m.extension_data)
+    }
+}
+impl From<ExtensionOwnedInner> for ExtensionOwned {
+    fn ex_from(m: ExtensionOwnedInner) -> ExtensionOwned {
+        let (extension_type, extension_data) = m;
+        ExtensionOwned {
+            extension_type,
+            extension_data,
+        }
+    }
+}
+
+pub type SpecEncryptedExtensionsExtensions = Seq<SpecExtension>;
+pub type EncryptedExtensionsExtensions<'a> = RepeatResult<Extension<'a>>;
+pub type EncryptedExtensionsExtensionsOwned = RepeatResult<ExtensionOwned>;
+
+pub struct SpecEncryptedExtensions {
+    pub l: SpecUint0Ffff,
+    pub extensions: SpecEncryptedExtensionsExtensions,
+}
+pub type SpecEncryptedExtensionsInner = (SpecUint0Ffff, SpecEncryptedExtensionsExtensions);
+impl SpecFrom<SpecEncryptedExtensions> for SpecEncryptedExtensionsInner {
+    open spec fn spec_from(m: SpecEncryptedExtensions) -> SpecEncryptedExtensionsInner {
+        (m.l, m.extensions)
+    }
+}
+impl SpecFrom<SpecEncryptedExtensionsInner> for SpecEncryptedExtensions {
+    open spec fn spec_from(m: SpecEncryptedExtensionsInner) -> SpecEncryptedExtensions {
+        let (l, extensions) = m;
+        SpecEncryptedExtensions {
+            l,
+            extensions,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EncryptedExtensions<'a> {
+    pub l: Uint0Ffff,
+    pub extensions: EncryptedExtensionsExtensions<'a>,
+}
+pub type EncryptedExtensionsInner<'a> = (Uint0Ffff, EncryptedExtensionsExtensions<'a>);
+impl View for EncryptedExtensions<'_> {
+    type V = SpecEncryptedExtensions;
+    open spec fn view(&self) -> Self::V {
+        SpecEncryptedExtensions {
+            l: self.l@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl<'a> From<EncryptedExtensions<'a>> for EncryptedExtensionsInner<'a> {
+    fn ex_from(m: EncryptedExtensions<'a>) -> EncryptedExtensionsInner<'a> {
+        (m.l, m.extensions)
+    }
+}
+impl<'a> From<EncryptedExtensionsInner<'a>> for EncryptedExtensions<'a> {
+    fn ex_from(m: EncryptedExtensionsInner<'a>) -> EncryptedExtensions<'a> {
+        let (l, extensions) = m;
+        EncryptedExtensions {
+            l,
+            extensions,
+        }
+    }
+}
+pub struct EncryptedExtensionsMapper;
+impl View for EncryptedExtensionsMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for EncryptedExtensionsMapper {
+    type Src = SpecEncryptedExtensionsInner;
+    type Dst = SpecEncryptedExtensions;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for EncryptedExtensionsMapper {
+    type Src<'a> = EncryptedExtensionsInner<'a>;
+    type Dst<'a> = EncryptedExtensions<'a>;
+    type SrcOwned = EncryptedExtensionsOwnedInner;
+    type DstOwned = EncryptedExtensionsOwned;
+}
+pub struct EncryptedExtensionsOwned {
+    pub l: Uint0FfffOwned,
+    pub extensions: EncryptedExtensionsExtensionsOwned,
+}
+pub type EncryptedExtensionsOwnedInner = (Uint0FfffOwned, EncryptedExtensionsExtensionsOwned);
+impl View for EncryptedExtensionsOwned {
+    type V = SpecEncryptedExtensions;
+    open spec fn view(&self) -> Self::V {
+        SpecEncryptedExtensions {
+            l: self.l@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl From<EncryptedExtensionsOwned> for EncryptedExtensionsOwnedInner {
+    fn ex_from(m: EncryptedExtensionsOwned) -> EncryptedExtensionsOwnedInner {
+        (m.l, m.extensions)
+    }
+}
+impl From<EncryptedExtensionsOwnedInner> for EncryptedExtensionsOwned {
+    fn ex_from(m: EncryptedExtensionsOwnedInner) -> EncryptedExtensionsOwned {
+        let (l, extensions) = m;
+        EncryptedExtensionsOwned {
+            l,
+            extensions,
+        }
+    }
+}
+
+pub type SpecCertificateExtensions = SpecEncryptedExtensions;
+pub type CertificateExtensions<'a> = EncryptedExtensions<'a>;
+pub type CertificateExtensionsOwned = EncryptedExtensionsOwned;
+
+pub struct SpecCertificateEntry {
+    pub cert_data: SpecOpaque1Ffffff,
+    pub extensions: SpecCertificateExtensions,
+}
+pub type SpecCertificateEntryInner = (SpecOpaque1Ffffff, SpecCertificateExtensions);
+impl SpecFrom<SpecCertificateEntry> for SpecCertificateEntryInner {
+    open spec fn spec_from(m: SpecCertificateEntry) -> SpecCertificateEntryInner {
+        (m.cert_data, m.extensions)
+    }
+}
+impl SpecFrom<SpecCertificateEntryInner> for SpecCertificateEntry {
+    open spec fn spec_from(m: SpecCertificateEntryInner) -> SpecCertificateEntry {
+        let (cert_data, extensions) = m;
+        SpecCertificateEntry {
+            cert_data,
+            extensions,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertificateEntry<'a> {
+    pub cert_data: Opaque1Ffffff<'a>,
+    pub extensions: CertificateExtensions<'a>,
+}
+pub type CertificateEntryInner<'a> = (Opaque1Ffffff<'a>, CertificateExtensions<'a>);
+impl View for CertificateEntry<'_> {
+    type V = SpecCertificateEntry;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateEntry {
+            cert_data: self.cert_data@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl<'a> From<CertificateEntry<'a>> for CertificateEntryInner<'a> {
+    fn ex_from(m: CertificateEntry<'a>) -> CertificateEntryInner<'a> {
+        (m.cert_data, m.extensions)
+    }
+}
+impl<'a> From<CertificateEntryInner<'a>> for CertificateEntry<'a> {
+    fn ex_from(m: CertificateEntryInner<'a>) -> CertificateEntry<'a> {
+        let (cert_data, extensions) = m;
+        CertificateEntry {
+            cert_data,
+            extensions,
+        }
+    }
+}
+pub struct CertificateEntryMapper;
+impl View for CertificateEntryMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CertificateEntryMapper {
+    type Src = SpecCertificateEntryInner;
+    type Dst = SpecCertificateEntry;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for CertificateEntryMapper {
+    type Src<'a> = CertificateEntryInner<'a>;
+    type Dst<'a> = CertificateEntry<'a>;
+    type SrcOwned = CertificateEntryOwnedInner;
+    type DstOwned = CertificateEntryOwned;
+}
+pub struct CertificateEntryOwned {
+    pub cert_data: Opaque1FfffffOwned,
+    pub extensions: CertificateExtensionsOwned,
+}
+pub type CertificateEntryOwnedInner = (Opaque1FfffffOwned, CertificateExtensionsOwned);
+impl View for CertificateEntryOwned {
+    type V = SpecCertificateEntry;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateEntry {
+            cert_data: self.cert_data@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl From<CertificateEntryOwned> for CertificateEntryOwnedInner {
+    fn ex_from(m: CertificateEntryOwned) -> CertificateEntryOwnedInner {
+        (m.cert_data, m.extensions)
+    }
+}
+impl From<CertificateEntryOwnedInner> for CertificateEntryOwned {
+    fn ex_from(m: CertificateEntryOwnedInner) -> CertificateEntryOwned {
+        let (cert_data, extensions) = m;
+        CertificateEntryOwned {
+            cert_data,
+            extensions,
+        }
+    }
+}
+
+pub type SpecCertificateListList = Seq<SpecCertificateEntry>;
+pub type CertificateListList<'a> = RepeatResult<CertificateEntry<'a>>;
+pub type CertificateListListOwned = RepeatResult<CertificateEntryOwned>;
+
+pub struct SpecCertificateList {
+    pub l: u24,
+    pub list: SpecCertificateListList,
+}
+pub type SpecCertificateListInner = (u24, SpecCertificateListList);
+impl SpecFrom<SpecCertificateList> for SpecCertificateListInner {
+    open spec fn spec_from(m: SpecCertificateList) -> SpecCertificateListInner {
+        (m.l, m.list)
+    }
+}
+impl SpecFrom<SpecCertificateListInner> for SpecCertificateList {
+    open spec fn spec_from(m: SpecCertificateListInner) -> SpecCertificateList {
+        let (l, list) = m;
+        SpecCertificateList {
+            l,
+            list,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertificateList<'a> {
+    pub l: u24,
+    pub list: CertificateListList<'a>,
+}
+pub type CertificateListInner<'a> = (u24, CertificateListList<'a>);
+impl View for CertificateList<'_> {
+    type V = SpecCertificateList;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateList {
+            l: self.l@,
+            list: self.list@,
+        }
+    }
+}
+impl<'a> From<CertificateList<'a>> for CertificateListInner<'a> {
+    fn ex_from(m: CertificateList<'a>) -> CertificateListInner<'a> {
+        (m.l, m.list)
+    }
+}
+impl<'a> From<CertificateListInner<'a>> for CertificateList<'a> {
+    fn ex_from(m: CertificateListInner<'a>) -> CertificateList<'a> {
+        let (l, list) = m;
+        CertificateList {
+            l,
+            list,
+        }
+    }
+}
+pub struct CertificateListMapper;
+impl View for CertificateListMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CertificateListMapper {
+    type Src = SpecCertificateListInner;
+    type Dst = SpecCertificateList;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for CertificateListMapper {
+    type Src<'a> = CertificateListInner<'a>;
+    type Dst<'a> = CertificateList<'a>;
+    type SrcOwned = CertificateListOwnedInner;
+    type DstOwned = CertificateListOwned;
+}
+pub struct CertificateListOwned {
+    pub l: u24,
+    pub list: CertificateListListOwned,
+}
+pub type CertificateListOwnedInner = (u24, CertificateListListOwned);
+impl View for CertificateListOwned {
+    type V = SpecCertificateList;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateList {
+            l: self.l@,
+            list: self.list@,
+        }
+    }
+}
+impl From<CertificateListOwned> for CertificateListOwnedInner {
+    fn ex_from(m: CertificateListOwned) -> CertificateListOwnedInner {
+        (m.l, m.list)
+    }
+}
+impl From<CertificateListOwnedInner> for CertificateListOwned {
+    fn ex_from(m: CertificateListOwnedInner) -> CertificateListOwned {
+        let (l, list) = m;
+        CertificateListOwned {
+            l,
+            list,
+        }
+    }
+}
+
+pub struct SpecCertificate {
+    pub certificate_request_context: SpecOpaque0Ff,
+    pub certificate_list: SpecCertificateList,
+}
+pub type SpecCertificateInner = (SpecOpaque0Ff, SpecCertificateList);
+impl SpecFrom<SpecCertificate> for SpecCertificateInner {
+    open spec fn spec_from(m: SpecCertificate) -> SpecCertificateInner {
+        (m.certificate_request_context, m.certificate_list)
+    }
+}
+impl SpecFrom<SpecCertificateInner> for SpecCertificate {
+    open spec fn spec_from(m: SpecCertificateInner) -> SpecCertificate {
+        let (certificate_request_context, certificate_list) = m;
+        SpecCertificate {
+            certificate_request_context,
+            certificate_list,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Certificate<'a> {
+    pub certificate_request_context: Opaque0Ff<'a>,
+    pub certificate_list: CertificateList<'a>,
+}
+pub type CertificateInner<'a> = (Opaque0Ff<'a>, CertificateList<'a>);
+impl View for Certificate<'_> {
+    type V = SpecCertificate;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificate {
+            certificate_request_context: self.certificate_request_context@,
+            certificate_list: self.certificate_list@,
+        }
+    }
+}
+impl<'a> From<Certificate<'a>> for CertificateInner<'a> {
+    fn ex_from(m: Certificate<'a>) -> CertificateInner<'a> {
+        (m.certificate_request_context, m.certificate_list)
+    }
+}
+impl<'a> From<CertificateInner<'a>> for Certificate<'a> {
+    fn ex_from(m: CertificateInner<'a>) -> Certificate<'a> {
+        let (certificate_request_context, certificate_list) = m;
+        Certificate {
+            certificate_request_context,
+            certificate_list,
+        }
+    }
+}
+pub struct CertificateMapper;
+impl View for CertificateMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CertificateMapper {
+    type Src = SpecCertificateInner;
+    type Dst = SpecCertificate;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for CertificateMapper {
+    type Src<'a> = CertificateInner<'a>;
+    type Dst<'a> = Certificate<'a>;
+    type SrcOwned = CertificateOwnedInner;
+    type DstOwned = CertificateOwned;
+}
+pub struct CertificateOwned {
+    pub certificate_request_context: Opaque0FfOwned,
+    pub certificate_list: CertificateListOwned,
+}
+pub type CertificateOwnedInner = (Opaque0FfOwned, CertificateListOwned);
+impl View for CertificateOwned {
+    type V = SpecCertificate;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificate {
+            certificate_request_context: self.certificate_request_context@,
+            certificate_list: self.certificate_list@,
+        }
+    }
+}
+impl From<CertificateOwned> for CertificateOwnedInner {
+    fn ex_from(m: CertificateOwned) -> CertificateOwnedInner {
+        (m.certificate_request_context, m.certificate_list)
+    }
+}
+impl From<CertificateOwnedInner> for CertificateOwned {
+    fn ex_from(m: CertificateOwnedInner) -> CertificateOwned {
+        let (certificate_request_context, certificate_list) = m;
+        CertificateOwned {
+            certificate_request_context,
+            certificate_list,
+        }
+    }
+}
 
 pub type SpecUint1Ff = u8;
 pub type Uint1Ff = u8;
 pub type Uint1FfOwned = u8;
 
+pub type SpecPskKeyExchangeMode = u8;
+pub type PskKeyExchangeMode = u8;
+pub type PskKeyExchangeModeOwned = u8;
+
+pub type SpecPskKeyExchangeModesModes = Seq<SpecPskKeyExchangeMode>;
+pub type PskKeyExchangeModesModes = RepeatResult<PskKeyExchangeMode>;
+pub type PskKeyExchangeModesModesOwned = RepeatResult<PskKeyExchangeModeOwned>;
+
+pub struct SpecPskKeyExchangeModes {
+    pub l: SpecUint1Ff,
+    pub modes: SpecPskKeyExchangeModesModes,
+}
+pub type SpecPskKeyExchangeModesInner = (SpecUint1Ff, SpecPskKeyExchangeModesModes);
+impl SpecFrom<SpecPskKeyExchangeModes> for SpecPskKeyExchangeModesInner {
+    open spec fn spec_from(m: SpecPskKeyExchangeModes) -> SpecPskKeyExchangeModesInner {
+        (m.l, m.modes)
+    }
+}
+impl SpecFrom<SpecPskKeyExchangeModesInner> for SpecPskKeyExchangeModes {
+    open spec fn spec_from(m: SpecPskKeyExchangeModesInner) -> SpecPskKeyExchangeModes {
+        let (l, modes) = m;
+        SpecPskKeyExchangeModes {
+            l,
+            modes,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PskKeyExchangeModes {
+    pub l: Uint1Ff,
+    pub modes: PskKeyExchangeModesModes,
+}
+pub type PskKeyExchangeModesInner = (Uint1Ff, PskKeyExchangeModesModes);
+impl View for PskKeyExchangeModes {
+    type V = SpecPskKeyExchangeModes;
+    open spec fn view(&self) -> Self::V {
+        SpecPskKeyExchangeModes {
+            l: self.l@,
+            modes: self.modes@,
+        }
+    }
+}
+impl From<PskKeyExchangeModes> for PskKeyExchangeModesInner {
+    fn ex_from(m: PskKeyExchangeModes) -> PskKeyExchangeModesInner {
+        (m.l, m.modes)
+    }
+}
+impl From<PskKeyExchangeModesInner> for PskKeyExchangeModes {
+    fn ex_from(m: PskKeyExchangeModesInner) -> PskKeyExchangeModes {
+        let (l, modes) = m;
+        PskKeyExchangeModes {
+            l,
+            modes,
+        }
+    }
+}
+pub struct PskKeyExchangeModesMapper;
+impl View for PskKeyExchangeModesMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for PskKeyExchangeModesMapper {
+    type Src = SpecPskKeyExchangeModesInner;
+    type Dst = SpecPskKeyExchangeModes;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for PskKeyExchangeModesMapper {
+    type Src<'a> = PskKeyExchangeModesInner;
+    type Dst<'a> = PskKeyExchangeModes;
+    type SrcOwned = PskKeyExchangeModesOwnedInner;
+    type DstOwned = PskKeyExchangeModesOwned;
+}
+pub struct PskKeyExchangeModesOwned {
+    pub l: Uint1FfOwned,
+    pub modes: PskKeyExchangeModesModesOwned,
+}
+pub type PskKeyExchangeModesOwnedInner = (Uint1FfOwned, PskKeyExchangeModesModesOwned);
+impl View for PskKeyExchangeModesOwned {
+    type V = SpecPskKeyExchangeModes;
+    open spec fn view(&self) -> Self::V {
+        SpecPskKeyExchangeModes {
+            l: self.l@,
+            modes: self.modes@,
+        }
+    }
+}
+impl From<PskKeyExchangeModesOwned> for PskKeyExchangeModesOwnedInner {
+    fn ex_from(m: PskKeyExchangeModesOwned) -> PskKeyExchangeModesOwnedInner {
+        (m.l, m.modes)
+    }
+}
+impl From<PskKeyExchangeModesOwnedInner> for PskKeyExchangeModesOwned {
+    fn ex_from(m: PskKeyExchangeModesOwnedInner) -> PskKeyExchangeModesOwned {
+        let (l, modes) = m;
+        PskKeyExchangeModesOwned {
+            l,
+            modes,
+        }
+    }
+}
+
+pub type SpecUint0Fffe = u16;
+pub type Uint0Fffe = u16;
+pub type Uint0FffeOwned = u16;
+
+pub type SpecNewSessionTicketExtensionsExtensions = Seq<SpecExtension>;
+pub type NewSessionTicketExtensionsExtensions<'a> = RepeatResult<Extension<'a>>;
+pub type NewSessionTicketExtensionsExtensionsOwned = RepeatResult<ExtensionOwned>;
+
+pub struct SpecNewSessionTicketExtensions {
+    pub l: SpecUint0Fffe,
+    pub extensions: SpecNewSessionTicketExtensionsExtensions,
+}
+pub type SpecNewSessionTicketExtensionsInner = (SpecUint0Fffe, SpecNewSessionTicketExtensionsExtensions);
+impl SpecFrom<SpecNewSessionTicketExtensions> for SpecNewSessionTicketExtensionsInner {
+    open spec fn spec_from(m: SpecNewSessionTicketExtensions) -> SpecNewSessionTicketExtensionsInner {
+        (m.l, m.extensions)
+    }
+}
+impl SpecFrom<SpecNewSessionTicketExtensionsInner> for SpecNewSessionTicketExtensions {
+    open spec fn spec_from(m: SpecNewSessionTicketExtensionsInner) -> SpecNewSessionTicketExtensions {
+        let (l, extensions) = m;
+        SpecNewSessionTicketExtensions {
+            l,
+            extensions,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewSessionTicketExtensions<'a> {
+    pub l: Uint0Fffe,
+    pub extensions: NewSessionTicketExtensionsExtensions<'a>,
+}
+pub type NewSessionTicketExtensionsInner<'a> = (Uint0Fffe, NewSessionTicketExtensionsExtensions<'a>);
+impl View for NewSessionTicketExtensions<'_> {
+    type V = SpecNewSessionTicketExtensions;
+    open spec fn view(&self) -> Self::V {
+        SpecNewSessionTicketExtensions {
+            l: self.l@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl<'a> From<NewSessionTicketExtensions<'a>> for NewSessionTicketExtensionsInner<'a> {
+    fn ex_from(m: NewSessionTicketExtensions<'a>) -> NewSessionTicketExtensionsInner<'a> {
+        (m.l, m.extensions)
+    }
+}
+impl<'a> From<NewSessionTicketExtensionsInner<'a>> for NewSessionTicketExtensions<'a> {
+    fn ex_from(m: NewSessionTicketExtensionsInner<'a>) -> NewSessionTicketExtensions<'a> {
+        let (l, extensions) = m;
+        NewSessionTicketExtensions {
+            l,
+            extensions,
+        }
+    }
+}
+pub struct NewSessionTicketExtensionsMapper;
+impl View for NewSessionTicketExtensionsMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for NewSessionTicketExtensionsMapper {
+    type Src = SpecNewSessionTicketExtensionsInner;
+    type Dst = SpecNewSessionTicketExtensions;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for NewSessionTicketExtensionsMapper {
+    type Src<'a> = NewSessionTicketExtensionsInner<'a>;
+    type Dst<'a> = NewSessionTicketExtensions<'a>;
+    type SrcOwned = NewSessionTicketExtensionsOwnedInner;
+    type DstOwned = NewSessionTicketExtensionsOwned;
+}
+pub struct NewSessionTicketExtensionsOwned {
+    pub l: Uint0FffeOwned,
+    pub extensions: NewSessionTicketExtensionsExtensionsOwned,
+}
+pub type NewSessionTicketExtensionsOwnedInner = (Uint0FffeOwned, NewSessionTicketExtensionsExtensionsOwned);
+impl View for NewSessionTicketExtensionsOwned {
+    type V = SpecNewSessionTicketExtensions;
+    open spec fn view(&self) -> Self::V {
+        SpecNewSessionTicketExtensions {
+            l: self.l@,
+            extensions: self.extensions@,
+        }
+    }
+}
+impl From<NewSessionTicketExtensionsOwned> for NewSessionTicketExtensionsOwnedInner {
+    fn ex_from(m: NewSessionTicketExtensionsOwned) -> NewSessionTicketExtensionsOwnedInner {
+        (m.l, m.extensions)
+    }
+}
+impl From<NewSessionTicketExtensionsOwnedInner> for NewSessionTicketExtensionsOwned {
+    fn ex_from(m: NewSessionTicketExtensionsOwnedInner) -> NewSessionTicketExtensionsOwned {
+        let (l, extensions) = m;
+        NewSessionTicketExtensionsOwned {
+            l,
+            extensions,
+        }
+    }
+}
+
+pub type SpecHeartbeatMode = u8;
+pub type HeartbeatMode = u8;
+pub type HeartbeatModeOwned = u8;
+
+pub struct SpecHeartbeatExtension {
+    pub mode: SpecHeartbeatMode,
+}
+pub type SpecHeartbeatExtensionInner = SpecHeartbeatMode;
+impl SpecFrom<SpecHeartbeatExtension> for SpecHeartbeatExtensionInner {
+    open spec fn spec_from(m: SpecHeartbeatExtension) -> SpecHeartbeatExtensionInner {
+        m.mode
+    }
+}
+impl SpecFrom<SpecHeartbeatExtensionInner> for SpecHeartbeatExtension {
+    open spec fn spec_from(m: SpecHeartbeatExtensionInner) -> SpecHeartbeatExtension {
+        let mode = m;
+        SpecHeartbeatExtension {
+            mode,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HeartbeatExtension {
+    pub mode: HeartbeatMode,
+}
+pub type HeartbeatExtensionInner = HeartbeatMode;
+impl View for HeartbeatExtension {
+    type V = SpecHeartbeatExtension;
+    open spec fn view(&self) -> Self::V {
+        SpecHeartbeatExtension {
+            mode: self.mode@,
+        }
+    }
+}
+impl From<HeartbeatExtension> for HeartbeatExtensionInner {
+    fn ex_from(m: HeartbeatExtension) -> HeartbeatExtensionInner {
+        m.mode
+    }
+}
+impl From<HeartbeatExtensionInner> for HeartbeatExtension {
+    fn ex_from(m: HeartbeatExtensionInner) -> HeartbeatExtension {
+        let mode = m;
+        HeartbeatExtension {
+            mode,
+        }
+    }
+}
+pub struct HeartbeatExtensionMapper;
+impl View for HeartbeatExtensionMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for HeartbeatExtensionMapper {
+    type Src = SpecHeartbeatExtensionInner;
+    type Dst = SpecHeartbeatExtension;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for HeartbeatExtensionMapper {
+    type Src<'a> = HeartbeatExtensionInner;
+    type Dst<'a> = HeartbeatExtension;
+    type SrcOwned = HeartbeatExtensionOwnedInner;
+    type DstOwned = HeartbeatExtensionOwned;
+}
+pub struct HeartbeatExtensionOwned {
+    pub mode: HeartbeatModeOwned,
+}
+pub type HeartbeatExtensionOwnedInner = HeartbeatModeOwned;
+impl View for HeartbeatExtensionOwned {
+    type V = SpecHeartbeatExtension;
+    open spec fn view(&self) -> Self::V {
+        SpecHeartbeatExtension {
+            mode: self.mode@,
+        }
+    }
+}
+impl From<HeartbeatExtensionOwned> for HeartbeatExtensionOwnedInner {
+    fn ex_from(m: HeartbeatExtensionOwned) -> HeartbeatExtensionOwnedInner {
+        m.mode
+    }
+}
+impl From<HeartbeatExtensionOwnedInner> for HeartbeatExtensionOwned {
+    fn ex_from(m: HeartbeatExtensionOwnedInner) -> HeartbeatExtensionOwned {
+        let mode = m;
+        HeartbeatExtensionOwned {
+            mode,
+        }
+    }
+}
+
+pub type SpecNamedGroup = u16;
+pub type NamedGroup = u16;
+pub type NamedGroupOwned = u16;
+
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AlertLevel {
+    Warning = 1,
+Fatal = 2
+}
+pub type SpecAlertLevel = AlertLevel;
+pub type AlertLevelOwned = AlertLevel;
+
+pub type AlertLevelInner = u8;
+
+impl View for AlertLevel {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<AlertLevelInner> for AlertLevel {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AlertLevelInner) -> Result<AlertLevel, ()> {
+        match v {
+            1u8 => Ok(AlertLevel::Warning),
+            2u8 => Ok(AlertLevel::Fatal),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<AlertLevel> for AlertLevelInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AlertLevel) -> Result<AlertLevelInner, ()> {
+        match v {
+            AlertLevel::Warning => Ok(1u8),
+            AlertLevel::Fatal => Ok(2u8),
+        }
+    }
+}
+
+impl TryFrom<AlertLevelInner> for AlertLevel {
+    type Error = ();
+
+    fn ex_try_from(v: AlertLevelInner) -> Result<AlertLevel, ()> {
+        match v {
+            1u8 => Ok(AlertLevel::Warning),
+            2u8 => Ok(AlertLevel::Fatal),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<AlertLevel> for AlertLevelInner {
+    type Error = ();
+
+    fn ex_try_from(v: AlertLevel) -> Result<AlertLevelInner, ()> {
+        match v {
+            AlertLevel::Warning => Ok(1u8),
+            AlertLevel::Fatal => Ok(2u8),
+        }
+    }
+}
+
+pub struct AlertLevelMapper;
+
+impl View for AlertLevelMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for AlertLevelMapper {
+    type Src = AlertLevelInner;
+    type Dst = AlertLevel;
+
+    proof fn spec_iso(s: Self::Src) {}
+
+    proof fn spec_iso_rev(s: Self::Dst) {}
+}
+
+impl TryFromInto for AlertLevelMapper {
+    type Src<'a> = AlertLevelInner;
+    type Dst<'a> = AlertLevel;
+
+    type SrcOwned = AlertLevelInner;
+    type DstOwned = AlertLevel;
+}
+
+                    
 pub type SpecCertificateType = u8;
 pub type CertificateType = u8;
 pub type CertificateTypeOwned = u8;
 
-pub type SpecServerCertTypeClientExtensionTypes = Seq<SpecCertificateType>;
-pub type ServerCertTypeClientExtensionTypes = RepeatResult<CertificateType>;
-pub type ServerCertTypeClientExtensionTypesOwned = RepeatResult<CertificateTypeOwned>;
+pub type SpecClientCertTypeClientExtensionTypes = Seq<SpecCertificateType>;
+pub type ClientCertTypeClientExtensionTypes = RepeatResult<CertificateType>;
+pub type ClientCertTypeClientExtensionTypesOwned = RepeatResult<CertificateTypeOwned>;
 
-pub struct SpecServerCertTypeClientExtension {
+pub struct SpecClientCertTypeClientExtension {
     pub l: SpecUint1Ff,
-    pub types: SpecServerCertTypeClientExtensionTypes,
+    pub types: SpecClientCertTypeClientExtensionTypes,
 }
-pub type SpecServerCertTypeClientExtensionInner = (SpecUint1Ff, SpecServerCertTypeClientExtensionTypes);
-impl SpecFrom<SpecServerCertTypeClientExtension> for SpecServerCertTypeClientExtensionInner {
-    open spec fn spec_from(m: SpecServerCertTypeClientExtension) -> SpecServerCertTypeClientExtensionInner {
+pub type SpecClientCertTypeClientExtensionInner = (SpecUint1Ff, SpecClientCertTypeClientExtensionTypes);
+impl SpecFrom<SpecClientCertTypeClientExtension> for SpecClientCertTypeClientExtensionInner {
+    open spec fn spec_from(m: SpecClientCertTypeClientExtension) -> SpecClientCertTypeClientExtensionInner {
         (m.l, m.types)
     }
 }
-impl SpecFrom<SpecServerCertTypeClientExtensionInner> for SpecServerCertTypeClientExtension {
-    open spec fn spec_from(m: SpecServerCertTypeClientExtensionInner) -> SpecServerCertTypeClientExtension {
+impl SpecFrom<SpecClientCertTypeClientExtensionInner> for SpecClientCertTypeClientExtension {
+    open spec fn spec_from(m: SpecClientCertTypeClientExtensionInner) -> SpecClientCertTypeClientExtension {
         let (l, types) = m;
-        SpecServerCertTypeClientExtension {
+        SpecClientCertTypeClientExtension {
             l,
             types,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ServerCertTypeClientExtension {
+pub struct ClientCertTypeClientExtension {
     pub l: Uint1Ff,
-    pub types: ServerCertTypeClientExtensionTypes,
+    pub types: ClientCertTypeClientExtensionTypes,
 }
-pub type ServerCertTypeClientExtensionInner = (Uint1Ff, ServerCertTypeClientExtensionTypes);
-impl View for ServerCertTypeClientExtension {
-    type V = SpecServerCertTypeClientExtension;
+pub type ClientCertTypeClientExtensionInner = (Uint1Ff, ClientCertTypeClientExtensionTypes);
+impl View for ClientCertTypeClientExtension {
+    type V = SpecClientCertTypeClientExtension;
     open spec fn view(&self) -> Self::V {
-        SpecServerCertTypeClientExtension {
+        SpecClientCertTypeClientExtension {
             l: self.l@,
             types: self.types@,
         }
     }
 }
-impl From<ServerCertTypeClientExtension> for ServerCertTypeClientExtensionInner {
-    fn ex_from(m: ServerCertTypeClientExtension) -> ServerCertTypeClientExtensionInner {
+impl From<ClientCertTypeClientExtension> for ClientCertTypeClientExtensionInner {
+    fn ex_from(m: ClientCertTypeClientExtension) -> ClientCertTypeClientExtensionInner {
         (m.l, m.types)
     }
 }
-impl From<ServerCertTypeClientExtensionInner> for ServerCertTypeClientExtension {
-    fn ex_from(m: ServerCertTypeClientExtensionInner) -> ServerCertTypeClientExtension {
+impl From<ClientCertTypeClientExtensionInner> for ClientCertTypeClientExtension {
+    fn ex_from(m: ClientCertTypeClientExtensionInner) -> ClientCertTypeClientExtension {
         let (l, types) = m;
-        ServerCertTypeClientExtension {
+        ClientCertTypeClientExtension {
             l,
             types,
         }
     }
 }
-pub struct ServerCertTypeClientExtensionMapper;
-impl View for ServerCertTypeClientExtensionMapper {
+pub struct ClientCertTypeClientExtensionMapper;
+impl View for ClientCertTypeClientExtensionMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ServerCertTypeClientExtensionMapper {
-    type Src = SpecServerCertTypeClientExtensionInner;
-    type Dst = SpecServerCertTypeClientExtension;
+impl SpecIso for ClientCertTypeClientExtensionMapper {
+    type Src = SpecClientCertTypeClientExtensionInner;
+    type Dst = SpecClientCertTypeClientExtension;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for ServerCertTypeClientExtensionMapper {
-    type Src<'a> = ServerCertTypeClientExtensionInner;
-    type Dst<'a> = ServerCertTypeClientExtension;
-    type SrcOwned = ServerCertTypeClientExtensionOwnedInner;
-    type DstOwned = ServerCertTypeClientExtensionOwned;
+impl Iso for ClientCertTypeClientExtensionMapper {
+    type Src<'a> = ClientCertTypeClientExtensionInner;
+    type Dst<'a> = ClientCertTypeClientExtension;
+    type SrcOwned = ClientCertTypeClientExtensionOwnedInner;
+    type DstOwned = ClientCertTypeClientExtensionOwned;
 }
-pub struct ServerCertTypeClientExtensionOwned {
+pub struct ClientCertTypeClientExtensionOwned {
     pub l: Uint1FfOwned,
-    pub types: ServerCertTypeClientExtensionTypesOwned,
+    pub types: ClientCertTypeClientExtensionTypesOwned,
 }
-pub type ServerCertTypeClientExtensionOwnedInner = (Uint1FfOwned, ServerCertTypeClientExtensionTypesOwned);
-impl View for ServerCertTypeClientExtensionOwned {
-    type V = SpecServerCertTypeClientExtension;
+pub type ClientCertTypeClientExtensionOwnedInner = (Uint1FfOwned, ClientCertTypeClientExtensionTypesOwned);
+impl View for ClientCertTypeClientExtensionOwned {
+    type V = SpecClientCertTypeClientExtension;
     open spec fn view(&self) -> Self::V {
-        SpecServerCertTypeClientExtension {
+        SpecClientCertTypeClientExtension {
             l: self.l@,
             types: self.types@,
         }
     }
 }
-impl From<ServerCertTypeClientExtensionOwned> for ServerCertTypeClientExtensionOwnedInner {
-    fn ex_from(m: ServerCertTypeClientExtensionOwned) -> ServerCertTypeClientExtensionOwnedInner {
+impl From<ClientCertTypeClientExtensionOwned> for ClientCertTypeClientExtensionOwnedInner {
+    fn ex_from(m: ClientCertTypeClientExtensionOwned) -> ClientCertTypeClientExtensionOwnedInner {
         (m.l, m.types)
     }
 }
-impl From<ServerCertTypeClientExtensionOwnedInner> for ServerCertTypeClientExtensionOwned {
-    fn ex_from(m: ServerCertTypeClientExtensionOwnedInner) -> ServerCertTypeClientExtensionOwned {
+impl From<ClientCertTypeClientExtensionOwnedInner> for ClientCertTypeClientExtensionOwned {
+    fn ex_from(m: ClientCertTypeClientExtensionOwnedInner) -> ClientCertTypeClientExtensionOwned {
         let (l, types) = m;
-        ServerCertTypeClientExtensionOwned {
+        ClientCertTypeClientExtensionOwned {
             l,
             types,
         }
     }
 }
 
-pub type SpecProtocolVersion = u16;
-pub type ProtocolVersion = u16;
-pub type ProtocolVersionOwned = u16;
-
 pub type SpecRandom = Seq<u8>;
 pub type Random<'a> = &'a [u8];
 pub type RandomOwned = Vec<u8>;
+
+pub struct SpecSessionId {
+    pub l: u8,
+    pub id: Seq<u8>,
+}
+pub type SpecSessionIdInner = (u8, Seq<u8>);
+impl SpecFrom<SpecSessionId> for SpecSessionIdInner {
+    open spec fn spec_from(m: SpecSessionId) -> SpecSessionIdInner {
+        (m.l, m.id)
+    }
+}
+impl SpecFrom<SpecSessionIdInner> for SpecSessionId {
+    open spec fn spec_from(m: SpecSessionIdInner) -> SpecSessionId {
+        let (l, id) = m;
+        SpecSessionId {
+            l,
+            id,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SessionId<'a> {
+    pub l: u8,
+    pub id: &'a [u8],
+}
+pub type SessionIdInner<'a> = (u8, &'a [u8]);
+impl View for SessionId<'_> {
+    type V = SpecSessionId;
+    open spec fn view(&self) -> Self::V {
+        SpecSessionId {
+            l: self.l@,
+            id: self.id@,
+        }
+    }
+}
+impl<'a> From<SessionId<'a>> for SessionIdInner<'a> {
+    fn ex_from(m: SessionId<'a>) -> SessionIdInner<'a> {
+        (m.l, m.id)
+    }
+}
+impl<'a> From<SessionIdInner<'a>> for SessionId<'a> {
+    fn ex_from(m: SessionIdInner<'a>) -> SessionId<'a> {
+        let (l, id) = m;
+        SessionId {
+            l,
+            id,
+        }
+    }
+}
+pub struct SessionIdMapper;
+impl View for SessionIdMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for SessionIdMapper {
+    type Src = SpecSessionIdInner;
+    type Dst = SpecSessionId;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for SessionIdMapper {
+    type Src<'a> = SessionIdInner<'a>;
+    type Dst<'a> = SessionId<'a>;
+    type SrcOwned = SessionIdOwnedInner;
+    type DstOwned = SessionIdOwned;
+}
+pub struct SessionIdOwned {
+    pub l: u8,
+    pub id: Vec<u8>,
+}
+pub type SessionIdOwnedInner = (u8, Vec<u8>);
+impl View for SessionIdOwned {
+    type V = SpecSessionId;
+    open spec fn view(&self) -> Self::V {
+        SpecSessionId {
+            l: self.l@,
+            id: self.id@,
+        }
+    }
+}
+impl From<SessionIdOwned> for SessionIdOwnedInner {
+    fn ex_from(m: SessionIdOwned) -> SessionIdOwnedInner {
+        (m.l, m.id)
+    }
+}
+impl From<SessionIdOwnedInner> for SessionIdOwned {
+    fn ex_from(m: SessionIdOwnedInner) -> SessionIdOwned {
+        let (l, id) = m;
+        SessionIdOwned {
+            l,
+            id,
+        }
+    }
+}
 
 pub type SpecUint2Fffe = u16;
 pub type Uint2Fffe = u16;
@@ -1794,10 +2591,6 @@ impl From<Opaque1FfOwnedInner> for Opaque1FfOwned {
     }
 }
 
-pub type SpecExtensionType = u8;
-pub type ExtensionType = u8;
-pub type ExtensionTypeOwned = u8;
-
 pub type SpecEmpty = Seq<u8>;
 pub type Empty<'a> = &'a [u8];
 pub type EmptyOwned = Vec<u8>;
@@ -1912,10 +2705,6 @@ impl From<EcPointFormatListOwnedInner> for EcPointFormatListOwned {
     }
 }
 
-pub type SpecUint2Ffff = u16;
-pub type Uint2Ffff = u16;
-pub type Uint2FfffOwned = u16;
-
 pub type SpecSrtpProtectionProfile = Seq<u8>;
 pub type SrtpProtectionProfile<'a> = &'a [u8];
 pub type SrtpProtectionProfileOwned = Vec<u8>;
@@ -2022,108 +2811,6 @@ impl From<SrtpProtectionProfilesOwnedInner> for SrtpProtectionProfilesOwned {
     }
 }
 
-pub type SpecUint0Ff = u8;
-pub type Uint0Ff = u8;
-pub type Uint0FfOwned = u8;
-
-pub struct SpecOpaque0Ff {
-    pub l: SpecUint0Ff,
-    pub data: Seq<u8>,
-}
-pub type SpecOpaque0FfInner = (SpecUint0Ff, Seq<u8>);
-impl SpecFrom<SpecOpaque0Ff> for SpecOpaque0FfInner {
-    open spec fn spec_from(m: SpecOpaque0Ff) -> SpecOpaque0FfInner {
-        (m.l, m.data)
-    }
-}
-impl SpecFrom<SpecOpaque0FfInner> for SpecOpaque0Ff {
-    open spec fn spec_from(m: SpecOpaque0FfInner) -> SpecOpaque0Ff {
-        let (l, data) = m;
-        SpecOpaque0Ff {
-            l,
-            data,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Opaque0Ff<'a> {
-    pub l: Uint0Ff,
-    pub data: &'a [u8],
-}
-pub type Opaque0FfInner<'a> = (Uint0Ff, &'a [u8]);
-impl View for Opaque0Ff<'_> {
-    type V = SpecOpaque0Ff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl<'a> From<Opaque0Ff<'a>> for Opaque0FfInner<'a> {
-    fn ex_from(m: Opaque0Ff<'a>) -> Opaque0FfInner<'a> {
-        (m.l, m.data)
-    }
-}
-impl<'a> From<Opaque0FfInner<'a>> for Opaque0Ff<'a> {
-    fn ex_from(m: Opaque0FfInner<'a>) -> Opaque0Ff<'a> {
-        let (l, data) = m;
-        Opaque0Ff {
-            l,
-            data,
-        }
-    }
-}
-pub struct Opaque0FfMapper;
-impl View for Opaque0FfMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for Opaque0FfMapper {
-    type Src = SpecOpaque0FfInner;
-    type Dst = SpecOpaque0Ff;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for Opaque0FfMapper {
-    type Src<'a> = Opaque0FfInner<'a>;
-    type Dst<'a> = Opaque0Ff<'a>;
-    type SrcOwned = Opaque0FfOwnedInner;
-    type DstOwned = Opaque0FfOwned;
-}
-pub struct Opaque0FfOwned {
-    pub l: Uint0FfOwned,
-    pub data: Vec<u8>,
-}
-pub type Opaque0FfOwnedInner = (Uint0FfOwned, Vec<u8>);
-impl View for Opaque0FfOwned {
-    type V = SpecOpaque0Ff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl From<Opaque0FfOwned> for Opaque0FfOwnedInner {
-    fn ex_from(m: Opaque0FfOwned) -> Opaque0FfOwnedInner {
-        (m.l, m.data)
-    }
-}
-impl From<Opaque0FfOwnedInner> for Opaque0FfOwned {
-    fn ex_from(m: Opaque0FfOwnedInner) -> Opaque0FfOwned {
-        let (l, data) = m;
-        Opaque0FfOwned {
-            l,
-            data,
-        }
-    }
-}
-
 pub struct SpecUseSrtpData {
     pub profiles: SpecSrtpProtectionProfiles,
     pub srtp_mki: SpecOpaque0Ff,
@@ -2221,10 +2908,6 @@ impl From<UseSrtpDataOwnedInner> for UseSrtpDataOwned {
         }
     }
 }
-
-pub type SpecHeartbeatMode = u8;
-pub type HeartbeatMode = u8;
-pub type HeartbeatModeOwned = u8;
 
 pub type SpecProtocolName = SpecOpaque1Ff;
 pub type ProtocolName<'a> = Opaque1Ff<'a>;
@@ -2438,102 +3121,102 @@ impl From<SignedCertificateTimestampListOwnedInner> for SignedCertificateTimesta
     }
 }
 
-pub type SpecClientCertTypeClientExtensionTypes = Seq<SpecCertificateType>;
-pub type ClientCertTypeClientExtensionTypes = RepeatResult<CertificateType>;
-pub type ClientCertTypeClientExtensionTypesOwned = RepeatResult<CertificateTypeOwned>;
+pub type SpecServerCertTypeClientExtensionTypes = Seq<SpecCertificateType>;
+pub type ServerCertTypeClientExtensionTypes = RepeatResult<CertificateType>;
+pub type ServerCertTypeClientExtensionTypesOwned = RepeatResult<CertificateTypeOwned>;
 
-pub struct SpecClientCertTypeClientExtension {
+pub struct SpecServerCertTypeClientExtension {
     pub l: SpecUint1Ff,
-    pub types: SpecClientCertTypeClientExtensionTypes,
+    pub types: SpecServerCertTypeClientExtensionTypes,
 }
-pub type SpecClientCertTypeClientExtensionInner = (SpecUint1Ff, SpecClientCertTypeClientExtensionTypes);
-impl SpecFrom<SpecClientCertTypeClientExtension> for SpecClientCertTypeClientExtensionInner {
-    open spec fn spec_from(m: SpecClientCertTypeClientExtension) -> SpecClientCertTypeClientExtensionInner {
+pub type SpecServerCertTypeClientExtensionInner = (SpecUint1Ff, SpecServerCertTypeClientExtensionTypes);
+impl SpecFrom<SpecServerCertTypeClientExtension> for SpecServerCertTypeClientExtensionInner {
+    open spec fn spec_from(m: SpecServerCertTypeClientExtension) -> SpecServerCertTypeClientExtensionInner {
         (m.l, m.types)
     }
 }
-impl SpecFrom<SpecClientCertTypeClientExtensionInner> for SpecClientCertTypeClientExtension {
-    open spec fn spec_from(m: SpecClientCertTypeClientExtensionInner) -> SpecClientCertTypeClientExtension {
+impl SpecFrom<SpecServerCertTypeClientExtensionInner> for SpecServerCertTypeClientExtension {
+    open spec fn spec_from(m: SpecServerCertTypeClientExtensionInner) -> SpecServerCertTypeClientExtension {
         let (l, types) = m;
-        SpecClientCertTypeClientExtension {
+        SpecServerCertTypeClientExtension {
             l,
             types,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ClientCertTypeClientExtension {
+pub struct ServerCertTypeClientExtension {
     pub l: Uint1Ff,
-    pub types: ClientCertTypeClientExtensionTypes,
+    pub types: ServerCertTypeClientExtensionTypes,
 }
-pub type ClientCertTypeClientExtensionInner = (Uint1Ff, ClientCertTypeClientExtensionTypes);
-impl View for ClientCertTypeClientExtension {
-    type V = SpecClientCertTypeClientExtension;
+pub type ServerCertTypeClientExtensionInner = (Uint1Ff, ServerCertTypeClientExtensionTypes);
+impl View for ServerCertTypeClientExtension {
+    type V = SpecServerCertTypeClientExtension;
     open spec fn view(&self) -> Self::V {
-        SpecClientCertTypeClientExtension {
+        SpecServerCertTypeClientExtension {
             l: self.l@,
             types: self.types@,
         }
     }
 }
-impl From<ClientCertTypeClientExtension> for ClientCertTypeClientExtensionInner {
-    fn ex_from(m: ClientCertTypeClientExtension) -> ClientCertTypeClientExtensionInner {
+impl From<ServerCertTypeClientExtension> for ServerCertTypeClientExtensionInner {
+    fn ex_from(m: ServerCertTypeClientExtension) -> ServerCertTypeClientExtensionInner {
         (m.l, m.types)
     }
 }
-impl From<ClientCertTypeClientExtensionInner> for ClientCertTypeClientExtension {
-    fn ex_from(m: ClientCertTypeClientExtensionInner) -> ClientCertTypeClientExtension {
+impl From<ServerCertTypeClientExtensionInner> for ServerCertTypeClientExtension {
+    fn ex_from(m: ServerCertTypeClientExtensionInner) -> ServerCertTypeClientExtension {
         let (l, types) = m;
-        ClientCertTypeClientExtension {
+        ServerCertTypeClientExtension {
             l,
             types,
         }
     }
 }
-pub struct ClientCertTypeClientExtensionMapper;
-impl View for ClientCertTypeClientExtensionMapper {
+pub struct ServerCertTypeClientExtensionMapper;
+impl View for ServerCertTypeClientExtensionMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ClientCertTypeClientExtensionMapper {
-    type Src = SpecClientCertTypeClientExtensionInner;
-    type Dst = SpecClientCertTypeClientExtension;
+impl SpecIso for ServerCertTypeClientExtensionMapper {
+    type Src = SpecServerCertTypeClientExtensionInner;
+    type Dst = SpecServerCertTypeClientExtension;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for ClientCertTypeClientExtensionMapper {
-    type Src<'a> = ClientCertTypeClientExtensionInner;
-    type Dst<'a> = ClientCertTypeClientExtension;
-    type SrcOwned = ClientCertTypeClientExtensionOwnedInner;
-    type DstOwned = ClientCertTypeClientExtensionOwned;
+impl Iso for ServerCertTypeClientExtensionMapper {
+    type Src<'a> = ServerCertTypeClientExtensionInner;
+    type Dst<'a> = ServerCertTypeClientExtension;
+    type SrcOwned = ServerCertTypeClientExtensionOwnedInner;
+    type DstOwned = ServerCertTypeClientExtensionOwned;
 }
-pub struct ClientCertTypeClientExtensionOwned {
+pub struct ServerCertTypeClientExtensionOwned {
     pub l: Uint1FfOwned,
-    pub types: ClientCertTypeClientExtensionTypesOwned,
+    pub types: ServerCertTypeClientExtensionTypesOwned,
 }
-pub type ClientCertTypeClientExtensionOwnedInner = (Uint1FfOwned, ClientCertTypeClientExtensionTypesOwned);
-impl View for ClientCertTypeClientExtensionOwned {
-    type V = SpecClientCertTypeClientExtension;
+pub type ServerCertTypeClientExtensionOwnedInner = (Uint1FfOwned, ServerCertTypeClientExtensionTypesOwned);
+impl View for ServerCertTypeClientExtensionOwned {
+    type V = SpecServerCertTypeClientExtension;
     open spec fn view(&self) -> Self::V {
-        SpecClientCertTypeClientExtension {
+        SpecServerCertTypeClientExtension {
             l: self.l@,
             types: self.types@,
         }
     }
 }
-impl From<ClientCertTypeClientExtensionOwned> for ClientCertTypeClientExtensionOwnedInner {
-    fn ex_from(m: ClientCertTypeClientExtensionOwned) -> ClientCertTypeClientExtensionOwnedInner {
+impl From<ServerCertTypeClientExtensionOwned> for ServerCertTypeClientExtensionOwnedInner {
+    fn ex_from(m: ServerCertTypeClientExtensionOwned) -> ServerCertTypeClientExtensionOwnedInner {
         (m.l, m.types)
     }
 }
-impl From<ClientCertTypeClientExtensionOwnedInner> for ClientCertTypeClientExtensionOwned {
-    fn ex_from(m: ClientCertTypeClientExtensionOwnedInner) -> ClientCertTypeClientExtensionOwned {
+impl From<ServerCertTypeClientExtensionOwnedInner> for ServerCertTypeClientExtensionOwned {
+    fn ex_from(m: ServerCertTypeClientExtensionOwnedInner) -> ServerCertTypeClientExtensionOwned {
         let (l, types) = m;
-        ClientCertTypeClientExtensionOwned {
+        ServerCertTypeClientExtensionOwned {
             l,
             types,
         }
@@ -2735,6 +3418,108 @@ impl From<PaddingExtensionOwnedInner> for PaddingExtensionOwned {
 pub type SpecSessionTicket = SpecOpaque0Ffff;
 pub type SessionTicket<'a> = Opaque0Ffff<'a>;
 pub type SessionTicketOwned = Opaque0FfffOwned;
+
+pub struct SpecPskIdentity {
+    pub identity: SpecOpaque1Ffff,
+    pub obfuscated_ticket_age: u32,
+}
+pub type SpecPskIdentityInner = (SpecOpaque1Ffff, u32);
+impl SpecFrom<SpecPskIdentity> for SpecPskIdentityInner {
+    open spec fn spec_from(m: SpecPskIdentity) -> SpecPskIdentityInner {
+        (m.identity, m.obfuscated_ticket_age)
+    }
+}
+impl SpecFrom<SpecPskIdentityInner> for SpecPskIdentity {
+    open spec fn spec_from(m: SpecPskIdentityInner) -> SpecPskIdentity {
+        let (identity, obfuscated_ticket_age) = m;
+        SpecPskIdentity {
+            identity,
+            obfuscated_ticket_age,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PskIdentity<'a> {
+    pub identity: Opaque1Ffff<'a>,
+    pub obfuscated_ticket_age: u32,
+}
+pub type PskIdentityInner<'a> = (Opaque1Ffff<'a>, u32);
+impl View for PskIdentity<'_> {
+    type V = SpecPskIdentity;
+    open spec fn view(&self) -> Self::V {
+        SpecPskIdentity {
+            identity: self.identity@,
+            obfuscated_ticket_age: self.obfuscated_ticket_age@,
+        }
+    }
+}
+impl<'a> From<PskIdentity<'a>> for PskIdentityInner<'a> {
+    fn ex_from(m: PskIdentity<'a>) -> PskIdentityInner<'a> {
+        (m.identity, m.obfuscated_ticket_age)
+    }
+}
+impl<'a> From<PskIdentityInner<'a>> for PskIdentity<'a> {
+    fn ex_from(m: PskIdentityInner<'a>) -> PskIdentity<'a> {
+        let (identity, obfuscated_ticket_age) = m;
+        PskIdentity {
+            identity,
+            obfuscated_ticket_age,
+        }
+    }
+}
+pub struct PskIdentityMapper;
+impl View for PskIdentityMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for PskIdentityMapper {
+    type Src = SpecPskIdentityInner;
+    type Dst = SpecPskIdentity;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for PskIdentityMapper {
+    type Src<'a> = PskIdentityInner<'a>;
+    type Dst<'a> = PskIdentity<'a>;
+    type SrcOwned = PskIdentityOwnedInner;
+    type DstOwned = PskIdentityOwned;
+}
+pub struct PskIdentityOwned {
+    pub identity: Opaque1FfffOwned,
+    pub obfuscated_ticket_age: u32,
+}
+pub type PskIdentityOwnedInner = (Opaque1FfffOwned, u32);
+impl View for PskIdentityOwned {
+    type V = SpecPskIdentity;
+    open spec fn view(&self) -> Self::V {
+        SpecPskIdentity {
+            identity: self.identity@,
+            obfuscated_ticket_age: self.obfuscated_ticket_age@,
+        }
+    }
+}
+impl From<PskIdentityOwned> for PskIdentityOwnedInner {
+    fn ex_from(m: PskIdentityOwned) -> PskIdentityOwnedInner {
+        (m.identity, m.obfuscated_ticket_age)
+    }
+}
+impl From<PskIdentityOwnedInner> for PskIdentityOwned {
+    fn ex_from(m: PskIdentityOwnedInner) -> PskIdentityOwned {
+        let (identity, obfuscated_ticket_age) = m;
+        PskIdentityOwned {
+            identity,
+            obfuscated_ticket_age,
+        }
+    }
+}
+
+pub type SpecPskIdentitiesIdentities = Seq<SpecPskIdentity>;
+pub type PskIdentitiesIdentities<'a> = RepeatResult<PskIdentity<'a>>;
+pub type PskIdentitiesIdentitiesOwned = RepeatResult<PskIdentityOwned>;
 
 pub struct SpecPskIdentities {
     pub l: u16,
@@ -3222,10 +4007,6 @@ impl From<PreSharedKeyClientExtensionOwnedInner> for PreSharedKeyClientExtension
     }
 }
 
-pub type SpecSupportedVersionsClientVersions = Seq<SpecProtocolVersion>;
-pub type SupportedVersionsClientVersions = RepeatResult<ProtocolVersion>;
-pub type SupportedVersionsClientVersionsOwned = RepeatResult<ProtocolVersionOwned>;
-
 pub struct SpecSupportedVersionsClient {
     pub l: u8,
     pub versions: SpecSupportedVersionsClientVersions,
@@ -3327,112 +4108,6 @@ impl From<SupportedVersionsClientOwnedInner> for SupportedVersionsClientOwned {
 pub type SpecCookie = SpecOpaque1Ffff;
 pub type Cookie<'a> = Opaque1Ffff<'a>;
 pub type CookieOwned = Opaque1FfffOwned;
-
-pub type SpecPskKeyExchangeMode = u8;
-pub type PskKeyExchangeMode = u8;
-pub type PskKeyExchangeModeOwned = u8;
-
-pub type SpecPskKeyExchangeModesModes = Seq<SpecPskKeyExchangeMode>;
-pub type PskKeyExchangeModesModes = RepeatResult<PskKeyExchangeMode>;
-pub type PskKeyExchangeModesModesOwned = RepeatResult<PskKeyExchangeModeOwned>;
-
-pub struct SpecPskKeyExchangeModes {
-    pub l: SpecUint1Ff,
-    pub modes: SpecPskKeyExchangeModesModes,
-}
-pub type SpecPskKeyExchangeModesInner = (SpecUint1Ff, SpecPskKeyExchangeModesModes);
-impl SpecFrom<SpecPskKeyExchangeModes> for SpecPskKeyExchangeModesInner {
-    open spec fn spec_from(m: SpecPskKeyExchangeModes) -> SpecPskKeyExchangeModesInner {
-        (m.l, m.modes)
-    }
-}
-impl SpecFrom<SpecPskKeyExchangeModesInner> for SpecPskKeyExchangeModes {
-    open spec fn spec_from(m: SpecPskKeyExchangeModesInner) -> SpecPskKeyExchangeModes {
-        let (l, modes) = m;
-        SpecPskKeyExchangeModes {
-            l,
-            modes,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PskKeyExchangeModes {
-    pub l: Uint1Ff,
-    pub modes: PskKeyExchangeModesModes,
-}
-pub type PskKeyExchangeModesInner = (Uint1Ff, PskKeyExchangeModesModes);
-impl View for PskKeyExchangeModes {
-    type V = SpecPskKeyExchangeModes;
-    open spec fn view(&self) -> Self::V {
-        SpecPskKeyExchangeModes {
-            l: self.l@,
-            modes: self.modes@,
-        }
-    }
-}
-impl From<PskKeyExchangeModes> for PskKeyExchangeModesInner {
-    fn ex_from(m: PskKeyExchangeModes) -> PskKeyExchangeModesInner {
-        (m.l, m.modes)
-    }
-}
-impl From<PskKeyExchangeModesInner> for PskKeyExchangeModes {
-    fn ex_from(m: PskKeyExchangeModesInner) -> PskKeyExchangeModes {
-        let (l, modes) = m;
-        PskKeyExchangeModes {
-            l,
-            modes,
-        }
-    }
-}
-pub struct PskKeyExchangeModesMapper;
-impl View for PskKeyExchangeModesMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for PskKeyExchangeModesMapper {
-    type Src = SpecPskKeyExchangeModesInner;
-    type Dst = SpecPskKeyExchangeModes;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for PskKeyExchangeModesMapper {
-    type Src<'a> = PskKeyExchangeModesInner;
-    type Dst<'a> = PskKeyExchangeModes;
-    type SrcOwned = PskKeyExchangeModesOwnedInner;
-    type DstOwned = PskKeyExchangeModesOwned;
-}
-pub struct PskKeyExchangeModesOwned {
-    pub l: Uint1FfOwned,
-    pub modes: PskKeyExchangeModesModesOwned,
-}
-pub type PskKeyExchangeModesOwnedInner = (Uint1FfOwned, PskKeyExchangeModesModesOwned);
-impl View for PskKeyExchangeModesOwned {
-    type V = SpecPskKeyExchangeModes;
-    open spec fn view(&self) -> Self::V {
-        SpecPskKeyExchangeModes {
-            l: self.l@,
-            modes: self.modes@,
-        }
-    }
-}
-impl From<PskKeyExchangeModesOwned> for PskKeyExchangeModesOwnedInner {
-    fn ex_from(m: PskKeyExchangeModesOwned) -> PskKeyExchangeModesOwnedInner {
-        (m.l, m.modes)
-    }
-}
-impl From<PskKeyExchangeModesOwnedInner> for PskKeyExchangeModesOwned {
-    fn ex_from(m: PskKeyExchangeModesOwnedInner) -> PskKeyExchangeModesOwned {
-        let (l, modes) = m;
-        PskKeyExchangeModesOwned {
-            l,
-            modes,
-        }
-    }
-}
 
 pub type SpecDistinguishedName = SpecOpaque1Ffff;
 pub type DistinguishedName<'a> = Opaque1Ffff<'a>;
@@ -3846,10 +4521,6 @@ impl From<SignatureSchemeListOwnedInner> for SignatureSchemeListOwned {
     }
 }
 
-pub type SpecNamedGroup = u16;
-pub type NamedGroup = u16;
-pub type NamedGroupOwned = u16;
-
 pub struct SpecKeyShareEntry {
     pub group: SpecNamedGroup,
     pub key_exchange: SpecKeyShareEntryKeyExchange,
@@ -4049,10 +4720,6 @@ impl From<KeyShareClientHelloOwnedInner> for KeyShareClientHelloOwned {
         }
     }
 }
-
-pub type SpecUnknownExtension = SpecOpaque0Ffff;
-pub type UnknownExtension<'a> = Opaque0Ffff<'a>;
-pub type UnknownExtensionOwned = Opaque0FfffOwned;
 
 pub enum SpecClientHelloExtensionExtensionData {
     ServerName(SpecEmpty),
@@ -5171,6 +5838,10 @@ impl From<ResponderIdListOwnedInner> for ResponderIdListOwned {
     }
 }
 
+pub type SpecOcspExtensions = SpecOpaque0Ffff;
+pub type OcspExtensions<'a> = Opaque0Ffff<'a>;
+pub type OcspExtensionsOwned = Opaque0FfffOwned;
+
 pub struct SpecOscpStatusRequest {
     pub responder_id_list: SpecResponderIdList,
     pub extensions: SpecOcspExtensions,
@@ -6186,210 +6857,6 @@ impl From<ServerHelloOwnedInner> for ServerHelloOwned {
     }
 }
 
-pub type SpecUint0Fffe = u16;
-pub type Uint0Fffe = u16;
-pub type Uint0FffeOwned = u16;
-
-pub struct SpecExtension {
-    pub extension_type: SpecExtensionType,
-    pub extension_data: SpecOpaque0Ffff,
-}
-pub type SpecExtensionInner = (SpecExtensionType, SpecOpaque0Ffff);
-impl SpecFrom<SpecExtension> for SpecExtensionInner {
-    open spec fn spec_from(m: SpecExtension) -> SpecExtensionInner {
-        (m.extension_type, m.extension_data)
-    }
-}
-impl SpecFrom<SpecExtensionInner> for SpecExtension {
-    open spec fn spec_from(m: SpecExtensionInner) -> SpecExtension {
-        let (extension_type, extension_data) = m;
-        SpecExtension {
-            extension_type,
-            extension_data,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Extension<'a> {
-    pub extension_type: ExtensionType,
-    pub extension_data: Opaque0Ffff<'a>,
-}
-pub type ExtensionInner<'a> = (ExtensionType, Opaque0Ffff<'a>);
-impl View for Extension<'_> {
-    type V = SpecExtension;
-    open spec fn view(&self) -> Self::V {
-        SpecExtension {
-            extension_type: self.extension_type@,
-            extension_data: self.extension_data@,
-        }
-    }
-}
-impl<'a> From<Extension<'a>> for ExtensionInner<'a> {
-    fn ex_from(m: Extension<'a>) -> ExtensionInner<'a> {
-        (m.extension_type, m.extension_data)
-    }
-}
-impl<'a> From<ExtensionInner<'a>> for Extension<'a> {
-    fn ex_from(m: ExtensionInner<'a>) -> Extension<'a> {
-        let (extension_type, extension_data) = m;
-        Extension {
-            extension_type,
-            extension_data,
-        }
-    }
-}
-pub struct ExtensionMapper;
-impl View for ExtensionMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExtensionMapper {
-    type Src = SpecExtensionInner;
-    type Dst = SpecExtension;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for ExtensionMapper {
-    type Src<'a> = ExtensionInner<'a>;
-    type Dst<'a> = Extension<'a>;
-    type SrcOwned = ExtensionOwnedInner;
-    type DstOwned = ExtensionOwned;
-}
-pub struct ExtensionOwned {
-    pub extension_type: ExtensionTypeOwned,
-    pub extension_data: Opaque0FfffOwned,
-}
-pub type ExtensionOwnedInner = (ExtensionTypeOwned, Opaque0FfffOwned);
-impl View for ExtensionOwned {
-    type V = SpecExtension;
-    open spec fn view(&self) -> Self::V {
-        SpecExtension {
-            extension_type: self.extension_type@,
-            extension_data: self.extension_data@,
-        }
-    }
-}
-impl From<ExtensionOwned> for ExtensionOwnedInner {
-    fn ex_from(m: ExtensionOwned) -> ExtensionOwnedInner {
-        (m.extension_type, m.extension_data)
-    }
-}
-impl From<ExtensionOwnedInner> for ExtensionOwned {
-    fn ex_from(m: ExtensionOwnedInner) -> ExtensionOwned {
-        let (extension_type, extension_data) = m;
-        ExtensionOwned {
-            extension_type,
-            extension_data,
-        }
-    }
-}
-
-pub type SpecNewSessionTicketExtensionsExtensions = Seq<SpecExtension>;
-pub type NewSessionTicketExtensionsExtensions<'a> = RepeatResult<Extension<'a>>;
-pub type NewSessionTicketExtensionsExtensionsOwned = RepeatResult<ExtensionOwned>;
-
-pub struct SpecNewSessionTicketExtensions {
-    pub l: SpecUint0Fffe,
-    pub extensions: SpecNewSessionTicketExtensionsExtensions,
-}
-pub type SpecNewSessionTicketExtensionsInner = (SpecUint0Fffe, SpecNewSessionTicketExtensionsExtensions);
-impl SpecFrom<SpecNewSessionTicketExtensions> for SpecNewSessionTicketExtensionsInner {
-    open spec fn spec_from(m: SpecNewSessionTicketExtensions) -> SpecNewSessionTicketExtensionsInner {
-        (m.l, m.extensions)
-    }
-}
-impl SpecFrom<SpecNewSessionTicketExtensionsInner> for SpecNewSessionTicketExtensions {
-    open spec fn spec_from(m: SpecNewSessionTicketExtensionsInner) -> SpecNewSessionTicketExtensions {
-        let (l, extensions) = m;
-        SpecNewSessionTicketExtensions {
-            l,
-            extensions,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewSessionTicketExtensions<'a> {
-    pub l: Uint0Fffe,
-    pub extensions: NewSessionTicketExtensionsExtensions<'a>,
-}
-pub type NewSessionTicketExtensionsInner<'a> = (Uint0Fffe, NewSessionTicketExtensionsExtensions<'a>);
-impl View for NewSessionTicketExtensions<'_> {
-    type V = SpecNewSessionTicketExtensions;
-    open spec fn view(&self) -> Self::V {
-        SpecNewSessionTicketExtensions {
-            l: self.l@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl<'a> From<NewSessionTicketExtensions<'a>> for NewSessionTicketExtensionsInner<'a> {
-    fn ex_from(m: NewSessionTicketExtensions<'a>) -> NewSessionTicketExtensionsInner<'a> {
-        (m.l, m.extensions)
-    }
-}
-impl<'a> From<NewSessionTicketExtensionsInner<'a>> for NewSessionTicketExtensions<'a> {
-    fn ex_from(m: NewSessionTicketExtensionsInner<'a>) -> NewSessionTicketExtensions<'a> {
-        let (l, extensions) = m;
-        NewSessionTicketExtensions {
-            l,
-            extensions,
-        }
-    }
-}
-pub struct NewSessionTicketExtensionsMapper;
-impl View for NewSessionTicketExtensionsMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for NewSessionTicketExtensionsMapper {
-    type Src = SpecNewSessionTicketExtensionsInner;
-    type Dst = SpecNewSessionTicketExtensions;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for NewSessionTicketExtensionsMapper {
-    type Src<'a> = NewSessionTicketExtensionsInner<'a>;
-    type Dst<'a> = NewSessionTicketExtensions<'a>;
-    type SrcOwned = NewSessionTicketExtensionsOwnedInner;
-    type DstOwned = NewSessionTicketExtensionsOwned;
-}
-pub struct NewSessionTicketExtensionsOwned {
-    pub l: Uint0FffeOwned,
-    pub extensions: NewSessionTicketExtensionsExtensionsOwned,
-}
-pub type NewSessionTicketExtensionsOwnedInner = (Uint0FffeOwned, NewSessionTicketExtensionsExtensionsOwned);
-impl View for NewSessionTicketExtensionsOwned {
-    type V = SpecNewSessionTicketExtensions;
-    open spec fn view(&self) -> Self::V {
-        SpecNewSessionTicketExtensions {
-            l: self.l@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl From<NewSessionTicketExtensionsOwned> for NewSessionTicketExtensionsOwnedInner {
-    fn ex_from(m: NewSessionTicketExtensionsOwned) -> NewSessionTicketExtensionsOwnedInner {
-        (m.l, m.extensions)
-    }
-}
-impl From<NewSessionTicketExtensionsOwnedInner> for NewSessionTicketExtensionsOwned {
-    fn ex_from(m: NewSessionTicketExtensionsOwnedInner) -> NewSessionTicketExtensionsOwned {
-        let (l, extensions) = m;
-        NewSessionTicketExtensionsOwned {
-            l,
-            extensions,
-        }
-    }
-}
-
 pub struct SpecNewSessionTicket {
     pub ticket_lifetime: u32,
     pub ticket_age_add: u32,
@@ -6508,508 +6975,6 @@ impl From<NewSessionTicketOwnedInner> for NewSessionTicketOwned {
             ticket_nonce,
             ticket,
             extensions,
-        }
-    }
-}
-
-pub type SpecEncryptedExtensionsExtensions = Seq<SpecExtension>;
-pub type EncryptedExtensionsExtensions<'a> = RepeatResult<Extension<'a>>;
-pub type EncryptedExtensionsExtensionsOwned = RepeatResult<ExtensionOwned>;
-
-pub struct SpecEncryptedExtensions {
-    pub l: SpecUint0Ffff,
-    pub extensions: SpecEncryptedExtensionsExtensions,
-}
-pub type SpecEncryptedExtensionsInner = (SpecUint0Ffff, SpecEncryptedExtensionsExtensions);
-impl SpecFrom<SpecEncryptedExtensions> for SpecEncryptedExtensionsInner {
-    open spec fn spec_from(m: SpecEncryptedExtensions) -> SpecEncryptedExtensionsInner {
-        (m.l, m.extensions)
-    }
-}
-impl SpecFrom<SpecEncryptedExtensionsInner> for SpecEncryptedExtensions {
-    open spec fn spec_from(m: SpecEncryptedExtensionsInner) -> SpecEncryptedExtensions {
-        let (l, extensions) = m;
-        SpecEncryptedExtensions {
-            l,
-            extensions,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EncryptedExtensions<'a> {
-    pub l: Uint0Ffff,
-    pub extensions: EncryptedExtensionsExtensions<'a>,
-}
-pub type EncryptedExtensionsInner<'a> = (Uint0Ffff, EncryptedExtensionsExtensions<'a>);
-impl View for EncryptedExtensions<'_> {
-    type V = SpecEncryptedExtensions;
-    open spec fn view(&self) -> Self::V {
-        SpecEncryptedExtensions {
-            l: self.l@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl<'a> From<EncryptedExtensions<'a>> for EncryptedExtensionsInner<'a> {
-    fn ex_from(m: EncryptedExtensions<'a>) -> EncryptedExtensionsInner<'a> {
-        (m.l, m.extensions)
-    }
-}
-impl<'a> From<EncryptedExtensionsInner<'a>> for EncryptedExtensions<'a> {
-    fn ex_from(m: EncryptedExtensionsInner<'a>) -> EncryptedExtensions<'a> {
-        let (l, extensions) = m;
-        EncryptedExtensions {
-            l,
-            extensions,
-        }
-    }
-}
-pub struct EncryptedExtensionsMapper;
-impl View for EncryptedExtensionsMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for EncryptedExtensionsMapper {
-    type Src = SpecEncryptedExtensionsInner;
-    type Dst = SpecEncryptedExtensions;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for EncryptedExtensionsMapper {
-    type Src<'a> = EncryptedExtensionsInner<'a>;
-    type Dst<'a> = EncryptedExtensions<'a>;
-    type SrcOwned = EncryptedExtensionsOwnedInner;
-    type DstOwned = EncryptedExtensionsOwned;
-}
-pub struct EncryptedExtensionsOwned {
-    pub l: Uint0FfffOwned,
-    pub extensions: EncryptedExtensionsExtensionsOwned,
-}
-pub type EncryptedExtensionsOwnedInner = (Uint0FfffOwned, EncryptedExtensionsExtensionsOwned);
-impl View for EncryptedExtensionsOwned {
-    type V = SpecEncryptedExtensions;
-    open spec fn view(&self) -> Self::V {
-        SpecEncryptedExtensions {
-            l: self.l@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl From<EncryptedExtensionsOwned> for EncryptedExtensionsOwnedInner {
-    fn ex_from(m: EncryptedExtensionsOwned) -> EncryptedExtensionsOwnedInner {
-        (m.l, m.extensions)
-    }
-}
-impl From<EncryptedExtensionsOwnedInner> for EncryptedExtensionsOwned {
-    fn ex_from(m: EncryptedExtensionsOwnedInner) -> EncryptedExtensionsOwned {
-        let (l, extensions) = m;
-        EncryptedExtensionsOwned {
-            l,
-            extensions,
-        }
-    }
-}
-
-pub struct SpecOpaque1Ffffff {
-    pub l: u24,
-    pub data: Seq<u8>,
-}
-pub type SpecOpaque1FfffffInner = (u24, Seq<u8>);
-impl SpecFrom<SpecOpaque1Ffffff> for SpecOpaque1FfffffInner {
-    open spec fn spec_from(m: SpecOpaque1Ffffff) -> SpecOpaque1FfffffInner {
-        (m.l, m.data)
-    }
-}
-impl SpecFrom<SpecOpaque1FfffffInner> for SpecOpaque1Ffffff {
-    open spec fn spec_from(m: SpecOpaque1FfffffInner) -> SpecOpaque1Ffffff {
-        let (l, data) = m;
-        SpecOpaque1Ffffff {
-            l,
-            data,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Opaque1Ffffff<'a> {
-    pub l: u24,
-    pub data: &'a [u8],
-}
-pub type Opaque1FfffffInner<'a> = (u24, &'a [u8]);
-impl View for Opaque1Ffffff<'_> {
-    type V = SpecOpaque1Ffffff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque1Ffffff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl<'a> From<Opaque1Ffffff<'a>> for Opaque1FfffffInner<'a> {
-    fn ex_from(m: Opaque1Ffffff<'a>) -> Opaque1FfffffInner<'a> {
-        (m.l, m.data)
-    }
-}
-impl<'a> From<Opaque1FfffffInner<'a>> for Opaque1Ffffff<'a> {
-    fn ex_from(m: Opaque1FfffffInner<'a>) -> Opaque1Ffffff<'a> {
-        let (l, data) = m;
-        Opaque1Ffffff {
-            l,
-            data,
-        }
-    }
-}
-pub struct Opaque1FfffffMapper;
-impl View for Opaque1FfffffMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for Opaque1FfffffMapper {
-    type Src = SpecOpaque1FfffffInner;
-    type Dst = SpecOpaque1Ffffff;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for Opaque1FfffffMapper {
-    type Src<'a> = Opaque1FfffffInner<'a>;
-    type Dst<'a> = Opaque1Ffffff<'a>;
-    type SrcOwned = Opaque1FfffffOwnedInner;
-    type DstOwned = Opaque1FfffffOwned;
-}
-pub struct Opaque1FfffffOwned {
-    pub l: u24,
-    pub data: Vec<u8>,
-}
-pub type Opaque1FfffffOwnedInner = (u24, Vec<u8>);
-impl View for Opaque1FfffffOwned {
-    type V = SpecOpaque1Ffffff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque1Ffffff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl From<Opaque1FfffffOwned> for Opaque1FfffffOwnedInner {
-    fn ex_from(m: Opaque1FfffffOwned) -> Opaque1FfffffOwnedInner {
-        (m.l, m.data)
-    }
-}
-impl From<Opaque1FfffffOwnedInner> for Opaque1FfffffOwned {
-    fn ex_from(m: Opaque1FfffffOwnedInner) -> Opaque1FfffffOwned {
-        let (l, data) = m;
-        Opaque1FfffffOwned {
-            l,
-            data,
-        }
-    }
-}
-
-pub type SpecCertificateExtensions = SpecEncryptedExtensions;
-pub type CertificateExtensions<'a> = EncryptedExtensions<'a>;
-pub type CertificateExtensionsOwned = EncryptedExtensionsOwned;
-
-pub struct SpecCertificateEntry {
-    pub cert_data: SpecOpaque1Ffffff,
-    pub extensions: SpecCertificateExtensions,
-}
-pub type SpecCertificateEntryInner = (SpecOpaque1Ffffff, SpecCertificateExtensions);
-impl SpecFrom<SpecCertificateEntry> for SpecCertificateEntryInner {
-    open spec fn spec_from(m: SpecCertificateEntry) -> SpecCertificateEntryInner {
-        (m.cert_data, m.extensions)
-    }
-}
-impl SpecFrom<SpecCertificateEntryInner> for SpecCertificateEntry {
-    open spec fn spec_from(m: SpecCertificateEntryInner) -> SpecCertificateEntry {
-        let (cert_data, extensions) = m;
-        SpecCertificateEntry {
-            cert_data,
-            extensions,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CertificateEntry<'a> {
-    pub cert_data: Opaque1Ffffff<'a>,
-    pub extensions: CertificateExtensions<'a>,
-}
-pub type CertificateEntryInner<'a> = (Opaque1Ffffff<'a>, CertificateExtensions<'a>);
-impl View for CertificateEntry<'_> {
-    type V = SpecCertificateEntry;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateEntry {
-            cert_data: self.cert_data@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl<'a> From<CertificateEntry<'a>> for CertificateEntryInner<'a> {
-    fn ex_from(m: CertificateEntry<'a>) -> CertificateEntryInner<'a> {
-        (m.cert_data, m.extensions)
-    }
-}
-impl<'a> From<CertificateEntryInner<'a>> for CertificateEntry<'a> {
-    fn ex_from(m: CertificateEntryInner<'a>) -> CertificateEntry<'a> {
-        let (cert_data, extensions) = m;
-        CertificateEntry {
-            cert_data,
-            extensions,
-        }
-    }
-}
-pub struct CertificateEntryMapper;
-impl View for CertificateEntryMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CertificateEntryMapper {
-    type Src = SpecCertificateEntryInner;
-    type Dst = SpecCertificateEntry;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for CertificateEntryMapper {
-    type Src<'a> = CertificateEntryInner<'a>;
-    type Dst<'a> = CertificateEntry<'a>;
-    type SrcOwned = CertificateEntryOwnedInner;
-    type DstOwned = CertificateEntryOwned;
-}
-pub struct CertificateEntryOwned {
-    pub cert_data: Opaque1FfffffOwned,
-    pub extensions: CertificateExtensionsOwned,
-}
-pub type CertificateEntryOwnedInner = (Opaque1FfffffOwned, CertificateExtensionsOwned);
-impl View for CertificateEntryOwned {
-    type V = SpecCertificateEntry;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateEntry {
-            cert_data: self.cert_data@,
-            extensions: self.extensions@,
-        }
-    }
-}
-impl From<CertificateEntryOwned> for CertificateEntryOwnedInner {
-    fn ex_from(m: CertificateEntryOwned) -> CertificateEntryOwnedInner {
-        (m.cert_data, m.extensions)
-    }
-}
-impl From<CertificateEntryOwnedInner> for CertificateEntryOwned {
-    fn ex_from(m: CertificateEntryOwnedInner) -> CertificateEntryOwned {
-        let (cert_data, extensions) = m;
-        CertificateEntryOwned {
-            cert_data,
-            extensions,
-        }
-    }
-}
-
-pub type SpecCertificateListList = Seq<SpecCertificateEntry>;
-pub type CertificateListList<'a> = RepeatResult<CertificateEntry<'a>>;
-pub type CertificateListListOwned = RepeatResult<CertificateEntryOwned>;
-
-pub struct SpecCertificateList {
-    pub l: u24,
-    pub list: SpecCertificateListList,
-}
-pub type SpecCertificateListInner = (u24, SpecCertificateListList);
-impl SpecFrom<SpecCertificateList> for SpecCertificateListInner {
-    open spec fn spec_from(m: SpecCertificateList) -> SpecCertificateListInner {
-        (m.l, m.list)
-    }
-}
-impl SpecFrom<SpecCertificateListInner> for SpecCertificateList {
-    open spec fn spec_from(m: SpecCertificateListInner) -> SpecCertificateList {
-        let (l, list) = m;
-        SpecCertificateList {
-            l,
-            list,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CertificateList<'a> {
-    pub l: u24,
-    pub list: CertificateListList<'a>,
-}
-pub type CertificateListInner<'a> = (u24, CertificateListList<'a>);
-impl View for CertificateList<'_> {
-    type V = SpecCertificateList;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateList {
-            l: self.l@,
-            list: self.list@,
-        }
-    }
-}
-impl<'a> From<CertificateList<'a>> for CertificateListInner<'a> {
-    fn ex_from(m: CertificateList<'a>) -> CertificateListInner<'a> {
-        (m.l, m.list)
-    }
-}
-impl<'a> From<CertificateListInner<'a>> for CertificateList<'a> {
-    fn ex_from(m: CertificateListInner<'a>) -> CertificateList<'a> {
-        let (l, list) = m;
-        CertificateList {
-            l,
-            list,
-        }
-    }
-}
-pub struct CertificateListMapper;
-impl View for CertificateListMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CertificateListMapper {
-    type Src = SpecCertificateListInner;
-    type Dst = SpecCertificateList;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for CertificateListMapper {
-    type Src<'a> = CertificateListInner<'a>;
-    type Dst<'a> = CertificateList<'a>;
-    type SrcOwned = CertificateListOwnedInner;
-    type DstOwned = CertificateListOwned;
-}
-pub struct CertificateListOwned {
-    pub l: u24,
-    pub list: CertificateListListOwned,
-}
-pub type CertificateListOwnedInner = (u24, CertificateListListOwned);
-impl View for CertificateListOwned {
-    type V = SpecCertificateList;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateList {
-            l: self.l@,
-            list: self.list@,
-        }
-    }
-}
-impl From<CertificateListOwned> for CertificateListOwnedInner {
-    fn ex_from(m: CertificateListOwned) -> CertificateListOwnedInner {
-        (m.l, m.list)
-    }
-}
-impl From<CertificateListOwnedInner> for CertificateListOwned {
-    fn ex_from(m: CertificateListOwnedInner) -> CertificateListOwned {
-        let (l, list) = m;
-        CertificateListOwned {
-            l,
-            list,
-        }
-    }
-}
-
-pub struct SpecCertificate {
-    pub certificate_request_context: SpecOpaque0Ff,
-    pub certificate_list: SpecCertificateList,
-}
-pub type SpecCertificateInner = (SpecOpaque0Ff, SpecCertificateList);
-impl SpecFrom<SpecCertificate> for SpecCertificateInner {
-    open spec fn spec_from(m: SpecCertificate) -> SpecCertificateInner {
-        (m.certificate_request_context, m.certificate_list)
-    }
-}
-impl SpecFrom<SpecCertificateInner> for SpecCertificate {
-    open spec fn spec_from(m: SpecCertificateInner) -> SpecCertificate {
-        let (certificate_request_context, certificate_list) = m;
-        SpecCertificate {
-            certificate_request_context,
-            certificate_list,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Certificate<'a> {
-    pub certificate_request_context: Opaque0Ff<'a>,
-    pub certificate_list: CertificateList<'a>,
-}
-pub type CertificateInner<'a> = (Opaque0Ff<'a>, CertificateList<'a>);
-impl View for Certificate<'_> {
-    type V = SpecCertificate;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificate {
-            certificate_request_context: self.certificate_request_context@,
-            certificate_list: self.certificate_list@,
-        }
-    }
-}
-impl<'a> From<Certificate<'a>> for CertificateInner<'a> {
-    fn ex_from(m: Certificate<'a>) -> CertificateInner<'a> {
-        (m.certificate_request_context, m.certificate_list)
-    }
-}
-impl<'a> From<CertificateInner<'a>> for Certificate<'a> {
-    fn ex_from(m: CertificateInner<'a>) -> Certificate<'a> {
-        let (certificate_request_context, certificate_list) = m;
-        Certificate {
-            certificate_request_context,
-            certificate_list,
-        }
-    }
-}
-pub struct CertificateMapper;
-impl View for CertificateMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CertificateMapper {
-    type Src = SpecCertificateInner;
-    type Dst = SpecCertificate;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for CertificateMapper {
-    type Src<'a> = CertificateInner<'a>;
-    type Dst<'a> = Certificate<'a>;
-    type SrcOwned = CertificateOwnedInner;
-    type DstOwned = CertificateOwned;
-}
-pub struct CertificateOwned {
-    pub certificate_request_context: Opaque0FfOwned,
-    pub certificate_list: CertificateListOwned,
-}
-pub type CertificateOwnedInner = (Opaque0FfOwned, CertificateListOwned);
-impl View for CertificateOwned {
-    type V = SpecCertificate;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificate {
-            certificate_request_context: self.certificate_request_context@,
-            certificate_list: self.certificate_list@,
-        }
-    }
-}
-impl From<CertificateOwned> for CertificateOwnedInner {
-    fn ex_from(m: CertificateOwned) -> CertificateOwnedInner {
-        (m.certificate_request_context, m.certificate_list)
-    }
-}
-impl From<CertificateOwnedInner> for CertificateOwned {
-    fn ex_from(m: CertificateOwnedInner) -> CertificateOwned {
-        let (certificate_request_context, certificate_list) = m;
-        CertificateOwned {
-            certificate_request_context,
-            certificate_list,
         }
     }
 }
@@ -7691,92 +7656,612 @@ impl From<HandshakeMsgOwnedInner> for HandshakeMsgOwned {
     }
 }
 
-pub struct SpecPreSharedKeyServerExtension {
-    pub selected_identity: u16,
+pub type SpecOcspResponse = SpecOpaque1Ffffff;
+pub type OcspResponse<'a> = Opaque1Ffffff<'a>;
+pub type OcspResponseOwned = Opaque1FfffffOwned;
+
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ContentType {
+    Invalid = 0,
+ChangeCipherSpec = 20,
+Alert = 21,
+Handshake = 22,
+ApplicationData = 23
 }
-pub type SpecPreSharedKeyServerExtensionInner = u16;
-impl SpecFrom<SpecPreSharedKeyServerExtension> for SpecPreSharedKeyServerExtensionInner {
-    open spec fn spec_from(m: SpecPreSharedKeyServerExtension) -> SpecPreSharedKeyServerExtensionInner {
-        m.selected_identity
+pub type SpecContentType = ContentType;
+pub type ContentTypeOwned = ContentType;
+
+pub type ContentTypeInner = u8;
+
+impl View for ContentType {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
     }
 }
-impl SpecFrom<SpecPreSharedKeyServerExtensionInner> for SpecPreSharedKeyServerExtension {
-    open spec fn spec_from(m: SpecPreSharedKeyServerExtensionInner) -> SpecPreSharedKeyServerExtension {
-        let selected_identity = m;
-        SpecPreSharedKeyServerExtension {
-            selected_identity,
+
+impl SpecTryFrom<ContentTypeInner> for ContentType {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ContentTypeInner) -> Result<ContentType, ()> {
+        match v {
+            0u8 => Ok(ContentType::Invalid),
+            20u8 => Ok(ContentType::ChangeCipherSpec),
+            21u8 => Ok(ContentType::Alert),
+            22u8 => Ok(ContentType::Handshake),
+            23u8 => Ok(ContentType::ApplicationData),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<ContentType> for ContentTypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ContentType) -> Result<ContentTypeInner, ()> {
+        match v {
+            ContentType::Invalid => Ok(0u8),
+            ContentType::ChangeCipherSpec => Ok(20u8),
+            ContentType::Alert => Ok(21u8),
+            ContentType::Handshake => Ok(22u8),
+            ContentType::ApplicationData => Ok(23u8),
+        }
+    }
+}
+
+impl TryFrom<ContentTypeInner> for ContentType {
+    type Error = ();
+
+    fn ex_try_from(v: ContentTypeInner) -> Result<ContentType, ()> {
+        match v {
+            0u8 => Ok(ContentType::Invalid),
+            20u8 => Ok(ContentType::ChangeCipherSpec),
+            21u8 => Ok(ContentType::Alert),
+            22u8 => Ok(ContentType::Handshake),
+            23u8 => Ok(ContentType::ApplicationData),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<ContentType> for ContentTypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: ContentType) -> Result<ContentTypeInner, ()> {
+        match v {
+            ContentType::Invalid => Ok(0u8),
+            ContentType::ChangeCipherSpec => Ok(20u8),
+            ContentType::Alert => Ok(21u8),
+            ContentType::Handshake => Ok(22u8),
+            ContentType::ApplicationData => Ok(23u8),
+        }
+    }
+}
+
+pub struct ContentTypeMapper;
+
+impl View for ContentTypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for ContentTypeMapper {
+    type Src = ContentTypeInner;
+    type Dst = ContentType;
+
+    proof fn spec_iso(s: Self::Src) {}
+
+    proof fn spec_iso_rev(s: Self::Dst) {}
+}
+
+impl TryFromInto for ContentTypeMapper {
+    type Src<'a> = ContentTypeInner;
+    type Dst<'a> = ContentType;
+
+    type SrcOwned = ContentTypeInner;
+    type DstOwned = ContentType;
+}
+
+                    
+pub struct SpecTlsPlaintext {
+    pub content_type: SpecContentType,
+    pub legacy_record_version: SpecProtocolVersion,
+    pub fragment: SpecOpaque0Ffff,
+}
+pub type SpecTlsPlaintextInner = (SpecContentType, (SpecProtocolVersion, SpecOpaque0Ffff));
+impl SpecFrom<SpecTlsPlaintext> for SpecTlsPlaintextInner {
+    open spec fn spec_from(m: SpecTlsPlaintext) -> SpecTlsPlaintextInner {
+        (m.content_type, (m.legacy_record_version, m.fragment))
+    }
+}
+impl SpecFrom<SpecTlsPlaintextInner> for SpecTlsPlaintext {
+    open spec fn spec_from(m: SpecTlsPlaintextInner) -> SpecTlsPlaintext {
+        let (content_type, (legacy_record_version, fragment)) = m;
+        SpecTlsPlaintext {
+            content_type,
+            legacy_record_version,
+            fragment,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PreSharedKeyServerExtension {
-    pub selected_identity: u16,
+pub struct TlsPlaintext<'a> {
+    pub content_type: ContentType,
+    pub legacy_record_version: ProtocolVersion,
+    pub fragment: Opaque0Ffff<'a>,
 }
-pub type PreSharedKeyServerExtensionInner = u16;
-impl View for PreSharedKeyServerExtension {
-    type V = SpecPreSharedKeyServerExtension;
+pub type TlsPlaintextInner<'a> = (ContentType, (ProtocolVersion, Opaque0Ffff<'a>));
+impl View for TlsPlaintext<'_> {
+    type V = SpecTlsPlaintext;
     open spec fn view(&self) -> Self::V {
-        SpecPreSharedKeyServerExtension {
-            selected_identity: self.selected_identity@,
+        SpecTlsPlaintext {
+            content_type: self.content_type@,
+            legacy_record_version: self.legacy_record_version@,
+            fragment: self.fragment@,
         }
     }
 }
-impl From<PreSharedKeyServerExtension> for PreSharedKeyServerExtensionInner {
-    fn ex_from(m: PreSharedKeyServerExtension) -> PreSharedKeyServerExtensionInner {
-        m.selected_identity
+impl<'a> From<TlsPlaintext<'a>> for TlsPlaintextInner<'a> {
+    fn ex_from(m: TlsPlaintext<'a>) -> TlsPlaintextInner<'a> {
+        (m.content_type, (m.legacy_record_version, m.fragment))
     }
 }
-impl From<PreSharedKeyServerExtensionInner> for PreSharedKeyServerExtension {
-    fn ex_from(m: PreSharedKeyServerExtensionInner) -> PreSharedKeyServerExtension {
-        let selected_identity = m;
-        PreSharedKeyServerExtension {
-            selected_identity,
+impl<'a> From<TlsPlaintextInner<'a>> for TlsPlaintext<'a> {
+    fn ex_from(m: TlsPlaintextInner<'a>) -> TlsPlaintext<'a> {
+        let (content_type, (legacy_record_version, fragment)) = m;
+        TlsPlaintext {
+            content_type,
+            legacy_record_version,
+            fragment,
         }
     }
 }
-pub struct PreSharedKeyServerExtensionMapper;
-impl View for PreSharedKeyServerExtensionMapper {
+pub struct TlsPlaintextMapper;
+impl View for TlsPlaintextMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for PreSharedKeyServerExtensionMapper {
-    type Src = SpecPreSharedKeyServerExtensionInner;
-    type Dst = SpecPreSharedKeyServerExtension;
+impl SpecIso for TlsPlaintextMapper {
+    type Src = SpecTlsPlaintextInner;
+    type Dst = SpecTlsPlaintext;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for PreSharedKeyServerExtensionMapper {
-    type Src<'a> = PreSharedKeyServerExtensionInner;
-    type Dst<'a> = PreSharedKeyServerExtension;
-    type SrcOwned = PreSharedKeyServerExtensionOwnedInner;
-    type DstOwned = PreSharedKeyServerExtensionOwned;
+impl Iso for TlsPlaintextMapper {
+    type Src<'a> = TlsPlaintextInner<'a>;
+    type Dst<'a> = TlsPlaintext<'a>;
+    type SrcOwned = TlsPlaintextOwnedInner;
+    type DstOwned = TlsPlaintextOwned;
 }
-pub struct PreSharedKeyServerExtensionOwned {
-    pub selected_identity: u16,
+pub struct TlsPlaintextOwned {
+    pub content_type: ContentTypeOwned,
+    pub legacy_record_version: ProtocolVersionOwned,
+    pub fragment: Opaque0FfffOwned,
 }
-pub type PreSharedKeyServerExtensionOwnedInner = u16;
-impl View for PreSharedKeyServerExtensionOwned {
-    type V = SpecPreSharedKeyServerExtension;
+pub type TlsPlaintextOwnedInner = (ContentTypeOwned, (ProtocolVersionOwned, Opaque0FfffOwned));
+impl View for TlsPlaintextOwned {
+    type V = SpecTlsPlaintext;
     open spec fn view(&self) -> Self::V {
-        SpecPreSharedKeyServerExtension {
-            selected_identity: self.selected_identity@,
+        SpecTlsPlaintext {
+            content_type: self.content_type@,
+            legacy_record_version: self.legacy_record_version@,
+            fragment: self.fragment@,
         }
     }
 }
-impl From<PreSharedKeyServerExtensionOwned> for PreSharedKeyServerExtensionOwnedInner {
-    fn ex_from(m: PreSharedKeyServerExtensionOwned) -> PreSharedKeyServerExtensionOwnedInner {
-        m.selected_identity
+impl From<TlsPlaintextOwned> for TlsPlaintextOwnedInner {
+    fn ex_from(m: TlsPlaintextOwned) -> TlsPlaintextOwnedInner {
+        (m.content_type, (m.legacy_record_version, m.fragment))
     }
 }
-impl From<PreSharedKeyServerExtensionOwnedInner> for PreSharedKeyServerExtensionOwned {
-    fn ex_from(m: PreSharedKeyServerExtensionOwnedInner) -> PreSharedKeyServerExtensionOwned {
-        let selected_identity = m;
-        PreSharedKeyServerExtensionOwned {
-            selected_identity,
+impl From<TlsPlaintextOwnedInner> for TlsPlaintextOwned {
+    fn ex_from(m: TlsPlaintextOwnedInner) -> TlsPlaintextOwned {
+        let (content_type, (legacy_record_version, fragment)) = m;
+        TlsPlaintextOwned {
+            content_type,
+            legacy_record_version,
+            fragment,
+        }
+    }
+}
+
+pub struct SpecOpaque2Ffff {
+    pub l: SpecUint2Ffff,
+    pub data: Seq<u8>,
+}
+pub type SpecOpaque2FfffInner = (SpecUint2Ffff, Seq<u8>);
+impl SpecFrom<SpecOpaque2Ffff> for SpecOpaque2FfffInner {
+    open spec fn spec_from(m: SpecOpaque2Ffff) -> SpecOpaque2FfffInner {
+        (m.l, m.data)
+    }
+}
+impl SpecFrom<SpecOpaque2FfffInner> for SpecOpaque2Ffff {
+    open spec fn spec_from(m: SpecOpaque2FfffInner) -> SpecOpaque2Ffff {
+        let (l, data) = m;
+        SpecOpaque2Ffff {
+            l,
+            data,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Opaque2Ffff<'a> {
+    pub l: Uint2Ffff,
+    pub data: &'a [u8],
+}
+pub type Opaque2FfffInner<'a> = (Uint2Ffff, &'a [u8]);
+impl View for Opaque2Ffff<'_> {
+    type V = SpecOpaque2Ffff;
+    open spec fn view(&self) -> Self::V {
+        SpecOpaque2Ffff {
+            l: self.l@,
+            data: self.data@,
+        }
+    }
+}
+impl<'a> From<Opaque2Ffff<'a>> for Opaque2FfffInner<'a> {
+    fn ex_from(m: Opaque2Ffff<'a>) -> Opaque2FfffInner<'a> {
+        (m.l, m.data)
+    }
+}
+impl<'a> From<Opaque2FfffInner<'a>> for Opaque2Ffff<'a> {
+    fn ex_from(m: Opaque2FfffInner<'a>) -> Opaque2Ffff<'a> {
+        let (l, data) = m;
+        Opaque2Ffff {
+            l,
+            data,
+        }
+    }
+}
+pub struct Opaque2FfffMapper;
+impl View for Opaque2FfffMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for Opaque2FfffMapper {
+    type Src = SpecOpaque2FfffInner;
+    type Dst = SpecOpaque2Ffff;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for Opaque2FfffMapper {
+    type Src<'a> = Opaque2FfffInner<'a>;
+    type Dst<'a> = Opaque2Ffff<'a>;
+    type SrcOwned = Opaque2FfffOwnedInner;
+    type DstOwned = Opaque2FfffOwned;
+}
+pub struct Opaque2FfffOwned {
+    pub l: Uint2FfffOwned,
+    pub data: Vec<u8>,
+}
+pub type Opaque2FfffOwnedInner = (Uint2FfffOwned, Vec<u8>);
+impl View for Opaque2FfffOwned {
+    type V = SpecOpaque2Ffff;
+    open spec fn view(&self) -> Self::V {
+        SpecOpaque2Ffff {
+            l: self.l@,
+            data: self.data@,
+        }
+    }
+}
+impl From<Opaque2FfffOwned> for Opaque2FfffOwnedInner {
+    fn ex_from(m: Opaque2FfffOwned) -> Opaque2FfffOwnedInner {
+        (m.l, m.data)
+    }
+}
+impl From<Opaque2FfffOwnedInner> for Opaque2FfffOwned {
+    fn ex_from(m: Opaque2FfffOwnedInner) -> Opaque2FfffOwned {
+        let (l, data) = m;
+        Opaque2FfffOwned {
+            l,
+            data,
+        }
+    }
+}
+
+pub struct SpecCertificateStatus {
+    pub status_type: u8,
+    pub response: SpecOcspResponse,
+}
+pub type SpecCertificateStatusInner = (u8, SpecOcspResponse);
+impl SpecFrom<SpecCertificateStatus> for SpecCertificateStatusInner {
+    open spec fn spec_from(m: SpecCertificateStatus) -> SpecCertificateStatusInner {
+        (m.status_type, m.response)
+    }
+}
+impl SpecFrom<SpecCertificateStatusInner> for SpecCertificateStatus {
+    open spec fn spec_from(m: SpecCertificateStatusInner) -> SpecCertificateStatus {
+        let (status_type, response) = m;
+        SpecCertificateStatus {
+            status_type,
+            response,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertificateStatus<'a> {
+    pub status_type: u8,
+    pub response: OcspResponse<'a>,
+}
+pub type CertificateStatusInner<'a> = (u8, OcspResponse<'a>);
+impl View for CertificateStatus<'_> {
+    type V = SpecCertificateStatus;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateStatus {
+            status_type: self.status_type@,
+            response: self.response@,
+        }
+    }
+}
+impl<'a> From<CertificateStatus<'a>> for CertificateStatusInner<'a> {
+    fn ex_from(m: CertificateStatus<'a>) -> CertificateStatusInner<'a> {
+        (m.status_type, m.response)
+    }
+}
+impl<'a> From<CertificateStatusInner<'a>> for CertificateStatus<'a> {
+    fn ex_from(m: CertificateStatusInner<'a>) -> CertificateStatus<'a> {
+        let (status_type, response) = m;
+        CertificateStatus {
+            status_type,
+            response,
+        }
+    }
+}
+pub struct CertificateStatusMapper;
+impl View for CertificateStatusMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CertificateStatusMapper {
+    type Src = SpecCertificateStatusInner;
+    type Dst = SpecCertificateStatus;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for CertificateStatusMapper {
+    type Src<'a> = CertificateStatusInner<'a>;
+    type Dst<'a> = CertificateStatus<'a>;
+    type SrcOwned = CertificateStatusOwnedInner;
+    type DstOwned = CertificateStatusOwned;
+}
+pub struct CertificateStatusOwned {
+    pub status_type: u8,
+    pub response: OcspResponseOwned,
+}
+pub type CertificateStatusOwnedInner = (u8, OcspResponseOwned);
+impl View for CertificateStatusOwned {
+    type V = SpecCertificateStatus;
+    open spec fn view(&self) -> Self::V {
+        SpecCertificateStatus {
+            status_type: self.status_type@,
+            response: self.response@,
+        }
+    }
+}
+impl From<CertificateStatusOwned> for CertificateStatusOwnedInner {
+    fn ex_from(m: CertificateStatusOwned) -> CertificateStatusOwnedInner {
+        (m.status_type, m.response)
+    }
+}
+impl From<CertificateStatusOwnedInner> for CertificateStatusOwned {
+    fn ex_from(m: CertificateStatusOwnedInner) -> CertificateStatusOwned {
+        let (status_type, response) = m;
+        CertificateStatusOwned {
+            status_type,
+            response,
+        }
+    }
+}
+
+pub struct SpecTlsCiphertext {
+    pub opaque_type: SpecContentType,
+    pub version: SpecProtocolVersion,
+    pub encrypted_record: SpecOpaque0Ffff,
+}
+pub type SpecTlsCiphertextInner = (SpecContentType, (SpecProtocolVersion, SpecOpaque0Ffff));
+impl SpecFrom<SpecTlsCiphertext> for SpecTlsCiphertextInner {
+    open spec fn spec_from(m: SpecTlsCiphertext) -> SpecTlsCiphertextInner {
+        (m.opaque_type, (m.version, m.encrypted_record))
+    }
+}
+impl SpecFrom<SpecTlsCiphertextInner> for SpecTlsCiphertext {
+    open spec fn spec_from(m: SpecTlsCiphertextInner) -> SpecTlsCiphertext {
+        let (opaque_type, (version, encrypted_record)) = m;
+        SpecTlsCiphertext {
+            opaque_type,
+            version,
+            encrypted_record,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TlsCiphertext<'a> {
+    pub opaque_type: ContentType,
+    pub version: ProtocolVersion,
+    pub encrypted_record: Opaque0Ffff<'a>,
+}
+pub type TlsCiphertextInner<'a> = (ContentType, (ProtocolVersion, Opaque0Ffff<'a>));
+impl View for TlsCiphertext<'_> {
+    type V = SpecTlsCiphertext;
+    open spec fn view(&self) -> Self::V {
+        SpecTlsCiphertext {
+            opaque_type: self.opaque_type@,
+            version: self.version@,
+            encrypted_record: self.encrypted_record@,
+        }
+    }
+}
+impl<'a> From<TlsCiphertext<'a>> for TlsCiphertextInner<'a> {
+    fn ex_from(m: TlsCiphertext<'a>) -> TlsCiphertextInner<'a> {
+        (m.opaque_type, (m.version, m.encrypted_record))
+    }
+}
+impl<'a> From<TlsCiphertextInner<'a>> for TlsCiphertext<'a> {
+    fn ex_from(m: TlsCiphertextInner<'a>) -> TlsCiphertext<'a> {
+        let (opaque_type, (version, encrypted_record)) = m;
+        TlsCiphertext {
+            opaque_type,
+            version,
+            encrypted_record,
+        }
+    }
+}
+pub struct TlsCiphertextMapper;
+impl View for TlsCiphertextMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TlsCiphertextMapper {
+    type Src = SpecTlsCiphertextInner;
+    type Dst = SpecTlsCiphertext;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for TlsCiphertextMapper {
+    type Src<'a> = TlsCiphertextInner<'a>;
+    type Dst<'a> = TlsCiphertext<'a>;
+    type SrcOwned = TlsCiphertextOwnedInner;
+    type DstOwned = TlsCiphertextOwned;
+}
+pub struct TlsCiphertextOwned {
+    pub opaque_type: ContentTypeOwned,
+    pub version: ProtocolVersionOwned,
+    pub encrypted_record: Opaque0FfffOwned,
+}
+pub type TlsCiphertextOwnedInner = (ContentTypeOwned, (ProtocolVersionOwned, Opaque0FfffOwned));
+impl View for TlsCiphertextOwned {
+    type V = SpecTlsCiphertext;
+    open spec fn view(&self) -> Self::V {
+        SpecTlsCiphertext {
+            opaque_type: self.opaque_type@,
+            version: self.version@,
+            encrypted_record: self.encrypted_record@,
+        }
+    }
+}
+impl From<TlsCiphertextOwned> for TlsCiphertextOwnedInner {
+    fn ex_from(m: TlsCiphertextOwned) -> TlsCiphertextOwnedInner {
+        (m.opaque_type, (m.version, m.encrypted_record))
+    }
+}
+impl From<TlsCiphertextOwnedInner> for TlsCiphertextOwned {
+    fn ex_from(m: TlsCiphertextOwnedInner) -> TlsCiphertextOwned {
+        let (opaque_type, (version, encrypted_record)) = m;
+        TlsCiphertextOwned {
+            opaque_type,
+            version,
+            encrypted_record,
+        }
+    }
+}
+
+pub struct SpecSupportedVersionsServer {
+    pub selected_version: SpecProtocolVersion,
+}
+pub type SpecSupportedVersionsServerInner = SpecProtocolVersion;
+impl SpecFrom<SpecSupportedVersionsServer> for SpecSupportedVersionsServerInner {
+    open spec fn spec_from(m: SpecSupportedVersionsServer) -> SpecSupportedVersionsServerInner {
+        m.selected_version
+    }
+}
+impl SpecFrom<SpecSupportedVersionsServerInner> for SpecSupportedVersionsServer {
+    open spec fn spec_from(m: SpecSupportedVersionsServerInner) -> SpecSupportedVersionsServer {
+        let selected_version = m;
+        SpecSupportedVersionsServer {
+            selected_version,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SupportedVersionsServer {
+    pub selected_version: ProtocolVersion,
+}
+pub type SupportedVersionsServerInner = ProtocolVersion;
+impl View for SupportedVersionsServer {
+    type V = SpecSupportedVersionsServer;
+    open spec fn view(&self) -> Self::V {
+        SpecSupportedVersionsServer {
+            selected_version: self.selected_version@,
+        }
+    }
+}
+impl From<SupportedVersionsServer> for SupportedVersionsServerInner {
+    fn ex_from(m: SupportedVersionsServer) -> SupportedVersionsServerInner {
+        m.selected_version
+    }
+}
+impl From<SupportedVersionsServerInner> for SupportedVersionsServer {
+    fn ex_from(m: SupportedVersionsServerInner) -> SupportedVersionsServer {
+        let selected_version = m;
+        SupportedVersionsServer {
+            selected_version,
+        }
+    }
+}
+pub struct SupportedVersionsServerMapper;
+impl View for SupportedVersionsServerMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for SupportedVersionsServerMapper {
+    type Src = SpecSupportedVersionsServerInner;
+    type Dst = SpecSupportedVersionsServer;
+    proof fn spec_iso(s: Self::Src) {
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+    }
+}
+impl Iso for SupportedVersionsServerMapper {
+    type Src<'a> = SupportedVersionsServerInner;
+    type Dst<'a> = SupportedVersionsServer;
+    type SrcOwned = SupportedVersionsServerOwnedInner;
+    type DstOwned = SupportedVersionsServerOwned;
+}
+pub struct SupportedVersionsServerOwned {
+    pub selected_version: ProtocolVersionOwned,
+}
+pub type SupportedVersionsServerOwnedInner = ProtocolVersionOwned;
+impl View for SupportedVersionsServerOwned {
+    type V = SpecSupportedVersionsServer;
+    open spec fn view(&self) -> Self::V {
+        SpecSupportedVersionsServer {
+            selected_version: self.selected_version@,
+        }
+    }
+}
+impl From<SupportedVersionsServerOwned> for SupportedVersionsServerOwnedInner {
+    fn ex_from(m: SupportedVersionsServerOwned) -> SupportedVersionsServerOwnedInner {
+        m.selected_version
+    }
+}
+impl From<SupportedVersionsServerOwnedInner> for SupportedVersionsServerOwned {
+    fn ex_from(m: SupportedVersionsServerOwnedInner) -> SupportedVersionsServerOwned {
+        let selected_version = m;
+        SupportedVersionsServerOwned {
+            selected_version,
         }
     }
 }
@@ -8004,389 +8489,6 @@ impl From<ServerCertTypeServerExtensionOwnedInner> for ServerCertTypeServerExten
     }
 }
 
-pub struct SpecSupportedVersionsServer {
-    pub selected_version: SpecProtocolVersion,
-}
-pub type SpecSupportedVersionsServerInner = SpecProtocolVersion;
-impl SpecFrom<SpecSupportedVersionsServer> for SpecSupportedVersionsServerInner {
-    open spec fn spec_from(m: SpecSupportedVersionsServer) -> SpecSupportedVersionsServerInner {
-        m.selected_version
-    }
-}
-impl SpecFrom<SpecSupportedVersionsServerInner> for SpecSupportedVersionsServer {
-    open spec fn spec_from(m: SpecSupportedVersionsServerInner) -> SpecSupportedVersionsServer {
-        let selected_version = m;
-        SpecSupportedVersionsServer {
-            selected_version,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SupportedVersionsServer {
-    pub selected_version: ProtocolVersion,
-}
-pub type SupportedVersionsServerInner = ProtocolVersion;
-impl View for SupportedVersionsServer {
-    type V = SpecSupportedVersionsServer;
-    open spec fn view(&self) -> Self::V {
-        SpecSupportedVersionsServer {
-            selected_version: self.selected_version@,
-        }
-    }
-}
-impl From<SupportedVersionsServer> for SupportedVersionsServerInner {
-    fn ex_from(m: SupportedVersionsServer) -> SupportedVersionsServerInner {
-        m.selected_version
-    }
-}
-impl From<SupportedVersionsServerInner> for SupportedVersionsServer {
-    fn ex_from(m: SupportedVersionsServerInner) -> SupportedVersionsServer {
-        let selected_version = m;
-        SupportedVersionsServer {
-            selected_version,
-        }
-    }
-}
-pub struct SupportedVersionsServerMapper;
-impl View for SupportedVersionsServerMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for SupportedVersionsServerMapper {
-    type Src = SpecSupportedVersionsServerInner;
-    type Dst = SpecSupportedVersionsServer;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for SupportedVersionsServerMapper {
-    type Src<'a> = SupportedVersionsServerInner;
-    type Dst<'a> = SupportedVersionsServer;
-    type SrcOwned = SupportedVersionsServerOwnedInner;
-    type DstOwned = SupportedVersionsServerOwned;
-}
-pub struct SupportedVersionsServerOwned {
-    pub selected_version: ProtocolVersionOwned,
-}
-pub type SupportedVersionsServerOwnedInner = ProtocolVersionOwned;
-impl View for SupportedVersionsServerOwned {
-    type V = SpecSupportedVersionsServer;
-    open spec fn view(&self) -> Self::V {
-        SpecSupportedVersionsServer {
-            selected_version: self.selected_version@,
-        }
-    }
-}
-impl From<SupportedVersionsServerOwned> for SupportedVersionsServerOwnedInner {
-    fn ex_from(m: SupportedVersionsServerOwned) -> SupportedVersionsServerOwnedInner {
-        m.selected_version
-    }
-}
-impl From<SupportedVersionsServerOwnedInner> for SupportedVersionsServerOwned {
-    fn ex_from(m: SupportedVersionsServerOwnedInner) -> SupportedVersionsServerOwned {
-        let selected_version = m;
-        SupportedVersionsServerOwned {
-            selected_version,
-        }
-    }
-}
-
-pub type SpecOcspResponse = SpecOpaque1Ffffff;
-pub type OcspResponse<'a> = Opaque1Ffffff<'a>;
-pub type OcspResponseOwned = Opaque1FfffffOwned;
-
-pub struct SpecCertificateStatus {
-    pub status_type: u8,
-    pub response: SpecOcspResponse,
-}
-pub type SpecCertificateStatusInner = (u8, SpecOcspResponse);
-impl SpecFrom<SpecCertificateStatus> for SpecCertificateStatusInner {
-    open spec fn spec_from(m: SpecCertificateStatus) -> SpecCertificateStatusInner {
-        (m.status_type, m.response)
-    }
-}
-impl SpecFrom<SpecCertificateStatusInner> for SpecCertificateStatus {
-    open spec fn spec_from(m: SpecCertificateStatusInner) -> SpecCertificateStatus {
-        let (status_type, response) = m;
-        SpecCertificateStatus {
-            status_type,
-            response,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CertificateStatus<'a> {
-    pub status_type: u8,
-    pub response: OcspResponse<'a>,
-}
-pub type CertificateStatusInner<'a> = (u8, OcspResponse<'a>);
-impl View for CertificateStatus<'_> {
-    type V = SpecCertificateStatus;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateStatus {
-            status_type: self.status_type@,
-            response: self.response@,
-        }
-    }
-}
-impl<'a> From<CertificateStatus<'a>> for CertificateStatusInner<'a> {
-    fn ex_from(m: CertificateStatus<'a>) -> CertificateStatusInner<'a> {
-        (m.status_type, m.response)
-    }
-}
-impl<'a> From<CertificateStatusInner<'a>> for CertificateStatus<'a> {
-    fn ex_from(m: CertificateStatusInner<'a>) -> CertificateStatus<'a> {
-        let (status_type, response) = m;
-        CertificateStatus {
-            status_type,
-            response,
-        }
-    }
-}
-pub struct CertificateStatusMapper;
-impl View for CertificateStatusMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CertificateStatusMapper {
-    type Src = SpecCertificateStatusInner;
-    type Dst = SpecCertificateStatus;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for CertificateStatusMapper {
-    type Src<'a> = CertificateStatusInner<'a>;
-    type Dst<'a> = CertificateStatus<'a>;
-    type SrcOwned = CertificateStatusOwnedInner;
-    type DstOwned = CertificateStatusOwned;
-}
-pub struct CertificateStatusOwned {
-    pub status_type: u8,
-    pub response: OcspResponseOwned,
-}
-pub type CertificateStatusOwnedInner = (u8, OcspResponseOwned);
-impl View for CertificateStatusOwned {
-    type V = SpecCertificateStatus;
-    open spec fn view(&self) -> Self::V {
-        SpecCertificateStatus {
-            status_type: self.status_type@,
-            response: self.response@,
-        }
-    }
-}
-impl From<CertificateStatusOwned> for CertificateStatusOwnedInner {
-    fn ex_from(m: CertificateStatusOwned) -> CertificateStatusOwnedInner {
-        (m.status_type, m.response)
-    }
-}
-impl From<CertificateStatusOwnedInner> for CertificateStatusOwned {
-    fn ex_from(m: CertificateStatusOwnedInner) -> CertificateStatusOwned {
-        let (status_type, response) = m;
-        CertificateStatusOwned {
-            status_type,
-            response,
-        }
-    }
-}
-
-pub struct SpecOpaque2Ffff {
-    pub l: SpecUint2Ffff,
-    pub data: Seq<u8>,
-}
-pub type SpecOpaque2FfffInner = (SpecUint2Ffff, Seq<u8>);
-impl SpecFrom<SpecOpaque2Ffff> for SpecOpaque2FfffInner {
-    open spec fn spec_from(m: SpecOpaque2Ffff) -> SpecOpaque2FfffInner {
-        (m.l, m.data)
-    }
-}
-impl SpecFrom<SpecOpaque2FfffInner> for SpecOpaque2Ffff {
-    open spec fn spec_from(m: SpecOpaque2FfffInner) -> SpecOpaque2Ffff {
-        let (l, data) = m;
-        SpecOpaque2Ffff {
-            l,
-            data,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Opaque2Ffff<'a> {
-    pub l: Uint2Ffff,
-    pub data: &'a [u8],
-}
-pub type Opaque2FfffInner<'a> = (Uint2Ffff, &'a [u8]);
-impl View for Opaque2Ffff<'_> {
-    type V = SpecOpaque2Ffff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque2Ffff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl<'a> From<Opaque2Ffff<'a>> for Opaque2FfffInner<'a> {
-    fn ex_from(m: Opaque2Ffff<'a>) -> Opaque2FfffInner<'a> {
-        (m.l, m.data)
-    }
-}
-impl<'a> From<Opaque2FfffInner<'a>> for Opaque2Ffff<'a> {
-    fn ex_from(m: Opaque2FfffInner<'a>) -> Opaque2Ffff<'a> {
-        let (l, data) = m;
-        Opaque2Ffff {
-            l,
-            data,
-        }
-    }
-}
-pub struct Opaque2FfffMapper;
-impl View for Opaque2FfffMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for Opaque2FfffMapper {
-    type Src = SpecOpaque2FfffInner;
-    type Dst = SpecOpaque2Ffff;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for Opaque2FfffMapper {
-    type Src<'a> = Opaque2FfffInner<'a>;
-    type Dst<'a> = Opaque2Ffff<'a>;
-    type SrcOwned = Opaque2FfffOwnedInner;
-    type DstOwned = Opaque2FfffOwned;
-}
-pub struct Opaque2FfffOwned {
-    pub l: Uint2FfffOwned,
-    pub data: Vec<u8>,
-}
-pub type Opaque2FfffOwnedInner = (Uint2FfffOwned, Vec<u8>);
-impl View for Opaque2FfffOwned {
-    type V = SpecOpaque2Ffff;
-    open spec fn view(&self) -> Self::V {
-        SpecOpaque2Ffff {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-impl From<Opaque2FfffOwned> for Opaque2FfffOwnedInner {
-    fn ex_from(m: Opaque2FfffOwned) -> Opaque2FfffOwnedInner {
-        (m.l, m.data)
-    }
-}
-impl From<Opaque2FfffOwnedInner> for Opaque2FfffOwned {
-    fn ex_from(m: Opaque2FfffOwnedInner) -> Opaque2FfffOwned {
-        let (l, data) = m;
-        Opaque2FfffOwned {
-            l,
-            data,
-        }
-    }
-}
-
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AlertLevel {
-    Warning = 1,
-Fatal = 2
-}
-pub type SpecAlertLevel = AlertLevel;
-pub type AlertLevelOwned = AlertLevel;
-
-pub type AlertLevelInner = u8;
-
-impl View for AlertLevel {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<AlertLevelInner> for AlertLevel {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AlertLevelInner) -> Result<AlertLevel, ()> {
-        match v {
-            1u8 => Ok(AlertLevel::Warning),
-            2u8 => Ok(AlertLevel::Fatal),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<AlertLevel> for AlertLevelInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AlertLevel) -> Result<AlertLevelInner, ()> {
-        match v {
-            AlertLevel::Warning => Ok(1u8),
-            AlertLevel::Fatal => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<AlertLevelInner> for AlertLevel {
-    type Error = ();
-
-    fn ex_try_from(v: AlertLevelInner) -> Result<AlertLevel, ()> {
-        match v {
-            1u8 => Ok(AlertLevel::Warning),
-            2u8 => Ok(AlertLevel::Fatal),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<AlertLevel> for AlertLevelInner {
-    type Error = ();
-
-    fn ex_try_from(v: AlertLevel) -> Result<AlertLevelInner, ()> {
-        match v {
-            AlertLevel::Warning => Ok(1u8),
-            AlertLevel::Fatal => Ok(2u8),
-        }
-    }
-}
-
-pub struct AlertLevelMapper;
-
-impl View for AlertLevelMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for AlertLevelMapper {
-    type Src = AlertLevelInner;
-    type Dst = AlertLevel;
-
-    proof fn spec_iso(s: Self::Src) {}
-
-    proof fn spec_iso_rev(s: Self::Dst) {}
-}
-
-impl TryFromInto for AlertLevelMapper {
-    type Src<'a> = AlertLevelInner;
-    type Dst<'a> = AlertLevel;
-
-    type SrcOwned = AlertLevelInner;
-    type DstOwned = AlertLevel;
-}
-
-                    
 pub struct SpecEarlyDataIndicationNewSessionTicket {
     pub max_early_data_size: u32,
 }
@@ -8477,510 +8579,280 @@ impl From<EarlyDataIndicationNewSessionTicketOwnedInner> for EarlyDataIndication
     }
 }
 
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ContentType {
-    Invalid = 0,
-ChangeCipherSpec = 20,
-Alert = 21,
-Handshake = 22,
-ApplicationData = 23
+pub struct SpecOpaque0Ffffff {
+    pub l: u24,
+    pub data: Seq<u8>,
 }
-pub type SpecContentType = ContentType;
-pub type ContentTypeOwned = ContentType;
-
-pub type ContentTypeInner = u8;
-
-impl View for ContentType {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
+pub type SpecOpaque0FfffffInner = (u24, Seq<u8>);
+impl SpecFrom<SpecOpaque0Ffffff> for SpecOpaque0FfffffInner {
+    open spec fn spec_from(m: SpecOpaque0Ffffff) -> SpecOpaque0FfffffInner {
+        (m.l, m.data)
     }
 }
-
-impl SpecTryFrom<ContentTypeInner> for ContentType {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ContentTypeInner) -> Result<ContentType, ()> {
-        match v {
-            0u8 => Ok(ContentType::Invalid),
-            20u8 => Ok(ContentType::ChangeCipherSpec),
-            21u8 => Ok(ContentType::Alert),
-            22u8 => Ok(ContentType::Handshake),
-            23u8 => Ok(ContentType::ApplicationData),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<ContentType> for ContentTypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ContentType) -> Result<ContentTypeInner, ()> {
-        match v {
-            ContentType::Invalid => Ok(0u8),
-            ContentType::ChangeCipherSpec => Ok(20u8),
-            ContentType::Alert => Ok(21u8),
-            ContentType::Handshake => Ok(22u8),
-            ContentType::ApplicationData => Ok(23u8),
-        }
-    }
-}
-
-impl TryFrom<ContentTypeInner> for ContentType {
-    type Error = ();
-
-    fn ex_try_from(v: ContentTypeInner) -> Result<ContentType, ()> {
-        match v {
-            0u8 => Ok(ContentType::Invalid),
-            20u8 => Ok(ContentType::ChangeCipherSpec),
-            21u8 => Ok(ContentType::Alert),
-            22u8 => Ok(ContentType::Handshake),
-            23u8 => Ok(ContentType::ApplicationData),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<ContentType> for ContentTypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: ContentType) -> Result<ContentTypeInner, ()> {
-        match v {
-            ContentType::Invalid => Ok(0u8),
-            ContentType::ChangeCipherSpec => Ok(20u8),
-            ContentType::Alert => Ok(21u8),
-            ContentType::Handshake => Ok(22u8),
-            ContentType::ApplicationData => Ok(23u8),
-        }
-    }
-}
-
-pub struct ContentTypeMapper;
-
-impl View for ContentTypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for ContentTypeMapper {
-    type Src = ContentTypeInner;
-    type Dst = ContentType;
-
-    proof fn spec_iso(s: Self::Src) {}
-
-    proof fn spec_iso_rev(s: Self::Dst) {}
-}
-
-impl TryFromInto for ContentTypeMapper {
-    type Src<'a> = ContentTypeInner;
-    type Dst<'a> = ContentType;
-
-    type SrcOwned = ContentTypeInner;
-    type DstOwned = ContentType;
-}
-
-                    
-pub struct SpecTlsPlaintext {
-    pub content_type: SpecContentType,
-    pub legacy_record_version: SpecProtocolVersion,
-    pub fragment: SpecOpaque0Ffff,
-}
-pub type SpecTlsPlaintextInner = (SpecContentType, (SpecProtocolVersion, SpecOpaque0Ffff));
-impl SpecFrom<SpecTlsPlaintext> for SpecTlsPlaintextInner {
-    open spec fn spec_from(m: SpecTlsPlaintext) -> SpecTlsPlaintextInner {
-        (m.content_type, (m.legacy_record_version, m.fragment))
-    }
-}
-impl SpecFrom<SpecTlsPlaintextInner> for SpecTlsPlaintext {
-    open spec fn spec_from(m: SpecTlsPlaintextInner) -> SpecTlsPlaintext {
-        let (content_type, (legacy_record_version, fragment)) = m;
-        SpecTlsPlaintext {
-            content_type,
-            legacy_record_version,
-            fragment,
+impl SpecFrom<SpecOpaque0FfffffInner> for SpecOpaque0Ffffff {
+    open spec fn spec_from(m: SpecOpaque0FfffffInner) -> SpecOpaque0Ffffff {
+        let (l, data) = m;
+        SpecOpaque0Ffffff {
+            l,
+            data,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TlsPlaintext<'a> {
-    pub content_type: ContentType,
-    pub legacy_record_version: ProtocolVersion,
-    pub fragment: Opaque0Ffff<'a>,
+pub struct Opaque0Ffffff<'a> {
+    pub l: u24,
+    pub data: &'a [u8],
 }
-pub type TlsPlaintextInner<'a> = (ContentType, (ProtocolVersion, Opaque0Ffff<'a>));
-impl View for TlsPlaintext<'_> {
-    type V = SpecTlsPlaintext;
+pub type Opaque0FfffffInner<'a> = (u24, &'a [u8]);
+impl View for Opaque0Ffffff<'_> {
+    type V = SpecOpaque0Ffffff;
     open spec fn view(&self) -> Self::V {
-        SpecTlsPlaintext {
-            content_type: self.content_type@,
-            legacy_record_version: self.legacy_record_version@,
-            fragment: self.fragment@,
+        SpecOpaque0Ffffff {
+            l: self.l@,
+            data: self.data@,
         }
     }
 }
-impl<'a> From<TlsPlaintext<'a>> for TlsPlaintextInner<'a> {
-    fn ex_from(m: TlsPlaintext<'a>) -> TlsPlaintextInner<'a> {
-        (m.content_type, (m.legacy_record_version, m.fragment))
+impl<'a> From<Opaque0Ffffff<'a>> for Opaque0FfffffInner<'a> {
+    fn ex_from(m: Opaque0Ffffff<'a>) -> Opaque0FfffffInner<'a> {
+        (m.l, m.data)
     }
 }
-impl<'a> From<TlsPlaintextInner<'a>> for TlsPlaintext<'a> {
-    fn ex_from(m: TlsPlaintextInner<'a>) -> TlsPlaintext<'a> {
-        let (content_type, (legacy_record_version, fragment)) = m;
-        TlsPlaintext {
-            content_type,
-            legacy_record_version,
-            fragment,
+impl<'a> From<Opaque0FfffffInner<'a>> for Opaque0Ffffff<'a> {
+    fn ex_from(m: Opaque0FfffffInner<'a>) -> Opaque0Ffffff<'a> {
+        let (l, data) = m;
+        Opaque0Ffffff {
+            l,
+            data,
         }
     }
 }
-pub struct TlsPlaintextMapper;
-impl View for TlsPlaintextMapper {
+pub struct Opaque0FfffffMapper;
+impl View for Opaque0FfffffMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for TlsPlaintextMapper {
-    type Src = SpecTlsPlaintextInner;
-    type Dst = SpecTlsPlaintext;
+impl SpecIso for Opaque0FfffffMapper {
+    type Src = SpecOpaque0FfffffInner;
+    type Dst = SpecOpaque0Ffffff;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for TlsPlaintextMapper {
-    type Src<'a> = TlsPlaintextInner<'a>;
-    type Dst<'a> = TlsPlaintext<'a>;
-    type SrcOwned = TlsPlaintextOwnedInner;
-    type DstOwned = TlsPlaintextOwned;
+impl Iso for Opaque0FfffffMapper {
+    type Src<'a> = Opaque0FfffffInner<'a>;
+    type Dst<'a> = Opaque0Ffffff<'a>;
+    type SrcOwned = Opaque0FfffffOwnedInner;
+    type DstOwned = Opaque0FfffffOwned;
 }
-pub struct TlsPlaintextOwned {
-    pub content_type: ContentTypeOwned,
-    pub legacy_record_version: ProtocolVersionOwned,
-    pub fragment: Opaque0FfffOwned,
+pub struct Opaque0FfffffOwned {
+    pub l: u24,
+    pub data: Vec<u8>,
 }
-pub type TlsPlaintextOwnedInner = (ContentTypeOwned, (ProtocolVersionOwned, Opaque0FfffOwned));
-impl View for TlsPlaintextOwned {
-    type V = SpecTlsPlaintext;
+pub type Opaque0FfffffOwnedInner = (u24, Vec<u8>);
+impl View for Opaque0FfffffOwned {
+    type V = SpecOpaque0Ffffff;
     open spec fn view(&self) -> Self::V {
-        SpecTlsPlaintext {
-            content_type: self.content_type@,
-            legacy_record_version: self.legacy_record_version@,
-            fragment: self.fragment@,
+        SpecOpaque0Ffffff {
+            l: self.l@,
+            data: self.data@,
         }
     }
 }
-impl From<TlsPlaintextOwned> for TlsPlaintextOwnedInner {
-    fn ex_from(m: TlsPlaintextOwned) -> TlsPlaintextOwnedInner {
-        (m.content_type, (m.legacy_record_version, m.fragment))
+impl From<Opaque0FfffffOwned> for Opaque0FfffffOwnedInner {
+    fn ex_from(m: Opaque0FfffffOwned) -> Opaque0FfffffOwnedInner {
+        (m.l, m.data)
     }
 }
-impl From<TlsPlaintextOwnedInner> for TlsPlaintextOwned {
-    fn ex_from(m: TlsPlaintextOwnedInner) -> TlsPlaintextOwned {
-        let (content_type, (legacy_record_version, fragment)) = m;
-        TlsPlaintextOwned {
-            content_type,
-            legacy_record_version,
-            fragment,
+impl From<Opaque0FfffffOwnedInner> for Opaque0FfffffOwned {
+    fn ex_from(m: Opaque0FfffffOwnedInner) -> Opaque0FfffffOwned {
+        let (l, data) = m;
+        Opaque0FfffffOwned {
+            l,
+            data,
         }
     }
 }
 
-pub struct SpecHeartbeatExtension {
-    pub mode: SpecHeartbeatMode,
+pub struct SpecPreSharedKeyServerExtension {
+    pub selected_identity: u16,
 }
-pub type SpecHeartbeatExtensionInner = SpecHeartbeatMode;
-impl SpecFrom<SpecHeartbeatExtension> for SpecHeartbeatExtensionInner {
-    open spec fn spec_from(m: SpecHeartbeatExtension) -> SpecHeartbeatExtensionInner {
-        m.mode
+pub type SpecPreSharedKeyServerExtensionInner = u16;
+impl SpecFrom<SpecPreSharedKeyServerExtension> for SpecPreSharedKeyServerExtensionInner {
+    open spec fn spec_from(m: SpecPreSharedKeyServerExtension) -> SpecPreSharedKeyServerExtensionInner {
+        m.selected_identity
     }
 }
-impl SpecFrom<SpecHeartbeatExtensionInner> for SpecHeartbeatExtension {
-    open spec fn spec_from(m: SpecHeartbeatExtensionInner) -> SpecHeartbeatExtension {
-        let mode = m;
-        SpecHeartbeatExtension {
-            mode,
+impl SpecFrom<SpecPreSharedKeyServerExtensionInner> for SpecPreSharedKeyServerExtension {
+    open spec fn spec_from(m: SpecPreSharedKeyServerExtensionInner) -> SpecPreSharedKeyServerExtension {
+        let selected_identity = m;
+        SpecPreSharedKeyServerExtension {
+            selected_identity,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HeartbeatExtension {
-    pub mode: HeartbeatMode,
+pub struct PreSharedKeyServerExtension {
+    pub selected_identity: u16,
 }
-pub type HeartbeatExtensionInner = HeartbeatMode;
-impl View for HeartbeatExtension {
-    type V = SpecHeartbeatExtension;
+pub type PreSharedKeyServerExtensionInner = u16;
+impl View for PreSharedKeyServerExtension {
+    type V = SpecPreSharedKeyServerExtension;
     open spec fn view(&self) -> Self::V {
-        SpecHeartbeatExtension {
-            mode: self.mode@,
+        SpecPreSharedKeyServerExtension {
+            selected_identity: self.selected_identity@,
         }
     }
 }
-impl From<HeartbeatExtension> for HeartbeatExtensionInner {
-    fn ex_from(m: HeartbeatExtension) -> HeartbeatExtensionInner {
-        m.mode
+impl From<PreSharedKeyServerExtension> for PreSharedKeyServerExtensionInner {
+    fn ex_from(m: PreSharedKeyServerExtension) -> PreSharedKeyServerExtensionInner {
+        m.selected_identity
     }
 }
-impl From<HeartbeatExtensionInner> for HeartbeatExtension {
-    fn ex_from(m: HeartbeatExtensionInner) -> HeartbeatExtension {
-        let mode = m;
-        HeartbeatExtension {
-            mode,
+impl From<PreSharedKeyServerExtensionInner> for PreSharedKeyServerExtension {
+    fn ex_from(m: PreSharedKeyServerExtensionInner) -> PreSharedKeyServerExtension {
+        let selected_identity = m;
+        PreSharedKeyServerExtension {
+            selected_identity,
         }
     }
 }
-pub struct HeartbeatExtensionMapper;
-impl View for HeartbeatExtensionMapper {
+pub struct PreSharedKeyServerExtensionMapper;
+impl View for PreSharedKeyServerExtensionMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for HeartbeatExtensionMapper {
-    type Src = SpecHeartbeatExtensionInner;
-    type Dst = SpecHeartbeatExtension;
+impl SpecIso for PreSharedKeyServerExtensionMapper {
+    type Src = SpecPreSharedKeyServerExtensionInner;
+    type Dst = SpecPreSharedKeyServerExtension;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for HeartbeatExtensionMapper {
-    type Src<'a> = HeartbeatExtensionInner;
-    type Dst<'a> = HeartbeatExtension;
-    type SrcOwned = HeartbeatExtensionOwnedInner;
-    type DstOwned = HeartbeatExtensionOwned;
+impl Iso for PreSharedKeyServerExtensionMapper {
+    type Src<'a> = PreSharedKeyServerExtensionInner;
+    type Dst<'a> = PreSharedKeyServerExtension;
+    type SrcOwned = PreSharedKeyServerExtensionOwnedInner;
+    type DstOwned = PreSharedKeyServerExtensionOwned;
 }
-pub struct HeartbeatExtensionOwned {
-    pub mode: HeartbeatModeOwned,
+pub struct PreSharedKeyServerExtensionOwned {
+    pub selected_identity: u16,
 }
-pub type HeartbeatExtensionOwnedInner = HeartbeatModeOwned;
-impl View for HeartbeatExtensionOwned {
-    type V = SpecHeartbeatExtension;
+pub type PreSharedKeyServerExtensionOwnedInner = u16;
+impl View for PreSharedKeyServerExtensionOwned {
+    type V = SpecPreSharedKeyServerExtension;
     open spec fn view(&self) -> Self::V {
-        SpecHeartbeatExtension {
-            mode: self.mode@,
+        SpecPreSharedKeyServerExtension {
+            selected_identity: self.selected_identity@,
         }
     }
 }
-impl From<HeartbeatExtensionOwned> for HeartbeatExtensionOwnedInner {
-    fn ex_from(m: HeartbeatExtensionOwned) -> HeartbeatExtensionOwnedInner {
-        m.mode
+impl From<PreSharedKeyServerExtensionOwned> for PreSharedKeyServerExtensionOwnedInner {
+    fn ex_from(m: PreSharedKeyServerExtensionOwned) -> PreSharedKeyServerExtensionOwnedInner {
+        m.selected_identity
     }
 }
-impl From<HeartbeatExtensionOwnedInner> for HeartbeatExtensionOwned {
-    fn ex_from(m: HeartbeatExtensionOwnedInner) -> HeartbeatExtensionOwned {
-        let mode = m;
-        HeartbeatExtensionOwned {
-            mode,
+impl From<PreSharedKeyServerExtensionOwnedInner> for PreSharedKeyServerExtensionOwned {
+    fn ex_from(m: PreSharedKeyServerExtensionOwnedInner) -> PreSharedKeyServerExtensionOwned {
+        let selected_identity = m;
+        PreSharedKeyServerExtensionOwned {
+            selected_identity,
         }
     }
 }
 
-pub struct SpecTlsCiphertext {
-    pub opaque_type: SpecContentType,
-    pub version: SpecProtocolVersion,
-    pub encrypted_record: SpecOpaque0Ffff,
+pub struct SpecClientCertTypeServerExtension {
+    pub client_certificate_type: SpecCertificateType,
 }
-pub type SpecTlsCiphertextInner = (SpecContentType, (SpecProtocolVersion, SpecOpaque0Ffff));
-impl SpecFrom<SpecTlsCiphertext> for SpecTlsCiphertextInner {
-    open spec fn spec_from(m: SpecTlsCiphertext) -> SpecTlsCiphertextInner {
-        (m.opaque_type, (m.version, m.encrypted_record))
+pub type SpecClientCertTypeServerExtensionInner = SpecCertificateType;
+impl SpecFrom<SpecClientCertTypeServerExtension> for SpecClientCertTypeServerExtensionInner {
+    open spec fn spec_from(m: SpecClientCertTypeServerExtension) -> SpecClientCertTypeServerExtensionInner {
+        m.client_certificate_type
     }
 }
-impl SpecFrom<SpecTlsCiphertextInner> for SpecTlsCiphertext {
-    open spec fn spec_from(m: SpecTlsCiphertextInner) -> SpecTlsCiphertext {
-        let (opaque_type, (version, encrypted_record)) = m;
-        SpecTlsCiphertext {
-            opaque_type,
-            version,
-            encrypted_record,
+impl SpecFrom<SpecClientCertTypeServerExtensionInner> for SpecClientCertTypeServerExtension {
+    open spec fn spec_from(m: SpecClientCertTypeServerExtensionInner) -> SpecClientCertTypeServerExtension {
+        let client_certificate_type = m;
+        SpecClientCertTypeServerExtension {
+            client_certificate_type,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TlsCiphertext<'a> {
-    pub opaque_type: ContentType,
-    pub version: ProtocolVersion,
-    pub encrypted_record: Opaque0Ffff<'a>,
+pub struct ClientCertTypeServerExtension {
+    pub client_certificate_type: CertificateType,
 }
-pub type TlsCiphertextInner<'a> = (ContentType, (ProtocolVersion, Opaque0Ffff<'a>));
-impl View for TlsCiphertext<'_> {
-    type V = SpecTlsCiphertext;
+pub type ClientCertTypeServerExtensionInner = CertificateType;
+impl View for ClientCertTypeServerExtension {
+    type V = SpecClientCertTypeServerExtension;
     open spec fn view(&self) -> Self::V {
-        SpecTlsCiphertext {
-            opaque_type: self.opaque_type@,
-            version: self.version@,
-            encrypted_record: self.encrypted_record@,
+        SpecClientCertTypeServerExtension {
+            client_certificate_type: self.client_certificate_type@,
         }
     }
 }
-impl<'a> From<TlsCiphertext<'a>> for TlsCiphertextInner<'a> {
-    fn ex_from(m: TlsCiphertext<'a>) -> TlsCiphertextInner<'a> {
-        (m.opaque_type, (m.version, m.encrypted_record))
+impl From<ClientCertTypeServerExtension> for ClientCertTypeServerExtensionInner {
+    fn ex_from(m: ClientCertTypeServerExtension) -> ClientCertTypeServerExtensionInner {
+        m.client_certificate_type
     }
 }
-impl<'a> From<TlsCiphertextInner<'a>> for TlsCiphertext<'a> {
-    fn ex_from(m: TlsCiphertextInner<'a>) -> TlsCiphertext<'a> {
-        let (opaque_type, (version, encrypted_record)) = m;
-        TlsCiphertext {
-            opaque_type,
-            version,
-            encrypted_record,
+impl From<ClientCertTypeServerExtensionInner> for ClientCertTypeServerExtension {
+    fn ex_from(m: ClientCertTypeServerExtensionInner) -> ClientCertTypeServerExtension {
+        let client_certificate_type = m;
+        ClientCertTypeServerExtension {
+            client_certificate_type,
         }
     }
 }
-pub struct TlsCiphertextMapper;
-impl View for TlsCiphertextMapper {
+pub struct ClientCertTypeServerExtensionMapper;
+impl View for ClientCertTypeServerExtensionMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for TlsCiphertextMapper {
-    type Src = SpecTlsCiphertextInner;
-    type Dst = SpecTlsCiphertext;
+impl SpecIso for ClientCertTypeServerExtensionMapper {
+    type Src = SpecClientCertTypeServerExtensionInner;
+    type Dst = SpecClientCertTypeServerExtension;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for TlsCiphertextMapper {
-    type Src<'a> = TlsCiphertextInner<'a>;
-    type Dst<'a> = TlsCiphertext<'a>;
-    type SrcOwned = TlsCiphertextOwnedInner;
-    type DstOwned = TlsCiphertextOwned;
+impl Iso for ClientCertTypeServerExtensionMapper {
+    type Src<'a> = ClientCertTypeServerExtensionInner;
+    type Dst<'a> = ClientCertTypeServerExtension;
+    type SrcOwned = ClientCertTypeServerExtensionOwnedInner;
+    type DstOwned = ClientCertTypeServerExtensionOwned;
 }
-pub struct TlsCiphertextOwned {
-    pub opaque_type: ContentTypeOwned,
-    pub version: ProtocolVersionOwned,
-    pub encrypted_record: Opaque0FfffOwned,
+pub struct ClientCertTypeServerExtensionOwned {
+    pub client_certificate_type: CertificateTypeOwned,
 }
-pub type TlsCiphertextOwnedInner = (ContentTypeOwned, (ProtocolVersionOwned, Opaque0FfffOwned));
-impl View for TlsCiphertextOwned {
-    type V = SpecTlsCiphertext;
+pub type ClientCertTypeServerExtensionOwnedInner = CertificateTypeOwned;
+impl View for ClientCertTypeServerExtensionOwned {
+    type V = SpecClientCertTypeServerExtension;
     open spec fn view(&self) -> Self::V {
-        SpecTlsCiphertext {
-            opaque_type: self.opaque_type@,
-            version: self.version@,
-            encrypted_record: self.encrypted_record@,
+        SpecClientCertTypeServerExtension {
+            client_certificate_type: self.client_certificate_type@,
         }
     }
 }
-impl From<TlsCiphertextOwned> for TlsCiphertextOwnedInner {
-    fn ex_from(m: TlsCiphertextOwned) -> TlsCiphertextOwnedInner {
-        (m.opaque_type, (m.version, m.encrypted_record))
+impl From<ClientCertTypeServerExtensionOwned> for ClientCertTypeServerExtensionOwnedInner {
+    fn ex_from(m: ClientCertTypeServerExtensionOwned) -> ClientCertTypeServerExtensionOwnedInner {
+        m.client_certificate_type
     }
 }
-impl From<TlsCiphertextOwnedInner> for TlsCiphertextOwned {
-    fn ex_from(m: TlsCiphertextOwnedInner) -> TlsCiphertextOwned {
-        let (opaque_type, (version, encrypted_record)) = m;
-        TlsCiphertextOwned {
-            opaque_type,
-            version,
-            encrypted_record,
-        }
-    }
-}
-
-pub struct SpecAlert {
-    pub level: SpecAlertLevel,
-    pub description: SpecAlertDescription,
-}
-pub type SpecAlertInner = (SpecAlertLevel, SpecAlertDescription);
-impl SpecFrom<SpecAlert> for SpecAlertInner {
-    open spec fn spec_from(m: SpecAlert) -> SpecAlertInner {
-        (m.level, m.description)
-    }
-}
-impl SpecFrom<SpecAlertInner> for SpecAlert {
-    open spec fn spec_from(m: SpecAlertInner) -> SpecAlert {
-        let (level, description) = m;
-        SpecAlert {
-            level,
-            description,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Alert {
-    pub level: AlertLevel,
-    pub description: AlertDescription,
-}
-pub type AlertInner = (AlertLevel, AlertDescription);
-impl View for Alert {
-    type V = SpecAlert;
-    open spec fn view(&self) -> Self::V {
-        SpecAlert {
-            level: self.level@,
-            description: self.description@,
-        }
-    }
-}
-impl From<Alert> for AlertInner {
-    fn ex_from(m: Alert) -> AlertInner {
-        (m.level, m.description)
-    }
-}
-impl From<AlertInner> for Alert {
-    fn ex_from(m: AlertInner) -> Alert {
-        let (level, description) = m;
-        Alert {
-            level,
-            description,
-        }
-    }
-}
-pub struct AlertMapper;
-impl View for AlertMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for AlertMapper {
-    type Src = SpecAlertInner;
-    type Dst = SpecAlert;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for AlertMapper {
-    type Src<'a> = AlertInner;
-    type Dst<'a> = Alert;
-    type SrcOwned = AlertOwnedInner;
-    type DstOwned = AlertOwned;
-}
-pub struct AlertOwned {
-    pub level: AlertLevelOwned,
-    pub description: AlertDescriptionOwned,
-}
-pub type AlertOwnedInner = (AlertLevelOwned, AlertDescriptionOwned);
-impl View for AlertOwned {
-    type V = SpecAlert;
-    open spec fn view(&self) -> Self::V {
-        SpecAlert {
-            level: self.level@,
-            description: self.description@,
-        }
-    }
-}
-impl From<AlertOwned> for AlertOwnedInner {
-    fn ex_from(m: AlertOwned) -> AlertOwnedInner {
-        (m.level, m.description)
-    }
-}
-impl From<AlertOwnedInner> for AlertOwned {
-    fn ex_from(m: AlertOwnedInner) -> AlertOwned {
-        let (level, description) = m;
-        AlertOwned {
-            level,
-            description,
+impl From<ClientCertTypeServerExtensionOwnedInner> for ClientCertTypeServerExtensionOwned {
+    fn ex_from(m: ClientCertTypeServerExtensionOwnedInner) -> ClientCertTypeServerExtensionOwned {
+        let client_certificate_type = m;
+        ClientCertTypeServerExtensionOwned {
+            client_certificate_type,
         }
     }
 }
@@ -9091,283 +8963,328 @@ impl From<HandshakeOwnedInner> for HandshakeOwned {
     }
 }
 
-pub struct SpecOpaque0Ffffff {
-    pub l: u24,
-    pub data: Seq<u8>,
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AlertDescription {
+    CloseNotify = 0,
+UnexpectedMessage = 10,
+BadRecordMac = 20,
+RecordOverflow = 22,
+HandshakeFailure = 40,
+BadCertificate = 42,
+UnsupportedCertificate = 43,
+CertificateRevoked = 44,
+CertificateExpired = 45,
+CertificateUnknown = 46,
+IllegalParameter = 47,
+UnknownCA = 48,
+AccessDenied = 49,
+DecodeError = 50,
+DecryptError = 51,
+ProtocolVersion = 70,
+InsufficientSecurity = 71,
+InternalError = 80,
+InappropriateFallback = 86,
+UserCanceled = 90,
+MissingExtension = 109,
+UnsupportedExtension = 110,
+UnrecognizedName = 112,
+BadCertificateStatusResponse = 113,
+UnknownPSKIdentity = 115,
+CertificateRequired = 116,
+NoApplicationProtocol = 120
 }
-pub type SpecOpaque0FfffffInner = (u24, Seq<u8>);
-impl SpecFrom<SpecOpaque0Ffffff> for SpecOpaque0FfffffInner {
-    open spec fn spec_from(m: SpecOpaque0Ffffff) -> SpecOpaque0FfffffInner {
-        (m.l, m.data)
+pub type SpecAlertDescription = AlertDescription;
+pub type AlertDescriptionOwned = AlertDescription;
+
+pub type AlertDescriptionInner = u8;
+
+impl View for AlertDescription {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
     }
 }
-impl SpecFrom<SpecOpaque0FfffffInner> for SpecOpaque0Ffffff {
-    open spec fn spec_from(m: SpecOpaque0FfffffInner) -> SpecOpaque0Ffffff {
-        let (l, data) = m;
-        SpecOpaque0Ffffff {
-            l,
-            data,
+
+impl SpecTryFrom<AlertDescriptionInner> for AlertDescription {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AlertDescriptionInner) -> Result<AlertDescription, ()> {
+        match v {
+            0u8 => Ok(AlertDescription::CloseNotify),
+            10u8 => Ok(AlertDescription::UnexpectedMessage),
+            20u8 => Ok(AlertDescription::BadRecordMac),
+            22u8 => Ok(AlertDescription::RecordOverflow),
+            40u8 => Ok(AlertDescription::HandshakeFailure),
+            42u8 => Ok(AlertDescription::BadCertificate),
+            43u8 => Ok(AlertDescription::UnsupportedCertificate),
+            44u8 => Ok(AlertDescription::CertificateRevoked),
+            45u8 => Ok(AlertDescription::CertificateExpired),
+            46u8 => Ok(AlertDescription::CertificateUnknown),
+            47u8 => Ok(AlertDescription::IllegalParameter),
+            48u8 => Ok(AlertDescription::UnknownCA),
+            49u8 => Ok(AlertDescription::AccessDenied),
+            50u8 => Ok(AlertDescription::DecodeError),
+            51u8 => Ok(AlertDescription::DecryptError),
+            70u8 => Ok(AlertDescription::ProtocolVersion),
+            71u8 => Ok(AlertDescription::InsufficientSecurity),
+            80u8 => Ok(AlertDescription::InternalError),
+            86u8 => Ok(AlertDescription::InappropriateFallback),
+            90u8 => Ok(AlertDescription::UserCanceled),
+            109u8 => Ok(AlertDescription::MissingExtension),
+            110u8 => Ok(AlertDescription::UnsupportedExtension),
+            112u8 => Ok(AlertDescription::UnrecognizedName),
+            113u8 => Ok(AlertDescription::BadCertificateStatusResponse),
+            115u8 => Ok(AlertDescription::UnknownPSKIdentity),
+            116u8 => Ok(AlertDescription::CertificateRequired),
+            120u8 => Ok(AlertDescription::NoApplicationProtocol),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<AlertDescription> for AlertDescriptionInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AlertDescription) -> Result<AlertDescriptionInner, ()> {
+        match v {
+            AlertDescription::CloseNotify => Ok(0u8),
+            AlertDescription::UnexpectedMessage => Ok(10u8),
+            AlertDescription::BadRecordMac => Ok(20u8),
+            AlertDescription::RecordOverflow => Ok(22u8),
+            AlertDescription::HandshakeFailure => Ok(40u8),
+            AlertDescription::BadCertificate => Ok(42u8),
+            AlertDescription::UnsupportedCertificate => Ok(43u8),
+            AlertDescription::CertificateRevoked => Ok(44u8),
+            AlertDescription::CertificateExpired => Ok(45u8),
+            AlertDescription::CertificateUnknown => Ok(46u8),
+            AlertDescription::IllegalParameter => Ok(47u8),
+            AlertDescription::UnknownCA => Ok(48u8),
+            AlertDescription::AccessDenied => Ok(49u8),
+            AlertDescription::DecodeError => Ok(50u8),
+            AlertDescription::DecryptError => Ok(51u8),
+            AlertDescription::ProtocolVersion => Ok(70u8),
+            AlertDescription::InsufficientSecurity => Ok(71u8),
+            AlertDescription::InternalError => Ok(80u8),
+            AlertDescription::InappropriateFallback => Ok(86u8),
+            AlertDescription::UserCanceled => Ok(90u8),
+            AlertDescription::MissingExtension => Ok(109u8),
+            AlertDescription::UnsupportedExtension => Ok(110u8),
+            AlertDescription::UnrecognizedName => Ok(112u8),
+            AlertDescription::BadCertificateStatusResponse => Ok(113u8),
+            AlertDescription::UnknownPSKIdentity => Ok(115u8),
+            AlertDescription::CertificateRequired => Ok(116u8),
+            AlertDescription::NoApplicationProtocol => Ok(120u8),
+        }
+    }
+}
+
+impl TryFrom<AlertDescriptionInner> for AlertDescription {
+    type Error = ();
+
+    fn ex_try_from(v: AlertDescriptionInner) -> Result<AlertDescription, ()> {
+        match v {
+            0u8 => Ok(AlertDescription::CloseNotify),
+            10u8 => Ok(AlertDescription::UnexpectedMessage),
+            20u8 => Ok(AlertDescription::BadRecordMac),
+            22u8 => Ok(AlertDescription::RecordOverflow),
+            40u8 => Ok(AlertDescription::HandshakeFailure),
+            42u8 => Ok(AlertDescription::BadCertificate),
+            43u8 => Ok(AlertDescription::UnsupportedCertificate),
+            44u8 => Ok(AlertDescription::CertificateRevoked),
+            45u8 => Ok(AlertDescription::CertificateExpired),
+            46u8 => Ok(AlertDescription::CertificateUnknown),
+            47u8 => Ok(AlertDescription::IllegalParameter),
+            48u8 => Ok(AlertDescription::UnknownCA),
+            49u8 => Ok(AlertDescription::AccessDenied),
+            50u8 => Ok(AlertDescription::DecodeError),
+            51u8 => Ok(AlertDescription::DecryptError),
+            70u8 => Ok(AlertDescription::ProtocolVersion),
+            71u8 => Ok(AlertDescription::InsufficientSecurity),
+            80u8 => Ok(AlertDescription::InternalError),
+            86u8 => Ok(AlertDescription::InappropriateFallback),
+            90u8 => Ok(AlertDescription::UserCanceled),
+            109u8 => Ok(AlertDescription::MissingExtension),
+            110u8 => Ok(AlertDescription::UnsupportedExtension),
+            112u8 => Ok(AlertDescription::UnrecognizedName),
+            113u8 => Ok(AlertDescription::BadCertificateStatusResponse),
+            115u8 => Ok(AlertDescription::UnknownPSKIdentity),
+            116u8 => Ok(AlertDescription::CertificateRequired),
+            120u8 => Ok(AlertDescription::NoApplicationProtocol),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<AlertDescription> for AlertDescriptionInner {
+    type Error = ();
+
+    fn ex_try_from(v: AlertDescription) -> Result<AlertDescriptionInner, ()> {
+        match v {
+            AlertDescription::CloseNotify => Ok(0u8),
+            AlertDescription::UnexpectedMessage => Ok(10u8),
+            AlertDescription::BadRecordMac => Ok(20u8),
+            AlertDescription::RecordOverflow => Ok(22u8),
+            AlertDescription::HandshakeFailure => Ok(40u8),
+            AlertDescription::BadCertificate => Ok(42u8),
+            AlertDescription::UnsupportedCertificate => Ok(43u8),
+            AlertDescription::CertificateRevoked => Ok(44u8),
+            AlertDescription::CertificateExpired => Ok(45u8),
+            AlertDescription::CertificateUnknown => Ok(46u8),
+            AlertDescription::IllegalParameter => Ok(47u8),
+            AlertDescription::UnknownCA => Ok(48u8),
+            AlertDescription::AccessDenied => Ok(49u8),
+            AlertDescription::DecodeError => Ok(50u8),
+            AlertDescription::DecryptError => Ok(51u8),
+            AlertDescription::ProtocolVersion => Ok(70u8),
+            AlertDescription::InsufficientSecurity => Ok(71u8),
+            AlertDescription::InternalError => Ok(80u8),
+            AlertDescription::InappropriateFallback => Ok(86u8),
+            AlertDescription::UserCanceled => Ok(90u8),
+            AlertDescription::MissingExtension => Ok(109u8),
+            AlertDescription::UnsupportedExtension => Ok(110u8),
+            AlertDescription::UnrecognizedName => Ok(112u8),
+            AlertDescription::BadCertificateStatusResponse => Ok(113u8),
+            AlertDescription::UnknownPSKIdentity => Ok(115u8),
+            AlertDescription::CertificateRequired => Ok(116u8),
+            AlertDescription::NoApplicationProtocol => Ok(120u8),
+        }
+    }
+}
+
+pub struct AlertDescriptionMapper;
+
+impl View for AlertDescriptionMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for AlertDescriptionMapper {
+    type Src = AlertDescriptionInner;
+    type Dst = AlertDescription;
+
+    proof fn spec_iso(s: Self::Src) {}
+
+    proof fn spec_iso_rev(s: Self::Dst) {}
+}
+
+impl TryFromInto for AlertDescriptionMapper {
+    type Src<'a> = AlertDescriptionInner;
+    type Dst<'a> = AlertDescription;
+
+    type SrcOwned = AlertDescriptionInner;
+    type DstOwned = AlertDescription;
+}
+
+                    
+pub struct SpecAlert {
+    pub level: SpecAlertLevel,
+    pub description: SpecAlertDescription,
+}
+pub type SpecAlertInner = (SpecAlertLevel, SpecAlertDescription);
+impl SpecFrom<SpecAlert> for SpecAlertInner {
+    open spec fn spec_from(m: SpecAlert) -> SpecAlertInner {
+        (m.level, m.description)
+    }
+}
+impl SpecFrom<SpecAlertInner> for SpecAlert {
+    open spec fn spec_from(m: SpecAlertInner) -> SpecAlert {
+        let (level, description) = m;
+        SpecAlert {
+            level,
+            description,
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Opaque0Ffffff<'a> {
-    pub l: u24,
-    pub data: &'a [u8],
+pub struct Alert {
+    pub level: AlertLevel,
+    pub description: AlertDescription,
 }
-pub type Opaque0FfffffInner<'a> = (u24, &'a [u8]);
-impl View for Opaque0Ffffff<'_> {
-    type V = SpecOpaque0Ffffff;
+pub type AlertInner = (AlertLevel, AlertDescription);
+impl View for Alert {
+    type V = SpecAlert;
     open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ffffff {
-            l: self.l@,
-            data: self.data@,
+        SpecAlert {
+            level: self.level@,
+            description: self.description@,
         }
     }
 }
-impl<'a> From<Opaque0Ffffff<'a>> for Opaque0FfffffInner<'a> {
-    fn ex_from(m: Opaque0Ffffff<'a>) -> Opaque0FfffffInner<'a> {
-        (m.l, m.data)
+impl From<Alert> for AlertInner {
+    fn ex_from(m: Alert) -> AlertInner {
+        (m.level, m.description)
     }
 }
-impl<'a> From<Opaque0FfffffInner<'a>> for Opaque0Ffffff<'a> {
-    fn ex_from(m: Opaque0FfffffInner<'a>) -> Opaque0Ffffff<'a> {
-        let (l, data) = m;
-        Opaque0Ffffff {
-            l,
-            data,
+impl From<AlertInner> for Alert {
+    fn ex_from(m: AlertInner) -> Alert {
+        let (level, description) = m;
+        Alert {
+            level,
+            description,
         }
     }
 }
-pub struct Opaque0FfffffMapper;
-impl View for Opaque0FfffffMapper {
+pub struct AlertMapper;
+impl View for AlertMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for Opaque0FfffffMapper {
-    type Src = SpecOpaque0FfffffInner;
-    type Dst = SpecOpaque0Ffffff;
+impl SpecIso for AlertMapper {
+    type Src = SpecAlertInner;
+    type Dst = SpecAlert;
     proof fn spec_iso(s: Self::Src) {
     }
     proof fn spec_iso_rev(s: Self::Dst) {
     }
 }
-impl Iso for Opaque0FfffffMapper {
-    type Src<'a> = Opaque0FfffffInner<'a>;
-    type Dst<'a> = Opaque0Ffffff<'a>;
-    type SrcOwned = Opaque0FfffffOwnedInner;
-    type DstOwned = Opaque0FfffffOwned;
+impl Iso for AlertMapper {
+    type Src<'a> = AlertInner;
+    type Dst<'a> = Alert;
+    type SrcOwned = AlertOwnedInner;
+    type DstOwned = AlertOwned;
 }
-pub struct Opaque0FfffffOwned {
-    pub l: u24,
-    pub data: Vec<u8>,
+pub struct AlertOwned {
+    pub level: AlertLevelOwned,
+    pub description: AlertDescriptionOwned,
 }
-pub type Opaque0FfffffOwnedInner = (u24, Vec<u8>);
-impl View for Opaque0FfffffOwned {
-    type V = SpecOpaque0Ffffff;
+pub type AlertOwnedInner = (AlertLevelOwned, AlertDescriptionOwned);
+impl View for AlertOwned {
+    type V = SpecAlert;
     open spec fn view(&self) -> Self::V {
-        SpecOpaque0Ffffff {
-            l: self.l@,
-            data: self.data@,
+        SpecAlert {
+            level: self.level@,
+            description: self.description@,
         }
     }
 }
-impl From<Opaque0FfffffOwned> for Opaque0FfffffOwnedInner {
-    fn ex_from(m: Opaque0FfffffOwned) -> Opaque0FfffffOwnedInner {
-        (m.l, m.data)
+impl From<AlertOwned> for AlertOwnedInner {
+    fn ex_from(m: AlertOwned) -> AlertOwnedInner {
+        (m.level, m.description)
     }
 }
-impl From<Opaque0FfffffOwnedInner> for Opaque0FfffffOwned {
-    fn ex_from(m: Opaque0FfffffOwnedInner) -> Opaque0FfffffOwned {
-        let (l, data) = m;
-        Opaque0FfffffOwned {
-            l,
-            data,
-        }
-    }
-}
-
-pub struct SpecClientCertTypeServerExtension {
-    pub client_certificate_type: SpecCertificateType,
-}
-pub type SpecClientCertTypeServerExtensionInner = SpecCertificateType;
-impl SpecFrom<SpecClientCertTypeServerExtension> for SpecClientCertTypeServerExtensionInner {
-    open spec fn spec_from(m: SpecClientCertTypeServerExtension) -> SpecClientCertTypeServerExtensionInner {
-        m.client_certificate_type
-    }
-}
-impl SpecFrom<SpecClientCertTypeServerExtensionInner> for SpecClientCertTypeServerExtension {
-    open spec fn spec_from(m: SpecClientCertTypeServerExtensionInner) -> SpecClientCertTypeServerExtension {
-        let client_certificate_type = m;
-        SpecClientCertTypeServerExtension {
-            client_certificate_type,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ClientCertTypeServerExtension {
-    pub client_certificate_type: CertificateType,
-}
-pub type ClientCertTypeServerExtensionInner = CertificateType;
-impl View for ClientCertTypeServerExtension {
-    type V = SpecClientCertTypeServerExtension;
-    open spec fn view(&self) -> Self::V {
-        SpecClientCertTypeServerExtension {
-            client_certificate_type: self.client_certificate_type@,
-        }
-    }
-}
-impl From<ClientCertTypeServerExtension> for ClientCertTypeServerExtensionInner {
-    fn ex_from(m: ClientCertTypeServerExtension) -> ClientCertTypeServerExtensionInner {
-        m.client_certificate_type
-    }
-}
-impl From<ClientCertTypeServerExtensionInner> for ClientCertTypeServerExtension {
-    fn ex_from(m: ClientCertTypeServerExtensionInner) -> ClientCertTypeServerExtension {
-        let client_certificate_type = m;
-        ClientCertTypeServerExtension {
-            client_certificate_type,
-        }
-    }
-}
-pub struct ClientCertTypeServerExtensionMapper;
-impl View for ClientCertTypeServerExtensionMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ClientCertTypeServerExtensionMapper {
-    type Src = SpecClientCertTypeServerExtensionInner;
-    type Dst = SpecClientCertTypeServerExtension;
-    proof fn spec_iso(s: Self::Src) {
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-    }
-}
-impl Iso for ClientCertTypeServerExtensionMapper {
-    type Src<'a> = ClientCertTypeServerExtensionInner;
-    type Dst<'a> = ClientCertTypeServerExtension;
-    type SrcOwned = ClientCertTypeServerExtensionOwnedInner;
-    type DstOwned = ClientCertTypeServerExtensionOwned;
-}
-pub struct ClientCertTypeServerExtensionOwned {
-    pub client_certificate_type: CertificateTypeOwned,
-}
-pub type ClientCertTypeServerExtensionOwnedInner = CertificateTypeOwned;
-impl View for ClientCertTypeServerExtensionOwned {
-    type V = SpecClientCertTypeServerExtension;
-    open spec fn view(&self) -> Self::V {
-        SpecClientCertTypeServerExtension {
-            client_certificate_type: self.client_certificate_type@,
-        }
-    }
-}
-impl From<ClientCertTypeServerExtensionOwned> for ClientCertTypeServerExtensionOwnedInner {
-    fn ex_from(m: ClientCertTypeServerExtensionOwned) -> ClientCertTypeServerExtensionOwnedInner {
-        m.client_certificate_type
-    }
-}
-impl From<ClientCertTypeServerExtensionOwnedInner> for ClientCertTypeServerExtensionOwned {
-    fn ex_from(m: ClientCertTypeServerExtensionOwnedInner) -> ClientCertTypeServerExtensionOwned {
-        let client_certificate_type = m;
-        ClientCertTypeServerExtensionOwned {
-            client_certificate_type,
+impl From<AlertOwnedInner> for AlertOwned {
+    fn ex_from(m: AlertOwnedInner) -> AlertOwned {
+        let (level, description) = m;
+        AlertOwned {
+            level,
+            description,
         }
     }
 }
 
-
-pub struct SpecAlertDescriptionCombinator(TryMap<U8, AlertDescriptionMapper>);
-
-impl SpecCombinator for SpecAlertDescriptionCombinator {
-    type SpecResult = SpecAlertDescription;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecAlertDescriptionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecAlertDescriptionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecAlertDescriptionCombinatorAlias = TryMap<U8, AlertDescriptionMapper>;
-
-pub struct AlertDescriptionCombinator(TryMap<U8, AlertDescriptionMapper>);
-
-impl View for AlertDescriptionCombinator {
-    type V = SpecAlertDescriptionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecAlertDescriptionCombinator(self.0@)
-    }
-}
-impl Combinator for AlertDescriptionCombinator {
-    type Result<'a> = AlertDescription;
-
-    type Owned = AlertDescriptionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type AlertDescriptionCombinatorAlias = TryMap<U8, AlertDescriptionMapper>;
-
-impl SpecPred for Predicate10693986609604791304 {
-    type Input = u8;
+impl SpecPred for Predicate11955646336730306823 {
+    type Input = u16;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
         let i = (*i);
-        if (i >= 0 && i <= 32) {
+        if (i >= 1 && i <= 65535) {
             true
         } else {
             false
@@ -9375,11 +9292,10 @@ impl SpecPred for Predicate10693986609604791304 {
     }
 }
 
+pub struct SpecUint1FfffCombinator(Refined<U16Be, Predicate11955646336730306823>);
 
-pub struct SpecSessionIdCombinator(Mapped<SpecDepend<Refined<U8, Predicate10693986609604791304>, Bytes>, SessionIdMapper>);
-
-impl SpecCombinator for SpecSessionIdCombinator {
-    type SpecResult = SpecSessionId;
+impl SpecCombinator for SpecUint1FfffCombinator {
+    type SpecResult = SpecUint1Ffff;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -9393,9 +9309,9 @@ impl SpecCombinator for SpecSessionIdCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecSessionIdCombinator {
+impl SecureSpecCombinator for SpecUint1FfffCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecSessionIdCombinatorAlias::is_prefix_secure()
+        SpecUint1FfffCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -9414,22 +9330,22 @@ impl SecureSpecCombinator for SpecSessionIdCombinator {
     }
 }
 
-                pub type SpecSessionIdCombinatorAlias = Mapped<SpecDepend<Refined<U8, Predicate10693986609604791304>, Bytes>, SessionIdMapper>;
-pub struct Predicate10693986609604791304;
-impl View for Predicate10693986609604791304 {
+                pub type SpecUint1FfffCombinatorAlias = Refined<U16Be, Predicate11955646336730306823>;
+pub struct Predicate11955646336730306823;
+impl View for Predicate11955646336730306823 {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl Pred for Predicate10693986609604791304 {
-    type Input<'a> = u8;
-    type InputOwned = u8;
+impl Pred for Predicate11955646336730306823 {
+    type Input<'a> = u16;
+    type InputOwned = u16;
 
     fn apply(&self, i: &Self::Input<'_>) -> bool {
         let i = (*i);
-        if (i >= 0 && i <= 32) {
+        if (i >= 1 && i <= 65535) {
             true
         } else {
             false
@@ -9437,20 +9353,19 @@ impl Pred for Predicate10693986609604791304 {
     }
 }
 
-pub struct SessionIdCont;
-pub struct SessionIdCombinator(Mapped<Depend<Refined<U8, Predicate10693986609604791304>, Bytes, SessionIdCont>, SessionIdMapper>);
+pub struct Uint1FfffCombinator(Refined<U16Be, Predicate11955646336730306823>);
 
-impl View for SessionIdCombinator {
-    type V = SpecSessionIdCombinator;
+impl View for Uint1FfffCombinator {
+    type V = SpecUint1FfffCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecSessionIdCombinator(self.0@)
+        SpecUint1FfffCombinator(self.0@)
     }
 }
-impl Combinator for SessionIdCombinator {
-    type Result<'a> = SessionId<'a>;
+impl Combinator for Uint1FfffCombinator {
+    type Result<'a> = Uint1Ffff;
 
-    type Owned = SessionIdOwned;
+    type Owned = Uint1FfffOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -9478,7 +9393,540 @@ impl Combinator for SessionIdCombinator {
     }
 
 }
-                pub type SessionIdCombinatorAlias = Mapped<Depend<Refined<U8, Predicate10693986609604791304>, Bytes, SessionIdCont>, SessionIdMapper>;
+                pub type Uint1FfffCombinatorAlias = Refined<U16Be, Predicate11955646336730306823>;
+
+impl SpecPred for Predicate5950696943328973166 {
+    type Input = u16;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        if (i >= 2 && i <= 65535) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct SpecUint2FfffCombinator(Refined<U16Be, Predicate5950696943328973166>);
+
+impl SpecCombinator for SpecUint2FfffCombinator {
+    type SpecResult = SpecUint2Ffff;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecUint2FfffCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecUint2FfffCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecUint2FfffCombinatorAlias = Refined<U16Be, Predicate5950696943328973166>;
+pub struct Predicate5950696943328973166;
+impl View for Predicate5950696943328973166 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate5950696943328973166 {
+    type Input<'a> = u16;
+    type InputOwned = u16;
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {
+        let i = (*i);
+        if (i >= 2 && i <= 65535) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct Uint2FfffCombinator(Refined<U16Be, Predicate5950696943328973166>);
+
+impl View for Uint2FfffCombinator {
+    type V = SpecUint2FfffCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecUint2FfffCombinator(self.0@)
+    }
+}
+impl Combinator for Uint2FfffCombinator {
+    type Result<'a> = Uint2Ffff;
+
+    type Owned = Uint2FfffOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type Uint2FfffCombinatorAlias = Refined<U16Be, Predicate5950696943328973166>;
+
+
+pub struct SpecUint0FfffCombinator(U16Be);
+
+impl SpecCombinator for SpecUint0FfffCombinator {
+    type SpecResult = SpecUint0Ffff;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecUint0FfffCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecUint0FfffCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecUint0FfffCombinatorAlias = U16Be;
+
+pub struct Uint0FfffCombinator(U16Be);
+
+impl View for Uint0FfffCombinator {
+    type V = SpecUint0FfffCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecUint0FfffCombinator(self.0@)
+    }
+}
+impl Combinator for Uint0FfffCombinator {
+    type Result<'a> = Uint0Ffff;
+
+    type Owned = Uint0FfffOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type Uint0FfffCombinatorAlias = U16Be;
+
+
+
+pub struct SpecOpaque0FfffCombinator(Mapped<SpecDepend<SpecUint0FfffCombinator, Bytes>, Opaque0FfffMapper>);
+
+impl SpecCombinator for SpecOpaque0FfffCombinator {
+    type SpecResult = SpecOpaque0Ffff;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecOpaque0FfffCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecOpaque0FfffCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecOpaque0FfffCombinatorAlias = Mapped<SpecDepend<SpecUint0FfffCombinator, Bytes>, Opaque0FfffMapper>;
+
+pub struct Opaque0FfffCont;
+pub struct Opaque0FfffCombinator(Mapped<Depend<Uint0FfffCombinator, Bytes, Opaque0FfffCont>, Opaque0FfffMapper>);
+
+impl View for Opaque0FfffCombinator {
+    type V = SpecOpaque0FfffCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecOpaque0FfffCombinator(self.0@)
+    }
+}
+impl Combinator for Opaque0FfffCombinator {
+    type Result<'a> = Opaque0Ffff<'a>;
+
+    type Owned = Opaque0FfffOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type Opaque0FfffCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, Bytes, Opaque0FfffCont>, Opaque0FfffMapper>;
+
+
+pub struct SpecUnknownExtensionCombinator(SpecOpaque0FfffCombinator);
+
+impl SpecCombinator for SpecUnknownExtensionCombinator {
+    type SpecResult = SpecUnknownExtension;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecUnknownExtensionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecUnknownExtensionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecUnknownExtensionCombinatorAlias = SpecOpaque0FfffCombinator;
+
+pub struct UnknownExtensionCombinator(Opaque0FfffCombinator);
+
+impl View for UnknownExtensionCombinator {
+    type V = SpecUnknownExtensionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecUnknownExtensionCombinator(self.0@)
+    }
+}
+impl Combinator for UnknownExtensionCombinator {
+    type Result<'a> = UnknownExtension<'a>;
+
+    type Owned = UnknownExtensionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type UnknownExtensionCombinatorAlias = Opaque0FfffCombinator;
+
+
+pub struct SpecProtocolVersionCombinator(U16Be);
+
+impl SpecCombinator for SpecProtocolVersionCombinator {
+    type SpecResult = SpecProtocolVersion;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecProtocolVersionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecProtocolVersionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecProtocolVersionCombinatorAlias = U16Be;
+
+pub struct ProtocolVersionCombinator(U16Be);
+
+impl View for ProtocolVersionCombinator {
+    type V = SpecProtocolVersionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecProtocolVersionCombinator(self.0@)
+    }
+}
+impl Combinator for ProtocolVersionCombinator {
+    type Result<'a> = ProtocolVersion;
+
+    type Owned = ProtocolVersionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type ProtocolVersionCombinatorAlias = U16Be;
+
+
+pub struct SpecSupportedVersionsClientVersionsCombinator(AndThen<Bytes, Repeat<SpecProtocolVersionCombinator>>);
+
+impl SpecCombinator for SpecSupportedVersionsClientVersionsCombinator {
+    type SpecResult = SpecSupportedVersionsClientVersions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecSupportedVersionsClientVersionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecSupportedVersionsClientVersionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecSupportedVersionsClientVersionsCombinatorAlias = AndThen<Bytes, Repeat<SpecProtocolVersionCombinator>>;
+
+pub struct SupportedVersionsClientVersionsCombinator(AndThen<Bytes, Repeat<ProtocolVersionCombinator>>);
+
+impl View for SupportedVersionsClientVersionsCombinator {
+    type V = SpecSupportedVersionsClientVersionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecSupportedVersionsClientVersionsCombinator(self.0@)
+    }
+}
+impl Combinator for SupportedVersionsClientVersionsCombinator {
+    type Result<'a> = SupportedVersionsClientVersions;
+
+    type Owned = SupportedVersionsClientVersionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type SupportedVersionsClientVersionsCombinatorAlias = AndThen<Bytes, Repeat<ProtocolVersionCombinator>>;
 
 pub const UNCOMPRESSEDPOINTREPRESENTATION32_LEGACY_FORM: u8 = 4;
 
@@ -9916,122 +10364,6 @@ impl Combinator for MontgomeryForm56Combinator {
 }
                 pub type MontgomeryForm56CombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, BytesN<56>), MontgomeryForm56Mapper>;
 
-impl SpecPred for Predicate11955646336730306823 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        if (i >= 1 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct SpecUint1FfffCombinator(Refined<U16Be, Predicate11955646336730306823>);
-
-impl SpecCombinator for SpecUint1FfffCombinator {
-    type SpecResult = SpecUint1Ffff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecUint1FfffCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecUint1FfffCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecUint1FfffCombinatorAlias = Refined<U16Be, Predicate11955646336730306823>;
-pub struct Predicate11955646336730306823;
-impl View for Predicate11955646336730306823 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate11955646336730306823 {
-    type Input<'a> = u16;
-    type InputOwned = u16;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        let i = (*i);
-        if (i >= 1 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct Uint1FfffCombinator(Refined<U16Be, Predicate11955646336730306823>);
-
-impl View for Uint1FfffCombinator {
-    type V = SpecUint1FfffCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecUint1FfffCombinator(self.0@)
-    }
-}
-impl Combinator for Uint1FfffCombinator {
-    type Result<'a> = Uint1Ffff;
-
-    type Owned = Uint1FfffOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Uint1FfffCombinatorAlias = Refined<U16Be, Predicate11955646336730306823>;
-
 
 
 pub struct SpecOpaque1FfffCombinator(Mapped<SpecDepend<SpecUint1FfffCombinator, Bytes>, Opaque1FfffMapper>);
@@ -10391,10 +10723,10 @@ impl Combinator for KeyShareEntryKeyExchangeCombinator {
                 pub type KeyShareEntryKeyExchangeCombinatorAlias = Mapped<OrdChoice<Cond<UncompressedPointRepresentation32Combinator>, OrdChoice<Cond<UncompressedPointRepresentation48Combinator>, OrdChoice<Cond<UncompressedPointRepresentation66Combinator>, OrdChoice<Cond<MontgomeryPoint32Combinator>, OrdChoice<Cond<MontgomeryForm56Combinator>, OrdChoice<Cond<SeverDhParamsCombinator>, OrdChoice<Cond<SeverDhParamsCombinator>, OrdChoice<Cond<SeverDhParamsCombinator>, OrdChoice<Cond<SeverDhParamsCombinator>, OrdChoice<Cond<SeverDhParamsCombinator>, Cond<KeyExchangeDataCombinator>>>>>>>>>>>, KeyShareEntryKeyExchangeMapper>;
 
 
-pub struct SpecUint0FfffCombinator(U16Be);
+pub struct SpecUint0FfCombinator(U8);
 
-impl SpecCombinator for SpecUint0FfffCombinator {
-    type SpecResult = SpecUint0Ffff;
+impl SpecCombinator for SpecUint0FfCombinator {
+    type SpecResult = SpecUint0Ff;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -10408,9 +10740,9 @@ impl SpecCombinator for SpecUint0FfffCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecUint0FfffCombinator {
+impl SecureSpecCombinator for SpecUint0FfCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecUint0FfffCombinatorAlias::is_prefix_secure()
+        SpecUint0FfCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -10429,21 +10761,21 @@ impl SecureSpecCombinator for SpecUint0FfffCombinator {
     }
 }
 
-                pub type SpecUint0FfffCombinatorAlias = U16Be;
+                pub type SpecUint0FfCombinatorAlias = U8;
 
-pub struct Uint0FfffCombinator(U16Be);
+pub struct Uint0FfCombinator(U8);
 
-impl View for Uint0FfffCombinator {
-    type V = SpecUint0FfffCombinator;
+impl View for Uint0FfCombinator {
+    type V = SpecUint0FfCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecUint0FfffCombinator(self.0@)
+        SpecUint0FfCombinator(self.0@)
     }
 }
-impl Combinator for Uint0FfffCombinator {
-    type Result<'a> = Uint0Ffff;
+impl Combinator for Uint0FfCombinator {
+    type Result<'a> = Uint0Ff;
 
-    type Owned = Uint0FfffOwned;
+    type Owned = Uint0FfOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -10471,14 +10803,14 @@ impl Combinator for Uint0FfffCombinator {
     }
 
 }
-                pub type Uint0FfffCombinatorAlias = U16Be;
+                pub type Uint0FfCombinatorAlias = U8;
 
 
 
-pub struct SpecOpaque0FfffCombinator(Mapped<SpecDepend<SpecUint0FfffCombinator, Bytes>, Opaque0FfffMapper>);
+pub struct SpecOpaque0FfCombinator(Mapped<SpecDepend<SpecUint0FfCombinator, Bytes>, Opaque0FfMapper>);
 
-impl SpecCombinator for SpecOpaque0FfffCombinator {
-    type SpecResult = SpecOpaque0Ffff;
+impl SpecCombinator for SpecOpaque0FfCombinator {
+    type SpecResult = SpecOpaque0Ff;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -10492,9 +10824,9 @@ impl SpecCombinator for SpecOpaque0FfffCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecOpaque0FfffCombinator {
+impl SecureSpecCombinator for SpecOpaque0FfCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecOpaque0FfffCombinatorAlias::is_prefix_secure()
+        SpecOpaque0FfCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -10513,22 +10845,22 @@ impl SecureSpecCombinator for SpecOpaque0FfffCombinator {
     }
 }
 
-                pub type SpecOpaque0FfffCombinatorAlias = Mapped<SpecDepend<SpecUint0FfffCombinator, Bytes>, Opaque0FfffMapper>;
+                pub type SpecOpaque0FfCombinatorAlias = Mapped<SpecDepend<SpecUint0FfCombinator, Bytes>, Opaque0FfMapper>;
 
-pub struct Opaque0FfffCont;
-pub struct Opaque0FfffCombinator(Mapped<Depend<Uint0FfffCombinator, Bytes, Opaque0FfffCont>, Opaque0FfffMapper>);
+pub struct Opaque0FfCont;
+pub struct Opaque0FfCombinator(Mapped<Depend<Uint0FfCombinator, Bytes, Opaque0FfCont>, Opaque0FfMapper>);
 
-impl View for Opaque0FfffCombinator {
-    type V = SpecOpaque0FfffCombinator;
+impl View for Opaque0FfCombinator {
+    type V = SpecOpaque0FfCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecOpaque0FfffCombinator(self.0@)
+        SpecOpaque0FfCombinator(self.0@)
     }
 }
-impl Combinator for Opaque0FfffCombinator {
-    type Result<'a> = Opaque0Ffff<'a>;
+impl Combinator for Opaque0FfCombinator {
+    type Result<'a> = Opaque0Ff<'a>;
 
-    type Owned = Opaque0FfffOwned;
+    type Owned = Opaque0FfOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -10556,13 +10888,26 @@ impl Combinator for Opaque0FfffCombinator {
     }
 
 }
-                pub type Opaque0FfffCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, Bytes, Opaque0FfffCont>, Opaque0FfffMapper>;
+                pub type Opaque0FfCombinatorAlias = Mapped<Depend<Uint0FfCombinator, Bytes, Opaque0FfCont>, Opaque0FfMapper>;
+
+impl SpecPred for Predicate10565972399076720534 {
+    type Input = u24;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i).spec_as_u32();
+        if (i >= 1 && i <= 16777215) {
+            true
+        } else {
+            false
+        }
+    }
+}
 
 
-pub struct SpecOcspExtensionsCombinator(SpecOpaque0FfffCombinator);
+pub struct SpecOpaque1FfffffCombinator(Mapped<SpecDepend<Refined<U24Be, Predicate10565972399076720534>, Bytes>, Opaque1FfffffMapper>);
 
-impl SpecCombinator for SpecOcspExtensionsCombinator {
-    type SpecResult = SpecOcspExtensions;
+impl SpecCombinator for SpecOpaque1FfffffCombinator {
+    type SpecResult = SpecOpaque1Ffffff;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -10576,9 +10921,9 @@ impl SpecCombinator for SpecOcspExtensionsCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecOcspExtensionsCombinator {
+impl SecureSpecCombinator for SpecOpaque1FfffffCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecOcspExtensionsCombinatorAlias::is_prefix_secure()
+        SpecOpaque1FfffffCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -10597,21 +10942,43 @@ impl SecureSpecCombinator for SpecOcspExtensionsCombinator {
     }
 }
 
-                pub type SpecOcspExtensionsCombinatorAlias = SpecOpaque0FfffCombinator;
+                pub type SpecOpaque1FfffffCombinatorAlias = Mapped<SpecDepend<Refined<U24Be, Predicate10565972399076720534>, Bytes>, Opaque1FfffffMapper>;
+pub struct Predicate10565972399076720534;
+impl View for Predicate10565972399076720534 {
+    type V = Self;
 
-pub struct OcspExtensionsCombinator(Opaque0FfffCombinator);
-
-impl View for OcspExtensionsCombinator {
-    type V = SpecOcspExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecOcspExtensionsCombinator(self.0@)
+    open spec fn view(&self) -> Self::V {
+        *self
     }
 }
-impl Combinator for OcspExtensionsCombinator {
-    type Result<'a> = OcspExtensions<'a>;
+impl Pred for Predicate10565972399076720534 {
+    type Input<'a> = u24;
+    type InputOwned = u24;
 
-    type Owned = OcspExtensionsOwned;
+    fn apply(&self, i: &Self::Input<'_>) -> bool {
+        let i = (*i).as_u32();
+        if (i >= 1 && i <= 16777215) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct Opaque1FfffffCont;
+pub struct Opaque1FfffffCombinator(Mapped<Depend<Refined<U24Be, Predicate10565972399076720534>, Bytes, Opaque1FfffffCont>, Opaque1FfffffMapper>);
+
+impl View for Opaque1FfffffCombinator {
+    type V = SpecOpaque1FfffffCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecOpaque1FfffffCombinator(self.0@)
+    }
+}
+impl Combinator for Opaque1FfffffCombinator {
+    type Result<'a> = Opaque1Ffffff<'a>;
+
+    type Owned = Opaque1FfffffOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -10639,14 +11006,13 @@ impl Combinator for OcspExtensionsCombinator {
     }
 
 }
-                pub type OcspExtensionsCombinatorAlias = Opaque0FfffCombinator;
+                pub type Opaque1FfffffCombinatorAlias = Mapped<Depend<Refined<U24Be, Predicate10565972399076720534>, Bytes, Opaque1FfffffCont>, Opaque1FfffffMapper>;
 
 
+pub struct SpecExtensionTypeCombinator(U8);
 
-pub struct SpecPskIdentityCombinator(Mapped<(SpecOpaque1FfffCombinator, U32Be), PskIdentityMapper>);
-
-impl SpecCombinator for SpecPskIdentityCombinator {
-    type SpecResult = SpecPskIdentity;
+impl SpecCombinator for SpecExtensionTypeCombinator {
+    type SpecResult = SpecExtensionType;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -10660,9 +11026,9 @@ impl SpecCombinator for SpecPskIdentityCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecPskIdentityCombinator {
+impl SecureSpecCombinator for SpecExtensionTypeCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecPskIdentityCombinatorAlias::is_prefix_secure()
+        SpecExtensionTypeCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -10681,22 +11047,21 @@ impl SecureSpecCombinator for SpecPskIdentityCombinator {
     }
 }
 
-                pub type SpecPskIdentityCombinatorAlias = Mapped<(SpecOpaque1FfffCombinator, U32Be), PskIdentityMapper>;
+                pub type SpecExtensionTypeCombinatorAlias = U8;
 
+pub struct ExtensionTypeCombinator(U8);
 
-pub struct PskIdentityCombinator(Mapped<(Opaque1FfffCombinator, U32Be), PskIdentityMapper>);
-
-impl View for PskIdentityCombinator {
-    type V = SpecPskIdentityCombinator;
+impl View for ExtensionTypeCombinator {
+    type V = SpecExtensionTypeCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecPskIdentityCombinator(self.0@)
+        SpecExtensionTypeCombinator(self.0@)
     }
 }
-impl Combinator for PskIdentityCombinator {
-    type Result<'a> = PskIdentity<'a>;
+impl Combinator for ExtensionTypeCombinator {
+    type Result<'a> = ExtensionType;
 
-    type Owned = PskIdentityOwned;
+    type Owned = ExtensionTypeOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -10724,13 +11089,14 @@ impl Combinator for PskIdentityCombinator {
     }
 
 }
-                pub type PskIdentityCombinatorAlias = Mapped<(Opaque1FfffCombinator, U32Be), PskIdentityMapper>;
+                pub type ExtensionTypeCombinatorAlias = U8;
 
 
-pub struct SpecPskIdentitiesIdentitiesCombinator(AndThen<Bytes, Repeat<SpecPskIdentityCombinator>>);
 
-impl SpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
-    type SpecResult = SpecPskIdentitiesIdentities;
+pub struct SpecExtensionCombinator(Mapped<(SpecExtensionTypeCombinator, SpecOpaque0FfffCombinator), ExtensionMapper>);
+
+impl SpecCombinator for SpecExtensionCombinator {
+    type SpecResult = SpecExtension;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -10744,9 +11110,9 @@ impl SpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
+impl SecureSpecCombinator for SpecExtensionCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecPskIdentitiesIdentitiesCombinatorAlias::is_prefix_secure()
+        SpecExtensionCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -10765,21 +11131,22 @@ impl SecureSpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
     }
 }
 
-                pub type SpecPskIdentitiesIdentitiesCombinatorAlias = AndThen<Bytes, Repeat<SpecPskIdentityCombinator>>;
+                pub type SpecExtensionCombinatorAlias = Mapped<(SpecExtensionTypeCombinator, SpecOpaque0FfffCombinator), ExtensionMapper>;
 
-pub struct PskIdentitiesIdentitiesCombinator(AndThen<Bytes, Repeat<PskIdentityCombinator>>);
 
-impl View for PskIdentitiesIdentitiesCombinator {
-    type V = SpecPskIdentitiesIdentitiesCombinator;
+pub struct ExtensionCombinator(Mapped<(ExtensionTypeCombinator, Opaque0FfffCombinator), ExtensionMapper>);
+
+impl View for ExtensionCombinator {
+    type V = SpecExtensionCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecPskIdentitiesIdentitiesCombinator(self.0@)
+        SpecExtensionCombinator(self.0@)
     }
 }
-impl Combinator for PskIdentitiesIdentitiesCombinator {
-    type Result<'a> = PskIdentitiesIdentities<'a>;
+impl Combinator for ExtensionCombinator {
+    type Result<'a> = Extension<'a>;
 
-    type Owned = PskIdentitiesIdentitiesOwned;
+    type Owned = ExtensionOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -10807,7 +11174,596 @@ impl Combinator for PskIdentitiesIdentitiesCombinator {
     }
 
 }
-                pub type PskIdentitiesIdentitiesCombinatorAlias = AndThen<Bytes, Repeat<PskIdentityCombinator>>;
+                pub type ExtensionCombinatorAlias = Mapped<(ExtensionTypeCombinator, Opaque0FfffCombinator), ExtensionMapper>;
+
+
+pub struct SpecEncryptedExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<SpecExtensionCombinator>>);
+
+impl SpecCombinator for SpecEncryptedExtensionsExtensionsCombinator {
+    type SpecResult = SpecEncryptedExtensionsExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecEncryptedExtensionsExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecEncryptedExtensionsExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecEncryptedExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<SpecExtensionCombinator>>;
+
+pub struct EncryptedExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<ExtensionCombinator>>);
+
+impl View for EncryptedExtensionsExtensionsCombinator {
+    type V = SpecEncryptedExtensionsExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecEncryptedExtensionsExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for EncryptedExtensionsExtensionsCombinator {
+    type Result<'a> = EncryptedExtensionsExtensions<'a>;
+
+    type Owned = EncryptedExtensionsExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type EncryptedExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<ExtensionCombinator>>;
+
+
+
+pub struct SpecEncryptedExtensionsCombinator(Mapped<SpecDepend<SpecUint0FfffCombinator, SpecEncryptedExtensionsExtensionsCombinator>, EncryptedExtensionsMapper>);
+
+impl SpecCombinator for SpecEncryptedExtensionsCombinator {
+    type SpecResult = SpecEncryptedExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecEncryptedExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecEncryptedExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecEncryptedExtensionsCombinatorAlias = Mapped<SpecDepend<SpecUint0FfffCombinator, SpecEncryptedExtensionsExtensionsCombinator>, EncryptedExtensionsMapper>;
+
+pub struct EncryptedExtensionsCont;
+pub struct EncryptedExtensionsCombinator(Mapped<Depend<Uint0FfffCombinator, EncryptedExtensionsExtensionsCombinator, EncryptedExtensionsCont>, EncryptedExtensionsMapper>);
+
+impl View for EncryptedExtensionsCombinator {
+    type V = SpecEncryptedExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecEncryptedExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for EncryptedExtensionsCombinator {
+    type Result<'a> = EncryptedExtensions<'a>;
+
+    type Owned = EncryptedExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type EncryptedExtensionsCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, EncryptedExtensionsExtensionsCombinator, EncryptedExtensionsCont>, EncryptedExtensionsMapper>;
+
+
+pub struct SpecCertificateExtensionsCombinator(SpecEncryptedExtensionsCombinator);
+
+impl SpecCombinator for SpecCertificateExtensionsCombinator {
+    type SpecResult = SpecCertificateExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateExtensionsCombinatorAlias = SpecEncryptedExtensionsCombinator;
+
+pub struct CertificateExtensionsCombinator(EncryptedExtensionsCombinator);
+
+impl View for CertificateExtensionsCombinator {
+    type V = SpecCertificateExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateExtensionsCombinator {
+    type Result<'a> = CertificateExtensions<'a>;
+
+    type Owned = CertificateExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateExtensionsCombinatorAlias = EncryptedExtensionsCombinator;
+
+
+
+pub struct SpecCertificateEntryCombinator(Mapped<(SpecOpaque1FfffffCombinator, SpecCertificateExtensionsCombinator), CertificateEntryMapper>);
+
+impl SpecCombinator for SpecCertificateEntryCombinator {
+    type SpecResult = SpecCertificateEntry;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateEntryCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateEntryCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateEntryCombinatorAlias = Mapped<(SpecOpaque1FfffffCombinator, SpecCertificateExtensionsCombinator), CertificateEntryMapper>;
+
+
+pub struct CertificateEntryCombinator(Mapped<(Opaque1FfffffCombinator, CertificateExtensionsCombinator), CertificateEntryMapper>);
+
+impl View for CertificateEntryCombinator {
+    type V = SpecCertificateEntryCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateEntryCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateEntryCombinator {
+    type Result<'a> = CertificateEntry<'a>;
+
+    type Owned = CertificateEntryOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateEntryCombinatorAlias = Mapped<(Opaque1FfffffCombinator, CertificateExtensionsCombinator), CertificateEntryMapper>;
+
+
+pub struct SpecCertificateListListCombinator(AndThen<Bytes, Repeat<SpecCertificateEntryCombinator>>);
+
+impl SpecCombinator for SpecCertificateListListCombinator {
+    type SpecResult = SpecCertificateListList;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateListListCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateListListCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateListListCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateEntryCombinator>>;
+
+pub struct CertificateListListCombinator(AndThen<Bytes, Repeat<CertificateEntryCombinator>>);
+
+impl View for CertificateListListCombinator {
+    type V = SpecCertificateListListCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateListListCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateListListCombinator {
+    type Result<'a> = CertificateListList<'a>;
+
+    type Owned = CertificateListListOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateListListCombinatorAlias = AndThen<Bytes, Repeat<CertificateEntryCombinator>>;
+
+
+
+pub struct SpecCertificateListCombinator(Mapped<SpecDepend<U24Be, SpecCertificateListListCombinator>, CertificateListMapper>);
+
+impl SpecCombinator for SpecCertificateListCombinator {
+    type SpecResult = SpecCertificateList;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateListCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateListCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateListCombinatorAlias = Mapped<SpecDepend<U24Be, SpecCertificateListListCombinator>, CertificateListMapper>;
+
+pub struct CertificateListCont;
+pub struct CertificateListCombinator(Mapped<Depend<U24Be, CertificateListListCombinator, CertificateListCont>, CertificateListMapper>);
+
+impl View for CertificateListCombinator {
+    type V = SpecCertificateListCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateListCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateListCombinator {
+    type Result<'a> = CertificateList<'a>;
+
+    type Owned = CertificateListOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateListCombinatorAlias = Mapped<Depend<U24Be, CertificateListListCombinator, CertificateListCont>, CertificateListMapper>;
+
+
+
+pub struct SpecCertificateCombinator(Mapped<(SpecOpaque0FfCombinator, SpecCertificateListCombinator), CertificateMapper>);
+
+impl SpecCombinator for SpecCertificateCombinator {
+    type SpecResult = SpecCertificate;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateCombinatorAlias = Mapped<(SpecOpaque0FfCombinator, SpecCertificateListCombinator), CertificateMapper>;
+
+
+pub struct CertificateCombinator(Mapped<(Opaque0FfCombinator, CertificateListCombinator), CertificateMapper>);
+
+impl View for CertificateCombinator {
+    type V = SpecCertificateCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateCombinator {
+    type Result<'a> = Certificate<'a>;
+
+    type Owned = CertificateOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateCombinatorAlias = Mapped<(Opaque0FfCombinator, CertificateListCombinator), CertificateMapper>;
 
 impl SpecPred for Predicate13930216038658429813 {
     type Input = u8;
@@ -10926,6 +11882,873 @@ impl Combinator for Uint1FfCombinator {
                 pub type Uint1FfCombinatorAlias = Refined<U8, Predicate13930216038658429813>;
 
 
+pub struct SpecPskKeyExchangeModeCombinator(U8);
+
+impl SpecCombinator for SpecPskKeyExchangeModeCombinator {
+    type SpecResult = SpecPskKeyExchangeMode;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPskKeyExchangeModeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPskKeyExchangeModeCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPskKeyExchangeModeCombinatorAlias = U8;
+
+pub struct PskKeyExchangeModeCombinator(U8);
+
+impl View for PskKeyExchangeModeCombinator {
+    type V = SpecPskKeyExchangeModeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPskKeyExchangeModeCombinator(self.0@)
+    }
+}
+impl Combinator for PskKeyExchangeModeCombinator {
+    type Result<'a> = PskKeyExchangeMode;
+
+    type Owned = PskKeyExchangeModeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PskKeyExchangeModeCombinatorAlias = U8;
+
+
+pub struct SpecPskKeyExchangeModesModesCombinator(AndThen<Bytes, Repeat<SpecPskKeyExchangeModeCombinator>>);
+
+impl SpecCombinator for SpecPskKeyExchangeModesModesCombinator {
+    type SpecResult = SpecPskKeyExchangeModesModes;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPskKeyExchangeModesModesCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPskKeyExchangeModesModesCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPskKeyExchangeModesModesCombinatorAlias = AndThen<Bytes, Repeat<SpecPskKeyExchangeModeCombinator>>;
+
+pub struct PskKeyExchangeModesModesCombinator(AndThen<Bytes, Repeat<PskKeyExchangeModeCombinator>>);
+
+impl View for PskKeyExchangeModesModesCombinator {
+    type V = SpecPskKeyExchangeModesModesCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPskKeyExchangeModesModesCombinator(self.0@)
+    }
+}
+impl Combinator for PskKeyExchangeModesModesCombinator {
+    type Result<'a> = PskKeyExchangeModesModes;
+
+    type Owned = PskKeyExchangeModesModesOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PskKeyExchangeModesModesCombinatorAlias = AndThen<Bytes, Repeat<PskKeyExchangeModeCombinator>>;
+
+
+
+pub struct SpecPskKeyExchangeModesCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecPskKeyExchangeModesModesCombinator>, PskKeyExchangeModesMapper>);
+
+impl SpecCombinator for SpecPskKeyExchangeModesCombinator {
+    type SpecResult = SpecPskKeyExchangeModes;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPskKeyExchangeModesCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPskKeyExchangeModesCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPskKeyExchangeModesCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecPskKeyExchangeModesModesCombinator>, PskKeyExchangeModesMapper>;
+
+pub struct PskKeyExchangeModesCont;
+pub struct PskKeyExchangeModesCombinator(Mapped<Depend<Uint1FfCombinator, PskKeyExchangeModesModesCombinator, PskKeyExchangeModesCont>, PskKeyExchangeModesMapper>);
+
+impl View for PskKeyExchangeModesCombinator {
+    type V = SpecPskKeyExchangeModesCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPskKeyExchangeModesCombinator(self.0@)
+    }
+}
+impl Combinator for PskKeyExchangeModesCombinator {
+    type Result<'a> = PskKeyExchangeModes;
+
+    type Owned = PskKeyExchangeModesOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PskKeyExchangeModesCombinatorAlias = Mapped<Depend<Uint1FfCombinator, PskKeyExchangeModesModesCombinator, PskKeyExchangeModesCont>, PskKeyExchangeModesMapper>;
+
+impl SpecPred for Predicate184937773087435626 {
+    type Input = u16;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        if (i >= 0 && i <= 65534) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct SpecUint0FffeCombinator(Refined<U16Be, Predicate184937773087435626>);
+
+impl SpecCombinator for SpecUint0FffeCombinator {
+    type SpecResult = SpecUint0Fffe;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecUint0FffeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecUint0FffeCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecUint0FffeCombinatorAlias = Refined<U16Be, Predicate184937773087435626>;
+pub struct Predicate184937773087435626;
+impl View for Predicate184937773087435626 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate184937773087435626 {
+    type Input<'a> = u16;
+    type InputOwned = u16;
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {
+        let i = (*i);
+        if (i >= 0 && i <= 65534) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct Uint0FffeCombinator(Refined<U16Be, Predicate184937773087435626>);
+
+impl View for Uint0FffeCombinator {
+    type V = SpecUint0FffeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecUint0FffeCombinator(self.0@)
+    }
+}
+impl Combinator for Uint0FffeCombinator {
+    type Result<'a> = Uint0Fffe;
+
+    type Owned = Uint0FffeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type Uint0FffeCombinatorAlias = Refined<U16Be, Predicate184937773087435626>;
+
+
+pub struct SpecNewSessionTicketExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<SpecExtensionCombinator>>);
+
+impl SpecCombinator for SpecNewSessionTicketExtensionsExtensionsCombinator {
+    type SpecResult = SpecNewSessionTicketExtensionsExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecNewSessionTicketExtensionsExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecNewSessionTicketExtensionsExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecNewSessionTicketExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<SpecExtensionCombinator>>;
+
+pub struct NewSessionTicketExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<ExtensionCombinator>>);
+
+impl View for NewSessionTicketExtensionsExtensionsCombinator {
+    type V = SpecNewSessionTicketExtensionsExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecNewSessionTicketExtensionsExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for NewSessionTicketExtensionsExtensionsCombinator {
+    type Result<'a> = NewSessionTicketExtensionsExtensions<'a>;
+
+    type Owned = NewSessionTicketExtensionsExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type NewSessionTicketExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<ExtensionCombinator>>;
+
+
+
+pub struct SpecNewSessionTicketExtensionsCombinator(Mapped<SpecDepend<SpecUint0FffeCombinator, SpecNewSessionTicketExtensionsExtensionsCombinator>, NewSessionTicketExtensionsMapper>);
+
+impl SpecCombinator for SpecNewSessionTicketExtensionsCombinator {
+    type SpecResult = SpecNewSessionTicketExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecNewSessionTicketExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecNewSessionTicketExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecNewSessionTicketExtensionsCombinatorAlias = Mapped<SpecDepend<SpecUint0FffeCombinator, SpecNewSessionTicketExtensionsExtensionsCombinator>, NewSessionTicketExtensionsMapper>;
+
+pub struct NewSessionTicketExtensionsCont;
+pub struct NewSessionTicketExtensionsCombinator(Mapped<Depend<Uint0FffeCombinator, NewSessionTicketExtensionsExtensionsCombinator, NewSessionTicketExtensionsCont>, NewSessionTicketExtensionsMapper>);
+
+impl View for NewSessionTicketExtensionsCombinator {
+    type V = SpecNewSessionTicketExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecNewSessionTicketExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for NewSessionTicketExtensionsCombinator {
+    type Result<'a> = NewSessionTicketExtensions<'a>;
+
+    type Owned = NewSessionTicketExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type NewSessionTicketExtensionsCombinatorAlias = Mapped<Depend<Uint0FffeCombinator, NewSessionTicketExtensionsExtensionsCombinator, NewSessionTicketExtensionsCont>, NewSessionTicketExtensionsMapper>;
+
+
+pub struct SpecHeartbeatModeCombinator(U8);
+
+impl SpecCombinator for SpecHeartbeatModeCombinator {
+    type SpecResult = SpecHeartbeatMode;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecHeartbeatModeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecHeartbeatModeCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecHeartbeatModeCombinatorAlias = U8;
+
+pub struct HeartbeatModeCombinator(U8);
+
+impl View for HeartbeatModeCombinator {
+    type V = SpecHeartbeatModeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecHeartbeatModeCombinator(self.0@)
+    }
+}
+impl Combinator for HeartbeatModeCombinator {
+    type Result<'a> = HeartbeatMode;
+
+    type Owned = HeartbeatModeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type HeartbeatModeCombinatorAlias = U8;
+
+
+pub struct SpecHeartbeatExtensionCombinator(Mapped<SpecHeartbeatModeCombinator, HeartbeatExtensionMapper>);
+
+impl SpecCombinator for SpecHeartbeatExtensionCombinator {
+    type SpecResult = SpecHeartbeatExtension;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecHeartbeatExtensionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecHeartbeatExtensionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecHeartbeatExtensionCombinatorAlias = Mapped<SpecHeartbeatModeCombinator, HeartbeatExtensionMapper>;
+
+pub struct HeartbeatExtensionCombinator(Mapped<HeartbeatModeCombinator, HeartbeatExtensionMapper>);
+
+impl View for HeartbeatExtensionCombinator {
+    type V = SpecHeartbeatExtensionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecHeartbeatExtensionCombinator(self.0@)
+    }
+}
+impl Combinator for HeartbeatExtensionCombinator {
+    type Result<'a> = HeartbeatExtension;
+
+    type Owned = HeartbeatExtensionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type HeartbeatExtensionCombinatorAlias = Mapped<HeartbeatModeCombinator, HeartbeatExtensionMapper>;
+
+
+pub struct SpecNamedGroupCombinator(U16Be);
+
+impl SpecCombinator for SpecNamedGroupCombinator {
+    type SpecResult = SpecNamedGroup;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecNamedGroupCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecNamedGroupCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecNamedGroupCombinatorAlias = U16Be;
+
+pub struct NamedGroupCombinator(U16Be);
+
+impl View for NamedGroupCombinator {
+    type V = SpecNamedGroupCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecNamedGroupCombinator(self.0@)
+    }
+}
+impl Combinator for NamedGroupCombinator {
+    type Result<'a> = NamedGroup;
+
+    type Owned = NamedGroupOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type NamedGroupCombinatorAlias = U16Be;
+
+
+pub struct SpecAlertLevelCombinator(TryMap<U8, AlertLevelMapper>);
+
+impl SpecCombinator for SpecAlertLevelCombinator {
+    type SpecResult = SpecAlertLevel;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecAlertLevelCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecAlertLevelCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecAlertLevelCombinatorAlias = TryMap<U8, AlertLevelMapper>;
+
+pub struct AlertLevelCombinator(TryMap<U8, AlertLevelMapper>);
+
+impl View for AlertLevelCombinator {
+    type V = SpecAlertLevelCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecAlertLevelCombinator(self.0@)
+    }
+}
+impl Combinator for AlertLevelCombinator {
+    type Result<'a> = AlertLevel;
+
+    type Owned = AlertLevelOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type AlertLevelCombinatorAlias = TryMap<U8, AlertLevelMapper>;
+
+
 pub struct SpecCertificateTypeCombinator(U8);
 
 impl SpecCombinator for SpecCertificateTypeCombinator {
@@ -11009,10 +12832,10 @@ impl Combinator for CertificateTypeCombinator {
                 pub type CertificateTypeCombinatorAlias = U8;
 
 
-pub struct SpecServerCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>);
+pub struct SpecClientCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>);
 
-impl SpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
-    type SpecResult = SpecServerCertTypeClientExtensionTypes;
+impl SpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
+    type SpecResult = SpecClientCertTypeClientExtensionTypes;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -11026,9 +12849,9 @@ impl SpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
+impl SecureSpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecServerCertTypeClientExtensionTypesCombinatorAlias::is_prefix_secure()
+        SpecClientCertTypeClientExtensionTypesCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -11047,21 +12870,21 @@ impl SecureSpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
     }
 }
 
-                pub type SpecServerCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>;
+                pub type SpecClientCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>;
 
-pub struct ServerCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<CertificateTypeCombinator>>);
+pub struct ClientCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<CertificateTypeCombinator>>);
 
-impl View for ServerCertTypeClientExtensionTypesCombinator {
-    type V = SpecServerCertTypeClientExtensionTypesCombinator;
+impl View for ClientCertTypeClientExtensionTypesCombinator {
+    type V = SpecClientCertTypeClientExtensionTypesCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecServerCertTypeClientExtensionTypesCombinator(self.0@)
+        SpecClientCertTypeClientExtensionTypesCombinator(self.0@)
     }
 }
-impl Combinator for ServerCertTypeClientExtensionTypesCombinator {
-    type Result<'a> = ServerCertTypeClientExtensionTypes;
+impl Combinator for ClientCertTypeClientExtensionTypesCombinator {
+    type Result<'a> = ClientCertTypeClientExtensionTypes;
 
-    type Owned = ServerCertTypeClientExtensionTypesOwned;
+    type Owned = ClientCertTypeClientExtensionTypesOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -11089,14 +12912,14 @@ impl Combinator for ServerCertTypeClientExtensionTypesCombinator {
     }
 
 }
-                pub type ServerCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<CertificateTypeCombinator>>;
+                pub type ClientCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<CertificateTypeCombinator>>;
 
 
 
-pub struct SpecServerCertTypeClientExtensionCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecServerCertTypeClientExtensionTypesCombinator>, ServerCertTypeClientExtensionMapper>);
+pub struct SpecClientCertTypeClientExtensionCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecClientCertTypeClientExtensionTypesCombinator>, ClientCertTypeClientExtensionMapper>);
 
-impl SpecCombinator for SpecServerCertTypeClientExtensionCombinator {
-    type SpecResult = SpecServerCertTypeClientExtension;
+impl SpecCombinator for SpecClientCertTypeClientExtensionCombinator {
+    type SpecResult = SpecClientCertTypeClientExtension;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -11110,9 +12933,9 @@ impl SpecCombinator for SpecServerCertTypeClientExtensionCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecServerCertTypeClientExtensionCombinator {
+impl SecureSpecCombinator for SpecClientCertTypeClientExtensionCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecServerCertTypeClientExtensionCombinatorAlias::is_prefix_secure()
+        SpecClientCertTypeClientExtensionCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -11131,22 +12954,22 @@ impl SecureSpecCombinator for SpecServerCertTypeClientExtensionCombinator {
     }
 }
 
-                pub type SpecServerCertTypeClientExtensionCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecServerCertTypeClientExtensionTypesCombinator>, ServerCertTypeClientExtensionMapper>;
+                pub type SpecClientCertTypeClientExtensionCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecClientCertTypeClientExtensionTypesCombinator>, ClientCertTypeClientExtensionMapper>;
 
-pub struct ServerCertTypeClientExtensionCont;
-pub struct ServerCertTypeClientExtensionCombinator(Mapped<Depend<Uint1FfCombinator, ServerCertTypeClientExtensionTypesCombinator, ServerCertTypeClientExtensionCont>, ServerCertTypeClientExtensionMapper>);
+pub struct ClientCertTypeClientExtensionCont;
+pub struct ClientCertTypeClientExtensionCombinator(Mapped<Depend<Uint1FfCombinator, ClientCertTypeClientExtensionTypesCombinator, ClientCertTypeClientExtensionCont>, ClientCertTypeClientExtensionMapper>);
 
-impl View for ServerCertTypeClientExtensionCombinator {
-    type V = SpecServerCertTypeClientExtensionCombinator;
+impl View for ClientCertTypeClientExtensionCombinator {
+    type V = SpecClientCertTypeClientExtensionCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecServerCertTypeClientExtensionCombinator(self.0@)
+        SpecClientCertTypeClientExtensionCombinator(self.0@)
     }
 }
-impl Combinator for ServerCertTypeClientExtensionCombinator {
-    type Result<'a> = ServerCertTypeClientExtension;
+impl Combinator for ClientCertTypeClientExtensionCombinator {
+    type Result<'a> = ClientCertTypeClientExtension;
 
-    type Owned = ServerCertTypeClientExtensionOwned;
+    type Owned = ClientCertTypeClientExtensionOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -11174,90 +12997,7 @@ impl Combinator for ServerCertTypeClientExtensionCombinator {
     }
 
 }
-                pub type ServerCertTypeClientExtensionCombinatorAlias = Mapped<Depend<Uint1FfCombinator, ServerCertTypeClientExtensionTypesCombinator, ServerCertTypeClientExtensionCont>, ServerCertTypeClientExtensionMapper>;
-
-
-pub struct SpecProtocolVersionCombinator(U16Be);
-
-impl SpecCombinator for SpecProtocolVersionCombinator {
-    type SpecResult = SpecProtocolVersion;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecProtocolVersionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecProtocolVersionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecProtocolVersionCombinatorAlias = U16Be;
-
-pub struct ProtocolVersionCombinator(U16Be);
-
-impl View for ProtocolVersionCombinator {
-    type V = SpecProtocolVersionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecProtocolVersionCombinator(self.0@)
-    }
-}
-impl Combinator for ProtocolVersionCombinator {
-    type Result<'a> = ProtocolVersion;
-
-    type Owned = ProtocolVersionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type ProtocolVersionCombinatorAlias = U16Be;
+                pub type ClientCertTypeClientExtensionCombinatorAlias = Mapped<Depend<Uint1FfCombinator, ClientCertTypeClientExtensionTypesCombinator, ClientCertTypeClientExtensionCont>, ClientCertTypeClientExtensionMapper>;
 
 
 pub struct SpecRandomCombinator(BytesN<32>);
@@ -11341,6 +13081,124 @@ impl Combinator for RandomCombinator {
 
 }
                 pub type RandomCombinatorAlias = BytesN<32>;
+
+impl SpecPred for Predicate10693986609604791304 {
+    type Input = u8;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        if (i >= 0 && i <= 32) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+
+pub struct SpecSessionIdCombinator(Mapped<SpecDepend<Refined<U8, Predicate10693986609604791304>, Bytes>, SessionIdMapper>);
+
+impl SpecCombinator for SpecSessionIdCombinator {
+    type SpecResult = SpecSessionId;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecSessionIdCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecSessionIdCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecSessionIdCombinatorAlias = Mapped<SpecDepend<Refined<U8, Predicate10693986609604791304>, Bytes>, SessionIdMapper>;
+pub struct Predicate10693986609604791304;
+impl View for Predicate10693986609604791304 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate10693986609604791304 {
+    type Input<'a> = u8;
+    type InputOwned = u8;
+
+    fn apply(&self, i: &Self::Input<'_>) -> bool {
+        let i = (*i);
+        if (i >= 0 && i <= 32) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct SessionIdCont;
+pub struct SessionIdCombinator(Mapped<Depend<Refined<U8, Predicate10693986609604791304>, Bytes, SessionIdCont>, SessionIdMapper>);
+
+impl View for SessionIdCombinator {
+    type V = SpecSessionIdCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecSessionIdCombinator(self.0@)
+    }
+}
+impl Combinator for SessionIdCombinator {
+    type Result<'a> = SessionId<'a>;
+
+    type Owned = SessionIdOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type SessionIdCombinatorAlias = Mapped<Depend<Refined<U8, Predicate10693986609604791304>, Bytes, SessionIdCont>, SessionIdMapper>;
 
 impl SpecPred for Predicate13238841935489611399 {
     type Input = u16;
@@ -11795,89 +13653,6 @@ impl Combinator for Opaque1FfCombinator {
                 pub type Opaque1FfCombinatorAlias = Mapped<Depend<Uint1FfCombinator, Bytes, Opaque1FfCont>, Opaque1FfMapper>;
 
 
-pub struct SpecExtensionTypeCombinator(U8);
-
-impl SpecCombinator for SpecExtensionTypeCombinator {
-    type SpecResult = SpecExtensionType;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecExtensionTypeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecExtensionTypeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecExtensionTypeCombinatorAlias = U8;
-
-pub struct ExtensionTypeCombinator(U8);
-
-impl View for ExtensionTypeCombinator {
-    type V = SpecExtensionTypeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecExtensionTypeCombinator(self.0@)
-    }
-}
-impl Combinator for ExtensionTypeCombinator {
-    type Result<'a> = ExtensionType;
-
-    type Owned = ExtensionTypeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type ExtensionTypeCombinatorAlias = U8;
-
-
 pub struct SpecEmptyCombinator(BytesN<0>);
 
 impl SpecCombinator for SpecEmptyCombinator {
@@ -12294,122 +14069,6 @@ impl Combinator for EcPointFormatListCombinator {
 }
                 pub type EcPointFormatListCombinatorAlias = Mapped<Depend<Uint1FfCombinator, EcPointFormatListListCombinator, EcPointFormatListCont>, EcPointFormatListMapper>;
 
-impl SpecPred for Predicate5950696943328973166 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        if (i >= 2 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct SpecUint2FfffCombinator(Refined<U16Be, Predicate5950696943328973166>);
-
-impl SpecCombinator for SpecUint2FfffCombinator {
-    type SpecResult = SpecUint2Ffff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecUint2FfffCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecUint2FfffCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecUint2FfffCombinatorAlias = Refined<U16Be, Predicate5950696943328973166>;
-pub struct Predicate5950696943328973166;
-impl View for Predicate5950696943328973166 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate5950696943328973166 {
-    type Input<'a> = u16;
-    type InputOwned = u16;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        let i = (*i);
-        if (i >= 2 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct Uint2FfffCombinator(Refined<U16Be, Predicate5950696943328973166>);
-
-impl View for Uint2FfffCombinator {
-    type V = SpecUint2FfffCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecUint2FfffCombinator(self.0@)
-    }
-}
-impl Combinator for Uint2FfffCombinator {
-    type Result<'a> = Uint2Ffff;
-
-    type Owned = Uint2FfffOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Uint2FfffCombinatorAlias = Refined<U16Be, Predicate5950696943328973166>;
-
 
 pub struct SpecSrtpProtectionProfileCombinator(BytesN<2>);
 
@@ -12662,174 +14321,6 @@ impl Combinator for SrtpProtectionProfilesCombinator {
                 pub type SrtpProtectionProfilesCombinatorAlias = Mapped<Depend<Uint2FfffCombinator, SrtpProtectionProfilesListCombinator, SrtpProtectionProfilesCont>, SrtpProtectionProfilesMapper>;
 
 
-pub struct SpecUint0FfCombinator(U8);
-
-impl SpecCombinator for SpecUint0FfCombinator {
-    type SpecResult = SpecUint0Ff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecUint0FfCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecUint0FfCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecUint0FfCombinatorAlias = U8;
-
-pub struct Uint0FfCombinator(U8);
-
-impl View for Uint0FfCombinator {
-    type V = SpecUint0FfCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecUint0FfCombinator(self.0@)
-    }
-}
-impl Combinator for Uint0FfCombinator {
-    type Result<'a> = Uint0Ff;
-
-    type Owned = Uint0FfOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Uint0FfCombinatorAlias = U8;
-
-
-
-pub struct SpecOpaque0FfCombinator(Mapped<SpecDepend<SpecUint0FfCombinator, Bytes>, Opaque0FfMapper>);
-
-impl SpecCombinator for SpecOpaque0FfCombinator {
-    type SpecResult = SpecOpaque0Ff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecOpaque0FfCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecOpaque0FfCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecOpaque0FfCombinatorAlias = Mapped<SpecDepend<SpecUint0FfCombinator, Bytes>, Opaque0FfMapper>;
-
-pub struct Opaque0FfCont;
-pub struct Opaque0FfCombinator(Mapped<Depend<Uint0FfCombinator, Bytes, Opaque0FfCont>, Opaque0FfMapper>);
-
-impl View for Opaque0FfCombinator {
-    type V = SpecOpaque0FfCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecOpaque0FfCombinator(self.0@)
-    }
-}
-impl Combinator for Opaque0FfCombinator {
-    type Result<'a> = Opaque0Ff<'a>;
-
-    type Owned = Opaque0FfOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Opaque0FfCombinatorAlias = Mapped<Depend<Uint0FfCombinator, Bytes, Opaque0FfCont>, Opaque0FfMapper>;
-
-
 
 pub struct SpecUseSrtpDataCombinator(Mapped<(SpecSrtpProtectionProfilesCombinator, SpecOpaque0FfCombinator), UseSrtpDataMapper>);
 
@@ -12913,89 +14404,6 @@ impl Combinator for UseSrtpDataCombinator {
 
 }
                 pub type UseSrtpDataCombinatorAlias = Mapped<(SrtpProtectionProfilesCombinator, Opaque0FfCombinator), UseSrtpDataMapper>;
-
-
-pub struct SpecHeartbeatModeCombinator(U8);
-
-impl SpecCombinator for SpecHeartbeatModeCombinator {
-    type SpecResult = SpecHeartbeatMode;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecHeartbeatModeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecHeartbeatModeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecHeartbeatModeCombinatorAlias = U8;
-
-pub struct HeartbeatModeCombinator(U8);
-
-impl View for HeartbeatModeCombinator {
-    type V = SpecHeartbeatModeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecHeartbeatModeCombinator(self.0@)
-    }
-}
-impl Combinator for HeartbeatModeCombinator {
-    type Result<'a> = HeartbeatMode;
-
-    type Owned = HeartbeatModeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type HeartbeatModeCombinatorAlias = U8;
 
 
 pub struct SpecProtocolNameCombinator(SpecOpaque1FfCombinator);
@@ -13500,10 +14908,10 @@ impl Combinator for SignedCertificateTimestampListCombinator {
                 pub type SignedCertificateTimestampListCombinatorAlias = Mapped<Depend<Uint1FfffCombinator, SignedCertificateTimestampListListCombinator, SignedCertificateTimestampListCont>, SignedCertificateTimestampListMapper>;
 
 
-pub struct SpecClientCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>);
+pub struct SpecServerCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>);
 
-impl SpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
-    type SpecResult = SpecClientCertTypeClientExtensionTypes;
+impl SpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
+    type SpecResult = SpecServerCertTypeClientExtensionTypes;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -13517,9 +14925,9 @@ impl SpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
+impl SecureSpecCombinator for SpecServerCertTypeClientExtensionTypesCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecClientCertTypeClientExtensionTypesCombinatorAlias::is_prefix_secure()
+        SpecServerCertTypeClientExtensionTypesCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -13538,21 +14946,21 @@ impl SecureSpecCombinator for SpecClientCertTypeClientExtensionTypesCombinator {
     }
 }
 
-                pub type SpecClientCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>;
+                pub type SpecServerCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateTypeCombinator>>;
 
-pub struct ClientCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<CertificateTypeCombinator>>);
+pub struct ServerCertTypeClientExtensionTypesCombinator(AndThen<Bytes, Repeat<CertificateTypeCombinator>>);
 
-impl View for ClientCertTypeClientExtensionTypesCombinator {
-    type V = SpecClientCertTypeClientExtensionTypesCombinator;
+impl View for ServerCertTypeClientExtensionTypesCombinator {
+    type V = SpecServerCertTypeClientExtensionTypesCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecClientCertTypeClientExtensionTypesCombinator(self.0@)
+        SpecServerCertTypeClientExtensionTypesCombinator(self.0@)
     }
 }
-impl Combinator for ClientCertTypeClientExtensionTypesCombinator {
-    type Result<'a> = ClientCertTypeClientExtensionTypes;
+impl Combinator for ServerCertTypeClientExtensionTypesCombinator {
+    type Result<'a> = ServerCertTypeClientExtensionTypes;
 
-    type Owned = ClientCertTypeClientExtensionTypesOwned;
+    type Owned = ServerCertTypeClientExtensionTypesOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -13580,14 +14988,14 @@ impl Combinator for ClientCertTypeClientExtensionTypesCombinator {
     }
 
 }
-                pub type ClientCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<CertificateTypeCombinator>>;
+                pub type ServerCertTypeClientExtensionTypesCombinatorAlias = AndThen<Bytes, Repeat<CertificateTypeCombinator>>;
 
 
 
-pub struct SpecClientCertTypeClientExtensionCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecClientCertTypeClientExtensionTypesCombinator>, ClientCertTypeClientExtensionMapper>);
+pub struct SpecServerCertTypeClientExtensionCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecServerCertTypeClientExtensionTypesCombinator>, ServerCertTypeClientExtensionMapper>);
 
-impl SpecCombinator for SpecClientCertTypeClientExtensionCombinator {
-    type SpecResult = SpecClientCertTypeClientExtension;
+impl SpecCombinator for SpecServerCertTypeClientExtensionCombinator {
+    type SpecResult = SpecServerCertTypeClientExtension;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -13601,9 +15009,9 @@ impl SpecCombinator for SpecClientCertTypeClientExtensionCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecClientCertTypeClientExtensionCombinator {
+impl SecureSpecCombinator for SpecServerCertTypeClientExtensionCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecClientCertTypeClientExtensionCombinatorAlias::is_prefix_secure()
+        SpecServerCertTypeClientExtensionCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -13622,22 +15030,22 @@ impl SecureSpecCombinator for SpecClientCertTypeClientExtensionCombinator {
     }
 }
 
-                pub type SpecClientCertTypeClientExtensionCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecClientCertTypeClientExtensionTypesCombinator>, ClientCertTypeClientExtensionMapper>;
+                pub type SpecServerCertTypeClientExtensionCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecServerCertTypeClientExtensionTypesCombinator>, ServerCertTypeClientExtensionMapper>;
 
-pub struct ClientCertTypeClientExtensionCont;
-pub struct ClientCertTypeClientExtensionCombinator(Mapped<Depend<Uint1FfCombinator, ClientCertTypeClientExtensionTypesCombinator, ClientCertTypeClientExtensionCont>, ClientCertTypeClientExtensionMapper>);
+pub struct ServerCertTypeClientExtensionCont;
+pub struct ServerCertTypeClientExtensionCombinator(Mapped<Depend<Uint1FfCombinator, ServerCertTypeClientExtensionTypesCombinator, ServerCertTypeClientExtensionCont>, ServerCertTypeClientExtensionMapper>);
 
-impl View for ClientCertTypeClientExtensionCombinator {
-    type V = SpecClientCertTypeClientExtensionCombinator;
+impl View for ServerCertTypeClientExtensionCombinator {
+    type V = SpecServerCertTypeClientExtensionCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecClientCertTypeClientExtensionCombinator(self.0@)
+        SpecServerCertTypeClientExtensionCombinator(self.0@)
     }
 }
-impl Combinator for ClientCertTypeClientExtensionCombinator {
-    type Result<'a> = ClientCertTypeClientExtension;
+impl Combinator for ServerCertTypeClientExtensionCombinator {
+    type Result<'a> = ServerCertTypeClientExtension;
 
-    type Owned = ClientCertTypeClientExtensionOwned;
+    type Owned = ServerCertTypeClientExtensionOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -13665,7 +15073,7 @@ impl Combinator for ClientCertTypeClientExtensionCombinator {
     }
 
 }
-                pub type ClientCertTypeClientExtensionCombinatorAlias = Mapped<Depend<Uint1FfCombinator, ClientCertTypeClientExtensionTypesCombinator, ClientCertTypeClientExtensionCont>, ClientCertTypeClientExtensionMapper>;
+                pub type ServerCertTypeClientExtensionCombinatorAlias = Mapped<Depend<Uint1FfCombinator, ServerCertTypeClientExtensionTypesCombinator, ServerCertTypeClientExtensionCont>, ServerCertTypeClientExtensionMapper>;
 
 pub const ZEROBYTE_ZERO: u8 = 0;
 
@@ -14001,6 +15409,174 @@ impl Combinator for SessionTicketCombinator {
 
 }
                 pub type SessionTicketCombinatorAlias = Opaque0FfffCombinator;
+
+
+
+pub struct SpecPskIdentityCombinator(Mapped<(SpecOpaque1FfffCombinator, U32Be), PskIdentityMapper>);
+
+impl SpecCombinator for SpecPskIdentityCombinator {
+    type SpecResult = SpecPskIdentity;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPskIdentityCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPskIdentityCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPskIdentityCombinatorAlias = Mapped<(SpecOpaque1FfffCombinator, U32Be), PskIdentityMapper>;
+
+
+pub struct PskIdentityCombinator(Mapped<(Opaque1FfffCombinator, U32Be), PskIdentityMapper>);
+
+impl View for PskIdentityCombinator {
+    type V = SpecPskIdentityCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPskIdentityCombinator(self.0@)
+    }
+}
+impl Combinator for PskIdentityCombinator {
+    type Result<'a> = PskIdentity<'a>;
+
+    type Owned = PskIdentityOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PskIdentityCombinatorAlias = Mapped<(Opaque1FfffCombinator, U32Be), PskIdentityMapper>;
+
+
+pub struct SpecPskIdentitiesIdentitiesCombinator(AndThen<Bytes, Repeat<SpecPskIdentityCombinator>>);
+
+impl SpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
+    type SpecResult = SpecPskIdentitiesIdentities;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPskIdentitiesIdentitiesCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPskIdentitiesIdentitiesCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPskIdentitiesIdentitiesCombinatorAlias = AndThen<Bytes, Repeat<SpecPskIdentityCombinator>>;
+
+pub struct PskIdentitiesIdentitiesCombinator(AndThen<Bytes, Repeat<PskIdentityCombinator>>);
+
+impl View for PskIdentitiesIdentitiesCombinator {
+    type V = SpecPskIdentitiesIdentitiesCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPskIdentitiesIdentitiesCombinator(self.0@)
+    }
+}
+impl Combinator for PskIdentitiesIdentitiesCombinator {
+    type Result<'a> = PskIdentitiesIdentities<'a>;
+
+    type Owned = PskIdentitiesIdentitiesOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PskIdentitiesIdentitiesCombinatorAlias = AndThen<Bytes, Repeat<PskIdentityCombinator>>;
 
 impl SpecPred for Predicate17762240283561303569 {
     type Input = u16;
@@ -14607,89 +16183,6 @@ impl Combinator for PreSharedKeyClientExtensionCombinator {
 }
                 pub type PreSharedKeyClientExtensionCombinatorAlias = Mapped<OfferedPsksCombinator, PreSharedKeyClientExtensionMapper>;
 
-
-pub struct SpecSupportedVersionsClientVersionsCombinator(AndThen<Bytes, Repeat<SpecProtocolVersionCombinator>>);
-
-impl SpecCombinator for SpecSupportedVersionsClientVersionsCombinator {
-    type SpecResult = SpecSupportedVersionsClientVersions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecSupportedVersionsClientVersionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecSupportedVersionsClientVersionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecSupportedVersionsClientVersionsCombinatorAlias = AndThen<Bytes, Repeat<SpecProtocolVersionCombinator>>;
-
-pub struct SupportedVersionsClientVersionsCombinator(AndThen<Bytes, Repeat<ProtocolVersionCombinator>>);
-
-impl View for SupportedVersionsClientVersionsCombinator {
-    type V = SpecSupportedVersionsClientVersionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecSupportedVersionsClientVersionsCombinator(self.0@)
-    }
-}
-impl Combinator for SupportedVersionsClientVersionsCombinator {
-    type Result<'a> = SupportedVersionsClientVersions;
-
-    type Owned = SupportedVersionsClientVersionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type SupportedVersionsClientVersionsCombinatorAlias = AndThen<Bytes, Repeat<ProtocolVersionCombinator>>;
-
 impl SpecPred for Predicate12026843412570934212 {
     type Input = u8;
 
@@ -14890,257 +16383,6 @@ impl Combinator for CookieCombinator {
 
 }
                 pub type CookieCombinatorAlias = Opaque1FfffCombinator;
-
-
-pub struct SpecPskKeyExchangeModeCombinator(U8);
-
-impl SpecCombinator for SpecPskKeyExchangeModeCombinator {
-    type SpecResult = SpecPskKeyExchangeMode;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecPskKeyExchangeModeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecPskKeyExchangeModeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecPskKeyExchangeModeCombinatorAlias = U8;
-
-pub struct PskKeyExchangeModeCombinator(U8);
-
-impl View for PskKeyExchangeModeCombinator {
-    type V = SpecPskKeyExchangeModeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecPskKeyExchangeModeCombinator(self.0@)
-    }
-}
-impl Combinator for PskKeyExchangeModeCombinator {
-    type Result<'a> = PskKeyExchangeMode;
-
-    type Owned = PskKeyExchangeModeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type PskKeyExchangeModeCombinatorAlias = U8;
-
-
-pub struct SpecPskKeyExchangeModesModesCombinator(AndThen<Bytes, Repeat<SpecPskKeyExchangeModeCombinator>>);
-
-impl SpecCombinator for SpecPskKeyExchangeModesModesCombinator {
-    type SpecResult = SpecPskKeyExchangeModesModes;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecPskKeyExchangeModesModesCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecPskKeyExchangeModesModesCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecPskKeyExchangeModesModesCombinatorAlias = AndThen<Bytes, Repeat<SpecPskKeyExchangeModeCombinator>>;
-
-pub struct PskKeyExchangeModesModesCombinator(AndThen<Bytes, Repeat<PskKeyExchangeModeCombinator>>);
-
-impl View for PskKeyExchangeModesModesCombinator {
-    type V = SpecPskKeyExchangeModesModesCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecPskKeyExchangeModesModesCombinator(self.0@)
-    }
-}
-impl Combinator for PskKeyExchangeModesModesCombinator {
-    type Result<'a> = PskKeyExchangeModesModes;
-
-    type Owned = PskKeyExchangeModesModesOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type PskKeyExchangeModesModesCombinatorAlias = AndThen<Bytes, Repeat<PskKeyExchangeModeCombinator>>;
-
-
-
-pub struct SpecPskKeyExchangeModesCombinator(Mapped<SpecDepend<SpecUint1FfCombinator, SpecPskKeyExchangeModesModesCombinator>, PskKeyExchangeModesMapper>);
-
-impl SpecCombinator for SpecPskKeyExchangeModesCombinator {
-    type SpecResult = SpecPskKeyExchangeModes;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecPskKeyExchangeModesCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecPskKeyExchangeModesCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecPskKeyExchangeModesCombinatorAlias = Mapped<SpecDepend<SpecUint1FfCombinator, SpecPskKeyExchangeModesModesCombinator>, PskKeyExchangeModesMapper>;
-
-pub struct PskKeyExchangeModesCont;
-pub struct PskKeyExchangeModesCombinator(Mapped<Depend<Uint1FfCombinator, PskKeyExchangeModesModesCombinator, PskKeyExchangeModesCont>, PskKeyExchangeModesMapper>);
-
-impl View for PskKeyExchangeModesCombinator {
-    type V = SpecPskKeyExchangeModesCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecPskKeyExchangeModesCombinator(self.0@)
-    }
-}
-impl Combinator for PskKeyExchangeModesCombinator {
-    type Result<'a> = PskKeyExchangeModes;
-
-    type Owned = PskKeyExchangeModesOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type PskKeyExchangeModesCombinatorAlias = Mapped<Depend<Uint1FfCombinator, PskKeyExchangeModesModesCombinator, PskKeyExchangeModesCont>, PskKeyExchangeModesMapper>;
 
 
 pub struct SpecDistinguishedNameCombinator(SpecOpaque1FfffCombinator);
@@ -15931,89 +17173,6 @@ impl Combinator for SignatureSchemeListCombinator {
                 pub type SignatureSchemeListCombinatorAlias = Mapped<Depend<Uint2FffeCombinator, SignatureSchemeListListCombinator, SignatureSchemeListCont>, SignatureSchemeListMapper>;
 
 
-pub struct SpecNamedGroupCombinator(U16Be);
-
-impl SpecCombinator for SpecNamedGroupCombinator {
-    type SpecResult = SpecNamedGroup;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecNamedGroupCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecNamedGroupCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecNamedGroupCombinatorAlias = U16Be;
-
-pub struct NamedGroupCombinator(U16Be);
-
-impl View for NamedGroupCombinator {
-    type V = SpecNamedGroupCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecNamedGroupCombinator(self.0@)
-    }
-}
-impl Combinator for NamedGroupCombinator {
-    type Result<'a> = NamedGroup;
-
-    type Owned = NamedGroupOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type NamedGroupCombinatorAlias = U16Be;
-
-
 
 pub struct SpecKeyShareEntryCombinator(Mapped<SpecDepend<SpecNamedGroupCombinator, SpecKeyShareEntryKeyExchangeCombinator>, KeyShareEntryMapper>);
 
@@ -16265,89 +17424,6 @@ impl Combinator for KeyShareClientHelloCombinator {
 
 }
                 pub type KeyShareClientHelloCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, KeyShareClientHelloClientSharesCombinator, KeyShareClientHelloCont>, KeyShareClientHelloMapper>;
-
-
-pub struct SpecUnknownExtensionCombinator(SpecOpaque0FfffCombinator);
-
-impl SpecCombinator for SpecUnknownExtensionCombinator {
-    type SpecResult = SpecUnknownExtension;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecUnknownExtensionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecUnknownExtensionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecUnknownExtensionCombinatorAlias = SpecOpaque0FfffCombinator;
-
-pub struct UnknownExtensionCombinator(Opaque0FfffCombinator);
-
-impl View for UnknownExtensionCombinator {
-    type V = SpecUnknownExtensionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecUnknownExtensionCombinator(self.0@)
-    }
-}
-impl Combinator for UnknownExtensionCombinator {
-    type Result<'a> = UnknownExtension<'a>;
-
-    type Owned = UnknownExtensionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type UnknownExtensionCombinatorAlias = Opaque0FfffCombinator;
 
 
 
@@ -17700,6 +18776,89 @@ impl Combinator for ResponderIdListCombinator {
                 pub type ResponderIdListCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, ResponderIdListListCombinator, ResponderIdListCont>, ResponderIdListMapper>;
 
 
+pub struct SpecOcspExtensionsCombinator(SpecOpaque0FfffCombinator);
+
+impl SpecCombinator for SpecOcspExtensionsCombinator {
+    type SpecResult = SpecOcspExtensions;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecOcspExtensionsCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecOcspExtensionsCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecOcspExtensionsCombinatorAlias = SpecOpaque0FfffCombinator;
+
+pub struct OcspExtensionsCombinator(Opaque0FfffCombinator);
+
+impl View for OcspExtensionsCombinator {
+    type V = SpecOcspExtensionsCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecOcspExtensionsCombinator(self.0@)
+    }
+}
+impl Combinator for OcspExtensionsCombinator {
+    type Result<'a> = OcspExtensions<'a>;
+
+    type Owned = OcspExtensionsOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type OcspExtensionsCombinatorAlias = Opaque0FfffCombinator;
+
+
 
 pub struct SpecOscpStatusRequestCombinator(Mapped<(SpecResponderIdListCombinator, SpecOcspExtensionsCombinator), OscpStatusRequestMapper>);
 
@@ -18555,375 +19714,6 @@ impl Combinator for ServerHelloCombinator {
 }
                 pub type ServerHelloCombinatorAlias = Mapped<(ProtocolVersionCombinator, (RandomCombinator, (SessionIdCombinator, (CipherSuiteCombinator, (Refined<U8, TagPred<u8>>, ServerExtensionsCombinator))))), ServerHelloMapper>;
 
-impl SpecPred for Predicate184937773087435626 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        if (i >= 0 && i <= 65534) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct SpecUint0FffeCombinator(Refined<U16Be, Predicate184937773087435626>);
-
-impl SpecCombinator for SpecUint0FffeCombinator {
-    type SpecResult = SpecUint0Fffe;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecUint0FffeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecUint0FffeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecUint0FffeCombinatorAlias = Refined<U16Be, Predicate184937773087435626>;
-pub struct Predicate184937773087435626;
-impl View for Predicate184937773087435626 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate184937773087435626 {
-    type Input<'a> = u16;
-    type InputOwned = u16;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        let i = (*i);
-        if (i >= 0 && i <= 65534) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct Uint0FffeCombinator(Refined<U16Be, Predicate184937773087435626>);
-
-impl View for Uint0FffeCombinator {
-    type V = SpecUint0FffeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecUint0FffeCombinator(self.0@)
-    }
-}
-impl Combinator for Uint0FffeCombinator {
-    type Result<'a> = Uint0Fffe;
-
-    type Owned = Uint0FffeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Uint0FffeCombinatorAlias = Refined<U16Be, Predicate184937773087435626>;
-
-
-
-pub struct SpecExtensionCombinator(Mapped<(SpecExtensionTypeCombinator, SpecOpaque0FfffCombinator), ExtensionMapper>);
-
-impl SpecCombinator for SpecExtensionCombinator {
-    type SpecResult = SpecExtension;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecExtensionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecExtensionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecExtensionCombinatorAlias = Mapped<(SpecExtensionTypeCombinator, SpecOpaque0FfffCombinator), ExtensionMapper>;
-
-
-pub struct ExtensionCombinator(Mapped<(ExtensionTypeCombinator, Opaque0FfffCombinator), ExtensionMapper>);
-
-impl View for ExtensionCombinator {
-    type V = SpecExtensionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecExtensionCombinator(self.0@)
-    }
-}
-impl Combinator for ExtensionCombinator {
-    type Result<'a> = Extension<'a>;
-
-    type Owned = ExtensionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type ExtensionCombinatorAlias = Mapped<(ExtensionTypeCombinator, Opaque0FfffCombinator), ExtensionMapper>;
-
-
-pub struct SpecNewSessionTicketExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<SpecExtensionCombinator>>);
-
-impl SpecCombinator for SpecNewSessionTicketExtensionsExtensionsCombinator {
-    type SpecResult = SpecNewSessionTicketExtensionsExtensions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecNewSessionTicketExtensionsExtensionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecNewSessionTicketExtensionsExtensionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecNewSessionTicketExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<SpecExtensionCombinator>>;
-
-pub struct NewSessionTicketExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<ExtensionCombinator>>);
-
-impl View for NewSessionTicketExtensionsExtensionsCombinator {
-    type V = SpecNewSessionTicketExtensionsExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecNewSessionTicketExtensionsExtensionsCombinator(self.0@)
-    }
-}
-impl Combinator for NewSessionTicketExtensionsExtensionsCombinator {
-    type Result<'a> = NewSessionTicketExtensionsExtensions<'a>;
-
-    type Owned = NewSessionTicketExtensionsExtensionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type NewSessionTicketExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<ExtensionCombinator>>;
-
-
-
-pub struct SpecNewSessionTicketExtensionsCombinator(Mapped<SpecDepend<SpecUint0FffeCombinator, SpecNewSessionTicketExtensionsExtensionsCombinator>, NewSessionTicketExtensionsMapper>);
-
-impl SpecCombinator for SpecNewSessionTicketExtensionsCombinator {
-    type SpecResult = SpecNewSessionTicketExtensions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecNewSessionTicketExtensionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecNewSessionTicketExtensionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecNewSessionTicketExtensionsCombinatorAlias = Mapped<SpecDepend<SpecUint0FffeCombinator, SpecNewSessionTicketExtensionsExtensionsCombinator>, NewSessionTicketExtensionsMapper>;
-
-pub struct NewSessionTicketExtensionsCont;
-pub struct NewSessionTicketExtensionsCombinator(Mapped<Depend<Uint0FffeCombinator, NewSessionTicketExtensionsExtensionsCombinator, NewSessionTicketExtensionsCont>, NewSessionTicketExtensionsMapper>);
-
-impl View for NewSessionTicketExtensionsCombinator {
-    type V = SpecNewSessionTicketExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecNewSessionTicketExtensionsCombinator(self.0@)
-    }
-}
-impl Combinator for NewSessionTicketExtensionsCombinator {
-    type Result<'a> = NewSessionTicketExtensions<'a>;
-
-    type Owned = NewSessionTicketExtensionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type NewSessionTicketExtensionsCombinatorAlias = Mapped<Depend<Uint0FffeCombinator, NewSessionTicketExtensionsExtensionsCombinator, NewSessionTicketExtensionsCont>, NewSessionTicketExtensionsMapper>;
-
 
 
 
@@ -19014,713 +19804,6 @@ impl Combinator for NewSessionTicketCombinator {
 
 }
                 pub type NewSessionTicketCombinatorAlias = Mapped<(U32Be, (U32Be, (Opaque0FfCombinator, (Opaque1FfffCombinator, NewSessionTicketExtensionsCombinator)))), NewSessionTicketMapper>;
-
-
-pub struct SpecEncryptedExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<SpecExtensionCombinator>>);
-
-impl SpecCombinator for SpecEncryptedExtensionsExtensionsCombinator {
-    type SpecResult = SpecEncryptedExtensionsExtensions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecEncryptedExtensionsExtensionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecEncryptedExtensionsExtensionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecEncryptedExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<SpecExtensionCombinator>>;
-
-pub struct EncryptedExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<ExtensionCombinator>>);
-
-impl View for EncryptedExtensionsExtensionsCombinator {
-    type V = SpecEncryptedExtensionsExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecEncryptedExtensionsExtensionsCombinator(self.0@)
-    }
-}
-impl Combinator for EncryptedExtensionsExtensionsCombinator {
-    type Result<'a> = EncryptedExtensionsExtensions<'a>;
-
-    type Owned = EncryptedExtensionsExtensionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type EncryptedExtensionsExtensionsCombinatorAlias = AndThen<Bytes, Repeat<ExtensionCombinator>>;
-
-
-
-pub struct SpecEncryptedExtensionsCombinator(Mapped<SpecDepend<SpecUint0FfffCombinator, SpecEncryptedExtensionsExtensionsCombinator>, EncryptedExtensionsMapper>);
-
-impl SpecCombinator for SpecEncryptedExtensionsCombinator {
-    type SpecResult = SpecEncryptedExtensions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecEncryptedExtensionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecEncryptedExtensionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecEncryptedExtensionsCombinatorAlias = Mapped<SpecDepend<SpecUint0FfffCombinator, SpecEncryptedExtensionsExtensionsCombinator>, EncryptedExtensionsMapper>;
-
-pub struct EncryptedExtensionsCont;
-pub struct EncryptedExtensionsCombinator(Mapped<Depend<Uint0FfffCombinator, EncryptedExtensionsExtensionsCombinator, EncryptedExtensionsCont>, EncryptedExtensionsMapper>);
-
-impl View for EncryptedExtensionsCombinator {
-    type V = SpecEncryptedExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecEncryptedExtensionsCombinator(self.0@)
-    }
-}
-impl Combinator for EncryptedExtensionsCombinator {
-    type Result<'a> = EncryptedExtensions<'a>;
-
-    type Owned = EncryptedExtensionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type EncryptedExtensionsCombinatorAlias = Mapped<Depend<Uint0FfffCombinator, EncryptedExtensionsExtensionsCombinator, EncryptedExtensionsCont>, EncryptedExtensionsMapper>;
-
-impl SpecPred for Predicate10565972399076720534 {
-    type Input = u24;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i).spec_as_u32();
-        if (i >= 1 && i <= 16777215) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-
-pub struct SpecOpaque1FfffffCombinator(Mapped<SpecDepend<Refined<U24Be, Predicate10565972399076720534>, Bytes>, Opaque1FfffffMapper>);
-
-impl SpecCombinator for SpecOpaque1FfffffCombinator {
-    type SpecResult = SpecOpaque1Ffffff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecOpaque1FfffffCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecOpaque1FfffffCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecOpaque1FfffffCombinatorAlias = Mapped<SpecDepend<Refined<U24Be, Predicate10565972399076720534>, Bytes>, Opaque1FfffffMapper>;
-pub struct Predicate10565972399076720534;
-impl View for Predicate10565972399076720534 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate10565972399076720534 {
-    type Input<'a> = u24;
-    type InputOwned = u24;
-
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
-        let i = (*i).as_u32();
-        if (i >= 1 && i <= 16777215) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-pub struct Opaque1FfffffCont;
-pub struct Opaque1FfffffCombinator(Mapped<Depend<Refined<U24Be, Predicate10565972399076720534>, Bytes, Opaque1FfffffCont>, Opaque1FfffffMapper>);
-
-impl View for Opaque1FfffffCombinator {
-    type V = SpecOpaque1FfffffCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecOpaque1FfffffCombinator(self.0@)
-    }
-}
-impl Combinator for Opaque1FfffffCombinator {
-    type Result<'a> = Opaque1Ffffff<'a>;
-
-    type Owned = Opaque1FfffffOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Opaque1FfffffCombinatorAlias = Mapped<Depend<Refined<U24Be, Predicate10565972399076720534>, Bytes, Opaque1FfffffCont>, Opaque1FfffffMapper>;
-
-
-pub struct SpecCertificateExtensionsCombinator(SpecEncryptedExtensionsCombinator);
-
-impl SpecCombinator for SpecCertificateExtensionsCombinator {
-    type SpecResult = SpecCertificateExtensions;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateExtensionsCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateExtensionsCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateExtensionsCombinatorAlias = SpecEncryptedExtensionsCombinator;
-
-pub struct CertificateExtensionsCombinator(EncryptedExtensionsCombinator);
-
-impl View for CertificateExtensionsCombinator {
-    type V = SpecCertificateExtensionsCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateExtensionsCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateExtensionsCombinator {
-    type Result<'a> = CertificateExtensions<'a>;
-
-    type Owned = CertificateExtensionsOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateExtensionsCombinatorAlias = EncryptedExtensionsCombinator;
-
-
-
-pub struct SpecCertificateEntryCombinator(Mapped<(SpecOpaque1FfffffCombinator, SpecCertificateExtensionsCombinator), CertificateEntryMapper>);
-
-impl SpecCombinator for SpecCertificateEntryCombinator {
-    type SpecResult = SpecCertificateEntry;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateEntryCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateEntryCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateEntryCombinatorAlias = Mapped<(SpecOpaque1FfffffCombinator, SpecCertificateExtensionsCombinator), CertificateEntryMapper>;
-
-
-pub struct CertificateEntryCombinator(Mapped<(Opaque1FfffffCombinator, CertificateExtensionsCombinator), CertificateEntryMapper>);
-
-impl View for CertificateEntryCombinator {
-    type V = SpecCertificateEntryCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateEntryCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateEntryCombinator {
-    type Result<'a> = CertificateEntry<'a>;
-
-    type Owned = CertificateEntryOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateEntryCombinatorAlias = Mapped<(Opaque1FfffffCombinator, CertificateExtensionsCombinator), CertificateEntryMapper>;
-
-
-pub struct SpecCertificateListListCombinator(AndThen<Bytes, Repeat<SpecCertificateEntryCombinator>>);
-
-impl SpecCombinator for SpecCertificateListListCombinator {
-    type SpecResult = SpecCertificateListList;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateListListCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateListListCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateListListCombinatorAlias = AndThen<Bytes, Repeat<SpecCertificateEntryCombinator>>;
-
-pub struct CertificateListListCombinator(AndThen<Bytes, Repeat<CertificateEntryCombinator>>);
-
-impl View for CertificateListListCombinator {
-    type V = SpecCertificateListListCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateListListCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateListListCombinator {
-    type Result<'a> = CertificateListList<'a>;
-
-    type Owned = CertificateListListOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateListListCombinatorAlias = AndThen<Bytes, Repeat<CertificateEntryCombinator>>;
-
-
-
-pub struct SpecCertificateListCombinator(Mapped<SpecDepend<U24Be, SpecCertificateListListCombinator>, CertificateListMapper>);
-
-impl SpecCombinator for SpecCertificateListCombinator {
-    type SpecResult = SpecCertificateList;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateListCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateListCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateListCombinatorAlias = Mapped<SpecDepend<U24Be, SpecCertificateListListCombinator>, CertificateListMapper>;
-
-pub struct CertificateListCont;
-pub struct CertificateListCombinator(Mapped<Depend<U24Be, CertificateListListCombinator, CertificateListCont>, CertificateListMapper>);
-
-impl View for CertificateListCombinator {
-    type V = SpecCertificateListCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateListCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateListCombinator {
-    type Result<'a> = CertificateList<'a>;
-
-    type Owned = CertificateListOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateListCombinatorAlias = Mapped<Depend<U24Be, CertificateListListCombinator, CertificateListCont>, CertificateListMapper>;
-
-
-
-pub struct SpecCertificateCombinator(Mapped<(SpecOpaque0FfCombinator, SpecCertificateListCombinator), CertificateMapper>);
-
-impl SpecCombinator for SpecCertificateCombinator {
-    type SpecResult = SpecCertificate;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateCombinatorAlias = Mapped<(SpecOpaque0FfCombinator, SpecCertificateListCombinator), CertificateMapper>;
-
-
-pub struct CertificateCombinator(Mapped<(Opaque0FfCombinator, CertificateListCombinator), CertificateMapper>);
-
-impl View for CertificateCombinator {
-    type V = SpecCertificateCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateCombinator {
-    type Result<'a> = Certificate<'a>;
-
-    type Owned = CertificateOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateCombinatorAlias = Mapped<(Opaque0FfCombinator, CertificateListCombinator), CertificateMapper>;
 
 
 pub struct SpecCertificateRequestExtensionsExtensionsCombinator(AndThen<Bytes, Repeat<SpecExtensionCombinator>>);
@@ -20411,338 +20494,6 @@ impl Combinator for HandshakeMsgCombinator {
                 pub type HandshakeMsgCombinatorAlias = AndThen<Bytes, Mapped<OrdChoice<Cond<ClientHelloCombinator>, OrdChoice<Cond<ServerHelloCombinator>, OrdChoice<Cond<NewSessionTicketCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EncryptedExtensionsCombinator>, OrdChoice<Cond<CertificateCombinator>, OrdChoice<Cond<CertificateRequestCombinator>, OrdChoice<Cond<CertificateVerifyCombinator>, OrdChoice<Cond<FinishedCombinator>, Cond<KeyUpdateCombinator>>>>>>>>>>, HandshakeMsgMapper>>;
 
 
-pub struct SpecPreSharedKeyServerExtensionCombinator(Mapped<U16Be, PreSharedKeyServerExtensionMapper>);
-
-impl SpecCombinator for SpecPreSharedKeyServerExtensionCombinator {
-    type SpecResult = SpecPreSharedKeyServerExtension;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecPreSharedKeyServerExtensionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecPreSharedKeyServerExtensionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecPreSharedKeyServerExtensionCombinatorAlias = Mapped<U16Be, PreSharedKeyServerExtensionMapper>;
-
-pub struct PreSharedKeyServerExtensionCombinator(Mapped<U16Be, PreSharedKeyServerExtensionMapper>);
-
-impl View for PreSharedKeyServerExtensionCombinator {
-    type V = SpecPreSharedKeyServerExtensionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecPreSharedKeyServerExtensionCombinator(self.0@)
-    }
-}
-impl Combinator for PreSharedKeyServerExtensionCombinator {
-    type Result<'a> = PreSharedKeyServerExtension;
-
-    type Owned = PreSharedKeyServerExtensionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type PreSharedKeyServerExtensionCombinatorAlias = Mapped<U16Be, PreSharedKeyServerExtensionMapper>;
-
-
-pub struct SpecHandshakeTypeCombinator(TryMap<U8, HandshakeTypeMapper>);
-
-impl SpecCombinator for SpecHandshakeTypeCombinator {
-    type SpecResult = SpecHandshakeType;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecHandshakeTypeCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecHandshakeTypeCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecHandshakeTypeCombinatorAlias = TryMap<U8, HandshakeTypeMapper>;
-
-pub struct HandshakeTypeCombinator(TryMap<U8, HandshakeTypeMapper>);
-
-impl View for HandshakeTypeCombinator {
-    type V = SpecHandshakeTypeCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecHandshakeTypeCombinator(self.0@)
-    }
-}
-impl Combinator for HandshakeTypeCombinator {
-    type Result<'a> = HandshakeType;
-
-    type Owned = HandshakeTypeOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type HandshakeTypeCombinatorAlias = TryMap<U8, HandshakeTypeMapper>;
-
-
-pub struct SpecServerCertTypeServerExtensionCombinator(Mapped<SpecCertificateTypeCombinator, ServerCertTypeServerExtensionMapper>);
-
-impl SpecCombinator for SpecServerCertTypeServerExtensionCombinator {
-    type SpecResult = SpecServerCertTypeServerExtension;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecServerCertTypeServerExtensionCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecServerCertTypeServerExtensionCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecServerCertTypeServerExtensionCombinatorAlias = Mapped<SpecCertificateTypeCombinator, ServerCertTypeServerExtensionMapper>;
-
-pub struct ServerCertTypeServerExtensionCombinator(Mapped<CertificateTypeCombinator, ServerCertTypeServerExtensionMapper>);
-
-impl View for ServerCertTypeServerExtensionCombinator {
-    type V = SpecServerCertTypeServerExtensionCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecServerCertTypeServerExtensionCombinator(self.0@)
-    }
-}
-impl Combinator for ServerCertTypeServerExtensionCombinator {
-    type Result<'a> = ServerCertTypeServerExtension;
-
-    type Owned = ServerCertTypeServerExtensionOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type ServerCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ServerCertTypeServerExtensionMapper>;
-
-
-pub struct SpecSupportedVersionsServerCombinator(Mapped<SpecProtocolVersionCombinator, SupportedVersionsServerMapper>);
-
-impl SpecCombinator for SpecSupportedVersionsServerCombinator {
-    type SpecResult = SpecSupportedVersionsServer;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecSupportedVersionsServerCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecSupportedVersionsServerCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecSupportedVersionsServerCombinatorAlias = Mapped<SpecProtocolVersionCombinator, SupportedVersionsServerMapper>;
-
-pub struct SupportedVersionsServerCombinator(Mapped<ProtocolVersionCombinator, SupportedVersionsServerMapper>);
-
-impl View for SupportedVersionsServerCombinator {
-    type V = SpecSupportedVersionsServerCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecSupportedVersionsServerCombinator(self.0@)
-    }
-}
-impl Combinator for SupportedVersionsServerCombinator {
-    type Result<'a> = SupportedVersionsServer;
-
-    type Owned = SupportedVersionsServerOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type SupportedVersionsServerCombinatorAlias = Mapped<ProtocolVersionCombinator, SupportedVersionsServerMapper>;
-
-
 pub struct SpecOcspResponseCombinator(SpecOpaque1FfffffCombinator);
 
 impl SpecCombinator for SpecOcspResponseCombinator {
@@ -20824,343 +20575,6 @@ impl Combinator for OcspResponseCombinator {
 
 }
                 pub type OcspResponseCombinatorAlias = Opaque1FfffffCombinator;
-
-pub const CERTIFICATESTATUS_STATUS_TYPE: u8 = 1;
-
-
-pub struct SpecCertificateStatusCombinator(Mapped<(Refined<U8, TagPred<u8>>, SpecOcspResponseCombinator), CertificateStatusMapper>);
-
-impl SpecCombinator for SpecCertificateStatusCombinator {
-    type SpecResult = SpecCertificateStatus;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecCertificateStatusCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecCertificateStatusCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecCertificateStatusCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, SpecOcspResponseCombinator), CertificateStatusMapper>;
-
-
-pub struct CertificateStatusCombinator(Mapped<(Refined<U8, TagPred<u8>>, OcspResponseCombinator), CertificateStatusMapper>);
-
-impl View for CertificateStatusCombinator {
-    type V = SpecCertificateStatusCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecCertificateStatusCombinator(self.0@)
-    }
-}
-impl Combinator for CertificateStatusCombinator {
-    type Result<'a> = CertificateStatus<'a>;
-
-    type Owned = CertificateStatusOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type CertificateStatusCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, OcspResponseCombinator), CertificateStatusMapper>;
-
-
-
-pub struct SpecOpaque2FfffCombinator(Mapped<SpecDepend<SpecUint2FfffCombinator, Bytes>, Opaque2FfffMapper>);
-
-impl SpecCombinator for SpecOpaque2FfffCombinator {
-    type SpecResult = SpecOpaque2Ffff;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecOpaque2FfffCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecOpaque2FfffCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecOpaque2FfffCombinatorAlias = Mapped<SpecDepend<SpecUint2FfffCombinator, Bytes>, Opaque2FfffMapper>;
-
-pub struct Opaque2FfffCont;
-pub struct Opaque2FfffCombinator(Mapped<Depend<Uint2FfffCombinator, Bytes, Opaque2FfffCont>, Opaque2FfffMapper>);
-
-impl View for Opaque2FfffCombinator {
-    type V = SpecOpaque2FfffCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecOpaque2FfffCombinator(self.0@)
-    }
-}
-impl Combinator for Opaque2FfffCombinator {
-    type Result<'a> = Opaque2Ffff<'a>;
-
-    type Owned = Opaque2FfffOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type Opaque2FfffCombinatorAlias = Mapped<Depend<Uint2FfffCombinator, Bytes, Opaque2FfffCont>, Opaque2FfffMapper>;
-
-
-pub struct SpecAlertLevelCombinator(TryMap<U8, AlertLevelMapper>);
-
-impl SpecCombinator for SpecAlertLevelCombinator {
-    type SpecResult = SpecAlertLevel;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecAlertLevelCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecAlertLevelCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecAlertLevelCombinatorAlias = TryMap<U8, AlertLevelMapper>;
-
-pub struct AlertLevelCombinator(TryMap<U8, AlertLevelMapper>);
-
-impl View for AlertLevelCombinator {
-    type V = SpecAlertLevelCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecAlertLevelCombinator(self.0@)
-    }
-}
-impl Combinator for AlertLevelCombinator {
-    type Result<'a> = AlertLevel;
-
-    type Owned = AlertLevelOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type AlertLevelCombinatorAlias = TryMap<U8, AlertLevelMapper>;
-
-
-pub struct SpecEarlyDataIndicationNewSessionTicketCombinator(Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>);
-
-impl SpecCombinator for SpecEarlyDataIndicationNewSessionTicketCombinator {
-    type SpecResult = SpecEarlyDataIndicationNewSessionTicket;
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        self.0.spec_parse(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    { self.0.spec_parse_wf(s) }
-
-}
-impl SecureSpecCombinator for SpecEarlyDataIndicationNewSessionTicketCombinator {
-    open spec fn is_prefix_secure() -> bool {
-        SpecEarlyDataIndicationNewSessionTicketCombinatorAlias::is_prefix_secure()
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {
-        self.0.lemma_prefix_secure(s1, s2)
-    }
-}
-
-                pub type SpecEarlyDataIndicationNewSessionTicketCombinatorAlias = Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>;
-
-pub struct EarlyDataIndicationNewSessionTicketCombinator(Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>);
-
-impl View for EarlyDataIndicationNewSessionTicketCombinator {
-    type V = SpecEarlyDataIndicationNewSessionTicketCombinator;
-
-    closed spec fn view(&self) -> Self::V {
-        SpecEarlyDataIndicationNewSessionTicketCombinator(self.0@)
-    }
-}
-impl Combinator for EarlyDataIndicationNewSessionTicketCombinator {
-    type Result<'a> = EarlyDataIndicationNewSessionTicket;
-
-    type Owned = EarlyDataIndicationNewSessionTicketOwned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    closed spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        self.0.parse(s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {
-        self.0.serialize(v, data, pos)
-    }
-
-}
-                pub type EarlyDataIndicationNewSessionTicketCombinatorAlias = Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>;
 
 
 pub struct SpecContentTypeCombinator(TryMap<U8, ContentTypeMapper>);
@@ -21333,10 +20747,11 @@ impl Combinator for TlsPlaintextCombinator {
                 pub type TlsPlaintextCombinatorAlias = Mapped<(ContentTypeCombinator, (ProtocolVersionCombinator, Opaque0FfffCombinator)), TlsPlaintextMapper>;
 
 
-pub struct SpecHeartbeatExtensionCombinator(Mapped<SpecHeartbeatModeCombinator, HeartbeatExtensionMapper>);
 
-impl SpecCombinator for SpecHeartbeatExtensionCombinator {
-    type SpecResult = SpecHeartbeatExtension;
+pub struct SpecOpaque2FfffCombinator(Mapped<SpecDepend<SpecUint2FfffCombinator, Bytes>, Opaque2FfffMapper>);
+
+impl SpecCombinator for SpecOpaque2FfffCombinator {
+    type SpecResult = SpecOpaque2Ffff;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -21350,9 +20765,9 @@ impl SpecCombinator for SpecHeartbeatExtensionCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecHeartbeatExtensionCombinator {
+impl SecureSpecCombinator for SpecOpaque2FfffCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecHeartbeatExtensionCombinatorAlias::is_prefix_secure()
+        SpecOpaque2FfffCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -21371,21 +20786,22 @@ impl SecureSpecCombinator for SpecHeartbeatExtensionCombinator {
     }
 }
 
-                pub type SpecHeartbeatExtensionCombinatorAlias = Mapped<SpecHeartbeatModeCombinator, HeartbeatExtensionMapper>;
+                pub type SpecOpaque2FfffCombinatorAlias = Mapped<SpecDepend<SpecUint2FfffCombinator, Bytes>, Opaque2FfffMapper>;
 
-pub struct HeartbeatExtensionCombinator(Mapped<HeartbeatModeCombinator, HeartbeatExtensionMapper>);
+pub struct Opaque2FfffCont;
+pub struct Opaque2FfffCombinator(Mapped<Depend<Uint2FfffCombinator, Bytes, Opaque2FfffCont>, Opaque2FfffMapper>);
 
-impl View for HeartbeatExtensionCombinator {
-    type V = SpecHeartbeatExtensionCombinator;
+impl View for Opaque2FfffCombinator {
+    type V = SpecOpaque2FfffCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecHeartbeatExtensionCombinator(self.0@)
+        SpecOpaque2FfffCombinator(self.0@)
     }
 }
-impl Combinator for HeartbeatExtensionCombinator {
-    type Result<'a> = HeartbeatExtension;
+impl Combinator for Opaque2FfffCombinator {
+    type Result<'a> = Opaque2Ffff<'a>;
 
-    type Owned = HeartbeatExtensionOwned;
+    type Owned = Opaque2FfffOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -21413,7 +20829,93 @@ impl Combinator for HeartbeatExtensionCombinator {
     }
 
 }
-                pub type HeartbeatExtensionCombinatorAlias = Mapped<HeartbeatModeCombinator, HeartbeatExtensionMapper>;
+                pub type Opaque2FfffCombinatorAlias = Mapped<Depend<Uint2FfffCombinator, Bytes, Opaque2FfffCont>, Opaque2FfffMapper>;
+
+pub const CERTIFICATESTATUS_STATUS_TYPE: u8 = 1;
+
+
+pub struct SpecCertificateStatusCombinator(Mapped<(Refined<U8, TagPred<u8>>, SpecOcspResponseCombinator), CertificateStatusMapper>);
+
+impl SpecCombinator for SpecCertificateStatusCombinator {
+    type SpecResult = SpecCertificateStatus;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecCertificateStatusCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecCertificateStatusCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecCertificateStatusCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, SpecOcspResponseCombinator), CertificateStatusMapper>;
+
+
+pub struct CertificateStatusCombinator(Mapped<(Refined<U8, TagPred<u8>>, OcspResponseCombinator), CertificateStatusMapper>);
+
+impl View for CertificateStatusCombinator {
+    type V = SpecCertificateStatusCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecCertificateStatusCombinator(self.0@)
+    }
+}
+impl Combinator for CertificateStatusCombinator {
+    type Result<'a> = CertificateStatus<'a>;
+
+    type Owned = CertificateStatusOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type CertificateStatusCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, OcspResponseCombinator), CertificateStatusMapper>;
 
 
 
@@ -21503,11 +21005,10 @@ impl Combinator for TlsCiphertextCombinator {
                 pub type TlsCiphertextCombinatorAlias = Mapped<(ContentTypeCombinator, (ProtocolVersionCombinator, Opaque0FfffCombinator)), TlsCiphertextMapper>;
 
 
+pub struct SpecSupportedVersionsServerCombinator(Mapped<SpecProtocolVersionCombinator, SupportedVersionsServerMapper>);
 
-pub struct SpecAlertCombinator(Mapped<(SpecAlertLevelCombinator, SpecAlertDescriptionCombinator), AlertMapper>);
-
-impl SpecCombinator for SpecAlertCombinator {
-    type SpecResult = SpecAlert;
+impl SpecCombinator for SpecSupportedVersionsServerCombinator {
+    type SpecResult = SpecSupportedVersionsServer;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -21521,9 +21022,9 @@ impl SpecCombinator for SpecAlertCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecAlertCombinator {
+impl SecureSpecCombinator for SpecSupportedVersionsServerCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecAlertCombinatorAlias::is_prefix_secure()
+        SpecSupportedVersionsServerCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -21542,22 +21043,21 @@ impl SecureSpecCombinator for SpecAlertCombinator {
     }
 }
 
-                pub type SpecAlertCombinatorAlias = Mapped<(SpecAlertLevelCombinator, SpecAlertDescriptionCombinator), AlertMapper>;
+                pub type SpecSupportedVersionsServerCombinatorAlias = Mapped<SpecProtocolVersionCombinator, SupportedVersionsServerMapper>;
 
+pub struct SupportedVersionsServerCombinator(Mapped<ProtocolVersionCombinator, SupportedVersionsServerMapper>);
 
-pub struct AlertCombinator(Mapped<(AlertLevelCombinator, AlertDescriptionCombinator), AlertMapper>);
-
-impl View for AlertCombinator {
-    type V = SpecAlertCombinator;
+impl View for SupportedVersionsServerCombinator {
+    type V = SpecSupportedVersionsServerCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecAlertCombinator(self.0@)
+        SpecSupportedVersionsServerCombinator(self.0@)
     }
 }
-impl Combinator for AlertCombinator {
-    type Result<'a> = Alert;
+impl Combinator for SupportedVersionsServerCombinator {
+    type Result<'a> = SupportedVersionsServer;
 
-    type Owned = AlertOwned;
+    type Owned = SupportedVersionsServerOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -21585,7 +21085,507 @@ impl Combinator for AlertCombinator {
     }
 
 }
-                pub type AlertCombinatorAlias = Mapped<(AlertLevelCombinator, AlertDescriptionCombinator), AlertMapper>;
+                pub type SupportedVersionsServerCombinatorAlias = Mapped<ProtocolVersionCombinator, SupportedVersionsServerMapper>;
+
+
+pub struct SpecHandshakeTypeCombinator(TryMap<U8, HandshakeTypeMapper>);
+
+impl SpecCombinator for SpecHandshakeTypeCombinator {
+    type SpecResult = SpecHandshakeType;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecHandshakeTypeCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecHandshakeTypeCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecHandshakeTypeCombinatorAlias = TryMap<U8, HandshakeTypeMapper>;
+
+pub struct HandshakeTypeCombinator(TryMap<U8, HandshakeTypeMapper>);
+
+impl View for HandshakeTypeCombinator {
+    type V = SpecHandshakeTypeCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecHandshakeTypeCombinator(self.0@)
+    }
+}
+impl Combinator for HandshakeTypeCombinator {
+    type Result<'a> = HandshakeType;
+
+    type Owned = HandshakeTypeOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type HandshakeTypeCombinatorAlias = TryMap<U8, HandshakeTypeMapper>;
+
+
+pub struct SpecServerCertTypeServerExtensionCombinator(Mapped<SpecCertificateTypeCombinator, ServerCertTypeServerExtensionMapper>);
+
+impl SpecCombinator for SpecServerCertTypeServerExtensionCombinator {
+    type SpecResult = SpecServerCertTypeServerExtension;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecServerCertTypeServerExtensionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecServerCertTypeServerExtensionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecServerCertTypeServerExtensionCombinatorAlias = Mapped<SpecCertificateTypeCombinator, ServerCertTypeServerExtensionMapper>;
+
+pub struct ServerCertTypeServerExtensionCombinator(Mapped<CertificateTypeCombinator, ServerCertTypeServerExtensionMapper>);
+
+impl View for ServerCertTypeServerExtensionCombinator {
+    type V = SpecServerCertTypeServerExtensionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecServerCertTypeServerExtensionCombinator(self.0@)
+    }
+}
+impl Combinator for ServerCertTypeServerExtensionCombinator {
+    type Result<'a> = ServerCertTypeServerExtension;
+
+    type Owned = ServerCertTypeServerExtensionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type ServerCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ServerCertTypeServerExtensionMapper>;
+
+
+pub struct SpecEarlyDataIndicationNewSessionTicketCombinator(Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>);
+
+impl SpecCombinator for SpecEarlyDataIndicationNewSessionTicketCombinator {
+    type SpecResult = SpecEarlyDataIndicationNewSessionTicket;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecEarlyDataIndicationNewSessionTicketCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecEarlyDataIndicationNewSessionTicketCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecEarlyDataIndicationNewSessionTicketCombinatorAlias = Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>;
+
+pub struct EarlyDataIndicationNewSessionTicketCombinator(Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>);
+
+impl View for EarlyDataIndicationNewSessionTicketCombinator {
+    type V = SpecEarlyDataIndicationNewSessionTicketCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecEarlyDataIndicationNewSessionTicketCombinator(self.0@)
+    }
+}
+impl Combinator for EarlyDataIndicationNewSessionTicketCombinator {
+    type Result<'a> = EarlyDataIndicationNewSessionTicket;
+
+    type Owned = EarlyDataIndicationNewSessionTicketOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type EarlyDataIndicationNewSessionTicketCombinatorAlias = Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>;
+
+
+
+pub struct SpecOpaque0FfffffCombinator(Mapped<SpecDepend<U24Be, Bytes>, Opaque0FfffffMapper>);
+
+impl SpecCombinator for SpecOpaque0FfffffCombinator {
+    type SpecResult = SpecOpaque0Ffffff;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecOpaque0FfffffCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecOpaque0FfffffCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecOpaque0FfffffCombinatorAlias = Mapped<SpecDepend<U24Be, Bytes>, Opaque0FfffffMapper>;
+
+pub struct Opaque0FfffffCont;
+pub struct Opaque0FfffffCombinator(Mapped<Depend<U24Be, Bytes, Opaque0FfffffCont>, Opaque0FfffffMapper>);
+
+impl View for Opaque0FfffffCombinator {
+    type V = SpecOpaque0FfffffCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecOpaque0FfffffCombinator(self.0@)
+    }
+}
+impl Combinator for Opaque0FfffffCombinator {
+    type Result<'a> = Opaque0Ffffff<'a>;
+
+    type Owned = Opaque0FfffffOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type Opaque0FfffffCombinatorAlias = Mapped<Depend<U24Be, Bytes, Opaque0FfffffCont>, Opaque0FfffffMapper>;
+
+
+pub struct SpecPreSharedKeyServerExtensionCombinator(Mapped<U16Be, PreSharedKeyServerExtensionMapper>);
+
+impl SpecCombinator for SpecPreSharedKeyServerExtensionCombinator {
+    type SpecResult = SpecPreSharedKeyServerExtension;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecPreSharedKeyServerExtensionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecPreSharedKeyServerExtensionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecPreSharedKeyServerExtensionCombinatorAlias = Mapped<U16Be, PreSharedKeyServerExtensionMapper>;
+
+pub struct PreSharedKeyServerExtensionCombinator(Mapped<U16Be, PreSharedKeyServerExtensionMapper>);
+
+impl View for PreSharedKeyServerExtensionCombinator {
+    type V = SpecPreSharedKeyServerExtensionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecPreSharedKeyServerExtensionCombinator(self.0@)
+    }
+}
+impl Combinator for PreSharedKeyServerExtensionCombinator {
+    type Result<'a> = PreSharedKeyServerExtension;
+
+    type Owned = PreSharedKeyServerExtensionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type PreSharedKeyServerExtensionCombinatorAlias = Mapped<U16Be, PreSharedKeyServerExtensionMapper>;
+
+
+pub struct SpecClientCertTypeServerExtensionCombinator(Mapped<SpecCertificateTypeCombinator, ClientCertTypeServerExtensionMapper>);
+
+impl SpecCombinator for SpecClientCertTypeServerExtensionCombinator {
+    type SpecResult = SpecClientCertTypeServerExtension;
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+        self.0.spec_parse(s)
+    }
+
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+        self.0.spec_serialize(v)
+    }
+
+    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    { self.0.spec_parse_wf(s) }
+
+}
+impl SecureSpecCombinator for SpecClientCertTypeServerExtensionCombinator {
+    open spec fn is_prefix_secure() -> bool {
+        SpecClientCertTypeServerExtensionCombinatorAlias::is_prefix_secure()
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    {
+        self.0.lemma_prefix_secure(s1, s2)
+    }
+}
+
+                pub type SpecClientCertTypeServerExtensionCombinatorAlias = Mapped<SpecCertificateTypeCombinator, ClientCertTypeServerExtensionMapper>;
+
+pub struct ClientCertTypeServerExtensionCombinator(Mapped<CertificateTypeCombinator, ClientCertTypeServerExtensionMapper>);
+
+impl View for ClientCertTypeServerExtensionCombinator {
+    type V = SpecClientCertTypeServerExtensionCombinator;
+
+    closed spec fn view(&self) -> Self::V {
+        SpecClientCertTypeServerExtensionCombinator(self.0@)
+    }
+}
+impl Combinator for ClientCertTypeServerExtensionCombinator {
+    type Result<'a> = ClientCertTypeServerExtension;
+
+    type Owned = ClientCertTypeServerExtensionOwned;
+
+    closed spec fn spec_length(&self) -> Option<usize> {
+        self.0.spec_length()
+    }
+
+    fn length(&self) -> Option<usize> {
+        self.0.length()
+    }
+
+    closed spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires()
+    }
+
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+        self.0.parse(s)
+    }
+
+    closed spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires()
+    }
+
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {
+        self.0.serialize(v, data, pos)
+    }
+
+}
+                pub type ClientCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ClientCertTypeServerExtensionMapper>;
 
 
 
@@ -21675,11 +21675,10 @@ impl Combinator for HandshakeCombinator {
                 pub type HandshakeCombinatorAlias = Mapped<Depend<(HandshakeTypeCombinator, U24Be), HandshakeMsgCombinator, HandshakeCont>, HandshakeMapper>;
 
 
+pub struct SpecAlertDescriptionCombinator(TryMap<U8, AlertDescriptionMapper>);
 
-pub struct SpecOpaque0FfffffCombinator(Mapped<SpecDepend<U24Be, Bytes>, Opaque0FfffffMapper>);
-
-impl SpecCombinator for SpecOpaque0FfffffCombinator {
-    type SpecResult = SpecOpaque0Ffffff;
+impl SpecCombinator for SpecAlertDescriptionCombinator {
+    type SpecResult = SpecAlertDescription;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -21693,9 +21692,9 @@ impl SpecCombinator for SpecOpaque0FfffffCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecOpaque0FfffffCombinator {
+impl SecureSpecCombinator for SpecAlertDescriptionCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecOpaque0FfffffCombinatorAlias::is_prefix_secure()
+        SpecAlertDescriptionCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -21714,22 +21713,21 @@ impl SecureSpecCombinator for SpecOpaque0FfffffCombinator {
     }
 }
 
-                pub type SpecOpaque0FfffffCombinatorAlias = Mapped<SpecDepend<U24Be, Bytes>, Opaque0FfffffMapper>;
+                pub type SpecAlertDescriptionCombinatorAlias = TryMap<U8, AlertDescriptionMapper>;
 
-pub struct Opaque0FfffffCont;
-pub struct Opaque0FfffffCombinator(Mapped<Depend<U24Be, Bytes, Opaque0FfffffCont>, Opaque0FfffffMapper>);
+pub struct AlertDescriptionCombinator(TryMap<U8, AlertDescriptionMapper>);
 
-impl View for Opaque0FfffffCombinator {
-    type V = SpecOpaque0FfffffCombinator;
+impl View for AlertDescriptionCombinator {
+    type V = SpecAlertDescriptionCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecOpaque0FfffffCombinator(self.0@)
+        SpecAlertDescriptionCombinator(self.0@)
     }
 }
-impl Combinator for Opaque0FfffffCombinator {
-    type Result<'a> = Opaque0Ffffff<'a>;
+impl Combinator for AlertDescriptionCombinator {
+    type Result<'a> = AlertDescription;
 
-    type Owned = Opaque0FfffffOwned;
+    type Owned = AlertDescriptionOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -21757,13 +21755,14 @@ impl Combinator for Opaque0FfffffCombinator {
     }
 
 }
-                pub type Opaque0FfffffCombinatorAlias = Mapped<Depend<U24Be, Bytes, Opaque0FfffffCont>, Opaque0FfffffMapper>;
+                pub type AlertDescriptionCombinatorAlias = TryMap<U8, AlertDescriptionMapper>;
 
 
-pub struct SpecClientCertTypeServerExtensionCombinator(Mapped<SpecCertificateTypeCombinator, ClientCertTypeServerExtensionMapper>);
 
-impl SpecCombinator for SpecClientCertTypeServerExtensionCombinator {
-    type SpecResult = SpecClientCertTypeServerExtension;
+pub struct SpecAlertCombinator(Mapped<(SpecAlertLevelCombinator, SpecAlertDescriptionCombinator), AlertMapper>);
+
+impl SpecCombinator for SpecAlertCombinator {
+    type SpecResult = SpecAlert;
 
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
         self.0.spec_parse(s)
@@ -21777,9 +21776,9 @@ impl SpecCombinator for SpecClientCertTypeServerExtensionCombinator {
     { self.0.spec_parse_wf(s) }
 
 }
-impl SecureSpecCombinator for SpecClientCertTypeServerExtensionCombinator {
+impl SecureSpecCombinator for SpecAlertCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecClientCertTypeServerExtensionCombinatorAlias::is_prefix_secure()
+        SpecAlertCombinatorAlias::is_prefix_secure()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
@@ -21798,21 +21797,22 @@ impl SecureSpecCombinator for SpecClientCertTypeServerExtensionCombinator {
     }
 }
 
-                pub type SpecClientCertTypeServerExtensionCombinatorAlias = Mapped<SpecCertificateTypeCombinator, ClientCertTypeServerExtensionMapper>;
+                pub type SpecAlertCombinatorAlias = Mapped<(SpecAlertLevelCombinator, SpecAlertDescriptionCombinator), AlertMapper>;
 
-pub struct ClientCertTypeServerExtensionCombinator(Mapped<CertificateTypeCombinator, ClientCertTypeServerExtensionMapper>);
 
-impl View for ClientCertTypeServerExtensionCombinator {
-    type V = SpecClientCertTypeServerExtensionCombinator;
+pub struct AlertCombinator(Mapped<(AlertLevelCombinator, AlertDescriptionCombinator), AlertMapper>);
+
+impl View for AlertCombinator {
+    type V = SpecAlertCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecClientCertTypeServerExtensionCombinator(self.0@)
+        SpecAlertCombinator(self.0@)
     }
 }
-impl Combinator for ClientCertTypeServerExtensionCombinator {
-    type Result<'a> = ClientCertTypeServerExtension;
+impl Combinator for AlertCombinator {
+    type Result<'a> = Alert;
 
-    type Owned = ClientCertTypeServerExtensionOwned;
+    type Owned = AlertOwned;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -21840,65 +21840,152 @@ impl Combinator for ClientCertTypeServerExtensionCombinator {
     }
 
 }
-                pub type ClientCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ClientCertTypeServerExtensionMapper>;
+                pub type AlertCombinatorAlias = Mapped<(AlertLevelCombinator, AlertDescriptionCombinator), AlertMapper>;
 
 
-pub closed spec fn spec_alert_description() -> SpecAlertDescriptionCombinator {
-    SpecAlertDescriptionCombinator(TryMap { inner: U8, mapper: AlertDescriptionMapper })
+pub closed spec fn spec_uint_1_ffff() -> SpecUint1FfffCombinator {
+    SpecUint1FfffCombinator(Refined { inner: U16Be, predicate: Predicate11955646336730306823 })
 }
 
 
                 
-pub fn alert_description() -> (o: AlertDescriptionCombinator)
-    ensures o@ == spec_alert_description(),
+pub fn uint_1_ffff() -> (o: Uint1FfffCombinator)
+    ensures o@ == spec_uint_1_ffff(),
 {
-    AlertDescriptionCombinator(TryMap { inner: U8, mapper: AlertDescriptionMapper })
+    Uint1FfffCombinator(Refined { inner: U16Be, predicate: Predicate11955646336730306823 })
 }
 
 
                 
 
-pub closed spec fn spec_session_id() -> SpecSessionIdCombinator {
-        let fst = Refined { inner: U8, predicate: Predicate10693986609604791304 };
-    let snd = |deps| spec_session_id_cont(deps);
-    SpecSessionIdCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SessionIdMapper })
+pub closed spec fn spec_uint_2_ffff() -> SpecUint2FfffCombinator {
+    SpecUint2FfffCombinator(Refined { inner: U16Be, predicate: Predicate5950696943328973166 })
 }
 
 
-pub open spec fn spec_session_id_cont(deps: u8) -> Bytes {
+                
+pub fn uint_2_ffff() -> (o: Uint2FfffCombinator)
+    ensures o@ == spec_uint_2_ffff(),
+{
+    Uint2FfffCombinator(Refined { inner: U16Be, predicate: Predicate5950696943328973166 })
+}
+
+
+                
+
+pub closed spec fn spec_uint_0_ffff() -> SpecUint0FfffCombinator {
+    SpecUint0FfffCombinator(U16Be)
+}
+
+
+                
+pub fn uint_0_ffff() -> (o: Uint0FfffCombinator)
+    ensures o@ == spec_uint_0_ffff(),
+{
+    Uint0FfffCombinator(U16Be)
+}
+
+
+                
+
+pub closed spec fn spec_opaque_0_ffff() -> SpecOpaque0FfffCombinator {
+    SpecOpaque0FfffCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_opaque0_ffff_cont(deps),
+        },
+        mapper: Opaque0FfffMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_opaque0_ffff_cont(deps: SpecUint0Ffff) -> Bytes {
     let l = deps;
     Bytes(l.spec_into())
 }
                     
                 
-pub fn session_id() -> (o: SessionIdCombinator)
-    ensures o@ == spec_session_id(),
+pub fn opaque_0_ffff() -> (o: Opaque0FfffCombinator)
+    ensures o@ == spec_opaque_0_ffff(),
 {
-       let fst = Refined { inner: U8, predicate: Predicate10693986609604791304 };
-    let snd = SessionIdCont;
-    let spec_snd = Ghost(|deps| spec_session_id_cont(deps));
-    SessionIdCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SessionIdMapper })
+    Opaque0FfffCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: Opaque0FfffCont,
+            spec_snd: Ghost(|deps| spec_opaque0_ffff_cont(deps)),
+        },
+        mapper: Opaque0FfffMapper,
+    }
+)
 }
 
 
-impl Continuation<u8> for SessionIdCont {
+impl Continuation<Uint0Ffff> for Opaque0FfffCont {
     type Output = Bytes;
 
-    open spec fn requires(&self, deps: u8) -> bool {
+    open spec fn requires(&self, deps: Uint0Ffff) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: u8, o: Self::Output) -> bool {
-        o@ == spec_session_id_cont(deps@)
+    open spec fn ensures(&self, deps: Uint0Ffff, o: Self::Output) -> bool {
+        o@ == spec_opaque0_ffff_cont(deps@)
     }
 
-    fn apply(&self, deps: u8) -> Self::Output {
+    fn apply(&self, deps: Uint0Ffff) -> Self::Output {
         let l = deps;
         Bytes(l.ex_into())
     }
 }
 
                     
+                
+
+pub closed spec fn spec_unknown_extension() -> SpecUnknownExtensionCombinator {
+    SpecUnknownExtensionCombinator(spec_opaque_0_ffff())
+}
+
+
+                
+pub fn unknown_extension() -> (o: UnknownExtensionCombinator)
+    ensures o@ == spec_unknown_extension(),
+{
+    UnknownExtensionCombinator(opaque_0_ffff())
+}
+
+
+                
+
+pub closed spec fn spec_protocol_version() -> SpecProtocolVersionCombinator {
+    SpecProtocolVersionCombinator(U16Be)
+}
+
+
+                
+pub fn protocol_version() -> (o: ProtocolVersionCombinator)
+    ensures o@ == spec_protocol_version(),
+{
+    ProtocolVersionCombinator(U16Be)
+}
+
+
+                
+
+pub closed spec fn spec_supported_versions_client_versions(l: u8) -> SpecSupportedVersionsClientVersionsCombinator {
+    SpecSupportedVersionsClientVersionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_protocol_version())))
+}
+
+
+                
+pub fn supported_versions_client_versions(l: u8) -> (o: SupportedVersionsClientVersionsCombinator)
+    ensures o@ == spec_supported_versions_client_versions(l@),
+{
+    SupportedVersionsClientVersionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(protocol_version())))
+}
+
+
                 
 
 pub closed spec fn spec_uncompressed_point_representation32() -> SpecUncompressedPointRepresentation32Combinator {
@@ -21992,25 +22079,16 @@ pub fn montgomery_form56() -> (o: MontgomeryForm56Combinator)
 
                 
 
-pub closed spec fn spec_uint_1_ffff() -> SpecUint1FfffCombinator {
-    SpecUint1FfffCombinator(Refined { inner: U16Be, predicate: Predicate11955646336730306823 })
-}
-
-
-                
-pub fn uint_1_ffff() -> (o: Uint1FfffCombinator)
-    ensures o@ == spec_uint_1_ffff(),
-{
-    Uint1FfffCombinator(Refined { inner: U16Be, predicate: Predicate11955646336730306823 })
-}
-
-
-                
-
 pub closed spec fn spec_opaque_1_ffff() -> SpecOpaque1FfffCombinator {
-        let fst = spec_uint_1_ffff();
-    let snd = |deps| spec_opaque1_ffff_cont(deps);
-    SpecOpaque1FfffCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque1FfffMapper })
+    SpecOpaque1FfffCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ffff(),
+            snd: |deps| spec_opaque1_ffff_cont(deps),
+        },
+        mapper: Opaque1FfffMapper,
+    }
+)
 }
 
 
@@ -22023,10 +22101,16 @@ pub open spec fn spec_opaque1_ffff_cont(deps: SpecUint1Ffff) -> Bytes {
 pub fn opaque_1_ffff() -> (o: Opaque1FfffCombinator)
     ensures o@ == spec_opaque_1_ffff(),
 {
-       let fst = uint_1_ffff();
-    let snd = Opaque1FfffCont;
-    let spec_snd = Ghost(|deps| spec_opaque1_ffff_cont(deps));
-    Opaque1FfffCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque1FfffMapper })
+    Opaque1FfffCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ffff(),
+            snd: Opaque1FfffCont,
+            spec_snd: Ghost(|deps| spec_opaque1_ffff_cont(deps)),
+        },
+        mapper: Opaque1FfffMapper,
+    }
+)
 }
 
 
@@ -22119,56 +22203,68 @@ pub fn key_share_entry_key_exchange<'a>(group: NamedGroup) -> (o: KeyShareEntryK
 
                 
 
-pub closed spec fn spec_uint_0_ffff() -> SpecUint0FfffCombinator {
-    SpecUint0FfffCombinator(U16Be)
+pub closed spec fn spec_uint_0_ff() -> SpecUint0FfCombinator {
+    SpecUint0FfCombinator(U8)
 }
 
 
                 
-pub fn uint_0_ffff() -> (o: Uint0FfffCombinator)
-    ensures o@ == spec_uint_0_ffff(),
+pub fn uint_0_ff() -> (o: Uint0FfCombinator)
+    ensures o@ == spec_uint_0_ff(),
 {
-    Uint0FfffCombinator(U16Be)
+    Uint0FfCombinator(U8)
 }
 
 
                 
 
-pub closed spec fn spec_opaque_0_ffff() -> SpecOpaque0FfffCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_opaque0_ffff_cont(deps);
-    SpecOpaque0FfffCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque0FfffMapper })
+pub closed spec fn spec_opaque_0_ff() -> SpecOpaque0FfCombinator {
+    SpecOpaque0FfCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ff(),
+            snd: |deps| spec_opaque0_ff_cont(deps),
+        },
+        mapper: Opaque0FfMapper,
+    }
+)
 }
 
 
-pub open spec fn spec_opaque0_ffff_cont(deps: SpecUint0Ffff) -> Bytes {
+pub open spec fn spec_opaque0_ff_cont(deps: SpecUint0Ff) -> Bytes {
     let l = deps;
     Bytes(l.spec_into())
 }
                     
                 
-pub fn opaque_0_ffff() -> (o: Opaque0FfffCombinator)
-    ensures o@ == spec_opaque_0_ffff(),
+pub fn opaque_0_ff() -> (o: Opaque0FfCombinator)
+    ensures o@ == spec_opaque_0_ff(),
 {
-       let fst = uint_0_ffff();
-    let snd = Opaque0FfffCont;
-    let spec_snd = Ghost(|deps| spec_opaque0_ffff_cont(deps));
-    Opaque0FfffCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque0FfffMapper })
+    Opaque0FfCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ff(),
+            snd: Opaque0FfCont,
+            spec_snd: Ghost(|deps| spec_opaque0_ff_cont(deps)),
+        },
+        mapper: Opaque0FfMapper,
+    }
+)
 }
 
 
-impl Continuation<Uint0Ffff> for Opaque0FfffCont {
+impl Continuation<Uint0Ff> for Opaque0FfCont {
     type Output = Bytes;
 
-    open spec fn requires(&self, deps: Uint0Ffff) -> bool {
+    open spec fn requires(&self, deps: Uint0Ff) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: Uint0Ffff, o: Self::Output) -> bool {
-        o@ == spec_opaque0_ffff_cont(deps@)
+    open spec fn ensures(&self, deps: Uint0Ff, o: Self::Output) -> bool {
+        o@ == spec_opaque0_ff_cont(deps@)
     }
 
-    fn apply(&self, deps: Uint0Ffff) -> Self::Output {
+    fn apply(&self, deps: Uint0Ff) -> Self::Output {
         let l = deps;
         Bytes(l.ex_into())
     }
@@ -22177,49 +22273,278 @@ impl Continuation<Uint0Ffff> for Opaque0FfffCont {
                     
                 
 
-pub closed spec fn spec_ocsp_extensions() -> SpecOcspExtensionsCombinator {
-    SpecOcspExtensionsCombinator(spec_opaque_0_ffff())
+pub closed spec fn spec_opaque_1_ffffff() -> SpecOpaque1FfffffCombinator {
+    SpecOpaque1FfffffCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U24Be, predicate: Predicate10565972399076720534 },
+            snd: |deps| spec_opaque1_ffffff_cont(deps),
+        },
+        mapper: Opaque1FfffffMapper,
+    }
+)
 }
 
 
+pub open spec fn spec_opaque1_ffffff_cont(deps: u24) -> Bytes {
+    let l = deps;
+    Bytes(l.spec_into())
+}
+                    
                 
-pub fn ocsp_extensions() -> (o: OcspExtensionsCombinator)
-    ensures o@ == spec_ocsp_extensions(),
+pub fn opaque_1_ffffff() -> (o: Opaque1FfffffCombinator)
+    ensures o@ == spec_opaque_1_ffffff(),
 {
-    OcspExtensionsCombinator(opaque_0_ffff())
+    Opaque1FfffffCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U24Be, predicate: Predicate10565972399076720534 },
+            snd: Opaque1FfffffCont,
+            spec_snd: Ghost(|deps| spec_opaque1_ffffff_cont(deps)),
+        },
+        mapper: Opaque1FfffffMapper,
+    }
+)
+}
+
+
+impl Continuation<u24> for Opaque1FfffffCont {
+    type Output = Bytes;
+
+    open spec fn requires(&self, deps: u24) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
+        o@ == spec_opaque1_ffffff_cont(deps@)
+    }
+
+    fn apply(&self, deps: u24) -> Self::Output {
+        let l = deps;
+        Bytes(l.ex_into())
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_extension_type() -> SpecExtensionTypeCombinator {
+    SpecExtensionTypeCombinator(U8)
 }
 
 
                 
-
-pub closed spec fn spec_psk_identity() -> SpecPskIdentityCombinator {
-    SpecPskIdentityCombinator(Mapped { inner: (spec_opaque_1_ffff(), U32Be), mapper: PskIdentityMapper })
-}
-
-
-
-                
-pub fn psk_identity() -> (o: PskIdentityCombinator)
-    ensures o@ == spec_psk_identity(),
+pub fn extension_type() -> (o: ExtensionTypeCombinator)
+    ensures o@ == spec_extension_type(),
 {
-    PskIdentityCombinator(Mapped { inner: (opaque_1_ffff(), U32Be), mapper: PskIdentityMapper })
+    ExtensionTypeCombinator(U8)
+}
+
+
+                
+
+pub closed spec fn spec_extension() -> SpecExtensionCombinator {
+    SpecExtensionCombinator(Mapped { inner: (spec_extension_type(), spec_opaque_0_ffff()), mapper: ExtensionMapper })
 }
 
 
 
                 
-
-pub closed spec fn spec_psk_identities_identities(l: u16) -> SpecPskIdentitiesIdentitiesCombinator {
-    SpecPskIdentitiesIdentitiesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_psk_identity())))
-}
-
-
-                
-pub fn psk_identities_identities<'a>(l: u16) -> (o: PskIdentitiesIdentitiesCombinator)
-    ensures o@ == spec_psk_identities_identities(l@),
+pub fn extension() -> (o: ExtensionCombinator)
+    ensures o@ == spec_extension(),
 {
-    PskIdentitiesIdentitiesCombinator(AndThen(Bytes(l.ex_into()), Repeat(psk_identity())))
+    ExtensionCombinator(Mapped { inner: (extension_type(), opaque_0_ffff()), mapper: ExtensionMapper })
 }
+
+
+
+                
+
+pub closed spec fn spec_encrypted_extensions_extensions(l: SpecUint0Ffff) -> SpecEncryptedExtensionsExtensionsCombinator {
+    SpecEncryptedExtensionsExtensionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_extension())))
+}
+
+
+                
+pub fn encrypted_extensions_extensions<'a>(l: Uint0Ffff) -> (o: EncryptedExtensionsExtensionsCombinator)
+    ensures o@ == spec_encrypted_extensions_extensions(l@),
+{
+    EncryptedExtensionsExtensionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(extension())))
+}
+
+
+                
+
+pub closed spec fn spec_encrypted_extensions() -> SpecEncryptedExtensionsCombinator {
+    SpecEncryptedExtensionsCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_encrypted_extensions_cont(deps),
+        },
+        mapper: EncryptedExtensionsMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_encrypted_extensions_cont(deps: SpecUint0Ffff) -> SpecEncryptedExtensionsExtensionsCombinator {
+    let l = deps;
+    spec_encrypted_extensions_extensions(l)
+}
+                    
+                
+pub fn encrypted_extensions() -> (o: EncryptedExtensionsCombinator)
+    ensures o@ == spec_encrypted_extensions(),
+{
+    EncryptedExtensionsCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: EncryptedExtensionsCont,
+            spec_snd: Ghost(|deps| spec_encrypted_extensions_cont(deps)),
+        },
+        mapper: EncryptedExtensionsMapper,
+    }
+)
+}
+
+
+impl Continuation<Uint0Ffff> for EncryptedExtensionsCont {
+    type Output = EncryptedExtensionsExtensionsCombinator;
+
+    open spec fn requires(&self, deps: Uint0Ffff) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: Uint0Ffff, o: Self::Output) -> bool {
+        o@ == spec_encrypted_extensions_cont(deps@)
+    }
+
+    fn apply(&self, deps: Uint0Ffff) -> Self::Output {
+        let l = deps;
+        encrypted_extensions_extensions(l)
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_certificate_extensions() -> SpecCertificateExtensionsCombinator {
+    SpecCertificateExtensionsCombinator(spec_encrypted_extensions())
+}
+
+
+                
+pub fn certificate_extensions() -> (o: CertificateExtensionsCombinator)
+    ensures o@ == spec_certificate_extensions(),
+{
+    CertificateExtensionsCombinator(encrypted_extensions())
+}
+
+
+                
+
+pub closed spec fn spec_certificate_entry() -> SpecCertificateEntryCombinator {
+    SpecCertificateEntryCombinator(Mapped { inner: (spec_opaque_1_ffffff(), spec_certificate_extensions()), mapper: CertificateEntryMapper })
+}
+
+
+
+                
+pub fn certificate_entry() -> (o: CertificateEntryCombinator)
+    ensures o@ == spec_certificate_entry(),
+{
+    CertificateEntryCombinator(Mapped { inner: (opaque_1_ffffff(), certificate_extensions()), mapper: CertificateEntryMapper })
+}
+
+
+
+                
+
+pub closed spec fn spec_certificate_list_list(l: u24) -> SpecCertificateListListCombinator {
+    SpecCertificateListListCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_entry())))
+}
+
+
+                
+pub fn certificate_list_list<'a>(l: u24) -> (o: CertificateListListCombinator)
+    ensures o@ == spec_certificate_list_list(l@),
+{
+    CertificateListListCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_entry())))
+}
+
+
+                
+
+pub closed spec fn spec_certificate_list() -> SpecCertificateListCombinator {
+    SpecCertificateListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: U24Be,
+            snd: |deps| spec_certificate_list_cont(deps),
+        },
+        mapper: CertificateListMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_certificate_list_cont(deps: u24) -> SpecCertificateListListCombinator {
+    let l = deps;
+    spec_certificate_list_list(l)
+}
+                    
+                
+pub fn certificate_list() -> (o: CertificateListCombinator)
+    ensures o@ == spec_certificate_list(),
+{
+    CertificateListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: U24Be,
+            snd: CertificateListCont,
+            spec_snd: Ghost(|deps| spec_certificate_list_cont(deps)),
+        },
+        mapper: CertificateListMapper,
+    }
+)
+}
+
+
+impl Continuation<u24> for CertificateListCont {
+    type Output = CertificateListListCombinator;
+
+    open spec fn requires(&self, deps: u24) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
+        o@ == spec_certificate_list_cont(deps@)
+    }
+
+    fn apply(&self, deps: u24) -> Self::Output {
+        let l = deps;
+        certificate_list_list(l)
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_certificate() -> SpecCertificateCombinator {
+    SpecCertificateCombinator(Mapped { inner: (spec_opaque_0_ff(), spec_certificate_list()), mapper: CertificateMapper })
+}
+
+
+
+                
+pub fn certificate() -> (o: CertificateCombinator)
+    ensures o@ == spec_certificate(),
+{
+    CertificateCombinator(Mapped { inner: (opaque_0_ff(), certificate_list()), mapper: CertificateMapper })
+}
+
 
 
                 
@@ -22234,6 +22559,236 @@ pub fn uint_1_ff() -> (o: Uint1FfCombinator)
     ensures o@ == spec_uint_1_ff(),
 {
     Uint1FfCombinator(Refined { inner: U8, predicate: Predicate13930216038658429813 })
+}
+
+
+                
+
+pub closed spec fn spec_psk_key_exchange_mode() -> SpecPskKeyExchangeModeCombinator {
+    SpecPskKeyExchangeModeCombinator(U8)
+}
+
+
+                
+pub fn psk_key_exchange_mode() -> (o: PskKeyExchangeModeCombinator)
+    ensures o@ == spec_psk_key_exchange_mode(),
+{
+    PskKeyExchangeModeCombinator(U8)
+}
+
+
+                
+
+pub closed spec fn spec_psk_key_exchange_modes_modes(l: SpecUint1Ff) -> SpecPskKeyExchangeModesModesCombinator {
+    SpecPskKeyExchangeModesModesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_psk_key_exchange_mode())))
+}
+
+
+                
+pub fn psk_key_exchange_modes_modes(l: Uint1Ff) -> (o: PskKeyExchangeModesModesCombinator)
+    ensures o@ == spec_psk_key_exchange_modes_modes(l@),
+{
+    PskKeyExchangeModesModesCombinator(AndThen(Bytes(l.ex_into()), Repeat(psk_key_exchange_mode())))
+}
+
+
+                
+
+pub closed spec fn spec_psk_key_exchange_modes() -> SpecPskKeyExchangeModesCombinator {
+    SpecPskKeyExchangeModesCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ff(),
+            snd: |deps| spec_psk_key_exchange_modes_cont(deps),
+        },
+        mapper: PskKeyExchangeModesMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_psk_key_exchange_modes_cont(deps: SpecUint1Ff) -> SpecPskKeyExchangeModesModesCombinator {
+    let l = deps;
+    spec_psk_key_exchange_modes_modes(l)
+}
+                    
+                
+pub fn psk_key_exchange_modes() -> (o: PskKeyExchangeModesCombinator)
+    ensures o@ == spec_psk_key_exchange_modes(),
+{
+    PskKeyExchangeModesCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ff(),
+            snd: PskKeyExchangeModesCont,
+            spec_snd: Ghost(|deps| spec_psk_key_exchange_modes_cont(deps)),
+        },
+        mapper: PskKeyExchangeModesMapper,
+    }
+)
+}
+
+
+impl Continuation<Uint1Ff> for PskKeyExchangeModesCont {
+    type Output = PskKeyExchangeModesModesCombinator;
+
+    open spec fn requires(&self, deps: Uint1Ff) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: Uint1Ff, o: Self::Output) -> bool {
+        o@ == spec_psk_key_exchange_modes_cont(deps@)
+    }
+
+    fn apply(&self, deps: Uint1Ff) -> Self::Output {
+        let l = deps;
+        psk_key_exchange_modes_modes(l)
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_uint_0_fffe() -> SpecUint0FffeCombinator {
+    SpecUint0FffeCombinator(Refined { inner: U16Be, predicate: Predicate184937773087435626 })
+}
+
+
+                
+pub fn uint_0_fffe() -> (o: Uint0FffeCombinator)
+    ensures o@ == spec_uint_0_fffe(),
+{
+    Uint0FffeCombinator(Refined { inner: U16Be, predicate: Predicate184937773087435626 })
+}
+
+
+                
+
+pub closed spec fn spec_new_session_ticket_extensions_extensions(l: SpecUint0Fffe) -> SpecNewSessionTicketExtensionsExtensionsCombinator {
+    SpecNewSessionTicketExtensionsExtensionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_extension())))
+}
+
+
+                
+pub fn new_session_ticket_extensions_extensions<'a>(l: Uint0Fffe) -> (o: NewSessionTicketExtensionsExtensionsCombinator)
+    ensures o@ == spec_new_session_ticket_extensions_extensions(l@),
+{
+    NewSessionTicketExtensionsExtensionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(extension())))
+}
+
+
+                
+
+pub closed spec fn spec_new_session_ticket_extensions() -> SpecNewSessionTicketExtensionsCombinator {
+    SpecNewSessionTicketExtensionsCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_fffe(),
+            snd: |deps| spec_new_session_ticket_extensions_cont(deps),
+        },
+        mapper: NewSessionTicketExtensionsMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_new_session_ticket_extensions_cont(deps: SpecUint0Fffe) -> SpecNewSessionTicketExtensionsExtensionsCombinator {
+    let l = deps;
+    spec_new_session_ticket_extensions_extensions(l)
+}
+                    
+                
+pub fn new_session_ticket_extensions() -> (o: NewSessionTicketExtensionsCombinator)
+    ensures o@ == spec_new_session_ticket_extensions(),
+{
+    NewSessionTicketExtensionsCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_fffe(),
+            snd: NewSessionTicketExtensionsCont,
+            spec_snd: Ghost(|deps| spec_new_session_ticket_extensions_cont(deps)),
+        },
+        mapper: NewSessionTicketExtensionsMapper,
+    }
+)
+}
+
+
+impl Continuation<Uint0Fffe> for NewSessionTicketExtensionsCont {
+    type Output = NewSessionTicketExtensionsExtensionsCombinator;
+
+    open spec fn requires(&self, deps: Uint0Fffe) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: Uint0Fffe, o: Self::Output) -> bool {
+        o@ == spec_new_session_ticket_extensions_cont(deps@)
+    }
+
+    fn apply(&self, deps: Uint0Fffe) -> Self::Output {
+        let l = deps;
+        new_session_ticket_extensions_extensions(l)
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_heartbeat_mode() -> SpecHeartbeatModeCombinator {
+    SpecHeartbeatModeCombinator(U8)
+}
+
+
+                
+pub fn heartbeat_mode() -> (o: HeartbeatModeCombinator)
+    ensures o@ == spec_heartbeat_mode(),
+{
+    HeartbeatModeCombinator(U8)
+}
+
+
+                
+
+pub closed spec fn spec_heartbeat_extension() -> SpecHeartbeatExtensionCombinator {
+    SpecHeartbeatExtensionCombinator(Mapped { inner: spec_heartbeat_mode(), mapper: HeartbeatExtensionMapper })
+}
+
+
+                
+pub fn heartbeat_extension() -> (o: HeartbeatExtensionCombinator)
+    ensures o@ == spec_heartbeat_extension(),
+{
+    HeartbeatExtensionCombinator(Mapped { inner: heartbeat_mode(), mapper: HeartbeatExtensionMapper })
+}
+
+
+                
+
+pub closed spec fn spec_named_group() -> SpecNamedGroupCombinator {
+    SpecNamedGroupCombinator(U16Be)
+}
+
+
+                
+pub fn named_group() -> (o: NamedGroupCombinator)
+    ensures o@ == spec_named_group(),
+{
+    NamedGroupCombinator(U16Be)
+}
+
+
+                
+
+pub closed spec fn spec_alert_level() -> SpecAlertLevelCombinator {
+    SpecAlertLevelCombinator(TryMap { inner: U8, mapper: AlertLevelMapper })
+}
+
+
+                
+pub fn alert_level() -> (o: AlertLevelCombinator)
+    ensures o@ == spec_alert_level(),
+{
+    AlertLevelCombinator(TryMap { inner: U8, mapper: AlertLevelMapper })
 }
 
 
@@ -22254,77 +22809,74 @@ pub fn certificate_type() -> (o: CertificateTypeCombinator)
 
                 
 
-pub closed spec fn spec_server_cert_type_client_extension_types(l: SpecUint1Ff) -> SpecServerCertTypeClientExtensionTypesCombinator {
-    SpecServerCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_type())))
+pub closed spec fn spec_client_cert_type_client_extension_types(l: SpecUint1Ff) -> SpecClientCertTypeClientExtensionTypesCombinator {
+    SpecClientCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_type())))
 }
 
 
                 
-pub fn server_cert_type_client_extension_types(l: Uint1Ff) -> (o: ServerCertTypeClientExtensionTypesCombinator)
-    ensures o@ == spec_server_cert_type_client_extension_types(l@),
+pub fn client_cert_type_client_extension_types(l: Uint1Ff) -> (o: ClientCertTypeClientExtensionTypesCombinator)
+    ensures o@ == spec_client_cert_type_client_extension_types(l@),
 {
-    ServerCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_type())))
+    ClientCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_type())))
 }
 
 
                 
 
-pub closed spec fn spec_server_cert_type_client_extension() -> SpecServerCertTypeClientExtensionCombinator {
-        let fst = spec_uint_1_ff();
-    let snd = |deps| spec_server_cert_type_client_extension_cont(deps);
-    SpecServerCertTypeClientExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ServerCertTypeClientExtensionMapper })
+pub closed spec fn spec_client_cert_type_client_extension() -> SpecClientCertTypeClientExtensionCombinator {
+    SpecClientCertTypeClientExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ff(),
+            snd: |deps| spec_client_cert_type_client_extension_cont(deps),
+        },
+        mapper: ClientCertTypeClientExtensionMapper,
+    }
+)
 }
 
 
-pub open spec fn spec_server_cert_type_client_extension_cont(deps: SpecUint1Ff) -> SpecServerCertTypeClientExtensionTypesCombinator {
+pub open spec fn spec_client_cert_type_client_extension_cont(deps: SpecUint1Ff) -> SpecClientCertTypeClientExtensionTypesCombinator {
     let l = deps;
-    spec_server_cert_type_client_extension_types(l)
+    spec_client_cert_type_client_extension_types(l)
 }
                     
                 
-pub fn server_cert_type_client_extension() -> (o: ServerCertTypeClientExtensionCombinator)
-    ensures o@ == spec_server_cert_type_client_extension(),
+pub fn client_cert_type_client_extension() -> (o: ClientCertTypeClientExtensionCombinator)
+    ensures o@ == spec_client_cert_type_client_extension(),
 {
-       let fst = uint_1_ff();
-    let snd = ServerCertTypeClientExtensionCont;
-    let spec_snd = Ghost(|deps| spec_server_cert_type_client_extension_cont(deps));
-    ServerCertTypeClientExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ServerCertTypeClientExtensionMapper })
+    ClientCertTypeClientExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ff(),
+            snd: ClientCertTypeClientExtensionCont,
+            spec_snd: Ghost(|deps| spec_client_cert_type_client_extension_cont(deps)),
+        },
+        mapper: ClientCertTypeClientExtensionMapper,
+    }
+)
 }
 
 
-impl Continuation<Uint1Ff> for ServerCertTypeClientExtensionCont {
-    type Output = ServerCertTypeClientExtensionTypesCombinator;
+impl Continuation<Uint1Ff> for ClientCertTypeClientExtensionCont {
+    type Output = ClientCertTypeClientExtensionTypesCombinator;
 
     open spec fn requires(&self, deps: Uint1Ff) -> bool {
         true
     }
 
     open spec fn ensures(&self, deps: Uint1Ff, o: Self::Output) -> bool {
-        o@ == spec_server_cert_type_client_extension_cont(deps@)
+        o@ == spec_client_cert_type_client_extension_cont(deps@)
     }
 
     fn apply(&self, deps: Uint1Ff) -> Self::Output {
         let l = deps;
-        server_cert_type_client_extension_types(l)
+        client_cert_type_client_extension_types(l)
     }
 }
 
                     
-                
-
-pub closed spec fn spec_protocol_version() -> SpecProtocolVersionCombinator {
-    SpecProtocolVersionCombinator(U16Be)
-}
-
-
-                
-pub fn protocol_version() -> (o: ProtocolVersionCombinator)
-    ensures o@ == spec_protocol_version(),
-{
-    ProtocolVersionCombinator(U16Be)
-}
-
-
                 
 
 pub closed spec fn spec_random() -> SpecRandomCombinator {
@@ -22340,6 +22892,61 @@ pub fn random() -> (o: RandomCombinator)
 }
 
 
+                
+
+pub closed spec fn spec_session_id() -> SpecSessionIdCombinator {
+    SpecSessionIdCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U8, predicate: Predicate10693986609604791304 },
+            snd: |deps| spec_session_id_cont(deps),
+        },
+        mapper: SessionIdMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_session_id_cont(deps: u8) -> Bytes {
+    let l = deps;
+    Bytes(l.spec_into())
+}
+                    
+                
+pub fn session_id() -> (o: SessionIdCombinator)
+    ensures o@ == spec_session_id(),
+{
+    SessionIdCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U8, predicate: Predicate10693986609604791304 },
+            snd: SessionIdCont,
+            spec_snd: Ghost(|deps| spec_session_id_cont(deps)),
+        },
+        mapper: SessionIdMapper,
+    }
+)
+}
+
+
+impl Continuation<u8> for SessionIdCont {
+    type Output = Bytes;
+
+    open spec fn requires(&self, deps: u8) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u8, o: Self::Output) -> bool {
+        o@ == spec_session_id_cont(deps@)
+    }
+
+    fn apply(&self, deps: u8) -> Self::Output {
+        let l = deps;
+        Bytes(l.ex_into())
+    }
+}
+
+                    
                 
 
 pub closed spec fn spec_uint_2_fffe() -> SpecUint2FffeCombinator {
@@ -22388,9 +22995,15 @@ pub fn cipher_suite_list_list(l: Uint2Fffe) -> (o: CipherSuiteListListCombinator
                 
 
 pub closed spec fn spec_cipher_suite_list() -> SpecCipherSuiteListCombinator {
-        let fst = spec_uint_2_fffe();
-    let snd = |deps| spec_cipher_suite_list_cont(deps);
-    SpecCipherSuiteListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: CipherSuiteListMapper })
+    SpecCipherSuiteListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_fffe(),
+            snd: |deps| spec_cipher_suite_list_cont(deps),
+        },
+        mapper: CipherSuiteListMapper,
+    }
+)
 }
 
 
@@ -22403,10 +23016,16 @@ pub open spec fn spec_cipher_suite_list_cont(deps: SpecUint2Fffe) -> SpecCipherS
 pub fn cipher_suite_list() -> (o: CipherSuiteListCombinator)
     ensures o@ == spec_cipher_suite_list(),
 {
-       let fst = uint_2_fffe();
-    let snd = CipherSuiteListCont;
-    let spec_snd = Ghost(|deps| spec_cipher_suite_list_cont(deps));
-    CipherSuiteListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: CipherSuiteListMapper })
+    CipherSuiteListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_fffe(),
+            snd: CipherSuiteListCont,
+            spec_snd: Ghost(|deps| spec_cipher_suite_list_cont(deps)),
+        },
+        mapper: CipherSuiteListMapper,
+    }
+)
 }
 
 
@@ -22431,9 +23050,15 @@ impl Continuation<Uint2Fffe> for CipherSuiteListCont {
                 
 
 pub closed spec fn spec_opaque_1_ff() -> SpecOpaque1FfCombinator {
-        let fst = spec_uint_1_ff();
-    let snd = |deps| spec_opaque1_ff_cont(deps);
-    SpecOpaque1FfCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque1FfMapper })
+    SpecOpaque1FfCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ff(),
+            snd: |deps| spec_opaque1_ff_cont(deps),
+        },
+        mapper: Opaque1FfMapper,
+    }
+)
 }
 
 
@@ -22446,10 +23071,16 @@ pub open spec fn spec_opaque1_ff_cont(deps: SpecUint1Ff) -> Bytes {
 pub fn opaque_1_ff() -> (o: Opaque1FfCombinator)
     ensures o@ == spec_opaque_1_ff(),
 {
-       let fst = uint_1_ff();
-    let snd = Opaque1FfCont;
-    let spec_snd = Ghost(|deps| spec_opaque1_ff_cont(deps));
-    Opaque1FfCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque1FfMapper })
+    Opaque1FfCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ff(),
+            snd: Opaque1FfCont,
+            spec_snd: Ghost(|deps| spec_opaque1_ff_cont(deps)),
+        },
+        mapper: Opaque1FfMapper,
+    }
+)
 }
 
 
@@ -22471,21 +23102,6 @@ impl Continuation<Uint1Ff> for Opaque1FfCont {
 }
 
                     
-                
-
-pub closed spec fn spec_extension_type() -> SpecExtensionTypeCombinator {
-    SpecExtensionTypeCombinator(U8)
-}
-
-
-                
-pub fn extension_type() -> (o: ExtensionTypeCombinator)
-    ensures o@ == spec_extension_type(),
-{
-    ExtensionTypeCombinator(U8)
-}
-
-
                 
 
 pub closed spec fn spec_empty() -> SpecEmptyCombinator {
@@ -22549,9 +23165,15 @@ pub fn ec_point_format_list_list(l: Uint1Ff) -> (o: EcPointFormatListListCombina
                 
 
 pub closed spec fn spec_ec_point_format_list() -> SpecEcPointFormatListCombinator {
-        let fst = spec_uint_1_ff();
-    let snd = |deps| spec_ec_point_format_list_cont(deps);
-    SpecEcPointFormatListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: EcPointFormatListMapper })
+    SpecEcPointFormatListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ff(),
+            snd: |deps| spec_ec_point_format_list_cont(deps),
+        },
+        mapper: EcPointFormatListMapper,
+    }
+)
 }
 
 
@@ -22564,10 +23186,16 @@ pub open spec fn spec_ec_point_format_list_cont(deps: SpecUint1Ff) -> SpecEcPoin
 pub fn ec_point_format_list() -> (o: EcPointFormatListCombinator)
     ensures o@ == spec_ec_point_format_list(),
 {
-       let fst = uint_1_ff();
-    let snd = EcPointFormatListCont;
-    let spec_snd = Ghost(|deps| spec_ec_point_format_list_cont(deps));
-    EcPointFormatListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: EcPointFormatListMapper })
+    EcPointFormatListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ff(),
+            snd: EcPointFormatListCont,
+            spec_snd: Ghost(|deps| spec_ec_point_format_list_cont(deps)),
+        },
+        mapper: EcPointFormatListMapper,
+    }
+)
 }
 
 
@@ -22589,21 +23217,6 @@ impl Continuation<Uint1Ff> for EcPointFormatListCont {
 }
 
                     
-                
-
-pub closed spec fn spec_uint_2_ffff() -> SpecUint2FfffCombinator {
-    SpecUint2FfffCombinator(Refined { inner: U16Be, predicate: Predicate5950696943328973166 })
-}
-
-
-                
-pub fn uint_2_ffff() -> (o: Uint2FfffCombinator)
-    ensures o@ == spec_uint_2_ffff(),
-{
-    Uint2FfffCombinator(Refined { inner: U16Be, predicate: Predicate5950696943328973166 })
-}
-
-
                 
 
 pub closed spec fn spec_srtp_protection_profile() -> SpecSrtpProtectionProfileCombinator {
@@ -22637,9 +23250,15 @@ pub fn srtp_protection_profiles_list<'a>(l: Uint2Ffff) -> (o: SrtpProtectionProf
                 
 
 pub closed spec fn spec_srtp_protection_profiles() -> SpecSrtpProtectionProfilesCombinator {
-        let fst = spec_uint_2_ffff();
-    let snd = |deps| spec_srtp_protection_profiles_cont(deps);
-    SpecSrtpProtectionProfilesCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SrtpProtectionProfilesMapper })
+    SpecSrtpProtectionProfilesCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_ffff(),
+            snd: |deps| spec_srtp_protection_profiles_cont(deps),
+        },
+        mapper: SrtpProtectionProfilesMapper,
+    }
+)
 }
 
 
@@ -22652,10 +23271,16 @@ pub open spec fn spec_srtp_protection_profiles_cont(deps: SpecUint2Ffff) -> Spec
 pub fn srtp_protection_profiles() -> (o: SrtpProtectionProfilesCombinator)
     ensures o@ == spec_srtp_protection_profiles(),
 {
-       let fst = uint_2_ffff();
-    let snd = SrtpProtectionProfilesCont;
-    let spec_snd = Ghost(|deps| spec_srtp_protection_profiles_cont(deps));
-    SrtpProtectionProfilesCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SrtpProtectionProfilesMapper })
+    SrtpProtectionProfilesCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_ffff(),
+            snd: SrtpProtectionProfilesCont,
+            spec_snd: Ghost(|deps| spec_srtp_protection_profiles_cont(deps)),
+        },
+        mapper: SrtpProtectionProfilesMapper,
+    }
+)
 }
 
 
@@ -22679,64 +23304,6 @@ impl Continuation<Uint2Ffff> for SrtpProtectionProfilesCont {
                     
                 
 
-pub closed spec fn spec_uint_0_ff() -> SpecUint0FfCombinator {
-    SpecUint0FfCombinator(U8)
-}
-
-
-                
-pub fn uint_0_ff() -> (o: Uint0FfCombinator)
-    ensures o@ == spec_uint_0_ff(),
-{
-    Uint0FfCombinator(U8)
-}
-
-
-                
-
-pub closed spec fn spec_opaque_0_ff() -> SpecOpaque0FfCombinator {
-        let fst = spec_uint_0_ff();
-    let snd = |deps| spec_opaque0_ff_cont(deps);
-    SpecOpaque0FfCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque0FfMapper })
-}
-
-
-pub open spec fn spec_opaque0_ff_cont(deps: SpecUint0Ff) -> Bytes {
-    let l = deps;
-    Bytes(l.spec_into())
-}
-                    
-                
-pub fn opaque_0_ff() -> (o: Opaque0FfCombinator)
-    ensures o@ == spec_opaque_0_ff(),
-{
-       let fst = uint_0_ff();
-    let snd = Opaque0FfCont;
-    let spec_snd = Ghost(|deps| spec_opaque0_ff_cont(deps));
-    Opaque0FfCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque0FfMapper })
-}
-
-
-impl Continuation<Uint0Ff> for Opaque0FfCont {
-    type Output = Bytes;
-
-    open spec fn requires(&self, deps: Uint0Ff) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: Uint0Ff, o: Self::Output) -> bool {
-        o@ == spec_opaque0_ff_cont(deps@)
-    }
-
-    fn apply(&self, deps: Uint0Ff) -> Self::Output {
-        let l = deps;
-        Bytes(l.ex_into())
-    }
-}
-
-                    
-                
-
 pub closed spec fn spec_use_srtp_data() -> SpecUseSrtpDataCombinator {
     SpecUseSrtpDataCombinator(Mapped { inner: (spec_srtp_protection_profiles(), spec_opaque_0_ff()), mapper: UseSrtpDataMapper })
 }
@@ -22750,21 +23317,6 @@ pub fn use_srtp_data() -> (o: UseSrtpDataCombinator)
     UseSrtpDataCombinator(Mapped { inner: (srtp_protection_profiles(), opaque_0_ff()), mapper: UseSrtpDataMapper })
 }
 
-
-
-                
-
-pub closed spec fn spec_heartbeat_mode() -> SpecHeartbeatModeCombinator {
-    SpecHeartbeatModeCombinator(U8)
-}
-
-
-                
-pub fn heartbeat_mode() -> (o: HeartbeatModeCombinator)
-    ensures o@ == spec_heartbeat_mode(),
-{
-    HeartbeatModeCombinator(U8)
-}
 
 
                 
@@ -22800,9 +23352,15 @@ pub fn protocol_name_list_list<'a>(l: Uint2Ffff) -> (o: ProtocolNameListListComb
                 
 
 pub closed spec fn spec_protocol_name_list() -> SpecProtocolNameListCombinator {
-        let fst = spec_uint_2_ffff();
-    let snd = |deps| spec_protocol_name_list_cont(deps);
-    SpecProtocolNameListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ProtocolNameListMapper })
+    SpecProtocolNameListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_ffff(),
+            snd: |deps| spec_protocol_name_list_cont(deps),
+        },
+        mapper: ProtocolNameListMapper,
+    }
+)
 }
 
 
@@ -22815,10 +23373,16 @@ pub open spec fn spec_protocol_name_list_cont(deps: SpecUint2Ffff) -> SpecProtoc
 pub fn protocol_name_list() -> (o: ProtocolNameListCombinator)
     ensures o@ == spec_protocol_name_list(),
 {
-       let fst = uint_2_ffff();
-    let snd = ProtocolNameListCont;
-    let spec_snd = Ghost(|deps| spec_protocol_name_list_cont(deps));
-    ProtocolNameListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ProtocolNameListMapper })
+    ProtocolNameListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_ffff(),
+            snd: ProtocolNameListCont,
+            spec_snd: Ghost(|deps| spec_protocol_name_list_cont(deps)),
+        },
+        mapper: ProtocolNameListMapper,
+    }
+)
 }
 
 
@@ -22873,9 +23437,15 @@ pub fn signed_certificate_timestamp_list_list<'a>(l: Uint1Ffff) -> (o: SignedCer
                 
 
 pub closed spec fn spec_signed_certificate_timestamp_list() -> SpecSignedCertificateTimestampListCombinator {
-        let fst = spec_uint_1_ffff();
-    let snd = |deps| spec_signed_certificate_timestamp_list_cont(deps);
-    SpecSignedCertificateTimestampListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SignedCertificateTimestampListMapper })
+    SpecSignedCertificateTimestampListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ffff(),
+            snd: |deps| spec_signed_certificate_timestamp_list_cont(deps),
+        },
+        mapper: SignedCertificateTimestampListMapper,
+    }
+)
 }
 
 
@@ -22888,10 +23458,16 @@ pub open spec fn spec_signed_certificate_timestamp_list_cont(deps: SpecUint1Ffff
 pub fn signed_certificate_timestamp_list() -> (o: SignedCertificateTimestampListCombinator)
     ensures o@ == spec_signed_certificate_timestamp_list(),
 {
-       let fst = uint_1_ffff();
-    let snd = SignedCertificateTimestampListCont;
-    let spec_snd = Ghost(|deps| spec_signed_certificate_timestamp_list_cont(deps));
-    SignedCertificateTimestampListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SignedCertificateTimestampListMapper })
+    SignedCertificateTimestampListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ffff(),
+            snd: SignedCertificateTimestampListCont,
+            spec_snd: Ghost(|deps| spec_signed_certificate_timestamp_list_cont(deps)),
+        },
+        mapper: SignedCertificateTimestampListMapper,
+    }
+)
 }
 
 
@@ -22915,58 +23491,70 @@ impl Continuation<Uint1Ffff> for SignedCertificateTimestampListCont {
                     
                 
 
-pub closed spec fn spec_client_cert_type_client_extension_types(l: SpecUint1Ff) -> SpecClientCertTypeClientExtensionTypesCombinator {
-    SpecClientCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_type())))
+pub closed spec fn spec_server_cert_type_client_extension_types(l: SpecUint1Ff) -> SpecServerCertTypeClientExtensionTypesCombinator {
+    SpecServerCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_type())))
 }
 
 
                 
-pub fn client_cert_type_client_extension_types(l: Uint1Ff) -> (o: ClientCertTypeClientExtensionTypesCombinator)
-    ensures o@ == spec_client_cert_type_client_extension_types(l@),
+pub fn server_cert_type_client_extension_types(l: Uint1Ff) -> (o: ServerCertTypeClientExtensionTypesCombinator)
+    ensures o@ == spec_server_cert_type_client_extension_types(l@),
 {
-    ClientCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_type())))
+    ServerCertTypeClientExtensionTypesCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_type())))
 }
 
 
                 
 
-pub closed spec fn spec_client_cert_type_client_extension() -> SpecClientCertTypeClientExtensionCombinator {
-        let fst = spec_uint_1_ff();
-    let snd = |deps| spec_client_cert_type_client_extension_cont(deps);
-    SpecClientCertTypeClientExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ClientCertTypeClientExtensionMapper })
+pub closed spec fn spec_server_cert_type_client_extension() -> SpecServerCertTypeClientExtensionCombinator {
+    SpecServerCertTypeClientExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ff(),
+            snd: |deps| spec_server_cert_type_client_extension_cont(deps),
+        },
+        mapper: ServerCertTypeClientExtensionMapper,
+    }
+)
 }
 
 
-pub open spec fn spec_client_cert_type_client_extension_cont(deps: SpecUint1Ff) -> SpecClientCertTypeClientExtensionTypesCombinator {
+pub open spec fn spec_server_cert_type_client_extension_cont(deps: SpecUint1Ff) -> SpecServerCertTypeClientExtensionTypesCombinator {
     let l = deps;
-    spec_client_cert_type_client_extension_types(l)
+    spec_server_cert_type_client_extension_types(l)
 }
                     
                 
-pub fn client_cert_type_client_extension() -> (o: ClientCertTypeClientExtensionCombinator)
-    ensures o@ == spec_client_cert_type_client_extension(),
+pub fn server_cert_type_client_extension() -> (o: ServerCertTypeClientExtensionCombinator)
+    ensures o@ == spec_server_cert_type_client_extension(),
 {
-       let fst = uint_1_ff();
-    let snd = ClientCertTypeClientExtensionCont;
-    let spec_snd = Ghost(|deps| spec_client_cert_type_client_extension_cont(deps));
-    ClientCertTypeClientExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ClientCertTypeClientExtensionMapper })
+    ServerCertTypeClientExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ff(),
+            snd: ServerCertTypeClientExtensionCont,
+            spec_snd: Ghost(|deps| spec_server_cert_type_client_extension_cont(deps)),
+        },
+        mapper: ServerCertTypeClientExtensionMapper,
+    }
+)
 }
 
 
-impl Continuation<Uint1Ff> for ClientCertTypeClientExtensionCont {
-    type Output = ClientCertTypeClientExtensionTypesCombinator;
+impl Continuation<Uint1Ff> for ServerCertTypeClientExtensionCont {
+    type Output = ServerCertTypeClientExtensionTypesCombinator;
 
     open spec fn requires(&self, deps: Uint1Ff) -> bool {
         true
     }
 
     open spec fn ensures(&self, deps: Uint1Ff, o: Self::Output) -> bool {
-        o@ == spec_client_cert_type_client_extension_cont(deps@)
+        o@ == spec_server_cert_type_client_extension_cont(deps@)
     }
 
     fn apply(&self, deps: Uint1Ff) -> Self::Output {
         let l = deps;
-        client_cert_type_client_extension_types(l)
+        server_cert_type_client_extension_types(l)
     }
 }
 
@@ -23004,9 +23592,15 @@ pub fn padding_extension_padding(l: Uint0Ffff) -> (o: PaddingExtensionPaddingCom
                 
 
 pub closed spec fn spec_padding_extension() -> SpecPaddingExtensionCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_padding_extension_cont(deps);
-    SpecPaddingExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: PaddingExtensionMapper })
+    SpecPaddingExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_padding_extension_cont(deps),
+        },
+        mapper: PaddingExtensionMapper,
+    }
+)
 }
 
 
@@ -23019,10 +23613,16 @@ pub open spec fn spec_padding_extension_cont(deps: SpecUint0Ffff) -> SpecPadding
 pub fn padding_extension() -> (o: PaddingExtensionCombinator)
     ensures o@ == spec_padding_extension(),
 {
-       let fst = uint_0_ffff();
-    let snd = PaddingExtensionCont;
-    let spec_snd = Ghost(|deps| spec_padding_extension_cont(deps));
-    PaddingExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: PaddingExtensionMapper })
+    PaddingExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: PaddingExtensionCont,
+            spec_snd: Ghost(|deps| spec_padding_extension_cont(deps)),
+        },
+        mapper: PaddingExtensionMapper,
+    }
+)
 }
 
 
@@ -23061,10 +23661,48 @@ pub fn session_ticket() -> (o: SessionTicketCombinator)
 
                 
 
+pub closed spec fn spec_psk_identity() -> SpecPskIdentityCombinator {
+    SpecPskIdentityCombinator(Mapped { inner: (spec_opaque_1_ffff(), U32Be), mapper: PskIdentityMapper })
+}
+
+
+
+                
+pub fn psk_identity() -> (o: PskIdentityCombinator)
+    ensures o@ == spec_psk_identity(),
+{
+    PskIdentityCombinator(Mapped { inner: (opaque_1_ffff(), U32Be), mapper: PskIdentityMapper })
+}
+
+
+
+                
+
+pub closed spec fn spec_psk_identities_identities(l: u16) -> SpecPskIdentitiesIdentitiesCombinator {
+    SpecPskIdentitiesIdentitiesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_psk_identity())))
+}
+
+
+                
+pub fn psk_identities_identities<'a>(l: u16) -> (o: PskIdentitiesIdentitiesCombinator)
+    ensures o@ == spec_psk_identities_identities(l@),
+{
+    PskIdentitiesIdentitiesCombinator(AndThen(Bytes(l.ex_into()), Repeat(psk_identity())))
+}
+
+
+                
+
 pub closed spec fn spec_psk_identities() -> SpecPskIdentitiesCombinator {
-        let fst = Refined { inner: U16Be, predicate: Predicate17762240283561303569 };
-    let snd = |deps| spec_psk_identities_cont(deps);
-    SpecPskIdentitiesCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: PskIdentitiesMapper })
+    SpecPskIdentitiesCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U16Be, predicate: Predicate17762240283561303569 },
+            snd: |deps| spec_psk_identities_cont(deps),
+        },
+        mapper: PskIdentitiesMapper,
+    }
+)
 }
 
 
@@ -23077,10 +23715,16 @@ pub open spec fn spec_psk_identities_cont(deps: u16) -> SpecPskIdentitiesIdentit
 pub fn psk_identities() -> (o: PskIdentitiesCombinator)
     ensures o@ == spec_psk_identities(),
 {
-       let fst = Refined { inner: U16Be, predicate: Predicate17762240283561303569 };
-    let snd = PskIdentitiesCont;
-    let spec_snd = Ghost(|deps| spec_psk_identities_cont(deps));
-    PskIdentitiesCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: PskIdentitiesMapper })
+    PskIdentitiesCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U16Be, predicate: Predicate17762240283561303569 },
+            snd: PskIdentitiesCont,
+            spec_snd: Ghost(|deps| spec_psk_identities_cont(deps)),
+        },
+        mapper: PskIdentitiesMapper,
+    }
+)
 }
 
 
@@ -23105,9 +23749,15 @@ impl Continuation<u16> for PskIdentitiesCont {
                 
 
 pub closed spec fn spec_psk_binder_entry() -> SpecPskBinderEntryCombinator {
-        let fst = Refined { inner: U8, predicate: Predicate14956021864372697443 };
-    let snd = |deps| spec_psk_binder_entry_cont(deps);
-    SpecPskBinderEntryCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: PskBinderEntryMapper })
+    SpecPskBinderEntryCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U8, predicate: Predicate14956021864372697443 },
+            snd: |deps| spec_psk_binder_entry_cont(deps),
+        },
+        mapper: PskBinderEntryMapper,
+    }
+)
 }
 
 
@@ -23120,10 +23770,16 @@ pub open spec fn spec_psk_binder_entry_cont(deps: u8) -> Bytes {
 pub fn psk_binder_entry() -> (o: PskBinderEntryCombinator)
     ensures o@ == spec_psk_binder_entry(),
 {
-       let fst = Refined { inner: U8, predicate: Predicate14956021864372697443 };
-    let snd = PskBinderEntryCont;
-    let spec_snd = Ghost(|deps| spec_psk_binder_entry_cont(deps));
-    PskBinderEntryCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: PskBinderEntryMapper })
+    PskBinderEntryCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U8, predicate: Predicate14956021864372697443 },
+            snd: PskBinderEntryCont,
+            spec_snd: Ghost(|deps| spec_psk_binder_entry_cont(deps)),
+        },
+        mapper: PskBinderEntryMapper,
+    }
+)
 }
 
 
@@ -23163,9 +23819,15 @@ pub fn psk_binder_entries_binders<'a>(l: u16) -> (o: PskBinderEntriesBindersComb
                 
 
 pub closed spec fn spec_psk_binder_entries() -> SpecPskBinderEntriesCombinator {
-        let fst = Refined { inner: U16Be, predicate: Predicate14504484746533333987 };
-    let snd = |deps| spec_psk_binder_entries_cont(deps);
-    SpecPskBinderEntriesCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: PskBinderEntriesMapper })
+    SpecPskBinderEntriesCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U16Be, predicate: Predicate14504484746533333987 },
+            snd: |deps| spec_psk_binder_entries_cont(deps),
+        },
+        mapper: PskBinderEntriesMapper,
+    }
+)
 }
 
 
@@ -23178,10 +23840,16 @@ pub open spec fn spec_psk_binder_entries_cont(deps: u16) -> SpecPskBinderEntries
 pub fn psk_binder_entries() -> (o: PskBinderEntriesCombinator)
     ensures o@ == spec_psk_binder_entries(),
 {
-       let fst = Refined { inner: U16Be, predicate: Predicate14504484746533333987 };
-    let snd = PskBinderEntriesCont;
-    let spec_snd = Ghost(|deps| spec_psk_binder_entries_cont(deps));
-    PskBinderEntriesCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: PskBinderEntriesMapper })
+    PskBinderEntriesCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U16Be, predicate: Predicate14504484746533333987 },
+            snd: PskBinderEntriesCont,
+            spec_snd: Ghost(|deps| spec_psk_binder_entries_cont(deps)),
+        },
+        mapper: PskBinderEntriesMapper,
+    }
+)
 }
 
 
@@ -23237,25 +23905,16 @@ pub fn pre_shared_key_client_extension() -> (o: PreSharedKeyClientExtensionCombi
 
                 
 
-pub closed spec fn spec_supported_versions_client_versions(l: u8) -> SpecSupportedVersionsClientVersionsCombinator {
-    SpecSupportedVersionsClientVersionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_protocol_version())))
-}
-
-
-                
-pub fn supported_versions_client_versions(l: u8) -> (o: SupportedVersionsClientVersionsCombinator)
-    ensures o@ == spec_supported_versions_client_versions(l@),
-{
-    SupportedVersionsClientVersionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(protocol_version())))
-}
-
-
-                
-
 pub closed spec fn spec_supported_versions_client() -> SpecSupportedVersionsClientCombinator {
-        let fst = Refined { inner: U8, predicate: Predicate12026843412570934212 };
-    let snd = |deps| spec_supported_versions_client_cont(deps);
-    SpecSupportedVersionsClientCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SupportedVersionsClientMapper })
+    SpecSupportedVersionsClientCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U8, predicate: Predicate12026843412570934212 },
+            snd: |deps| spec_supported_versions_client_cont(deps),
+        },
+        mapper: SupportedVersionsClientMapper,
+    }
+)
 }
 
 
@@ -23268,10 +23927,16 @@ pub open spec fn spec_supported_versions_client_cont(deps: u8) -> SpecSupportedV
 pub fn supported_versions_client() -> (o: SupportedVersionsClientCombinator)
     ensures o@ == spec_supported_versions_client(),
 {
-       let fst = Refined { inner: U8, predicate: Predicate12026843412570934212 };
-    let snd = SupportedVersionsClientCont;
-    let spec_snd = Ghost(|deps| spec_supported_versions_client_cont(deps));
-    SupportedVersionsClientCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SupportedVersionsClientMapper })
+    SupportedVersionsClientCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U8, predicate: Predicate12026843412570934212 },
+            snd: SupportedVersionsClientCont,
+            spec_snd: Ghost(|deps| spec_supported_versions_client_cont(deps)),
+        },
+        mapper: SupportedVersionsClientMapper,
+    }
+)
 }
 
 
@@ -23310,79 +23975,6 @@ pub fn cookie() -> (o: CookieCombinator)
 
                 
 
-pub closed spec fn spec_psk_key_exchange_mode() -> SpecPskKeyExchangeModeCombinator {
-    SpecPskKeyExchangeModeCombinator(U8)
-}
-
-
-                
-pub fn psk_key_exchange_mode() -> (o: PskKeyExchangeModeCombinator)
-    ensures o@ == spec_psk_key_exchange_mode(),
-{
-    PskKeyExchangeModeCombinator(U8)
-}
-
-
-                
-
-pub closed spec fn spec_psk_key_exchange_modes_modes(l: SpecUint1Ff) -> SpecPskKeyExchangeModesModesCombinator {
-    SpecPskKeyExchangeModesModesCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_psk_key_exchange_mode())))
-}
-
-
-                
-pub fn psk_key_exchange_modes_modes(l: Uint1Ff) -> (o: PskKeyExchangeModesModesCombinator)
-    ensures o@ == spec_psk_key_exchange_modes_modes(l@),
-{
-    PskKeyExchangeModesModesCombinator(AndThen(Bytes(l.ex_into()), Repeat(psk_key_exchange_mode())))
-}
-
-
-                
-
-pub closed spec fn spec_psk_key_exchange_modes() -> SpecPskKeyExchangeModesCombinator {
-        let fst = spec_uint_1_ff();
-    let snd = |deps| spec_psk_key_exchange_modes_cont(deps);
-    SpecPskKeyExchangeModesCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: PskKeyExchangeModesMapper })
-}
-
-
-pub open spec fn spec_psk_key_exchange_modes_cont(deps: SpecUint1Ff) -> SpecPskKeyExchangeModesModesCombinator {
-    let l = deps;
-    spec_psk_key_exchange_modes_modes(l)
-}
-                    
-                
-pub fn psk_key_exchange_modes() -> (o: PskKeyExchangeModesCombinator)
-    ensures o@ == spec_psk_key_exchange_modes(),
-{
-       let fst = uint_1_ff();
-    let snd = PskKeyExchangeModesCont;
-    let spec_snd = Ghost(|deps| spec_psk_key_exchange_modes_cont(deps));
-    PskKeyExchangeModesCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: PskKeyExchangeModesMapper })
-}
-
-
-impl Continuation<Uint1Ff> for PskKeyExchangeModesCont {
-    type Output = PskKeyExchangeModesModesCombinator;
-
-    open spec fn requires(&self, deps: Uint1Ff) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: Uint1Ff, o: Self::Output) -> bool {
-        o@ == spec_psk_key_exchange_modes_cont(deps@)
-    }
-
-    fn apply(&self, deps: Uint1Ff) -> Self::Output {
-        let l = deps;
-        psk_key_exchange_modes_modes(l)
-    }
-}
-
-                    
-                
-
 pub closed spec fn spec_distinguished_name() -> SpecDistinguishedNameCombinator {
     SpecDistinguishedNameCombinator(spec_opaque_1_ffff())
 }
@@ -23414,9 +24006,15 @@ pub fn certificate_authorities_extension_authorities<'a>(l: u16) -> (o: Certific
                 
 
 pub closed spec fn spec_certificate_authorities_extension() -> SpecCertificateAuthoritiesExtensionCombinator {
-        let fst = Refined { inner: U16Be, predicate: Predicate17709910934222271310 };
-    let snd = |deps| spec_certificate_authorities_extension_cont(deps);
-    SpecCertificateAuthoritiesExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: CertificateAuthoritiesExtensionMapper })
+    SpecCertificateAuthoritiesExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U16Be, predicate: Predicate17709910934222271310 },
+            snd: |deps| spec_certificate_authorities_extension_cont(deps),
+        },
+        mapper: CertificateAuthoritiesExtensionMapper,
+    }
+)
 }
 
 
@@ -23429,10 +24027,16 @@ pub open spec fn spec_certificate_authorities_extension_cont(deps: u16) -> SpecC
 pub fn certificate_authorities_extension() -> (o: CertificateAuthoritiesExtensionCombinator)
     ensures o@ == spec_certificate_authorities_extension(),
 {
-       let fst = Refined { inner: U16Be, predicate: Predicate17709910934222271310 };
-    let snd = CertificateAuthoritiesExtensionCont;
-    let spec_snd = Ghost(|deps| spec_certificate_authorities_extension_cont(deps));
-    CertificateAuthoritiesExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: CertificateAuthoritiesExtensionMapper })
+    CertificateAuthoritiesExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U16Be, predicate: Predicate17709910934222271310 },
+            snd: CertificateAuthoritiesExtensionCont,
+            spec_snd: Ghost(|deps| spec_certificate_authorities_extension_cont(deps)),
+        },
+        mapper: CertificateAuthoritiesExtensionMapper,
+    }
+)
 }
 
 
@@ -23489,9 +24093,15 @@ pub fn oid_filter_extension_filters<'a>(l: Uint0Ffff) -> (o: OidFilterExtensionF
                 
 
 pub closed spec fn spec_oid_filter_extension() -> SpecOidFilterExtensionCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_oid_filter_extension_cont(deps);
-    SpecOidFilterExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: OidFilterExtensionMapper })
+    SpecOidFilterExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_oid_filter_extension_cont(deps),
+        },
+        mapper: OidFilterExtensionMapper,
+    }
+)
 }
 
 
@@ -23504,10 +24114,16 @@ pub open spec fn spec_oid_filter_extension_cont(deps: SpecUint0Ffff) -> SpecOidF
 pub fn oid_filter_extension() -> (o: OidFilterExtensionCombinator)
     ensures o@ == spec_oid_filter_extension(),
 {
-       let fst = uint_0_ffff();
-    let snd = OidFilterExtensionCont;
-    let spec_snd = Ghost(|deps| spec_oid_filter_extension_cont(deps));
-    OidFilterExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: OidFilterExtensionMapper })
+    OidFilterExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: OidFilterExtensionCont,
+            spec_snd: Ghost(|deps| spec_oid_filter_extension_cont(deps)),
+        },
+        mapper: OidFilterExtensionMapper,
+    }
+)
 }
 
 
@@ -23562,9 +24178,15 @@ pub fn signature_scheme_list_list(l: Uint2Fffe) -> (o: SignatureSchemeListListCo
                 
 
 pub closed spec fn spec_signature_scheme_list() -> SpecSignatureSchemeListCombinator {
-        let fst = spec_uint_2_fffe();
-    let snd = |deps| spec_signature_scheme_list_cont(deps);
-    SpecSignatureSchemeListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SignatureSchemeListMapper })
+    SpecSignatureSchemeListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_fffe(),
+            snd: |deps| spec_signature_scheme_list_cont(deps),
+        },
+        mapper: SignatureSchemeListMapper,
+    }
+)
 }
 
 
@@ -23577,10 +24199,16 @@ pub open spec fn spec_signature_scheme_list_cont(deps: SpecUint2Fffe) -> SpecSig
 pub fn signature_scheme_list() -> (o: SignatureSchemeListCombinator)
     ensures o@ == spec_signature_scheme_list(),
 {
-       let fst = uint_2_fffe();
-    let snd = SignatureSchemeListCont;
-    let spec_snd = Ghost(|deps| spec_signature_scheme_list_cont(deps));
-    SignatureSchemeListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SignatureSchemeListMapper })
+    SignatureSchemeListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_fffe(),
+            snd: SignatureSchemeListCont,
+            spec_snd: Ghost(|deps| spec_signature_scheme_list_cont(deps)),
+        },
+        mapper: SignatureSchemeListMapper,
+    }
+)
 }
 
 
@@ -23604,25 +24232,16 @@ impl Continuation<Uint2Fffe> for SignatureSchemeListCont {
                     
                 
 
-pub closed spec fn spec_named_group() -> SpecNamedGroupCombinator {
-    SpecNamedGroupCombinator(U16Be)
-}
-
-
-                
-pub fn named_group() -> (o: NamedGroupCombinator)
-    ensures o@ == spec_named_group(),
-{
-    NamedGroupCombinator(U16Be)
-}
-
-
-                
-
 pub closed spec fn spec_key_share_entry() -> SpecKeyShareEntryCombinator {
-        let fst = spec_named_group();
-    let snd = |deps| spec_key_share_entry_cont(deps);
-    SpecKeyShareEntryCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: KeyShareEntryMapper })
+    SpecKeyShareEntryCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_named_group(),
+            snd: |deps| spec_key_share_entry_cont(deps),
+        },
+        mapper: KeyShareEntryMapper,
+    }
+)
 }
 
 
@@ -23635,10 +24254,16 @@ pub open spec fn spec_key_share_entry_cont(deps: SpecNamedGroup) -> SpecKeyShare
 pub fn key_share_entry() -> (o: KeyShareEntryCombinator)
     ensures o@ == spec_key_share_entry(),
 {
-       let fst = named_group();
-    let snd = KeyShareEntryCont;
-    let spec_snd = Ghost(|deps| spec_key_share_entry_cont(deps));
-    KeyShareEntryCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: KeyShareEntryMapper })
+    KeyShareEntryCombinator(
+    Mapped {
+        inner: Depend {
+            fst: named_group(),
+            snd: KeyShareEntryCont,
+            spec_snd: Ghost(|deps| spec_key_share_entry_cont(deps)),
+        },
+        mapper: KeyShareEntryMapper,
+    }
+)
 }
 
 
@@ -23678,9 +24303,15 @@ pub fn key_share_client_hello_client_shares<'a>(l: Uint0Ffff) -> (o: KeyShareCli
                 
 
 pub closed spec fn spec_key_share_client_hello() -> SpecKeyShareClientHelloCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_key_share_client_hello_cont(deps);
-    SpecKeyShareClientHelloCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: KeyShareClientHelloMapper })
+    SpecKeyShareClientHelloCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_key_share_client_hello_cont(deps),
+        },
+        mapper: KeyShareClientHelloMapper,
+    }
+)
 }
 
 
@@ -23693,10 +24324,16 @@ pub open spec fn spec_key_share_client_hello_cont(deps: SpecUint0Ffff) -> SpecKe
 pub fn key_share_client_hello() -> (o: KeyShareClientHelloCombinator)
     ensures o@ == spec_key_share_client_hello(),
 {
-       let fst = uint_0_ffff();
-    let snd = KeyShareClientHelloCont;
-    let spec_snd = Ghost(|deps| spec_key_share_client_hello_cont(deps));
-    KeyShareClientHelloCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: KeyShareClientHelloMapper })
+    KeyShareClientHelloCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: KeyShareClientHelloCont,
+            spec_snd: Ghost(|deps| spec_key_share_client_hello_cont(deps)),
+        },
+        mapper: KeyShareClientHelloMapper,
+    }
+)
 }
 
 
@@ -23718,21 +24355,6 @@ impl Continuation<Uint0Ffff> for KeyShareClientHelloCont {
 }
 
                     
-                
-
-pub closed spec fn spec_unknown_extension() -> SpecUnknownExtensionCombinator {
-    SpecUnknownExtensionCombinator(spec_opaque_0_ffff())
-}
-
-
-                
-pub fn unknown_extension() -> (o: UnknownExtensionCombinator)
-    ensures o@ == spec_unknown_extension(),
-{
-    UnknownExtensionCombinator(opaque_0_ffff())
-}
-
-
                 
 
 pub closed spec fn spec_client_hello_extension_extension_data(extension_type: SpecExtensionType, ext_len: u16) -> SpecClientHelloExtensionExtensionDataCombinator {
@@ -23799,9 +24421,15 @@ pub fn client_hello_extension_extension_data<'a>(extension_type: ExtensionType, 
                 
 
 pub closed spec fn spec_client_hello_extension() -> SpecClientHelloExtensionCombinator {
-        let fst = (spec_extension_type(), U16Be);
-    let snd = |deps| spec_client_hello_extension_cont(deps);
-    SpecClientHelloExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ClientHelloExtensionMapper })
+    SpecClientHelloExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: (spec_extension_type(), U16Be),
+            snd: |deps| spec_client_hello_extension_cont(deps),
+        },
+        mapper: ClientHelloExtensionMapper,
+    }
+)
 }
 
 
@@ -23815,10 +24443,16 @@ pub open spec fn spec_client_hello_extension_cont(deps: (SpecExtensionType, u16)
 pub fn client_hello_extension() -> (o: ClientHelloExtensionCombinator)
     ensures o@ == spec_client_hello_extension(),
 {
-       let fst = (extension_type(), U16Be);
-    let snd = ClientHelloExtensionCont;
-    let spec_snd = Ghost(|deps| spec_client_hello_extension_cont(deps));
-    ClientHelloExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ClientHelloExtensionMapper })
+    ClientHelloExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: (extension_type(), U16Be),
+            snd: ClientHelloExtensionCont,
+            spec_snd: Ghost(|deps| spec_client_hello_extension_cont(deps)),
+        },
+        mapper: ClientHelloExtensionMapper,
+    }
+)
 }
 
 
@@ -23859,9 +24493,15 @@ pub fn client_extensions_extensions<'a>(l: u16) -> (o: ClientExtensionsExtension
                 
 
 pub closed spec fn spec_client_extensions() -> SpecClientExtensionsCombinator {
-        let fst = Refined { inner: U16Be, predicate: Predicate15770232246241775772 };
-    let snd = |deps| spec_client_extensions_cont(deps);
-    SpecClientExtensionsCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ClientExtensionsMapper })
+    SpecClientExtensionsCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U16Be, predicate: Predicate15770232246241775772 },
+            snd: |deps| spec_client_extensions_cont(deps),
+        },
+        mapper: ClientExtensionsMapper,
+    }
+)
 }
 
 
@@ -23874,10 +24514,16 @@ pub open spec fn spec_client_extensions_cont(deps: u16) -> SpecClientExtensionsE
 pub fn client_extensions() -> (o: ClientExtensionsCombinator)
     ensures o@ == spec_client_extensions(),
 {
-       let fst = Refined { inner: U16Be, predicate: Predicate15770232246241775772 };
-    let snd = ClientExtensionsCont;
-    let spec_snd = Ghost(|deps| spec_client_extensions_cont(deps));
-    ClientExtensionsCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ClientExtensionsMapper })
+    ClientExtensionsCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U16Be, predicate: Predicate15770232246241775772 },
+            snd: ClientExtensionsCont,
+            spec_snd: Ghost(|deps| spec_client_extensions_cont(deps)),
+        },
+        mapper: ClientExtensionsMapper,
+    }
+)
 }
 
 
@@ -23989,9 +24635,15 @@ pub fn server_name_name<'a>(name_type: NameType) -> (o: ServerNameNameCombinator
                 
 
 pub closed spec fn spec_server_name() -> SpecServerNameCombinator {
-        let fst = spec_name_type();
-    let snd = |deps| spec_server_name_cont(deps);
-    SpecServerNameCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ServerNameMapper })
+    SpecServerNameCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_name_type(),
+            snd: |deps| spec_server_name_cont(deps),
+        },
+        mapper: ServerNameMapper,
+    }
+)
 }
 
 
@@ -24004,10 +24656,16 @@ pub open spec fn spec_server_name_cont(deps: SpecNameType) -> SpecServerNameName
 pub fn server_name() -> (o: ServerNameCombinator)
     ensures o@ == spec_server_name(),
 {
-       let fst = name_type();
-    let snd = ServerNameCont;
-    let spec_snd = Ghost(|deps| spec_server_name_cont(deps));
-    ServerNameCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ServerNameMapper })
+    ServerNameCombinator(
+    Mapped {
+        inner: Depend {
+            fst: name_type(),
+            snd: ServerNameCont,
+            spec_snd: Ghost(|deps| spec_server_name_cont(deps)),
+        },
+        mapper: ServerNameMapper,
+    }
+)
 }
 
 
@@ -24047,9 +24705,15 @@ pub fn server_name_list_list<'a>(l: Uint1Ffff) -> (o: ServerNameListListCombinat
                 
 
 pub closed spec fn spec_server_name_list() -> SpecServerNameListCombinator {
-        let fst = spec_uint_1_ffff();
-    let snd = |deps| spec_server_name_list_cont(deps);
-    SpecServerNameListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ServerNameListMapper })
+    SpecServerNameListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_1_ffff(),
+            snd: |deps| spec_server_name_list_cont(deps),
+        },
+        mapper: ServerNameListMapper,
+    }
+)
 }
 
 
@@ -24062,10 +24726,16 @@ pub open spec fn spec_server_name_list_cont(deps: SpecUint1Ffff) -> SpecServerNa
 pub fn server_name_list() -> (o: ServerNameListCombinator)
     ensures o@ == spec_server_name_list(),
 {
-       let fst = uint_1_ffff();
-    let snd = ServerNameListCont;
-    let spec_snd = Ghost(|deps| spec_server_name_list_cont(deps));
-    ServerNameListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ServerNameListMapper })
+    ServerNameListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_1_ffff(),
+            snd: ServerNameListCont,
+            spec_snd: Ghost(|deps| spec_server_name_list_cont(deps)),
+        },
+        mapper: ServerNameListMapper,
+    }
+)
 }
 
 
@@ -24120,9 +24790,15 @@ pub fn responder_id_list_list<'a>(l: Uint0Ffff) -> (o: ResponderIdListListCombin
                 
 
 pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_responder_id_list_cont(deps);
-    SpecResponderIdListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ResponderIdListMapper })
+    SpecResponderIdListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_0_ffff(),
+            snd: |deps| spec_responder_id_list_cont(deps),
+        },
+        mapper: ResponderIdListMapper,
+    }
+)
 }
 
 
@@ -24135,10 +24811,16 @@ pub open spec fn spec_responder_id_list_cont(deps: SpecUint0Ffff) -> SpecRespond
 pub fn responder_id_list() -> (o: ResponderIdListCombinator)
     ensures o@ == spec_responder_id_list(),
 {
-       let fst = uint_0_ffff();
-    let snd = ResponderIdListCont;
-    let spec_snd = Ghost(|deps| spec_responder_id_list_cont(deps));
-    ResponderIdListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ResponderIdListMapper })
+    ResponderIdListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_0_ffff(),
+            snd: ResponderIdListCont,
+            spec_snd: Ghost(|deps| spec_responder_id_list_cont(deps)),
+        },
+        mapper: ResponderIdListMapper,
+    }
+)
 }
 
 
@@ -24160,6 +24842,21 @@ impl Continuation<Uint0Ffff> for ResponderIdListCont {
 }
 
                     
+                
+
+pub closed spec fn spec_ocsp_extensions() -> SpecOcspExtensionsCombinator {
+    SpecOcspExtensionsCombinator(spec_opaque_0_ffff())
+}
+
+
+                
+pub fn ocsp_extensions() -> (o: OcspExtensionsCombinator)
+    ensures o@ == spec_ocsp_extensions(),
+{
+    OcspExtensionsCombinator(opaque_0_ffff())
+}
+
+
                 
 
 pub closed spec fn spec_oscp_status_request() -> SpecOscpStatusRequestCombinator {
@@ -24212,9 +24909,15 @@ pub fn named_group_list_list(l: Uint2Ffff) -> (o: NamedGroupListListCombinator)
                 
 
 pub closed spec fn spec_named_group_list() -> SpecNamedGroupListCombinator {
-        let fst = spec_uint_2_ffff();
-    let snd = |deps| spec_named_group_list_cont(deps);
-    SpecNamedGroupListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: NamedGroupListMapper })
+    SpecNamedGroupListCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_ffff(),
+            snd: |deps| spec_named_group_list_cont(deps),
+        },
+        mapper: NamedGroupListMapper,
+    }
+)
 }
 
 
@@ -24227,10 +24930,16 @@ pub open spec fn spec_named_group_list_cont(deps: SpecUint2Ffff) -> SpecNamedGro
 pub fn named_group_list() -> (o: NamedGroupListCombinator)
     ensures o@ == spec_named_group_list(),
 {
-       let fst = uint_2_ffff();
-    let snd = NamedGroupListCont;
-    let spec_snd = Ghost(|deps| spec_named_group_list_cont(deps));
-    NamedGroupListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: NamedGroupListMapper })
+    NamedGroupListCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_ffff(),
+            snd: NamedGroupListCont,
+            spec_snd: Ghost(|deps| spec_named_group_list_cont(deps)),
+        },
+        mapper: NamedGroupListMapper,
+    }
+)
 }
 
 
@@ -24322,9 +25031,15 @@ pub fn sever_hello_extension_extension_data<'a>(ext_len: u16, extension_type: Ex
                 
 
 pub closed spec fn spec_sever_hello_extension() -> SpecSeverHelloExtensionCombinator {
-        let fst = (spec_extension_type(), U16Be);
-    let snd = |deps| spec_sever_hello_extension_cont(deps);
-    SpecSeverHelloExtensionCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: SeverHelloExtensionMapper })
+    SpecSeverHelloExtensionCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: (spec_extension_type(), U16Be),
+            snd: |deps| spec_sever_hello_extension_cont(deps),
+        },
+        mapper: SeverHelloExtensionMapper,
+    }
+)
 }
 
 
@@ -24338,10 +25053,16 @@ pub open spec fn spec_sever_hello_extension_cont(deps: (SpecExtensionType, u16))
 pub fn sever_hello_extension() -> (o: SeverHelloExtensionCombinator)
     ensures o@ == spec_sever_hello_extension(),
 {
-       let fst = (extension_type(), U16Be);
-    let snd = SeverHelloExtensionCont;
-    let spec_snd = Ghost(|deps| spec_sever_hello_extension_cont(deps));
-    SeverHelloExtensionCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: SeverHelloExtensionMapper })
+    SeverHelloExtensionCombinator(
+    Mapped {
+        inner: Depend {
+            fst: (extension_type(), U16Be),
+            snd: SeverHelloExtensionCont,
+            spec_snd: Ghost(|deps| spec_sever_hello_extension_cont(deps)),
+        },
+        mapper: SeverHelloExtensionMapper,
+    }
+)
 }
 
 
@@ -24382,9 +25103,15 @@ pub fn server_extensions_extensions<'a>(l: u16) -> (o: ServerExtensionsExtension
                 
 
 pub closed spec fn spec_server_extensions() -> SpecServerExtensionsCombinator {
-        let fst = Refined { inner: U16Be, predicate: Predicate503472032047519273 };
-    let snd = |deps| spec_server_extensions_cont(deps);
-    SpecServerExtensionsCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: ServerExtensionsMapper })
+    SpecServerExtensionsCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: Refined { inner: U16Be, predicate: Predicate503472032047519273 },
+            snd: |deps| spec_server_extensions_cont(deps),
+        },
+        mapper: ServerExtensionsMapper,
+    }
+)
 }
 
 
@@ -24397,10 +25124,16 @@ pub open spec fn spec_server_extensions_cont(deps: u16) -> SpecServerExtensionsE
 pub fn server_extensions() -> (o: ServerExtensionsCombinator)
     ensures o@ == spec_server_extensions(),
 {
-       let fst = Refined { inner: U16Be, predicate: Predicate503472032047519273 };
-    let snd = ServerExtensionsCont;
-    let spec_snd = Ghost(|deps| spec_server_extensions_cont(deps));
-    ServerExtensionsCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ServerExtensionsMapper })
+    ServerExtensionsCombinator(
+    Mapped {
+        inner: Depend {
+            fst: Refined { inner: U16Be, predicate: Predicate503472032047519273 },
+            snd: ServerExtensionsCont,
+            spec_snd: Ghost(|deps| spec_server_extensions_cont(deps)),
+        },
+        mapper: ServerExtensionsMapper,
+    }
+)
 }
 
 
@@ -24449,96 +25182,6 @@ pub fn server_hello() -> (o: ServerHelloCombinator)
 
                 
 
-pub closed spec fn spec_uint_0_fffe() -> SpecUint0FffeCombinator {
-    SpecUint0FffeCombinator(Refined { inner: U16Be, predicate: Predicate184937773087435626 })
-}
-
-
-                
-pub fn uint_0_fffe() -> (o: Uint0FffeCombinator)
-    ensures o@ == spec_uint_0_fffe(),
-{
-    Uint0FffeCombinator(Refined { inner: U16Be, predicate: Predicate184937773087435626 })
-}
-
-
-                
-
-pub closed spec fn spec_extension() -> SpecExtensionCombinator {
-    SpecExtensionCombinator(Mapped { inner: (spec_extension_type(), spec_opaque_0_ffff()), mapper: ExtensionMapper })
-}
-
-
-
-                
-pub fn extension() -> (o: ExtensionCombinator)
-    ensures o@ == spec_extension(),
-{
-    ExtensionCombinator(Mapped { inner: (extension_type(), opaque_0_ffff()), mapper: ExtensionMapper })
-}
-
-
-
-                
-
-pub closed spec fn spec_new_session_ticket_extensions_extensions(l: SpecUint0Fffe) -> SpecNewSessionTicketExtensionsExtensionsCombinator {
-    SpecNewSessionTicketExtensionsExtensionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_extension())))
-}
-
-
-                
-pub fn new_session_ticket_extensions_extensions<'a>(l: Uint0Fffe) -> (o: NewSessionTicketExtensionsExtensionsCombinator)
-    ensures o@ == spec_new_session_ticket_extensions_extensions(l@),
-{
-    NewSessionTicketExtensionsExtensionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(extension())))
-}
-
-
-                
-
-pub closed spec fn spec_new_session_ticket_extensions() -> SpecNewSessionTicketExtensionsCombinator {
-        let fst = spec_uint_0_fffe();
-    let snd = |deps| spec_new_session_ticket_extensions_cont(deps);
-    SpecNewSessionTicketExtensionsCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: NewSessionTicketExtensionsMapper })
-}
-
-
-pub open spec fn spec_new_session_ticket_extensions_cont(deps: SpecUint0Fffe) -> SpecNewSessionTicketExtensionsExtensionsCombinator {
-    let l = deps;
-    spec_new_session_ticket_extensions_extensions(l)
-}
-                    
-                
-pub fn new_session_ticket_extensions() -> (o: NewSessionTicketExtensionsCombinator)
-    ensures o@ == spec_new_session_ticket_extensions(),
-{
-       let fst = uint_0_fffe();
-    let snd = NewSessionTicketExtensionsCont;
-    let spec_snd = Ghost(|deps| spec_new_session_ticket_extensions_cont(deps));
-    NewSessionTicketExtensionsCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: NewSessionTicketExtensionsMapper })
-}
-
-
-impl Continuation<Uint0Fffe> for NewSessionTicketExtensionsCont {
-    type Output = NewSessionTicketExtensionsExtensionsCombinator;
-
-    open spec fn requires(&self, deps: Uint0Fffe) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: Uint0Fffe, o: Self::Output) -> bool {
-        o@ == spec_new_session_ticket_extensions_cont(deps@)
-    }
-
-    fn apply(&self, deps: Uint0Fffe) -> Self::Output {
-        let l = deps;
-        new_session_ticket_extensions_extensions(l)
-    }
-}
-
-                    
-                
-
 pub closed spec fn spec_new_session_ticket() -> SpecNewSessionTicketCombinator {
     SpecNewSessionTicketCombinator(Mapped { inner: (U32Be, (U32Be, (spec_opaque_0_ff(), (spec_opaque_1_ffff(), spec_new_session_ticket_extensions())))), mapper: NewSessionTicketMapper })
 }
@@ -24562,214 +25205,6 @@ pub fn new_session_ticket() -> (o: NewSessionTicketCombinator)
 
                 
 
-pub closed spec fn spec_encrypted_extensions_extensions(l: SpecUint0Ffff) -> SpecEncryptedExtensionsExtensionsCombinator {
-    SpecEncryptedExtensionsExtensionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_extension())))
-}
-
-
-                
-pub fn encrypted_extensions_extensions<'a>(l: Uint0Ffff) -> (o: EncryptedExtensionsExtensionsCombinator)
-    ensures o@ == spec_encrypted_extensions_extensions(l@),
-{
-    EncryptedExtensionsExtensionsCombinator(AndThen(Bytes(l.ex_into()), Repeat(extension())))
-}
-
-
-                
-
-pub closed spec fn spec_encrypted_extensions() -> SpecEncryptedExtensionsCombinator {
-        let fst = spec_uint_0_ffff();
-    let snd = |deps| spec_encrypted_extensions_cont(deps);
-    SpecEncryptedExtensionsCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: EncryptedExtensionsMapper })
-}
-
-
-pub open spec fn spec_encrypted_extensions_cont(deps: SpecUint0Ffff) -> SpecEncryptedExtensionsExtensionsCombinator {
-    let l = deps;
-    spec_encrypted_extensions_extensions(l)
-}
-                    
-                
-pub fn encrypted_extensions() -> (o: EncryptedExtensionsCombinator)
-    ensures o@ == spec_encrypted_extensions(),
-{
-       let fst = uint_0_ffff();
-    let snd = EncryptedExtensionsCont;
-    let spec_snd = Ghost(|deps| spec_encrypted_extensions_cont(deps));
-    EncryptedExtensionsCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: EncryptedExtensionsMapper })
-}
-
-
-impl Continuation<Uint0Ffff> for EncryptedExtensionsCont {
-    type Output = EncryptedExtensionsExtensionsCombinator;
-
-    open spec fn requires(&self, deps: Uint0Ffff) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: Uint0Ffff, o: Self::Output) -> bool {
-        o@ == spec_encrypted_extensions_cont(deps@)
-    }
-
-    fn apply(&self, deps: Uint0Ffff) -> Self::Output {
-        let l = deps;
-        encrypted_extensions_extensions(l)
-    }
-}
-
-                    
-                
-
-pub closed spec fn spec_opaque_1_ffffff() -> SpecOpaque1FfffffCombinator {
-        let fst = Refined { inner: U24Be, predicate: Predicate10565972399076720534 };
-    let snd = |deps| spec_opaque1_ffffff_cont(deps);
-    SpecOpaque1FfffffCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque1FfffffMapper })
-}
-
-
-pub open spec fn spec_opaque1_ffffff_cont(deps: u24) -> Bytes {
-    let l = deps;
-    Bytes(l.spec_into())
-}
-                    
-                
-pub fn opaque_1_ffffff() -> (o: Opaque1FfffffCombinator)
-    ensures o@ == spec_opaque_1_ffffff(),
-{
-       let fst = Refined { inner: U24Be, predicate: Predicate10565972399076720534 };
-    let snd = Opaque1FfffffCont;
-    let spec_snd = Ghost(|deps| spec_opaque1_ffffff_cont(deps));
-    Opaque1FfffffCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque1FfffffMapper })
-}
-
-
-impl Continuation<u24> for Opaque1FfffffCont {
-    type Output = Bytes;
-
-    open spec fn requires(&self, deps: u24) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
-        o@ == spec_opaque1_ffffff_cont(deps@)
-    }
-
-    fn apply(&self, deps: u24) -> Self::Output {
-        let l = deps;
-        Bytes(l.ex_into())
-    }
-}
-
-                    
-                
-
-pub closed spec fn spec_certificate_extensions() -> SpecCertificateExtensionsCombinator {
-    SpecCertificateExtensionsCombinator(spec_encrypted_extensions())
-}
-
-
-                
-pub fn certificate_extensions() -> (o: CertificateExtensionsCombinator)
-    ensures o@ == spec_certificate_extensions(),
-{
-    CertificateExtensionsCombinator(encrypted_extensions())
-}
-
-
-                
-
-pub closed spec fn spec_certificate_entry() -> SpecCertificateEntryCombinator {
-    SpecCertificateEntryCombinator(Mapped { inner: (spec_opaque_1_ffffff(), spec_certificate_extensions()), mapper: CertificateEntryMapper })
-}
-
-
-
-                
-pub fn certificate_entry() -> (o: CertificateEntryCombinator)
-    ensures o@ == spec_certificate_entry(),
-{
-    CertificateEntryCombinator(Mapped { inner: (opaque_1_ffffff(), certificate_extensions()), mapper: CertificateEntryMapper })
-}
-
-
-
-                
-
-pub closed spec fn spec_certificate_list_list(l: u24) -> SpecCertificateListListCombinator {
-    SpecCertificateListListCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_certificate_entry())))
-}
-
-
-                
-pub fn certificate_list_list<'a>(l: u24) -> (o: CertificateListListCombinator)
-    ensures o@ == spec_certificate_list_list(l@),
-{
-    CertificateListListCombinator(AndThen(Bytes(l.ex_into()), Repeat(certificate_entry())))
-}
-
-
-                
-
-pub closed spec fn spec_certificate_list() -> SpecCertificateListCombinator {
-        let fst = U24Be;
-    let snd = |deps| spec_certificate_list_cont(deps);
-    SpecCertificateListCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: CertificateListMapper })
-}
-
-
-pub open spec fn spec_certificate_list_cont(deps: u24) -> SpecCertificateListListCombinator {
-    let l = deps;
-    spec_certificate_list_list(l)
-}
-                    
-                
-pub fn certificate_list() -> (o: CertificateListCombinator)
-    ensures o@ == spec_certificate_list(),
-{
-       let fst = U24Be;
-    let snd = CertificateListCont;
-    let spec_snd = Ghost(|deps| spec_certificate_list_cont(deps));
-    CertificateListCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: CertificateListMapper })
-}
-
-
-impl Continuation<u24> for CertificateListCont {
-    type Output = CertificateListListCombinator;
-
-    open spec fn requires(&self, deps: u24) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
-        o@ == spec_certificate_list_cont(deps@)
-    }
-
-    fn apply(&self, deps: u24) -> Self::Output {
-        let l = deps;
-        certificate_list_list(l)
-    }
-}
-
-                    
-                
-
-pub closed spec fn spec_certificate() -> SpecCertificateCombinator {
-    SpecCertificateCombinator(Mapped { inner: (spec_opaque_0_ff(), spec_certificate_list()), mapper: CertificateMapper })
-}
-
-
-
-                
-pub fn certificate() -> (o: CertificateCombinator)
-    ensures o@ == spec_certificate(),
-{
-    CertificateCombinator(Mapped { inner: (opaque_0_ff(), certificate_list()), mapper: CertificateMapper })
-}
-
-
-
-                
-
 pub closed spec fn spec_certificate_request_extensions_extensions(l: SpecUint2Ffff) -> SpecCertificateRequestExtensionsExtensionsCombinator {
     SpecCertificateRequestExtensionsExtensionsCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_extension())))
 }
@@ -24786,9 +25221,15 @@ pub fn certificate_request_extensions_extensions<'a>(l: Uint2Ffff) -> (o: Certif
                 
 
 pub closed spec fn spec_certificate_request_extensions() -> SpecCertificateRequestExtensionsCombinator {
-        let fst = spec_uint_2_ffff();
-    let snd = |deps| spec_certificate_request_extensions_cont(deps);
-    SpecCertificateRequestExtensionsCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: CertificateRequestExtensionsMapper })
+    SpecCertificateRequestExtensionsCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_ffff(),
+            snd: |deps| spec_certificate_request_extensions_cont(deps),
+        },
+        mapper: CertificateRequestExtensionsMapper,
+    }
+)
 }
 
 
@@ -24801,10 +25242,16 @@ pub open spec fn spec_certificate_request_extensions_cont(deps: SpecUint2Ffff) -
 pub fn certificate_request_extensions() -> (o: CertificateRequestExtensionsCombinator)
     ensures o@ == spec_certificate_request_extensions(),
 {
-       let fst = uint_2_ffff();
-    let snd = CertificateRequestExtensionsCont;
-    let spec_snd = Ghost(|deps| spec_certificate_request_extensions_cont(deps));
-    CertificateRequestExtensionsCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: CertificateRequestExtensionsMapper })
+    CertificateRequestExtensionsCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_ffff(),
+            snd: CertificateRequestExtensionsCont,
+            spec_snd: Ghost(|deps| spec_certificate_request_extensions_cont(deps)),
+        },
+        mapper: CertificateRequestExtensionsMapper,
+    }
+)
 }
 
 
@@ -24940,66 +25387,6 @@ pub fn handshake_msg<'a>(msg_type: HandshakeType, length: u24) -> (o: HandshakeM
 
                 
 
-pub closed spec fn spec_pre_shared_key_server_extension() -> SpecPreSharedKeyServerExtensionCombinator {
-    SpecPreSharedKeyServerExtensionCombinator(Mapped { inner: U16Be, mapper: PreSharedKeyServerExtensionMapper })
-}
-
-
-                
-pub fn pre_shared_key_server_extension() -> (o: PreSharedKeyServerExtensionCombinator)
-    ensures o@ == spec_pre_shared_key_server_extension(),
-{
-    PreSharedKeyServerExtensionCombinator(Mapped { inner: U16Be, mapper: PreSharedKeyServerExtensionMapper })
-}
-
-
-                
-
-pub closed spec fn spec_handshake_type() -> SpecHandshakeTypeCombinator {
-    SpecHandshakeTypeCombinator(TryMap { inner: U8, mapper: HandshakeTypeMapper })
-}
-
-
-                
-pub fn handshake_type() -> (o: HandshakeTypeCombinator)
-    ensures o@ == spec_handshake_type(),
-{
-    HandshakeTypeCombinator(TryMap { inner: U8, mapper: HandshakeTypeMapper })
-}
-
-
-                
-
-pub closed spec fn spec_server_cert_type_server_extension() -> SpecServerCertTypeServerExtensionCombinator {
-    SpecServerCertTypeServerExtensionCombinator(Mapped { inner: spec_certificate_type(), mapper: ServerCertTypeServerExtensionMapper })
-}
-
-
-                
-pub fn server_cert_type_server_extension() -> (o: ServerCertTypeServerExtensionCombinator)
-    ensures o@ == spec_server_cert_type_server_extension(),
-{
-    ServerCertTypeServerExtensionCombinator(Mapped { inner: certificate_type(), mapper: ServerCertTypeServerExtensionMapper })
-}
-
-
-                
-
-pub closed spec fn spec_supported_versions_server() -> SpecSupportedVersionsServerCombinator {
-    SpecSupportedVersionsServerCombinator(Mapped { inner: spec_protocol_version(), mapper: SupportedVersionsServerMapper })
-}
-
-
-                
-pub fn supported_versions_server() -> (o: SupportedVersionsServerCombinator)
-    ensures o@ == spec_supported_versions_server(),
-{
-    SupportedVersionsServerCombinator(Mapped { inner: protocol_version(), mapper: SupportedVersionsServerMapper })
-}
-
-
-                
-
 pub closed spec fn spec_ocsp_response() -> SpecOcspResponseCombinator {
     SpecOcspResponseCombinator(spec_opaque_1_ffffff())
 }
@@ -25010,96 +25397,6 @@ pub fn ocsp_response() -> (o: OcspResponseCombinator)
     ensures o@ == spec_ocsp_response(),
 {
     OcspResponseCombinator(opaque_1_ffffff())
-}
-
-
-                
-
-pub closed spec fn spec_certificate_status() -> SpecCertificateStatusCombinator {
-    SpecCertificateStatusCombinator(Mapped { inner: (Refined { inner: U8, predicate: TagPred(CERTIFICATESTATUS_STATUS_TYPE) }, spec_ocsp_response()), mapper: CertificateStatusMapper })
-}
-
-
-
-                
-pub fn certificate_status() -> (o: CertificateStatusCombinator)
-    ensures o@ == spec_certificate_status(),
-{
-    CertificateStatusCombinator(Mapped { inner: (Refined { inner: U8, predicate: TagPred(CERTIFICATESTATUS_STATUS_TYPE) }, ocsp_response()), mapper: CertificateStatusMapper })
-}
-
-
-
-                
-
-pub closed spec fn spec_opaque_2_ffff() -> SpecOpaque2FfffCombinator {
-        let fst = spec_uint_2_ffff();
-    let snd = |deps| spec_opaque2_ffff_cont(deps);
-    SpecOpaque2FfffCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque2FfffMapper })
-}
-
-
-pub open spec fn spec_opaque2_ffff_cont(deps: SpecUint2Ffff) -> Bytes {
-    let l = deps;
-    Bytes(l.spec_into())
-}
-                    
-                
-pub fn opaque_2_ffff() -> (o: Opaque2FfffCombinator)
-    ensures o@ == spec_opaque_2_ffff(),
-{
-       let fst = uint_2_ffff();
-    let snd = Opaque2FfffCont;
-    let spec_snd = Ghost(|deps| spec_opaque2_ffff_cont(deps));
-    Opaque2FfffCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque2FfffMapper })
-}
-
-
-impl Continuation<Uint2Ffff> for Opaque2FfffCont {
-    type Output = Bytes;
-
-    open spec fn requires(&self, deps: Uint2Ffff) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: Uint2Ffff, o: Self::Output) -> bool {
-        o@ == spec_opaque2_ffff_cont(deps@)
-    }
-
-    fn apply(&self, deps: Uint2Ffff) -> Self::Output {
-        let l = deps;
-        Bytes(l.ex_into())
-    }
-}
-
-                    
-                
-
-pub closed spec fn spec_alert_level() -> SpecAlertLevelCombinator {
-    SpecAlertLevelCombinator(TryMap { inner: U8, mapper: AlertLevelMapper })
-}
-
-
-                
-pub fn alert_level() -> (o: AlertLevelCombinator)
-    ensures o@ == spec_alert_level(),
-{
-    AlertLevelCombinator(TryMap { inner: U8, mapper: AlertLevelMapper })
-}
-
-
-                
-
-pub closed spec fn spec_early_data_indication_new_session_ticket() -> SpecEarlyDataIndicationNewSessionTicketCombinator {
-    SpecEarlyDataIndicationNewSessionTicketCombinator(Mapped { inner: U32Be, mapper: EarlyDataIndicationNewSessionTicketMapper })
-}
-
-
-                
-pub fn early_data_indication_new_session_ticket() -> (o: EarlyDataIndicationNewSessionTicketCombinator)
-    ensures o@ == spec_early_data_indication_new_session_ticket(),
-{
-    EarlyDataIndicationNewSessionTicketCombinator(Mapped { inner: U32Be, mapper: EarlyDataIndicationNewSessionTicketMapper })
 }
 
 
@@ -25139,17 +25436,74 @@ pub fn tls_plaintext() -> (o: TlsPlaintextCombinator)
 
                 
 
-pub closed spec fn spec_heartbeat_extension() -> SpecHeartbeatExtensionCombinator {
-    SpecHeartbeatExtensionCombinator(Mapped { inner: spec_heartbeat_mode(), mapper: HeartbeatExtensionMapper })
+pub closed spec fn spec_opaque_2_ffff() -> SpecOpaque2FfffCombinator {
+    SpecOpaque2FfffCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: spec_uint_2_ffff(),
+            snd: |deps| spec_opaque2_ffff_cont(deps),
+        },
+        mapper: Opaque2FfffMapper,
+    }
+)
 }
+
+
+pub open spec fn spec_opaque2_ffff_cont(deps: SpecUint2Ffff) -> Bytes {
+    let l = deps;
+    Bytes(l.spec_into())
+}
+                    
+                
+pub fn opaque_2_ffff() -> (o: Opaque2FfffCombinator)
+    ensures o@ == spec_opaque_2_ffff(),
+{
+    Opaque2FfffCombinator(
+    Mapped {
+        inner: Depend {
+            fst: uint_2_ffff(),
+            snd: Opaque2FfffCont,
+            spec_snd: Ghost(|deps| spec_opaque2_ffff_cont(deps)),
+        },
+        mapper: Opaque2FfffMapper,
+    }
+)
+}
+
+
+impl Continuation<Uint2Ffff> for Opaque2FfffCont {
+    type Output = Bytes;
+
+    open spec fn requires(&self, deps: Uint2Ffff) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: Uint2Ffff, o: Self::Output) -> bool {
+        o@ == spec_opaque2_ffff_cont(deps@)
+    }
+
+    fn apply(&self, deps: Uint2Ffff) -> Self::Output {
+        let l = deps;
+        Bytes(l.ex_into())
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_certificate_status() -> SpecCertificateStatusCombinator {
+    SpecCertificateStatusCombinator(Mapped { inner: (Refined { inner: U8, predicate: TagPred(CERTIFICATESTATUS_STATUS_TYPE) }, spec_ocsp_response()), mapper: CertificateStatusMapper })
+}
+
 
 
                 
-pub fn heartbeat_extension() -> (o: HeartbeatExtensionCombinator)
-    ensures o@ == spec_heartbeat_extension(),
+pub fn certificate_status() -> (o: CertificateStatusCombinator)
+    ensures o@ == spec_certificate_status(),
 {
-    HeartbeatExtensionCombinator(Mapped { inner: heartbeat_mode(), mapper: HeartbeatExtensionMapper })
+    CertificateStatusCombinator(Mapped { inner: (Refined { inner: U8, predicate: TagPred(CERTIFICATESTATUS_STATUS_TYPE) }, ocsp_response()), mapper: CertificateStatusMapper })
 }
+
 
 
                 
@@ -25173,27 +25527,161 @@ pub fn tls_ciphertext() -> (o: TlsCiphertextCombinator)
 
                 
 
-pub closed spec fn spec_alert() -> SpecAlertCombinator {
-    SpecAlertCombinator(Mapped { inner: (spec_alert_level(), spec_alert_description()), mapper: AlertMapper })
+pub closed spec fn spec_supported_versions_server() -> SpecSupportedVersionsServerCombinator {
+    SpecSupportedVersionsServerCombinator(Mapped { inner: spec_protocol_version(), mapper: SupportedVersionsServerMapper })
 }
-
 
 
                 
-pub fn alert() -> (o: AlertCombinator)
-    ensures o@ == spec_alert(),
+pub fn supported_versions_server() -> (o: SupportedVersionsServerCombinator)
+    ensures o@ == spec_supported_versions_server(),
 {
-    AlertCombinator(Mapped { inner: (alert_level(), alert_description()), mapper: AlertMapper })
+    SupportedVersionsServerCombinator(Mapped { inner: protocol_version(), mapper: SupportedVersionsServerMapper })
 }
 
+
+                
+
+pub closed spec fn spec_handshake_type() -> SpecHandshakeTypeCombinator {
+    SpecHandshakeTypeCombinator(TryMap { inner: U8, mapper: HandshakeTypeMapper })
+}
+
+
+                
+pub fn handshake_type() -> (o: HandshakeTypeCombinator)
+    ensures o@ == spec_handshake_type(),
+{
+    HandshakeTypeCombinator(TryMap { inner: U8, mapper: HandshakeTypeMapper })
+}
+
+
+                
+
+pub closed spec fn spec_server_cert_type_server_extension() -> SpecServerCertTypeServerExtensionCombinator {
+    SpecServerCertTypeServerExtensionCombinator(Mapped { inner: spec_certificate_type(), mapper: ServerCertTypeServerExtensionMapper })
+}
+
+
+                
+pub fn server_cert_type_server_extension() -> (o: ServerCertTypeServerExtensionCombinator)
+    ensures o@ == spec_server_cert_type_server_extension(),
+{
+    ServerCertTypeServerExtensionCombinator(Mapped { inner: certificate_type(), mapper: ServerCertTypeServerExtensionMapper })
+}
+
+
+                
+
+pub closed spec fn spec_early_data_indication_new_session_ticket() -> SpecEarlyDataIndicationNewSessionTicketCombinator {
+    SpecEarlyDataIndicationNewSessionTicketCombinator(Mapped { inner: U32Be, mapper: EarlyDataIndicationNewSessionTicketMapper })
+}
+
+
+                
+pub fn early_data_indication_new_session_ticket() -> (o: EarlyDataIndicationNewSessionTicketCombinator)
+    ensures o@ == spec_early_data_indication_new_session_ticket(),
+{
+    EarlyDataIndicationNewSessionTicketCombinator(Mapped { inner: U32Be, mapper: EarlyDataIndicationNewSessionTicketMapper })
+}
+
+
+                
+
+pub closed spec fn spec_opaque_0_ffffff() -> SpecOpaque0FfffffCombinator {
+    SpecOpaque0FfffffCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: U24Be,
+            snd: |deps| spec_opaque0_ffffff_cont(deps),
+        },
+        mapper: Opaque0FfffffMapper,
+    }
+)
+}
+
+
+pub open spec fn spec_opaque0_ffffff_cont(deps: u24) -> Bytes {
+    let l = deps;
+    Bytes(l.spec_into())
+}
+                    
+                
+pub fn opaque_0_ffffff() -> (o: Opaque0FfffffCombinator)
+    ensures o@ == spec_opaque_0_ffffff(),
+{
+    Opaque0FfffffCombinator(
+    Mapped {
+        inner: Depend {
+            fst: U24Be,
+            snd: Opaque0FfffffCont,
+            spec_snd: Ghost(|deps| spec_opaque0_ffffff_cont(deps)),
+        },
+        mapper: Opaque0FfffffMapper,
+    }
+)
+}
+
+
+impl Continuation<u24> for Opaque0FfffffCont {
+    type Output = Bytes;
+
+    open spec fn requires(&self, deps: u24) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
+        o@ == spec_opaque0_ffffff_cont(deps@)
+    }
+
+    fn apply(&self, deps: u24) -> Self::Output {
+        let l = deps;
+        Bytes(l.ex_into())
+    }
+}
+
+                    
+                
+
+pub closed spec fn spec_pre_shared_key_server_extension() -> SpecPreSharedKeyServerExtensionCombinator {
+    SpecPreSharedKeyServerExtensionCombinator(Mapped { inner: U16Be, mapper: PreSharedKeyServerExtensionMapper })
+}
+
+
+                
+pub fn pre_shared_key_server_extension() -> (o: PreSharedKeyServerExtensionCombinator)
+    ensures o@ == spec_pre_shared_key_server_extension(),
+{
+    PreSharedKeyServerExtensionCombinator(Mapped { inner: U16Be, mapper: PreSharedKeyServerExtensionMapper })
+}
+
+
+                
+
+pub closed spec fn spec_client_cert_type_server_extension() -> SpecClientCertTypeServerExtensionCombinator {
+    SpecClientCertTypeServerExtensionCombinator(Mapped { inner: spec_certificate_type(), mapper: ClientCertTypeServerExtensionMapper })
+}
+
+
+                
+pub fn client_cert_type_server_extension() -> (o: ClientCertTypeServerExtensionCombinator)
+    ensures o@ == spec_client_cert_type_server_extension(),
+{
+    ClientCertTypeServerExtensionCombinator(Mapped { inner: certificate_type(), mapper: ClientCertTypeServerExtensionMapper })
+}
 
 
                 
 
 pub closed spec fn spec_handshake() -> SpecHandshakeCombinator {
-        let fst = (spec_handshake_type(), U24Be);
-    let snd = |deps| spec_handshake_cont(deps);
-    SpecHandshakeCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: HandshakeMapper })
+    SpecHandshakeCombinator(
+    Mapped {
+        inner: SpecDepend {
+            fst: (spec_handshake_type(), U24Be),
+            snd: |deps| spec_handshake_cont(deps),
+        },
+        mapper: HandshakeMapper,
+    }
+)
 }
 
 
@@ -25207,10 +25695,16 @@ pub open spec fn spec_handshake_cont(deps: (SpecHandshakeType, u24)) -> SpecHand
 pub fn handshake() -> (o: HandshakeCombinator)
     ensures o@ == spec_handshake(),
 {
-       let fst = (handshake_type(), U24Be);
-    let snd = HandshakeCont;
-    let spec_snd = Ghost(|deps| spec_handshake_cont(deps));
-    HandshakeCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: HandshakeMapper })
+    HandshakeCombinator(
+    Mapped {
+        inner: Depend {
+            fst: (handshake_type(), U24Be),
+            snd: HandshakeCont,
+            spec_snd: Ghost(|deps| spec_handshake_cont(deps)),
+        },
+        mapper: HandshakeMapper,
+    }
+)
 }
 
 
@@ -25235,60 +25729,34 @@ impl Continuation<(HandshakeType, u24)> for HandshakeCont {
                     
                 
 
-pub closed spec fn spec_opaque_0_ffffff() -> SpecOpaque0FfffffCombinator {
-        let fst = U24Be;
-    let snd = |deps| spec_opaque0_ffffff_cont(deps);
-    SpecOpaque0FfffffCombinator(Mapped { inner: SpecDepend { fst, snd }, mapper: Opaque0FfffffMapper })
+pub closed spec fn spec_alert_description() -> SpecAlertDescriptionCombinator {
+    SpecAlertDescriptionCombinator(TryMap { inner: U8, mapper: AlertDescriptionMapper })
 }
 
 
-pub open spec fn spec_opaque0_ffffff_cont(deps: u24) -> Bytes {
-    let l = deps;
-    Bytes(l.spec_into())
-}
-                    
                 
-pub fn opaque_0_ffffff() -> (o: Opaque0FfffffCombinator)
-    ensures o@ == spec_opaque_0_ffffff(),
+pub fn alert_description() -> (o: AlertDescriptionCombinator)
+    ensures o@ == spec_alert_description(),
 {
-       let fst = U24Be;
-    let snd = Opaque0FfffffCont;
-    let spec_snd = Ghost(|deps| spec_opaque0_ffffff_cont(deps));
-    Opaque0FfffffCombinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: Opaque0FfffffMapper })
-}
-
-
-impl Continuation<u24> for Opaque0FfffffCont {
-    type Output = Bytes;
-
-    open spec fn requires(&self, deps: u24) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
-        o@ == spec_opaque0_ffffff_cont(deps@)
-    }
-
-    fn apply(&self, deps: u24) -> Self::Output {
-        let l = deps;
-        Bytes(l.ex_into())
-    }
-}
-
-                    
-                
-
-pub closed spec fn spec_client_cert_type_server_extension() -> SpecClientCertTypeServerExtensionCombinator {
-    SpecClientCertTypeServerExtensionCombinator(Mapped { inner: spec_certificate_type(), mapper: ClientCertTypeServerExtensionMapper })
+    AlertDescriptionCombinator(TryMap { inner: U8, mapper: AlertDescriptionMapper })
 }
 
 
                 
-pub fn client_cert_type_server_extension() -> (o: ClientCertTypeServerExtensionCombinator)
-    ensures o@ == spec_client_cert_type_server_extension(),
+
+pub closed spec fn spec_alert() -> SpecAlertCombinator {
+    SpecAlertCombinator(Mapped { inner: (spec_alert_level(), spec_alert_description()), mapper: AlertMapper })
+}
+
+
+
+                
+pub fn alert() -> (o: AlertCombinator)
+    ensures o@ == spec_alert(),
 {
-    ClientCertTypeServerExtensionCombinator(Mapped { inner: certificate_type(), mapper: ClientCertTypeServerExtensionMapper })
+    AlertCombinator(Mapped { inner: (alert_level(), alert_description()), mapper: AlertMapper })
 }
+
 
 
                 

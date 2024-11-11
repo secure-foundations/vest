@@ -696,9 +696,15 @@ pub type ResponderIdListCombinatorAlias = Mapped<
 >;
 
 pub closed spec fn spec_opaque_u16_1() -> SpecOpaqueU161Combinator {
-    let fst = Refined { inner: U16Le, predicate: Predicate11955646336730306823 };
-    let snd = |deps| spec_opaque_u161_cont(deps);
-    SpecOpaqueU161Combinator(Mapped { inner: SpecDepend { fst, snd }, mapper: OpaqueU161Mapper })
+    SpecOpaqueU161Combinator(
+        Mapped {
+            inner: SpecDepend {
+                fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
+                snd: |deps| spec_opaque_u161_cont(deps),
+            },
+            mapper: OpaqueU161Mapper,
+        },
+    )
 }
 
 pub open spec fn spec_opaque_u161_cont(deps: u16) -> Bytes {
@@ -710,10 +716,16 @@ pub fn opaque_u16_1() -> (o: OpaqueU161Combinator)
     ensures
         o@ == spec_opaque_u16_1(),
 {
-    let fst = Refined { inner: U16Le, predicate: Predicate11955646336730306823 };
-    let snd = OpaqueU161Cont;
-    let spec_snd = Ghost(|deps| spec_opaque_u161_cont(deps));
-    OpaqueU161Combinator(Mapped { inner: Depend { fst, snd, spec_snd }, mapper: OpaqueU161Mapper })
+    OpaqueU161Combinator(
+        Mapped {
+            inner: Depend {
+                fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
+                snd: OpaqueU161Cont,
+                spec_snd: Ghost(|deps| spec_opaque_u161_cont(deps)),
+            },
+            mapper: OpaqueU161Mapper,
+        },
+    )
 }
 
 impl Continuation<u16> for OpaqueU161Cont {
@@ -756,10 +768,14 @@ pub fn responder_id_list_list<'a>(l: u16) -> (o: ResponderIdListListCombinator)
 }
 
 pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
-    let fst = Refined { inner: U16Le, predicate: Predicate6556550293019859977 };
-    let snd = |deps| spec_responder_id_list_cont(deps);
     SpecResponderIdListCombinator(
-        Mapped { inner: SpecDepend { fst, snd }, mapper: ResponderIdListMapper },
+        Mapped {
+            inner: SpecDepend {
+                fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
+                snd: |deps| spec_responder_id_list_cont(deps),
+            },
+            mapper: ResponderIdListMapper,
+        },
     )
 }
 
@@ -772,11 +788,15 @@ pub fn responder_id_list() -> (o: ResponderIdListCombinator)
     ensures
         o@ == spec_responder_id_list(),
 {
-    let fst = Refined { inner: U16Le, predicate: Predicate6556550293019859977 };
-    let snd = ResponderIdListCont;
-    let spec_snd = Ghost(|deps| spec_responder_id_list_cont(deps));
     ResponderIdListCombinator(
-        Mapped { inner: Depend { fst, snd, spec_snd }, mapper: ResponderIdListMapper },
+        Mapped {
+            inner: Depend {
+                fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
+                snd: ResponderIdListCont,
+                spec_snd: Ghost(|deps| spec_responder_id_list_cont(deps)),
+            },
+            mapper: ResponderIdListMapper,
+        },
     )
 }
 
