@@ -259,9 +259,7 @@ impl SpecPred for Predicate11955646336730306823 {
     }
 }
 
-pub struct SpecOpaqueU161Combinator(
-    Mapped<SpecDepend<Refined<U16Le, Predicate11955646336730306823>, Bytes>, OpaqueU161Mapper>,
-);
+pub struct SpecOpaqueU161Combinator(SpecOpaqueU161CombinatorAlias);
 
 impl SpecCombinator for SpecOpaqueU161Combinator {
     type SpecResult = SpecOpaqueU161;
@@ -329,12 +327,7 @@ impl Pred for Predicate11955646336730306823 {
 
 pub struct OpaqueU161Cont;
 
-pub struct OpaqueU161Combinator(
-    Mapped<
-        Depend<Refined<U16Le, Predicate11955646336730306823>, Bytes, OpaqueU161Cont>,
-        OpaqueU161Mapper,
-    >,
-);
+pub struct OpaqueU161Combinator(OpaqueU161CombinatorAlias);
 
 impl View for OpaqueU161Combinator {
     type V = SpecOpaqueU161Combinator;
@@ -382,7 +375,7 @@ pub type OpaqueU161CombinatorAlias = Mapped<
     OpaqueU161Mapper,
 >;
 
-pub struct SpecResponderIdCombinator(SpecOpaqueU161Combinator);
+pub struct SpecResponderIdCombinator(SpecResponderIdCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdCombinator {
     type SpecResult = SpecResponderId;
@@ -420,7 +413,7 @@ impl SecureSpecCombinator for SpecResponderIdCombinator {
 
 pub type SpecResponderIdCombinatorAlias = SpecOpaqueU161Combinator;
 
-pub struct ResponderIdCombinator(OpaqueU161Combinator);
+pub struct ResponderIdCombinator(ResponderIdCombinatorAlias);
 
 impl View for ResponderIdCombinator {
     type V = SpecResponderIdCombinator;
@@ -465,7 +458,7 @@ impl Combinator for ResponderIdCombinator {
 
 pub type ResponderIdCombinatorAlias = OpaqueU161Combinator;
 
-pub struct SpecResponderIdListListCombinator(AndThen<Bytes, Repeat<SpecResponderIdCombinator>>);
+pub struct SpecResponderIdListListCombinator(SpecResponderIdListListCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdListListCombinator {
     type SpecResult = SpecResponderIdListList;
@@ -503,7 +496,7 @@ impl SecureSpecCombinator for SpecResponderIdListListCombinator {
 
 pub type SpecResponderIdListListCombinatorAlias = AndThen<Bytes, Repeat<SpecResponderIdCombinator>>;
 
-pub struct ResponderIdListListCombinator(AndThen<Bytes, Repeat<ResponderIdCombinator>>);
+pub struct ResponderIdListListCombinator(ResponderIdListListCombinatorAlias);
 
 impl View for ResponderIdListListCombinator {
     type V = SpecResponderIdListListCombinator;
@@ -561,12 +554,7 @@ impl SpecPred for Predicate6556550293019859977 {
     }
 }
 
-pub struct SpecResponderIdListCombinator(
-    Mapped<
-        SpecDepend<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
-        ResponderIdListMapper,
-    >,
-);
+pub struct SpecResponderIdListCombinator(SpecResponderIdListCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdListCombinator {
     type SpecResult = SpecResponderIdList;
@@ -634,16 +622,7 @@ impl Pred for Predicate6556550293019859977 {
 
 pub struct ResponderIdListCont;
 
-pub struct ResponderIdListCombinator(
-    Mapped<
-        Depend<
-            Refined<U16Le, Predicate6556550293019859977>,
-            ResponderIdListListCombinator,
-            ResponderIdListCont,
-        >,
-        ResponderIdListMapper,
-    >,
-);
+pub struct ResponderIdListCombinator(ResponderIdListCombinatorAlias);
 
 impl View for ResponderIdListCombinator {
     type V = SpecResponderIdListCombinator;
