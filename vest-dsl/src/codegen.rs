@@ -327,48 +327,32 @@ impl Codegen for Combinator {
             Mode::Spec => "Spec",
             _ => "",
         };
-        let wrapper_code = |combinator_type: &str| match mode {
+        let wrapper_code = || match mode {
             Mode::Spec => format!(
                 r#"
-pub struct Spec{name}Combinator({combinator_type});
+pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
     type SpecResult = Spec{name};
-
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {{
-        self.0.spec_parse(s)
-    }}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {{
-        self.0.spec_serialize(v)
-    }}
-
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    {{ self.0.spec_parse(s) }}
+    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    {{ self.0.spec_serialize(v) }}
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     {{ self.0.spec_parse_wf(s) }}
 
 }}
 impl SecureSpecCombinator for Spec{name}Combinator {{
-    open spec fn is_prefix_secure() -> bool {{
-        Spec{name}CombinatorAlias::is_prefix_secure()
-    }}
-
+    open spec fn is_prefix_secure() -> bool 
+    {{ Spec{name}CombinatorAlias::is_prefix_secure() }}
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
-    {{
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }}
-
+    {{ self.0.theorem_serialize_parse_roundtrip(v) }}
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    {{
-        self.0.theorem_parse_serialize_roundtrip(buf)
-    }}
-
+    {{ self.0.theorem_parse_serialize_roundtrip(buf) }}
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    {{
-        self.0.lemma_prefix_secure(s1, s2)
-    }}
+    {{ self.0.lemma_prefix_secure(s1, s2) }}
 }}
-
-                "#
+"#
             ),
             Mode::Exec(_) => {
                 let lifetime_ann = match mode {
@@ -377,47 +361,29 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
                 };
                 format!(
                     r#"
-pub struct {name}Combinator({combinator_type});
+pub struct {name}Combinator({name}CombinatorAlias);
 
 impl View for {name}Combinator {{
     type V = Spec{name}Combinator;
-
-    closed spec fn view(&self) -> Self::V {{
-        Spec{name}Combinator(self.0@)
-    }}
+    closed spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
 }}
 impl Combinator for {name}Combinator {{
     type Result<'a> = {name}{lifetime_ann};
-
     type Owned = {name}Owned;
-
-    closed spec fn spec_length(&self) -> Option<usize> {{
-        self.0.spec_length()
-    }}
-
-    fn length(&self) -> Option<usize> {{
-        self.0.length()
-    }}
-
-    closed spec fn parse_requires(&self) -> bool {{
-        self.0.parse_requires()
-    }}
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {{
-        self.0.parse(s)
-    }}
-
-    closed spec fn serialize_requires(&self) -> bool {{
-        self.0.serialize_requires()
-    }}
-
+    closed spec fn spec_length(&self) -> Option<usize> 
+    {{ self.0.spec_length() }}
+    fn length(&self) -> Option<usize> 
+    {{ self.0.length() }}
+    closed spec fn parse_requires(&self) -> bool 
+    {{ self.0.parse_requires() }}
+    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) 
+    {{ self.0.parse(s) }}
+    closed spec fn serialize_requires(&self) -> bool 
+    {{ self.0.serialize_requires() }}
     fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {{
-        self.0.serialize(v, data, pos)
-    }}
-
-}}
-                "#
+    {{ self.0.serialize(v, data, pos) }}
+}} 
+"#
                 )
             }
             _ => "".to_string(),
@@ -436,7 +402,7 @@ impl Combinator for {name}Combinator {{
                     format!(
                         "pub type {spec}{name}CombinatorAlias = AndThen<{comb_type}, {and_then_comb_type}>;\n"
                     ),
-                    additional_code + &and_then_additional_code + &wrapper_code(&format!("AndThen<{comb_type}, {and_then_comb_type}>")),
+                    additional_code + &and_then_additional_code + &wrapper_code(),
                 )
             }
         } else if name.is_empty() {
@@ -446,7 +412,7 @@ impl Combinator for {name}Combinator {{
                 self.inner.gen_combinator_type(name, mode, ctx);
             (
                 format!("pub type {spec}{name}CombinatorAlias = {combinator_type};\n"),
-                additional_code + &wrapper_code(&combinator_type),
+                additional_code + &wrapper_code(),
             )
         }
     }
@@ -1130,7 +1096,7 @@ impl Codegen for StructCombinator {
                 .map(combinator_type_from_field)
                 .map(|(_, code)| code)
                 .collect::<Vec<_>>()
-                .join("\n");
+                .join("");
             (
                 format!("Mapped<{}, {}Mapper>", inner, name),
                 additional_code,
@@ -1169,7 +1135,7 @@ impl Codegen for StructCombinator {
                 .chain(snd.iter())
                 .map(|(_, code)| code.to_string())
                 .collect::<Vec<_>>()
-                .join("\n");
+                .join("");
             (
                 format!("Mapped<{}, {}Mapper>", inner, name),
                 additional_code + &cont_struct,
@@ -1211,7 +1177,7 @@ impl Codegen for StructCombinator {
                     fmt_in_pairs(&inner, "", Bracket::Parentheses),
                     name
                 ),
-                additional_code.join("\n"),
+                additional_code.join(""),
             )
         } else {
             // struct has dependent fields
@@ -1301,7 +1267,7 @@ pub open spec fn spec_{snaked_name}_cont(deps: {fst_msg_type}) -> {snd_combinato
     let {fst_bindings} = deps;
     {snd_exprs}
 }}
-                    "#
+"#
                     )
                 }
                 _ => {
@@ -1323,14 +1289,13 @@ impl Continuation<{fst_msg_type}> for {name}Cont {{
         {snd_exprs}
     }}
 }}
-
-                    "#
+"#
                     )
                 }
             };
             (
                 expr,
-                fst_code.join("\n") + &snd_code.join("\n") + &additional_code,
+                fst_code.join("") + &snd_code.join("") + &additional_code,
             )
         }
     }
@@ -1468,8 +1433,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
     type SrcOwned = {msg_type_name}Inner;
     type DstOwned = {msg_type_name};
 }}
-
-                    "#
+"#
                         )
                     }
                 } else {
@@ -1738,7 +1702,7 @@ impl Codegen for ChoiceCombinator {
             let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
             (
                 format!("Mapped<{}, {}Mapper>", inner, name),
-                additional_code.join("\n"),
+                additional_code.join(""),
             )
         } else {
             unimplemented!()
@@ -1822,7 +1786,7 @@ impl Codegen for ChoiceCombinator {
                 let inner = fmt_in_pairs(&combinator_exprs, "OrdChoice", Bracket::Parentheses);
                 let combinator_expr =
                     format!("Mapped {{ inner: {}, mapper: {}Mapper }}", inner, name);
-                (combinator_expr, additional_code.join("\n"))
+                (combinator_expr, additional_code.join(""))
             } else {
                 panic!("unexpected combinator type for dependent id: {}. Maybe something wrong with type checking 🙀", depend_id)
             }
@@ -2143,8 +2107,7 @@ impl Codegen for ConstBytesCombinator {
     assert(arr@ == SPEC_{name});
     arr
 }}
-    
-    "#
+"#
         );
         let hash = compute_hash(&format!("{}", self.values));
         let predicate = format!(
@@ -2170,7 +2133,6 @@ impl Pred for BytesPredicate{hash} {{
         compare_slice(i, {name}.as_slice())
     }}
 }}
-
 "#,
         );
         let additional_code = match mode {
@@ -2347,9 +2309,7 @@ fn gen_combinator_expr_for_definition(defn: &Definition, code: &mut String, ctx:
 pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
     Spec{upper_caml_name}Combinator({expr})
 }}
-
-{additional_code}
-                "#
+{additional_code} "#
                 ));
                 // exec
                 let (expr, additional_code) = &combinator.gen_combinator_expr(
@@ -2365,9 +2325,7 @@ pub fn {name}() -> (o: {upper_caml_name}Combinator)
 {{
     {upper_caml_name}Combinator({expr})
 }}
-
-{additional_code}
-                "#
+{additional_code} "#
                 ));
             } else {
                 // has dependencies
@@ -2411,9 +2369,7 @@ pub fn {name}() -> (o: {upper_caml_name}Combinator)
 pub closed spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator {{
     Spec{upper_caml_name}Combinator({expr})
 }}
-
-{additional_code}
-                "#
+{additional_code} "#
                 ));
                 // exec
                 let exec_params = std::iter::zip(&dep_params_name, &dep_params_exec_type)
@@ -2440,9 +2396,7 @@ pub fn {name}{lifetime_ann}({exec_params}) -> (o: {upper_caml_name}Combinator)
 {{
     {upper_caml_name}Combinator({expr})
 }}
-
-{additional_code}
-                "#
+{additional_code} "#
                 ));
             }
         }
