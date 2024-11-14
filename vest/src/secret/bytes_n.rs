@@ -1,6 +1,7 @@
 use super::*;
 use crate::properties::*;
 use vstd::prelude::*;
+use vstd::slice::*;
 
 
 verus! {
@@ -75,22 +76,23 @@ impl<const N: usize> SecCombinator for SecBytesN<N> {
         Some(N)
     }
 
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse<'a>(&self, s: &'a [SecByte]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
         if N <= s.len() {
             let s_ = slice_subrange(s, 0, N);
+            assert(s_.deep_view() == s.deep_view().subrange(0, N as int)); 
             Ok((N, s_))
         } else {
             Err(ParseError::UnexpectedEndOfInput)
         }
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<SecByte>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
-            set_range(data, pos, v);
-            assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
+            set_range_secret(data, pos, v);
+            assert(data.deep_view().subrange(pos as int, pos + N as int) == self@.spec_serialize(v.deep_view()).unwrap());
             Ok(N)
         } else {
             Err(SerializeError::InsufficientBuffer)
