@@ -1,29 +1,45 @@
 use crate::properties::*;
-use crate::view::*;
 use vstd::prelude::*;
 
 verus! {
 
 mod Inner {
-    use crate::view::*;
+    use super::*;
 
     #[repr(transparent)]
     pub struct SecByte(u8);
 
-    impl DView for SecByte {
+    impl View for SecByte {
         type V = u8;
 
-        closed spec fn dview(&self) -> u8 {
+        closed spec fn view(&self) -> u8 {
             self.0
         }
     }
 
+    impl DeepView for SecByte {
+        type V = u8;
+
+        closed spec fn deep_view(&self) -> u8 {
+            self.0
+        }
+    }
+
+    // impl View for &[SecByte] {
+    //     type V = Seq<u8>;
+
+    //     closed spec fn view(&self) -> Seq<u8> {
+    //         Seq::new(self.len(), |i| self[i]@)
+    //     }
+    // }
+
     #[verifier(external_body)]
     pub fn mk_secbyte_slice(xs: &[u8]) -> (res: &[SecByte])
         ensures
-            res.dview() == xs.dview(),
+            res.deep_view() == xs.view(),
     {
-        unsafe { std::slice::from_raw_parts(xs.as_ptr() as *const SecByte, xs.len()) }
+        todo!()
+        //unsafe { std::slice::from_raw_parts(xs.as_ptr() as *const SecByte, xs.len()) }
     }
 
     /*
@@ -42,111 +58,141 @@ mod Inner {
 
 use Inner::*;
 
-pub trait SecCombinator<'a, T: DView> where Self: SpecCombinator<T> {
-    // Only for statically known
+/// Implementation for secret parser and serializer combinators. A combinator's view must be a
+/// [`SecureSpecCombinator`].
+pub trait SecCombinator: View where
+    Self::V: SecureSpecCombinator<SpecResult = <Self::Owned as DeepView>::V>,
+ {
+    /// The result type of parsing and the input type of serialization.
+    type Result<'a>: View<V = <Self::Owned as DeepView>::V>;
+
+    /// The owned parsed type. This is currently a hack to avoid lifetime bindings in [`SpecCombinator::SpecResult`]
+    /// , but it can be useful if we want to have functions that return owned values (e.g. [`Vec<T>`]).
+    type Owned: DeepView;
+
+    /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
 
+    /// The length of the output buffer, if known.
+    /// This can be used to optimize serialization by pre-allocating the buffer.
     fn length(&self) -> (res: Option<usize>)
         ensures
             res == self.spec_length(),
     ;
 
-    fn parse(&self, s: &'a [SecByte], pos: usize) -> (res: Result<(usize, T), ()>) where T: 'a
-        requires
-            pos <= s.dview().len(),  /* ensures res.dview() == self.spec_parse(..) */
+    /// Pre-condition for parsing.
+    open spec fn parse_requires(&self) -> bool {
+        true
+    }
 
+    /// The parsing function.
+    fn parse<'a>(&self, s: &'a [SecByte]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
+        requires
+            self.parse_requires(),
         ensures
-            res.is_ok() ==> self.spec_wf(res.unwrap().1.dview()) && res.dview() == self.spec_parse(
-                s.dview().subrange(pos as int, s.dview().len() as int),
-            ),
+            res matches Ok((n, v)) ==> {
+                &&& self@.spec_parse(s.deep_view()) is Ok
+                &&& self@.spec_parse(s.deep_view()) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
+            },
+            res is Err ==> self@.spec_parse(s.deep_view()) is Err,
+            self@.spec_parse(s.deep_view()) matches Ok((m, w)) ==> {
+                &&& res is Ok
+                &&& res matches Ok((n, v)) ==> m == n && w == v@
+            },
+            self@.spec_parse(s.deep_view()) is Err ==> res is Err,
     ;
 
-    spec fn serialize_req(&self, v: T::V, data: Seq<u8>, pos: usize) -> bool;
+    /// Pre-condition for serialization.
+    open spec fn serialize_requires(&self) -> bool {
+        true
+    }
 
-    fn serialize<'b>(&self, v: T, data: &'b mut [SecByte], pos: usize) -> (res: Result<
+    /// The serialization function.
+    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<SecByte>, pos: usize) -> (res: Result<
         usize,
-        (),
-    >) where T: 'a
+        SerializeError,
+    >)
         requires
-            pos <= old(data).dview().len() && self.serialize_req(v.dview(), old(data).dview(), pos),
+            self.serialize_requires(),
         ensures
-            data.dview().len() == old(data).dview().len(),
-            res.is_ok() ==> self.spec_serialize(v.dview()).is_ok() && res.unwrap()
-                == self.spec_serialize(v.dview()).unwrap().len() && pos + res.unwrap()
-                <= data.dview().len() && data.dview() == seq_splice(
-                old(data).dview(),
-                pos,
-                self.spec_serialize(v.dview()).unwrap(),
-            ),
+            data@.len() == old(data)@.len(),
+            res matches Ok(n) ==> {
+                &&& self@.spec_serialize(v@) is Ok
+                &&& self@.spec_serialize(v@) matches Ok(b) ==> {
+                    n == b.len() && data.deep_view() == seq_splice(old(data).deep_view(), pos, b)
+                }
+            },
     ;
 }
 
-pub struct ToPub<S>(pub S);
+pub mod bytes_n;
 
-impl<T: DView, C: SpecCombinator<T>> SpecCombinator<T> for ToPub<C> {
-    open spec fn spec_wf(&self, v: T::V) -> bool {
-        self.0.spec_wf(v)
-    }
+// pub struct ToPub<S>(pub S);
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, T::V), ()> {
-        self.0.spec_parse(s)
-    }
+// impl<T: DView, C: SpecCombinator<T>> SpecCombinator<T> for ToPub<C> {
+//     open spec fn spec_wf(&self, v: T::V) -> bool {
+//         self.0.spec_wf(v)
+//     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
+//     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, T::V), ()> {
+//         self.0.spec_parse(s)
+//     }
 
-    open spec fn spec_serialize(&self, v: T::V) -> Result<Seq<u8>, ()> {
-        self.0.spec_serialize(v)
-    }
+//     proof fn spec_parse_wf(&self, s: Seq<u8>) {
+//         self.0.spec_parse_wf(s)
+//     }
 
-    proof fn spec_serialize_wf(&self, v: T::V) {
-        self.0.spec_serialize_wf(v)
-    }
-}
+//     open spec fn spec_serialize(&self, v: T::V) -> Result<Seq<u8>, ()> {
+//         self.0.spec_serialize(v)
+//     }
 
-impl<T: DView, C: SecureSpecCombinator<T>> SecureSpecCombinator<T> for ToPub<C> {
-    open spec fn spec_has_prefix() -> bool {
-        C::spec_has_prefix()
-    }
+//     proof fn spec_serialize_wf(&self, v: T::V) {
+//         self.0.spec_serialize_wf(v)
+//     }
+// }
 
-    fn has_prefix() -> bool {
-        C::has_prefix()
-    }
+// impl<T: DView, C: SecureSpecCombinator<T>> SecureSpecCombinator<T> for ToPub<C> {
+//     open spec fn spec_has_prefix() -> bool {
+//         C::spec_has_prefix()
+//     }
 
-    proof fn spec_serialize_parse(&self, v: T::V) {
-        self.0.spec_serialize_parse(v)
-    }
+//     fn has_prefix() -> bool {
+//         C::has_prefix()
+//     }
 
-    proof fn spec_parse_serialize(&self, buf: Seq<u8>) {
-        self.0.spec_parse_serialize(buf)
-    }
+//     proof fn spec_serialize_parse(&self, v: T::V) {
+//         self.0.spec_serialize_parse(v)
+//     }
 
-    proof fn spec_parse_prefix(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        self.0.spec_parse_prefix(s1, s2)
-    }
-}
+//     proof fn spec_parse_serialize(&self, buf: Seq<u8>) {
+//         self.0.spec_parse_serialize(buf)
+//     }
 
-impl<'a, T: DView + 'a, C: SecCombinator<'a, T>> Combinator<'a, T> for ToPub<C> {
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
+//     proof fn spec_parse_prefix(&self, s1: Seq<u8>, s2: Seq<u8>) {
+//         self.0.spec_parse_prefix(s1, s2)
+//     }
+// }
 
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
+// impl<'a, T: DView + 'a, C: SecCombinator<'a, T>> Combinator<'a, T> for ToPub<C> {
+//     open spec fn spec_length(&self) -> Option<usize> {
+//         self.0.spec_length()
+//     }
 
-    fn parse(&self, s: &'a [u8], pos: usize) -> Result<(usize, T), ()> {
-        self.0.parse(mk_secbyte_slice(s), pos)
-    }
+//     fn length(&self) -> Option<usize> {
+//         self.0.length()
+//     }
 
-    open spec fn serialize_req(&self, v: T::V, data: Seq<u8>, pos: usize) -> bool {
-        self.0.serialize_req(v, data, pos)
-    }
+//     fn parse(&self, s: &'a [u8], pos: usize) -> Result<(usize, T), ()> {
+//         self.0.parse(mk_secbyte_slice(s), pos)
+//     }
 
-    fn serialize<'b>(&self, v: T, data: &'b mut [u8], pos: usize) -> Result<usize, ()> {
-        Err(())
-    }
-}
+//     open spec fn serialize_req(&self, v: T::V, data: Seq<u8>, pos: usize) -> bool {
+//         self.0.serialize_req(v, data, pos)
+//     }
+
+//     fn serialize<'b>(&self, v: T, data: &'b mut [u8], pos: usize) -> Result<usize, ()> {
+//         Err(())
+//     }
+// }
 
 } // verus!

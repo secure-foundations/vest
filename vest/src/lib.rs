@@ -96,7 +96,7 @@ pub mod regular;
 /// Utility functions and types.
 pub mod utils;
 //// Constant-time parser and serializer combinators.
-// mod secret;
+pub mod secret;
 /// Error types
 #[allow(missing_docs)]
 pub mod errors;
