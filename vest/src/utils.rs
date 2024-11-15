@@ -170,7 +170,7 @@ impl<'a, 'b> Compare<&'b [u8]> for &'a [u8] {
 }
 
 /// Helper function to splice a sequence of bytes into another sequence of bytes.
-pub open spec fn seq_splice(data: Seq<u8>, pos: usize, v: Seq<u8>) -> Seq<u8>
+pub open spec fn seq_splice<A>(data: Seq<A>, pos: usize, v: Seq<A>) -> Seq<A>
     recommends
         pos + v.len() <= data.len(),
 {

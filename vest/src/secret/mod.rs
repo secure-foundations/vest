@@ -39,8 +39,8 @@ mod Inner {
         ensures
             res.deep_view() == xs.view(),
     {
-        todo!()
-        //unsafe { std::slice::from_raw_parts(xs.as_ptr() as *const SecByte, xs.len()) }
+        // TODO: is this fine?
+        unsafe { std::slice::from_raw_parts(xs.as_ptr() as *const SecByte, xs.len()) }
     }
 
     // private, so not usable outside
@@ -167,6 +167,7 @@ pub trait SecCombinator: View where
 }
 
 pub mod bytes_n;
+pub mod pair;
 
 // pub struct ToPub<S>(pub S);
 
