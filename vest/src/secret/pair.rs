@@ -6,10 +6,10 @@ verus! {
 pub struct SecPair<Fst, Snd>(pub Fst, pub Snd);
 
 impl<Fst: View, Snd:View> View for SecPair<Fst, Snd> {
-    type V = (Fst::V, Snd::V);
+    type V = SecPair<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
-        (self.0.view(), self.1.view())
+        SecPair(self.0.view(), self.1.view())
     }
 }
 
