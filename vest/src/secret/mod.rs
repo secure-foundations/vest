@@ -166,6 +166,7 @@ pub trait SecCombinator: View where
     ;
 }
 
+pub mod bytes;
 pub mod bytes_n;
 pub mod pair;
 pub mod tail;

@@ -1,6 +1,4 @@
 use super::*;
-use crate::properties::*;
-use vstd::prelude::*;
 use vstd::slice::*;
 
 verus! {

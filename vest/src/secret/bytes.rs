@@ -1,33 +1,49 @@
 use super::*;
 use vstd::slice::*;
 
-
 verus! {
 
-/// Combinator for parsing and serializing a fixed number of bytes (statically known).
-pub struct SecBytesN<const N: usize>;
+/// Combinator for parsing and serializing a fixed number of bytes (dynamically known).
+pub struct SecBytes(pub usize);
 
-impl<const N: usize> View for SecBytesN<N> {
-    type V = SecBytesN<N>;
+impl View for SecBytes {
+    type V = SecBytes;
 
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
 
-impl<const N: usize> SpecCombinator for SecBytesN<N> {
+// impl SecBytes {
+//     /// Spec version of [`Self::and_then`]
+//     pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<SecBytes, Next> {
+//         AndThen(self, next)
+//     }
+
+//     /// Chains this combinator with another combinator.
+//     pub fn and_then<Next: Combinator>(self, next: Next) -> (o: AndThen<SecBytes, Next>) where
+//         Next::V: SecureSpecCombinator<SpecResult = <Next::Owned as View>::V>,
+
+//         ensures
+//             o@ == self@.spec_and_then(next@),
+//     {
+//         AndThen(self, next)
+//     }
+// }
+
+impl SpecCombinator for SecBytes {
     type SpecResult = Seq<u8>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if N <= s.len() {
-            Ok((N, s.subrange(0, N as int)))
+        if self.0 <= s.len() {
+            Ok((self.0, s.subrange(0, self.0 as int)))
         } else {
             Err(())
         }
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if v.len() == N {
+        if v.len() == self.0 {
             Ok(v)
         } else {
             Err(())
@@ -38,7 +54,7 @@ impl<const N: usize> SpecCombinator for SecBytesN<N> {
     }
 }
 
-impl<const N: usize> SecureSpecCombinator for SecBytesN<N> {
+impl SecureSpecCombinator for SecBytes {
     open spec fn is_prefix_secure() -> bool {
         true
     }
@@ -61,24 +77,24 @@ impl<const N: usize> SecureSpecCombinator for SecBytesN<N> {
     }
 }
 
-impl<const N: usize> SecCombinator for SecBytesN<N> {
+impl SecCombinator for SecBytes {
     type Result<'a> = &'a [SecByte];
 
     type Owned = Vec<SecByte>;
 
     open spec fn spec_length(&self) -> Option<usize> {
-        Some(N)
+        Some(self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        Some(N)
+        Some(self.0)
     }
 
     fn parse<'a>(&self, s: &'a [SecByte]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
-        if N <= s.len() {
-            let s_ = slice_subrange(s, 0, N);
-            assert(s_.deep_view() == s.deep_view().subrange(0, N as int)); 
-            Ok((N, s_))
+        if self.0 <= s.len() {
+            let s_ = slice_subrange(s, 0, self.0);
+            assert(s_.deep_view() == s.deep_view().subrange(0, self.0 as int));
+            Ok((self.0, s_))
         } else {
             Err(ParseError::UnexpectedEndOfInput)
         }
@@ -88,10 +104,12 @@ impl<const N: usize> SecCombinator for SecBytesN<N> {
         usize,
         SerializeError,
     >) {
-        if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
+        if v.len() <= data.len() && v.len() == self.0 && pos <= data.len() - v.len() {
             set_range_secret(data, pos, v);
-            assert(data.deep_view().subrange(pos as int, pos + N as int) == self@.spec_serialize(v.deep_view()).unwrap());
-            Ok(N)
+            assert(data.deep_view().subrange(pos as int, pos + self.0 as int) == self@.spec_serialize(
+                v.deep_view(),
+            ).unwrap());
+            Ok(self.0)
         } else {
             Err(SerializeError::InsufficientBuffer)
         }
@@ -99,5 +117,3 @@ impl<const N: usize> SecCombinator for SecBytesN<N> {
 }
 
 } // verus!
-    
-
