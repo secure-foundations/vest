@@ -6,6 +6,7 @@ mod pair;
 mod repeat;
 mod tlv;
 mod wireguard;
+mod secret_examples;
 
 macro_rules! my_vec {
     // Match against any number of comma-separated expressions.
