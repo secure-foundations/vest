@@ -168,6 +168,7 @@ pub trait SecCombinator: View where
 
 pub mod bytes_n;
 pub mod pair;
+pub mod tail;
 
 // pub struct ToPub<S>(pub S);
 
