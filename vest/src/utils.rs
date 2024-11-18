@@ -177,6 +177,18 @@ pub open spec fn seq_splice(data: Seq<u8>, pos: usize, v: Seq<u8>) -> Seq<u8>
     data.subrange(0, pos as int).add(v).add(data.subrange(pos + v.len() as int, data.len() as int))
 }
 
+/// Wraps Rust's `Vec::extend_from_slice`.
+#[verifier::external_body]
+pub fn vec_u8_extend_from_slice(dest: &mut Vec<u8>, src: &[u8])
+    requires
+        old(dest)@.len() + src@.len() <= usize::MAX,
+    ensures
+        dest@.len() == old(dest)@.len() + src@.len(),
+        dest@ == old(dest)@.add(src@),
+{
+    dest.extend_from_slice(src);
+}
+
 /// Helper function to set a range of bytes in a vector.
 pub fn set_range<'a>(data: &mut Vec<u8>, i: usize, input: &[u8])
     requires

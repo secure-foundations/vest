@@ -1,6 +1,7 @@
 pub use crate::errors::*;
 pub use crate::utils::*;
 use vstd::prelude::*;
+use vstd::slice::*;
 use vstd::*;
 
 verus! {
@@ -121,10 +122,50 @@ pub trait SecureSpecCombinator: SpecCombinator {
     ;
 }
 
+/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
+pub trait VestInput: View<V = Seq<u8>> {
+    /// The length of the buffer.    
+    fn length(&self) -> usize;
+
+    /// Analogous to `vstd::slice_subrange`
+    fn subrange(&self, i: usize, j: usize) -> (res: Self)
+    where Self: Sized
+        requires
+            0 <= i <= j <= self@.len(),
+        ensures
+            res@ == self@.subrange(i as int, j as int),
+    ;            
+}
+
+impl<'a> VestInput for &'a [u8] {
+    fn length(&self) -> usize {
+        self.len()
+    }
+
+    fn subrange(&self, i: usize, j: usize) -> &'a [u8] {
+        slice_subrange(*self, i, j)
+    }
+}
+
+/// Provided to demonstrate flexibility of the trait, but likely should not be used,
+/// since this impl clones every time you call `subrange`.
+impl VestInput for Vec<u8> {
+    fn length(&self) -> usize {
+        self.len()
+    }
+
+    fn subrange(&self, i: usize, j: usize) -> Vec<u8> {
+        let mut res = Vec::new();
+        vec_u8_extend_from_slice(&mut res, slice_subrange(self.as_slice(), i, j));
+        proof { assert_seqs_equal!(res@, self@.subrange(i as int, j as int)); }
+        res
+    }
+}
+
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator<I>: View where
-    I: View<V = Seq<u8>>,
+    I: VestInput,
     Self::V: SecureSpecCombinator<SpecResult = <Self::Result as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
@@ -220,7 +261,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 }
 
 impl<I, C: Combinator<I>> Combinator<I> for &C where
-    I: View<V = Seq<u8>>,
+    I: VestInput,
     C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
  {
     type Result = C::Result;
