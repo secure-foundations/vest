@@ -124,7 +124,9 @@ pub trait SecureSpecCombinator: SpecCombinator {
 }
 
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
-pub trait VestInput: View<V = Seq<u8>> {
+/// `VestSecretInput` does not expose the contents of the buffer, so opaque buffer types for side-channel
+/// security can implement `VestSecretInput`.
+pub trait VestSecretInput: View<V = Seq<u8>> {
     /// The length of the buffer.    
     fn len(&self) -> (res: usize)
         ensures
@@ -148,7 +150,10 @@ pub trait VestInput: View<V = Seq<u8>> {
         ensures
             res@ == self@
     ;
+}
 
+/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
+pub trait VestInput: VestSecretInput {
     /// Returns a byte slice with the contents of the buffer
     fn as_byte_slice(&self) -> (res: &[u8])
         ensures
@@ -156,7 +161,7 @@ pub trait VestInput: View<V = Seq<u8>> {
     ;
 }
 
-impl<'a> VestInput for &'a [u8] {
+impl<'a> VestSecretInput for &'a [u8] {
     fn len(&self) -> usize {
         <[u8]>::len(self)
     }
@@ -168,7 +173,9 @@ impl<'a> VestInput for &'a [u8] {
     fn clone(&self) -> &'a [u8] {
         *self
     }
+}
 
+impl<'a> VestInput for &'a [u8] {
     fn as_byte_slice(&self) -> &[u8] {
         *self
     }
@@ -176,7 +183,7 @@ impl<'a> VestInput for &'a [u8] {
 
 /// Provided to demonstrate flexibility of the trait, but likely should not be used,
 /// since this impl copies the `Vec` every time you call `subrange` or `clone`.
-impl VestInput for Vec<u8> {
+impl VestSecretInput for Vec<u8> {
     fn len(&self) -> usize {
         Vec::len(self)
     }
@@ -191,7 +198,9 @@ impl VestInput for Vec<u8> {
     fn clone(&self) -> Vec<u8> {
         Clone::clone(self)
     }
+}
 
+impl VestInput for Vec<u8> {
     fn as_byte_slice(&self) -> &[u8] {
         self.as_slice()
     }
@@ -199,7 +208,7 @@ impl VestInput for Vec<u8> {
 
 /// Provided to demonstrate flexibility of the trait, but likely should not be used,
 /// since this impl copies the `Vec` every time you call `subrange` or `clone`.
-impl VestInput for Rc<Vec<u8>> {
+impl VestSecretInput for Rc<Vec<u8>> {
     fn len(&self) -> usize {
         Vec::len(self)
     }
@@ -214,7 +223,9 @@ impl VestInput for Rc<Vec<u8>> {
     fn clone(&self) -> Rc<Vec<u8>> {
         Clone::clone(self)
     }
+}
 
+impl VestInput for Rc<Vec<u8>> {
     fn as_byte_slice(&self) -> &[u8] {
         self.as_slice()
     }
