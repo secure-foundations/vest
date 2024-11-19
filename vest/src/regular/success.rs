@@ -45,7 +45,7 @@ impl SecureSpecCombinator for Success {
     }
 }
 
-impl Combinator<&[u8]> for Success {
+impl<I: VestInput> Combinator<I> for Success {
     type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -56,11 +56,11 @@ impl Combinator<&[u8]> for Success {
         Some(0)
     }
 
-    fn parse(&self, s: &[u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, _s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         Ok((0, ()))
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

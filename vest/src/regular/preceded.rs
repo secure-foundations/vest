@@ -1,6 +1,5 @@
 use crate::properties::*;
 use vstd::prelude::*;
-use vstd::slice::slice_subrange;
 
 verus! {
 
