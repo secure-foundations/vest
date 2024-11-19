@@ -111,10 +111,11 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 }
 
-impl<Fst, Snd, I> Combinator<I> for (Fst, Snd) where
+impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
     I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+    O: VestOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
  {
@@ -171,7 +172,7 @@ impl<Fst, Snd, I> Combinator<I> for (Fst, Snd) where
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

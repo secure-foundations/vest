@@ -60,8 +60,9 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
     }
 }
 
-impl<const N: usize, I> Combinator<I> for BytesN<N> 
-    where I: VestInput,
+impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where 
+    I: VestInput,
+    O: VestOutput<I>,
 {
     type Result = I;
 
@@ -82,12 +83,12 @@ impl<const N: usize, I> Combinator<I> for BytesN<N>
         }
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
-            set_range(data, pos, v.as_byte_slice());
+            data.set_range(pos, v);
             assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
             Ok(N)
         } else {
