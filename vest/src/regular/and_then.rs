@@ -86,24 +86,27 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
     }
 }
 
-impl<'a, Next: Combinator<&'a [u8]>> Combinator<&'a [u8]> for AndThen<Bytes, Next> where
+impl<I, Next: Combinator<I>> Combinator<I> for AndThen<Bytes, Next> where
+    I: VestInput,
     Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
  {
     type Result = Next::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
+        // self.0.spec_length()
+        <Bytes as Combinator<I>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        self.0.length()
+        // self.0.length()
+        <Bytes as Combinator<I>>::length(&self.0)
     }
 
     open spec fn parse_requires(&self) -> bool {
         self.1.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
         let (n, v1) = self.0.parse(s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {

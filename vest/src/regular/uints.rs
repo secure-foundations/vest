@@ -153,7 +153,7 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
             }
 
-            impl Combinator<&[u8]> for $combinator {
+            impl<I: VestInput> Combinator<I> for $combinator {
                 type Result = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
@@ -164,10 +164,10 @@ macro_rules! impl_combinator_for_le_uint_type {
                     Some(size_of::<$int_type>())
                 }
 
-                fn parse(&self, s: &[u8]) -> (res: Result<(usize, $int_type), ParseError>) {
+                fn parse(&self, s: I) -> (res: Result<(usize, $int_type), ParseError>) {
                     if s.len() >= size_of::<$int_type>() {
-                        let s_ = slice_subrange(s, 0, size_of::<$int_type>());
-                        let v = $int_type::ex_from_le_bytes(s_);
+                        let s_ = s.subrange(0, size_of::<$int_type>());
+                        let v = $int_type::ex_from_le_bytes(s_.as_byte_slice());
                         proof {
                             let s_ = s_@;
                             let s__ = s@.subrange(size_of::<$int_type>() as int, s@.len() as int);

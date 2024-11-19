@@ -53,8 +53,8 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl<'a> Combinator<&'a [u8]> for Tail {
-    type Result = &'a [u8];
+impl<I: VestInput> Combinator<I> for Tail {
+    type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -64,7 +64,7 @@ impl<'a> Combinator<&'a [u8]> for Tail {
         None
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         Ok(((s.len()), s))
     }
 
@@ -74,7 +74,7 @@ impl<'a> Combinator<&'a [u8]> for Tail {
     >) {
         if pos <= data.len() {
             if v.len() <= data.len() - pos {
-                set_range(data, pos, v);
+                set_range(data, pos, v.as_byte_slice());
                 assert(data@.subrange(pos as int, pos + v@.len() as int) == self@.spec_serialize(
                     v@,
                 ).unwrap());

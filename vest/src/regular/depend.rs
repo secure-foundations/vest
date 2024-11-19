@@ -153,9 +153,10 @@ pub trait Continuation<Input> {
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
-pub struct Depend<'a, Fst, Snd, C> where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+pub struct Depend<I, Fst, Snd, C> where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -169,9 +170,10 @@ pub struct Depend<'a, Fst, Snd, C> where
     pub spec_snd: Ghost<spec_fn(<Fst::Result as View>::V) -> Snd::V>,
 }
 
-impl<'a, Fst, Snd, C> Depend<'a, Fst, Snd, C> where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+impl<I, Fst, Snd, C> Depend<I, Fst, Snd, C> where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -185,9 +187,10 @@ impl<'a, Fst, Snd, C> Depend<'a, Fst, Snd, C> where
 }
 
 /// Same [`View`] as [`Depend`]
-impl<'a, Fst, Snd, C> View for Depend<'a, Fst, Snd, C> where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+impl<I, Fst, Snd, C> View for Depend<I, Fst, Snd, C> where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -201,9 +204,10 @@ impl<'a, Fst, Snd, C> View for Depend<'a, Fst, Snd, C> where
 }
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<'a, Fst, Snd, C> Combinator<&'a [u8]> for Depend<'a, Fst, Snd, C> where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+impl<I, Fst, Snd, C> Combinator<I> for Depend<I, Fst, Snd, C> where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -226,9 +230,9 @@ impl<'a, Fst, Snd, C> Combinator<&'a [u8]> for Depend<'a, Fst, Snd, C> where
         &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
-        let (n, v1) = self.fst.parse(s)?;
-        let s_ = slice_subrange(s, n, s.len());
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+        let (n, v1) = self.fst.parse(s.clone())?;
+        let s_ = s.subrange(n, s.len());
         let snd = self.snd.apply(v1);
         let (m, v2) = snd.parse(s_)?;
         if let Some(nm) = n.checked_add(m) {

@@ -80,8 +80,10 @@ impl SecureSpecCombinator for Bytes {
     }
 }
 
-impl<'a> Combinator<&'a [u8]> for Bytes {
-    type Result = &'a [u8];
+impl<I> Combinator<I> for Bytes 
+    where I: VestInput
+{
+    type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)
@@ -91,9 +93,9 @@ impl<'a> Combinator<&'a [u8]> for Bytes {
         Some(self.0)
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         if self.0 <= s.len() {
-            let s_ = slice_subrange(s, 0, self.0);
+            let s_ = s.subrange(0, self.0);
             Ok((self.0, s_))
         } else {
             Err(ParseError::UnexpectedEndOfInput)
@@ -105,7 +107,7 @@ impl<'a> Combinator<&'a [u8]> for Bytes {
         SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == self.0 && pos <= data.len() - v.len() {
-            set_range(data, pos, v);
+            set_range(data, pos, v.as_byte_slice());
             assert(data@.subrange(pos as int, pos + self.0 as int) == self@.spec_serialize(
                 v@,
             ).unwrap());

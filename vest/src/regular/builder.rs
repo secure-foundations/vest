@@ -90,7 +90,10 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<T> Combinator<&[u8]> for BuilderCombinator<T> where T: Builder + View {
+impl<I, T> Combinator<I> for BuilderCombinator<T> where 
+    I: VestInput,
+    T: Builder + View,
+{
     type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -101,12 +104,12 @@ impl<T> Combinator<&[u8]> for BuilderCombinator<T> where T: Builder + View {
         None
     }
 
-    fn parse(&self, s: &[u8]) -> (res: Result<(usize, ()), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, ()), ParseError>) {
         let v = self.0.into_vec();
         proof {
             self.0.value_wf();
         }
-        if compare_slice(s, v.as_slice()) {
+        if compare_slice(s.as_byte_slice(), v.as_slice()) {
             Ok((s.len(), ()))
         } else {
             Err(ParseError::BuilderError)

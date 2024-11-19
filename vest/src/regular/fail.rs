@@ -44,7 +44,7 @@ impl SecureSpecCombinator for Fail {
     }
 }
 
-impl Combinator<&[u8]> for Fail {
+impl<I: VestInput> Combinator<I> for Fail {
     type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -55,7 +55,7 @@ impl Combinator<&[u8]> for Fail {
         Some(0)
     }
 
-    fn parse(&self, s: &[u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         Err(ParseError::Other(self.0.clone()))
     }
 

@@ -112,9 +112,10 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 }
 
-impl<'a, Fst, Snd> Combinator<&'a [u8]> for (Fst, Snd) where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+impl<Fst, Snd, I> Combinator<I> for (Fst, Snd) where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
  {
@@ -156,9 +157,9 @@ impl<'a, Fst, Snd> Combinator<&'a [u8]> for (Fst, Snd) where
         self.0.parse_requires() && self.1.parse_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
-        let (n, v1) = self.0.parse(s)?;
-        let s_ = slice_subrange(s, n, s.len());
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+        let (n, v1) = self.0.parse(s.clone())?;
+        let s_ = s.subrange(n, s.len());
         let (m, v2) = self.1.parse(s_)?;
         if n <= usize::MAX - m {
             Ok(((n + m), (v1, v2)))

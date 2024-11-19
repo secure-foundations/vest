@@ -101,8 +101,9 @@ impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Ta
     }
 }
 
-impl<'a, Inner, T> Combinator<&'a [u8]> for Tag<Inner, T> where
-    Inner: Combinator<&'a [u8], Result = T>,
+impl<I, Inner, T> Combinator<I> for Tag<Inner, T> where
+    I: VestInput,
+    Inner: Combinator<I, Result = T>,
     Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
  {
     type Result = ();
@@ -119,7 +120,7 @@ impl<'a, Inner, T> Combinator<&'a [u8]> for Tag<Inner, T> where
         self.0.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
         let (n, _) = self.0.parse(s)?;
         Ok((n, ()))
     }

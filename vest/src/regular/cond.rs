@@ -69,7 +69,7 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<'a, Inner: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Cond<Inner> where
+impl<I: VestInput, Inner: Combinator<I>> Combinator<I> for Cond<Inner> where
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
  {
     type Result = Inner::Result;
@@ -94,7 +94,7 @@ impl<'a, Inner: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Cond<Inner> where
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
         if self.cond {
             self.inner.parse(s)
         } else {

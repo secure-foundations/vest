@@ -149,11 +149,12 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 }
 
-impl<'a, Inner, M> Combinator<&'a [u8]> for Mapped<
+impl<I, Inner, M> Combinator<I> for Mapped<
     Inner,
     M,
 > where
-    Inner: Combinator<&'a [u8]>,
+    I: VestInput,
+    Inner: Combinator<I>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
      M: Iso<Src = Inner::Result>,
     Inner::Result: From<M::Dst> + View,
@@ -176,7 +177,7 @@ impl<'a, Inner, M> Combinator<&'a [u8]> for Mapped<
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => {

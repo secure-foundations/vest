@@ -3,6 +3,7 @@ pub use crate::utils::*;
 use vstd::prelude::*;
 use vstd::slice::*;
 use vstd::*;
+use std::rc::Rc;
 
 verus! {
 
@@ -125,7 +126,10 @@ pub trait SecureSpecCombinator: SpecCombinator {
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
 pub trait VestInput: View<V = Seq<u8>> {
     /// The length of the buffer.    
-    fn length(&self) -> usize;
+    fn len(&self) -> (res: usize)
+        ensures
+            res == self@.len(),
+    ;
 
     /// Analogous to `vstd::slice_subrange`
     fn subrange(&self, i: usize, j: usize) -> (res: Self)
@@ -134,24 +138,47 @@ pub trait VestInput: View<V = Seq<u8>> {
             0 <= i <= j <= self@.len(),
         ensures
             res@ == self@.subrange(i as int, j as int),
-    ;            
+    ;
+
+    /// Creates another buffer with the same contents.
+    /// For good performance, this function should be cheap, just creating a new reference rather than
+    /// actually copying the buffer.
+    fn clone(&self) -> (res: Self)
+    where Self: Sized
+        ensures
+            res@ == self@
+    ;
+
+    /// Returns a byte slice with the contents of the buffer
+    fn as_byte_slice(&self) -> (res: &[u8])
+        ensures
+            res@ == self@,
+    ;
 }
 
 impl<'a> VestInput for &'a [u8] {
-    fn length(&self) -> usize {
-        self.len()
+    fn len(&self) -> usize {
+        <[u8]>::len(self)
     }
 
     fn subrange(&self, i: usize, j: usize) -> &'a [u8] {
         slice_subrange(*self, i, j)
     }
+
+    fn clone(&self) -> &'a [u8] {
+        *self
+    }
+
+    fn as_byte_slice(&self) -> &[u8] {
+        *self
+    }
 }
 
 /// Provided to demonstrate flexibility of the trait, but likely should not be used,
-/// since this impl clones every time you call `subrange`.
+/// since this impl copies the `Vec` every time you call `subrange` or `clone`.
 impl VestInput for Vec<u8> {
-    fn length(&self) -> usize {
-        self.len()
+    fn len(&self) -> usize {
+        Vec::len(self)
     }
 
     fn subrange(&self, i: usize, j: usize) -> Vec<u8> {
@@ -159,6 +186,37 @@ impl VestInput for Vec<u8> {
         vec_u8_extend_from_slice(&mut res, slice_subrange(self.as_slice(), i, j));
         proof { assert_seqs_equal!(res@, self@.subrange(i as int, j as int)); }
         res
+    }
+
+    fn clone(&self) -> Vec<u8> {
+        Clone::clone(self)
+    }
+
+    fn as_byte_slice(&self) -> &[u8] {
+        self.as_slice()
+    }
+}
+
+/// Provided to demonstrate flexibility of the trait, but likely should not be used,
+/// since this impl copies the `Vec` every time you call `subrange` or `clone`.
+impl VestInput for Rc<Vec<u8>> {
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+
+    fn subrange(&self, i: usize, j: usize) -> Rc<Vec<u8>> {
+        let mut res = Vec::new();
+        vec_u8_extend_from_slice(&mut res, slice_subrange(self.as_slice(), i, j));
+        proof { assert_seqs_equal!(res@, self@.subrange(i as int, j as int)); }
+        Rc::new(res)
+    }
+
+    fn clone(&self) -> Rc<Vec<u8>> {
+        Clone::clone(self)
+    }
+
+    fn as_byte_slice(&self) -> &[u8] {
+        self.as_slice()
     }
 }
 

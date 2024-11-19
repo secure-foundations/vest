@@ -121,9 +121,10 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<'a, Fst, Snd> Combinator<&'a [u8]> for OrdChoice<Fst, Snd> where
-    Fst: Combinator<&'a [u8]>,
-    Snd: Combinator<&'a [u8]>,
+impl<I, Fst, Snd> Combinator<I> for OrdChoice<Fst, Snd> where
+    I: VestInput,
+    Fst: Combinator<I>,
+    Snd: Combinator<I>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
@@ -142,8 +143,8 @@ impl<'a, Fst, Snd> Combinator<&'a [u8]> for OrdChoice<Fst, Snd> where
         self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
-        if let Ok((n, v)) = self.0.parse(s) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+        if let Ok((n, v)) = self.0.parse(s.clone()) {
             Ok((n, Either::Left(v)))
         } else {
             if let Ok((n, v)) = self.1.parse(s) {

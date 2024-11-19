@@ -91,11 +91,12 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<'a, Inner, P> Combinator<&'a [u8]> for Refined<
+impl<I, Inner, P> Combinator<I> for Refined<
     Inner,
     P,
 > where
-    Inner: Combinator<&'a [u8]>,
+    I: VestInput,
+    Inner: Combinator<I>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
     P: Pred<Input = Inner::Result>,
     P::V: SpecPred<Input = <Inner::Result as View>::V>,
@@ -114,7 +115,7 @@ impl<'a, Inner, P> Combinator<&'a [u8]> for Refined<
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
         match self.inner.parse(s) {
             Ok((n, v)) => if self.predicate.apply(&v) {
                 Ok((n, v))
