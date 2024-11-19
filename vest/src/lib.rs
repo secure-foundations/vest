@@ -89,6 +89,10 @@
 //! ```
 
 // mod examples;
+
+/// Definitions for buffer traits that can be used as input and output for parsers and serializers,
+/// along with some implementations for commonly used buffers.
+pub mod buf_traits;
 /// Definitions for parser and serializer combinators and their properties.
 pub mod properties;
 /// Regular parser and serializer combinators.
