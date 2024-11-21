@@ -69,7 +69,7 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<I: VestInput, Inner: Combinator<I>> Combinator<I> for Cond<Inner> where
+impl<I: VestSecretInput, O: VestSecretOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<Inner> where
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
  {
     type Result = Inner::Result;
@@ -106,7 +106,7 @@ impl<I: VestInput, Inner: Combinator<I>> Combinator<I> for Cond<Inner> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

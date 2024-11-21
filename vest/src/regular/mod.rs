@@ -1,39 +1,39 @@
-// /// Builder combinator
-// pub mod builder;
-// /// Bytes combinator
-// pub mod bytes;
+/// Builder combinator
+pub mod builder;
+/// Bytes combinator
+pub mod bytes;
 /// BytesN combinator
 pub mod bytes_n;
-// /// OrdChoice combinator
-// #[allow(missing_docs)]
-// pub mod choice;
-// /// Cond combinator
-// pub mod cond;
-// /// Mapped combinator
-// pub mod map;
+/// OrdChoice combinator
+#[allow(missing_docs)]
+pub mod choice;
+/// Cond combinator
+pub mod cond;
+/// Mapped combinator
+pub mod map;
 /// Pair combinator
 pub mod pair;
-// /// Refined combinator
-// pub mod refined;
-// /// AndThen combinator
-// pub mod and_then;
-// /// impl Clone for some combinators
-// pub mod clone;
-// /// Depend combinator
-// pub mod depend;
-// /// Disjointness for OrdChoice combinator
-// pub mod disjoint;
-// /// Fail combinator
-// pub mod fail;
-// /// Success combinator
-// pub mod success;
-// /// Preceded combinator
-// pub mod preceded;
+/// Refined combinator
+pub mod refined;
+/// AndThen combinator
+pub mod and_then;
+/// impl Clone for some combinators
+pub mod clone;
+/// Depend combinator
+pub mod depend;
+/// Disjointness for OrdChoice combinator
+pub mod disjoint;
+/// Fail combinator
+pub mod fail;
+/// Success combinator
+pub mod success;
+/// Preceded combinator
+pub mod preceded;
 // /// Repeat combinator
 // pub mod repeat;
-// /// Tag combinator
-// pub mod tag;
-// /// Tail combinator
-// pub mod tail;
+/// Tag combinator
+pub mod tag;
+/// Tail combinator
+pub mod tail;
 /// Uints combinator
 pub mod uints;

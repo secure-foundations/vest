@@ -86,20 +86,21 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
     }
 }
 
-impl<I, Next: Combinator<I>> Combinator<I> for AndThen<Bytes, Next> where
-    I: VestInput,
+impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
     Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
  {
     type Result = Next::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
-        <Bytes as Combinator<I>>::spec_length(&self.0)
+        <Bytes as Combinator<I, O>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
         // self.0.length()
-        <Bytes as Combinator<I>>::length(&self.0)
+        <Bytes as Combinator<I, O>>::length(&self.0)
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -107,7 +108,7 @@ impl<I, Next: Combinator<I>> Combinator<I> for AndThen<Bytes, Next> where
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
-        let (n, v1) = self.0.parse(s)?;
+        let (n, v1) = <Bytes as Combinator<I, O>>::parse(&self.0, s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {
             Ok((n, v2))
@@ -120,7 +121,7 @@ impl<I, Next: Combinator<I>> Combinator<I> for AndThen<Bytes, Next> where
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

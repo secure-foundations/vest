@@ -61,8 +61,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
 }
 
 impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where 
-    I: VestInput,
-    O: VestOutput<I>,
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
 {
     type Result = I;
 
@@ -88,7 +88,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
         SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
-            data.set_range(pos, v);
+            data.set_range(pos, &v);
             assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
             Ok(N)
         } else {

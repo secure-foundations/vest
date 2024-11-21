@@ -23,7 +23,9 @@ impl Bytes {
     }
 
     /// Chains this combinator with another combinator.
-    pub fn and_then<'a, Next: Combinator<&'a [u8]>>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
+    pub fn and_then<'a, I, O, Next: Combinator<I, O>>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
+        I: VestInput,
+        O: VestOutput<I>,
         Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
 
         ensures
@@ -79,8 +81,9 @@ impl SecureSpecCombinator for Bytes {
     }
 }
 
-impl<I> Combinator<I> for Bytes 
-    where I: VestInput
+impl<I, O> Combinator<I, O> for Bytes where 
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
 {
     type Result = I;
 
@@ -101,12 +104,12 @@ impl<I> Combinator<I> for Bytes
         }
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
         if v.len() <= data.len() && v.len() == self.0 && pos <= data.len() - v.len() {
-            set_range(data, pos, v.as_byte_slice());
+            data.set_range(pos, &v);
             assert(data@.subrange(pos as int, pos + self.0 as int) == self@.spec_serialize(
                 v@,
             ).unwrap());

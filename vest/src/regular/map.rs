@@ -149,12 +149,13 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 }
 
-impl<I, Inner, M> Combinator<I> for Mapped<
+impl<I, O, Inner, M> Combinator<I, O> for Mapped<
     Inner,
     M,
 > where
-    I: VestInput,
-    Inner: Combinator<I>,
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
      M: Iso<Src = Inner::Result>,
     Inner::Result: From<M::Dst> + View,
@@ -193,7 +194,7 @@ impl<I, Inner, M> Combinator<I> for Mapped<
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -375,11 +376,13 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 }
 
-impl<'a, Inner, M> Combinator<&'a [u8]> for TryMap<
+impl<I, O, Inner, M> Combinator<I, O> for TryMap<
     Inner,
     M,
 > where
-    Inner: Combinator<&'a [u8]>,
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
      M: TryFromInto<Src = Inner::Result>,
     Inner::Result: TryFrom<M::Dst> + View,
@@ -402,7 +405,7 @@ impl<'a, Inner, M> Combinator<&'a [u8]> for TryMap<
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => match M::apply(v) {
@@ -416,7 +419,7 @@ impl<'a, Inner, M> Combinator<&'a [u8]> for TryMap<
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -556,7 +559,7 @@ fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
 {
-    field_less().parse(i)
+    <FieldLessCombinator as Combinator<&[u8], Vec<u8>>>::parse(&field_less(), i)
 }
 
 fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
@@ -566,7 +569,7 @@ fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: R
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    field_less().serialize(msg, data, pos)
+    <FieldLessCombinator as Combinator<&[u8], Vec<u8>>>::serialize(&field_less(), msg, data, pos)
 }
 
 // non-exhaustive enum

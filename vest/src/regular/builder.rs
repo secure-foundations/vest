@@ -90,7 +90,7 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<I, T> Combinator<I> for BuilderCombinator<T> where 
+impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where 
     I: VestInput,
     T: Builder + View,
 {

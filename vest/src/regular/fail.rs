@@ -44,7 +44,7 @@ impl SecureSpecCombinator for Fail {
     }
 }
 
-impl<I: VestInput> Combinator<I> for Fail {
+impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Fail {
     type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -55,11 +55,11 @@ impl<I: VestInput> Combinator<I> for Fail {
         Some(0)
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, _s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         Err(ParseError::Other(self.0.clone()))
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::Result, _data: &mut O, _pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

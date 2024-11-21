@@ -53,7 +53,7 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl<I: VestInput> Combinator<I> for Tail {
+impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Tail {
     type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {
@@ -68,13 +68,13 @@ impl<I: VestInput> Combinator<I> for Tail {
         Ok(((s.len()), s))
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
         if pos <= data.len() {
             if v.len() <= data.len() - pos {
-                set_range(data, pos, v.as_byte_slice());
+                data.set_range(pos, &v);
                 assert(data@.subrange(pos as int, pos + v@.len() as int) == self@.spec_serialize(
                     v@,
                 ).unwrap());

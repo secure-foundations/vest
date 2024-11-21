@@ -121,10 +121,11 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<I, Fst, Snd> Combinator<I> for OrdChoice<Fst, Snd> where
-    I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
@@ -161,7 +162,7 @@ impl<I, Fst, Snd> Combinator<I> for OrdChoice<Fst, Snd> where
         )
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

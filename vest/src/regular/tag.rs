@@ -101,9 +101,10 @@ impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Ta
     }
 }
 
-impl<I, Inner, T> Combinator<I> for Tag<Inner, T> where
-    I: VestInput,
-    Inner: Combinator<I, Result = T>,
+impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Inner: Combinator<I, O, Result = T>,
     Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
  {
     type Result = ();
@@ -129,7 +130,7 @@ impl<I, Inner, T> Combinator<I> for Tag<Inner, T> where
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

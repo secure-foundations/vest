@@ -91,12 +91,13 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<I, Inner, P> Combinator<I> for Refined<
+impl<I, O, Inner, P> Combinator<I, O> for Refined<
     Inner,
     P,
 > where
-    I: VestInput,
-    Inner: Combinator<I>,
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
     P: Pred<Input = Inner::Result>,
     P::V: SpecPred<Input = <Inner::Result as View>::V>,
@@ -130,7 +131,7 @@ impl<I, Inner, P> Combinator<I> for Refined<
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

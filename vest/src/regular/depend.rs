@@ -152,10 +152,11 @@ pub trait Continuation<Input> {
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
-pub struct Depend<I, Fst, Snd, C> where
-    I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+pub struct Depend<I, O, Fst, Snd, C> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -169,10 +170,11 @@ pub struct Depend<I, Fst, Snd, C> where
     pub spec_snd: Ghost<spec_fn(<Fst::Result as View>::V) -> Snd::V>,
 }
 
-impl<I, Fst, Snd, C> Depend<I, Fst, Snd, C> where
-    I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+impl<I, O, Fst, Snd, C> Depend<I, O, Fst, Snd, C> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -186,10 +188,11 @@ impl<I, Fst, Snd, C> Depend<I, Fst, Snd, C> where
 }
 
 /// Same [`View`] as [`Depend`]
-impl<I, Fst, Snd, C> View for Depend<I, Fst, Snd, C> where
-    I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -203,10 +206,11 @@ impl<I, Fst, Snd, C> View for Depend<I, Fst, Snd, C> where
 }
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<I, Fst, Snd, C> Combinator<I> for Depend<I, Fst, Snd, C> where
+impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
     I: VestInput,
-    Fst: Combinator<I>,
-    Snd: Combinator<I>,
+    O: VestOutput<I>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
     C: Continuation<Fst::Result, Output = Snd>,
@@ -248,7 +252,7 @@ impl<I, Fst, Snd, C> Combinator<I> for Depend<I, Fst, Snd, C> where
         &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

@@ -63,7 +63,7 @@ pub trait VestSecretOutput<I>: View<V = Seq<u8>> where
     ;
 
     /// Copy `input` to `self` starting at index `i`.
-    fn set_range(&mut self, i: usize, input: I) -> (res: ()) 
+    fn set_range(&mut self, i: usize, input: &I) -> (res: ()) 
         requires
             0 <= i + input@.len() <= old(self)@.len() <= usize::MAX,
         ensures 
@@ -182,7 +182,7 @@ impl<I> VestSecretOutput<I> for Vec<u8> where
         Vec::len(self)
     }
 
-    fn set_range(&mut self, i: usize, input: I) {
+    fn set_range(&mut self, i: usize, input: &I) {
         set_range(self, i, input.as_byte_slice());
     }
 }
