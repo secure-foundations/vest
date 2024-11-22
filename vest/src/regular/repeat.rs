@@ -1,6 +1,5 @@
 use crate::properties::*;
 use vstd::prelude::*;
-use vstd::slice::slice_subrange;
 
 verus! {
 
@@ -146,17 +145,18 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
     }
 }
 
-impl<'a, C: Combinator<&'a [u8]>> Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
- {
-    /// Get the deep view of RepeatResult
-    pub open spec fn deep_view(v: &'a [C::Result]) -> Seq<<C::Result as View>::V> {
-        Seq::new(v.len() as nat, |i: int| v@[i]@)
-    }
-
+impl<C> Repeat<C> where  {
     /// Helper function for parse()
     /// TODO: Recursion is not ideal, but hopefully tail call opt will kick in
-    fn parse_helper(&self, s: &'a [u8], res: &mut Vec<C::Result>) -> (r: Result<(), ParseError>)
+    fn parse_helper<I, O>(&self, s: I, res: &mut Vec<C::Result>) -> (r: Result<
+        (),
+        ParseError,
+    >) where
+        I: VestSecretInput,
+        O: VestSecretOutput<I>,
+        C: Combinator<I, O>,
+        C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+
         requires
             self.0.parse_requires(),
             C::V::is_prefix_secure(),
@@ -171,23 +171,29 @@ impl<'a, C: Combinator<&'a [u8]>> Repeat<C> where
         if s.len() == 0 {
             return Ok(());
         }
-        let (n, v) = self.0.parse(s)?;
+        let (n, v) = self.0.parse(s.clone())?;
 
         if n > 0 {
             res.push(v);
-            self.parse_helper(slice_subrange(s, n, s.len()), res)
+            // self.parse_helper(slice_subrange(s, n, s.len()), res)
+            self.parse_helper(s.subrange(n, s.len()), res)
         } else {
             Err(ParseError::RepeatEmptyElement)
         }
     }
 
-    fn serialize_helper(
+    fn serialize_helper<I, O>(
         &self,
         v: &mut RepeatResult<C::Result>,
-        data: &mut Vec<u8>,
+        data: &mut O,
         pos: usize,
         len: usize,
-    ) -> (res: Result<usize, SerializeError>)
+    ) -> (res: Result<usize, SerializeError>) where
+        I: VestSecretInput,
+        O: VestSecretOutput<I>,
+        C: Combinator<I, O>,
+        C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+
         requires
             self.0.serialize_requires(),
             C::V::is_prefix_secure(),
@@ -224,8 +230,11 @@ impl<'a, C: Combinator<&'a [u8]>> Repeat<C> where
     }
 }
 
-impl<'a, C: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+impl<I, O, C> Combinator<I, O> for Repeat<C> where
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
+    C: Combinator<I, O>,
+    C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
  {
     type Result = RepeatResult<C::Result>;
 
@@ -242,9 +251,9 @@ impl<'a, C: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Repeat<C> where
         &&& self.0.parse_requires()
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         let mut res = Vec::new();
-        self.parse_helper(s, &mut res)?;
+        self.parse_helper(s.clone(), &mut res)?;
         Ok((s.len(), RepeatResult(res)))
     }
 
@@ -253,7 +262,7 @@ impl<'a, C: Combinator<&'a [u8]>> Combinator<&'a [u8]> for Repeat<C> where
         &&& self.0.serialize_requires()
     }
 
-    fn serialize(&self, mut v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, mut v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

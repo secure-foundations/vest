@@ -30,7 +30,7 @@ pub mod refined;
 /// Success combinator
 pub mod success;
 // /// Repeat combinator
-// pub mod repeat;
+pub mod repeat;
 /// Tag combinator
 pub mod tag;
 /// Tail combinator
