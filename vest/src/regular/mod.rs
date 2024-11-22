@@ -29,7 +29,7 @@ pub mod preceded;
 pub mod refined;
 /// Success combinator
 pub mod success;
-// /// Repeat combinator
+/// Repeat combinator
 pub mod repeat;
 /// Tag combinator
 pub mod tag;
