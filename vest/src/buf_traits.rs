@@ -1,28 +1,25 @@
 pub use crate::utils::*;
+use std::rc::Rc;
 use vstd::prelude::*;
 use vstd::slice::*;
 use vstd::*;
-use std::rc::Rc;
 
 verus! {
 
 //////////////////////////////////////////////////////////////////////////////
 /// Trait definitions
-
-
-/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
+/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers.
 /// `VestSecretInput` does not expose the contents of the buffer, so opaque buffer types for side-channel
 /// security can implement `VestSecretInput`.
 pub trait VestSecretInput: View<V = Seq<u8>> {
-    /// The length of the buffer.    
+    /// The length of the buffer.
     fn len(&self) -> (res: usize)
         ensures
             res == self@.len(),
     ;
 
     /// Analogous to `vstd::slice_subrange`
-    fn subrange(&self, i: usize, j: usize) -> (res: Self)
-    where Self: Sized
+    fn subrange(&self, i: usize, j: usize) -> (res: Self) where Self: Sized
         requires
             0 <= i <= j <= self@.len(),
         ensures
@@ -32,14 +29,13 @@ pub trait VestSecretInput: View<V = Seq<u8>> {
     /// Creates another buffer with the same contents.
     /// For good performance, this function should be cheap, just creating a new reference rather than
     /// actually copying the buffer.
-    fn clone(&self) -> (res: Self)
-    where Self: Sized
+    fn clone(&self) -> (res: Self) where Self: Sized
         ensures
-            res@ == self@
+            res@ == self@,
     ;
 }
 
-/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers. 
+/// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers.
 /// `VestInput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
 pub trait VestInput: VestSecretInput {
     /// Returns a byte slice with the contents of the buffer
@@ -49,36 +45,30 @@ pub trait VestInput: VestSecretInput {
     ;
 }
 
-
 /// Trait for types that can be used as output for Vest serializers.
 /// `VestSecretOutput` does not expose the contents of the buffer, so opaque buffer types for side-channel
 /// security can implement `VestSecretOutput`.
-pub trait VestSecretOutput<I>: View<V = Seq<u8>> where 
-    I: View<V = Seq<u8>>
-{
-    /// The length of the buffer.    
+pub trait VestSecretOutput<I>: View<V = Seq<u8>> where I: View<V = Seq<u8>> {
+    /// The length of the buffer.
     fn len(&self) -> (res: usize)
         ensures
             res == self@.len(),
     ;
 
     /// Copy `input` to `self` starting at index `i`.
-    fn set_range(&mut self, i: usize, input: &I) -> (res: ()) 
+    fn set_range(&mut self, i: usize, input: &I) -> (res: ())
         requires
             0 <= i + input@.len() <= old(self)@.len() <= usize::MAX,
-        ensures 
-            self@.len() == old(self)@.len() 
-            && self@ == old(self)@.subrange(0, i as int)
-                            .add(input@)
-                            .add(old(self)@.subrange(i + input@.len(), self@.len() as int))
+        ensures
+            self@.len() == old(self)@.len() && self@ == old(self)@.subrange(0, i as int).add(
+                input@,
+            ).add(old(self)@.subrange(i + input@.len(), self@.len() as int)),
     ;
 }
 
 /// Trait for types that can be used as output for Vest serializers.
 /// `VestOutput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
-pub trait VestOutput<I>: VestSecretOutput<I> where 
-    I: View<V = Seq<u8>>
-{
+pub trait VestOutput<I>: VestSecretOutput<I> where I: View<V = Seq<u8>> {
     /// Set the byte at index `i` to `value`.
     fn set_byte(&mut self, i: usize, value: u8)
         requires
@@ -88,21 +78,18 @@ pub trait VestOutput<I>: VestSecretOutput<I> where
     ;
 
     /// Copy `input` to `self` starting at index `i`. (Same as `set_range` but with byte slice input.)
-    fn set_byte_range(&mut self, i: usize, input: &[u8]) -> (res: ()) 
+    fn set_byte_range(&mut self, i: usize, input: &[u8]) -> (res: ())
         requires
             0 <= i + input@.len() <= old(self)@.len() <= usize::MAX,
-        ensures 
-            self@.len() == old(self)@.len() 
-            && self@ == old(self)@.subrange(0, i as int)
-                            .add(input@)
-                            .add(old(self)@.subrange(i + input@.len(), self@.len() as int))
+        ensures
+            self@.len() == old(self)@.len() && self@ == old(self)@.subrange(0, i as int).add(
+                input@,
+            ).add(old(self)@.subrange(i + input@.len(), self@.len() as int)),
     ;
 }
 
-
 //////////////////////////////////////////////////////////////////////////////
 /// Implementations for common types
-
 impl<'a> VestSecretInput for &'a [u8] {
     fn len(&self) -> usize {
         <[u8]>::len(self)
@@ -133,7 +120,9 @@ impl VestSecretInput for Vec<u8> {
     fn subrange(&self, i: usize, j: usize) -> Vec<u8> {
         let mut res = Vec::new();
         vec_u8_extend_from_slice(&mut res, slice_subrange(self.as_slice(), i, j));
-        proof { assert_seqs_equal!(res@, self@.subrange(i as int, j as int)); }
+        proof {
+            assert_seqs_equal!(res@, self@.subrange(i as int, j as int));
+        }
         res
     }
 
@@ -158,7 +147,9 @@ impl VestSecretInput for Rc<Vec<u8>> {
     fn subrange(&self, i: usize, j: usize) -> Rc<Vec<u8>> {
         let mut res = Vec::new();
         vec_u8_extend_from_slice(&mut res, slice_subrange(self.as_slice(), i, j));
-        proof { assert_seqs_equal!(res@, self@.subrange(i as int, j as int)); }
+        proof {
+            assert_seqs_equal!(res@, self@.subrange(i as int, j as int));
+        }
         Rc::new(res)
     }
 
@@ -173,11 +164,7 @@ impl VestInput for Rc<Vec<u8>> {
     }
 }
 
-
-
-impl<I> VestSecretOutput<I> for Vec<u8> where
-    I: VestInput
-{
+impl<I> VestSecretOutput<I> for Vec<u8> where I: VestInput {
     fn len(&self) -> usize {
         Vec::len(self)
     }
@@ -187,10 +174,7 @@ impl<I> VestSecretOutput<I> for Vec<u8> where
     }
 }
 
-
-impl<I> VestOutput<I> for Vec<u8> where
-    I: VestInput
-{
+impl<I> VestOutput<I> for Vec<u8> where I: VestInput {
     fn set_byte(&mut self, i: usize, value: u8) {
         self.set(i, value);
     }
@@ -199,6 +183,5 @@ impl<I> VestOutput<I> for Vec<u8> where
         set_range(self, i, input);
     }
 }
-
 
 } // verus!

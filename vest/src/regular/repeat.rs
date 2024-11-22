@@ -156,10 +156,7 @@ impl<'a, C: Combinator<&'a [u8]>> Repeat<C> where
 
     /// Helper function for parse()
     /// TODO: Recursion is not ideal, but hopefully tail call opt will kick in
-    fn parse_helper(&self, s: &'a [u8], res: &mut Vec<C::Result>) -> (r: Result<
-        (),
-        ParseError,
-    >)
+    fn parse_helper(&self, s: &'a [u8], res: &mut Vec<C::Result>) -> (r: Result<(), ParseError>)
         requires
             self.0.parse_requires(),
             C::V::is_prefix_secure(),

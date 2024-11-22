@@ -396,10 +396,7 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
     ;
 
     /// Converts an integer to a sequence of bytes in little-endian byte order.
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize)
-        where
-            I: VestInput,
-            O: VestOutput<I>,
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I>
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
@@ -417,10 +414,7 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
     ;
 
     /// Converts an integer to a sequence of bytes in big-endian byte order.
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize)
-        where
-            I: VestInput,
-            O: VestOutput<I>,
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I>
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
@@ -481,10 +475,7 @@ impl FromToBytes for u8 {
         *slice_index_get(s, 0)
     }
 
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let ghost old = s@;
         s.set_byte(pos, *self);
         proof {
@@ -496,10 +487,7 @@ impl FromToBytes for u8 {
         *slice_index_get(s, 0)
     }
 
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let ghost old = s@;
         s.set_byte(pos, *self);
         proof {
@@ -564,8 +552,8 @@ impl FromToBytes for u16 {
             let x = Self::spec_from_be_bytes(s);
             let s0 = s[0] as u16;
             let s1 = s[1] as u16;
-            assert(((x == s0 << 8 | s1) && (s0 < 256) && (s1 < 256)) ==> s0 == ((x >> 8) & 0xff) &&
-            s1 == (x & 0xff)) by (bit_vector);
+            assert(((x == s0 << 8 | s1) && (s0 < 256) && (s1 < 256)) ==> s0 == ((x >> 8) & 0xff)
+                && s1 == (x & 0xff)) by (bit_vector);
             assert_seqs_equal!(Self::spec_to_be_bytes(&Self::spec_from_be_bytes(s)) == s);
         }
     }
@@ -580,10 +568,7 @@ impl FromToBytes for u16 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 2].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -598,10 +583,7 @@ impl FromToBytes for u16 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 2].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -678,8 +660,8 @@ impl FromToBytes for u32 {
             &&& (self >> 16) & 0xff < 256
             &&& (self >> 24) & 0xff < 256
         }) by (bit_vector);
-        assert(self == (((self >> 24) & 0xff) << 24 | ((self >> 16) & 0xff) << 16 | ((self >> 8) &
-        0xff) << 8 | (self & 0xff))) by (bit_vector);
+        assert(self == (((self >> 24) & 0xff) << 24 | ((self >> 16) & 0xff) << 16 | ((self >> 8)
+            & 0xff) << 8 | (self & 0xff))) by (bit_vector);
     }
 
     proof fn lemma_spec_from_to_be_bytes(s: Seq<u8>) {
@@ -706,10 +688,7 @@ impl FromToBytes for u32 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 4].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -726,10 +705,7 @@ impl FromToBytes for u32 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 4].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -834,9 +810,9 @@ impl FromToBytes for u64 {
             &&& (self >> 48) & 0xff < 256
             &&& (self >> 56) & 0xff < 256
         }) by (bit_vector);
-        assert(self == (((self >> 56) & 0xff) << 56 | ((self >> 48) & 0xff) << 48 | ((self >> 40) &
-        0xff) << 40 | ((self >> 32) & 0xff) << 32 | ((self >> 24) & 0xff) << 24 | ((self >> 16) &
-        0xff) << 16 | ((self >> 8) & 0xff) << 8 | (self & 0xff))) by (bit_vector);
+        assert(self == (((self >> 56) & 0xff) << 56 | ((self >> 48) & 0xff) << 48 | ((self >> 40)
+            & 0xff) << 40 | ((self >> 32) & 0xff) << 32 | ((self >> 24) & 0xff) << 24 | ((self
+            >> 16) & 0xff) << 16 | ((self >> 8) & 0xff) << 8 | (self & 0xff))) by (bit_vector);
     }
 
     proof fn lemma_spec_from_to_be_bytes(s: Seq<u8>) {
@@ -870,10 +846,7 @@ impl FromToBytes for u64 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 8].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -894,10 +867,7 @@ impl FromToBytes for u64 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where
-        I: VestInput,
-        O: VestOutput<I>,
-    {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 8].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -1003,7 +973,7 @@ impl u24 {
         ensures
             o == self.spec_as_u32(),
     {
-        let mut bytes = [0; 4];
+        let mut bytes = [0;4];
         bytes.set(1, self.0[0]);
         bytes.set(2, self.0[1]);
         bytes.set(3, self.0[2]);
@@ -1061,11 +1031,11 @@ impl SecureSpecCombinator for U24Le {
                 match BytesN::<3>.spec_parse(buf) {
                     Ok((n, bytes)) => {
                         bytes_eq_view_implies_eq([bytes[2], bytes[1], bytes[0]], v.0);
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -1074,8 +1044,8 @@ impl SecureSpecCombinator for U24Le {
         match BytesN::<3>.spec_parse(s) {
             Ok((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 }
@@ -1096,11 +1066,13 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
         Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
     }
 
-    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
         BytesN::<3>.serialize([v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
     }
 }
-
 
 /// Combinator for parsing and serializing unsigned u24 integers in big-endian byte order.
 pub struct U24Be;
@@ -1148,11 +1120,11 @@ impl SecureSpecCombinator for U24Be {
                 match BytesN::<3>.spec_parse(buf) {
                     Ok((n, bytes)) => {
                         bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -1161,11 +1133,10 @@ impl SecureSpecCombinator for U24Be {
         match BytesN::<3>.spec_parse(s) {
             Ok((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
-
 }
 
 proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
@@ -1193,7 +1164,10 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 
-    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
         BytesN::<3>.serialize(v.0.as_slice(), data, pos)
     }
 }

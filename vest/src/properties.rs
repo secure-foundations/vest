@@ -1,5 +1,5 @@
-pub use crate::errors::*;
 pub use crate::buf_traits::*;
+pub use crate::errors::*;
 use vstd::prelude::*;
 use vstd::*;
 
@@ -56,10 +56,11 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             self.spec_serialize(v) is Ok,
         ensures
-            exists |b: Seq<u8>| {
-                &&& self.spec_parse(b) is Ok
-                &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
-            }
+            exists|b: Seq<u8>|
+                {
+                    &&& self.spec_parse(b) is Ok
+                    &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
+                },
     {
         self.theorem_serialize_parse_roundtrip(v);
     }

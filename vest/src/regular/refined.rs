@@ -91,10 +91,7 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<I, O, Inner, P> Combinator<I, O> for Refined<
-    Inner,
-    P,
-> where
+impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O>,

@@ -55,7 +55,6 @@ impl std::convert::From<SerializeError> for Error {
 }
 
 } // verus!
-
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {

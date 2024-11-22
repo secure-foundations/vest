@@ -90,10 +90,7 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 }
 
-impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where 
-    I: VestInput,
-    T: Builder + View,
-{
+impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where I: VestInput, T: Builder + View {
     type Result = ();
 
     open spec fn spec_length(&self) -> Option<usize> {

@@ -60,10 +60,10 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
     }
 }
 
-impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where 
+impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
-{
+ {
     type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {

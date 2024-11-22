@@ -55,8 +55,7 @@ pub trait Iso: View where
         ensures
             res@ == Self::V::spec_apply(s@),
     {
-        assert(Self::V::spec_apply(s@) == <Self::Dst as View>::V::spec_from(s@))
-            by (compute_only);
+        assert(Self::V::spec_apply(s@) == <Self::Dst as View>::V::spec_from(s@)) by (compute_only);
         Self::Dst::ex_from(s)
     }
 
@@ -149,15 +148,12 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for Mapped<
-    Inner,
-    M,
-> where
+impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
-     M: Iso<Src = Inner::Result>,
+    M: Iso<Src = Inner::Result>,
     Inner::Result: From<M::Dst> + View,
     M::Dst: From<Inner::Result> + View,
     M::V: SpecIso<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,
@@ -258,10 +254,7 @@ pub trait TryFromInto: View where
     type Dst: View + TryFrom<Self::Src>;
 
     /// Applies the faillible conversion to the source type.
-    fn apply(s: Self::Src) -> (res: Result<
-        Self::Dst,
-        <Self::Dst as TryFrom<Self::Src>>::Error,
-    >)
+    fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>)
         ensures
             res matches Ok(v) ==> {
                 &&& Self::V::spec_apply(s@) is Ok
@@ -275,10 +268,7 @@ pub trait TryFromInto: View where
     }
 
     /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Result<
-        Self::Src,
-        <Self::Src as TryFrom<Self::Dst>>::Error,
-    >)
+    fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
         ensures
             res matches Ok(v) ==> {
                 &&& Self::V::spec_rev_apply(s@) is Ok
@@ -376,15 +366,12 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for TryMap<
-    Inner,
-    M,
-> where
+impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
-     M: TryFromInto<Src = Inner::Result>,
+    M: TryFromInto<Src = Inner::Result>,
     Inner::Result: TryFrom<M::Dst> + View,
     M::Dst: TryFrom<Inner::Result> + View,
     M::V: SpecTryFromInto<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,

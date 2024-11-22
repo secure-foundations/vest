@@ -105,7 +105,8 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O, Result = T>,
-    Inner::V: SecureSpecCombinator<SpecResult = T::V>, T: FromToBytes
+    Inner::V: SecureSpecCombinator<SpecResult = T::V>,
+    T: FromToBytes,
  {
     type Result = ();
 
@@ -137,7 +138,6 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -182,7 +182,6 @@ mod test {
             }
         }
     }
-
 
 }
 

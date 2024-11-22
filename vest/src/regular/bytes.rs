@@ -23,7 +23,10 @@ impl Bytes {
     }
 
     /// Chains this combinator with another combinator.
-    pub fn and_then<'a, I, O, Next: Combinator<I, O>>(self, next: Next) -> (o: AndThen<Bytes, Next>) where
+    pub fn and_then<'a, I, O, Next: Combinator<I, O>>(self, next: Next) -> (o: AndThen<
+        Bytes,
+        Next,
+    >) where
         I: VestInput,
         O: VestOutput<I>,
         Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
@@ -81,10 +84,7 @@ impl SecureSpecCombinator for Bytes {
     }
 }
 
-impl<I, O> Combinator<I, O> for Bytes where 
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
-{
+impl<I, O> Combinator<I, O> for Bytes where I: VestSecretInput, O: VestSecretOutput<I> {
     type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {

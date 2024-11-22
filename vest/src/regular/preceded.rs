@@ -6,7 +6,7 @@ verus! {
 /// Combinator that sequentially applies two combinators and returns the result of the second one.
 pub struct Preceded<Fst, Snd>(pub Fst, pub Snd);
 
-impl<Fst: View, Snd: View> View for Preceded<Fst, Snd>{
+impl<Fst: View, Snd: View> View for Preceded<Fst, Snd> {
     type V = Preceded<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -124,10 +124,7 @@ impl<
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<
-    Fst,
-    Snd,
-> where
+impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O, Result = ()>,
