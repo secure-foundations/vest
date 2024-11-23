@@ -1,3 +1,4 @@
+#![allow(unused)]
 /// Builder combinator
 pub mod builder;
 /// Bytes combinator
