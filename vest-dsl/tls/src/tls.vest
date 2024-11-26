@@ -80,6 +80,7 @@ extension_type = enum {
   PostHandshakeAuth = 49,
   SignatureAlgorithmsCert = 50,
   KeyShare = 51,
+  Dummy = 0xffff,
   ...
 }
 
@@ -304,7 +305,7 @@ padding_extension = {
 // struct {
 //   opaque ticket_data<0..2^16-1>;
 // } SessionTicket;
-session_ticket = opaque_0_ffff
+// session_ticket = opaque_0_ffff
 
 psk_identity = {
   identity: opaque_1_ffff,
@@ -403,15 +404,9 @@ uncompressed_point_representation66 = {
   y: [u8; 66],
 }
 
-montgomery_point32 = {
-  const legacy_form: u8 = 4,
-  point: [u8; 32],
-}
+montgomery_point32 = [u8; 32]
 
-montgomery_form56 = {
-  const legacy_form: u8 = 4,
-  point: [u8; 56],
-}
+montgomery_form56 = [u8; 56]
 
 sever_dh_params = {
   dh_p: opaque_1_ffff,
@@ -423,7 +418,8 @@ key_exchange_data = opaque_1_ffff
 
 key_share_entry = {
   @group: named_group,
-  key_exchange: choose(@group) {
+  @l: uint_1_ffff,
+  key_exchange: [u8; @l] >>= choose(@group) {
     Secp256r1 => uncompressed_point_representation32,
     Secp384r1 => uncompressed_point_representation48,
     Secp521r1 => uncompressed_point_representation66,
@@ -454,10 +450,12 @@ client_hello_extension = {
   @extension_type: extension_type,
   @ext_len: u16,
   extension_data: [u8; @ext_len] >>= choose(@extension_type) {
-    ServerName => empty,
+    ServerName => server_name_list,
     MaxFragmentLength => max_fragment_length,
-    StatusRequest => empty,
+    StatusRequest => certificate_status_request,
+    SupportedGroups => named_group_list,
     ECPointFormats => ec_point_format_list,
+    SignatureAlgorithms => signature_scheme_list,
     UseSRTP => use_srtp_data,
     Heartbeat => heartbeat_mode,
     ApplicationLayerProtocolNegotiation => protocol_name_list,
@@ -467,7 +465,7 @@ client_hello_extension = {
     Padding => padding_extension,
     EncryptThenMac => empty,
     ExtendedMasterSecret => empty,
-    SessionTicket => session_ticket,
+    SessionTicket => [u8; @ext_len],
     PreSharedKey => pre_shared_key_client_extension,
     EarlyData => empty,
     SupportedVersions => supported_versions_client,
@@ -478,7 +476,7 @@ client_hello_extension = {
     PostHandshakeAuth => empty,
     SignatureAlgorithmsCert => signature_scheme_list,
     KeyShare => key_share_client_hello,
-    _ => unknown_extension,
+    _ => [u8; @ext_len],
   },
 }
 
@@ -501,7 +499,7 @@ sever_hello_extension = {
     Padding => padding_extension,
     EncryptThenMac => empty,
     ExtendedMasterSecret => empty,
-    SessionTicket => session_ticket,
+    SessionTicket => empty,
     PreSharedKey => pre_shared_key_client_extension,
     EarlyData => empty,
     SupportedVersions => supported_versions_client,
@@ -512,7 +510,7 @@ sever_hello_extension = {
     PostHandshakeAuth => empty,
     SignatureAlgorithmsCert => signature_scheme_list,
     KeyShare => key_share_client_hello,
-    _ => unknown_extension,
+    _ => [u8; @ext_len],
   },
 }
 
@@ -622,8 +620,9 @@ session_id = {
 
 client_extensions = {
   @l: u16 | { 8..0xffff },
+  extensions: [u8; @l],
   // extensions: [u8; @l] >>= Vec<extension>,
-  extensions: [u8; @l] >>= Vec<client_hello_extension>,
+  // extensions: [u8; @l] >>= Vec<client_hello_extension>,
 }
 
 server_extensions = {
