@@ -118,7 +118,7 @@ fn parse_serialize() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
+    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(val, &mut s, 0)?;
     proof {
         msg.theorem_parse_serialize_roundtrip(data@);
@@ -140,7 +140,7 @@ fn serialize_parse() -> Result<(), Error> {
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = msg.parse(s_)?;
+    let (n, val_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
@@ -229,8 +229,8 @@ fn parse_serialize2() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
-    let len = msg.serialize(val, &mut s, 0)?;
+    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, data.as_slice())?;
+    let len = <_ as Combinator<&[u8],Vec<u8>>>::serialize(&msg, val, &mut s, 0)?;
     proof {
         msg.theorem_parse_serialize_roundtrip(data@);
         assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
@@ -247,9 +247,9 @@ fn serialize_parse2() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper(std::marker::PhantomData) };
     let val = Msg2 { a: 1, b: 123, c: 1 };
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let len = msg.serialize(val, &mut s1, 0)?;
+    let len = <_ as Combinator<&[u8],Vec<u8>>>::serialize(&msg, val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = msg.parse(s_)?;
+    let (n, val_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
@@ -340,7 +340,7 @@ fn parse_serialize3() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
+    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(val, &mut s, 0)?;
     proof {
         assert(n == 6);
@@ -362,7 +362,7 @@ fn serialize_parse3() -> Result<(), Error> {
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = msg.parse(s_)?;
+    let (n, val_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
@@ -495,7 +495,7 @@ fn parse_serialize4() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
+    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(val, &mut s, 0)?;
     proof {
         msg.theorem_parse_serialize_roundtrip(data@);
@@ -504,7 +504,7 @@ fn parse_serialize4() -> Result<(), Error> {
     }
     let mut data = my_vec![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
+    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(val, &mut s, 0)?;
     proof {
         msg.theorem_parse_serialize_roundtrip(data@);
@@ -544,7 +544,7 @@ fn serialize_parse4() -> Result<(), Error> {
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = msg.parse(s_)?;
+    let (n, val_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg@.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
@@ -555,7 +555,7 @@ fn serialize_parse4() -> Result<(), Error> {
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = msg.parse(s_)?;
+    let (n, val_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg@.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);

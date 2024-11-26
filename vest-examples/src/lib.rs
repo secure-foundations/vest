@@ -1,11 +1,11 @@
-// mod choice;
-// mod depend;
-// mod enums;
-// mod map;
-// mod pair;
+mod choice;
+mod depend;
+mod enums;
+mod map;
+mod pair;
 // mod repeat;
 mod tlv;
-// mod wireguard;
+mod wireguard;
 
 macro_rules! my_vec {
     // Match against any number of comma-separated expressions.

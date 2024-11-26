@@ -72,7 +72,7 @@ fn exec_parse<'a>(x: &'a [u8]) -> (res: Option<MyEnumExec<'a>>)
     let case2 = (tag2, payload2);
     let case3 = (tag3, payload3);
     let comb = ord_choice!(case1, case2, case3);
-    if let Ok((_, eithers)) = comb.parse(x) {
+    if let Ok((_, eithers)) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&comb, x) {
         match eithers {
             inj_ord_choice_pat!((_, x), *, *) => Some(MyEnumExec::A(x)),
             inj_ord_choice_pat!(*, (_, x), *) => Some(MyEnumExec::B(x)),
