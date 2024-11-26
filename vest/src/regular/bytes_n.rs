@@ -60,9 +60,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
     }
 }
 
-impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
+impl<const N: usize, I> Combinator<I> for BytesN<N> where
     I: VestSecretInput,
-    O: VestSecretOutput<I>,
  {
     type Result = I;
 
@@ -83,7 +82,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
         }
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize<O: VestSecretOutput<I>>(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

@@ -124,9 +124,8 @@ pub trait SecureSpecCombinator: SpecCombinator {
 
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
-pub trait Combinator<I, O>: View where
+pub trait Combinator<I>: View where
     I: VestSecretInput,
-    O: VestSecretOutput<I>,
     Self::V: SecureSpecCombinator<SpecResult = <Self::Result as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
@@ -170,7 +169,7 @@ pub trait Combinator<I, O>: View where
     }
 
     /// The serialization function.
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize<O: VestSecretOutput<I>>(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >)
@@ -221,9 +220,8 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
     }
 }
 
-impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
+impl<I, C: Combinator<I>> Combinator<I> for &C where
     I: VestSecretInput,
-    O: VestSecretOutput<I>,
     C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
  {
     type Result = C::Result;
@@ -248,7 +246,7 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize<O: VestSecretOutput<I>>(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
