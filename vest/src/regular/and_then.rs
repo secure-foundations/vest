@@ -95,12 +95,12 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
 
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
-        <Bytes as Combinator<I, O>>::spec_length(&self.0)
+        <_ as Combinator<I, O>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
         // self.0.length()
-        <Bytes as Combinator<I, O>>::length(&self.0)
+        <_ as Combinator<I, O>>::length(&self.0)
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -108,7 +108,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
-        let (n, v1) = <Bytes as Combinator<I, O>>::parse(&self.0, s)?;
+        let (n, v1) = <_ as Combinator<I, O>>::parse(&self.0, s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {
             Ok((n, v2))

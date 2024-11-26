@@ -1062,7 +1062,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
-        let (n, bytes) = <BytesN::<3> as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
         Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
     }
 
@@ -1160,7 +1160,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
-        let (n, bytes) = <BytesN::<3> as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 

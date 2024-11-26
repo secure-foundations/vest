@@ -546,7 +546,7 @@ fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
 {
-    <FieldLessCombinator as Combinator<&[u8], Vec<u8>>>::parse(&field_less(), i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&field_less(), i)
 }
 
 fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
@@ -556,7 +556,7 @@ fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: R
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    <FieldLessCombinator as Combinator<&[u8], Vec<u8>>>::serialize(&field_less(), msg, data, pos)
+    <_ as Combinator<&[u8], Vec<u8>>>::serialize(&field_less(), msg, data, pos)
 }
 
 // non-exhaustive enum

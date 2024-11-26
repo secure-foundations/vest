@@ -583,7 +583,7 @@ pub type SpecMsgCCombinator = Mapped<
 pub struct MsgCCont<'a>(std::marker::PhantomData<&'a ()>);
 
 pub type MsgCCombinator<'a> = Mapped<
-    Depend<'a, (ContentTypeCombinator, U24Be), MsgCF4Combinator<'a>, MsgCCont<'a>>,
+    Depend<&'a [u8], Vec<u8>, (ContentTypeCombinator, U24Be), MsgCF4Combinator<'a>, MsgCCont<'a>>,
     MsgCMapper<'a>,
 >;
 
@@ -752,7 +752,8 @@ pub fn parse_msg_d(i: &[u8]) -> (o: Result<(usize, MsgD<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_d(i@) matches Ok(r_) && r@ == r_,
 {
-    msg_d().parse(i)
+    // msg_d().parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg_d(), i)
 }
 
 pub fn serialize_msg_d(msg: MsgD<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -780,7 +781,7 @@ pub fn parse_msg_b(i: &[u8]) -> (o: Result<(usize, MsgB<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_b(i@) matches Ok(r_) && r@ == r_,
 {
-    msg_b().parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg_b(), i)
 }
 
 pub fn serialize_msg_b(msg: MsgB<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -808,7 +809,7 @@ pub fn parse_content_0(i: &[u8], num: u24) -> (o: Result<(usize, Content0<'_>), 
     ensures
         o matches Ok(r) ==> parse_spec_content_0(i@, num@) matches Ok(r_) && r@ == r_,
 {
-    content_0(num).parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&content_0(num), i)
 }
 
 pub fn serialize_content_0(msg: Content0<'_>, data: &mut Vec<u8>, pos: usize, num: u24) -> (o:
@@ -834,7 +835,7 @@ pub fn parse_content_type(i: &[u8]) -> (o: Result<(usize, ContentType), ParseErr
     ensures
         o matches Ok(r) ==> parse_spec_content_type(i@) matches Ok(r_) && r@ == r_,
 {
-    content_type().parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&content_type(), i)
 }
 
 pub fn serialize_content_type(msg: ContentType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -847,7 +848,7 @@ pub fn serialize_content_type(msg: ContentType, data: &mut Vec<u8>, pos: usize) 
             &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
         },
 {
-    content_type().serialize(msg, data, pos)
+    <_ as Combinator<&[u8], Vec<u8>>>::serialize(&content_type(), msg, data, pos)
 }
 
 pub open spec fn parse_spec_msg_c_f4(i: Seq<u8>, f2: SpecContentType, f3: u24) -> Result<
@@ -871,7 +872,7 @@ pub fn parse_msg_c_f4(i: &[u8], f2: ContentType, f3: u24) -> (o: Result<
     ensures
         o matches Ok(r) ==> parse_spec_msg_c_f4(i@, f2@, f3@) matches Ok(r_) && r@ == r_,
 {
-    msg_c_f4(f2, f3).parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg_c_f4(f2, f3), i)
 }
 
 pub fn serialize_msg_c_f4(
@@ -902,7 +903,7 @@ pub fn parse_msg_c(i: &[u8]) -> (o: Result<(usize, MsgC<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_c(i@) matches Ok(r_) && r@ == r_,
 {
-    msg_c().parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg_c(), i)
 }
 
 pub fn serialize_msg_c(msg: MsgC<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -930,7 +931,7 @@ pub fn parse_msg_a(i: &[u8]) -> (o: Result<(usize, MsgA<'_>), ParseError>)
     ensures
         o matches Ok(r) ==> parse_spec_msg_a(i@) matches Ok(r_) && r@ == r_,
 {
-    msg_a().parse(i)
+    <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg_a(), i)
 }
 
 pub fn serialize_msg_a(msg: MsgA<'_>, data: &mut Vec<u8>, pos: usize) -> (o: Result<
