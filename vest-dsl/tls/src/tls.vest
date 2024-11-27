@@ -620,9 +620,9 @@ session_id = {
 
 client_extensions = {
   @l: u16 | { 8..0xffff },
-  extensions: [u8; @l],
+  // extensions: [u8; @l],
   // extensions: [u8; @l] >>= Vec<extension>,
-  // extensions: [u8; @l] >>= Vec<client_hello_extension>,
+  extensions: [u8; @l] >>= Vec<client_hello_extension>,
 }
 
 server_extensions = {
