@@ -1,5 +1,5 @@
 [package]
-name = "test"
+name = "tls"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,25 @@ builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" 
 builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vest = { path = "../../vest" }
+rustls = "0.23"
 
 [package.metadata.verus.ide]
 extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern vest=../../vest/libvest.rlib src/lib.rs"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rustls = "0.23"
+
+[[bench]]
+name = "tls_benchmark"
+harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = true
+
+[profile.bench]
+lto = true

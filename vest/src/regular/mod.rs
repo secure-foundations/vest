@@ -1,3 +1,4 @@
+#![allow(unused)]
 /// AndThen combinator
 pub mod and_then;
 /// Builder combinator
@@ -27,10 +28,10 @@ pub mod pair;
 pub mod preceded;
 /// Refined combinator
 pub mod refined;
-/// Success combinator
-pub mod success;
 /// Repeat combinator
 pub mod repeat;
+/// Success combinator
+pub mod success;
 /// Tag combinator
 pub mod tag;
 /// Tail combinator
