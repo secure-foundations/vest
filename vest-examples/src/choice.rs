@@ -24,8 +24,8 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
 
     let mut data = my_vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&choice, data.as_slice())?;
-    let len = <_ as Combinator<&[u8],Vec<u8>>>::serialize(&choice, val, &mut s, 0)?;
+    let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&choice, data.as_slice())?;
+    let len = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&choice, val, &mut s, 0)?;
 
     Ok(())
 }
@@ -52,7 +52,7 @@ exec fn choice_parse_serialize() -> Result<(), Error> {
     let mut data1 =
         my_vec![1u8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8, 0x16u8, 0x17u8, 0x18u8];
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n1, val1) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&ord_choice1, data1.as_slice())?;
+    let (n1, val1) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&ord_choice1, data1.as_slice())?;
     let len1 = ord_choice1.serialize(val1, &mut s1, 0)?;
     proof {
         ord_choice1.theorem_parse_serialize_roundtrip(data1@);
@@ -74,7 +74,7 @@ exec fn choice_parse_serialize() -> Result<(), Error> {
     let mut data2 =
         my_vec![4u8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0xA0, 0xB1, 0xC2, 0x00, 0x00, 0x00];
     let mut s2 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n2, val2) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&ord_choice1, data2.as_slice())?;
+    let (n2, val2) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&ord_choice1, data2.as_slice())?;
     let len2 = ord_choice1.serialize(val2, &mut s2, 0)?;
     proof {
         ord_choice1.theorem_parse_serialize_roundtrip(data2@);
@@ -127,7 +127,10 @@ exec fn choice_serialize_parse() -> Result<(), Error> {
     let val1 = inj_ord_choice_result!(((), (vec1.as_slice(), vec2.as_slice())), *, *, *);
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len1 = ord_choice1.serialize(val1, &mut s1, 0)?;
-    let (n1, val1_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&ord_choice1, slice_subrange(s1.as_slice(), 0, len1))?;
+    let (n1, val1_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(
+        &ord_choice1,
+        slice_subrange(s1.as_slice(), 0, len1),
+    )?;
     assert(val1_ is Left);
     proof {
         ord_choice1@.theorem_serialize_parse_roundtrip(val1@);
@@ -145,7 +148,10 @@ exec fn choice_serialize_parse() -> Result<(), Error> {
     let val2 = inj_ord_choice_result!(*, *, *, ((), (vec3.as_slice(), (32000u16, (0u8, 0u8)))));
     let mut s2 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len2 = ord_choice1.serialize(val2, &mut s2, 0)?;
-    let (n2, val2_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&ord_choice1, slice_subrange(s2.as_slice(), 0, len2))?;
+    let (n2, val2_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(
+        &ord_choice1,
+        slice_subrange(s2.as_slice(), 0, len2),
+    )?;
     assert(val2_ is Right);
     proof {
         ord_choice1@.theorem_serialize_parse_roundtrip(val2@);

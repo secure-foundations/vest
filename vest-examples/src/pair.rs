@@ -15,7 +15,7 @@ exec fn parse_serialize() -> Result<(), Error> {
     let msg1 = ((Tag::new(U8, 1), U32Le), Bytes(3));
     let mut data1 = my_vec![1u8, 0x40u8, 0xE2u8, 0x01u8, 0x00u8, 0u8, 0u8, 1u8, 0u8, 0u8, 0u8, 0u8];
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n1, val1) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg1, data1.as_slice())?;
+    let (n1, val1) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg1, data1.as_slice())?;
     let len1 = msg1.serialize(val1, &mut s1, 0)?;
     proof {
         msg1.theorem_parse_serialize_roundtrip(data1@);
@@ -45,7 +45,7 @@ exec fn serialize_parse() -> Result<(), Error> {
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len1 = msg1.serialize(val1, &mut s1, 0)?;
     let s1_ = slice_subrange(s1.as_slice(), 0, len1);
-    let (n1, val1_) = <_ as Combinator<&[u8],Vec<u8>>>::parse(&msg1, s1_)?;
+    let (n1, val1_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg1, s1_)?;
     proof {
         msg1.theorem_serialize_parse_roundtrip(val1@);
         assert(n1 == len1);
