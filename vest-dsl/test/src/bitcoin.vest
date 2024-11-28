@@ -1,0 +1,38 @@
+empty = [u8; 0]
+
+varint = {
+  @tag: u8,
+  rest: choose(@tag) {
+    0..0xFC => empty,
+    0xFD => u16,
+    0xFE => u32,
+    0xFF => u64,
+  }
+} as u64
+
+script_sig = {
+  @tag: u8,
+  rest: choose(@tag) {
+    0..0xFC => [u8; @tag],
+    0xFD => opaque_0_ff,
+    0xFE => opaque_0_ffff,
+    0xFF => opaque_0_ffffffff,
+  }
+}
+
+opaque_0_ff = {
+  @l: u16 | { 0..10000 },
+  data: [u8; @l],
+}
+
+opaque_0_ffff = {
+  @l: u32,
+  data: [u8; @l],
+}
+
+opaque_0_ffffffff = {
+  @l: u64,
+  data: [u8; @l],
+}
+
+tx
