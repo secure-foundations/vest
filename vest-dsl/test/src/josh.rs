@@ -1,4 +1,5 @@
-#![allow(unused_imports)]
+#![allow(warnings)]
+#![allow(unused)]
 use std::marker::PhantomData;
 use vstd::prelude::*;
 use vest::properties::*;
@@ -222,6 +223,7 @@ pub fn mydata<'a>() -> (o: MydataCombinator<'a>)
 
 
                 
+
 pub enum SpecTstMydata {
     C0(SpecMydata),
     C1(SpecMydata),
@@ -255,7 +257,11 @@ pub enum SpecTstMydata {
     C29(SpecMydata),
     C30(SpecMydata),
 }
+
 pub type SpecTstMydataInner = Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, SpecMydata>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+
+
+
 impl SpecFrom<SpecTstMydata> for SpecTstMydataInner {
     open spec fn spec_from(m: SpecTstMydata) -> SpecTstMydataInner {
         match m {
@@ -292,7 +298,9 @@ impl SpecFrom<SpecTstMydata> for SpecTstMydataInner {
             SpecTstMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
         }
     }
+
 }
+
 impl SpecFrom<SpecTstMydataInner> for SpecTstMydata {
     open spec fn spec_from(m: SpecTstMydataInner) -> SpecTstMydata {
         match m {
@@ -329,7 +337,11 @@ impl SpecFrom<SpecTstMydataInner> for SpecTstMydata {
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => SpecTstMydata::C30(m),
         }
     }
+
 }
+
+
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TstMydata<'a> {
     C0(Mydata<'a>),
@@ -364,8 +376,11 @@ pub enum TstMydata<'a> {
     C29(Mydata<'a>),
     C30(Mydata<'a>),
 }
+
 pub type TstMydataInner<'a> = Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Mydata<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
-impl View for TstMydata<'_> {
+
+
+impl<'a> View for TstMydata<'a> {
     type V = SpecTstMydata;
     open spec fn view(&self) -> Self::V {
         match self {
@@ -403,6 +418,8 @@ impl View for TstMydata<'_> {
         }
     }
 }
+
+
 impl<'a> From<TstMydata<'a>> for TstMydataInner<'a> {
     fn ex_from(m: TstMydata<'a>) -> TstMydataInner<'a> {
         match m {
@@ -439,7 +456,9 @@ impl<'a> From<TstMydata<'a>> for TstMydataInner<'a> {
             TstMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
         }
     }
+
 }
+
 impl<'a> From<TstMydataInner<'a>> for TstMydata<'a> {
     fn ex_from(m: TstMydataInner<'a>) -> TstMydata<'a> {
         match m {
@@ -476,7 +495,9 @@ impl<'a> From<TstMydataInner<'a>> for TstMydata<'a> {
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => TstMydata::C30(m),
         }
     }
+    
 }
+
 
 pub struct TstMydataMapper<'a>(PhantomData<&'a ()>);
 impl<'a> TstMydataMapper<'a> {
@@ -506,6 +527,7 @@ impl<'a> Iso for TstMydataMapper<'a> {
     type Dst = TstMydata<'a>;
 }
     
+
 
 pub struct SpecTstMydataCombinator(SpecTstMydataCombinatorAlias);
 
@@ -564,7 +586,7 @@ pub closed spec fn spec_tst_mydata(tag: SpecTstTag) -> SpecTstMydataCombinator {
 pub fn tst_mydata<'a>(tag: TstTag) -> (o: TstMydataCombinator<'a>)
     ensures o@ == spec_tst_mydata(tag@),
 {
-    TstMydataCombinator(Mapped { inner: OrdChoice(Cond { cond: tag == 0, inner: mydata() }, OrdChoice(Cond { cond: tag == 1, inner: mydata() }, OrdChoice(Cond { cond: tag == 2, inner: mydata() }, OrdChoice(Cond { cond: tag == 3, inner: mydata() }, OrdChoice(Cond { cond: tag == 4, inner: mydata() }, OrdChoice(Cond { cond: tag == 5, inner: mydata() }, OrdChoice(Cond { cond: tag == 6, inner: mydata() }, OrdChoice(Cond { cond: tag == 7, inner: mydata() }, OrdChoice(Cond { cond: tag == 8, inner: mydata() }, OrdChoice(Cond { cond: tag == 9, inner: mydata() }, OrdChoice(Cond { cond: tag == 10, inner: mydata() }, OrdChoice(Cond { cond: tag == 11, inner: mydata() }, OrdChoice(Cond { cond: tag == 12, inner: mydata() }, OrdChoice(Cond { cond: tag == 13, inner: mydata() }, OrdChoice(Cond { cond: tag == 14, inner: mydata() }, OrdChoice(Cond { cond: tag == 15, inner: mydata() }, OrdChoice(Cond { cond: tag == 16, inner: mydata() }, OrdChoice(Cond { cond: tag == 17, inner: mydata() }, OrdChoice(Cond { cond: tag == 18, inner: mydata() }, OrdChoice(Cond { cond: tag == 19, inner: mydata() }, OrdChoice(Cond { cond: tag == 20, inner: mydata() }, OrdChoice(Cond { cond: tag == 21, inner: mydata() }, OrdChoice(Cond { cond: tag == 22, inner: mydata() }, OrdChoice(Cond { cond: tag == 23, inner: mydata() }, OrdChoice(Cond { cond: tag == 24, inner: mydata() }, OrdChoice(Cond { cond: tag == 25, inner: mydata() }, OrdChoice(Cond { cond: tag == 26, inner: mydata() }, OrdChoice(Cond { cond: tag == 27, inner: mydata() }, OrdChoice(Cond { cond: tag == 28, inner: mydata() }, OrdChoice(Cond { cond: tag == 29, inner: mydata() }, Cond { cond: tag == 30, inner: mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::new() })
+    TstMydataCombinator(Mapped { inner: OrdChoice::new(Cond { cond: tag == 0, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 1, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 2, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 3, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 4, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 5, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 6, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 7, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 8, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 9, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 10, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 11, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 12, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 13, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 14, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 15, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 16, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 17, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 18, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 19, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 20, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 21, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 22, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 23, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 24, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 25, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 26, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 27, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 28, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 29, inner: mydata() }, Cond { cond: tag == 30, inner: mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::new() })
 }
 
 

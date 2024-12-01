@@ -1,4 +1,5 @@
-#![allow(unused_imports)]
+#![allow(warnings)]
+#![allow(unused)]
 use std::marker::PhantomData;
 use vest::properties::*;
 use vest::regular::and_then::*;

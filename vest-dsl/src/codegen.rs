@@ -2341,7 +2341,12 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
             *combinator_lifetime_ann,
             &mut codegen_ctx,
         );
-        gen_combinator_expr_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
+        gen_combinator_expr_for_definition(
+            defn,
+            &mut code,
+            *combinator_lifetime_ann,
+            &mut codegen_ctx,
+        );
     }
     "#![allow(warnings)]\n#![allow(unused)]\n".to_string()
         + "use std::marker::PhantomData;\n"
