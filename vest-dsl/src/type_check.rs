@@ -198,6 +198,7 @@ fn check_const_array_combinator(combinator: &IntCombinator, len: &usize, values:
             check_const_int_combinator(combinator, int_val);
         }
         ConstArray::Char(_) => panic!("Char array literals should be of type `[u8; N]`"),
+        ConstArray::Wildcard => (),
     }
 }
 
@@ -259,6 +260,7 @@ fn check_const_bytes_combinator(len: &usize, values: &ConstArray) {
                 );
             }
         }
+        ConstArray::Wildcard => (),
     }
 }
 
@@ -564,28 +566,30 @@ fn check_choice_combinator(
     local_ctx: &mut LocalCtx,
     global_ctx: &GlobalCtx,
 ) {
+    let get_combinator_from_depend_id = |depend_id: &str| {
+        local_ctx
+            .dependent_fields
+            .get(depend_id)
+            .map(|combinator| &combinator.inner)
+            .unwrap_or_else(|| {
+                param_defns
+                    .iter()
+                    .find_map(|param_defn| match param_defn {
+                        ParamDefn::Dependent { name, combinator } if name == depend_id => {
+                            Some(combinator)
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("`{}` is not defined as a dependent field", depend_id);
+                    })
+            })
+    };
     match choices {
         Choices::Enums(enums) => {
             if let Some(depend_id) = depend_id {
                 // check if depend_id a prior field in the struct or in the param_defns
-                let combinator = local_ctx
-                    .dependent_fields
-                    .get(depend_id)
-                    .map(|combinator| &combinator.inner)
-                    .unwrap_or_else(|| {
-                        param_defns
-                            .iter()
-                            .find_map(|param_defn| match param_defn {
-                                ParamDefn::Dependent { name, combinator } if name == depend_id => {
-                                    Some(combinator)
-                                }
-                                _ => None,
-                            })
-                            .unwrap_or_else(|| {
-                                panic!("`{}` is not defined as a dependent field", depend_id);
-                            })
-                    });
-
+                let combinator = get_combinator_from_depend_id(depend_id);
                 // check if `combinator` is defined as an enum
                 if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) = &combinator
                 {
@@ -646,31 +650,65 @@ fn check_choice_combinator(
             }
         }
         Choices::Ints(ints) => {
-            if depend_id.is_none() {
-                panic!("Ints are not allowed in a non-dependent choice");
+            if let Some(depend_id) = depend_id {
+                let combinator = get_combinator_from_depend_id(depend_id);
+                // check if `combinator` is defined as an int
+                if let CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                    combinator: IntCombinator::Unsigned(_),
+                    ..
+                }) = combinator
+                {
+                    let mut int_variants = HashSet::new();
+                    ints.iter().for_each(|(int, combinator)| {
+                        if let Some(int) = int {
+                            if !int_variants.insert(*int) {
+                                panic!("Duplicate int variant `{}`", int);
+                            }
+                        }
+                        check_combinator(combinator, param_defns, local_ctx, global_ctx);
+                    });
+                } else {
+                    panic!("Type mismatch: expected unsigned int, got {}", combinator);
+                }
             } else {
-                let mut int_variants = HashSet::new();
-                ints.iter().for_each(|(int, combinator)| {
-                    if !int_variants.insert(*int) {
-                        panic!("Duplicate int variant `{}`", int);
-                    }
-                    // TODO: infer and check the type of the int
-                    check_combinator(combinator, param_defns, local_ctx, global_ctx);
-                });
+                panic!("Ints are not allowed in a non-dependent choice");
             }
         }
         Choices::Arrays(arrays) => {
-            if depend_id.is_none() {
-                panic!("Arrays are not allowed in a non-dependent choice");
+            if let Some(depend_id) = depend_id {
+                let combinator = get_combinator_from_depend_id(depend_id);
+                // check if `combinator` is defined as an array
+                if let CombinatorInner::Array(ArrayCombinator { len, .. })
+                | CombinatorInner::Bytes(BytesCombinator { len }) = combinator
+                {
+                    let LengthSpecifier::Const(len) = len.clone() else {
+                        panic!("Length specifier must be constant");
+                    };
+                    let mut array_variants = HashSet::new();
+                    arrays.iter().for_each(|(array, comb)| {
+                        if !array_variants.insert(array) {
+                            panic!("Duplicate array variant");
+                        }
+                        match array {
+                            ConstArray::Int(elems) => {
+                                if elems.len() != len {
+                                    panic!(
+                                        "Array length mismatch: expected {}, got {}",
+                                        len,
+                                        elems.len()
+                                    );
+                                }
+                            }
+                            ConstArray::Wildcard => (),
+                            _ => unimplemented!(),
+                        }
+                        check_combinator(comb, param_defns, local_ctx, global_ctx);
+                    });
+                } else {
+                    panic!("Type mismatch: expected array, got {}", combinator);
+                }
             } else {
-                let mut array_variants = HashSet::new();
-                arrays.iter().for_each(|(array, combinator)| {
-                    if !array_variants.insert(array) {
-                        panic!("Duplicate array variant");
-                    }
-                    // TODO: infer and check the type of the array
-                    check_combinator(combinator, param_defns, local_ctx, global_ctx);
-                });
+                panic!("Arrays are not allowed in a non-dependent choice");
             }
         }
     }

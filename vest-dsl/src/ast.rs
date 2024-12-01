@@ -160,7 +160,7 @@ pub struct ChoiceCombinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Choices {
     Enums(Vec<(String, Combinator)>),
-    Ints(Vec<(i128, Combinator)>),
+    Ints(Vec<(Option<i128>, Combinator)>),
     Arrays(Vec<(ConstArray, Combinator)>),
 }
 
@@ -240,6 +240,7 @@ pub enum ConstArray {
     Char(Vec<u8>),
     Int(Vec<i128>),
     Repeat(i128, usize),
+    Wildcard,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -451,6 +452,7 @@ impl Display for ConstArray {
                 write!(f, "]")
             }
             ConstArray::Repeat(value, count) => write!(f, "[{}; {}]", value, count),
+            ConstArray::Wildcard => write!(f, "_"),
         }
     }
 }
@@ -562,6 +564,7 @@ impl Display for Choices {
             }
             Choices::Ints(ints) => {
                 for (value, combinator) in ints {
+                    let value = value.map_or("_".to_string(), |v| v.to_string());
                     writeln!(f, "{} => {},", value, combinator)?;
                 }
                 Ok(())
@@ -1069,6 +1072,7 @@ fn parse_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
 }
 
 fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
+    // peak the first variant
     let choice_variant = inner_rules
         .peek()
         .unwrap()
@@ -1090,9 +1094,23 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
         Rule::const_int => {
             let parse_int_choice = |pair: pest::iterators::Pair<Rule>| {
                 let mut inner_rules = pair.into_inner();
-                let value = parse_const_int(inner_rules.next().unwrap());
-                let combinator = parse_combinator(inner_rules.next().unwrap());
-                (value, combinator)
+                match inner_rules.peek().unwrap().as_rule() {
+                    Rule::const_int => {
+                        let value = parse_const_int(inner_rules.next().unwrap());
+                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        (Some(value), combinator)
+                    }
+                    Rule::variant_id => {
+                        let name = inner_rules.next().unwrap().as_str();
+                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        if name == "_" {
+                            (None, combinator)
+                        } else {
+                            panic!("Invalid pattern for int choice: {}", name)
+                        }
+                    }
+                    _ => unreachable!(),
+                }
             };
             let choices = inner_rules.map(parse_int_choice).collect();
             Choices::Ints(choices)
@@ -1100,9 +1118,23 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
         Rule::const_array => {
             let parse_array_choice = |pair: pest::iterators::Pair<Rule>| {
                 let mut inner_rules = pair.into_inner();
-                let array = parse_const_array(inner_rules.next().unwrap());
-                let combinator = parse_combinator(inner_rules.next().unwrap());
-                (array, combinator)
+                match inner_rules.peek().unwrap().as_rule() {
+                    Rule::const_array => {
+                        let array = parse_const_array(inner_rules.next().unwrap());
+                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        (array, combinator)
+                    }
+                    Rule::variant_id => {
+                        let name = inner_rules.next().unwrap().as_str();
+                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        if name == "_" {
+                            (ConstArray::Wildcard, combinator)
+                        } else {
+                            panic!("Invalid pattern for array choice: {}", name)
+                        }
+                    }
+                    _ => unreachable!(),
+                }
             };
             let choices = inner_rules.map(parse_array_choice).collect();
             Choices::Arrays(choices)

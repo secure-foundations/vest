@@ -150,7 +150,7 @@ pub struct CodegenCtx<'a> {
 /// A message type needs lifetime annotations if the combinator, after resolving,
 /// - is a `Bytes` or `Tail` combinator
 /// - is any combinator that recursively contains a message type that needs lifetime
-/// annotations
+///   annotations
 fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
     use CombinatorInner::*;
     let resolved = ctx.resolve(combinator);
@@ -732,16 +732,14 @@ impl Codegen for BytesCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, _ctx: &CodegenCtx) -> String {
         let type_name = match mode {
             Mode::Spec => "Seq<u8>".to_string(),
-            Mode::Exec(LifetimeAnn::Some) => "&'a [u8]".to_string(),
-            _ => "Vec<u8>".to_string(),
+            Mode::Exec(_) => "&'a [u8]".to_string(),
         };
         if name.is_empty() {
             type_name
         } else {
             let type_alias_name = match mode {
                 Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
-                Mode::Exec(LifetimeAnn::None) => name,
+                Mode::Exec(_) => &format!("{}{}", name, "<'a>"),
             };
             format!("pub type {} = {};\n", type_alias_name, type_name)
         }
@@ -1591,172 +1589,176 @@ impl TryFromInto for {msg_type_name}Mapper {{
 
 impl Codegen for ChoiceCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        let mut code = String::new();
-        match &self.choices {
-            Choices::Enums(enums) => {
-                let msg_type_name = match mode {
-                    Mode::Spec => format!("Spec{}", name),
-                    Mode::Exec(_) => name.to_string(),
-                };
-                let lifetime_ann = match mode {
-                    Mode::Exec(LifetimeAnn::Some) => "<'a>",
-                    _ => "",
-                };
-                let derive = match mode {
-                    Mode::Exec(_) => "#[derive(Debug, Clone, PartialEq, Eq)]\n",
-                    _ => "",
-                };
-                // generate the enum
-                code.push_str(&format!(
-                    "{}pub enum {}{} {{\n",
-                    derive, msg_type_name, lifetime_ann
-                ));
-                let mut variants = Vec::new();
-                for (label, combinator) in enums {
+        let variants = match &self.choices {
+            Choices::Enums(enums) => enums
+                .iter()
+                .map(|(label, combinator)| {
                     let variant_type = combinator.gen_msg_type("", mode, ctx);
                     let label = if label == "_" { "Unrecognized" } else { label };
-                    code.push_str(&format!("    {}({}),\n", label, variant_type));
-                    variants.push((label.to_string(), variant_type));
-                }
-                code.push_str("}\n");
-
-                // generate the enum inner
-                let msg_type_inner_name = msg_type_name.clone() + "Inner";
-                code.push_str(&format!(
-                    "pub type {}{} = {};\n",
-                    msg_type_inner_name,
-                    lifetime_ann,
-                    fmt_in_pairs(
-                        &variants
-                            .iter()
-                            .map(|(_, variant_type)| variant_type)
-                            .collect::<Vec<_>>(),
-                        "Either",
-                        Bracket::Angle
-                    ),
-                ));
-
-                // impl View for exec enums
-                match mode {
-                    Mode::Exec(_) => {
-                        let lifetime = match mode {
-                            Mode::Exec(LifetimeAnn::Some) => "<'_>",
-                            Mode::Exec(LifetimeAnn::None) => "",
-                            _ => unreachable!(),
-                        };
-                        code.push_str(&format!(
-                            r#"impl View for {}{} {{
-    type V = Spec{};
+                    (label.to_string(), variant_type)
+                })
+                .collect::<Vec<_>>(),
+            Choices::Ints(ints) => ints
+                .iter()
+                .enumerate()
+                .map(|(i, (_, combinator))| {
+                    let variant_name = format!("Variant{}", i);
+                    let variant_type = combinator.gen_msg_type("", mode, ctx);
+                    (variant_name, variant_type)
+                })
+                .collect::<Vec<_>>(),
+            Choices::Arrays(arrays) => arrays
+                .iter()
+                .enumerate()
+                .map(|(i, (_, combinator))| {
+                    let variant_name = format!("Variant{}", i);
+                    let variant_type = combinator.gen_msg_type("", mode, ctx);
+                    (variant_name, variant_type)
+                })
+                .collect::<Vec<_>>(),
+        };
+        let msg_type_name = match mode {
+            Mode::Spec => format!("Spec{}", name),
+            Mode::Exec(_) => name.to_string(),
+        };
+        let lifetime_ann = match mode {
+            Mode::Exec(LifetimeAnn::Some) => "<'a>",
+            _ => "",
+        };
+        let derive = match mode {
+            Mode::Exec(_) => "#[derive(Debug, Clone, PartialEq, Eq)]\n",
+            _ => "",
+        };
+        let nominal_sum = variants
+            .iter()
+            .map(|(label, variant_type)| format!("    {}({}),", label, variant_type))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let structural_sum = fmt_in_pairs(
+            &variants
+                .iter()
+                .map(|(_, variant_type)| variant_type)
+                .collect::<Vec<_>>(),
+            "Either",
+            Bracket::Angle,
+        );
+        // impl View for exec enums
+        let impl_view = match mode {
+            Mode::Exec(_) => {
+                let impl_view_body = variants
+                    .iter()
+                    .map(|(label, variant_type)| {
+                        format!(
+                            "            {}::{}(m) => Spec{}::{}(m@),",
+                            msg_type_name, label, name, label
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                format!(
+                    r#"
+impl{lifetime_ann} View for {msg_type_name}{lifetime_ann} {{
+    type V = Spec{msg_type_name};
     open spec fn view(&self) -> Self::V {{
         match self {{
-"#,
-                            msg_type_name, lifetime, name
-                        ));
-                        for (label, _) in &variants {
-                            code.push_str(&format!(
-                                "            {}::{}(m) => Spec{}::{}(m@),\n",
-                                msg_type_name, label, name, label
-                            ));
-                        }
-                        code.push_str("        }\n    }\n}\n");
-                    }
-                    Mode::Spec => {}
-                }
-
-                // impl (Spec)From
-                let trait_name = match mode {
-                    Mode::Spec => "SpecFrom",
-                    _ => "From",
-                };
-                let assoc_func_name = match mode {
-                    Mode::Spec => "spec_from",
-                    _ => "ex_from",
-                };
-                if variants.len() < 2 {
-                    panic!("`Choice` should have at least two variants")
-                }
-                let nested_eithers = gen_nested_eithers(variants.len(), "m");
-                code.push_str(&format!(
-                    "impl{} {}<{}{}> for {}{} {{\n",
-                    lifetime_ann,
-                    trait_name,
-                    msg_type_name,
-                    lifetime_ann,
-                    msg_type_inner_name,
-                    lifetime_ann
-                ));
-                match mode {
-                    Mode::Spec => {
-                        code.push_str(&format!(
-                            "    open spec fn {}(m: {}) -> {} {{\n        match m {{\n",
-                            assoc_func_name, msg_type_name, msg_type_inner_name
-                        ));
-                    }
-                    _ => {
-                        code.push_str(&format!(
-                            "    fn {}(m: {}{}) -> {}{} {{\n        match m {{\n",
-                            assoc_func_name,
-                            msg_type_name,
-                            lifetime_ann,
-                            msg_type_inner_name,
-                            lifetime_ann
-                        ));
-                    }
-                }
-                std::iter::zip(&variants, &nested_eithers).for_each(|((label, _), nested)| {
-                    code.push_str(&format!(
-                        "            {}::{}(m) => {},\n",
-                        msg_type_name, label, nested
-                    ));
-                });
-                code.push_str("        }\n    }\n");
-                code.push_str("}\n");
-
-                code.push_str(&format!(
-                    "impl{} {}<{}{}> for {}{} {{\n",
-                    lifetime_ann,
-                    trait_name,
-                    msg_type_inner_name,
-                    lifetime_ann,
-                    msg_type_name,
-                    lifetime_ann
-                ));
-                match mode {
-                    Mode::Spec => {
-                        code.push_str(&format!(
-                            "    open spec fn {}(m: {}) -> {} {{\n        match m {{\n",
-                            assoc_func_name, msg_type_inner_name, msg_type_name
-                        ));
-                    }
-                    _ => {
-                        code.push_str(&format!(
-                            "    fn {}(m: {}{}) -> {}{} {{\n        match m {{\n",
-                            assoc_func_name,
-                            msg_type_inner_name,
-                            lifetime_ann,
-                            msg_type_name,
-                            lifetime_ann
-                        ));
-                    }
-                }
-                std::iter::zip(&variants, &nested_eithers).for_each(|((label, _), nested)| {
-                    code.push_str(&format!(
-                        "            {} => {}::{}(m),\n",
-                        nested, msg_type_name, label
-                    ));
-                });
-                code.push_str("        }\n    }\n");
-                code.push_str("}\n");
-
-                // impl Mapper for Exec
-                if let Mode::Exec(_) = mode {
-                    code.push_str(&gen_mapper(name, &msg_type_name, lifetime_ann));
-                }
+{impl_view_body}
+        }}
+    }}
+}}
+"#
+                )
             }
-            Choices::Ints(..) => todo!(),
-            Choices::Arrays(..) => todo!(),
-        }
-        code
+            Mode::Spec => "".to_string(),
+        };
+        // impl (Spec)From
+        let trait_name = match mode {
+            Mode::Spec => "SpecFrom",
+            _ => "From",
+        };
+        let assoc_func_name = match mode {
+            Mode::Spec => "spec_from",
+            _ => "ex_from",
+        };
+        assert!(
+            variants.len() >= 2,
+            "`Choice` should have at least two variants"
+        );
+        let nested_eithers = gen_nested_eithers(variants.len(), "m");
+        let impl_inner_from_body = std::iter::zip(&variants, &nested_eithers)
+            .map(|((label, _), nested)| {
+                format!("            {}::{}(m) => {},", msg_type_name, label, nested)
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let impl_inner_from = match mode {
+            Mode::Spec => {
+                format!(
+                    r#"    open spec fn {assoc_func_name}(m: {msg_type_name}) -> {msg_type_name}Inner {{
+        match m {{
+{impl_inner_from_body}
+        }}
+    }}
+"#
+                )
+            }
+            Mode::Exec(_) => format!(
+                r#"    fn {assoc_func_name}(m: {msg_type_name}{lifetime_ann}) -> {msg_type_name}Inner{lifetime_ann} {{
+        match m {{
+{impl_inner_from_body}
+        }}
+    }}
+"#
+            ),
+        };
+        let impl_from_inner_body = std::iter::zip(&variants, &nested_eithers)
+            .map(|((label, _), nested)| {
+                format!("            {} => {}::{}(m),", nested, msg_type_name, label)
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let impl_from_inner = match mode {
+            Mode::Spec => format!(
+                r#"    open spec fn {assoc_func_name}(m: {msg_type_name}Inner) -> {msg_type_name} {{
+        match m {{
+{impl_from_inner_body}
+        }}
+    }}
+"#
+            ),
+            Mode::Exec(_) => format!(
+                r#"    fn {assoc_func_name}(m: {msg_type_name}Inner{lifetime_ann}) -> {msg_type_name}{lifetime_ann} {{
+        match m {{
+{impl_from_inner_body}
+        }}
+    }}
+    "#
+            ),
+        };
+        let impl_mapper = match mode {
+            Mode::Exec(_) => &gen_mapper(name, &msg_type_name, lifetime_ann),
+            Mode::Spec => "",
+        };
+        format!(
+            r#"
+{derive}pub enum {msg_type_name}{lifetime_ann} {{
+{nominal_sum}
+}}
+
+pub type {msg_type_name}Inner{lifetime_ann} = {structural_sum};
+
+{impl_view}
+
+impl{lifetime_ann} {trait_name}<{msg_type_name}{lifetime_ann}> for {msg_type_name}Inner{lifetime_ann} {{
+{impl_inner_from}
+}}
+
+impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_type_name}{lifetime_ann} {{
+{impl_from_inner}
+}}
+
+{impl_mapper}
+"#
+        )
     }
 
     fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
@@ -1780,11 +1782,17 @@ impl Codegen for ChoiceCombinator {
                         .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
                         .map(|(t, code)| (format!("Cond<{}>", t), code))
                         .unzip(),
-                    // .collect::<Vec<(String, String)>>()
-                    Choices::Ints(..) => todo!(),
-                    Choices::Arrays(..) => todo!(),
+                    Choices::Ints(ints) => ints
+                        .iter()
+                        .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
+                        .map(|(t, code)| (format!("Cond<{}>", t), code))
+                        .unzip(),
+                    Choices::Arrays(arrays) => arrays
+                        .iter()
+                        .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
+                        .map(|(t, code)| (format!("Cond<{}>", t), code))
+                        .unzip(),
                 };
-
             let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
             (
                 format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
@@ -1812,18 +1820,19 @@ impl Codegen for ChoiceCombinator {
                     _ => None,
                 })
                 .unwrap();
-            // must be an invocation to an enum
-            if let CombinatorInner::Invocation(CombinatorInvocation {
-                func: enum_name, ..
-            }) = &combinator
-            {
-                let (combinator_exprs, additional_code): (Vec<String>, Vec<String>) =
+            let (combinator_exprs, additional_code): (Vec<String>, Vec<String>) = match combinator {
+                // invocation to an enum
+                CombinatorInner::Invocation(CombinatorInvocation {
+                    func: enum_name, ..
+                }) => {
                     match &self.choices {
                         Choices::Enums(enums) => enums
                             .iter()
                             .map(|(variant, combinator)| {
-                                let (inner, code) = combinator.gen_combinator_expr("", mode, ctx);
-                                let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap() {
+                                let (inner, code) =
+                                    combinator.gen_combinator_expr("", mode, ctx);
+                                let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
+                                {
                                     EnumCombinator::NonExhaustive { enums } => {
                                         if variant == "_" {
                                             // default case; the negation of all other cases
@@ -1833,7 +1842,10 @@ impl Codegen for ChoiceCombinator {
                                                     if name == "_" {
                                                         None
                                                     } else {
-                                                        Some(format!("{} == {}", depend_id, value))
+                                                        Some(format!(
+                                                            "{} == {}",
+                                                            depend_id, value
+                                                        ))
                                                     }
                                                 })
                                                 .collect::<Vec<_>>();
@@ -1854,7 +1866,10 @@ impl Codegen for ChoiceCombinator {
                                     }
                                     EnumCombinator::Exhaustive { .. } => {
                                         let upper_caml_name = snake_to_upper_caml(enum_name);
-                                        format!("{} == {}::{}", depend_id, upper_caml_name, variant)
+                                        format!(
+                                            "{} == {}::{}",
+                                            depend_id, upper_caml_name, variant
+                                        )
                                     }
                                 };
                                 (
@@ -1863,18 +1878,109 @@ impl Codegen for ChoiceCombinator {
                                 )
                             })
                             .unzip(),
-                        Choices::Ints(..) => todo!(),
-                        Choices::Arrays(..) => todo!(),
-                    };
-                let inner = fmt_in_pairs(&combinator_exprs, "OrdChoice", Bracket::Parentheses);
-                let combinator_expr = format!(
-                    "Mapped {{ inner: {}, mapper: {}Mapper{} }}",
-                    inner, name, mapper_new
-                );
-                (combinator_expr, additional_code.join(""))
-            } else {
-                panic!("unexpected combinator type for dependent id: {}. Maybe something wrong with type checking 🙀", depend_id)
-            }
+                        Choices::Ints(..) | Choices::Arrays(..) => unreachable!(),
+                    }
+                }
+                // bytes
+                CombinatorInner::Bytes(BytesCombinator { len }) => {
+                    match &self.choices {
+                        Choices::Arrays(arrays)=> arrays
+                            .iter()
+                            .map(|(variant, combinator)| {
+                                let (inner, code) =
+                                    combinator.gen_combinator_expr("", mode, ctx);
+                                let bool_exp = match variant {
+                                    ConstArray::Int(ints) => {
+                                        let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
+                                        match mode {
+                                            Mode::Spec => format!("{} == seq![{}]", depend_id, ints),
+                                            _ => format!("compare_slice({}, {}.as_slice())", depend_id, variant),
+                                        }
+                                    }
+                                    ConstArray::Wildcard => {
+                                             // default case; the negation of all other cases
+                                         let other_variants = arrays
+                                             .iter()
+                                             .filter_map(|(variant, _)| {
+                                                match variant {
+                                                      ConstArray::Int(ints) => {
+                                                        let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
+                                                        match mode {
+                                                            Mode::Spec => Some(format!("{} == seq![{}]", depend_id, ints)),
+                                                            _ => Some(format!(
+                                                                "compare_slice({}, {}.as_slice())",
+                                                                depend_id, variant
+                                                            ))
+                                                        }
+                                                    }
+                                                    _ => None
+                                                    }
+                                             })
+                                             .collect::<Vec<_>>();
+                                         format!("!({})", other_variants.join(" || "))
+                                    }
+                                    _ => unimplemented!(),
+                                };
+                                (
+                                    format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                    code,
+                                )
+                            })
+                            .unzip(),
+                        Choices::Ints(..) | Choices::Enums(..) => unreachable!(),
+                    }
+                }
+                // ints
+                CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
+                    match &self.choices {
+                        Choices::Ints(ints)=> ints
+                            .iter()
+                            .map(|(variant, combinator)| {
+                                let (inner, code) =
+                                    combinator.gen_combinator_expr("", mode, ctx);
+                                let bool_exp = match variant {
+                                    Some(int) => {
+                                        format!("{} == {}", depend_id, int)
+                                    }
+                                    None => {
+                                         // default case; the negation of all other cases
+                                         let other_variants = ints
+                                             .iter()
+                                             .filter_map(|(variant, _)| {
+                                                variant.map(|variant| format!("{} == {}", depend_id, variant))
+                                             })
+                                             .collect::<Vec<_>>();
+                                         format!("!({})", other_variants.join(" || "))
+                                    }
+                                };
+                                (
+                                    format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                    code,
+                                )
+                            })
+                            .unzip(),
+                        Choices::Arrays(..) | Choices::Enums(..) => unreachable!(),
+                    }
+                }
+                _ => unreachable!(
+                    "Unexpected combinator type for dependent id: {}. We currently only support dependent fields on enum, int, and bytes, got {}.",
+                    depend_id, combinator
+                ),
+            };
+            let ord_choice_constructor = match mode {
+                Mode::Spec => "OrdChoice",
+                _ => "OrdChoice::new",
+            };
+            let inner = fmt_in_pairs(
+                &combinator_exprs,
+                ord_choice_constructor,
+                Bracket::Parentheses,
+            );
+            let combinator_expr = format!(
+                "Mapped {{ inner: {}, mapper: {}Mapper{} }}",
+                inner, name, mapper_new
+            );
+            (combinator_expr, additional_code.join(""))
         } else {
             unimplemented!()
         }
@@ -2235,12 +2341,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
             *combinator_lifetime_ann,
             &mut codegen_ctx,
         );
-        gen_combinator_expr_for_definition(
-            defn,
-            &mut code,
-            *combinator_lifetime_ann,
-            &mut codegen_ctx,
-        );
+        gen_combinator_expr_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
     }
     "#![allow(warnings)]\n#![allow(unused)]\n".to_string()
         + "use std::marker::PhantomData;\n"
@@ -2429,7 +2530,7 @@ pub closed spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator
                 );
                 code.push_str(&format!(
                     r#"
-pub fn {name}{lifetime_ann}({exec_params}) -> (o: {upper_caml_name}Combinator{lifetime_ann})
+pub fn {name}<'a>({exec_params}) -> (o: {upper_caml_name}Combinator{lifetime_ann})
     ensures o@ == spec_{name}({args_view}),
 {{
     {upper_caml_name}Combinator({expr})
