@@ -24,6 +24,23 @@ impl<A: View, B: View> View for Either<A, B> {
 /// Combinator that tries the `Fst` combinator and if it fails, tries the `Snd` combinator.
 pub struct OrdChoice<Fst, Snd>(pub Fst, pub Snd);
 
+impl<Fst, Snd> OrdChoice<Fst, Snd> where
+    Fst: View,
+    Snd: View,
+    Fst::V: SpecCombinator,
+    Snd::V: SpecCombinator,
+    Snd::V: DisjointFrom<Fst::V>,
+ {
+    pub fn new(fst: Fst, snd: Snd) -> (o: Self)
+        requires
+            snd@.disjoint_from(&fst@)
+        ensures
+            o == OrdChoice(fst, snd)
+    {
+        OrdChoice(fst, snd)
+    }
+}
+
 impl<Fst: View, Snd: View> View for OrdChoice<Fst, Snd> where  {
     type V = OrdChoice<Fst::V, Snd::V>;
 
