@@ -3,6 +3,7 @@
 #![allow(unused_variables)]
 
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::{collections::HashMap, fmt::Display};
 
@@ -137,10 +138,12 @@ impl Display for LifetimeAnn {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CodegenCtx<'a> {
     pub msg_lifetimes: HashMap<String, LifetimeAnn>,
     pub combinator_lifetimes: HashMap<String, LifetimeAnn>,
     pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
+    pub constraint_int_combs: HashSet<u64>,
     pub param_defns: Vec<ParamDefn>,
     pub endianess: Endianess,
 }
@@ -297,6 +300,7 @@ impl<'a> CodegenCtx<'a> {
             msg_lifetimes,
             combinator_lifetimes,
             enums,
+            constraint_int_combs: HashSet::new(),
             param_defns: Vec::new(),
             endianess: endianness,
         }
@@ -382,7 +386,8 @@ trait Codegen {
     /// - constant int and array declarations
     /// - type declaration for continuations of dependent structs
     /// - additional code recursively generated from the inner combinators for `Struct` and `Choice`
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String);
+    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &mut CodegenCtx)
+        -> (String, String);
     /// will generate a pair of (combinator expr, additional code), where additional code can be
     /// - the continuation of the second half of a dependent struct
     /// - additional code recursively generated from the inner combinators
@@ -404,12 +409,19 @@ impl Codegen for Combinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let lifetime_ann = match mode {
             Mode::Exec(LifetimeAnn::Some) => "<'a>",
             _ => "",
         };
-        let wrapper_code = || {
+        let wrapper_code = if name.is_empty() {
+            "".to_string()
+        } else {
             let msg_has_lifetime = ctx
                 .msg_lifetimes
                 .get(name)
@@ -490,7 +502,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
                         _ => format!(
                             "pub type {name}CombinatorAlias{lifetime_ann} = AndThen<{comb_type}, {and_then_comb_type}>;\n"),
                 },
-                    additional_code + &and_then_additional_code + &wrapper_code(),
+                    additional_code + &and_then_additional_code + &wrapper_code,
                 )
             }
         } else if name.is_empty() {
@@ -508,7 +520,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
                         "pub type {name}CombinatorAlias{lifetime_ann} = {combinator_type};\n"
                     ),
                 },
-                additional_code + &wrapper_code(),
+                additional_code + &wrapper_code,
             )
         }
     }
@@ -545,7 +557,12 @@ impl Codegen for CombinatorInner {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let upper_caml_name = &snake_to_upper_caml(name);
         match self {
             CombinatorInner::ConstraintInt(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
@@ -598,7 +615,12 @@ impl Codegen for ConstraintIntCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         fn gen_constraints(c: &IntConstraint) -> String {
             match c {
                 IntConstraint::Single(constraint_elem) => gen_constraint_elem(constraint_elem),
@@ -640,7 +662,7 @@ impl Codegen for ConstraintIntCombinator {
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
-            let hash = compute_hash(constraint);
+            let hash = compute_hash(self);
             let pred_defn = format!("pub struct Predicate{};\n", hash);
             // reflexive view for the predicate
             let impl_view = format!(
@@ -692,8 +714,14 @@ impl Codegen for ConstraintIntCombinator {
 "#
             );
             let additional_code = match mode {
-                Mode::Spec => impl_spec_pred,
-                _ => pred_defn + &impl_view + &impl_exec_pred,
+                Mode::Spec => "".to_string(),
+                _ => {
+                    if ctx.constraint_int_combs.insert(hash) {
+                        pred_defn + &impl_view + &impl_exec_pred + &impl_spec_pred
+                    } else {
+                        "".to_string()
+                    }
+                }
             };
             (
                 format!("Refined<{}, Predicate{}>", int_type, hash),
@@ -718,7 +746,7 @@ impl Codegen for ConstraintIntCombinator {
             let combinator_expr = format!(
                 "Refined {{ inner: {}, predicate: Predicate{} }}",
                 int_type,
-                compute_hash(constraint)
+                compute_hash(self)
             );
             (combinator_expr, "".to_string())
         } else {
@@ -745,7 +773,12 @@ impl Codegen for BytesCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         match &self.len {
             LengthSpecifier::Const(len) => (format!("BytesN<{}>", len), "".to_string()),
             LengthSpecifier::Dependent(..) => ("Bytes".to_string(), "".to_string()),
@@ -783,7 +816,12 @@ impl Codegen for TailCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         if name.is_empty() {
             ("Tail".to_string(), "".to_string())
         } else {
@@ -832,7 +870,12 @@ impl Codegen for CombinatorInvocation {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let lifetime_ann = ctx.combinator_lifetimes.get(&self.func).unwrap_or_else(|| {
             panic!(
                 "format lifetime not found for combinator invocation: {}",
@@ -1135,7 +1178,12 @@ impl Codegen for StructCombinator {
     }
 
     /// assuming all structs are top-level definitions
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let msg_has_lifetime = ctx
             .msg_lifetimes
             .get(name)
@@ -1153,42 +1201,73 @@ impl Codegen for StructCombinator {
         };
         let name = &snake_to_upper_caml(name);
         let (fst, snd) = self.split_at_last_dependent();
-        let combinator_type_from_field = |field: &StructField| match field {
-            StructField::Ordinary { combinator, .. }
-            | StructField::Dependent { combinator, .. } => {
-                combinator.gen_combinator_type("", mode, ctx)
-            }
-            StructField::Const { label, combinator } => {
-                let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
-                combinator.gen_combinator_type(name, mode, ctx)
-            }
-            _ => todo!(),
-        };
+        // let combinator_type_from_field = |field: &StructField| match field {
+        //     StructField::Ordinary { combinator, .. }
+        //     | StructField::Dependent { combinator, .. } => {
+        //         combinator.gen_combinator_type("", mode, ctx)
+        //     }
+        //     StructField::Const { label, combinator } => {
+        //         let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+        //         combinator.gen_combinator_type(name, mode, ctx)
+        //     }
+        //     _ => todo!(),
+        // };
         if fst.is_empty() {
             // no dependent fields
-            let snd_comb_types = snd
+            let (snd_comb_types, additional_code) = snd
                 .iter()
-                .map(combinator_type_from_field)
-                .map(|(t, _)| t)
-                .collect::<Vec<_>>();
+                .map(|field| match field {
+                    StructField::Ordinary { combinator, .. }
+                    | StructField::Dependent { combinator, .. } => {
+                        combinator.gen_combinator_type("", mode, ctx)
+                    }
+                    StructField::Const { label, combinator } => {
+                        let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+                        combinator.gen_combinator_type(name, mode, ctx)
+                    }
+                    _ => todo!(),
+                })
+                .collect::<(Vec<_>, Vec<_>)>();
             let inner = fmt_in_pairs(&snd_comb_types, "", Bracket::Parentheses);
-            let additional_code = snd
-                .iter()
-                .map(combinator_type_from_field)
-                .map(|(_, code)| code)
-                .collect::<Vec<_>>()
-                .join("");
+            // let additional_code = snd
+            //     .iter()
+            //     .map(combinator_type_from_field)
+            //     .map(|(_, code)| code)
+            //     .collect::<Vec<_>>()
+            //     .join("");
             (
                 format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
-                additional_code,
+                additional_code.join(""),
             )
         } else {
             let (fst, snd) = (
                 fst.iter()
-                    .map(combinator_type_from_field)
+                    .map(|field| match field {
+                        StructField::Ordinary { combinator, .. }
+                        | StructField::Dependent { combinator, .. } => {
+                            combinator.gen_combinator_type("", mode, ctx)
+                        }
+                        StructField::Const { label, combinator } => {
+                            let name =
+                                &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+                            combinator.gen_combinator_type(name, mode, ctx)
+                        }
+                        _ => todo!(),
+                    })
                     .collect::<Vec<_>>(),
                 snd.iter()
-                    .map(combinator_type_from_field)
+                    .map(|field| match field {
+                        StructField::Ordinary { combinator, .. }
+                        | StructField::Dependent { combinator, .. } => {
+                            combinator.gen_combinator_type("", mode, ctx)
+                        }
+                        StructField::Const { label, combinator } => {
+                            let name =
+                                &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
+                            combinator.gen_combinator_type(name, mode, ctx)
+                        }
+                        _ => todo!(),
+                    })
                     .collect::<Vec<_>>(),
             );
             let (fst_comb_type, snd_comb_types) = (
@@ -1294,7 +1373,9 @@ impl Codegen for StructCombinator {
                 .map(|field| match field {
                     StructField::Ordinary { combinator, .. }
                     | StructField::Dependent { combinator, .. } => (
-                        combinator.gen_combinator_type("", mode, ctx).0,
+                        combinator
+                            .gen_combinator_type("", mode, &mut ctx.to_owned())
+                            .0,
                         combinator.gen_combinator_expr("", mode, ctx),
                     ),
                     _ => todo!(),
@@ -1523,7 +1604,12 @@ impl TryFromInto for {msg_type_name}Mapper {{
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let endianness = match ctx.endianess {
             Endianess::Little => "Le",
             Endianess::Big => "Be",
@@ -1761,7 +1847,12 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         )
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let lifetime_ann = ctx
             .msg_lifetimes
             .get(name)
@@ -2030,7 +2121,12 @@ impl Codegen for ArrayCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         todo!()
     }
 
@@ -2063,7 +2159,12 @@ impl Codegen for VecCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let inner = match self {
             VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
                 combinator.gen_combinator_type("", mode, ctx)
@@ -2092,7 +2193,12 @@ impl Codegen for SepByCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         todo!()
     }
 
@@ -2106,7 +2212,12 @@ impl Codegen for WrapCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         todo!()
     }
 
@@ -2120,7 +2231,12 @@ impl Codegen for ApplyCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         todo!()
     }
 
@@ -2134,7 +2250,12 @@ impl Codegen for OptionCombinator {
         todo!()
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         todo!()
     }
 
@@ -2156,7 +2277,12 @@ impl Codegen for ConstCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         match &self {
             ConstCombinator::ConstInt(c) => c.gen_combinator_type(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_combinator_type(name, mode, ctx),
@@ -2186,7 +2312,12 @@ impl Codegen for ConstIntCombinator {
         format!("{}", self.combinator)
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let endianess = match ctx.endianess {
             Endianess::Big => "Be",
             Endianess::Little => "Le",
@@ -2236,7 +2367,12 @@ impl Codegen for ConstBytesCombinator {
         }
     }
 
-    fn gen_combinator_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
         let len = self.len;
         let arr_val = format!("{}", self.values);
         let spec_const_decl = format!("pub spec const SPEC_{}: Seq<u8> = seq!{};", name, arr_val);
