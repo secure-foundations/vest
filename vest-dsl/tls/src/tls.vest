@@ -63,7 +63,7 @@ extension_type = enum {
   UseSRTP = 14,
   Heartbeat = 15,
   ApplicationLayerProtocolNegotiation = 16,
-  SigedCertificateTimestamp = 18,
+  SignedCertificateTimeStamp = 18,
   ClientCertificateType = 19,
   ServerCertificateType = 20,
   Padding = 21,
@@ -349,9 +349,7 @@ supported_versions_client = {
   versions: [u8; @l] >>= Vec<protocol_version>,
 }
 
-supported_versions_server = {
-  selected_version: protocol_version,
-}
+supported_versions_server = protocol_version
 
 // struct {
 //   opaque cookie<1..2^16-1>;
@@ -419,6 +417,7 @@ key_exchange_data = opaque_1_ffff
 key_share_entry = {
   @group: named_group,
   @l: uint_1_ffff,
+  // key_exchange: [u8; @l],
   key_exchange: [u8; @l] >>= choose(@group) {
     Secp256r1 => uncompressed_point_representation32,
     Secp384r1 => uncompressed_point_representation48,
@@ -454,28 +453,28 @@ client_hello_extension = {
     MaxFragmentLength => max_fragment_length,
     StatusRequest => certificate_status_request,
     SupportedGroups => named_group_list,
-    ECPointFormats => ec_point_format_list,
+    ECPointFormats => ec_point_format_list, // not used in TLS 1.3
     SignatureAlgorithms => signature_scheme_list,
-    UseSRTP => use_srtp_data,
+    // UseSRTP => use_srtp_data, // Only allowed in DTLS?
     Heartbeat => heartbeat_mode,
     ApplicationLayerProtocolNegotiation => protocol_name_list,
-    SigedCertificateTimestamp => signed_certificate_timestamp_list,
+    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
     ClientCertificateType => client_cert_type_client_extension,
     ServerCertificateType => server_cert_type_client_extension,
     Padding => padding_extension,
-    EncryptThenMac => empty,
-    ExtendedMasterSecret => empty,
-    SessionTicket => [u8; @ext_len],
+    EncryptThenMac => empty, // not used in TLS 1.3
+    ExtendedMasterSecret => empty, // not used in TLS 1.3
+    SessionTicket => [u8; @ext_len], // not used in TLS 1.3
     PreSharedKey => pre_shared_key_client_extension,
+    KeyShare => key_share_client_hello,
+    PskKeyExchangeModes => psk_key_exchange_modes,
     EarlyData => empty,
     SupportedVersions => supported_versions_client,
     Cookie => cookie,
-    PskKeyExchangeModes => psk_key_exchange_modes,
     CertificateAuthorities => certificate_authorities_extension,
     OidFilters => oid_filter_extension,
     PostHandshakeAuth => empty,
     SignatureAlgorithmsCert => signature_scheme_list,
-    KeyShare => key_share_client_hello,
     _ => [u8; @ext_len],
   },
 }
@@ -484,32 +483,93 @@ sever_hello_extension = {
   @extension_type: extension_type,
   @ext_len: u16,
   extension_data: [u8; @ext_len] >>= choose(@extension_type) {
-    ServerName => server_name_list,
+    // ServerName => server_name_list,
+    // MaxFragmentLength => max_fragment_length,
+    // StatusRequest => certificate_status_request,
+    // SupportedGroups => named_group_list,
+    // ECPointFormats => ec_point_format_list,
+    // SignatureAlgorithms => signature_scheme_list,
+    // UseSRTP => srtp_protection_profiles,
+    // Heartbeat => heartbeat_mode,
+    // ApplicationLayerProtocolNegotiation => protocol_name_list,
+    // SignedCertificateTimeStamp => signed_certificate_timestamp_list,
+    // ClientCertificateType => client_cert_type_client_extension,
+    // ServerCertificateType => server_cert_type_client_extension,
+    // Padding => padding_extension,
+    // EncryptThenMac => empty,
+    // ExtendedMasterSecret => empty,
+    // SessionTicket => empty,
+    PreSharedKey => pre_shared_key_server_extension,
+    // EarlyData => empty,
+    SupportedVersions => supported_versions_server,
+    //Cookie => cookie,
+    //PskKeyExchangeModes => psk_key_exchange_modes,
+    //CertificateAuthorities => certificate_authorities_extension,
+    //OidFilters => oid_filter_extension,
+    //PostHandshakeAuth => empty,
+    //SignatureAlgorithmsCert => signature_scheme_list,
+    KeyShare => key_share_entry,
+    _ => [u8; @ext_len],
+  },
+}
+
+hello_retry_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    SupportedVersions => supported_versions_server,
+    Cookie => cookie,
+    KeyShare => named_group,
+    _ => [u8; @ext_len],
+  },
+}
+
+encrypted_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    ServerName => empty,
     MaxFragmentLength => max_fragment_length,
-    StatusRequest => certificate_status_request,
     SupportedGroups => named_group_list,
-    ECPointFormats => ec_point_format_list,
-    SignatureAlgorithms => signature_scheme_list,
-    UseSRTP => srtp_protection_profiles,
+    // UseSRTP => use_srtp_data,
     Heartbeat => heartbeat_mode,
     ApplicationLayerProtocolNegotiation => protocol_name_list,
-    SigedCertificateTimestamp => signed_certificate_timestamp_list,
     ClientCertificateType => client_cert_type_client_extension,
     ServerCertificateType => server_cert_type_client_extension,
-    Padding => padding_extension,
-    EncryptThenMac => empty,
-    ExtendedMasterSecret => empty,
-    SessionTicket => empty,
-    PreSharedKey => pre_shared_key_client_extension,
     EarlyData => empty,
-    SupportedVersions => supported_versions_client,
-    Cookie => cookie,
-    PskKeyExchangeModes => psk_key_exchange_modes,
+    _ => [u8; @ext_len],
+  },
+}
+
+certificate_request_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    SignatureAlgorithms => signature_scheme_list,
     CertificateAuthorities => certificate_authorities_extension,
-    OidFilters => oid_filter_extension,
-    PostHandshakeAuth => empty,
     SignatureAlgorithmsCert => signature_scheme_list,
-    KeyShare => key_share_client_hello,
+    StatusRequest => certificate_status_request,
+    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
+    OidFilters => oid_filter_extension,
+    _ => [u8; @ext_len],
+  },
+}
+
+certificate_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    StatusRequest => certificate_status,
+    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
+    _ => [u8; @ext_len],
+  },
+}
+
+new_session_ticket_extension = {
+  @extension_type: extension_type,
+  @ext_len: u16,
+  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    EarlyData => early_data_indication_new_session_ticket,
     _ => [u8; @ext_len],
   },
 }
@@ -579,8 +639,6 @@ tls_ciphertext = {
   encrypted_record: opaque_0_ffff,
 }
 
-random = [u8; 32]
-
 cipher_suite = enum {
   TLS_AES_128_GCM_SHA256 = 0x1301,
   TLS_AES_256_GCM_SHA384 = 0x1302,
@@ -591,21 +649,39 @@ cipher_suite = enum {
 }
 
 client_hello = {
-  legacy_version: protocol_version,
-  random: random,
+  const legacy_version: u16 = 0x0303, // TLS 1.2
+  random: [u8; 32],
   legacy_session_id: session_id,
   cipher_suites: cipher_suite_list,
   legacy_compression_methods: opaque_1_ff,
+  // const legacy_compression_methods: [u8; 2] = [0x01, 0x00],
   extensions: client_extensions,
 }
 
+sh_or_hrr = {
+  const legacy_version: u16 = 0x0303, // TLS 1.2
+  @random: [u8; 32],
+  payload: choose (@random) {
+    [0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11,
+     0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91,
+     0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e,
+     0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c] => hello_retry_request,
+    _ => server_hello,
+  },
+}
+
 server_hello = {
-  legacy_version: protocol_version,
-  random: random,
   legacy_session_id_echo: session_id,
   cipher_suite: cipher_suite,
   const legacy_compression_method: u8 = 0,
   extensions: server_extensions,
+}
+
+hello_retry_request = {
+  legacy_session_id_echo: session_id,
+  cipher_suite: cipher_suite,
+  const legacy_compression_method: u8 = 0,
+  extensions: hello_retry_extensions,
 }
 
 cipher_suite_list = {
@@ -631,22 +707,30 @@ server_extensions = {
   extensions: [u8; @l] >>= Vec<sever_hello_extension>,
 }
 
+hello_retry_extensions = {
+  @l: u16 | { 6..0xffff },
+  extensions: [u8; @l] >>= Vec<hello_retry_extension>,
+}
+
 certificate_request_extensions = {
   @l: uint_2_ffff,
-  extensions: [u8; @l] >>= Vec<extension>,
+  extensions: [u8; @l] >>= Vec<certificate_request_extension>,
 }
 
 encrypted_extensions = {
   @l: uint_0_ffff,
-  extensions: [u8; @l] >>= Vec<extension>,
+  extensions: [u8; @l] >>= Vec<encrypted_extension>,
 }
 
 new_session_ticket_extensions = {
   @l: uint_0_fffe,
-  extensions: [u8; @l] >>= Vec<extension>,
+  extensions: [u8; @l] >>= Vec<new_session_ticket_extension>,
 }
 
-certificate_extensions = encrypted_extensions
+certificate_extensions = {
+  @l: uint_0_ffff,
+  extensions: [u8; @l] >>= Vec<certificate_extension>,
+}
 
 certificate_request = {
   certificate_request_context: opaque_0_ff,
@@ -680,7 +764,7 @@ certificate = {
 }
 
 certificate_verify = {
-  signature_scheme: signature_scheme,
+  algorithm: signature_scheme,
   signature: opaque_0_ffff,
 }
 
@@ -757,7 +841,7 @@ handshake = {
   @length: u24,
   msg: [u8; @length] >>= choose(@msg_type) {
     ClientHello => client_hello,
-    ServerHello => server_hello,
+    ServerHello => sh_or_hrr,
     NewSessionTicket => new_session_ticket,
     EndOfEarlyData => empty,
     EncryptedExtensions => encrypted_extensions,
