@@ -1,6 +1,8 @@
 #![allow(unused)]
+pub mod tls13_testvector;
 pub mod tls_combinators;
 
+use tls13_testvector::*;
 use tls_combinators::ClientHelloExtensionExtensionData::*;
 use tls_combinators::KeyShareEntryKeyExchange::*;
 use tls_combinators::ServerNameName::HostName;
@@ -58,6 +60,21 @@ static BYTES_CLIENT_HELLO_RECORD: &[u8] = &[
     0x3b, 0x75, 0xe9, 0x65, 0xd0, 0xd2, 0xcd, 0x16, 0x62, 0x54,
 ];
 
+#[rustfmt::skip]
+static BYTES_SERVER_HELLO_RECORD: &[u8] = &[
+    0x16, 0x03, 0x03, 0x00, 0x7a,
+    0x02, 0x00, 0x00, 0x76, 
+    0x03, 0x03,
+    0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f,
+    0x20, 0xe0, 0xe1, 0xe2 , 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 
+0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+    0x13, 0x02, 
+    0x00,
+    0x00, 0x2e,
+    0x00, 0x2b, 0x00, 0x02, 0x03, 0x04,
+    0x00, 0x33, 0x00, 0x24, 0x00, 0x1d, 0x00, 0x20, 0x9f, 0xd7, 0xad, 0x6d, 0xcf, 0xf4, 0x29, 0x8d, 0xd3, 0xf9, 0x6d, 0x5b, 0x1b, 0x2a, 0xf9, 0x10, 0xa0, 0x53, 0x5b, 0x14, 0x88, 0xd7 , 0xf8, 0xfa, 0xbb, 0x34, 0x9a, 0x98, 0x28, 0x80, 0xb6, 0x15
+];
+
 fn parse_vesttls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
     let (consumed, parsed_client_hello) = client_hello()
         .parse(&BYTES_CLIENT_HELLO_RECORD[9..])
@@ -77,6 +94,51 @@ fn parse_rustls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
             panic!("Failed to parse ClientHello: {:?}", e);
         });
     // println!("parsed_client_hello: {:#?}", parsed_client_hello);
+
+    Ok(())
+}
+
+fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
+    for payload in [
+        &CLIENT_HELLO_RECORD[5..],
+        &SERVER_HELLO_RECORD[5..],
+        ENCRTPTED_EXTENSIONS_HANDSHAKE,
+        CERTIFICATE_HANDSHAKE,
+        CERTIFICATEVERIFY_HANDSHAKE,
+        SERVER_FINISHED_HANDSHAKE,
+        CLIENT_FINISHED_HANDSHAKE,
+    ] {
+        let (consumed, parsed_handshake) = handshake().parse(payload).unwrap_or_else(|e| {
+            panic!("Failed to parse Handshake: {}", e);
+        });
+        // println!("consumed: {}", consumed);
+        // println!("parsed_handshake: {:#?}", parsed_handshake);
+    }
+
+    Ok(())
+}
+
+fn parse_rustls_handshake() -> Result<(), Box<dyn std::error::Error>> {
+    for payload in [
+        &CLIENT_HELLO_RECORD[5..],
+        &SERVER_HELLO_RECORD[5..],
+        ENCRTPTED_EXTENSIONS_HANDSHAKE,
+        CERTIFICATE_HANDSHAKE,
+        CERTIFICATEVERIFY_HANDSHAKE,
+        SERVER_FINISHED_HANDSHAKE,
+        CLIENT_FINISHED_HANDSHAKE,
+    ] {
+        // let mut rd = rustls::internal::msgs::codec::Reader::init(payload);
+        let parsed_handshake = rustls::internal::msgs::message::MessagePayload::new(
+            rustls::ContentType::Handshake,
+            rustls::ProtocolVersion::TLSv1_3,
+            payload,
+        )
+        .unwrap_or_else(|e| {
+            panic!("Failed to parse Handshake: {:?}", e);
+        });
+        // println!("parsed_handshake: {:#?}", parsed_handshake);
+    }
 
     Ok(())
 }
@@ -102,16 +164,6 @@ fn serialize_vesttls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
         legacy_compression_methods: Opaque1Ff { l: 1, data: &[0] },
         extensions: ClientExtensions {
             l: 163,
-            // extensions: &[
-            //     0, 0, 0, 24, 0, 22, 0, 0, 19, 101, 120, 97, 109, 112, 108, 101, 46, 117, 108, 102,
-            //     104, 101, 105, 109, 46, 110, 101, 116, 0, 11, 0, 4, 3, 0, 1, 2, 0, 10, 0, 22, 0,
-            //     20, 0, 29, 0, 23, 0, 30, 0, 25, 0, 24, 1, 0, 1, 1, 1, 2, 1, 3, 1, 4, 0, 35, 0, 0,
-            //     0, 22, 0, 0, 0, 23, 0, 0, 0, 13, 0, 30, 0, 28, 4, 3, 5, 3, 6, 3, 8, 7, 8, 8, 8, 9,
-            //     8, 10, 8, 11, 8, 4, 8, 5, 8, 6, 4, 1, 5, 1, 6, 1, 0, 43, 0, 3, 2, 3, 4, 0, 45, 0,
-            //     2, 1, 1, 0, 51, 0, 38, 0, 36, 0, 29, 0, 32, 53, 128, 114, 214, 54, 88, 128, 209,
-            //     174, 234, 50, 154, 223, 145, 33, 56, 56, 81, 237, 33, 162, 142, 59, 117, 233, 101,
-            //     208, 210, 205, 22, 98, 84,
-            // ],
             extensions: RepeatResult(vec![
                 ClientHelloExtension {
                     extension_type: 0,
@@ -315,9 +367,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // client_hello_parse_serialize_roundtrip()?;
     // parse_vesttls_client_hello()?;
     // parse_rustls_client_hello()?;
+    parse_vesttls_handshake()?;
+    parse_rustls_handshake()?;
     // serialize_vesttls_client_hello()?;
-    bench_fn(parse_rustls_client_hello)?;
-    bench_fn(parse_vesttls_client_hello)?;
+    // bench_fn(parse_rustls_client_hello)?;
+    // bench_fn(parse_vesttls_client_hello)?;
+    bench_fn(parse_rustls_handshake)?;
+    bench_fn(parse_vesttls_handshake)?;
 
     Ok(())
 }
@@ -326,7 +382,7 @@ fn bench_fn(
     f: impl Fn() -> Result<(), Box<dyn std::error::Error>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = std::time::Instant::now();
-    for _ in 0..500000 {
+    for _ in 0..1000000 {
         f()?;
     }
     println!("Time elapsed: {} ms", start.elapsed().as_millis());

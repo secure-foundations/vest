@@ -8,6 +8,7 @@ builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" 
 builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vest = { path = "../../vest" }
+# rustls = { path = "../../../rustls/rustls" }
 rustls = "0.23"
 
 [package.metadata.verus.ide]
@@ -15,6 +16,7 @@ extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+# rustls = { path = "../../../rustls/rustls" }
 rustls = "0.23"
 
 [[bench]]
@@ -26,7 +28,11 @@ inherits = "release"
 debug = true
 
 [profile.release]
-lto = true
+lto = "fat"
+opt-level = 3
+codegen-units = 1
 
 [profile.bench]
-lto = true
+lto = "fat"
+opt-level = 3
+codegen-units = 1

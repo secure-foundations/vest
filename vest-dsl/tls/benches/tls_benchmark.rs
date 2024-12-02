@@ -4,6 +4,7 @@ extern crate rustls;
 extern crate tls;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use tls::tls13_testvector::*;
 use tls::tls_combinators;
 use tls::tls_combinators::ClientHelloExtensionExtensionData::*;
 use tls::tls_combinators::KeyShareEntryKeyExchange::*;
@@ -221,10 +222,59 @@ fn vesttls_client_hello_serialize(c: &mut Criterion) {
     });
 }
 
+fn vesttls_parse_handshake(c: &mut Criterion) {
+    c.bench_function("vesttls_handshake_parse", |b| {
+        b.iter(|| {
+            for payload in [
+                &CLIENT_HELLO_RECORD[5..],
+                &SERVER_HELLO_RECORD[5..],
+                ENCRTPTED_EXTENSIONS_HANDSHAKE,
+                CERTIFICATE_HANDSHAKE,
+                CERTIFICATEVERIFY_HANDSHAKE,
+                SERVER_FINISHED_HANDSHAKE,
+                CLIENT_FINISHED_HANDSHAKE,
+            ] {
+                black_box(handshake().parse(payload).unwrap_or_else(|e| {
+                    panic!("Failed to parse Handshake: {}", e);
+                }));
+            }
+        })
+    });
+}
+
+fn rustls_parse_handshake(c: &mut Criterion) {
+    c.bench_function("vesttls_handshake_parse", |b| {
+        b.iter(|| {
+            for payload in [
+                &CLIENT_HELLO_RECORD[5..],
+                &SERVER_HELLO_RECORD[5..],
+                ENCRTPTED_EXTENSIONS_HANDSHAKE,
+                CERTIFICATE_HANDSHAKE,
+                CERTIFICATEVERIFY_HANDSHAKE,
+                SERVER_FINISHED_HANDSHAKE,
+                CLIENT_FINISHED_HANDSHAKE,
+            ] {
+                black_box(
+                    rustls::internal::msgs::message::MessagePayload::new(
+                        rustls::ContentType::Handshake,
+                        rustls::ProtocolVersion::TLSv1_3,
+                        payload,
+                    )
+                    .unwrap_or_else(|e| {
+                        panic!("Failed to parse Handshake: {:?}", e);
+                    }),
+                );
+            }
+        })
+    });
+}
+
 criterion_group!(
     benches,
-    vesttls_client_hello_parse,
-    rustls_client_hello_parse,
+    vesttls_parse_handshake,
+    rustls_parse_handshake,
+    // vesttls_client_hello_parse,
+    // rustls_client_hello_parse,
     // vesttls_client_hello_serialize
 );
 criterion_main!(benches);
