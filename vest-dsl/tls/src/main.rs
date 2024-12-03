@@ -4,7 +4,7 @@ pub mod tls_combinators;
 
 use tls13_testvector::*;
 use tls_combinators::ClientHelloExtensionExtensionData::*;
-use tls_combinators::KeyShareEntryKeyExchange::*;
+// use tls_combinators::KeyShareEntryKeyExchange::*;
 use tls_combinators::ServerNameName::HostName;
 use tls_combinators::*;
 use vest::properties::*;
@@ -143,137 +143,137 @@ fn parse_rustls_handshake() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn serialize_vesttls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
-    let client_hello_record: ClientHello<'_> = ClientHello {
-        legacy_version: 771,
-        random: &[
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31,
-        ],
-        legacy_session_id: SessionId {
-            l: 32,
-            id: &[
-                224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
-                240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,
-            ],
-        },
-        cipher_suites: CipherSuiteList {
-            l: 8,
-            list: RepeatResult(vec![4866, 4867, 4865, 255]),
-        },
-        legacy_compression_methods: Opaque1Ff { l: 1, data: &[0] },
-        extensions: ClientExtensions {
-            l: 163,
-            extensions: RepeatResult(vec![
-                ClientHelloExtension {
-                    extension_type: 0,
-                    ext_len: 24,
-                    extension_data: ServerName(ServerNameList {
-                        l: 22,
-                        list: RepeatResult(vec![tls_combinators::ServerName {
-                            name_type: 0,
-                            name: HostName(Opaque1Ffff {
-                                l: 19,
-                                data: &[
-                                    101, 120, 97, 109, 112, 108, 101, 46, 117, 108, 102, 104, 101,
-                                    105, 109, 46, 110, 101, 116,
-                                ],
-                            }),
-                        }]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 11,
-                    ext_len: 4,
-                    extension_data: ECPointFormats(EcPointFormatList {
-                        l: 3,
-                        list: RepeatResult(vec![0, 1, 2]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 10,
-                    ext_len: 22,
-                    extension_data: SupportedGroups(NamedGroupList {
-                        l: 20,
-                        list: RepeatResult(vec![29, 23, 30, 25, 24, 256, 257, 258, 259, 260]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 35,
-                    ext_len: 0,
-                    extension_data: SessionTicket(&[]),
-                },
-                ClientHelloExtension {
-                    extension_type: 22,
-                    ext_len: 0,
-                    extension_data: EncryptThenMac(&[]),
-                },
-                ClientHelloExtension {
-                    extension_type: 23,
-                    ext_len: 0,
-                    extension_data: ExtendedMasterSecret(&[]),
-                },
-                ClientHelloExtension {
-                    extension_type: 13,
-                    ext_len: 30,
-                    extension_data: SignatureAlgorithms(SignatureSchemeList {
-                        l: 28,
-                        list: RepeatResult(vec![
-                            1027, 1283, 1539, 2055, 2056, 2057, 2058, 2059, 2052, 2053, 2054, 1025,
-                            1281, 1537,
-                        ]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 43,
-                    ext_len: 3,
-                    extension_data: SupportedVersions(SupportedVersionsClient {
-                        l: 2,
-                        versions: RepeatResult(vec![772]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 45,
-                    ext_len: 2,
-                    extension_data: PskKeyExchangeModes(tls_combinators::PskKeyExchangeModes {
-                        l: 1,
-                        modes: RepeatResult(vec![1]),
-                    }),
-                },
-                ClientHelloExtension {
-                    extension_type: 51,
-                    ext_len: 38,
-                    extension_data: KeyShare(KeyShareClientHello {
-                        l: 36,
-                        client_shares: RepeatResult(vec![KeyShareEntry {
-                            group: 29,
-                            l: 32,
-                            key_exchange: X25519(&[
-                                53, 128, 114, 214, 54, 88, 128, 209, 174, 234, 50, 154, 223, 145,
-                                33, 56, 56, 81, 237, 33, 162, 142, 59, 117, 233, 101, 208, 210,
-                                205, 22, 98, 84,
-                            ]),
-                        }]),
-                    }),
-                },
-            ]),
-        },
-    };
-    let mut outbuf = vec![0u8; 300];
-    let serialized = client_hello()
-        .serialize(client_hello_record, &mut outbuf, 0)
-        .unwrap_or_else(|e| {
-            panic!("Failed to serialize ClientHello: {}", e);
-        });
-    println!("serialized: {}", serialized);
-    println!("serialize_client_hello: {:?}", &outbuf[..serialized]);
-    assert_eq!(
-        &outbuf[..serialized],
-        &BYTES_CLIENT_HELLO_RECORD[9..9 + serialized]
-    );
-
-    Ok(())
-}
+// fn serialize_vesttls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
+//     let client_hello_record: ClientHello<'_> = ClientHello {
+//         legacy_version: 771,
+//         random: &[
+//             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+//             24, 25, 26, 27, 28, 29, 30, 31,
+//         ],
+//         legacy_session_id: SessionId {
+//             l: 32,
+//             id: &[
+//                 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
+//                 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,
+//             ],
+//         },
+//         cipher_suites: CipherSuiteList {
+//             l: 8,
+//             list: RepeatResult(vec![4866, 4867, 4865, 255]),
+//         },
+//         legacy_compression_methods: Opaque1Ff { l: 1, data: &[0] },
+//         extensions: ClientExtensions {
+//             l: 163,
+//             extensions: RepeatResult(vec![
+//                 ClientHelloExtension {
+//                     extension_type: 0,
+//                     ext_len: 24,
+//                     extension_data: ServerName(ServerNameList {
+//                         l: 22,
+//                         list: RepeatResult(vec![tls_combinators::ServerName {
+//                             name_type: 0,
+//                             name: HostName(Opaque1Ffff {
+//                                 l: 19,
+//                                 data: &[
+//                                     101, 120, 97, 109, 112, 108, 101, 46, 117, 108, 102, 104, 101,
+//                                     105, 109, 46, 110, 101, 116,
+//                                 ],
+//                             }),
+//                         }]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 11,
+//                     ext_len: 4,
+//                     extension_data: ECPointFormats(EcPointFormatList {
+//                         l: 3,
+//                         list: RepeatResult(vec![0, 1, 2]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 10,
+//                     ext_len: 22,
+//                     extension_data: SupportedGroups(NamedGroupList {
+//                         l: 20,
+//                         list: RepeatResult(vec![29, 23, 30, 25, 24, 256, 257, 258, 259, 260]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 35,
+//                     ext_len: 0,
+//                     extension_data: SessionTicket(&[]),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 22,
+//                     ext_len: 0,
+//                     extension_data: EncryptThenMac(&[]),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 23,
+//                     ext_len: 0,
+//                     extension_data: ExtendedMasterSecret(&[]),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 13,
+//                     ext_len: 30,
+//                     extension_data: SignatureAlgorithms(SignatureSchemeList {
+//                         l: 28,
+//                         list: RepeatResult(vec![
+//                             1027, 1283, 1539, 2055, 2056, 2057, 2058, 2059, 2052, 2053, 2054, 1025,
+//                             1281, 1537,
+//                         ]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 43,
+//                     ext_len: 3,
+//                     extension_data: SupportedVersions(SupportedVersionsClient {
+//                         l: 2,
+//                         versions: RepeatResult(vec![772]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 45,
+//                     ext_len: 2,
+//                     extension_data: PskKeyExchangeModes(tls_combinators::PskKeyExchangeModes {
+//                         l: 1,
+//                         modes: RepeatResult(vec![1]),
+//                     }),
+//                 },
+//                 ClientHelloExtension {
+//                     extension_type: 51,
+//                     ext_len: 38,
+//                     extension_data: KeyShare(KeyShareClientHello {
+//                         l: 36,
+//                         client_shares: RepeatResult(vec![KeyShareEntry {
+//                             group: 29,
+//                             l: 32,
+//                             key_exchange: X25519(&[
+//                                 53, 128, 114, 214, 54, 88, 128, 209, 174, 234, 50, 154, 223, 145,
+//                                 33, 56, 56, 81, 237, 33, 162, 142, 59, 117, 233, 101, 208, 210,
+//                                 205, 22, 98, 84,
+//                             ]),
+//                         }]),
+//                     }),
+//                 },
+//             ]),
+//         },
+//     };
+//     let mut outbuf = vec![0u8; 300];
+//     let serialized = client_hello()
+//         .serialize(client_hello_record, &mut outbuf, 0)
+//         .unwrap_or_else(|e| {
+//             panic!("Failed to serialize ClientHello: {}", e);
+//         });
+//     println!("serialized: {}", serialized);
+//     println!("serialize_client_hello: {:?}", &outbuf[..serialized]);
+//     assert_eq!(
+//         &outbuf[..serialized],
+//         &BYTES_CLIENT_HELLO_RECORD[9..9 + serialized]
+//     );
+//
+//     Ok(())
+// }
 
 // fn client_hello_serialize_parse_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
 //     // construct a contrived ClientHello message
@@ -367,8 +367,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // client_hello_parse_serialize_roundtrip()?;
     // parse_vesttls_client_hello()?;
     // parse_rustls_client_hello()?;
-    parse_vesttls_handshake()?;
-    parse_rustls_handshake()?;
+    // parse_vesttls_handshake()?;
+    // parse_rustls_handshake()?;
     // serialize_vesttls_client_hello()?;
     // bench_fn(parse_rustls_client_hello)?;
     // bench_fn(parse_vesttls_client_hello)?;

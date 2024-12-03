@@ -417,23 +417,23 @@ key_exchange_data = opaque_1_ffff
 key_share_entry = {
   @group: named_group,
   @l: uint_1_ffff,
-  // key_exchange: [u8; @l],
-  key_exchange: [u8; @l] >>= choose(@group) {
-    Secp256r1 => uncompressed_point_representation32,
-    Secp384r1 => uncompressed_point_representation48,
-    Secp521r1 => uncompressed_point_representation66,
+  key_exchange: [u8; @l],
+  // key_exchange: [u8; @l] >>= choose(@group) {
+  //   Secp256r1 => uncompressed_point_representation32,
+  //   Secp384r1 => uncompressed_point_representation48,
+  //   Secp521r1 => uncompressed_point_representation66,
 
-    X25519 => montgomery_point32,
-    X448 => montgomery_form56,
+  //   X25519 => montgomery_point32,
+  //   X448 => montgomery_form56,
 
-    Ffdhe2048 => sever_dh_params,
-    Ffdhe3072 => sever_dh_params,
-    Ffdhe4096 => sever_dh_params,
-    Ffdhe6144 => sever_dh_params,
-    Ffdhe8192 => sever_dh_params,
+  //   Ffdhe2048 => sever_dh_params,
+  //   Ffdhe3072 => sever_dh_params,
+  //   Ffdhe4096 => sever_dh_params,
+  //   Ffdhe6144 => sever_dh_params,
+  //   Ffdhe8192 => sever_dh_params,
 
-    _ => key_exchange_data,
-  },
+  //   _ => key_exchange_data,
+  // },
 }
 
 key_share_client_hello = {
