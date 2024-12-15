@@ -90,6 +90,8 @@
 
 // mod examples;
 
+/// Combinators for Bitcoin formats.
+pub mod bitcoin;
 /// Definitions for buffer traits that can be used as input and output for parsers and serializers,
 /// along with some implementations for commonly used buffers.
 pub mod buf_traits;
