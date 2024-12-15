@@ -16,6 +16,7 @@ impl<C: View> View for RepeatN<C> {
 }
 
 impl<C: SecureSpecCombinator> RepeatN<C> {
+    /// Helper function for parsing [n] instances of [C] from [s].
     pub closed spec fn spec_parse_helper(&self, s: Seq<u8>, n: usize) -> Result<
         (usize, Seq<C::SpecResult>),
         (),
@@ -41,6 +42,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         }
     }
 
+    /// Helper function for serializing [n] instances of [C] from [v].
     pub closed spec fn spec_serialize_helper(&self, v: Seq<C::SpecResult>, n: usize) -> Result<
         Seq<u8>,
         (),

@@ -112,7 +112,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
     }
 
     /// This prefix-secure lemma is used in the proof of the roundtrip properties for sequencing
-    /// combinators.
+    /// and repeating combinators.
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
         requires
             s1.len() + s2.len() <= usize::MAX,
