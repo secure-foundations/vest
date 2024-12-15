@@ -218,7 +218,7 @@ pub fn set_range<'a>(data: &mut Vec<u8>, i: usize, input: &[u8])
 /// Helper function to compare two slices.
 pub fn compare_slice<'a, 'b>(x: &'a [u8], y: &'a [u8]) -> (res: bool)
     ensures
-        res == (x@ == y@),
+        res == (x@ =~= y@),
 {
     if x.len() != y.len() {
         assert(x@.len() != y@.len());

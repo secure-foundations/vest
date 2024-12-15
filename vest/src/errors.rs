@@ -30,6 +30,7 @@ pub enum SerializeError {
     TryMapFailed,
     RefinedPredicateFailed,
     RepeatEmptyElement,
+    RepeatNMalformed,
     Other(String),
 }
 
@@ -95,6 +96,10 @@ impl std::fmt::Display for SerializeError {
             SerializeError::RepeatEmptyElement => {
                 write!(f, "`Repeat` combinator could not terminate")
             }
+            SerializeError::RepeatNMalformed => write!(
+                f,
+                "`RepeatN` combinator can only serialize a fixed number of elements"
+            ),
             SerializeError::Other(s) => write!(f, "{}", s),
         }
     }

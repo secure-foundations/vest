@@ -93,7 +93,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
             buf.len() <= usize::MAX,
         ensures
             self.spec_parse(buf) matches Ok((n, v)) ==> self.spec_serialize(v) == Ok::<_, ()>(
-                buf.subrange(0, n as int),
+                buf.take(n as int),
             ),
     ;
 
