@@ -26,6 +26,7 @@ impl View for BtcVarint {
 }
 
 /// Enum representing a Bitcoin variable-length integer
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarInt {
     /// u8 that's [..=0xFC]
     U8(u8),
@@ -305,6 +306,22 @@ impl TryFrom<VarInt> for (u8, Either<&[u8], Either<u16, Either<u32, u64>>>) {
     }
 }
 
+// impl<'a> TryFrom<&'a VarInt> for &'a (u8, Either<&'a [u8], Either<u16, Either<u32, u64>>>) {
+//     type Error = ();
+//
+//     fn ex_try_from(t: &'a VarInt) -> Result<&'a (u8, Either<&'a [u8], Either<u16, Either<u32, u64>>>), Self::Error> {
+//         match t {
+//             VarInt::U8(t) => {
+//                 let empty = (&[]).as_slice();
+//                 assert(empty@ == Seq::<u8>::empty());
+//                 Ok(&(t, inj_ord_choice_result!(empty, *, *, *)))
+//             },
+//             VarInt::U16(x) => Ok(&(0xFD, inj_ord_choice_result!(*, x, *, *))),
+//             VarInt::U32(x) => Ok(&(0xFE, inj_ord_choice_result!(*, *, x, *))),
+//             VarInt::U64(x) => Ok(&(0xFF, inj_ord_choice_result!(*, *, *, x))),
+//         }
+//     }
+// }
 /// Mapper for converting between Bitcoin variable-length integers and their internal representations
 pub struct VarIntMapper<'a>(std::marker::PhantomData<&'a ()>);
 
@@ -407,12 +424,8 @@ impl Continuation<u8> for BtVarintCont {
 impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
     type Result = VarInt;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        btc_varint_inner().length(v)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {

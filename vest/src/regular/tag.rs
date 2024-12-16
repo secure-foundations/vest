@@ -110,12 +110,12 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
  {
     type Result = ();
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
+    open spec fn length_requires(&self) -> bool {
+        self.0.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        self.0.length()
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        self.0.length(&self.0.predicate.0)
     }
 
     open spec fn parse_requires(&self) -> bool {

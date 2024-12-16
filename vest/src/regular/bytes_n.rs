@@ -66,12 +66,12 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
  {
     type Result = I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(N)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(N)
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        if v.len() == N {
+            Some(N)
+        } else {
+            None
+        }
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {

@@ -177,6 +177,15 @@ pub open spec fn seq_splice(data: Seq<u8>, pos: usize, v: Seq<u8>) -> Seq<u8>
     data.subrange(0, pos as int).add(v).add(data.subrange(pos + v.len() as int, data.len() as int))
 }
 
+/// A stub for `.clone()` that ensures the view of `t` is preserved. Should be used with scrutiny.
+#[verifier::external_body]
+pub fn view_preserving_clone<T: Clone + View>(t: &T) -> (o: T)
+    ensures
+        o@ == t@,
+{
+    t.clone()
+}
+
 /// Wraps Rust's `Vec::extend_from_slice`.
 #[verifier::external_body]
 pub fn vec_u8_extend_from_slice(dest: &mut Vec<u8>, src: &[u8])
@@ -277,7 +286,7 @@ macro_rules! declare_identity_view_reflex {
                 proof fn reflex(&self) {}
             }
         }
-};
+    };
 }
 
 declare_identity_view_reflex!(());

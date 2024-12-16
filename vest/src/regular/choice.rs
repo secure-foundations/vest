@@ -5,6 +5,7 @@ use vstd::prelude::*;
 verus! {
 
 #[allow(missing_docs)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Either<A, B> {
     Left(A),
     Right(B),
@@ -33,9 +34,9 @@ impl<Fst, Snd> OrdChoice<Fst, Snd> where
  {
     pub fn new(fst: Fst, snd: Snd) -> (o: Self)
         requires
-            snd@.disjoint_from(&fst@)
+            snd@.disjoint_from(&fst@),
         ensures
-            o == OrdChoice(fst, snd)
+            o == OrdChoice(fst, snd),
     {
         OrdChoice(fst, snd)
     }
@@ -149,12 +150,15 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
  {
     type Result = Either<Fst::Result, Snd::Result>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
+    open spec fn length_requires(&self) -> bool {
+        self@.1.disjoint_from(&self@.0) && self.0.length_requires() && self.1.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        match v {
+            Either::Left(v) => self.0.length(v),
+            Either::Right(v) => self.1.length(v),
+        }
     }
 
     open spec fn parse_requires(&self) -> bool {

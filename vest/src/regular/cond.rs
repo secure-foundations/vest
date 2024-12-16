@@ -74,17 +74,13 @@ impl<I: VestSecretInput, O: VestSecretOutput<I>, Inner: Combinator<I, O>> Combin
 > where Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V> {
     type Result = Inner::Result;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        if self.cond@ {
-            self.inner.spec_length()
-        } else {
-            None
-        }
+    open spec fn length_requires(&self) -> bool {
+        self.inner.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
+    fn length(&self, v: &Self::Result) -> Option<usize> {
         if self.cond {
-            self.inner.length()
+            self.inner.length(v)
         } else {
             None
         }

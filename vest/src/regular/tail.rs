@@ -56,12 +56,8 @@ impl SecureSpecCombinator for Tail {
 impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Tail {
     type Result = I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        Some(v.len())
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {

@@ -87,12 +87,12 @@ impl SecureSpecCombinator for Bytes {
 impl<I, O> Combinator<I, O> for Bytes where I: VestSecretInput, O: VestSecretOutput<I> {
     type Result = I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(self.0)
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        if v.len() == self.0 {
+            Some(self.0)
+        } else {
+            None
+        }
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {

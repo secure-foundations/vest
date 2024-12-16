@@ -101,12 +101,16 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
  {
     type Result = Inner::Result;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
+    open spec fn length_requires(&self) -> bool {
+        self.inner.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        if self.predicate.apply(v) {
+            self.inner.length(v)
+        } else {
+            None
+        }
     }
 
     open spec fn parse_requires(&self) -> bool {

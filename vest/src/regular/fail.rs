@@ -47,12 +47,8 @@ impl SecureSpecCombinator for Fail {
 impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Fail {
     type Result = ();
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(0)
+    fn length(&self, _v: &Self::Result) -> Option<usize> {
+        None
     }
 
     fn parse(&self, _s: I) -> (res: Result<(usize, Self::Result), ParseError>) {

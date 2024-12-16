@@ -68,6 +68,17 @@ pub trait Iso: View where
             by (compute_only);
         Self::Src::ex_from(s)
     }
+    // fn rev_apply_ref<'a>(s: &'a Self::Dst) -> (res: &'a Self::Src) where
+    //     &'a Self::Src: View + From<&'a Self::Dst>,
+    //     <&'a Self::Src as View>::V: SpecFrom<<&'a Self::Dst as View>::V>,
+    //     ensures
+    //         res@ == Self::V::spec_rev_apply(s@),
+    // {
+    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_from(s@))
+    //         by (compute_only);
+    //     <&Self::Src>::ex_from(s)
+    // }
+
 }
 
 /// Combinator that maps the result of an `inner` combinator with an isomorphism that implements
@@ -155,19 +166,23 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
     M: Iso<Src = Inner::Result>,
     Inner::Result: From<M::Dst> + View,
-    M::Dst: From<Inner::Result> + View,
+    M::Dst: From<Inner::Result> + View + Clone,
     M::V: SpecIso<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Result as View>::V: SpecFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecFrom<<Inner::Result as View>::V>,
+// for<'a> &'a Inner::Result: View + From<&'a M::Dst>,
+// for<'a> <&'a Inner::Result as View>::V: SpecFrom<<&'a M::Dst as View>::V>,
  {
     type Result = M::Dst;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
+    open spec fn length_requires(&self) -> bool {
+        self.inner.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        // self.inner.length(M::rev_apply_ref(v))
+        let v_clone = view_preserving_clone(v);
+        self.inner.length(&M::rev_apply(v_clone))
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -280,6 +295,21 @@ pub trait TryFromInto: View where
             by (compute_only);
         Self::Src::ex_try_from(s)
     }
+    // fn rev_apply_ref<'a>(s: &'a Self::Dst) -> (res: Result<&'a Self::Src, <&'a Self::Src as TryFrom<&'a Self::Dst>>::Error>) where
+    //     &'a Self::Src: View + TryFrom<&'a Self::Dst>,
+    //     <&'a Self::Src as View>::V: SpecTryFrom<<&'a Self::Dst as View>::V>,
+    //     ensures
+    //         res matches Ok(v) ==> {
+    //             &&& Self::V::spec_rev_apply(s@) is Ok
+    //             &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
+    //         },
+    //         res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
+    // {
+    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_try_from(s@))
+    //         by (compute_only);
+    //     <&Self::Src>::ex_try_from(s)
+    // }
+
 }
 
 /// Combinator that maps the result of an `inner` combinator with a faillible conversion
@@ -373,19 +403,26 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
     M: TryFromInto<Src = Inner::Result>,
     Inner::Result: TryFrom<M::Dst> + View,
-    M::Dst: TryFrom<Inner::Result> + View,
+    M::Dst: TryFrom<Inner::Result> + View + Clone,
     M::V: SpecTryFromInto<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Result as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Result as View>::V>,
+// for<'a> &'a Inner::Result: View + TryFrom<&'a M::Dst>,
+// for<'a> <&'a Inner::Result as View>::V: SpecTryFrom<<&'a M::Dst as View>::V>,
  {
     type Result = M::Dst;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
+    open spec fn length_requires(&self) -> bool {
+        self.inner.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        let v_clone = view_preserving_clone(v);
+        if let Ok(v) = M::rev_apply(v_clone) {
+            self.inner.length(&v)
+        } else {
+            None
+        }
     }
 
     open spec fn parse_requires(&self) -> bool {
@@ -497,6 +534,18 @@ impl TryFrom<FieldLess> for FieldLessInner {
         }
     }
 }
+
+// impl<'a> TryFrom<&'a FieldLess> for &'a FieldLessInner {
+//     type Error = ();
+//
+//     fn ex_try_from(v: &'a FieldLess) -> Result<&'a FieldLessInner, ()> {
+//         match v {
+//             FieldLess::A => Ok(&0u8),
+//             FieldLess::B => Ok(&1u8),
+//             FieldLess::C => Ok(&2u8),
+//         }
+//     }
+// }
 
 struct FieldLessMapper;
 

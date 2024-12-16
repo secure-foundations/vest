@@ -48,11 +48,7 @@ impl SecureSpecCombinator for Success {
 impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Success {
     type Result = ();
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn length(&self) -> Option<usize> {
+    fn length(&self, _v: &Self::Result) -> Option<usize> {
         Some(0)
     }
 

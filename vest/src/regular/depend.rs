@@ -218,12 +218,18 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
  {
     type Result = (Fst::Result, Snd::Result);
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
+    open spec fn length_requires(&self) -> bool {
+        &&& self.wf()
+        &&& self.fst.length_requires()
+        &&& Fst::V::is_prefix_secure()
+        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        let n = self.fst.length(&v.0)?;
+        let snd = self.snd.apply(v.0);
+        let m = snd.length(&v.1)?;
+        n.checked_add(m)
     }
 
     open spec fn parse_requires(&self) -> bool {

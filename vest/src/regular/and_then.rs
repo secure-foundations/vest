@@ -93,14 +93,17 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
  {
     type Result = Next::Result;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        // self.0.spec_length()
-        <_ as Combinator<I, O>>::spec_length(&self.0)
+    open spec fn length_requires(&self) -> bool {
+        self.1.length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        // self.0.length()
-        <_ as Combinator<I, O>>::length(&self.0)
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        let n = self.1.length(v)?;
+        if n == self.0.0 {
+            Some(n)
+        } else {
+            None
+        }
     }
 
     open spec fn parse_requires(&self) -> bool {

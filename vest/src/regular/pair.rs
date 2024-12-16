@@ -121,36 +121,14 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
  {
     type Result = (Fst::Result, Snd::Result);
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        if let Some(n) = self.0.spec_length() {
-            if let Some(m) = self.1.spec_length() {
-                if n <= usize::MAX - m {
-                    Some((n + m) as usize)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    open spec fn length_requires(&self) -> bool {
+        self.0.length_requires() && self.1.length_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn length(&self) -> Option<usize> {
-        if let Some(n) = self.0.length() {
-            if let Some(m) = self.1.length() {
-                if n <= usize::MAX - m {
-                    Some(n + m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        let n = self.0.length(&v.0)?;
+        let m = self.1.length(&v.1)?;
+        n.checked_add(m)
     }
 
     open spec fn parse_requires(&self) -> bool {

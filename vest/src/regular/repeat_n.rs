@@ -301,12 +301,42 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
  {
     type Result = RepeatResult<C::Result>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
+    open spec fn length_requires(&self) -> bool {
+        self.0.length_requires() && C::V::is_prefix_secure()
     }
 
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, vs: &Self::Result) -> Option<usize> {
+        let mut len = 0usize;
+        let mut i = 0usize;
+
+        if vs.0.len() != self.1 {
+            return None;
+        }
+        let ghost res = Some(0);
+
+        while i < self.1
+            invariant
+                0 <= i <= self.1,
+                vs@.len() == self.1,
+                self.0.length_requires(),
+                res == Some(len),
+                res matches Some(n) ==> self@.spec_serialize_helper(
+                    vs@.take(i as int),
+                    i,
+                ) matches Ok(b) && b.len() == n,
+        {
+            let n = self.0.length(&vs.0[i])?;
+            len = len.checked_add(n)?;
+            i += 1;
+            proof {
+                res = Some(len);
+                assert(vs@.take(i as int).drop_last() == vs@.take((i - 1) as int));
+            }
+        }
+
+        assert(vs@.take(i as int) =~= vs@);
+
+        Some(len)
     }
 
     open spec fn parse_requires(&self) -> bool {

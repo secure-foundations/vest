@@ -228,6 +228,37 @@ impl<C> Repeat<C> where  {
             Err(SerializeError::RepeatEmptyElement)
         }
     }
+
+    fn length_helper<I, O>(
+        &self,
+        vs: &mut RepeatResult<C::Result>,
+        len: usize,
+    ) -> (res: Option<usize>) where
+        I: VestSecretInput,
+        O: VestSecretOutput<I>,
+        C: Combinator<I, O>,
+        C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+
+        requires
+            self.0.length_requires(),
+            C::V::is_prefix_secure(),
+        ensures
+            res matches Some(n) ==> self@.spec_serialize(old(vs)@) matches Ok(b) && n == len + b.len(),
+    {
+        if vs.0.len() == 0 {
+            return Some(len);
+        }
+        let n = self.0.length(&vs.0.remove(0))?;
+
+        assert(vs@ =~= old(vs)@.drop_first());
+
+        if n > 0 {
+            let len = len.checked_add(n)?;
+            self.length_helper(vs, len)
+        } else {
+            None
+        }
+    }
 }
 
 impl<I, O, C> Combinator<I, O> for Repeat<C> where
@@ -235,15 +266,17 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
     O: VestSecretOutput<I>,
     C: Combinator<I, O>,
     C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+    C::Result: Clone,
  {
     type Result = RepeatResult<C::Result>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
+    open spec fn length_requires(&self) -> bool {
+        self.0.length_requires() && C::V::is_prefix_secure()
     }
 
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        let mut v_clone = RepeatResult(view_preserving_clone(&v.0));
+        self.length_helper(&mut v_clone, 0)
     }
 
     open spec fn parse_requires(&self) -> bool {
