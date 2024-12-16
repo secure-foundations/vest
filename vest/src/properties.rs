@@ -132,14 +132,18 @@ pub trait Combinator<I, O>: View where
     /// The result type of parsing and the input type of serialization.
     type Result: View;
 
-    /// Spec version of [`Self::length`].
-    spec fn spec_length(&self) -> Option<usize>;
+    /// Pre-condition for length calculation.
+    open spec fn length_requires(&self) -> bool {
+        true
+    }
 
-    /// The length of the output buffer, if known.
+    /// The length of the output buffer for serializing [`Self::Result`] (if well-formed).
     /// This can be used to optimize serialization by pre-allocating the buffer.
-    fn length(&self) -> (res: Option<usize>)
+    fn length(&self, v: &Self::Result) -> (res: Option<usize>)
+        requires
+            self.length_requires(),
         ensures
-            res == self.spec_length(),
+            res matches Some(n) ==> self@.spec_serialize(v@) matches Ok(b) && b.len() == n,
     ;
 
     /// Pre-condition for parsing.
@@ -152,15 +156,10 @@ pub trait Combinator<I, O>: View where
         requires
             self.parse_requires(),
         ensures
-            res matches Ok((n, v)) ==> {
-                &&& self@.spec_parse(s@) is Ok
-                &&& self@.spec_parse(s@) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
-            },
+            res matches Ok((n, v)) ==> self@.spec_parse(s@) == Ok::<_, ()>((n, v@)) && n
+                <= s@.len(),
+            self@.spec_parse(s@) matches Ok((m, w)) ==> res matches Ok((m, v)) && w == v@,
             res is Err ==> self@.spec_parse(s@) is Err,
-            self@.spec_parse(s@) matches Ok((m, w)) ==> {
-                &&& res is Ok
-                &&& res matches Ok((n, v)) ==> m == n && w == v@
-            },
             self@.spec_parse(s@) is Err ==> res is Err,
     ;
 
@@ -178,12 +177,8 @@ pub trait Combinator<I, O>: View where
             self.serialize_requires(),
         ensures
             data@.len() == old(data)@.len(),
-            res matches Ok(n) ==> {
-                &&& self@.spec_serialize(v@) is Ok
-                &&& self@.spec_serialize(v@) matches Ok(b) ==> {
-                    n == b.len() && data@ == seq_splice(old(data)@, pos, b)
-                }
-            },
+            res matches Ok(n) ==> self@.spec_serialize(v@) matches Ok(b) && n == b.len() && data@
+                == seq_splice(old(data)@, pos, b),
     ;
 }
 
@@ -228,12 +223,12 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
  {
     type Result = C::Result;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        (*self).spec_length()
+    open spec fn length_requires(&self) -> bool {
+        (*self).length_requires()
     }
 
-    fn length(&self) -> Option<usize> {
-        (*self).length()
+    fn length(&self, v: &Self::Result) -> Option<usize> {
+        (*self).length(v)
     }
 
     open spec fn parse_requires(&self) -> bool {
