@@ -87,7 +87,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
         usize,
         SerializeError,
     >) {
-        if v.len() <= data.len() && v.len() == N && pos < data.len() - v.len() {
+        if v.len() <= data.len() && v.len() == N && pos <= data.len() - v.len() {
             data.set_range(pos, &v);
             assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
             Ok(N)
