@@ -98,8 +98,8 @@ fn parse_rustls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
-    for payload in [
+fn handshake_msg_payloads() -> [&'static [u8]; 7] {
+    [
         &CLIENT_HELLO_RECORD[5..],
         &SERVER_HELLO_RECORD[5..],
         ENCRTPTED_EXTENSIONS_HANDSHAKE,
@@ -107,7 +107,11 @@ fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
         CERTIFICATEVERIFY_HANDSHAKE,
         SERVER_FINISHED_HANDSHAKE,
         CLIENT_FINISHED_HANDSHAKE,
-    ] {
+    ]
+}
+
+fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
+    for payload in handshake_msg_payloads() {
         let (consumed, parsed_handshake) = handshake().parse(payload).unwrap_or_else(|e| {
             panic!("Failed to parse Handshake: {}", e);
         });
@@ -119,16 +123,7 @@ fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn parse_rustls_handshake() -> Result<(), Box<dyn std::error::Error>> {
-    for payload in [
-        &CLIENT_HELLO_RECORD[5..],
-        &SERVER_HELLO_RECORD[5..],
-        ENCRTPTED_EXTENSIONS_HANDSHAKE,
-        CERTIFICATE_HANDSHAKE,
-        CERTIFICATEVERIFY_HANDSHAKE,
-        SERVER_FINISHED_HANDSHAKE,
-        CLIENT_FINISHED_HANDSHAKE,
-    ] {
-        // let mut rd = rustls::internal::msgs::codec::Reader::init(payload);
+    for payload in handshake_msg_payloads() {
         let parsed_handshake = rustls::internal::msgs::message::MessagePayload::new(
             rustls::ContentType::Handshake,
             rustls::ProtocolVersion::TLSv1_3,
@@ -138,6 +133,49 @@ fn parse_rustls_handshake() -> Result<(), Box<dyn std::error::Error>> {
             panic!("Failed to parse Handshake: {:?}", e);
         });
         // println!("parsed_handshake: {:#?}", parsed_handshake);
+    }
+
+    Ok(())
+}
+
+fn vesttls_handshake_msgs<'a>() -> [Handshake<'a>; 7] {
+    handshake_msg_payloads().map(|payload| handshake().parse(payload).unwrap().1)
+}
+
+fn rustls_handshake_msgs<'a>() -> [rustls::internal::msgs::handshake::HandshakeMessagePayload<'a>; 7]
+{
+    handshake_msg_payloads().map(|payload| {
+        match rustls::internal::msgs::message::MessagePayload::new(
+            rustls::ContentType::Handshake,
+            rustls::ProtocolVersion::TLSv1_3,
+            payload,
+        )
+        .unwrap()
+        {
+            rustls::internal::msgs::message::MessagePayload::Handshake { parsed, .. } => parsed,
+            _ => unreachable!(),
+        }
+    })
+}
+
+fn serialize_vesttls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
+    for (i, handshake_msg) in vesttls_handshake_msgs().into_iter().enumerate() {
+        let mut buf = vec![0; 512];
+        let len = handshake()
+            .serialize(handshake_msg, &mut buf, 0)
+            .unwrap_or_else(|e| panic!("Failed to serialize Handshake: {}", e));
+        // println!("len: {}", len);
+        // assert_eq!(&buf[0..len], &handshake_msg_payloads()[i][0..len]);
+    }
+
+    Ok(())
+}
+
+fn serialize_rustls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
+    for (i, handshake_msg) in rustls_handshake_msgs().into_iter().enumerate() {
+        let mut buf = Vec::new();
+        handshake_msg.encode(&mut buf);
+        // assert_eq!(&buf, &handshake_msg_payloads()[i]);
     }
 
     Ok(())
@@ -369,11 +407,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse_rustls_client_hello()?;
     // parse_vesttls_handshake()?;
     // parse_rustls_handshake()?;
+    // serialize_vesttls_handshakes()?;
+    // serialize_rustls_handshakes()?;
     // serialize_vesttls_client_hello()?;
     // bench_fn(parse_rustls_client_hello)?;
     // bench_fn(parse_vesttls_client_hello)?;
-    bench_fn(parse_rustls_handshake)?;
-    bench_fn(parse_vesttls_handshake)?;
+    // bench_fn(parse_rustls_handshake)?;
+    // bench_fn(parse_vesttls_handshake)?;
+    bench_fn(serialize_vesttls_handshakes)?;
+    bench_fn(serialize_rustls_handshakes)?;
 
     Ok(())
 }
