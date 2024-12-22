@@ -465,10 +465,10 @@ impl{lifetime_ann} View for {name}Combinator{lifetime_ann} {{
 }}
 impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
     type Result = {name}{msg_has_lifetime};
-    closed spec fn spec_length(&self) -> Option<usize> 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }}
-    fn length(&self) -> Option<usize> 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }}
+    closed spec fn length_requires(&self) -> bool 
+    {{ <_ as Combinator<&[u8], Vec<u8>>>::length_requires(&self.0) }}
+    fn length(&self, v: &Self::Result) -> Option<usize>
+    {{ <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0, v) }}
     closed spec fn parse_requires(&self) -> bool 
     {{ <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }}
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) 

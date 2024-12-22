@@ -23,6 +23,7 @@ pub struct SpecMsg1 {
 
 pub type SpecMsg1Inner = (u8, (u16, (Seq<u8>, Seq<u8>)));
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Msg1<'a> {
     pub a: u8,
     pub b: u16,
@@ -151,6 +152,7 @@ fn serialize_parse() -> Result<(), Error> {
 }
 
 /// Message type 2
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Msg2 {
     pub a: u8,
     pub b: u16,
@@ -266,6 +268,7 @@ pub struct SpecMsg3 {
 
 pub type SpecMsg3Inner = (Seq<u8>);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Msg3<'a> {
     pub a: &'a [u8],
 }
@@ -381,6 +384,7 @@ pub enum SpecMsg4 {
 
 pub type SpecMsg4Inner = ord_choice_result!(SpecMsg1, Msg2, SpecMsg3);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg4<'a> {
     M1(Msg1<'a>),
     M2(Msg2),

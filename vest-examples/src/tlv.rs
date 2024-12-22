@@ -37,6 +37,7 @@ impl SpecFrom<SpecMsgDInner> for SpecMsgD {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgD<'a> {
     pub f1: &'a [u8],
     pub f2: u16,
@@ -122,6 +123,7 @@ impl SpecFrom<SpecMsgBInner> for SpecMsgB {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgB<'a> {
     pub f1: MsgD<'a>,
 }
@@ -226,6 +228,7 @@ impl SpecFrom<SpecMsgCF4Inner> for SpecMsgCF4 {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MsgCF4<'a> {
     C0(Content0<'a>),
     C1(u16),
@@ -329,6 +332,7 @@ impl SpecFrom<SpecMsgCInner> for SpecMsgC {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgC<'a> {
     pub f2: ContentType,
     pub f3: u24,
@@ -416,6 +420,7 @@ impl SpecFrom<SpecMsgAInner> for SpecMsgA {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgA<'a> {
     pub f1: MsgB<'a>,
     pub f2: &'a [u8],

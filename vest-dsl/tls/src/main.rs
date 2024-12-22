@@ -115,7 +115,7 @@ fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
         let (consumed, parsed_handshake) = handshake().parse(payload).unwrap_or_else(|e| {
             panic!("Failed to parse Handshake: {}", e);
         });
-        // println!("consumed: {}", consumed);
+        println!("consumed: {}", consumed);
         // println!("parsed_handshake: {:#?}", parsed_handshake);
     }
 
@@ -160,7 +160,9 @@ fn rustls_handshake_msgs<'a>() -> [rustls::internal::msgs::handshake::HandshakeM
 
 fn serialize_vesttls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
     for (i, handshake_msg) in vesttls_handshake_msgs().into_iter().enumerate() {
-        let mut buf = vec![0; 512];
+        // let calc_len = handshake().length(&handshake_msg).unwrap();
+        // let mut buf = vec![0; calc_len];
+        let mut buf = vec![0; 5000];
         let len = handshake()
             .serialize(handshake_msg, &mut buf, 0)
             .unwrap_or_else(|e| panic!("Failed to serialize Handshake: {}", e));
