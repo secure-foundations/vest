@@ -56,11 +56,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             self.spec_serialize(v) is Ok,
         ensures
-            exists|b: Seq<u8>|
-                {
-                    &&& self.spec_parse(b) is Ok
-                    &&& self.spec_parse(b) matches Ok((n, v_)) && v_ == v
-                },
+            exists|b: Seq<u8>| #[trigger] self.spec_parse(b) matches Ok((_, v_)) && v_ == v,
     {
         self.theorem_serialize_parse_roundtrip(v);
     }
@@ -105,7 +101,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
         ensures
             self.spec_parse(buf1) matches Ok((n1, v1)) ==> self.spec_parse(buf2) matches Ok(
                 (n2, v2),
-            ) ==> v1 == v2 ==> buf1.subrange(0, n1 as int) == buf2.subrange(0, n2 as int),
+            ) ==> v1 == v2 ==> buf1.take(n1 as int) == buf2.take(n2 as int),
     {
         self.theorem_parse_serialize_roundtrip(buf1);
         self.theorem_parse_serialize_roundtrip(buf2);
@@ -117,7 +113,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
         requires
             s1.len() + s2.len() <= usize::MAX,
         ensures
-            Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(s1.add(s2))
+            Self::is_prefix_secure() ==> self.spec_parse(s1) is Ok ==> self.spec_parse(s1.add(s2))
                 == self.spec_parse(s1),
     ;
 }
@@ -148,19 +144,25 @@ pub trait Combinator<I, O>: View where
     }
 
     /// The parsing function.
+    ///
+    /// ## Pre-conditions
+    /// - Sequencing combinators require that the first combinator is prefix-secure.
+    /// - Repeating combinators require that the inner combinator is prefix-secure.
+    /// - [`crate::regular::choice::OrdChoice`] combinator requires that `Snd` is [`crate::regular::disjoint::DisjointFrom`] `Fst`.
+    /// - [`crate::regular::depend::Depend`] combinator requires that the
+/// [`crate::regular::depend::Continuation`] is well-formed.
+    #[verusfmt::skip]
+    /// 
+    /// ## Post-conditions
+    /// Essentially, the implementation of `parse` is functionally correct with respect to the
+    /// specification `spec_parse` in both `Ok` and `Err` cases.
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>)
         requires
             self.parse_requires(),
         ensures
-            res matches Ok((n, v)) ==> {
-                &&& self@.spec_parse(s@) is Ok
-                &&& self@.spec_parse(s@) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
-            },
+            res matches Ok((n, v)) ==> self@.spec_parse(s@) == Ok::<_, ()>((n, v@)) && n <= s@.len(),
+            self@.spec_parse(s@) matches Ok((m, w)) ==> res matches Ok((m, v)) && w == v@,
             res is Err ==> self@.spec_parse(s@) is Err,
-            self@.spec_parse(s@) matches Ok((m, w)) ==> {
-                &&& res is Ok
-                &&& res matches Ok((n, v)) ==> m == n && w == v@
-            },
             self@.spec_parse(s@) is Err ==> res is Err,
     ;
 
@@ -170,19 +172,26 @@ pub trait Combinator<I, O>: View where
     }
 
     /// The serialization function.
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
-        usize,
-        SerializeError,
-    >)
+    ///
+    /// ## Pre-conditions
+    /// Similar to `parse` pre-conditions, but for serializer combinators.
+    ///
+    /// ## Post-conditions
+    /// Currently, `serialize` only ensures that it is functionally correct with respect to the
+    /// specification `spec_serialize` when it returns `Ok`. This is because `serialize` is trying to
+    /// seialize "in-place" on a "sufficiently large" buffer with a pointer `pos` for efficiency.
+    /// This means it's not neccessarily the case that when `serialize` fails, `spec_serialize`
+    /// will also fail.
+    #[verusfmt::skip]
+    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>)
         requires
             self.serialize_requires(),
         ensures
             data@.len() == old(data)@.len(),
             res matches Ok(n) ==> {
-                &&& self@.spec_serialize(v@) is Ok
-                &&& self@.spec_serialize(v@) matches Ok(b) ==> {
-                    n == b.len() && data@ == seq_splice(old(data)@, pos, b)
-                }
+                &&& self@.spec_serialize(v@) matches Ok(b)
+                &&& b.len() == n
+                &&& data@ == seq_splice(old(data)@, pos, b)
             },
     ;
 }
