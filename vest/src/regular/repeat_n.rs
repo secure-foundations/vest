@@ -316,16 +316,14 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
     fn parse(&self, input: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         let (mut s, mut m, mut vs) = (input, 0usize, Vec::new());
         let mut i = 0usize;
-        let ghost res = Ok((0usize, seq![]));
         assert(RepeatResult(vs)@ =~= seq![]);
 
         while i < self.1
             invariant
                 0 <= i <= self.1,
                 self.0.parse_requires(),
-                res == Ok::<_, ParseError>((m, RepeatResult(vs)@)),
-                s@ =~= input@.subrange(m as int, input@.len() as int),  // <-- this is the key
-                self@.parse_correct(input@, i, res),
+                s@ =~= input@.skip(m as int),  // <-- this is the key
+                self@.parse_correct(input@, i, Ok::<_, ParseError>((m, RepeatResult(vs)@))),
         {
             i += 1;
             match self.0.parse(s.clone()) {
@@ -335,13 +333,9 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
                         vs.push(v);
                         m = m_plus_n;
                         s = s.subrange(n, s.len());
-                        proof {
-                            res = Ok((m, RepeatResult(vs)@));
-                            assert(RepeatResult(vs)@ =~= old_vs.push(v@));
-                        }
+                        assert(RepeatResult(vs)@ == old_vs.push(v@));
                     } else {
                         proof {
-                            res = Err(ParseError::SizeOverflow);
                             self@.lemma_spec_parse_err_unrecoverable(input@, i, self.1);
                         }
                         return Err(ParseError::SizeOverflow);
@@ -349,7 +343,6 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
                 },
                 Err(e) => {
                     proof {
-                        res = Err(e);
                         self@.lemma_spec_parse_err_unrecoverable(input@, i, self.1);
                     }
                     return Err(e);
@@ -377,7 +370,6 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
         if pos > data.len() {
             return Err(SerializeError::InsufficientBuffer);
         }
-        let ghost res: Result<usize, SerializeError> = Ok(0);
         let ghost old_data = data@;
         assert(data@ == seq_splice(old_data, pos, seq![]));
 
@@ -387,8 +379,14 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
                 vs@.len() == self.1,
                 data@.len() == old(data)@.len(),
                 self.0.serialize_requires(),
-                res == Ok::<_, SerializeError>(len),
-                self@.serialize_correct(vs@.take(i as int), i, data@, old_data, pos, res),
+                self@.serialize_correct(
+                    vs@.take(i as int),
+                    i,
+                    data@,
+                    old_data,
+                    pos,
+                    Ok::<_, SerializeError>(len),
+                ),
         {
             if pos > usize::MAX - len || pos + len > data.len() {
                 return Err(SerializeError::InsufficientBuffer);
@@ -398,15 +396,9 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
                     if let Some(next_len) = len.checked_add(n) {
                         len = next_len;
                         i += 1;
-                        proof {
-                            res = Ok(len);
-                            assert(vs@.take(i as int).drop_last() == vs@.take((i - 1) as int));  // <-- key
-                            let spec_bytes = self@.spec_serialize_helper(
-                                vs@.take(i as int),
-                                i,
-                            ).unwrap();
-                            assert(data@ == seq_splice(old_data, pos, spec_bytes));
-                        }
+                        assert(vs@.take(i as int).drop_last() == vs@.take((i - 1) as int));  // <-- key
+                        let ghost spec_bytes = self@.spec_serialize_helper(vs@.take(i as int), i);
+                        assert(data@ == seq_splice(old_data, pos, spec_bytes.unwrap()));
                     } else {
                         return Err(SerializeError::SizeOverflow);
                     }
