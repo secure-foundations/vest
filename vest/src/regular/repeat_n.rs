@@ -296,7 +296,6 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     C: Combinator<I, O>,
-    C::Result: Copy,
     C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
  {
     type Result = RepeatResult<C::Result>;
@@ -371,16 +370,18 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
             return Err(SerializeError::InsufficientBuffer);
         }
         let ghost old_data = data@;
+        let ghost old_vs = vs@;
         assert(data@ == seq_splice(old_data, pos, seq![]));
 
         while i < self.1
             invariant
                 0 <= i <= self.1,
-                vs@.len() == self.1,
+                old_vs.len() == self.1,
+                old_vs.take(i as int) + vs@ == old_vs,
                 data@.len() == old(data)@.len(),
                 self.0.serialize_requires(),
                 self@.serialize_correct(
-                    vs@.take(i as int),
+                    old_vs.take(i as int),
                     i,
                     data@,
                     old_data,
@@ -391,14 +392,15 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
             if pos > usize::MAX - len || pos + len > data.len() {
                 return Err(SerializeError::InsufficientBuffer);
             }
-            match self.0.serialize(vs.0[i], data, pos + len) {
+            match self.0.serialize(vs.0.remove(0), data, pos + len) {
                 Ok(n) => {
                     if let Some(next_len) = len.checked_add(n) {
                         len = next_len;
                         i += 1;
-                        assert(vs@.take(i as int).drop_last() == vs@.take((i - 1) as int));  // <-- key
-                        let ghost spec_bytes = self@.spec_serialize_helper(vs@.take(i as int), i);
-                        assert(data@ == seq_splice(old_data, pos, spec_bytes.unwrap()));
+                        assert(old_vs.take(i as int) + vs@ == old_vs);  // <-- important
+                        assert(old_vs.take(i as int).drop_last() == old_vs.take((i - 1) as int));  // <-- key
+                        let ghost spec_res = self@.spec_serialize_helper(old_vs.take(i as int), i);
+                        assert(data@ == seq_splice(old_data, pos, spec_res.unwrap()));
                     } else {
                         return Err(SerializeError::SizeOverflow);
                     }
@@ -406,8 +408,6 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
                 Err(e) => return Err(e),
             }
         }
-
-        assert(vs@.take(i as int) =~= vs@);
 
         Ok(len)
     }
