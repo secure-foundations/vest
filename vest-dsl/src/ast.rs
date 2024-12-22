@@ -77,6 +77,7 @@ pub struct ConstraintIntCombinator {
 pub enum IntCombinator {
     Signed(u8),
     Unsigned(u8),
+    BtcVarint,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -344,6 +345,7 @@ impl Display for IntCombinator {
         match self {
             IntCombinator::Signed(n) => write!(f, "i{}", n),
             IntCombinator::Unsigned(n) => write!(f, "u{}", n),
+            IntCombinator::BtcVarint => write!(f, "VarInt"),
         }
     }
 }
@@ -914,6 +916,7 @@ fn parse_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
     match rule.as_rule() {
         Rule::unsigned => IntCombinator::Unsigned(parse_width()),
         Rule::signed => IntCombinator::Signed(parse_width()),
+        Rule::btc_varint => IntCombinator::BtcVarint,
         _ => unreachable!(),
     }
 }

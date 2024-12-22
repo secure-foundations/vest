@@ -311,6 +311,11 @@ fn check_const_int_combinator(combinator: &IntCombinator, value: &i128) {
                 panic!("Value {} is out of range for u64", value);
             }
         }
+        IntCombinator::BtcVarint => {
+            if *value < u64::MIN.into() || *value > u64::MAX.into() {
+                panic!("Value {} is out of range for btc_varint", value);
+            }
+        }
         _ => panic!("Unsupported const int combinator"),
     }
 }
@@ -497,7 +502,7 @@ fn check_bytes_combinator(
             if let Some(combinator) = local_ctx.dependent_fields.get(depend_id) {
                 match global_ctx.resolve(combinator) {
                     CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                        combinator: IntCombinator::Unsigned(_),
+                        combinator: IntCombinator::Unsigned(_) | IntCombinator::BtcVarint,
                         ..
                     }) => {}
                     _ => panic!("Length specifier must be an unsigned int"),

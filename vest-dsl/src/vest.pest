@@ -30,7 +30,7 @@ combinator_inner = {
 
 /// an integer combinator with an optional set of constraints
 constraint_int_combinator =  { int_combinator ~ ("|" ~ int_constraint)? }
-int_combinator            = ${ (unsigned | signed) ~ decimal }
+int_combinator            = ${ ((unsigned | signed) ~ decimal) | btc_varint }
 int_constraint            =  { constraint_elem | constraint_elem_set | "!" ~ int_constraint }
 constraint_elem_set       =  { "{" ~ constraint_elem ~ ("," ~ constraint_elem)* ~ "}" }
 constraint_elem           =  { const_int_range | const_int }
@@ -132,20 +132,21 @@ depend_id  = @{ "@" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_"
 
 // keywords
 
-secret   =  { "secret" }
-wrap     = _{ "wrap" }
-preser   = _{ "preser" }
-enum     = _{ "enum" }
-choose   = _{ "choose" }
-apply    = _{ "apply" }
-let      = _{ "let" }
-constant =  { "const" }
-signed   =  { "i" }
-unsigned =  { "u" }
-option   = _{ "Option" }
-vec      =  { "Vec" }
-vec1     =  { "Vec1" }
-tail     =  { "Tail" }
+secret     =  { "secret" }
+wrap       = _{ "wrap" }
+preser     = _{ "preser" }
+enum       = _{ "enum" }
+choose     = _{ "choose" }
+apply      = _{ "apply" }
+let        = _{ "let" }
+constant   =  { "const" }
+signed     =  { "i" }
+unsigned   =  { "u" }
+btc_varint =  { "btc_varint" }
+option     = _{ "Option" }
+vec        =  { "Vec" }
+vec1       =  { "Vec1" }
+tail       =  { "Tail" }
 
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" | "\r\n" }
 

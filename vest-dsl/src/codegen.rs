@@ -659,6 +659,7 @@ impl Codegen for ConstraintIntCombinator {
         let int_type = match &self.combinator {
             IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
+            IntCombinator::BtcVarint => "BtcVarint".to_string(),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -677,10 +678,10 @@ impl Codegen for ConstraintIntCombinator {
             );
             // impl SpecPred
             let input_type = format!("{}", self.combinator);
-            let (spec_as_u32, as_u32) = if input_type == "u24" {
-                (".spec_as_u32()", ".as_u32()")
-            } else {
-                ("", "")
+            let (spec_cast, cast) = match input_type.as_str() {
+                "u24" => (".spec_as_u32()", ".as_u32()"),
+                "VarInt" => (".spec_as_usize()", ".as_usize()"),
+                _ => ("", ""),
             };
             let constraints = gen_constraints(constraint);
             let impl_spec_pred = format!(
@@ -688,12 +689,8 @@ impl Codegen for ConstraintIntCombinator {
     type Input = {input_type};
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
-        let i = (*i){spec_as_u32};
-        if {constraints} {{
-            true
-        }} else {{
-            false
-        }}
+        let i = (*i){spec_cast};
+        {constraints}
     }}
 }}
 "#
@@ -703,12 +700,8 @@ impl Codegen for ConstraintIntCombinator {
     type Input = {input_type};
 
     fn apply(&self, i: &Self::Input) -> bool {{
-        let i = (*i){as_u32};
-        if {constraints} {{
-            true
-        }} else {{
-            false
-        }}
+        let i = (*i){cast};
+        {constraints}
     }}
 }}
 "#
@@ -740,6 +733,7 @@ impl Codegen for ConstraintIntCombinator {
         let int_type = match &self.combinator {
             IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
+            IntCombinator::BtcVarint => "BtcVarint".to_string(),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -1621,6 +1615,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
+                    IntCombinator::BtcVarint => unreachable!(),
                 };
                 (
                     format!("TryMap<{}, {}Mapper>", int_type, name),
@@ -1633,6 +1628,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
                     IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
                     IntCombinator::Signed(..) => unimplemented!(),
+                    IntCombinator::BtcVarint => unreachable!(),
                 }
             }
         }
@@ -1654,6 +1650,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
+                    IntCombinator::BtcVarint => unreachable!(),
                 };
                 let combinator_expr =
                     format!("TryMap {{ inner: {}, mapper: {}Mapper }}", int_type, name);
@@ -1665,6 +1662,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
+                    IntCombinator::BtcVarint => unreachable!(),
                 };
                 let combinator_expr = int_combinator;
                 (combinator_expr, "".to_string())
@@ -2326,6 +2324,7 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Unsigned(t) if *t == 8 => ("U8".to_string(), "u8".to_string()),
             IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianess), format!("u{}", t)),
             IntCombinator::Signed(..) => unimplemented!(),
+            IntCombinator::BtcVarint => unimplemented!(),
         };
         let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
         let additional_code = match mode {
@@ -2347,6 +2346,7 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
             IntCombinator::Signed(..) => unimplemented!(),
+            IntCombinator::BtcVarint => unimplemented!(),
         };
         (
             format!(
@@ -2501,6 +2501,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::regular::and_then::*;\n"
         + "use vest::regular::refined::*;\n"
         + "use vest::regular::repeat::*;\n"
+        + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }
 

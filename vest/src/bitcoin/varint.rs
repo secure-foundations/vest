@@ -26,6 +26,7 @@ impl View for BtcVarint {
 }
 
 /// Enum representing a Bitcoin variable-length integer
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarInt {
     /// u8 that's [..=0xFC]
     U8(u8),
@@ -64,6 +65,21 @@ impl From<VarInt> for usize {
             VarInt::U32(t) => t as usize,
             VarInt::U64(t) => t as usize,
         }
+    }
+}
+
+impl VarInt {
+    /// Spec version of [`VarInt::as_usize`]
+    pub open spec fn spec_as_usize(self) -> usize {
+        self.spec_into()
+    }
+
+    /// Converts a `VarInt` into a `usize`
+    pub fn as_usize(self) -> (o: usize)
+        ensures
+            o@ == self.spec_as_usize(),
+    {
+        self.ex_into()
     }
 }
 
