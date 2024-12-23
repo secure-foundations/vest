@@ -291,19 +291,19 @@ impl<'a> OpaqueU16Cont<'a> {
     }
 }
 
-impl<'a> Continuation<u16> for OpaqueU16Cont<'a> {
+impl<'a> Continuation<&u16> for OpaqueU16Cont<'a> {
     type Output = Bytes;
 
-    open spec fn requires(&self, deps: u16) -> bool {
+    open spec fn requires(&self, deps: &u16) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: u16, o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: &u16, o: Self::Output) -> bool {
         o@ == spec_opaque_u16_cont(deps@)
     }
 
-    fn apply(&self, deps: u16) -> Self::Output {
-        let l = deps;
+    fn apply(&self, deps: &u16) -> Self::Output {
+        let l = *deps;
         Bytes(l.ex_into())
     }
 }
@@ -757,19 +757,19 @@ impl<'a> ResponderIdListCont<'a> {
     }
 }
 
-impl<'a> Continuation<u16> for ResponderIdListCont<'a> {
+impl<'a> Continuation<&u16> for ResponderIdListCont<'a> {
     type Output = ResponderIdListListCombinator<'a>;
 
-    open spec fn requires(&self, deps: u16) -> bool {
+    open spec fn requires(&self, deps: &u16) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: u16, o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: &u16, o: Self::Output) -> bool {
         o@ == spec_responder_id_list_cont(deps@)
     }
 
-    fn apply(&self, deps: u16) -> Self::Output {
-        let l = deps;
+    fn apply(&self, deps: &u16) -> Self::Output {
+        let l = *deps;
         responder_id_list_list(l)
     }
 }

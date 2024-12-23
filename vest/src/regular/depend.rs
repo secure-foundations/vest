@@ -50,8 +50,8 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
         if Fst::is_prefix_secure() {
+            let snd = (self.snd)(v.0);
             if let Ok(buf1) = self.fst.spec_serialize(v.0) {
-                let snd = (self.snd)(v.0);
                 if let Ok(buf2) = snd.spec_serialize(v.1) {
                     if buf1.len() + buf2.len() <= usize::MAX {
                         Ok(buf1.add(buf2))
@@ -159,7 +159,7 @@ pub struct Depend<I, O, Fst, Snd, C> where
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
-    C: Continuation<Fst::Result, Output = Snd>,
+    C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     /// combinators that contain dependencies
     pub fst: Fst,
@@ -177,7 +177,7 @@ impl<I, O, Fst, Snd, C> Depend<I, O, Fst, Snd, C> where
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
-    C: Continuation<Fst::Result, Output = Snd>,
+    C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
     pub open spec fn wf(&self) -> bool {
@@ -195,7 +195,7 @@ impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
-    C: Continuation<Fst::Result, Output = Snd>,
+    C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     type V = SpecDepend<Fst::V, Snd::V>;
 
@@ -213,8 +213,7 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
     Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
-    C: Continuation<Fst::Result, Output = Snd>,
-    Fst::Result: Copy,
+    C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     type Result = (Fst::Result, Snd::Result);
 
@@ -236,7 +235,7 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
         let (n, v1) = self.fst.parse(s.clone())?;
         let s_ = s.subrange(n, s.len());
-        let snd = self.snd.apply(v1);
+        let snd = self.snd.apply(&v1);
         let (m, v2) = snd.parse(s_)?;
         if let Some(nm) = n.checked_add(m) {
             Ok((nm, (v1, v2)))
@@ -256,9 +255,9 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
         usize,
         SerializeError,
     >) {
+        let snd = self.snd.apply(&v.0);
         let n = self.fst.serialize(v.0, data, pos)?;
         if n <= usize::MAX - pos && n + pos <= data.len() {
-            let snd = self.snd.apply(v.0);
             let m = snd.serialize(v.1, data, pos + n)?;
             if let Some(nm) = n.checked_add(m) {
                 assert(data@.subrange(pos as int, pos + n + m as int) == self@.spec_serialize(

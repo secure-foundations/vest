@@ -399,23 +399,23 @@ impl SecureSpecCombinator for BtcVarint {
 /// Continuation for parsing and serializing Bitcoin variable-length integers
 pub struct BtVarintCont;
 
-impl Continuation<u8> for BtVarintCont {
+impl Continuation<&u8> for BtVarintCont {
     type Output = VarintChoice;
 
-    open spec fn requires(&self, t: u8) -> bool {
+    open spec fn requires(&self, t: &u8) -> bool {
         true
     }
 
-    open spec fn ensures(&self, t: u8, o: Self::Output) -> bool {
+    open spec fn ensures(&self, t: &u8, o: Self::Output) -> bool {
         o@ == (spec_btc_varint_inner().inner.snd)(t@)
     }
 
-    fn apply(&self, t: u8) -> Self::Output {
+    fn apply(&self, t: &u8) -> Self::Output {
         ord_choice!(
-                    Cond { cond: t <= 0xFC, inner: BytesN::<0> },
-                    Cond { cond: t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
-                    Cond { cond: t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
-                    Cond { cond: t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
+                    Cond { cond: *t <= 0xFC, inner: BytesN::<0> },
+                    Cond { cond: *t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
+                    Cond { cond: *t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
+                    Cond { cond: *t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
                 )
     }
 }

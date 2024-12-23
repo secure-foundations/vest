@@ -712,19 +712,19 @@ pub fn msg_c<'a>() -> (o: MsgCCombinator<'a>)
     Mapped { inner: Depend { fst, snd, spec_snd }, mapper: MsgCMapper::new() }
 }
 
-impl<'a> Continuation<(ContentType, u24)> for MsgCCont<'a> {
+impl<'a> Continuation<&(ContentType, u24)> for MsgCCont<'a> {
     type Output = MsgCF4Combinator<'a>;
 
-    open spec fn requires(&self, deps: (ContentType, u24)) -> bool {
+    open spec fn requires(&self, deps: &(ContentType, u24)) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: (ContentType, u24), o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: &(ContentType, u24), o: Self::Output) -> bool {
         o@ == spec_msg_c_cont(deps@)
     }
 
-    fn apply(&self, deps: (ContentType, u24)) -> Self::Output {
-        let (f2, f3) = deps;
+    fn apply(&self, deps: &(ContentType, u24)) -> Self::Output {
+        let (f2, f3) = *deps;
         msg_c_f4(f2, f3)
     }
 }

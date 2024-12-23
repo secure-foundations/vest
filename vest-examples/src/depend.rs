@@ -19,19 +19,19 @@ pub open spec fn msg1_snd(deps: (VarInt, u24)) -> (Bytes, Bytes) {
 
 pub struct Msg1Snd;
 
-impl Continuation<(VarInt, u24)> for Msg1Snd {
+impl Continuation<&(VarInt, u24)> for Msg1Snd {
     type Output = (Bytes, Bytes);
 
-    open spec fn requires(&self, i: (VarInt, u24)) -> bool {
+    open spec fn requires(&self, i: &(VarInt, u24)) -> bool {
         true
     }
 
-    open spec fn ensures(&self, i: (VarInt, u24), o: (Bytes, Bytes)) -> bool {
+    open spec fn ensures(&self, i: &(VarInt, u24), o: (Bytes, Bytes)) -> bool {
         o@ == msg1_snd(i@)
     }
 
-    fn apply(&self, deps: (VarInt, u24)) -> (Bytes, Bytes) {
-        let (x, y) = deps;
+    fn apply(&self, deps: &(VarInt, u24)) -> (Bytes, Bytes) {
+        let (x, y) = *deps;
         (Bytes(x.ex_into()), Bytes(y.ex_into()))
     }
 }
