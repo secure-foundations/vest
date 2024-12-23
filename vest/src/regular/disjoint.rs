@@ -6,7 +6,7 @@ use super::depend::SpecDepend;
 use super::fail::Fail;
 use super::map::{Mapped, SpecIso};
 use super::preceded::Preceded;
-use super::refined::Refined;
+use super::refined::{Refined, SpecPred};
 use super::tag::{Tag, TagPred};
 use super::uints::*;
 use crate::properties::*;
@@ -33,113 +33,15 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
     ;
 }
 
-macro_rules! impl_disjoint_for_int_tag {
-    ($combinator:ty) => {
-        ::builtin_macros::verus! {
-            impl DisjointFrom<$combinator> for $combinator {
-                // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-                open spec fn disjoint_from(&self, other: &$combinator) -> bool {
-                    self.0.predicate.0 != other.0.predicate.0
-                }
-
-                proof fn parse_disjoint_on(&self, other: &$combinator, buf: Seq<u8>) {
-                }
-            }
-        }
-    };
-}
-
-macro_rules! impl_disjoint_for_refined_int {
-    ($combinator:ty) => {
-        ::builtin_macros::verus! {
-            impl DisjointFrom<$combinator> for $combinator {
-                // two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-                open spec fn disjoint_from(&self, other: &$combinator) -> bool {
-                    self.predicate.0 != other.predicate.0
-                }
-
-                proof fn parse_disjoint_on(&self, other: &$combinator, buf: Seq<u8>) {
-                }
-            }
-        }
-    };
-}
-
-impl_disjoint_for_int_tag!(Tag<U8, u8>);
-
-impl_disjoint_for_int_tag!(Tag<U16Le, u16>);
-
-impl_disjoint_for_int_tag!(Tag<U24Le, u24>);
-
-impl_disjoint_for_int_tag!(Tag<U32Le, u32>);
-
-impl_disjoint_for_int_tag!(Tag<U64Le, u64>);
-
-impl_disjoint_for_int_tag!(Tag<U16Be, u16>);
-
-impl_disjoint_for_int_tag!(Tag<U24Be, u24>);
-
-impl_disjoint_for_int_tag!(Tag<U32Be, u32>);
-
-impl_disjoint_for_int_tag!(Tag<U64Be, u64>);
-
-impl_disjoint_for_refined_int!(Refined<U8, TagPred<u8>>);
-
-impl_disjoint_for_refined_int!(Refined<U16Le, TagPred<u16>>);
-
-impl_disjoint_for_refined_int!(Refined<U24Le, TagPred<u24>>);
-
-impl_disjoint_for_refined_int!(Refined<U32Le, TagPred<u32>>);
-
-impl_disjoint_for_refined_int!(Refined<U64Le, TagPred<u64>>);
-
-impl_disjoint_for_refined_int!(Refined<U16Be, TagPred<u16>>);
-
-impl_disjoint_for_refined_int!(Refined<U24Be, TagPred<u24>>);
-
-impl_disjoint_for_refined_int!(Refined<U32Be, TagPred<u32>>);
-
-impl_disjoint_for_refined_int!(Refined<U64Be, TagPred<u64>>);
-
-// two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-impl<const N: usize> DisjointFrom<Tag<BytesN<N>, Seq<u8>>> for Tag<BytesN<N>, Seq<u8>> {
-    open spec fn disjoint_from(&self, other: &Tag<BytesN<N>, Seq<u8>>) -> bool {
-        self.0.predicate.0 != other.0.predicate.0
+// two `Tag(T, value)`s are disjoint if their inner `Refined` combinators are disjoint
+impl<Inner, T> DisjointFrom<Tag<Inner, T>> for Tag<Inner, T> where
+    Inner: SpecCombinator<SpecResult = T>,
+ {
+    open spec fn disjoint_from(&self, other: &Tag<Inner, T>) -> bool {
+        self.0.disjoint_from(&other.0)
     }
 
-    proof fn parse_disjoint_on(&self, other: &Tag<BytesN<N>, Seq<u8>>, buf: Seq<u8>) {
-    }
-}
-
-// two `Tag(T, value)`s are disjoint if their bytes `value`s are different
-impl DisjointFrom<Tag<Bytes, Seq<u8>>> for Tag<Bytes, Seq<u8>> {
-    open spec fn disjoint_from(&self, other: &Tag<Bytes, Seq<u8>>) -> bool {
-        // must also say that two `Bytes` combinators are of the same length
-        self.0.predicate.0 != other.0.predicate.0 && self.0.inner.0 == other.0.inner.0
-    }
-
-    proof fn parse_disjoint_on(&self, other: &Tag<Bytes, Seq<u8>>, buf: Seq<u8>) {
-    }
-}
-
-impl<const N: usize> DisjointFrom<Refined<BytesN<N>, TagPred<Seq<u8>>>> for Refined<
-    BytesN<N>,
-    TagPred<Seq<u8>>,
-> {
-    open spec fn disjoint_from(&self, other: &Refined<BytesN<N>, TagPred<Seq<u8>>>) -> bool {
-        self.predicate.0 != other.predicate.0
-    }
-
-    proof fn parse_disjoint_on(&self, other: &Refined<BytesN<N>, TagPred<Seq<u8>>>, buf: Seq<u8>) {
-    }
-}
-
-impl DisjointFrom<Refined<Bytes, TagPred<Seq<u8>>>> for Refined<Bytes, TagPred<Seq<u8>>> {
-    open spec fn disjoint_from(&self, other: &Refined<Bytes, TagPred<Seq<u8>>>) -> bool {
-        self.predicate.0 != other.predicate.0 && self.inner.0 == other.inner.0
-    }
-
-    proof fn parse_disjoint_on(&self, other: &Refined<Bytes, TagPred<Seq<u8>>>, buf: Seq<u8>) {
+    proof fn parse_disjoint_on(&self, other: &Tag<Inner, T>, buf: Seq<u8>) {
     }
 }
 
@@ -241,6 +143,22 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
     }
 
     proof fn parse_disjoint_on(&self, other: &Cond<Inner2>, buf: Seq<u8>) {
+    }
+}
+
+// if the inner combinator is the same, and whenever `self.predicate` succeeds, `other.predicate`
+// fails, then `self` is disjoint from `other`
+impl<Inner, P1, P2> DisjointFrom<Refined<Inner, P2>> for Refined<Inner, P1> where
+    Inner: SpecCombinator,
+    P1: SpecPred<Input = Inner::SpecResult>,
+    P2: SpecPred<Input = Inner::SpecResult>,
+ {
+    open spec fn disjoint_from(&self, other: &Refined<Inner, P2>) -> bool {
+        self.inner == other.inner && forall|i|
+            { self.predicate.spec_apply(&i) ==> !other.predicate.spec_apply(&i) }
+    }
+
+    proof fn parse_disjoint_on(&self, other: &Refined<Inner, P2>, buf: Seq<u8>) {
     }
 }
 
