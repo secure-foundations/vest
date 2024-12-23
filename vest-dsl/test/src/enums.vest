@@ -25,3 +25,8 @@ a_choose_with_default(@e: an_open_enum) = choose(@e) {
   _ => Tail,
 }
 
+a_non_dependent_choose = choose {
+  Variant1(u8 | 0..10),
+  Variant2(u8 | 11..20),
+  Variant3(u8 | 21..),
+}

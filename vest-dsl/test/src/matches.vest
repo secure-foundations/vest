@@ -30,3 +30,19 @@ msg3 = {
     _ => Tail,
   },
 }
+
+msg4 = {
+  @i: u24,
+  content: choose(@i) {
+    1 => u16,
+    _ => Tail,
+  },
+}
+
+msg5 = {
+  @i: btc_varint,
+  content: choose(@i) {
+    1 => u16,
+    _ => Tail,
+  },
+}

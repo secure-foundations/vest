@@ -1,6 +1,7 @@
 #![allow(warnings)]
 #![allow(unused)]
 use std::marker::PhantomData;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::properties::*;
 use vest::regular::and_then::*;
 use vest::regular::bytes::*;
@@ -105,19 +106,6 @@ impl<'a> Iso for OpaqueU16Mapper<'a> {
     type Dst = OpaqueU16<'a>;
 }
 
-impl SpecPred for Predicate11955646336730306823 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        if (i >= 1 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
 pub struct SpecOpaqueU16Combinator(SpecOpaqueU16CombinatorAlias);
 
 impl SpecCombinator for SpecOpaqueU16Combinator {
@@ -155,13 +143,13 @@ impl SecureSpecCombinator for SpecOpaqueU16Combinator {
 }
 
 pub type SpecOpaqueU16CombinatorAlias = Mapped<
-    SpecDepend<Refined<U16Le, Predicate11955646336730306823>, Bytes>,
+    SpecDepend<Refined<U16Le, Predicate17626095872143391426>, Bytes>,
     OpaqueU16Mapper<'static>,
 >;
 
-pub struct Predicate11955646336730306823;
+pub struct Predicate17626095872143391426;
 
-impl View for Predicate11955646336730306823 {
+impl View for Predicate17626095872143391426 {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -169,16 +157,21 @@ impl View for Predicate11955646336730306823 {
     }
 }
 
-impl Pred for Predicate11955646336730306823 {
+impl Pred for Predicate17626095872143391426 {
     type Input = u16;
 
     fn apply(&self, i: &Self::Input) -> bool {
         let i = (*i);
-        if (i >= 1 && i <= 65535) {
-            true
-        } else {
-            false
-        }
+        (i >= 1 && i <= 65535)
+    }
+}
+
+impl SpecPred for Predicate17626095872143391426 {
+    type Input = u16;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 1 && i <= 65535)
     }
 }
 
@@ -227,7 +220,7 @@ pub type OpaqueU16CombinatorAlias<'a> = Mapped<
     Depend<
         &'a [u8],
         Vec<u8>,
-        Refined<U16Le, Predicate11955646336730306823>,
+        Refined<U16Le, Predicate17626095872143391426>,
         Bytes,
         OpaqueU16Cont<'a>,
     >,
@@ -238,7 +231,7 @@ pub closed spec fn spec_opaque_u16() -> SpecOpaqueU16Combinator {
     SpecOpaqueU16Combinator(
         Mapped {
             inner: SpecDepend {
-                fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
+                fst: Refined { inner: U16Le, predicate: Predicate17626095872143391426 },
                 snd: |deps| spec_opaque_u16_cont(deps),
             },
             mapper: OpaqueU16Mapper::spec_new(),
@@ -258,7 +251,7 @@ pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator<'a>)
     OpaqueU16Combinator(
         Mapped {
             inner: Depend {
-                fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
+                fst: Refined { inner: U16Le, predicate: Predicate17626095872143391426 },
                 snd: OpaqueU16Cont::new(),
                 spec_snd: Ghost(|deps| spec_opaque_u16_cont(deps)),
             },
@@ -571,19 +564,6 @@ impl<'a> Iso for ResponderIdListMapper<'a> {
     type Dst = ResponderIdList<'a>;
 }
 
-impl SpecPred for Predicate6556550293019859977 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        if (i >= 0 && i <= 65535) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
 pub struct SpecResponderIdListCombinator(SpecResponderIdListCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdListCombinator {
@@ -621,13 +601,13 @@ impl SecureSpecCombinator for SpecResponderIdListCombinator {
 }
 
 pub type SpecResponderIdListCombinatorAlias = Mapped<
-    SpecDepend<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
+    SpecDepend<Refined<U16Le, Predicate2984462868727922620>, SpecResponderIdListListCombinator>,
     ResponderIdListMapper<'static>,
 >;
 
-pub struct Predicate6556550293019859977;
+pub struct Predicate2984462868727922620;
 
-impl View for Predicate6556550293019859977 {
+impl View for Predicate2984462868727922620 {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -635,16 +615,21 @@ impl View for Predicate6556550293019859977 {
     }
 }
 
-impl Pred for Predicate6556550293019859977 {
+impl Pred for Predicate2984462868727922620 {
     type Input = u16;
 
     fn apply(&self, i: &Self::Input) -> bool {
         let i = (*i);
-        if (i >= 0 && i <= 65535) {
-            true
-        } else {
-            false
-        }
+        (i >= 0 && i <= 65535)
+    }
+}
+
+impl SpecPred for Predicate2984462868727922620 {
+    type Input = u16;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 0 && i <= 65535)
     }
 }
 
@@ -693,7 +678,7 @@ pub type ResponderIdListCombinatorAlias<'a> = Mapped<
     Depend<
         &'a [u8],
         Vec<u8>,
-        Refined<U16Le, Predicate6556550293019859977>,
+        Refined<U16Le, Predicate2984462868727922620>,
         ResponderIdListListCombinator<'a>,
         ResponderIdListCont<'a>,
     >,
@@ -704,7 +689,7 @@ pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
     SpecResponderIdListCombinator(
         Mapped {
             inner: SpecDepend {
-                fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
+                fst: Refined { inner: U16Le, predicate: Predicate2984462868727922620 },
                 snd: |deps| spec_responder_id_list_cont(deps),
             },
             mapper: ResponderIdListMapper::spec_new(),
@@ -724,7 +709,7 @@ pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator<'a>)
     ResponderIdListCombinator(
         Mapped {
             inner: Depend {
-                fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
+                fst: Refined { inner: U16Le, predicate: Predicate2984462868727922620 },
                 snd: ResponderIdListCont::new(),
                 spec_snd: Ghost(|deps| spec_responder_id_list_cont(deps)),
             },
