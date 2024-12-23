@@ -659,7 +659,7 @@ fn check_choice_combinator(
                 let combinator = get_combinator_from_depend_id(depend_id);
                 // check if `combinator` is defined as an int
                 if let CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                    combinator: IntCombinator::Unsigned(_),
+                    combinator: IntCombinator::Unsigned(_) | IntCombinator::BtcVarint,
                     ..
                 }) = combinator
                 {

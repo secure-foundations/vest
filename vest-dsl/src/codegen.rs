@@ -2020,23 +2020,36 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                     }
                 }
                 // ints
-                CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
+                CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator: int_type, .. }) => {
                     match &self.choices {
                         Choices::Ints(ints)=> ints
                             .iter()
                             .map(|(variant, combinator)| {
                                 let (inner, code) =
                                     combinator.gen_combinator_expr("", mode, ctx);
+                                let (spec_cast, cast) = match int_type {
+                                    IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
+                                    IntCombinator::BtcVarint => (".spec_as_usize()", ".as_usize()"),
+                                    _ => ("", ""),
+                                };
                                 let bool_exp = match variant {
                                     Some(int) => {
-                                        format!("{} == {}", depend_id, int)
+                                        match mode {
+                                            Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, int),
+                                            _ => format!("{}{} == {}", depend_id, cast, int)
+                                        }
                                     }
                                     None => {
                                          // default case; the negation of all other cases
                                          let other_variants = ints
                                              .iter()
                                              .filter_map(|(variant, _)| {
-                                                variant.map(|variant| format!("{} == {}", depend_id, variant))
+                                                variant.map(|variant| {
+                                                    match mode {
+                                                        Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, variant),
+                                                        _ => format!("{}{} == {}", depend_id, cast, variant)
+                                                    }
+                                                })
                                              })
                                              .collect::<Vec<_>>();
                                          format!("!({})", other_variants.join(" || "))
