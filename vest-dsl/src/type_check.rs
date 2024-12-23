@@ -590,6 +590,10 @@ fn check_choice_combinator(
                     })
             })
     };
+    // if there isn't a depend_id, it must be an `enum` choice:
+    if depend_id.is_none() && !matches!(choices, Choices::Enums(_)) {
+        panic!("Labels for a non-dependent ordered choice must be `variant_id`");
+    }
     match choices {
         Choices::Enums(enums) => {
             if let Some(depend_id) = depend_id {

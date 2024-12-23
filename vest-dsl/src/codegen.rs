@@ -1863,33 +1863,34 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             LifetimeAnn::None => "",
         };
         let name = &snake_to_upper_caml(name);
-        if self.depend_id.is_some() {
-            let (combinator_types, additional_code): (Vec<String>, Vec<String>) =
-                match &self.choices {
-                    Choices::Enums(enums) => enums
-                        .iter()
-                        .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
-                        .map(|(t, code)| (format!("Cond<{}>", t), code))
-                        .unzip(),
-                    Choices::Ints(ints) => ints
-                        .iter()
-                        .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
-                        .map(|(t, code)| (format!("Cond<{}>", t), code))
-                        .unzip(),
-                    Choices::Arrays(arrays) => arrays
-                        .iter()
-                        .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
-                        .map(|(t, code)| (format!("Cond<{}>", t), code))
-                        .unzip(),
-                };
-            let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
-            (
-                format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
-                additional_code.join(""),
-            )
-        } else {
-            unimplemented!()
-        }
+        let (combinator_types, additional_code): (Vec<String>, Vec<String>) = match &self.choices {
+            Choices::Enums(enums) => enums
+                .iter()
+                .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
+                .map(|(t, code)| {
+                    if self.depend_id.is_some() {
+                        (format!("Cond<{}>", t), code)
+                    } else {
+                        (t, code)
+                    }
+                })
+                .unzip(),
+            Choices::Ints(ints) => ints
+                .iter()
+                .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
+                .map(|(t, code)| (format!("Cond<{}>", t), code))
+                .unzip(),
+            Choices::Arrays(arrays) => arrays
+                .iter()
+                .map(|(_, combinator)| combinator.gen_combinator_type("", mode, ctx))
+                .map(|(t, code)| (format!("Cond<{}>", t), code))
+                .unzip(),
+        };
+        let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
+        (
+            format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
+            additional_code.join(""),
+        )
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
@@ -1897,195 +1898,206 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             Mode::Spec => "::spec_new()",
             _ => "::new()",
         };
-        if let Some(depend_id) = &self.depend_id {
-            // find the corresponding combinator of `depend_id`
-            let combinator = ctx
-                .param_defns
-                .iter()
-                .find_map(|param_defn| match param_defn {
-                    ParamDefn::Dependent { name, combinator } if name == depend_id => {
-                        Some(combinator)
-                    }
-                    _ => None,
-                })
-                .unwrap();
-            let (combinator_exprs, additional_code): (Vec<String>, Vec<String>) = match combinator {
-                // invocation to an enum
-                CombinatorInner::Invocation(CombinatorInvocation {
-                    func: enum_name, ..
-                }) => {
-                    match &self.choices {
-                        Choices::Enums(enums) => enums
-                            .iter()
-                            .map(|(variant, combinator)| {
-                                let (inner, code) =
-                                    combinator.gen_combinator_expr("", mode, ctx);
-                                let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
-                                {
-                                    EnumCombinator::NonExhaustive { enums } => {
-                                        if variant == "_" {
-                                            // default case; the negation of all other cases
-                                            let other_variants = enums
-                                                .iter()
-                                                .filter_map(|Enum { name, value }| {
-                                                    if name == "_" {
-                                                        None
-                                                    } else {
-                                                        Some(format!(
-                                                            "{} == {}",
-                                                            depend_id, value
-                                                        ))
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>();
-                                            format!("!({})", other_variants.join(" || "))
-                                        } else {
-                                            let value = enums
-                                                .iter()
-                                                .find_map(|Enum { name, value }| {
-                                                    if name == variant {
-                                                        Some(value.to_string())
-                                                    } else {
-                                                        None
-                                                    }
-                                                })
-                                                .unwrap();
-                                            format!("{} == {}", depend_id, value)
-                                        }
-                                    }
-                                    EnumCombinator::Exhaustive { .. } => {
-                                        let upper_caml_name = snake_to_upper_caml(enum_name);
-                                        format!(
-                                            "{} == {}::{}",
-                                            depend_id, upper_caml_name, variant
-                                        )
-                                    }
-                                };
-                                (
-                                    format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
-                                    code,
-                                )
-                            })
-                            .unzip(),
-                        Choices::Ints(..) | Choices::Arrays(..) => unreachable!(),
-                    }
-                }
-                // bytes
-                CombinatorInner::Bytes(BytesCombinator { len }) => {
-                    match &self.choices {
-                        Choices::Arrays(arrays)=> arrays
-                            .iter()
-                            .map(|(variant, combinator)| {
-                                let (inner, code) =
-                                    combinator.gen_combinator_expr("", mode, ctx);
-                                let bool_exp = match variant {
-                                    ConstArray::Int(ints) => {
-                                        let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
-                                        match mode {
-                                            Mode::Spec => format!("{} == seq![{}]", depend_id, ints),
-                                            _ => format!("compare_slice({}, {}.as_slice())", depend_id, variant),
-                                        }
-                                    }
-                                    ConstArray::Wildcard => {
-                                             // default case; the negation of all other cases
-                                         let other_variants = arrays
-                                             .iter()
-                                             .filter_map(|(variant, _)| {
-                                                match variant {
-                                                      ConstArray::Int(ints) => {
-                                                        let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
-                                                        match mode {
-                                                            Mode::Spec => Some(format!("{} == seq![{}]", depend_id, ints)),
-                                                            _ => Some(format!(
-                                                                "compare_slice({}, {}.as_slice())",
-                                                                depend_id, variant
+        let (combinator_exprs, additional_code): (Vec<String>, Vec<String>) = match &self.depend_id
+        {
+            Some(depend_id) => {
+                // find the corresponding combinator of `depend_id`
+                let combinator = ctx
+                    .param_defns
+                    .iter()
+                    .find_map(|param_defn| match param_defn {
+                        ParamDefn::Dependent { name, combinator } if name == depend_id => {
+                            Some(combinator)
+                        }
+                        _ => None,
+                    })
+                    .unwrap();
+                match combinator {
+                    // invocation to an enum
+                    CombinatorInner::Invocation(CombinatorInvocation {
+                        func: enum_name, ..
+                    }) => {
+                        match &self.choices {
+                            Choices::Enums(enums) => enums
+                                .iter()
+                                .map(|(variant, combinator)| {
+                                    let (inner, code) =
+                                        combinator.gen_combinator_expr("", mode, ctx);
+                                    let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
+                                    {
+                                        EnumCombinator::NonExhaustive { enums } => {
+                                            if variant == "_" {
+                                                // default case; the negation of all other cases
+                                                let other_variants = enums
+                                                    .iter()
+                                                    .filter_map(|Enum { name, value }| {
+                                                        if name == "_" {
+                                                            None
+                                                        } else {
+                                                            Some(format!(
+                                                                "{} == {}",
+                                                                depend_id, value
                                                             ))
                                                         }
-                                                    }
-                                                    _ => None
-                                                    }
-                                             })
-                                             .collect::<Vec<_>>();
-                                         format!("!({})", other_variants.join(" || "))
-                                    }
-                                    _ => unimplemented!(),
-                                };
-                                (
-                                    format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
-                                    code,
-                                )
-                            })
-                            .unzip(),
-                        Choices::Ints(..) | Choices::Enums(..) => unreachable!(),
-                    }
-                }
-                // ints
-                CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator: int_type, .. }) => {
-                    match &self.choices {
-                        Choices::Ints(ints)=> ints
-                            .iter()
-                            .map(|(variant, combinator)| {
-                                let (inner, code) =
-                                    combinator.gen_combinator_expr("", mode, ctx);
-                                let (spec_cast, cast) = match int_type {
-                                    IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
-                                    IntCombinator::BtcVarint => (".spec_as_usize()", ".as_usize()"),
-                                    _ => ("", ""),
-                                };
-                                let bool_exp = match variant {
-                                    Some(int) => {
-                                        match mode {
-                                            Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, int),
-                                            _ => format!("{}{} == {}", depend_id, cast, int)
+                                                    })
+                                                    .collect::<Vec<_>>();
+                                                format!("!({})", other_variants.join(" || "))
+                                            } else {
+                                                let value = enums
+                                                    .iter()
+                                                    .find_map(|Enum { name, value }| {
+                                                        if name == variant {
+                                                            Some(value.to_string())
+                                                        } else {
+                                                            None
+                                                        }
+                                                    })
+                                                    .unwrap();
+                                                format!("{} == {}", depend_id, value)
+                                            }
                                         }
-                                    }
-                                    None => {
-                                         // default case; the negation of all other cases
-                                         let other_variants = ints
-                                             .iter()
-                                             .filter_map(|(variant, _)| {
-                                                variant.map(|variant| {
-                                                    match mode {
-                                                        Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, variant),
-                                                        _ => format!("{}{} == {}", depend_id, cast, variant)
-                                                    }
-                                                })
-                                             })
-                                             .collect::<Vec<_>>();
-                                         format!("!({})", other_variants.join(" || "))
-                                    }
-                                };
-                                (
-                                    format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
-                                    code,
-                                )
-                            })
-                            .unzip(),
-                        Choices::Arrays(..) | Choices::Enums(..) => unreachable!(),
+                                        EnumCombinator::Exhaustive { .. } => {
+                                            let upper_caml_name = snake_to_upper_caml(enum_name);
+                                            format!(
+                                                "{} == {}::{}",
+                                                depend_id, upper_caml_name, variant
+                                            )
+                                        }
+                                    };
+                                    (
+                                        format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                        code,
+                                    )
+                                })
+                                .unzip(),
+                            Choices::Ints(..) | Choices::Arrays(..) => unreachable!(),
+                        }
                     }
+                    // bytes
+                    CombinatorInner::Bytes(BytesCombinator { len }) => {
+                        match &self.choices {
+                            Choices::Arrays(arrays)=> arrays
+                                .iter()
+                                .map(|(variant, combinator)| {
+                                    let (inner, code) =
+                                        combinator.gen_combinator_expr("", mode, ctx);
+                                    let bool_exp = match variant {
+                                        ConstArray::Int(ints) => {
+                                            let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
+                                            match mode {
+                                                Mode::Spec => format!("{} == seq![{}]", depend_id, ints),
+                                                _ => format!("compare_slice({}, {}.as_slice())", depend_id, variant),
+                                            }
+                                        }
+                                        ConstArray::Wildcard => {
+                                                 // default case; the negation of all other cases
+                                             let other_variants = arrays
+                                                 .iter()
+                                                 .filter_map(|(variant, _)| {
+                                                    match variant {
+                                                          ConstArray::Int(ints) => {
+                                                            let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
+                                                            match mode {
+                                                                Mode::Spec => Some(format!("{} == seq![{}]", depend_id, ints)),
+                                                                _ => Some(format!(
+                                                                    "compare_slice({}, {}.as_slice())",
+                                                                    depend_id, variant
+                                                                ))
+                                                            }
+                                                        }
+                                                        _ => None
+                                                        }
+                                                 })
+                                                 .collect::<Vec<_>>();
+                                             format!("!({})", other_variants.join(" || "))
+                                        }
+                                        _ => unimplemented!(),
+                                    };
+                                    (
+                                        format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                        code,
+                                    )
+                                })
+                                .unzip(),
+                            Choices::Ints(..) | Choices::Enums(..) => unreachable!(),
+                        }
+                    }
+                    // ints
+                    CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator: int_type, .. }) => {
+                        match &self.choices {
+                            Choices::Ints(ints)=> ints
+                                .iter()
+                                .map(|(variant, combinator)| {
+                                    let (inner, code) =
+                                        combinator.gen_combinator_expr("", mode, ctx);
+                                    let (spec_cast, cast) = match int_type {
+                                        IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
+                                        IntCombinator::BtcVarint => (".spec_as_usize()", ".as_usize()"),
+                                        _ => ("", ""),
+                                    };
+                                    let bool_exp = match variant {
+                                        Some(int) => {
+                                            match mode {
+                                                Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, int),
+                                                _ => format!("{}{} == {}", depend_id, cast, int)
+                                            }
+                                        }
+                                        None => {
+                                             // default case; the negation of all other cases
+                                             let other_variants = ints
+                                                 .iter()
+                                                 .filter_map(|(variant, _)| {
+                                                    variant.map(|variant| {
+                                                        match mode {
+                                                            Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, variant),
+                                                            _ => format!("{}{} == {}", depend_id, cast, variant)
+                                                        }
+                                                    })
+                                                 })
+                                                 .collect::<Vec<_>>();
+                                             format!("!({})", other_variants.join(" || "))
+                                        }
+                                    };
+                                    (
+                                        format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                        code,
+                                    )
+                                })
+                                .unzip(),
+                            Choices::Arrays(..) | Choices::Enums(..) => unreachable!(),
+                        }
+                    }
+                    _ => unreachable!(
+                        "Unexpected combinator type for dependent id: {}. We currently only support dependent fields on enum, int, and bytes, got {}.",
+                        depend_id, combinator
+                    ),
                 }
-                _ => unreachable!(
-                    "Unexpected combinator type for dependent id: {}. We currently only support dependent fields on enum, int, and bytes, got {}.",
-                    depend_id, combinator
-                ),
-            };
-            let ord_choice_constructor = match mode {
-                Mode::Spec => "OrdChoice",
-                _ => "OrdChoice::new",
-            };
-            let inner = fmt_in_pairs(
-                &combinator_exprs,
-                ord_choice_constructor,
-                Bracket::Parentheses,
-            );
-            let combinator_expr = format!(
-                "Mapped {{ inner: {}, mapper: {}Mapper{} }}",
-                inner, name, mapper_new
-            );
-            (combinator_expr, additional_code.join(""))
-        } else {
-            unimplemented!()
-        }
+            }
+            None => {
+                let Choices::Enums(choices) = &self.choices else {
+                    // already type-checked that when there's no dependent id, the choices must be enums
+                    unreachable!()
+                };
+                choices
+                    .iter()
+                    .map(|(_, combinator)| combinator.gen_combinator_expr("", mode, ctx))
+                    .unzip()
+            }
+        };
+        let ord_choice_constructor = match mode {
+            Mode::Spec => "OrdChoice",
+            _ => "OrdChoice::new",
+        };
+        let inner = fmt_in_pairs(
+            &combinator_exprs,
+            ord_choice_constructor,
+            Bracket::Parentheses,
+        );
+        let combinator_expr = format!(
+            "Mapped {{ inner: {}, mapper: {}Mapper{} }}",
+            inner, name, mapper_new
+        );
+        (combinator_expr, additional_code.join(""))
     }
 }
 
