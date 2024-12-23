@@ -2141,7 +2141,22 @@ impl{lifetime_ann} Iso for {name}Mapper{lifetime_ann} {{
 
 impl Codegen for ArrayCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        todo!()
+        let inner = &self.combinator.gen_msg_type("", mode, ctx);
+
+        let type_name = match mode {
+            Mode::Spec => format!("Seq<{}>", inner),
+            _ => format!("RepeatResult<{}>", inner),
+        };
+        if name.is_empty() {
+            type_name
+        } else {
+            let type_alias_name = match mode {
+                Mode::Spec => &format!("Spec{}", name),
+                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
+                Mode::Exec(LifetimeAnn::None) => name,
+            };
+            format!("pub type {} = {};\n", type_alias_name, type_name)
+        }
     }
 
     fn gen_combinator_type(
@@ -2150,11 +2165,28 @@ impl Codegen for ArrayCombinator {
         mode: Mode,
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
-        todo!()
+        let inner = self.combinator.gen_combinator_type("", mode, ctx);
+        (format!("RepeatN<{}>", inner.0), inner.1)
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
+        let into = match mode {
+            Mode::Spec => ".spec_into()",
+            _ => ".ex_into()",
+        };
+        let (inner, additional_code) = self.combinator.gen_combinator_expr("", mode, ctx);
+        match &self.len {
+            LengthSpecifier::Const(len) => {
+                (format!("RepeatN({}, {})", inner, len), additional_code)
+            }
+            LengthSpecifier::Dependent(depend_id) => (
+                format!("RepeatN({}, {}{})", inner, depend_id, into),
+                additional_code,
+            ),
+        }
+
+        // let combinator_expr = format!("RepeatN({}, {}{})", inner.0, len, into);
+        // (combinator_expr, inner.1)
     }
 }
 
@@ -2197,10 +2229,6 @@ impl Codegen for VecCombinator {
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        let spec = match mode {
-            Mode::Spec => "Spec",
-            _ => "",
-        };
         let inner = match self {
             VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
                 combinator.gen_combinator_expr("", mode, ctx)
@@ -2526,6 +2554,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::regular::and_then::*;\n"
         + "use vest::regular::refined::*;\n"
         + "use vest::regular::repeat::*;\n"
+        + "use vest::regular::repeat_n::*;\n"
         + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }

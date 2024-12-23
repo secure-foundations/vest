@@ -10,3 +10,9 @@ responder_id_list = {
   list: [u8; @l] >>= Vec<responder_id>,
 }
 
+repeat_fix = [u16; 32]
+
+repeat_dyn = {
+  @l: btc_varint,
+  data: [responder_id_list; @l],
+}

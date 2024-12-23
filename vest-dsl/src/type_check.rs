@@ -522,7 +522,7 @@ fn check_bytes_combinator(
                     ParamDefn::Dependent { combinator, .. } => {
                         match global_ctx.resolve_alias(combinator) {
                             CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                                combinator: IntCombinator::Unsigned(_),
+                                combinator: IntCombinator::Unsigned(_) | IntCombinator::BtcVarint,
                                 ..
                             }) => {}
                             _ => panic!("Length specifier must be an unsigned int"),
