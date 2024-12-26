@@ -914,12 +914,6 @@ impl Codegen for CombinatorInvocation {
     }
 }
 
-// #[derive(Debug)]
-// enum FieldKind {
-//     Ordinary,
-//     Dependent,
-// }
-
 fn rsplit_dependent_fields_at(
     fields: &[StructField],
     offset: usize,
@@ -950,6 +944,7 @@ fn split_at_dependent_field(fields: &[StructField]) -> (&[StructField], &[Struct
     }
 }
 
+/// build nested pairs of various kinds from fields using custom left and right delimiters
 fn custom_build_nested_pairs(
     fields: &[StructField],
     into_pairs: &mut impl FnMut(&[StructField]) -> String,
@@ -971,6 +966,7 @@ fn custom_build_nested_pairs(
     }
 }
 
+/// build nested pairs of various kinds from fields
 fn build_nested_pairs(
     fields: &[StructField],
     into_pairs: &mut impl FnMut(&[StructField]) -> String,
@@ -980,6 +976,7 @@ fn build_nested_pairs(
     custom_build_nested_pairs(fields, into_pairs, &|_| l.into(), &|_| r.into(), 0)
 }
 
+/// get the label and message type from a struct field by destructing the field and calling `combinator.gen_msg_type`
 fn label_and_msg_type_from_field(
     field: &StructField,
     mode: Mode,
@@ -1143,238 +1140,6 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
 }}
 {mapper_impl}"#,
         )
-        //         let mut code = String::new();
-        //
-        //         let msg_type_name = match mode {
-        //             Mode::Spec => format!("Spec{}", name),
-        //             Mode::Exec(_) => name.to_string(),
-        //         };
-        //         let lifetime_ann = match mode {
-        //             Mode::Exec(LifetimeAnn::Some) => "<'a>",
-        //             _ => "",
-        //         };
-        //         let derive = match mode {
-        //             Mode::Exec(_) => "#[derive(Debug, Clone, PartialEq, Eq)]\n",
-        //             _ => "",
-        //         };
-        //         // generate the struct
-        //         code.push_str(&format!(
-        //             "{}pub struct {}{} {{\n",
-        //             derive, msg_type_name, lifetime_ann
-        //         ));
-        //         let mut fields = Vec::new();
-        //         for field in &self.0 {
-        //             match field {
-        //                 StructField::Ordinary { label, combinator } => {
-        //                     let field_type = combinator.gen_msg_type("", mode, ctx);
-        //                     code.push_str(&format!("    pub {}: {},\n", label, &field_type));
-        //                     fields.push((FieldKind::Ordinary, label.to_string(), field_type));
-        //                 }
-        //                 StructField::Dependent { label, combinator } => {
-        //                     let field_type = combinator.gen_msg_type("", mode, ctx);
-        //                     code.push_str(&format!("    pub {}: {},\n", label, &field_type));
-        //                     fields.push((FieldKind::Dependent, label.to_string(), field_type));
-        //                 }
-        //                 StructField::Const { label, combinator } => {
-        //                     let field_type = combinator.gen_msg_type("", mode, ctx);
-        //                     code.push_str(&format!("    pub {}: {},\n", label, &field_type));
-        //                     fields.push((FieldKind::Ordinary, label.to_string(), field_type));
-        //                 }
-        //                 _ => todo!(),
-        //             }
-        //         }
-        //         code.push_str("}\n");
-        //
-        //         // NOTE: this is for the sake of simplicity, we can do better
-        //         let (fst, snd) = fields.split_at(
-        //             fields
-        //                 .iter()
-        //                 .rposition(|(kind, _, _)| matches!(kind, FieldKind::Dependent))
-        //                 .map(|i| i + 1)
-        //                 .unwrap_or(0),
-        //         );
-        //
-        //         // generate the struct inner
-        //         let msg_type_inner_name = msg_type_name.clone() + "Inner";
-        //         let msg_type_inner = if fst.is_empty() {
-        //             fmt_in_pairs(
-        //                 &snd.iter()
-        //                     .map(|(_, _, field_type)| field_type)
-        //                     .collect::<Vec<_>>(),
-        //                 "",
-        //                 Bracket::Parentheses,
-        //             )
-        //         } else {
-        //             format!(
-        //                 "({}, {})",
-        //                 fmt_in_pairs(
-        //                     &fst.iter()
-        //                         .map(|(_, _, field_type)| field_type)
-        //                         .collect::<Vec<_>>(),
-        //                     "",
-        //                     Bracket::Parentheses
-        //                 ),
-        //                 fmt_in_pairs(
-        //                     &snd.iter()
-        //                         .map(|(_, _, field_type)| field_type)
-        //                         .collect::<Vec<_>>(),
-        //                     "",
-        //                     Bracket::Parentheses
-        //                 ),
-        //             )
-        //         };
-        //         code.push_str(&format!(
-        //             "pub type {}{} = {};\n",
-        //             msg_type_inner_name, lifetime_ann, msg_type_inner
-        //         ));
-        //
-        //         // impl View for exec struct(s)
-        //         match mode {
-        //             Mode::Exec(_) => {
-        //                 let lifetime = match mode {
-        //                     Mode::Exec(LifetimeAnn::Some) => "<'_>",
-        //                     Mode::Exec(LifetimeAnn::None) => "",
-        //                     _ => unreachable!(),
-        //                 };
-        //                 code.push_str(&format!(
-        //                     r#"impl View for {}{} {{
-        //     type V = Spec{};
-        //     open spec fn view(&self) -> Self::V {{
-        //         Spec{} {{
-        // "#,
-        //                     msg_type_name, lifetime, name, name
-        //                 ));
-        //                 for (_, label, _) in &fields {
-        //                     code.push_str(&format!("            {}: self.{}@,\n", label, label));
-        //                 }
-        //                 code.push_str("        }\n    }\n}\n");
-        //             }
-        //             Mode::Spec => {}
-        //         }
-        //
-        //         // impl (Spec)From
-        //         let trait_name = match mode {
-        //             Mode::Spec => "SpecFrom",
-        //             _ => "From",
-        //         };
-        //         let assoc_func_name = match mode {
-        //             Mode::Spec => "spec_from",
-        //             _ => "ex_from",
-        //         };
-        //         // ["a", "b", "c", "d"]
-        //         let field_names_fst = fst.iter().map(|(_, name, _)| name).collect::<Vec<_>>();
-        //         let field_names_snd = snd.iter().map(|(_, name, _)| name).collect::<Vec<_>>();
-        //         // ["m.a", "m.b", "m.c", "m.d"]
-        //         let dot_field_names_fst = field_names_fst
-        //             .iter()
-        //             .map(|name| format!("m.{}", name))
-        //             .collect::<Vec<_>>();
-        //         let dot_field_names_snd = field_names_snd
-        //             .iter()
-        //             .map(|name| format!("m.{}", name))
-        //             .collect::<Vec<_>>();
-        //         // "(((m.a, m.b), m.c), m.d)", "(((a, b), c), d)"
-        //         let (inner_constructor, inner_destructor) = if fst.is_empty() {
-        //             (
-        //                 fmt_in_pairs(&dot_field_names_snd, "", Bracket::Parentheses),
-        //                 fmt_in_pairs(&field_names_snd, "", Bracket::Parentheses),
-        //             )
-        //         } else {
-        //             (
-        //                 format!(
-        //                     "({}, {})",
-        //                     fmt_in_pairs(&dot_field_names_fst, "", Bracket::Parentheses),
-        //                     fmt_in_pairs(&dot_field_names_snd, "", Bracket::Parentheses)
-        //                 ),
-        //                 format!(
-        //                     "({}, {})",
-        //                     fmt_in_pairs(&field_names_fst, "", Bracket::Parentheses),
-        //                     fmt_in_pairs(&field_names_snd, "", Bracket::Parentheses)
-        //                 ),
-        //             )
-        //         };
-        //         code.push_str(&format!(
-        //             "impl{} {}<{}{}> for {}{} {{\n",
-        //             lifetime_ann,
-        //             trait_name,
-        //             msg_type_name,
-        //             lifetime_ann,
-        //             msg_type_inner_name,
-        //             lifetime_ann
-        //         ));
-        //         match mode {
-        //             Mode::Spec => {
-        //                 code.push_str(&format!(
-        //                     "    open spec fn {}(m: {}) -> {} {{\n        {}\n    }}\n",
-        //                     assoc_func_name, msg_type_name, msg_type_inner_name, inner_constructor
-        //                 ));
-        //             }
-        //             _ => {
-        //                 code.push_str(&format!(
-        //                     "    fn {}(m: {}{}) -> {}{} {{\n        {}\n    }}\n",
-        //                     assoc_func_name,
-        //                     msg_type_name,
-        //                     lifetime_ann,
-        //                     msg_type_inner_name,
-        //                     lifetime_ann,
-        //                     inner_constructor
-        //                 ));
-        //             }
-        //         }
-        //         code.push_str("}\n");
-        //
-        //         code.push_str(&format!(
-        //             "impl{} {}<{}{}> for {}{} {{\n",
-        //             lifetime_ann,
-        //             trait_name,
-        //             msg_type_inner_name,
-        //             lifetime_ann,
-        //             msg_type_name,
-        //             lifetime_ann
-        //         ));
-        //         match mode {
-        //             Mode::Spec => {
-        //                 code.push_str(&format!(
-        //                     r#"    open spec fn {}(m: {}) -> {} {{
-        //         let {} = m;
-        //         {} {{
-        // "#,
-        //                     assoc_func_name,
-        //                     msg_type_inner_name,
-        //                     msg_type_name,
-        //                     inner_destructor,
-        //                     msg_type_name
-        //                 ));
-        //             }
-        //             _ => {
-        //                 code.push_str(&format!(
-        //                     r#"    fn {}(m: {}{}) -> {}{} {{
-        //         let {} = m;
-        //         {} {{
-        // "#,
-        //                     assoc_func_name,
-        //                     msg_type_inner_name,
-        //                     lifetime_ann,
-        //                     msg_type_name,
-        //                     lifetime_ann,
-        //                     inner_destructor,
-        //                     msg_type_name
-        //                 ));
-        //             }
-        //         }
-        //         for (_, label, _) in &fields {
-        //             code.push_str(&format!("            {},\n", label));
-        //         }
-        //
-        //         code.push_str("        }\n    }\n");
-        //         code.push_str("}\n");
-        //
-        //         // impl Mapper for Exec
-        //         if let Mode::Exec(_) = mode {
-        //             code.push_str(&gen_mapper(name, &msg_type_name, lifetime_ann));
-        //         }
-        //
-        //         code
     }
 
     /// assuming all structs are top-level definitions
@@ -1455,86 +1220,6 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             ),
             additional_code,
         )
-        // let (fst, snd) = self.split_at_dependent_field();
-        // if fst.is_empty() {
-        //     // no dependent fields
-        //     let (snd_comb_types, additional_code) = snd
-        //         .iter()
-        //         .map(|field| match field {
-        //             StructField::Ordinary { combinator, .. }
-        //             | StructField::Dependent { combinator, .. } => {
-        //                 combinator.gen_combinator_type("", mode, ctx)
-        //             }
-        //             StructField::Const { label, combinator } => {
-        //                 let name = &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
-        //                 combinator.gen_combinator_type(name, mode, ctx)
-        //             }
-        //             _ => todo!(),
-        //         })
-        //         .collect::<(Vec<_>, Vec<_>)>();
-        //     let inner = fmt_in_pairs(&snd_comb_types, "", Bracket::Parentheses);
-        //     (
-        //         format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
-        //         additional_code.join(""),
-        //     )
-        // } else {
-        //     let (fst, snd) = (
-        //         fst.iter()
-        //             .map(|field| match field {
-        //                 StructField::Ordinary { combinator, .. }
-        //                 | StructField::Dependent { combinator, .. } => {
-        //                     combinator.gen_combinator_type("", mode, ctx)
-        //                 }
-        //                 StructField::Const { label, combinator } => {
-        //                     let name =
-        //                         &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
-        //                     combinator.gen_combinator_type(name, mode, ctx)
-        //                 }
-        //                 _ => todo!(),
-        //             })
-        //             .collect::<Vec<_>>(),
-        //         snd.iter()
-        //             .map(|field| match field {
-        //                 StructField::Ordinary { combinator, .. }
-        //                 | StructField::Dependent { combinator, .. } => {
-        //                     combinator.gen_combinator_type("", mode, ctx)
-        //                 }
-        //                 StructField::Const { label, combinator } => {
-        //                     let name =
-        //                         &lower_snake_to_upper_snake(&(name.to_owned() + "_" + label));
-        //                     combinator.gen_combinator_type(name, mode, ctx)
-        //                 }
-        //                 _ => todo!(),
-        //             })
-        //             .collect::<Vec<_>>(),
-        //     );
-        //     let (fst_comb_type, snd_comb_types) = (
-        //         fmt_in_pairs(
-        //             &fst.iter().map(|(t, _)| t).collect::<Vec<_>>(),
-        //             "",
-        //             Bracket::Parentheses,
-        //         ),
-        //         fmt_in_pairs(
-        //             &snd.iter().map(|(t, _)| t).collect::<Vec<_>>(),
-        //             "",
-        //             Bracket::Parentheses,
-        //         ),
-        //     );
-        //     let inner = match mode {
-        //         Mode::Spec => format!("SpecDepend<{fst_comb_type}, {snd_comb_types}>"),
-        //         _ => format!("Depend<&'a [u8], Vec<u8>, {fst_comb_type}, {snd_comb_types}, {name}Cont{lifetime_ann_cont}>"),
-        //     };
-        //     let additional_code = fst
-        //         .iter()
-        //         .chain(snd.iter())
-        //         .map(|(_, code)| code.to_string())
-        //         .collect::<Vec<_>>()
-        //         .join("");
-        //     (
-        //         format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
-        //         additional_code,
-        //     )
-        // }
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
