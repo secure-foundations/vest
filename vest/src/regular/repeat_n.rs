@@ -293,8 +293,8 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 }
 
 impl<I, O, C> Combinator<I, O> for RepeatN<C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     C: Combinator<I, O>,
     C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
  {

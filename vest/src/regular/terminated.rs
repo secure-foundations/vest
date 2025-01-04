@@ -65,8 +65,8 @@ impl<
 }
 
 impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O, Result = ()>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,

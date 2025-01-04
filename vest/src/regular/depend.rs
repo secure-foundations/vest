@@ -153,8 +153,8 @@ pub trait Continuation<Input> {
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
 pub struct Depend<I, O, Fst, Snd, C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
@@ -171,8 +171,8 @@ pub struct Depend<I, O, Fst, Snd, C> where
 }
 
 impl<I, O, Fst, Snd, C> Depend<I, O, Fst, Snd, C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
@@ -189,8 +189,8 @@ impl<I, O, Fst, Snd, C> Depend<I, O, Fst, Snd, C> where
 
 /// Same [`View`] as [`Depend`]
 impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
@@ -207,8 +207,8 @@ impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
 impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,

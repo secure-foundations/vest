@@ -152,8 +152,8 @@ impl<C> Repeat<C> where  {
         (),
         ParseError,
     >) where
-        I: VestSecretInput,
-        O: VestSecretOutput<I>,
+        I: VestInput,
+        O: VestOutput<I>,
         C: Combinator<I, O>,
         C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
 
@@ -189,8 +189,8 @@ impl<C> Repeat<C> where  {
         pos: usize,
         len: usize,
     ) -> (res: Result<usize, SerializeError>) where
-        I: VestSecretInput,
-        O: VestSecretOutput<I>,
+        I: VestInput,
+        O: VestOutput<I>,
         C: Combinator<I, O>,
         C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
 
@@ -231,8 +231,8 @@ impl<C> Repeat<C> where  {
 }
 
 impl<I, O, C> Combinator<I, O> for Repeat<C> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     C: Combinator<I, O>,
     C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
  {

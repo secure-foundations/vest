@@ -61,8 +61,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
 }
 
 impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
  {
     type Result = I;
 

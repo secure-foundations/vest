@@ -102,8 +102,8 @@ impl<Inner: SecureSpecCombinator<Result = T>, T> SecureSpecCombinator for Tag<In
 }
 
 impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Inner: Combinator<I, O, Result = T>,
     Inner::V: SecureSpecCombinator<Result = T::V>,
     T: FromToBytes,

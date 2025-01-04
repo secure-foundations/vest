@@ -65,8 +65,8 @@ impl<
 }
 
 impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O, Result = ()>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = ()>,

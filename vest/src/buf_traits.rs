@@ -9,9 +9,9 @@ verus! {
 //////////////////////////////////////////////////////////////////////////////
 /// Trait definitions
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers.
-/// `VestSecretInput` does not expose the contents of the buffer, so opaque buffer types for side-channel
-/// security can implement `VestSecretInput`.
-pub trait VestSecretInput: View<V = Seq<u8>> {
+/// `VestInput` does not expose the contents of the buffer, so opaque buffer types for side-channel
+/// security can implement `VestInput`.
+pub trait VestInput: View<V = Seq<u8>> {
     /// The length of the buffer.
     fn len(&self) -> (res: usize)
         ensures
@@ -36,8 +36,8 @@ pub trait VestSecretInput: View<V = Seq<u8>> {
 }
 
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte buffers.
-/// `VestInput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
-pub trait VestInput: VestSecretInput {
+/// `VestPublicInput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
+pub trait VestPublicInput: VestInput {
     /// Returns a byte slice with the contents of the buffer
     fn as_byte_slice(&self) -> (res: &[u8])
         ensures
@@ -46,9 +46,9 @@ pub trait VestInput: VestSecretInput {
 }
 
 /// Trait for types that can be used as output for Vest serializers.
-/// `VestSecretOutput` does not expose the contents of the buffer, so opaque buffer types for side-channel
-/// security can implement `VestSecretOutput`.
-pub trait VestSecretOutput<I>: View<V = Seq<u8>> where I: View<V = Seq<u8>> {
+/// `VestOutput` does not expose the contents of the buffer, so opaque buffer types for side-channel
+/// security can implement `VestOutput`.
+pub trait VestOutput<I>: View<V = Seq<u8>> where I: View<V = Seq<u8>> {
     /// The length of the buffer.
     fn len(&self) -> (res: usize)
         ensures
@@ -67,8 +67,8 @@ pub trait VestSecretOutput<I>: View<V = Seq<u8>> where I: View<V = Seq<u8>> {
 }
 
 /// Trait for types that can be used as output for Vest serializers.
-/// `VestOutput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
-pub trait VestOutput<I>: VestSecretOutput<I> where I: View<V = Seq<u8>> {
+/// `VestPublicOutput` can be set using transparent bytes, so it cannot provide type abstraction for side-channel security.
+pub trait VestPublicOutput<I>: VestOutput<I> where I: View<V = Seq<u8>> {
     /// Set the byte at index `i` to `value`.
     fn set_byte(&mut self, i: usize, value: u8)
         requires
@@ -90,7 +90,7 @@ pub trait VestOutput<I>: VestSecretOutput<I> where I: View<V = Seq<u8>> {
 
 //////////////////////////////////////////////////////////////////////////////
 /// Implementations for common types
-impl<'a> VestSecretInput for &'a [u8] {
+impl<'a> VestInput for &'a [u8] {
     fn len(&self) -> usize {
         <[u8]>::len(self)
     }
@@ -104,7 +104,7 @@ impl<'a> VestSecretInput for &'a [u8] {
     }
 }
 
-impl<'a> VestInput for &'a [u8] {
+impl<'a> VestPublicInput for &'a [u8] {
     fn as_byte_slice(&self) -> &[u8] {
         *self
     }
@@ -164,7 +164,7 @@ impl<'a> VestInput for &'a [u8] {
 //     }
 // }
 
-impl<I> VestSecretOutput<I> for Vec<u8> where I: VestInput {
+impl<I> VestOutput<I> for Vec<u8> where I: VestPublicInput {
     fn len(&self) -> usize {
         Vec::len(self)
     }
@@ -174,7 +174,7 @@ impl<I> VestSecretOutput<I> for Vec<u8> where I: VestInput {
     }
 }
 
-impl<I> VestOutput<I> for Vec<u8> where I: VestInput {
+impl<I> VestPublicOutput<I> for Vec<u8> where I: VestPublicInput {
     fn set_byte(&mut self, i: usize, value: u8) {
         self.set(i, value);
     }

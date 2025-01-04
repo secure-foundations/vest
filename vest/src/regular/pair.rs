@@ -46,8 +46,8 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
 }
 
 impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,

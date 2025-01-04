@@ -27,8 +27,8 @@ impl Bytes {
         Bytes,
         Next,
     >) where
-        I: VestInput,
-        O: VestOutput<I>,
+        I: VestPublicInput,
+        O: VestPublicOutput<I>,
         Next::V: SecureSpecCombinator<Result = <Next::Result as View>::V>,
 
         ensures
@@ -84,7 +84,7 @@ impl SecureSpecCombinator for Bytes {
     }
 }
 
-impl<I, O> Combinator<I, O> for Bytes where I: VestSecretInput, O: VestSecretOutput<I> {
+impl<I, O> Combinator<I, O> for Bytes where I: VestInput, O: VestOutput<I> {
     type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {

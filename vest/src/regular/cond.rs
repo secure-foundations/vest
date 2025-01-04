@@ -69,7 +69,7 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<I: VestSecretInput, O: VestSecretOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
+impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
     Inner,
 > where Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V> {
     type Result = Inner::Result;

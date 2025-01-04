@@ -153,7 +153,7 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
             }
 
-            impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for $combinator {
+            impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
                 type Result = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
@@ -251,7 +251,7 @@ macro_rules! impl_combinator_for_be_uint_type {
                 }
             }
 
-            impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for $combinator {
+            impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
                 type Result = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
@@ -396,7 +396,7 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
     ;
 
     /// Converts an integer to a sequence of bytes in little-endian byte order.
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I>
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I>
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
@@ -414,7 +414,7 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
     ;
 
     /// Converts an integer to a sequence of bytes in big-endian byte order.
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I>
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I>
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
@@ -475,7 +475,7 @@ impl FromToBytes for u8 {
         *slice_index_get(s, 0)
     }
 
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let ghost old = s@;
         s.set_byte(pos, *self);
         proof {
@@ -487,7 +487,7 @@ impl FromToBytes for u8 {
         *slice_index_get(s, 0)
     }
 
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let ghost old = s@;
         s.set_byte(pos, *self);
         proof {
@@ -568,7 +568,7 @@ impl FromToBytes for u16 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 2].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -583,7 +583,7 @@ impl FromToBytes for u16 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 2].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -688,7 +688,7 @@ impl FromToBytes for u32 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 4].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -705,7 +705,7 @@ impl FromToBytes for u32 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 4].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -846,7 +846,7 @@ impl FromToBytes for u64 {
     }
 
     #[verifier::external_body]
-    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_le_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_le_bytes();
         // s[pos..pos + 8].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);
@@ -867,7 +867,7 @@ impl FromToBytes for u64 {
     }
 
     #[verifier::external_body]
-    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestInput, O: VestOutput<I> {
+    fn ex_to_be_bytes<I, O>(&self, s: &mut O, pos: usize) where I: VestPublicInput, O: VestPublicOutput<I> {
         let bytes = self.to_be_bytes();
         // s[pos..pos + 8].copy_from_slice(&bytes);
         // s.set_byte(pos, bytes[0]);

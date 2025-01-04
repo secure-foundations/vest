@@ -125,8 +125,8 @@ pub trait SecureSpecCombinator: SpecCombinator {
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator<I, O>: View where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Self::V: SecureSpecCombinator<Result = <Self::Result as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
@@ -237,8 +237,8 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 }
 
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
  {
     type Result = C::Result;

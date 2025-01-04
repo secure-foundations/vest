@@ -87,8 +87,8 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
 }
 
 impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Next::V: SecureSpecCombinator<Result = <Next::Result as View>::V>,
  {
     type Result = Next::Result;

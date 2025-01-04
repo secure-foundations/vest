@@ -53,7 +53,7 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl<I: VestSecretInput, O: VestSecretOutput<I>> Combinator<I, O> for Tail {
+impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
     type Result = I;
 
     open spec fn spec_length(&self) -> Option<usize> {

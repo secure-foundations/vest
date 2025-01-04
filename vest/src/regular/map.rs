@@ -149,8 +149,8 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
 }
 
 impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
     M: Iso<Src = Inner::Result>,
@@ -367,8 +367,8 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
 }
 
 impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
-    I: VestSecretInput,
-    O: VestSecretOutput<I>,
+    I: VestInput,
+    O: VestOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
     M: TryFromInto<Src = Inner::Result>,
