@@ -207,8 +207,8 @@ impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
 
 /// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
 impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
-    I: VestInput,
-    O: VestOutput<I>,
+    I: VestSecretInput,
+    O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,

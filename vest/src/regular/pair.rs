@@ -1,89 +1,39 @@
 use crate::properties::*;
 use vstd::prelude::*;
 
+use super::depend::SpecDepend;
+
 verus! {
 
 impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Snd) {
     type SpecResult = (Fst::SpecResult, Snd::SpecResult);
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        if Fst::is_prefix_secure() {
-            if let Ok((n, v1)) = self.0.spec_parse(s) {
-                if let Ok((m, v2)) = self.1.spec_parse(s.subrange(n as int, s.len() as int)) {
-                    if n <= usize::MAX - m {
-                        Ok(((n + m) as usize, (v1, v2)))
-                    } else {
-                        Err(())
-                    }
-                } else {
-                    Err(())
-                }
-            } else {
-                Err(())
-            }
-        } else {
-            Err(())
-        }
+        SpecDepend { fst: self.0, snd: |r: Fst::SpecResult| self.1 }.spec_parse(s)
     }
 
     proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        if let Ok((n, v1)) = self.0.spec_parse(s) {
-            if let Ok((m, v2)) = self.1.spec_parse(s.subrange(n as int, s.len() as int)) {
-                self.0.spec_parse_wf(s);
-                self.1.spec_parse_wf(s.subrange(n as int, s.len() as int));
-            }
-        }
+        SpecDepend { fst: self.0, snd: |r: Fst::SpecResult| self.1 }.spec_parse_wf(s)
     }
 
     open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        if Fst::is_prefix_secure() {
-            if let Ok(buf1) = self.0.spec_serialize(v.0) {
-                if let Ok(buf2) = self.1.spec_serialize(v.1) {
-                    if buf1.len() + buf2.len() <= usize::MAX {
-                        Ok(buf1.add(buf2))
-                    } else {
-                        Err(())
-                    }
-                } else {
-                    Err(())
-                }
-            } else {
-                Err(())
-            }
-        } else {
-            Err(())
-        }
+        SpecDepend { fst: self.0, snd: |r: Fst::SpecResult| self.1 }.spec_serialize(v)
     }
 }
 
 impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator for (Fst, Snd) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok((buf)) = self.spec_serialize(v) {
-            let buf0 = self.0.spec_serialize(v.0).unwrap();
-            let buf1 = self.1.spec_serialize(v.1).unwrap();
-            self.0.theorem_serialize_parse_roundtrip(v.0);
-            self.0.lemma_prefix_secure(buf0, buf1);
-            self.1.theorem_serialize_parse_roundtrip(v.1);
-            assert(buf0.add(buf1).subrange(buf0.len() as int, buf.len() as int) == buf1);
-        }
+        SpecDepend {
+            fst: self.0,
+            snd: |r: Fst::SpecResult| self.1,
+        }.theorem_serialize_parse_roundtrip(v)
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
-            let (n, v0_) = self.0.spec_parse(buf).unwrap();
-            self.0.spec_parse_wf(buf);
-            let buf0 = buf.subrange(0, n as int);
-            let buf1 = buf.subrange(n as int, buf.len() as int);
-            assert(buf == buf0.add(buf1));
-            self.0.lemma_prefix_secure(buf0, buf1);
-            self.0.theorem_parse_serialize_roundtrip(buf);
-            let (m, v1_) = self.1.spec_parse(buf1).unwrap();
-            self.1.theorem_parse_serialize_roundtrip(buf1);
-            self.1.spec_parse_wf(buf1);
-            let buf2 = self.spec_serialize((v0, v1)).unwrap();
-            assert(buf2 == buf.subrange(0, nm as int));
-        } else {
-        }
+        SpecDepend {
+            fst: self.0,
+            snd: |r: Fst::SpecResult| self.1,
+        }.theorem_parse_serialize_roundtrip(buf)
     }
 
     open spec fn is_prefix_secure() -> bool {
@@ -91,23 +41,7 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
-        if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
-            if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
-                let (n, _) = self.0.spec_parse(buf).unwrap();
-                self.0.spec_parse_wf(buf);
-                let buf0 = buf.subrange(0, n as int);
-                let buf1 = buf.subrange(n as int, buf.len() as int);
-                self.0.lemma_prefix_secure(buf0, buf1);
-                self.0.lemma_prefix_secure(buf0, buf1.add(s2));
-                self.0.lemma_prefix_secure(buf, s2);
-                let (m, v1_) = self.1.spec_parse(buf1).unwrap();
-                assert(buf.add(s2).subrange(0, n as int) == buf0);
-                assert(buf.add(s2).subrange(n as int, buf.add(s2).len() as int) == buf1.add(s2));
-                self.1.lemma_prefix_secure(buf1, s2);
-            } else {
-            }
-        } else {
-        }
+        SpecDepend { fst: self.0, snd: |r: Fst::SpecResult| self.1 }.lemma_prefix_secure(buf, s2)
     }
 }
 
