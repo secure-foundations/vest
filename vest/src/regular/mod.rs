@@ -36,6 +36,8 @@ pub mod repeat_n;
 pub mod success;
 /// Tag combinator
 pub mod tag;
+/// Terminated combinator
+pub mod terminated;
 /// Tail combinator
 pub mod tail;
 /// Uints combinator
