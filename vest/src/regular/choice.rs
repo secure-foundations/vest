@@ -53,9 +53,9 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     Fst: SpecCombinator,
     Snd: SpecCombinator + DisjointFrom<Fst>,
  {
-    type SpecResult = Either<Fst::SpecResult, Snd::SpecResult>;
+    type Result = Either<Fst::Result, Snd::Result>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if self.1.disjoint_from(&self.0) {
             if let Ok((n, v)) = self.0.spec_parse(s) {
                 Ok((n, Either::Left(v)))
@@ -81,7 +81,7 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if self.1.disjoint_from(&self.0) {
             match v {
                 Either::Left(v) => self.0.spec_serialize(v),
@@ -112,7 +112,7 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         }
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         match v {
             Either::Left(v) => {
                 self.0.theorem_serialize_parse_roundtrip(v);
@@ -143,8 +143,8 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
  {
     type Result = Either<Fst::Result, Snd::Result>;

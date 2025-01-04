@@ -363,13 +363,13 @@ impl<'a> TryFromInto for VarIntMapper<'a> {
 }
 
 impl SpecCombinator for BtcVarint {
-    type SpecResult = VarInt;
+    type Result = VarInt;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         spec_btc_varint_inner().spec_parse(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         spec_btc_varint_inner().spec_serialize(v)
     }
 
@@ -387,7 +387,7 @@ impl SecureSpecCombinator for BtcVarint {
         spec_btc_varint_inner().lemma_prefix_secure(s1, s2);
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         spec_btc_varint_inner().theorem_serialize_parse_roundtrip(v);
     }
 

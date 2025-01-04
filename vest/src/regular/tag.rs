@@ -60,10 +60,10 @@ impl<Inner: View, T: View> View for Tag<Inner, T> {
     }
 }
 
-impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> {
-    type SpecResult = ();
+impl<Inner: SpecCombinator<Result = T>, T> SpecCombinator for Tag<Inner, T> {
+    type Result = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if let Ok((n, _)) = self.0.spec_parse(s) {
             Ok((n, ()))
         } else {
@@ -71,7 +71,7 @@ impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> 
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(self.0.predicate.0)
     }
 
@@ -80,12 +80,12 @@ impl<Inner: SpecCombinator<SpecResult = T>, T> SpecCombinator for Tag<Inner, T> 
     }
 }
 
-impl<Inner: SecureSpecCombinator<SpecResult = T>, T> SecureSpecCombinator for Tag<Inner, T> {
+impl<Inner: SecureSpecCombinator<Result = T>, T> SecureSpecCombinator for Tag<Inner, T> {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(self.0.predicate.0);
     }
 
@@ -105,7 +105,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O, Result = T>,
-    Inner::V: SecureSpecCombinator<SpecResult = T::V>,
+    Inner::V: SecureSpecCombinator<Result = T::V>,
     T: FromToBytes,
  {
     type Result = ();

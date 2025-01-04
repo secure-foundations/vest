@@ -30,9 +30,9 @@ impl<T: View> View for RepeatResult<T> {
 }
 
 impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
-    type SpecResult = Seq<C::SpecResult>;
+    type Result = Seq<C::Result>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()>
         decreases s.len(),
     {
         if !C::is_prefix_secure() {
@@ -57,7 +57,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
     proof fn spec_parse_wf(&self, s: Seq<u8>) {
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()>
         decreases v.len(),
     {
         if !C::is_prefix_secure() {
@@ -91,7 +91,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
         false
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
         decreases v.len(),
     {
         if v.len() == 0 {
@@ -155,7 +155,7 @@ impl<C> Repeat<C> where  {
         I: VestSecretInput,
         O: VestSecretOutput<I>,
         C: Combinator<I, O>,
-        C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+        C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
 
         requires
             self.0.parse_requires(),
@@ -192,7 +192,7 @@ impl<C> Repeat<C> where  {
         I: VestSecretInput,
         O: VestSecretOutput<I>,
         C: Combinator<I, O>,
-        C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+        C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
 
         requires
             self.0.serialize_requires(),
@@ -234,7 +234,7 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     C: Combinator<I, O>,
-    C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+    C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
  {
     type Result = RepeatResult<C::Result>;
 

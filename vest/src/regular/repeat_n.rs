@@ -18,7 +18,7 @@ impl<C: View> View for RepeatN<C> {
 impl<C: SecureSpecCombinator> RepeatN<C> {
     /// Helper function for parsing [n] instances of [C] from [s].
     pub closed spec fn spec_parse_helper(&self, s: Seq<u8>, n: usize) -> Result<
-        (usize, Seq<C::SpecResult>),
+        (usize, Seq<C::Result>),
         (),
     >
         decreases n,
@@ -43,7 +43,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
     }
 
     /// Helper function for serializing [n] instances of [C] from [v].
-    pub closed spec fn spec_serialize_helper(&self, v: Seq<C::SpecResult>, n: usize) -> Result<
+    pub closed spec fn spec_serialize_helper(&self, v: Seq<C::Result>, n: usize) -> Result<
         Seq<u8>,
         (),
     >
@@ -129,7 +129,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 }
 
 impl<C: SecureSpecCombinator> RepeatN<C> {
-    proof fn theorem_serialize_parse_roundtrip_helper(&self, v: Seq<C::SpecResult>, n: usize)
+    proof fn theorem_serialize_parse_roundtrip_helper(&self, v: Seq<C::Result>, n: usize)
         ensures
             self.spec_serialize_helper(v, n) matches Ok(b) ==> self.spec_parse_helper(b, n) == Ok::<
                 _,
@@ -219,9 +219,9 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 }
 
 impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
-    type SpecResult = Seq<C::SpecResult>;
+    type Result = Seq<C::Result>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.spec_parse_helper(s, self.1)
     }
 
@@ -229,7 +229,7 @@ impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
         self.spec_parse_wf_helper(s, self.1)
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.spec_serialize_helper(v, self.1)
     }
 }
@@ -239,7 +239,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
         C::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.theorem_serialize_parse_roundtrip_helper(v, self.1)
     }
 
@@ -259,7 +259,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         &self,
         s: Seq<u8>,
         n: usize,
-        res: Result<(usize, Seq<C::SpecResult>), ParseError>,
+        res: Result<(usize, Seq<C::Result>), ParseError>,
     ) -> bool {
         &&& res matches Ok((k, v)) ==> {
             &&& self.spec_parse_helper(s, n) is Ok
@@ -275,7 +275,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 
     spec fn serialize_correct(
         &self,
-        v: Seq<C::SpecResult>,
+        v: Seq<C::Result>,
         n: usize,
         data: Seq<u8>,
         old_data: Seq<u8>,
@@ -296,7 +296,7 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     C: Combinator<I, O>,
-    C::V: SecureSpecCombinator<SpecResult = <C::Result as View>::V>,
+    C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
  {
     type Result = RepeatResult<C::Result>;
 

@@ -15,9 +15,9 @@ impl<const N: usize> View for BytesN<N> {
 }
 
 impl<const N: usize> SpecCombinator for BytesN<N> {
-    type SpecResult = Seq<u8>;
+    type Result = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if N <= s.len() {
             Ok((N, s.subrange(0, N as int)))
         } else {
@@ -25,7 +25,7 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if v.len() == N {
             Ok(v)
         } else {
@@ -50,7 +50,7 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
         }
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         if let Ok(buf) = self.spec_serialize(v) {
             assert(v.subrange(0, v.len() as int) == v);
         }

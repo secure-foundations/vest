@@ -8,16 +8,16 @@ pub struct SpecDepend<Fst, Snd> where Fst: SecureSpecCombinator, Snd: SpecCombin
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
-    pub snd: spec_fn(Fst::SpecResult) -> Snd,
+    pub snd: spec_fn(Fst::Result) -> Snd,
 }
 
 impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
     Fst: SecureSpecCombinator,
     Snd: SpecCombinator,
  {
-    type SpecResult = (Fst::SpecResult, Snd::SpecResult);
+    type Result = (Fst::Result, Snd::Result);
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if Fst::is_prefix_secure() {
             if let Ok((n, v1)) = self.fst.spec_parse(s) {
                 let snd = (self.snd)(v1);
@@ -48,7 +48,7 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if Fst::is_prefix_secure() {
             let snd = (self.snd)(v.0);
             if let Ok(buf1) = self.fst.spec_serialize(v.0) {
@@ -74,7 +74,7 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
     Fst: SecureSpecCombinator,
     Snd: SecureSpecCombinator,
  {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         if let Ok((buf)) = self.spec_serialize(v) {
             let buf0 = self.fst.spec_serialize(v.0).unwrap();
             let buf1 = (self.snd)(v.0).spec_serialize(v.1).unwrap();
@@ -157,8 +157,8 @@ pub struct Depend<I, O, Fst, Snd, C> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
     C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     /// combinators that contain dependencies
@@ -175,8 +175,8 @@ impl<I, O, Fst, Snd, C> Depend<I, O, Fst, Snd, C> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
     C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
@@ -193,8 +193,8 @@ impl<I, O, Fst, Snd, C> View for Depend<I, O, Fst, Snd, C> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
     C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     type V = SpecDepend<Fst::V, Snd::V>;
@@ -211,8 +211,8 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Depend<I, O, Fst, Snd, C> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
     C: for <'a>Continuation<&'a Fst::Result, Output = Snd>,
  {
     type Result = (Fst::Result, Snd::Result);

@@ -14,13 +14,13 @@ impl<Fst: View, Snd: View> View for Preceded<Fst, Snd> {
     }
 }
 
-impl<Fst: SecureSpecCombinator<SpecResult = ()>, Snd: SpecCombinator> SpecCombinator for Preceded<
+impl<Fst: SecureSpecCombinator<Result = ()>, Snd: SpecCombinator> SpecCombinator for Preceded<
     Fst,
     Snd,
 > {
-    type SpecResult = Snd::SpecResult;
+    type Result = Snd::Result;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if let Ok((n, ((), v))) = (self.0, self.1).spec_parse(s) {
             Ok((n, v))
         } else {
@@ -34,16 +34,16 @@ impl<Fst: SecureSpecCombinator<SpecResult = ()>, Snd: SpecCombinator> SpecCombin
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         (self.0, self.1).spec_serialize(((), v))
     }
 }
 
 impl<
-    Fst: SecureSpecCombinator<SpecResult = ()>,
+    Fst: SecureSpecCombinator<Result = ()>,
     Snd: SecureSpecCombinator,
 > SecureSpecCombinator for Preceded<Fst, Snd> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         (self.0, self.1).theorem_serialize_parse_roundtrip(((), v));
     }
 
@@ -69,8 +69,8 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd> where
     O: VestSecretOutput<I>,
     Fst: Combinator<I, O, Result = ()>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<SpecResult = ()>,
-    Snd::V: SecureSpecCombinator<SpecResult = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Result = ()>,
+    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
  {
     type Result = Snd::Result;
 

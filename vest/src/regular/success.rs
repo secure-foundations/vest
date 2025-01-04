@@ -15,13 +15,13 @@ impl View for Success {
 }
 
 impl SpecCombinator for Success {
-    type SpecResult = ();
+    type Result = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         Ok((0, ()))
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         Ok(Seq::empty())
     }
 
@@ -37,7 +37,7 @@ impl SecureSpecCombinator for Success {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {

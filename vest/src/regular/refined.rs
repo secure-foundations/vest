@@ -43,18 +43,18 @@ impl<Inner: View, P: View> View for Refined<Inner, P> where  {
 
 impl<Inner, P> SpecCombinator for Refined<Inner, P> where
     Inner: SpecCombinator,
-    P: SpecPred<Input = Inner::SpecResult>,
+    P: SpecPred<Input = Inner::Result>,
  {
-    type SpecResult = Inner::SpecResult;
+    type Result = Inner::Result;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         match self.inner.spec_parse(s) {
             Ok((n, v)) if self.predicate.spec_apply(&v) => Ok((n, v)),
             _ => Err(()),
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if self.predicate.spec_apply(&v) {
             self.inner.spec_serialize(v)
         } else {
@@ -69,13 +69,13 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
 
 impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     Inner: SecureSpecCombinator,
-    P: SpecPred<Input = Inner::SpecResult>,
+    P: SpecPred<Input = Inner::Result>,
  {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.inner.theorem_serialize_parse_roundtrip(v);
     }
 
@@ -95,7 +95,7 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
     Inner: Combinator<I, O>,
-    Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V>,
+    Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
     P: Pred<Input = Inner::Result>,
     P::V: SpecPred<Input = <Inner::Result as View>::V>,
  {

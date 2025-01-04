@@ -110,7 +110,7 @@ macro_rules! impl_combinator_for_le_uint_type {
     ($combinator:ty, $int_type:ty) => {
         ::builtin_macros::verus! {
             impl SpecCombinator for $combinator {
-                type SpecResult = $int_type;
+                type Result = $int_type;
 
                 open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
                     if s.len() >= size_of::<$int_type>() {
@@ -208,7 +208,7 @@ macro_rules! impl_combinator_for_be_uint_type {
     ($combinator:ty, $int_type:ty) => {
         ::builtin_macros::verus! {
             impl SpecCombinator for $combinator {
-                type SpecResult = $int_type;
+                type Result = $int_type;
 
                 open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
                     if s.len() >= size_of::<$int_type>() {
@@ -993,7 +993,7 @@ impl View for U24Le {
 }
 
 impl SpecCombinator for U24Le {
-    type SpecResult = u24;
+    type Result = u24;
 
     // To parse a u24 in little-endian byte order, we simply reverse the 3 bytes parsed by the
     // `BytesN<3>` combinator.
@@ -1086,7 +1086,7 @@ impl View for U24Be {
 }
 
 impl SpecCombinator for U24Be {
-    type SpecResult = u24;
+    type Result = u24;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
         match BytesN::<3>.spec_parse(s) {

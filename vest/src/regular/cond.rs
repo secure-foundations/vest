@@ -20,9 +20,9 @@ impl<Inner: View> View for Cond<Inner> {
 }
 
 impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
-    type SpecResult = Inner::SpecResult;
+    type Result = Inner::Result;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if self.cond {
             self.inner.spec_parse(s)
         } else {
@@ -36,7 +36,7 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if self.cond {
             self.inner.spec_serialize(v)
         } else {
@@ -46,7 +46,7 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
 }
 
 impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         if self.cond {
             self.inner.theorem_serialize_parse_roundtrip(v);
         }
@@ -71,7 +71,7 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
 
 impl<I: VestSecretInput, O: VestSecretOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
     Inner,
-> where Inner::V: SecureSpecCombinator<SpecResult = <Inner::Result as View>::V> {
+> where Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V> {
     type Result = Inner::Result;
 
     open spec fn spec_length(&self) -> Option<usize> {

@@ -15,9 +15,9 @@ impl View for Tail {
 }
 
 impl SpecCombinator for Tail {
-    type SpecResult = Seq<u8>;
+    type Result = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if s.len() <= usize::MAX {
             Ok((s.len() as usize, s))
         } else {
@@ -25,7 +25,7 @@ impl SpecCombinator for Tail {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if v.len() <= usize::MAX {
             Ok(v)
         } else {
@@ -38,7 +38,7 @@ impl SpecCombinator for Tail {
 }
 
 impl SecureSpecCombinator for Tail {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {

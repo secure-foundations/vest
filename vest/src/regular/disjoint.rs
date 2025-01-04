@@ -35,7 +35,7 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
 
 // two `Tag(T, value)`s are disjoint if their inner `Refined` combinators are disjoint
 impl<Inner, T> DisjointFrom<Tag<Inner, T>> for Tag<Inner, T> where
-    Inner: SpecCombinator<SpecResult = T>,
+    Inner: SpecCombinator<Result = T>,
  {
     open spec fn disjoint_from(&self, other: &Tag<Inner, T>) -> bool {
         self.0.disjoint_from(&other.0)
@@ -65,8 +65,8 @@ impl<U1, U2, V1, V2> DisjointFrom<(U2, V2)> for (U1, V1) where
 // if `U1` and `U2` are disjoint, then `preceded(U1, V1)` and `preceded(U2, V2)` are disjoint
 impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
     U1: DisjointFrom<U2>,
-    U1: SecureSpecCombinator<SpecResult = ()>,
-    U2: SecureSpecCombinator<SpecResult = ()>,
+    U1: SecureSpecCombinator<Result = ()>,
+    U2: SecureSpecCombinator<Result = ()>,
     V1: SpecCombinator,
     V2: SpecCombinator,
  {
@@ -117,12 +117,12 @@ impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2> where
 impl<U1, U2, M1, M2> DisjointFrom<Mapped<U2, M2>> for Mapped<U1, M1> where
     U1: DisjointFrom<U2>,
     U2: SpecCombinator,
-    M1: SpecIso<Src = U1::SpecResult>,
-    M2: SpecIso<Src = U2::SpecResult>,
-    U1::SpecResult: SpecFrom<M1::Dst>,
-    U2::SpecResult: SpecFrom<M2::Dst>,
-    M1::Dst: SpecFrom<U1::SpecResult>,
-    M2::Dst: SpecFrom<U2::SpecResult>,
+    M1: SpecIso<Src = U1::Result>,
+    M2: SpecIso<Src = U2::Result>,
+    U1::Result: SpecFrom<M1::Dst>,
+    U2::Result: SpecFrom<M2::Dst>,
+    M1::Dst: SpecFrom<U1::Result>,
+    M2::Dst: SpecFrom<U2::Result>,
  {
     open spec fn disjoint_from(&self, other: &Mapped<U2, M2>) -> bool {
         self.inner.disjoint_from(&other.inner)
@@ -150,8 +150,8 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
 // fails, then `self` is disjoint from `other`
 impl<Inner, P1, P2> DisjointFrom<Refined<Inner, P2>> for Refined<Inner, P1> where
     Inner: SpecCombinator,
-    P1: SpecPred<Input = Inner::SpecResult>,
-    P2: SpecPred<Input = Inner::SpecResult>,
+    P1: SpecPred<Input = Inner::Result>,
+    P2: SpecPred<Input = Inner::Result>,
  {
     open spec fn disjoint_from(&self, other: &Refined<Inner, P2>) -> bool {
         self.inner == other.inner && forall|i|

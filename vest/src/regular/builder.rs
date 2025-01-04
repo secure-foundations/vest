@@ -54,7 +54,7 @@ impl<T> View for BuilderCombinator<T> {
 }
 
 impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
-    type SpecResult = ();
+    type Result = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, ()), ()> {
         if s == self.0.value() {

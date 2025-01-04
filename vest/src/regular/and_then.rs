@@ -17,9 +17,9 @@ impl<Prev: View, Next: View> View for AndThen<Prev, Next> {
 }
 
 impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
-    type SpecResult = Next::SpecResult;
+    type Result = Next::Result;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         if let Ok((n, v1)) = self.0.spec_parse(s) {
             if let Ok((m, v2)) = self.1.spec_parse(v1) {
                 // !! for security, can only proceed if the `Next` parser consumed the entire
@@ -44,7 +44,7 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.0.spec_serialize(buf1)
         } else {
@@ -54,7 +54,7 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
 }
 
 impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.1.theorem_serialize_parse_roundtrip(v);
             self.0.theorem_serialize_parse_roundtrip(buf1);
@@ -89,7 +89,7 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
 impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where
     I: VestSecretInput,
     O: VestSecretOutput<I>,
-    Next::V: SecureSpecCombinator<SpecResult = <Next::Result as View>::V>,
+    Next::V: SecureSpecCombinator<Result = <Next::Result as View>::V>,
  {
     type Result = Next::Result;
 
