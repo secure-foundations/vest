@@ -20,9 +20,9 @@ impl<Inner: View> View for Cond<Inner> {
 }
 
 impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
-    type Result = Inner::Result;
+    type Type = Inner::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if self.cond {
             self.inner.spec_parse(s)
         } else {
@@ -36,7 +36,7 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if self.cond {
             self.inner.spec_serialize(v)
         } else {
@@ -46,7 +46,7 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
 }
 
 impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if self.cond {
             self.inner.theorem_serialize_parse_roundtrip(v);
         }
@@ -71,8 +71,8 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
 
 impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
     Inner,
-> where Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V> {
-    type Result = Inner::Result;
+> where Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V> {
+    type Type = Inner::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {
@@ -94,7 +94,7 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         if self.cond {
             self.inner.parse(s)
         } else {
@@ -106,7 +106,7 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

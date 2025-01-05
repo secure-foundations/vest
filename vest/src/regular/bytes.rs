@@ -29,7 +29,7 @@ impl Bytes {
     >) where
         I: VestPublicInput,
         O: VestPublicOutput<I>,
-        Next::V: SecureSpecCombinator<Result = <Next::Result as View>::V>,
+        Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
 
         ensures
             o@ == self@.spec_and_then(next@),
@@ -39,9 +39,9 @@ impl Bytes {
 }
 
 impl SpecCombinator for Bytes {
-    type Result = Seq<u8>;
+    type Type = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if self.0 <= s.len() {
             Ok((self.0, s.subrange(0, self.0 as int)))
         } else {
@@ -49,7 +49,7 @@ impl SpecCombinator for Bytes {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if v.len() == self.0 {
             Ok(v)
         } else {
@@ -74,7 +74,7 @@ impl SecureSpecCombinator for Bytes {
         }
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(buf) = self.spec_serialize(v) {
             assert(v.subrange(0, v.len() as int) == v);
         }
@@ -85,7 +85,7 @@ impl SecureSpecCombinator for Bytes {
 }
 
 impl<I, O> Combinator<I, O> for Bytes where I: VestInput, O: VestOutput<I> {
-    type Result = I;
+    type Type = I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)
@@ -95,7 +95,7 @@ impl<I, O> Combinator<I, O> for Bytes where I: VestInput, O: VestOutput<I> {
         Some(self.0)
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if self.0 <= s.len() {
             let s_ = s.subrange(0, self.0);
             Ok((self.0, s_))
@@ -104,7 +104,7 @@ impl<I, O> Combinator<I, O> for Bytes where I: VestInput, O: VestOutput<I> {
         }
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

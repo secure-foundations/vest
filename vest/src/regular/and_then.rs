@@ -17,9 +17,9 @@ impl<Prev: View, Next: View> View for AndThen<Prev, Next> {
 }
 
 impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
-    type Result = Next::Result;
+    type Type = Next::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if let Ok((n, v1)) = self.0.spec_parse(s) {
             if let Ok((m, v2)) = self.1.spec_parse(v1) {
                 // !! for security, can only proceed if the `Next` parser consumed the entire
@@ -44,7 +44,7 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.0.spec_serialize(buf1)
         } else {
@@ -54,7 +54,7 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
 }
 
 impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.1.theorem_serialize_parse_roundtrip(v);
             self.0.theorem_serialize_parse_roundtrip(buf1);
@@ -89,9 +89,9 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
 impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where
     I: VestInput,
     O: VestOutput<I>,
-    Next::V: SecureSpecCombinator<Result = <Next::Result as View>::V>,
+    Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
  {
-    type Result = Next::Result;
+    type Type = Next::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
@@ -107,7 +107,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
         self.1.parse_requires()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         let (n, v1) = <_ as Combinator<I, O>>::parse(&self.0, s)?;
         let (m, v2) = self.1.parse(v1)?;
         if m == n {
@@ -121,7 +121,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

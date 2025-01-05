@@ -54,7 +54,7 @@ impl<T> View for BuilderCombinator<T> {
 }
 
 impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
-    type Result = ();
+    type Type = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, ()), ()> {
         if s == self.0.value() {
@@ -91,7 +91,7 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
 }
 
 impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where I: VestPublicInput, T: Builder + View {
-    type Result = ();
+    type Type = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

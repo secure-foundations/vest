@@ -60,10 +60,10 @@ impl<Inner: View, T: View> View for Tag<Inner, T> {
     }
 }
 
-impl<Inner: SpecCombinator<Result = T>, T> SpecCombinator for Tag<Inner, T> {
-    type Result = ();
+impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
+    type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if let Ok((n, _)) = self.0.spec_parse(s) {
             Ok((n, ()))
         } else {
@@ -71,7 +71,7 @@ impl<Inner: SpecCombinator<Result = T>, T> SpecCombinator for Tag<Inner, T> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(self.0.predicate.0)
     }
 
@@ -80,12 +80,12 @@ impl<Inner: SpecCombinator<Result = T>, T> SpecCombinator for Tag<Inner, T> {
     }
 }
 
-impl<Inner: SecureSpecCombinator<Result = T>, T> SecureSpecCombinator for Tag<Inner, T> {
+impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T> {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         self.0.theorem_serialize_parse_roundtrip(self.0.predicate.0);
     }
 
@@ -104,11 +104,11 @@ impl<Inner: SecureSpecCombinator<Result = T>, T> SecureSpecCombinator for Tag<In
 impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O, Result = T>,
-    Inner::V: SecureSpecCombinator<Result = T::V>,
+    Inner: Combinator<I, O, Type = T>,
+    Inner::V: SecureSpecCombinator<Type = T::V>,
     T: FromToBytes,
  {
-    type Result = ();
+    type Type = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -122,7 +122,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         self.0.parse_requires()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         let (n, _) = self.0.parse(s)?;
         Ok((n, ()))
     }
@@ -131,7 +131,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

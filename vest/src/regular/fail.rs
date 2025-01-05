@@ -15,13 +15,13 @@ impl View for Fail {
 }
 
 impl SpecCombinator for Fail {
-    type Result = ();
+    type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         Err(())
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         Err(())
     }
 
@@ -37,7 +37,7 @@ impl SecureSpecCombinator for Fail {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
@@ -45,7 +45,7 @@ impl SecureSpecCombinator for Fail {
 }
 
 impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Fail {
-    type Result = ();
+    type Type = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(0)
@@ -55,11 +55,11 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Fail {
         Some(0)
     }
 
-    fn parse(&self, _s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, _s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         Err(ParseError::Other(self.0.clone()))
     }
 
-    fn serialize(&self, _v: Self::Result, _data: &mut O, _pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::Type, _data: &mut O, _pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

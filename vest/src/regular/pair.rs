@@ -6,33 +6,33 @@ use super::depend::SpecDepend;
 verus! {
 
 impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Snd) {
-    type Result = (Fst::Result, Snd::Result);
+    type Type = (Fst::Type, Snd::Type);
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
-        SpecDepend { fst: self.0, snd: |r: Fst::Result| self.1 }.spec_parse(s)
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse(s)
     }
 
     proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        SpecDepend { fst: self.0, snd: |r: Fst::Result| self.1 }.spec_parse_wf(s)
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse_wf(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
-        SpecDepend { fst: self.0, snd: |r: Fst::Result| self.1 }.spec_serialize(v)
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_serialize(v)
     }
 }
 
 impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator for (Fst, Snd) {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         SpecDepend {
             fst: self.0,
-            snd: |r: Fst::Result| self.1,
+            snd: |r: Fst::Type| self.1,
         }.theorem_serialize_parse_roundtrip(v)
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         SpecDepend {
             fst: self.0,
-            snd: |r: Fst::Result| self.1,
+            snd: |r: Fst::Type| self.1,
         }.theorem_parse_serialize_roundtrip(buf)
     }
 
@@ -41,7 +41,7 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
-        SpecDepend { fst: self.0, snd: |r: Fst::Result| self.1 }.lemma_prefix_secure(buf, s2)
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_prefix_secure(buf, s2)
     }
 }
 
@@ -50,10 +50,10 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
+    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
  {
-    type Result = (Fst::Result, Snd::Result);
+    type Type = (Fst::Type, Snd::Type);
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
@@ -91,7 +91,7 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
         self.0.parse_requires() && self.1.parse_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (n, v1) = self.0.parse(s.clone())?;
         let s_ = s.subrange(n, s.len());
         let (m, v2) = self.1.parse(s_)?;
@@ -106,7 +106,7 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

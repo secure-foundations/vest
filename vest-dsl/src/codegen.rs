@@ -439,10 +439,10 @@ impl Codegen for Combinator {
 pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
-    type Result = Spec{name};
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
+    type Type = Spec{name};
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     {{ self.0.spec_parse(s) }}
-    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     {{ self.0.spec_serialize(v) }}
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     {{ self.0.spec_parse_wf(s) }}
@@ -451,7 +451,7 @@ impl SpecCombinator for Spec{name}Combinator {{
 impl SecureSpecCombinator for Spec{name}Combinator {{
     open spec fn is_prefix_secure() -> bool 
     {{ Spec{name}CombinatorAlias::is_prefix_secure() }}
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     {{ self.0.theorem_serialize_parse_roundtrip(v) }}
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     {{ self.0.theorem_parse_serialize_roundtrip(buf) }}
@@ -470,18 +470,18 @@ impl{lifetime_ann} View for {name}Combinator{lifetime_ann} {{
     closed spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
 }}
 impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
-    type Result = {name}{msg_has_lifetime};
+    type Type = {name}{msg_has_lifetime};
     closed spec fn spec_length(&self) -> Option<usize> 
     {{ <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }}
     fn length(&self) -> Option<usize> 
     {{ <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }}
     closed spec fn parse_requires(&self) -> bool 
     {{ <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }}
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
     {{ <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }}
     closed spec fn serialize_requires(&self) -> bool 
     {{ <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }}
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     {{ <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }}
 }} 
 "#

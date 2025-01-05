@@ -43,18 +43,18 @@ impl<Inner: View, P: View> View for Refined<Inner, P> where  {
 
 impl<Inner, P> SpecCombinator for Refined<Inner, P> where
     Inner: SpecCombinator,
-    P: SpecPred<Input = Inner::Result>,
+    P: SpecPred<Input = Inner::Type>,
  {
-    type Result = Inner::Result;
+    type Type = Inner::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         match self.inner.spec_parse(s) {
             Ok((n, v)) if self.predicate.spec_apply(&v) => Ok((n, v)),
             _ => Err(()),
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if self.predicate.spec_apply(&v) {
             self.inner.spec_serialize(v)
         } else {
@@ -69,13 +69,13 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
 
 impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     Inner: SecureSpecCombinator,
-    P: SpecPred<Input = Inner::Result>,
+    P: SpecPred<Input = Inner::Type>,
  {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         self.inner.theorem_serialize_parse_roundtrip(v);
     }
 
@@ -95,11 +95,11 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     I: VestInput,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
-    P: Pred<Input = Inner::Result>,
-    P::V: SpecPred<Input = <Inner::Result as View>::V>,
+    Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
+    P: Pred<Input = Inner::Type>,
+    P::V: SpecPred<Input = <Inner::Type as View>::V>,
  {
-    type Result = Inner::Result;
+    type Type = Inner::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -113,7 +113,7 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         match self.inner.parse(s) {
             Ok((n, v)) => if self.predicate.apply(&v) {
                 Ok((n, v))
@@ -128,7 +128,7 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

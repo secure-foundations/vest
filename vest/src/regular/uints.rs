@@ -110,7 +110,7 @@ macro_rules! impl_combinator_for_le_uint_type {
     ($combinator:ty, $int_type:ty) => {
         ::builtin_macros::verus! {
             impl SpecCombinator for $combinator {
-                type Result = $int_type;
+                type Type = $int_type;
 
                 open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
                     if s.len() >= size_of::<$int_type>() {
@@ -154,7 +154,7 @@ macro_rules! impl_combinator_for_le_uint_type {
             }
 
             impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
-                type Result = $int_type;
+                type Type = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -208,7 +208,7 @@ macro_rules! impl_combinator_for_be_uint_type {
     ($combinator:ty, $int_type:ty) => {
         ::builtin_macros::verus! {
             impl SpecCombinator for $combinator {
-                type Result = $int_type;
+                type Type = $int_type;
 
                 open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
                     if s.len() >= size_of::<$int_type>() {
@@ -252,7 +252,7 @@ macro_rules! impl_combinator_for_be_uint_type {
             }
 
             impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
-                type Result = $int_type;
+                type Type = $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -993,7 +993,7 @@ impl View for U24Le {
 }
 
 impl SpecCombinator for U24Le {
-    type Result = u24;
+    type Type = u24;
 
     // To parse a u24 in little-endian byte order, we simply reverse the 3 bytes parsed by the
     // `BytesN<3>` combinator.
@@ -1051,7 +1051,7 @@ impl SecureSpecCombinator for U24Le {
 }
 
 impl Combinator<&[u8], Vec<u8>> for U24Le {
-    type Result = u24;
+    type Type = u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
@@ -1086,7 +1086,7 @@ impl View for U24Be {
 }
 
 impl SpecCombinator for U24Be {
-    type Result = u24;
+    type Type = u24;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
         match BytesN::<3>.spec_parse(s) {
@@ -1149,7 +1149,7 @@ proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
 }
 
 impl Combinator<&[u8], Vec<u8>> for U24Be {
-    type Result = u24;
+    type Type = u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)

@@ -30,9 +30,9 @@ impl<T: View> View for RepeatResult<T> {
 }
 
 impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
-    type Result = Seq<C::Result>;
+    type Type = Seq<C::Type>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()>
         decreases s.len(),
     {
         if !C::is_prefix_secure() {
@@ -57,7 +57,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
     proof fn spec_parse_wf(&self, s: Seq<u8>) {
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()>
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()>
         decreases v.len(),
     {
         if !C::is_prefix_secure() {
@@ -91,7 +91,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
         false
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len(),
     {
         if v.len() == 0 {
@@ -148,14 +148,14 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
 impl<C> Repeat<C> where  {
     /// Helper function for parse()
     /// TODO: Recursion is not ideal, but hopefully tail call opt will kick in
-    fn parse_helper<I, O>(&self, s: I, res: &mut Vec<C::Result>) -> (r: Result<
+    fn parse_helper<I, O>(&self, s: I, res: &mut Vec<C::Type>) -> (r: Result<
         (),
         ParseError,
     >) where
         I: VestInput,
         O: VestOutput<I>,
         C: Combinator<I, O>,
-        C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
+        C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
 
         requires
             self.0.parse_requires(),
@@ -184,7 +184,7 @@ impl<C> Repeat<C> where  {
 
     fn serialize_helper<I, O>(
         &self,
-        v: &mut RepeatResult<C::Result>,
+        v: &mut RepeatResult<C::Type>,
         data: &mut O,
         pos: usize,
         len: usize,
@@ -192,7 +192,7 @@ impl<C> Repeat<C> where  {
         I: VestInput,
         O: VestOutput<I>,
         C: Combinator<I, O>,
-        C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
+        C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
 
         requires
             self.0.serialize_requires(),
@@ -234,9 +234,9 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
     I: VestInput,
     O: VestOutput<I>,
     C: Combinator<I, O>,
-    C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
+    C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
  {
-    type Result = RepeatResult<C::Result>;
+    type Type = RepeatResult<C::Type>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -251,7 +251,7 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
         &&& self.0.parse_requires()
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         let mut res = Vec::new();
         self.parse_helper(s.clone(), &mut res)?;
         Ok((s.len(), RepeatResult(res)))
@@ -262,7 +262,7 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
         &&& self.0.serialize_requires()
     }
 
-    fn serialize(&self, mut v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, mut v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

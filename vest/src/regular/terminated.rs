@@ -14,13 +14,13 @@ impl<Fst: View, Snd: View> View for Terminated<Fst, Snd> {
     }
 }
 
-impl<Fst: SecureSpecCombinator, Snd: SpecCombinator<Result = ()>> SpecCombinator for Terminated<
+impl<Fst: SecureSpecCombinator, Snd: SpecCombinator<Type = ()>> SpecCombinator for Terminated<
     Fst,
     Snd,
 > {
-    type Result = Fst::Result;
+    type Type = Fst::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if let Ok((n, (v, ()))) = (self.0, self.1).spec_parse(s) {
             Ok((n, v))
         } else {
@@ -34,16 +34,16 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator<Result = ()>> SpecCombinator
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         (self.0, self.1).spec_serialize((v, ()))
     }
 }
 
 impl<
     Fst: SecureSpecCombinator,
-    Snd: SecureSpecCombinator<Result = ()>,
+    Snd: SecureSpecCombinator<Type = ()>,
 > SecureSpecCombinator for Terminated<Fst, Snd> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         (self.0, self.1).theorem_serialize_parse_roundtrip((v, ()));
     }
 
@@ -68,11 +68,11 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
-    Snd: Combinator<I, O, Result = ()>,
-    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<Result = ()>,
+    Snd: Combinator<I, O, Type = ()>,
+    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
+    Snd::V: SecureSpecCombinator<Type = ()>,
  {
-    type Result = Fst::Result;
+    type Type = Fst::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (self.0, self.1).spec_length()
@@ -86,7 +86,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
         (&self.0, &self.1).parse_requires()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Result), ParseError> {
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         let (n, (v, ())) = (&self.0, &self.1).parse(s.clone())?;
         Ok((n, v))
     }
@@ -95,7 +95,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
         (&self.0, &self.1).serialize_requires()
     }
 
-    fn serialize<'b>(&self, v: Self::Result, data: &'b mut O, pos: usize) -> Result<
+    fn serialize<'b>(&self, v: Self::Type, data: &'b mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {

@@ -89,13 +89,13 @@ impl<Inner: View, M: View> View for Mapped<Inner, M> {
 
 impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
     Inner: SpecCombinator,
-    M: SpecIso<Src = Inner::Result>,
-    Inner::Result: SpecFrom<M::Dst>,
-    M::Dst: SpecFrom<Inner::Result>,
+    M: SpecIso<Src = Inner::Type>,
+    Inner::Type: SpecFrom<M::Dst>,
+    M::Dst: SpecFrom<Inner::Type>,
  {
-    type Result = M::Dst;
+    type Type = M::Dst;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         match self.inner.spec_parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => Ok((n, M::spec_apply(v))),
@@ -109,22 +109,22 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.inner.spec_serialize(M::spec_rev_apply(v))
     }
 }
 
 impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     Inner: SecureSpecCombinator,
-    M: SpecIso<Src = Inner::Result>,
-    Inner::Result: SpecFrom<M::Dst>,
-    M::Dst: SpecFrom<Inner::Result>,
+    M: SpecIso<Src = Inner::Type>,
+    Inner::Type: SpecFrom<M::Dst>,
+    M::Dst: SpecFrom<Inner::Type>,
  {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(buf) = self.inner.spec_serialize(M::spec_rev_apply(v)) {
             M::spec_iso_rev(v);
             self.inner.theorem_serialize_parse_roundtrip(M::spec_rev_apply(v))
@@ -152,15 +152,15 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
-    M: Iso<Src = Inner::Result>,
-    Inner::Result: From<M::Dst> + View,
-    M::Dst: From<Inner::Result> + View,
-    M::V: SpecIso<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,
-    <Inner::Result as View>::V: SpecFrom<<M::Dst as View>::V>,
-    <M::Dst as View>::V: SpecFrom<<Inner::Result as View>::V>,
+    Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
+    M: Iso<Src = Inner::Type>,
+    Inner::Type: From<M::Dst> + View,
+    M::Dst: From<Inner::Type> + View,
+    M::V: SpecIso<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+    <Inner::Type as View>::V: SpecFrom<<M::Dst as View>::V>,
+    <M::Dst as View>::V: SpecFrom<<Inner::Type as View>::V>,
  {
-    type Result = M::Dst;
+    type Type = M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -174,7 +174,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => {
@@ -190,7 +190,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -301,13 +301,13 @@ impl<Inner: View, M: View> View for TryMap<Inner, M> {
 
 impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
     Inner: SpecCombinator,
-    M: SpecTryFromInto<Src = Inner::Result>,
-    Inner::Result: SpecTryFrom<M::Dst>,
-    M::Dst: SpecTryFrom<Inner::Result>,
+    M: SpecTryFromInto<Src = Inner::Type>,
+    Inner::Type: SpecTryFrom<M::Dst>,
+    M::Dst: SpecTryFrom<Inner::Type>,
  {
-    type Result = M::Dst;
+    type Type = M::Dst;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         match self.inner.spec_parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => match M::spec_apply(v) {
@@ -324,7 +324,7 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         match M::spec_rev_apply(v) {
             Ok(v) => self.inner.spec_serialize(v),
             Err(_) => Err(()),
@@ -334,15 +334,15 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
 
 impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     Inner: SecureSpecCombinator,
-    M: SpecTryFromInto<Src = Inner::Result>,
-    Inner::Result: SpecTryFrom<M::Dst>,
-    M::Dst: SpecTryFrom<Inner::Result>,
+    M: SpecTryFromInto<Src = Inner::Type>,
+    Inner::Type: SpecTryFrom<M::Dst>,
+    M::Dst: SpecTryFrom<Inner::Type>,
  {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(v_) = M::spec_rev_apply(v) {
             M::spec_iso_rev(v);
             self.inner.theorem_serialize_parse_roundtrip(v_);
@@ -370,15 +370,15 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    Inner::V: SecureSpecCombinator<Result = <Inner::Result as View>::V>,
-    M: TryFromInto<Src = Inner::Result>,
-    Inner::Result: TryFrom<M::Dst> + View,
-    M::Dst: TryFrom<Inner::Result> + View,
-    M::V: SpecTryFromInto<Src = <Inner::Result as View>::V, Dst = <M::Dst as View>::V>,
-    <Inner::Result as View>::V: SpecTryFrom<<M::Dst as View>::V>,
-    <M::Dst as View>::V: SpecTryFrom<<Inner::Result as View>::V>,
+    Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
+    M: TryFromInto<Src = Inner::Type>,
+    Inner::Type: TryFrom<M::Dst> + View,
+    M::Dst: TryFrom<Inner::Type> + View,
+    M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+    <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
+    <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
  {
-    type Result = M::Dst;
+    type Type = M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -392,7 +392,7 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
         self.inner.parse_requires()
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         match self.inner.parse(s) {
             Err(e) => Err(e),
             Ok((n, v)) => match M::apply(v) {
@@ -406,7 +406,7 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

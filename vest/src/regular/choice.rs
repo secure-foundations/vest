@@ -53,9 +53,9 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     Fst: SpecCombinator,
     Snd: SpecCombinator + DisjointFrom<Fst>,
  {
-    type Result = Either<Fst::Result, Snd::Result>;
+    type Type = Either<Fst::Type, Snd::Type>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if self.1.disjoint_from(&self.0) {
             if let Ok((n, v)) = self.0.spec_parse(s) {
                 Ok((n, Either::Left(v)))
@@ -81,7 +81,7 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if self.1.disjoint_from(&self.0) {
             match v {
                 Either::Left(v) => self.0.spec_serialize(v),
@@ -112,7 +112,7 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         }
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         match v {
             Either::Left(v) => {
                 self.0.theorem_serialize_parse_roundtrip(v);
@@ -143,11 +143,11 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
-    Fst::V: SecureSpecCombinator<Result = <Fst::Result as View>::V>,
-    Snd::V: SecureSpecCombinator<Result = <Snd::Result as View>::V>,
+    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
+    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
  {
-    type Result = Either<Fst::Result, Snd::Result>;
+    type Type = Either<Fst::Type, Snd::Type>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -161,7 +161,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
         self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if let Ok((n, v)) = self.0.parse(s.clone()) {
             Ok((n, Either::Left(v)))
         } else {
@@ -179,7 +179,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
         )
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

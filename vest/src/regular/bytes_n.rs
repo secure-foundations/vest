@@ -15,9 +15,9 @@ impl<const N: usize> View for BytesN<N> {
 }
 
 impl<const N: usize> SpecCombinator for BytesN<N> {
-    type Result = Seq<u8>;
+    type Type = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         if N <= s.len() {
             Ok((N, s.subrange(0, N as int)))
         } else {
@@ -25,7 +25,7 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if v.len() == N {
             Ok(v)
         } else {
@@ -50,7 +50,7 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
         }
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(buf) = self.spec_serialize(v) {
             assert(v.subrange(0, v.len() as int) == v);
         }
@@ -64,7 +64,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
     I: VestInput,
     O: VestOutput<I>,
  {
-    type Result = I;
+    type Type = I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)
@@ -74,7 +74,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
         Some(N)
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if N <= s.len() {
             let s_ = s.subrange(0, N);
             Ok((N, s_))
@@ -83,7 +83,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
         }
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

@@ -363,13 +363,13 @@ impl<'a> TryFromInto for VarIntMapper<'a> {
 }
 
 impl SpecCombinator for BtcVarint {
-    type Result = VarInt;
+    type Type = VarInt;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         spec_btc_varint_inner().spec_parse(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         spec_btc_varint_inner().spec_serialize(v)
     }
 
@@ -387,7 +387,7 @@ impl SecureSpecCombinator for BtcVarint {
         spec_btc_varint_inner().lemma_prefix_secure(s1, s2);
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         spec_btc_varint_inner().theorem_serialize_parse_roundtrip(v);
     }
 
@@ -421,7 +421,7 @@ impl Continuation<&u8> for BtVarintCont {
 }
 
 impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
-    type Result = VarInt;
+    type Type = VarInt;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -431,11 +431,11 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
         None
     }
 
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         btc_varint_inner().parse(s)
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

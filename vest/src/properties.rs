@@ -13,13 +13,13 @@ pub type SResult<T, E> = Result<T, E>;
 /// trait.
 pub trait SpecCombinator {
     /// The view of [`Combinator::Result`].
-    type Result;
+    type Type;
 
     /// The specification of [`Combinator::parse`].
-    spec fn spec_parse(&self, s: Seq<u8>) -> PResult<Self::Result, ()>;
+    spec fn spec_parse(&self, s: Seq<u8>) -> PResult<Self::Type, ()>;
 
     /// The specification of [`Combinator::serialize`].
-    spec fn spec_serialize(&self, v: Self::Result) -> SResult<Seq<u8>, ()>;
+    spec fn spec_serialize(&self, v: Self::Type) -> SResult<Seq<u8>, ()>;
 
     /// A helper fact to ensure that the result of parsing is within the input bounds.
     proof fn spec_parse_wf(&self, s: Seq<u8>)
@@ -48,7 +48,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
     /// 3. correctness of parsing: given a correct serializer that produces some byte sequence from
     ///   a value, the corresponding parser should be able to parse the byte sequence back to the
     ///   same value (can lead to format-confusion attacks if not satisfied).
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         ensures
             self.spec_serialize(v) matches Ok(b) ==> self.spec_parse(b) == Ok::<_, ()>(
                 (b.len() as usize, v),
@@ -56,7 +56,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
     ;
 
     /// Followed from `theorem_serialize_parse_roundtrip`
-    proof fn corollary_parse_surjective(&self, v: Self::Result)
+    proof fn corollary_parse_surjective(&self, v: Self::Type)
         requires
             self.spec_serialize(v) is Ok,
         ensures
@@ -66,7 +66,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
     }
 
     /// Followed from `theorem_serialize_parse_roundtrip`
-    proof fn corollary_serialize_injective(&self, v1: Self::Result, v2: Self::Result)
+    proof fn corollary_serialize_injective(&self, v1: Self::Type, v2: Self::Type)
         ensures
             self.spec_serialize(v1) matches Ok(b1) ==> self.spec_serialize(v2) matches Ok(b2) ==> b1
                 == b2 ==> v1 == v2,
@@ -127,10 +127,10 @@ pub trait SecureSpecCombinator: SpecCombinator {
 pub trait Combinator<I, O>: View where
     I: VestInput,
     O: VestOutput<I>,
-    Self::V: SecureSpecCombinator<Result = <Self::Result as View>::V>,
+    Self::V: SecureSpecCombinator<Type = <Self::Type as View>::V>,
  {
     /// The result type of parsing and the input type of serialization.
-    type Result: View;
+    type Type: View;
 
     /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
@@ -159,7 +159,7 @@ pub trait Combinator<I, O>: View where
     /// ## Post-conditions
     /// Essentially, the implementation of `parse` is functionally correct with respect to the
     /// specification `spec_parse` in both `Ok` and `Err` cases.
-    fn parse(&self, s: I) -> (res: PResult<Self::Result, ParseError>)
+    fn parse(&self, s: I) -> (res: PResult<Self::Type, ParseError>)
         requires
             self.parse_requires(),
         ensures
@@ -186,7 +186,7 @@ pub trait Combinator<I, O>: View where
     /// seialize "in-place" on a "sufficiently large" buffer with a pointer `pos` for efficiency.
     /// This means it's not neccessarily the case that when `serialize` fails, `spec_serialize`
     /// will also fail.
-    fn serialize(&self, v: Self::Result, buf: &mut O, pos: usize) -> (res: SResult<
+    fn serialize(&self, v: Self::Type, buf: &mut O, pos: usize) -> (res: SResult<
         usize,
         SerializeError,
     >)
@@ -203,13 +203,13 @@ pub trait Combinator<I, O>: View where
 }
 
 impl<C: SpecCombinator> SpecCombinator for &C {
-    type Result = C::Result;
+    type Type = C::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         (*self).spec_parse(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         (*self).spec_serialize(v)
     }
 
@@ -223,7 +223,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
         C::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         (*self).theorem_serialize_parse_roundtrip(v)
     }
 
@@ -239,9 +239,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
     I: VestInput,
     O: VestOutput<I>,
-    C::V: SecureSpecCombinator<Result = <C::Result as View>::V>,
+    C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
  {
-    type Result = C::Result;
+    type Type = C::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (*self).spec_length()
@@ -255,7 +255,7 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
         (*self).parse_requires()
     }
 
-    fn parse(&self, s: I) -> (res: Result<(usize, Self::Result), ParseError>) {
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         (*self).parse(s)
     }
 
@@ -263,7 +263,7 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Result, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
