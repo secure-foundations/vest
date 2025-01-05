@@ -20,18 +20,88 @@ use vest::utils::*;
 use vstd::prelude::*;
 verus! {
 
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AClosedEnum {
-    A = 0,
-    B = 1,
-    C = 2,
+pub enum SpecARegularChoose {
+    A(u8),
+    B(u16),
+    C(u32),
 }
 
-pub type SpecAClosedEnum = AClosedEnum;
+pub type SpecARegularChooseInner = Either<u8, Either<u16, u32>>;
 
-pub type AClosedEnumInner = u8;
+impl SpecFrom<SpecARegularChoose> for SpecARegularChooseInner {
+    open spec fn spec_from(m: SpecARegularChoose) -> SpecARegularChooseInner {
+        match m {
+            SpecARegularChoose::A(m) => Either::Left(m),
+            SpecARegularChoose::B(m) => Either::Right(Either::Left(m)),
+            SpecARegularChoose::C(m) => Either::Right(Either::Right(m)),
+        }
+    }
+}
 
-impl View for AClosedEnum {
+impl SpecFrom<SpecARegularChooseInner> for SpecARegularChoose {
+    open spec fn spec_from(m: SpecARegularChooseInner) -> SpecARegularChoose {
+        match m {
+            Either::Left(m) => SpecARegularChoose::A(m),
+            Either::Right(Either::Left(m)) => SpecARegularChoose::B(m),
+            Either::Right(Either::Right(m)) => SpecARegularChoose::C(m),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ARegularChoose {
+    A(u8),
+    B(u16),
+    C(u32),
+}
+
+pub type ARegularChooseInner = Either<u8, Either<u16, u32>>;
+
+impl View for ARegularChoose {
+    type V = SpecARegularChoose;
+
+    open spec fn view(&self) -> Self::V {
+        match self {
+            ARegularChoose::A(m) => SpecARegularChoose::A(m@),
+            ARegularChoose::B(m) => SpecARegularChoose::B(m@),
+            ARegularChoose::C(m) => SpecARegularChoose::C(m@),
+        }
+    }
+}
+
+impl From<ARegularChoose> for ARegularChooseInner {
+    fn ex_from(m: ARegularChoose) -> ARegularChooseInner {
+        match m {
+            ARegularChoose::A(m) => Either::Left(m),
+            ARegularChoose::B(m) => Either::Right(Either::Left(m)),
+            ARegularChoose::C(m) => Either::Right(Either::Right(m)),
+        }
+    }
+}
+
+impl From<ARegularChooseInner> for ARegularChoose {
+    fn ex_from(m: ARegularChooseInner) -> ARegularChoose {
+        match m {
+            Either::Left(m) => ARegularChoose::A(m),
+            Either::Right(Either::Left(m)) => ARegularChoose::B(m),
+            Either::Right(Either::Right(m)) => ARegularChoose::C(m),
+        }
+    }
+}
+
+pub struct ARegularChooseMapper;
+
+impl ARegularChooseMapper {
+    pub closed spec fn spec_new() -> Self {
+        ARegularChooseMapper
+    }
+
+    pub fn new() -> Self {
+        ARegularChooseMapper
+    }
+}
+
+impl View for ARegularChooseMapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -39,94 +109,36 @@ impl View for AClosedEnum {
     }
 }
 
-impl SpecTryFrom<AClosedEnumInner> for AClosedEnum {
-    type Error = ();
+impl SpecIso for ARegularChooseMapper {
+    type Src = SpecARegularChooseInner;
 
-    open spec fn spec_try_from(v: AClosedEnumInner) -> Result<AClosedEnum, ()> {
-        match v {
-            0u8 => Ok(AClosedEnum::A),
-            1u8 => Ok(AClosedEnum::B),
-            2u8 => Ok(AClosedEnum::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<AClosedEnum> for AClosedEnumInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: AClosedEnum) -> Result<AClosedEnumInner, ()> {
-        match v {
-            AClosedEnum::A => Ok(0u8),
-            AClosedEnum::B => Ok(1u8),
-            AClosedEnum::C => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<AClosedEnumInner> for AClosedEnum {
-    type Error = ();
-
-    fn ex_try_from(v: AClosedEnumInner) -> Result<AClosedEnum, ()> {
-        match v {
-            0u8 => Ok(AClosedEnum::A),
-            1u8 => Ok(AClosedEnum::B),
-            2u8 => Ok(AClosedEnum::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<AClosedEnum> for AClosedEnumInner {
-    type Error = ();
-
-    fn ex_try_from(v: AClosedEnum) -> Result<AClosedEnumInner, ()> {
-        match v {
-            AClosedEnum::A => Ok(0u8),
-            AClosedEnum::B => Ok(1u8),
-            AClosedEnum::C => Ok(2u8),
-        }
-    }
-}
-
-pub struct AClosedEnumMapper;
-
-impl View for AClosedEnumMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for AClosedEnumMapper {
-    type Src = AClosedEnumInner;
-
-    type Dst = AClosedEnum;
+    type Dst = SpecARegularChoose;
 
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
 
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 
-impl TryFromInto for AClosedEnumMapper {
-    type Src = AClosedEnumInner;
+impl Iso for ARegularChooseMapper {
+    type Src = ARegularChooseInner;
 
-    type Dst = AClosedEnum;
+    type Dst = ARegularChoose;
 }
 
-pub struct SpecAClosedEnumCombinator(SpecAClosedEnumCombinatorAlias);
+pub struct SpecARegularChooseCombinator(SpecARegularChooseCombinatorAlias);
 
-impl SpecCombinator for SpecAClosedEnumCombinator {
-    type SpecResult = SpecAClosedEnum;
+impl SpecCombinator for SpecARegularChooseCombinator {
+    type Result = SpecARegularChoose;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -135,12 +147,12 @@ impl SpecCombinator for SpecAClosedEnumCombinator {
     }
 }
 
-impl SecureSpecCombinator for SpecAClosedEnumCombinator {
+impl SecureSpecCombinator for SpecARegularChooseCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecAClosedEnumCombinatorAlias::is_prefix_secure()
+        SpecARegularChooseCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -153,20 +165,23 @@ impl SecureSpecCombinator for SpecAClosedEnumCombinator {
     }
 }
 
-pub type SpecAClosedEnumCombinatorAlias = TryMap<U8, AClosedEnumMapper>;
+pub type SpecARegularChooseCombinatorAlias = Mapped<
+    OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>,
+    ARegularChooseMapper,
+>;
 
-pub struct AClosedEnumCombinator(AClosedEnumCombinatorAlias);
+pub struct ARegularChooseCombinator(ARegularChooseCombinatorAlias);
 
-impl View for AClosedEnumCombinator {
-    type V = SpecAClosedEnumCombinator;
+impl View for ARegularChooseCombinator {
+    type V = SpecARegularChooseCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecAClosedEnumCombinator(self.0@)
+        SpecARegularChooseCombinator(self.0@)
     }
 }
 
-impl<'a> Combinator<&'a [u8], Vec<u8>> for AClosedEnumCombinator {
-    type Result = AClosedEnum;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
+    type Result = ARegularChoose;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
@@ -196,17 +211,42 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for AClosedEnumCombinator {
     }
 }
 
-pub type AClosedEnumCombinatorAlias = TryMap<U8, AClosedEnumMapper>;
+pub type ARegularChooseCombinatorAlias = Mapped<
+    OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>,
+    ARegularChooseMapper,
+>;
 
-pub closed spec fn spec_a_closed_enum() -> SpecAClosedEnumCombinator {
-    SpecAClosedEnumCombinator(TryMap { inner: U8, mapper: AClosedEnumMapper })
+pub closed spec fn spec_a_regular_choose(e: SpecAClosedEnum) -> SpecARegularChooseCombinator {
+    SpecARegularChooseCombinator(
+        Mapped {
+            inner: OrdChoice(
+                Cond { cond: e == AClosedEnum::A, inner: U8 },
+                OrdChoice(
+                    Cond { cond: e == AClosedEnum::B, inner: U16Le },
+                    Cond { cond: e == AClosedEnum::C, inner: U32Le },
+                ),
+            ),
+            mapper: ARegularChooseMapper::spec_new(),
+        },
+    )
 }
 
-pub fn a_closed_enum() -> (o: AClosedEnumCombinator)
+pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
     ensures
-        o@ == spec_a_closed_enum(),
+        o@ == spec_a_regular_choose(e@),
 {
-    AClosedEnumCombinator(TryMap { inner: U8, mapper: AClosedEnumMapper })
+    ARegularChooseCombinator(
+        Mapped {
+            inner: OrdChoice::new(
+                Cond { cond: e == AClosedEnum::A, inner: U8 },
+                OrdChoice::new(
+                    Cond { cond: e == AClosedEnum::B, inner: U16Le },
+                    Cond { cond: e == AClosedEnum::C, inner: U32Le },
+                ),
+            ),
+            mapper: ARegularChooseMapper::new(),
+        },
+    )
 }
 
 pub enum SpecAChooseWithDefault {
@@ -315,9 +355,11 @@ impl SpecIso for AChooseWithDefaultMapper<'_> {
     type Dst = SpecAChooseWithDefault;
 
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
 
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 
@@ -330,13 +372,13 @@ impl<'a> Iso for AChooseWithDefaultMapper<'a> {
 pub struct SpecAChooseWithDefaultCombinator(SpecAChooseWithDefaultCombinatorAlias);
 
 impl SpecCombinator for SpecAChooseWithDefaultCombinator {
-    type SpecResult = SpecAChooseWithDefault;
+    type Result = SpecAChooseWithDefault;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -350,7 +392,7 @@ impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
         SpecAChooseWithDefaultCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -550,9 +592,11 @@ impl SpecIso for ANonDependentChooseMapper {
     type Dst = SpecANonDependentChoose;
 
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
 
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 
@@ -565,13 +609,13 @@ impl Iso for ANonDependentChooseMapper {
 pub struct SpecANonDependentChooseCombinator(SpecANonDependentChooseCombinatorAlias);
 
 impl SpecCombinator for SpecANonDependentChooseCombinator {
-    type SpecResult = SpecANonDependentChoose;
+    type Result = SpecANonDependentChoose;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -585,7 +629,7 @@ impl SecureSpecCombinator for SpecANonDependentChooseCombinator {
         SpecANonDependentChooseCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -778,88 +822,18 @@ pub fn a_non_dependent_choose() -> (o: ANonDependentChooseCombinator)
     )
 }
 
-pub enum SpecARegularChoose {
-    A(u8),
-    B(u16),
-    C(u32),
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AClosedEnum {
+    A = 0,
+    B = 1,
+    C = 2,
 }
 
-pub type SpecARegularChooseInner = Either<u8, Either<u16, u32>>;
+pub type SpecAClosedEnum = AClosedEnum;
 
-impl SpecFrom<SpecARegularChoose> for SpecARegularChooseInner {
-    open spec fn spec_from(m: SpecARegularChoose) -> SpecARegularChooseInner {
-        match m {
-            SpecARegularChoose::A(m) => Either::Left(m),
-            SpecARegularChoose::B(m) => Either::Right(Either::Left(m)),
-            SpecARegularChoose::C(m) => Either::Right(Either::Right(m)),
-        }
-    }
-}
+pub type AClosedEnumInner = u8;
 
-impl SpecFrom<SpecARegularChooseInner> for SpecARegularChoose {
-    open spec fn spec_from(m: SpecARegularChooseInner) -> SpecARegularChoose {
-        match m {
-            Either::Left(m) => SpecARegularChoose::A(m),
-            Either::Right(Either::Left(m)) => SpecARegularChoose::B(m),
-            Either::Right(Either::Right(m)) => SpecARegularChoose::C(m),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ARegularChoose {
-    A(u8),
-    B(u16),
-    C(u32),
-}
-
-pub type ARegularChooseInner = Either<u8, Either<u16, u32>>;
-
-impl View for ARegularChoose {
-    type V = SpecARegularChoose;
-
-    open spec fn view(&self) -> Self::V {
-        match self {
-            ARegularChoose::A(m) => SpecARegularChoose::A(m@),
-            ARegularChoose::B(m) => SpecARegularChoose::B(m@),
-            ARegularChoose::C(m) => SpecARegularChoose::C(m@),
-        }
-    }
-}
-
-impl From<ARegularChoose> for ARegularChooseInner {
-    fn ex_from(m: ARegularChoose) -> ARegularChooseInner {
-        match m {
-            ARegularChoose::A(m) => Either::Left(m),
-            ARegularChoose::B(m) => Either::Right(Either::Left(m)),
-            ARegularChoose::C(m) => Either::Right(Either::Right(m)),
-        }
-    }
-}
-
-impl From<ARegularChooseInner> for ARegularChoose {
-    fn ex_from(m: ARegularChooseInner) -> ARegularChoose {
-        match m {
-            Either::Left(m) => ARegularChoose::A(m),
-            Either::Right(Either::Left(m)) => ARegularChoose::B(m),
-            Either::Right(Either::Right(m)) => ARegularChoose::C(m),
-        }
-    }
-}
-
-pub struct ARegularChooseMapper;
-
-impl ARegularChooseMapper {
-    pub closed spec fn spec_new() -> Self {
-        ARegularChooseMapper
-    }
-
-    pub fn new() -> Self {
-        ARegularChooseMapper
-    }
-}
-
-impl View for ARegularChooseMapper {
+impl View for AClosedEnum {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -867,10 +841,70 @@ impl View for ARegularChooseMapper {
     }
 }
 
-impl SpecIso for ARegularChooseMapper {
-    type Src = SpecARegularChooseInner;
+impl SpecTryFrom<AClosedEnumInner> for AClosedEnum {
+    type Error = ();
 
-    type Dst = SpecARegularChoose;
+    open spec fn spec_try_from(v: AClosedEnumInner) -> Result<AClosedEnum, ()> {
+        match v {
+            0u8 => Ok(AClosedEnum::A),
+            1u8 => Ok(AClosedEnum::B),
+            2u8 => Ok(AClosedEnum::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<AClosedEnum> for AClosedEnumInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: AClosedEnum) -> Result<AClosedEnumInner, ()> {
+        match v {
+            AClosedEnum::A => Ok(0u8),
+            AClosedEnum::B => Ok(1u8),
+            AClosedEnum::C => Ok(2u8),
+        }
+    }
+}
+
+impl TryFrom<AClosedEnumInner> for AClosedEnum {
+    type Error = ();
+
+    fn ex_try_from(v: AClosedEnumInner) -> Result<AClosedEnum, ()> {
+        match v {
+            0u8 => Ok(AClosedEnum::A),
+            1u8 => Ok(AClosedEnum::B),
+            2u8 => Ok(AClosedEnum::C),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<AClosedEnum> for AClosedEnumInner {
+    type Error = ();
+
+    fn ex_try_from(v: AClosedEnum) -> Result<AClosedEnumInner, ()> {
+        match v {
+            AClosedEnum::A => Ok(0u8),
+            AClosedEnum::B => Ok(1u8),
+            AClosedEnum::C => Ok(2u8),
+        }
+    }
+}
+
+pub struct AClosedEnumMapper;
+
+impl View for AClosedEnumMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for AClosedEnumMapper {
+    type Src = AClosedEnumInner;
+
+    type Dst = AClosedEnum;
 
     proof fn spec_iso(s: Self::Src) {
     }
@@ -879,22 +913,22 @@ impl SpecIso for ARegularChooseMapper {
     }
 }
 
-impl Iso for ARegularChooseMapper {
-    type Src = ARegularChooseInner;
+impl TryFromInto for AClosedEnumMapper {
+    type Src = AClosedEnumInner;
 
-    type Dst = ARegularChoose;
+    type Dst = AClosedEnum;
 }
 
-pub struct SpecARegularChooseCombinator(SpecARegularChooseCombinatorAlias);
+pub struct SpecAClosedEnumCombinator(SpecAClosedEnumCombinatorAlias);
 
-impl SpecCombinator for SpecARegularChooseCombinator {
-    type SpecResult = SpecARegularChoose;
+impl SpecCombinator for SpecAClosedEnumCombinator {
+    type Result = SpecAClosedEnum;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -903,12 +937,12 @@ impl SpecCombinator for SpecARegularChooseCombinator {
     }
 }
 
-impl SecureSpecCombinator for SpecARegularChooseCombinator {
+impl SecureSpecCombinator for SpecAClosedEnumCombinator {
     open spec fn is_prefix_secure() -> bool {
-        SpecARegularChooseCombinatorAlias::is_prefix_secure()
+        SpecAClosedEnumCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -921,23 +955,20 @@ impl SecureSpecCombinator for SpecARegularChooseCombinator {
     }
 }
 
-pub type SpecARegularChooseCombinatorAlias = Mapped<
-    OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>,
-    ARegularChooseMapper,
->;
+pub type SpecAClosedEnumCombinatorAlias = TryMap<U8, AClosedEnumMapper>;
 
-pub struct ARegularChooseCombinator(ARegularChooseCombinatorAlias);
+pub struct AClosedEnumCombinator(AClosedEnumCombinatorAlias);
 
-impl View for ARegularChooseCombinator {
-    type V = SpecARegularChooseCombinator;
+impl View for AClosedEnumCombinator {
+    type V = SpecAClosedEnumCombinator;
 
     closed spec fn view(&self) -> Self::V {
-        SpecARegularChooseCombinator(self.0@)
+        SpecAClosedEnumCombinator(self.0@)
     }
 }
 
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
-    type Result = ARegularChoose;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for AClosedEnumCombinator {
+    type Result = AClosedEnum;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
@@ -967,42 +998,17 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
     }
 }
 
-pub type ARegularChooseCombinatorAlias = Mapped<
-    OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>,
-    ARegularChooseMapper,
->;
+pub type AClosedEnumCombinatorAlias = TryMap<U8, AClosedEnumMapper>;
 
-pub closed spec fn spec_a_regular_choose(e: SpecAClosedEnum) -> SpecARegularChooseCombinator {
-    SpecARegularChooseCombinator(
-        Mapped {
-            inner: OrdChoice(
-                Cond { cond: e == AClosedEnum::A, inner: U8 },
-                OrdChoice(
-                    Cond { cond: e == AClosedEnum::B, inner: U16Le },
-                    Cond { cond: e == AClosedEnum::C, inner: U32Le },
-                ),
-            ),
-            mapper: ARegularChooseMapper::spec_new(),
-        },
-    )
+pub closed spec fn spec_a_closed_enum() -> SpecAClosedEnumCombinator {
+    SpecAClosedEnumCombinator(TryMap { inner: U8, mapper: AClosedEnumMapper })
 }
 
-pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
+pub fn a_closed_enum() -> (o: AClosedEnumCombinator)
     ensures
-        o@ == spec_a_regular_choose(e@),
+        o@ == spec_a_closed_enum(),
 {
-    ARegularChooseCombinator(
-        Mapped {
-            inner: OrdChoice::new(
-                Cond { cond: e == AClosedEnum::A, inner: U8 },
-                OrdChoice::new(
-                    Cond { cond: e == AClosedEnum::B, inner: U16Le },
-                    Cond { cond: e == AClosedEnum::C, inner: U32Le },
-                ),
-            ),
-            mapper: ARegularChooseMapper::new(),
-        },
-    )
+    AClosedEnumCombinator(TryMap { inner: U8, mapper: AClosedEnumMapper })
 }
 
 pub type SpecAnOpenEnum = u8;
@@ -1012,13 +1018,13 @@ pub type AnOpenEnum = u8;
 pub struct SpecAnOpenEnumCombinator(SpecAnOpenEnumCombinatorAlias);
 
 impl SpecCombinator for SpecAnOpenEnumCombinator {
-    type SpecResult = SpecAnOpenEnum;
+    type Result = SpecAnOpenEnum;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -1032,7 +1038,7 @@ impl SecureSpecCombinator for SpecAnOpenEnumCombinator {
         SpecAnOpenEnumCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 

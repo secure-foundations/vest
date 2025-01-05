@@ -26,10 +26,10 @@ pub type TstTag = u8;
 pub struct SpecTstTagCombinator(SpecTstTagCombinatorAlias);
 
 impl SpecCombinator for SpecTstTagCombinator {
-    type SpecResult = SpecTstTag;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    type Result = SpecTstTag;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
     { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     { self.0.spec_parse_wf(s) }
@@ -38,7 +38,7 @@ impl SpecCombinator for SpecTstTagCombinator {
 impl SecureSpecCombinator for SpecTstTagCombinator {
     open spec fn is_prefix_secure() -> bool 
     { SpecTstTagCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     { self.0.theorem_parse_serialize_roundtrip(buf) }
@@ -150,8 +150,10 @@ impl SpecIso for MydataMapper<'_> {
     type Src = SpecMydataInner;
     type Dst = SpecMydata;
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 impl<'a> Iso for MydataMapper<'a> {
@@ -162,10 +164,10 @@ impl<'a> Iso for MydataMapper<'a> {
 pub struct SpecMydataCombinator(SpecMydataCombinatorAlias);
 
 impl SpecCombinator for SpecMydataCombinator {
-    type SpecResult = SpecMydata;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    type Result = SpecMydata;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
     { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     { self.0.spec_parse_wf(s) }
@@ -174,7 +176,7 @@ impl SpecCombinator for SpecMydataCombinator {
 impl SecureSpecCombinator for SpecMydataCombinator {
     open spec fn is_prefix_secure() -> bool 
     { SpecMydataCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     { self.0.theorem_parse_serialize_roundtrip(buf) }
@@ -522,8 +524,10 @@ impl SpecIso for TstMydataMapper<'_> {
     type Src = SpecTstMydataInner;
     type Dst = SpecTstMydata;
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 impl<'a> Iso for TstMydataMapper<'a> {
@@ -535,10 +539,10 @@ impl<'a> Iso for TstMydataMapper<'a> {
 pub struct SpecTstMydataCombinator(SpecTstMydataCombinatorAlias);
 
 impl SpecCombinator for SpecTstMydataCombinator {
-    type SpecResult = SpecTstMydata;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    type Result = SpecTstMydata;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
     { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     { self.0.spec_parse_wf(s) }
@@ -547,7 +551,7 @@ impl SpecCombinator for SpecTstMydataCombinator {
 impl SecureSpecCombinator for SpecTstMydataCombinator {
     open spec fn is_prefix_secure() -> bool 
     { SpecTstMydataCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     { self.0.theorem_parse_serialize_roundtrip(buf) }
@@ -659,8 +663,10 @@ impl SpecIso for TstMapper<'_> {
     type Src = SpecTstInner;
     type Dst = SpecTst;
     proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
     proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
 impl<'a> Iso for TstMapper<'a> {
@@ -671,10 +677,10 @@ impl<'a> Iso for TstMapper<'a> {
 pub struct SpecTstCombinator(SpecTstCombinatorAlias);
 
 impl SpecCombinator for SpecTstCombinator {
-    type SpecResult = SpecTst;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    type Result = SpecTst;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
     { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     { self.0.spec_parse_wf(s) }
@@ -683,7 +689,7 @@ impl SpecCombinator for SpecTstCombinator {
 impl SecureSpecCombinator for SpecTstCombinator {
     open spec fn is_prefix_secure() -> bool 
     { SpecTstCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     { self.0.theorem_parse_serialize_roundtrip(buf) }

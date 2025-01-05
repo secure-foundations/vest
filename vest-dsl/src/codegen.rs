@@ -439,10 +439,10 @@ impl Codegen for Combinator {
 pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
-    type SpecResult = Spec{name};
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> 
+    type Result = Spec{name};
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> 
     {{ self.0.spec_parse(s) }}
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> 
     {{ self.0.spec_serialize(v) }}
     proof fn spec_parse_wf(&self, s: Seq<u8>)
     {{ self.0.spec_parse_wf(s) }}
@@ -451,7 +451,7 @@ impl SpecCombinator for Spec{name}Combinator {{
 impl SecureSpecCombinator for Spec{name}Combinator {{
     open spec fn is_prefix_secure() -> bool 
     {{ Spec{name}CombinatorAlias::is_prefix_secure() }}
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result)
     {{ self.0.theorem_serialize_parse_roundtrip(v) }}
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     {{ self.0.theorem_parse_serialize_roundtrip(buf) }}

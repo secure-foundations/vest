@@ -137,13 +137,13 @@ impl SpecPred for Predicate11955646336730306823 {
 pub struct SpecOpaqueU16Combinator(SpecOpaqueU16CombinatorAlias);
 
 impl SpecCombinator for SpecOpaqueU16Combinator {
-    type SpecResult = SpecOpaqueU16;
+    type Result = SpecOpaqueU16;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -157,7 +157,7 @@ impl SecureSpecCombinator for SpecOpaqueU16Combinator {
         SpecOpaqueU16CombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -315,13 +315,13 @@ pub type ResponderId<'a> = OpaqueU16<'a>;
 pub struct SpecResponderIdCombinator(SpecResponderIdCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdCombinator {
-    type SpecResult = SpecResponderId;
+    type Result = SpecResponderId;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -335,7 +335,7 @@ impl SecureSpecCombinator for SpecResponderIdCombinator {
         SpecResponderIdCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -411,13 +411,13 @@ pub type ResponderIdListList<'a> = RepeatResult<ResponderId<'a>>;
 pub struct SpecResponderIdListListCombinator(SpecResponderIdListListCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdListListCombinator {
-    type SpecResult = SpecResponderIdListList;
+    type Result = SpecResponderIdListList;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -431,7 +431,7 @@ impl SecureSpecCombinator for SpecResponderIdListListCombinator {
         SpecResponderIdListListCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
@@ -603,13 +603,13 @@ impl SpecPred for Predicate6556550293019859977 {
 pub struct SpecResponderIdListCombinator(SpecResponderIdListCombinatorAlias);
 
 impl SpecCombinator for SpecResponderIdListCombinator {
-    type SpecResult = SpecResponderIdList;
+    type Result = SpecResponderIdList;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Result), ()> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Result) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
 
@@ -623,7 +623,7 @@ impl SecureSpecCombinator for SpecResponderIdListCombinator {
         SpecResponderIdListCombinatorAlias::is_prefix_secure()
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Result) {
         self.0.theorem_serialize_parse_roundtrip(v)
     }
 
