@@ -174,7 +174,7 @@ pub open spec fn seq_splice(data: Seq<u8>, pos: usize, v: Seq<u8>) -> Seq<u8>
     recommends
         pos + v.len() <= data.len(),
 {
-    data.subrange(0, pos as int).add(v).add(data.subrange(pos + v.len() as int, data.len() as int))
+    data.take(pos as int) + v + data.skip(pos + v.len() as int)
 }
 
 /// Wraps Rust's `Vec::extend_from_slice`.
