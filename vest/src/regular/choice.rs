@@ -5,6 +5,7 @@ use vstd::prelude::*;
 verus! {
 
 #[allow(missing_docs)]
+#[derive(Debug)]
 pub enum Either<A, B> {
     Left(A),
     Right(B),
