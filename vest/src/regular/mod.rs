@@ -42,3 +42,5 @@ pub mod terminated;
 pub mod tail;
 /// Uints combinator
 pub mod uints;
+/// Star combinator
+pub mod star;
