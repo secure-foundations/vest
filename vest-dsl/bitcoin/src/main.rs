@@ -115,165 +115,165 @@ fn bench_fn(
     Ok(())
 }
 
-pub const INSTR_BASE: u8 = 0;
-pub const AUXBLOCK_BEGIN: u8 = 1;
-pub const AUXBLOCK_END: u8 = 11;
-
-#[derive(Debug)]
-struct InstrFmt(Either<u8, Box<AuxBlockFmt>>);
-#[derive(Debug)]
-struct AuxBlockFmt((u8, (RepeatResult<Box<InstrFmt>>, u8)));
-
-impl vstd::view::View for InstrFmt {
-    type V = Self;
-}
-impl vstd::view::View for AuxBlockFmt {
-    type V = Self;
-}
-
-struct InstrCom(
-    pub OrdChoice<Refined<U8, TagPred<u8>>, Box<dyn Continuation<(), Output = AuxBlockCom>>>,
-);
-struct AuxBlockCom(
-    pub  (
-        Refined<U8, TagPred<u8>>,
-        (
-            Star<Box<dyn Continuation<(), Output = InstrCom>>>,
-            Refined<U8, TagPred<u8>>,
-        ),
-    ),
-);
-impl vstd::view::View for InstrCom {
-    type V = Self;
-}
-impl vstd::view::View for AuxBlockCom {
-    type V = Self;
-}
-impl SpecCombinator for InstrCom {
-    type Type = InstrFmt;
-}
-impl SecureSpecCombinator for InstrCom {}
-impl SpecCombinator for AuxBlockCom {
-    type Type = AuxBlockFmt;
-}
-impl SecureSpecCombinator for AuxBlockCom {}
-
-impl DisjointFrom<Refined<U8, TagPred<u8>>> for AuxBlockCom {}
-
-impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrCom {
-    type Type = InstrFmt;
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
-    }
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
-        match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
-            Ok((n, Either::Left(v))) => Ok((n, InstrFmt(Either::Left(v)))),
-            Ok((n, Either::Right(v))) => Ok((n, InstrFmt(Either::Right(v)))),
-            Err(e) => Err(e),
-        }
-    }
-    fn serialize(
-        &self,
-        v: Self::Type,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError> {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
-    }
-}
-
-impl<'a> Combinator<&'a [u8], Vec<u8>> for AuxBlockCom {
-    type Type = AuxBlockFmt;
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
-    }
-    fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
-        match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
-            Ok((n, (a, (b, c)))) => Ok((n, AuxBlockFmt((a, (b, c))))),
-            Err(e) => Err(e),
-        }
-    }
-    fn serialize(
-        &self,
-        v: Self::Type,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError> {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
-    }
-}
-
-struct AuxBlockCont;
-struct InstrCont;
-
-impl Continuation<()> for AuxBlockCont {
-    type Output = AuxBlockCom;
-
-    fn apply(&self, i: ()) -> Self::Output {
-        AuxBlockCom((
-            Refined {
-                inner: U8,
-                predicate: TagPred(AUXBLOCK_BEGIN),
-            },
-            (
-                Star(Box::new(InstrCont)),
-                Refined {
-                    inner: U8,
-                    predicate: TagPred(AUXBLOCK_END),
-                },
-            ),
-        ))
-    }
-}
-
-impl Continuation<()> for InstrCont {
-    type Output = InstrCom;
-
-    fn apply(&self, i: ()) -> Self::Output {
-        InstrCom(OrdChoice(
-            Refined {
-                inner: U8,
-                predicate: TagPred(INSTR_BASE),
-            },
-            Box::new(AuxBlockCont),
-        ))
-    }
-}
-
-fn test() {
-    // let buf = vec![0x00];
-    let buf = vec![0x01, 0, 0, 0x01, 0, 0, 0, 0x0B, 0, 0x0B];
-    let aux_block = AuxBlockCont.apply(());
-    let instr = InstrCont.apply(());
-    let (consumed, parsed) = instr.parse(&buf).unwrap_or_else(|e| {
-        panic!("Failed to parse: {}", e);
-    });
-    println!("consumed: {}", consumed);
-    println!("parsed: {:?}", parsed);
-}
-
-// fn instr<'a>() -> InstrCom {
-//     InstrCom(OrdChoice(
-//         Refined {
-//             inner: U8,
-//             predicate: TagPred(INSTR_BASE),
-//         },
-//         Box::new(aux_block()),
-//     ))
+// pub const INSTR_BASE: u8 = 0;
+// pub const AUXBLOCK_BEGIN: u8 = 1;
+// pub const AUXBLOCK_END: u8 = 11;
+//
+// #[derive(Debug)]
+// struct InstrFmt(Either<u8, Box<AuxBlockFmt>>);
+// #[derive(Debug)]
+// struct AuxBlockFmt((u8, (RepeatResult<Box<InstrFmt>>, u8)));
+//
+// impl vstd::view::View for InstrFmt {
+//     type V = Self;
+// }
+// impl vstd::view::View for AuxBlockFmt {
+//     type V = Self;
 // }
 //
-// fn aux_block<'a>() -> AuxBlockCom {
-//     AuxBlockCom((
-//         Refined {
-//             inner: U8,
-//             predicate: TagPred(AUXBLOCK_BEGIN),
-//         },
+// struct InstrCom(
+//     pub OrdChoice<Refined<U8, TagPred<u8>>, Box<dyn Continuation<(), Output = AuxBlockCom>>>,
+// );
+// struct AuxBlockCom(
+//     pub  (
+//         Refined<U8, TagPred<u8>>,
 //         (
-//             Star(Box::new(instr())),
+//             Star<Box<dyn Continuation<(), Output = InstrCom>>>,
+//             Refined<U8, TagPred<u8>>,
+//         ),
+//     ),
+// );
+// impl vstd::view::View for InstrCom {
+//     type V = Self;
+// }
+// impl vstd::view::View for AuxBlockCom {
+//     type V = Self;
+// }
+// impl SpecCombinator for InstrCom {
+//     type Type = InstrFmt;
+// }
+// impl SecureSpecCombinator for InstrCom {}
+// impl SpecCombinator for AuxBlockCom {
+//     type Type = AuxBlockFmt;
+// }
+// impl SecureSpecCombinator for AuxBlockCom {}
+//
+// impl DisjointFrom<Refined<U8, TagPred<u8>>> for AuxBlockCom {}
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrCom {
+//     type Type = InstrFmt;
+//     fn length(&self) -> Option<usize> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+//     }
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
+//             Ok((n, Either::Left(v))) => Ok((n, InstrFmt(Either::Left(v)))),
+//             Ok((n, Either::Right(v))) => Ok((n, InstrFmt(Either::Right(v)))),
+//             Err(e) => Err(e),
+//         }
+//     }
+//     fn serialize(
+//         &self,
+//         v: Self::Type,
+//         data: &mut Vec<u8>,
+//         pos: usize,
+//     ) -> Result<usize, SerializeError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
+//     }
+// }
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for AuxBlockCom {
+//     type Type = AuxBlockFmt;
+//     fn length(&self) -> Option<usize> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+//     }
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
+//             Ok((n, (a, (b, c)))) => Ok((n, AuxBlockFmt((a, (b, c))))),
+//             Err(e) => Err(e),
+//         }
+//     }
+//     fn serialize(
+//         &self,
+//         v: Self::Type,
+//         data: &mut Vec<u8>,
+//         pos: usize,
+//     ) -> Result<usize, SerializeError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
+//     }
+// }
+//
+// struct AuxBlockCont;
+// struct InstrCont;
+//
+// impl Continuation<()> for AuxBlockCont {
+//     type Output = AuxBlockCom;
+//
+//     fn apply(&self, i: ()) -> Self::Output {
+//         AuxBlockCom((
 //             Refined {
 //                 inner: U8,
-//                 predicate: TagPred(AUXBLOCK_END),
+//                 predicate: TagPred(AUXBLOCK_BEGIN),
 //             },
-//         ),
-//     ))
+//             (
+//                 Star(Box::new(InstrCont)),
+//                 Refined {
+//                     inner: U8,
+//                     predicate: TagPred(AUXBLOCK_END),
+//                 },
+//             ),
+//         ))
+//     }
 // }
+//
+// impl Continuation<()> for InstrCont {
+//     type Output = InstrCom;
+//
+//     fn apply(&self, i: ()) -> Self::Output {
+//         InstrCom(OrdChoice(
+//             Refined {
+//                 inner: U8,
+//                 predicate: TagPred(INSTR_BASE),
+//             },
+//             Box::new(AuxBlockCont),
+//         ))
+//     }
+// }
+//
+// fn test() {
+//     // let buf = vec![0x00];
+//     let buf = vec![0x01, 0, 0, 0x01, 0, 0, 0, 0x0B, 0, 0x0B];
+//     let aux_block = AuxBlockCont.apply(());
+//     let instr = InstrCont.apply(());
+//     let (consumed, parsed) = instr.parse(&buf).unwrap_or_else(|e| {
+//         panic!("Failed to parse: {}", e);
+//     });
+//     println!("consumed: {}", consumed);
+//     println!("parsed: {:?}", parsed);
+// }
+//
+// // fn instr<'a>() -> InstrCom {
+// //     InstrCom(OrdChoice(
+// //         Refined {
+// //             inner: U8,
+// //             predicate: TagPred(INSTR_BASE),
+// //         },
+// //         Box::new(aux_block()),
+// //     ))
+// // }
+// //
+// // fn aux_block<'a>() -> AuxBlockCom {
+// //     AuxBlockCom((
+// //         Refined {
+// //             inner: U8,
+// //             predicate: TagPred(AUXBLOCK_BEGIN),
+// //         },
+// //         (
+// //             Star(Box::new(instr())),
+// //             Refined {
+// //                 inner: U8,
+// //                 predicate: TagPred(AUXBLOCK_END),
+// //             },
+// //         ),
+// //     ))
+// // }
