@@ -1,5 +1,5 @@
 [package]
-name = "bitcoin"
+name = "vestbitcoin"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,8 @@ builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" 
 builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vest = { path = "../../vest" }
+hex = "0.4.3"
+bitcoin = "0.32.5"
 
 [package.metadata.verus.ide]
 extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern vest=../../vest/libvest.rlib src/lib.rs"
@@ -15,9 +17,9 @@ extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 
-[[bench]]
-name = "tls_benchmark"
-harness = false
+# [[bench]]
+# name = "tls_benchmark"
+# harness = false
 
 [profile.profiling]
 inherits = "release"

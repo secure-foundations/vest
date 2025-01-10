@@ -327,6 +327,9 @@ psk_binder_entries = {
   binders: [u8; @l] >>= Vec<psk_binder_entry>,
 }
 
+// TODO: binders:  A series of HMAC values, one for each value in the
+// identities list and in the same order, computed as described
+// below.
 offered_psks = {
   identities: psk_identities,
   binders: psk_binder_entries,

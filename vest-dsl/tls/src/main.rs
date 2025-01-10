@@ -115,7 +115,7 @@ fn parse_vesttls_handshake() -> Result<(), Box<dyn std::error::Error>> {
         let (consumed, parsed_handshake) = handshake().parse(payload).unwrap_or_else(|e| {
             panic!("Failed to parse Handshake: {}", e);
         });
-        // println!("consumed: {}", consumed);
+        println!("consumed: {}", consumed);
         // println!("parsed_handshake: {:#?}", parsed_handshake);
     }
 
@@ -164,8 +164,8 @@ fn serialize_vesttls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
         let len = handshake()
             .serialize(handshake_msg, &mut buf, 0)
             .unwrap_or_else(|e| panic!("Failed to serialize Handshake: {}", e));
-        // println!("len: {}", len);
-        // assert_eq!(&buf[0..len], &handshake_msg_payloads()[i][0..len]);
+        println!("len: {}", len);
+        assert_eq!(&buf[0..len], &handshake_msg_payloads()[i][0..len]);
     }
 
     Ok(())
@@ -405,17 +405,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // client_hello_parse_serialize_roundtrip()?;
     // parse_vesttls_client_hello()?;
     // parse_rustls_client_hello()?;
-    // parse_vesttls_handshake()?;
+    parse_vesttls_handshake()?;
     // parse_rustls_handshake()?;
-    // serialize_vesttls_handshakes()?;
+    serialize_vesttls_handshakes()?;
     // serialize_rustls_handshakes()?;
     // serialize_vesttls_client_hello()?;
     // bench_fn(parse_rustls_client_hello)?;
     // bench_fn(parse_vesttls_client_hello)?;
     // bench_fn(parse_rustls_handshake)?;
     // bench_fn(parse_vesttls_handshake)?;
-    bench_fn(serialize_vesttls_handshakes)?;
-    bench_fn(serialize_rustls_handshakes)?;
+    // bench_fn(serialize_vesttls_handshakes)?;
+    // bench_fn(serialize_rustls_handshakes)?;
 
     Ok(())
 }
