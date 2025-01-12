@@ -1,6 +1,11 @@
 pub mod transaction_data;
 pub mod vest_bitcoin;
 
+use std::fs::File;
+use std::path::PathBuf;
+use std::io::{BufRead, BufReader};
+use std::time::Instant;
+
 use transaction_data::*;
 use vest::{
     properties::*,
@@ -18,6 +23,10 @@ use vest::{
 use vest_bitcoin::*;
 
 use bitcoin::consensus::{Decodable, Encodable};
+
+use criterion::black_box;
+
+use base64::prelude::*;
 
 fn parse_vestbtc_tx() -> Result<(), Box<dyn std::error::Error>> {
     for bytes in transaction_data() {
@@ -85,10 +94,64 @@ fn hex_to_bytes(hex: &str) -> Vec<u8> {
     hex::decode(hex).unwrap()
 }
 
+/// Load blocks stored in benches/data/sampled_blocks.txt
+fn load_bitcoin_blocks(path: &str) -> Vec<Vec<u8>> {
+    let mut blocks_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    blocks_path.push(path);
+    let blocks_file = File::open(blocks_path).expect("failed to read blocks data");
+
+    BufReader::new(blocks_file).lines().map(|line| {
+        BASE64_STANDARD.decode(line.unwrap()).expect("failed to load test blocks")
+    }).collect::<Vec<_>>()
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    parse_vestbtc_tx()?;
+    let test_blocks = &load_bitcoin_blocks("benches/data/sampled_blocks.txt")[..100];
+    let max_block_size = test_blocks.iter().map(|block| block.len()).max().unwrap();
+
+    let num_iter = 20;
+
+    for _ in 0..num_iter {
+        let parsed = test_blocks.iter().map(|b| block().parse(b).unwrap().1).collect::<Vec<_>>();
+
+        let start = Instant::now();
+        black_box(
+            for b in parsed {
+                let mut buf = vec![0; max_block_size];
+                block().serialize(b, &mut buf, 0).unwrap();
+            }
+        );
+        println!("vest elapsed: {} ms", start.elapsed().as_millis());
+    }
+
+    let parsed = test_blocks.iter().map(|b| bitcoin::Block::consensus_decode(&mut &b[..]).unwrap()).collect::<Vec<_>>();
+
+    for _ in 0..num_iter {
+        let start = Instant::now();
+        black_box(
+            for b in &parsed {
+                let mut buf = Vec::with_capacity(max_block_size);
+                b.consensus_encode(&mut buf).unwrap();
+            }
+        );
+        println!("rust btc elapsed (without dropping): {} ms", start.elapsed().as_millis());
+    }
+
+    for _ in 0..num_iter {
+        let parsed = test_blocks.iter().map(|b| bitcoin::Block::consensus_decode(&mut &b[..]).unwrap()).collect::<Vec<_>>();
+        let start = Instant::now();
+        black_box(
+            for b in parsed {
+                let mut buf = Vec::with_capacity(max_block_size);
+                b.consensus_encode(&mut buf).unwrap();
+            }
+        );
+        println!("rust btc elapsed (with dropping): {} ms", start.elapsed().as_millis());
+    }
+
+    // parse_vestbtc_tx()?;
     // parse_rustbtc_tx()?;
-    serialize_vestbtc_tx()?;
+    // serialize_vestbtc_tx()?;
     // serialize_rustbtc_tx()?;
     // bench_fn(parse_rustbtc_tx)?;
     // bench_fn(parse_vestbtc_tx)?;

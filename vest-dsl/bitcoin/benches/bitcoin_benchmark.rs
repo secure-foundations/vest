@@ -19,7 +19,7 @@ use bitcoin::consensus::{Decodable, Encodable};
 use base64::prelude::*;
 
 /// Load blocks stored in benches/data/sampled_blocks.txt
-fn load_bitcoint_blocks(path: &str) -> Vec<Vec<u8>> {
+fn load_bitcoin_blocks(path: &str) -> Vec<Vec<u8>> {
     let mut blocks_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     blocks_path.push(path);
     let blocks_file = File::open(blocks_path).expect("failed to read blocks data");
@@ -31,7 +31,7 @@ fn load_bitcoint_blocks(path: &str) -> Vec<Vec<u8>> {
 
 /// Benchmark parsing time of 1K bitcoin blocks
 fn bench_parse_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
-    let test_blocks = load_bitcoint_blocks("benches/data/sampled_blocks.txt");
+    let test_blocks = load_bitcoin_blocks("benches/data/sampled_blocks.txt");
 
     let mut group = c.benchmark_group("parse_bitcoin_1k_blocks_bulk");
     group.bench_function("vest", |b| b.iter(||
@@ -49,7 +49,7 @@ fn bench_parse_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
 
 /// Benchmark parsing 1K bitcoin blocks, but collect data on each block
 fn bench_parse_bitcoin_1k_blocks(c: &mut Criterion) {
-    let test_blocks = load_bitcoint_blocks("benches/data/sampled_blocks.txt");
+    let test_blocks = load_bitcoin_blocks("benches/data/sampled_blocks.txt");
 
     let mut group = c.benchmark_group("parse_bitcoin_1k_blocks");
     group.sample_size(20);
@@ -70,7 +70,7 @@ fn bench_parse_bitcoin_1k_blocks(c: &mut Criterion) {
 
 /// Benchmark serializing 1K bitcoin blocks
 fn bench_serialize_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
-    let test_blocks = load_bitcoint_blocks("benches/data/sampled_blocks.txt");
+    let test_blocks = load_bitcoin_blocks("benches/data/sampled_blocks.txt");
 
     // Get the largest block size
     let max_block_size = test_blocks.iter().map(|block| block.len()).max().unwrap();
@@ -106,7 +106,7 @@ fn bench_serialize_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
 
 /// Benchmark serializing 1K bitcoin blocks, but collect data on each block
 fn bench_serialize_bitcoin_1k_blocks(c: &mut Criterion) {
-    let test_blocks = load_bitcoint_blocks("benches/data/sampled_blocks.txt");
+    let test_blocks = load_bitcoin_blocks("benches/data/sampled_blocks.txt");
 
     // Get the largest block size
     let max_block_size = test_blocks.iter().map(|block| block.len()).max().unwrap();
