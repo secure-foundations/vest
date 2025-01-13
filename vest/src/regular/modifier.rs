@@ -57,7 +57,10 @@ pub trait Iso: View where
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
  {
     /// The source type of the isomorphism.
-    type Src: View + From<Self::Dst>;
+    type Src: View;
+
+    /// The reference of the [`Src`] type.
+    type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
 
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
@@ -78,7 +81,7 @@ pub trait IsoFn: Iso where
     ;
 
     /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Self::Src)
+    fn rev_apply<'a>(s: &'a Self::Dst) -> (res: Self::RefSrc<'a>)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
     ;
@@ -202,6 +205,8 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
  {
     type Type = M::Dst;
 
+    type SType<'a> = &'a M::Dst where <M as Iso>::Dst: 'a;
+
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
     }
@@ -230,7 +235,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize<'a>(&self, v: Self::SType<'a>, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

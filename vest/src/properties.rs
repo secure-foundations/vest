@@ -168,8 +168,11 @@ pub trait Combinator<I, O>: View where
     O: VestOutput<I>,
     Self::V: SecureSpecCombinator<Type = <Self::Type as View>::V>,
  {
-    /// The result type of parsing and the input type of serialization.
+    /// The result type of parsing
     type Type: View;
+
+    /// The input type of serialization
+    type SType<'a>: View<V = <Self::Type as View>::V> where Self::Type: 'a;
 
     /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
@@ -225,7 +228,7 @@ pub trait Combinator<I, O>: View where
     /// seialize "in-place" on a "sufficiently large" buffer with a pointer `pos` for efficiency.
     /// This means it's not neccessarily the case that when `serialize` fails, `spec_serialize`
     /// will also fail.
-    fn serialize(&self, v: Self::Type, buf: &mut O, pos: usize) -> (res: SResult<
+    fn serialize<'a>(&self, v: Self::SType<'a>, buf: &mut O, pos: usize) -> (res: SResult<
         usize,
         SerializeError,
     >)
