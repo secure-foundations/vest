@@ -45,7 +45,10 @@ pub trait Iso: View where
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
  {
     /// The source type of the isomorphism.
-    type Src: View + From<Self::Dst>;
+    type Src: View;
+
+    /// The reference of the [`Src`] type.
+    type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
 
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
@@ -60,13 +63,13 @@ pub trait Iso: View where
     }
 
     /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Self::Src)
+    fn rev_apply<'a>(s: &'a Self::Dst) -> (res: Self::RefSrc<'a>)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
     {
         assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_from(s@))
             by (compute_only);
-        Self::Src::ex_from(s)
+        Self::RefSrc::ex_from(s)
     }
 }
 
@@ -164,14 +167,18 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: Iso<Src = Inner::Type>,
-    Inner::Type: From<M::Dst> + View,
-    M::Dst: From<Inner::Type> + View,
+    M: for<'a> Iso<Src = Inner::Type, RefSrc<'a> = Inner::SType<'a>>,
+    // for<'a> M::RefSrc<'a>: From<&'a Inner::Type>,
+    // Inner::Type: From<M::Dst> + View,
+    // Self::Type: From<Inner::Type> + View,
+    // for<'a> Inner::SType<'a>: From<Self::SType<'a>>,
     M::V: SpecIso<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecFrom<<Inner::Type as View>::V>,
  {
     type Type = M::Dst;
+
+    type SType<'a> = &'a M::Dst where <M as Iso>::Dst: 'a;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -201,7 +208,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize<'a>(&self, v: Self::SType<'a>, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
