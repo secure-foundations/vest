@@ -12,10 +12,6 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse(s)
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_serialize(v)
     }
@@ -23,17 +19,13 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
 
 impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator for (Fst, Snd) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        SpecDepend {
-            fst: self.0,
-            snd: |r: Fst::Type| self.1,
-        }.theorem_serialize_parse_roundtrip(v)
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.theorem_serialize_parse_roundtrip(v)
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        SpecDepend {
-            fst: self.0,
-            snd: |r: Fst::Type| self.1,
-        }.theorem_parse_serialize_roundtrip(buf)
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.theorem_parse_serialize_roundtrip(
+            buf,
+        )
     }
 
     open spec fn is_prefix_secure() -> bool {
@@ -42,6 +34,10 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_prefix_secure(buf, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
     }
 }
 

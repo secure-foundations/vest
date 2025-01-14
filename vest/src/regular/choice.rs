@@ -34,9 +34,9 @@ impl<Fst, Snd> OrdChoice<Fst, Snd> where
  {
     pub fn new(fst: Fst, snd: Snd) -> (o: Self)
         requires
-            snd@.disjoint_from(&fst@)
+            snd@.disjoint_from(&fst@),
         ensures
-            o == OrdChoice(fst, snd)
+            o == OrdChoice(fst, snd),
     {
         OrdChoice(fst, snd)
     }
@@ -69,16 +69,6 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
             }
         } else {
             Err(())
-        }
-    }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v)) = self.0.spec_parse(s) {
-            self.0.lemma_parse_length(s);
-        } else {
-            if let Ok((n, v)) = self.1.spec_parse(s) {
-                self.1.lemma_parse_length(s);
-            }
         }
     }
 
@@ -134,6 +124,16 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         } else {
             if let Ok((n, v)) = self.1.spec_parse(buf) {
                 self.1.theorem_parse_serialize_roundtrip(buf);
+            }
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Ok((n, v)) = self.0.spec_parse(s) {
+            self.0.lemma_parse_length(s);
+        } else {
+            if let Ok((n, v)) = self.1.spec_parse(s) {
+                self.1.lemma_parse_length(s);
             }
         }
     }
@@ -205,13 +205,12 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
     }
 }
 
-    // TODO: Add Non-emptiness proof
+// TODO: Add Non-emptiness proof
 // pub struct Opt<T>(pub OrdChoice<T, Success>);
 //
 //         fn test () {
 //             let _ = Opt(OrdChoice::new(super::uints::U8, Success));
 //     }
-
 /// This macro constructs a nested OrdChoice combinator
 /// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
 #[allow(unused_macros)]

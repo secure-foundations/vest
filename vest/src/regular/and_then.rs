@@ -37,13 +37,6 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v1)) = self.0.spec_parse(s) {
-            self.0.lemma_parse_length(s);
-            self.1.lemma_parse_length(v1);
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if let Ok(buf1) = self.1.spec_serialize(v) {
             self.0.spec_serialize(buf1)
@@ -84,6 +77,13 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(buf, s2);
     }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Ok((n, v1)) = self.0.spec_parse(s) {
+            self.0.lemma_parse_length(s);
+            self.1.lemma_parse_length(v1);
+        }
+    }
 }
 
 impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where
@@ -121,10 +121,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         let n = self.1.serialize(v, data, pos)?;
         if n == self.0.0 {
             Ok(n)

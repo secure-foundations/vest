@@ -372,10 +372,6 @@ impl SpecCombinator for BtcVarint {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         spec_btc_varint_inner().spec_serialize(v)
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        spec_btc_varint_inner().lemma_parse_length(s);
-    }
 }
 
 impl SecureSpecCombinator for BtcVarint {
@@ -393,6 +389,10 @@ impl SecureSpecCombinator for BtcVarint {
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
         spec_btc_varint_inner().theorem_parse_serialize_roundtrip(s);
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        spec_btc_varint_inner().lemma_parse_length(s);
     }
 }
 

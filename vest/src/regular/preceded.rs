@@ -28,12 +28,6 @@ impl<Fst: SecureSpecCombinator<Type = ()>, Snd: SpecCombinator> SpecCombinator f
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, ((), v))) = (self.0, self.1).spec_parse(s) {
-            (self.0, self.1).lemma_parse_length(s);
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         (self.0, self.1).spec_serialize(((), v))
     }
@@ -60,6 +54,12 @@ impl<
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
             (self.0, self.1).lemma_prefix_secure(s1, s2);
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Ok((n, ((), v))) = (self.0, self.1).spec_parse(s) {
+            (self.0, self.1).lemma_parse_length(s);
         }
     }
 }

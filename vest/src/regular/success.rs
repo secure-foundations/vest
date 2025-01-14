@@ -24,9 +24,6 @@ impl SpecCombinator for Success {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         Ok(Seq::empty())
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
 }
 
 impl SecureSpecCombinator for Success {
@@ -42,6 +39,9 @@ impl SecureSpecCombinator for Success {
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
         assert(s.subrange(0, 0) == Seq::<u8>::empty());
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 }
 

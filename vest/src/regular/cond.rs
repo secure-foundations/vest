@@ -30,12 +30,6 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if self.cond {
-            self.inner.lemma_parse_length(s);
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if self.cond {
             self.inner.spec_serialize(v)
@@ -65,6 +59,12 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         if self.cond {
             self.inner.lemma_prefix_secure(s1, s2);
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if self.cond {
+            self.inner.lemma_parse_length(s);
         }
     }
 }
@@ -106,10 +106,7 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {

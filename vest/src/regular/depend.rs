@@ -38,16 +38,6 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v1)) = self.fst.spec_parse(s) {
-            let snd = (self.snd)(v1);
-            if let Ok((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
-                self.fst.lemma_parse_length(s);
-                snd.lemma_parse_length(s.subrange(n as int, s.len() as int));
-            }
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         if Fst::is_prefix_secure() {
             let snd = (self.snd)(v.0);
@@ -124,6 +114,16 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
             } else {
             }
         } else {
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Ok((n, v1)) = self.fst.spec_parse(s) {
+            let snd = (self.snd)(v1);
+            if let Ok((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
+                self.fst.lemma_parse_length(s);
+                snd.lemma_parse_length(s.subrange(n as int, s.len() as int));
+            }
         }
     }
 }

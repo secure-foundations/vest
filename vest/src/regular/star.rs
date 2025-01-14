@@ -60,27 +60,6 @@ impl<C: SecureSpecCombinator> Star<C> {
             }
         }
     }
-
-    proof fn spec_parse_wf_helper(&self, s: Seq<u8>, res: Seq<C::Type>, consumed: usize, len: usize)
-        requires
-            consumed <= len,
-        ensures
-            self.spec_parse_helper(s, res, consumed, len) matches Ok((m, _)) ==> m <= len,
-        decreases s.len(),
-    {
-        match self.0.spec_parse(s) {
-            Ok((n, v)) => if 0 < n <= s.len() && consumed + n <= len {
-                self.spec_parse_wf_helper(
-                    s.skip(n as int),
-                    res.push(v),
-                    (consumed + n) as usize,
-                    len,
-                )
-            } else {
-            },
-            Err(..) => {},
-        }
-    }
 }
 
 impl<C: SecureSpecCombinator> Star<C> {
@@ -101,7 +80,7 @@ impl<C: SecureSpecCombinator> Star<C> {
                 ==> self.spec_serialize(v) == Ok::<_, ()>(s.take(consumed as int)),
         decreases s.len(),
     {
-        self.spec_parse_wf_helper(s, vs, consumed, len);
+        self.lemma_parse_length_helper(s, vs, consumed, len);
         match self.0.spec_parse(s) {
             Ok((n, v)) => if 0 < n <= s.len() && consumed + n <= len {
                 self.0.theorem_parse_serialize_roundtrip(s);
@@ -123,6 +102,33 @@ impl<C: SecureSpecCombinator> Star<C> {
         }
 
     }
+
+    proof fn lemma_parse_length_helper(
+        &self,
+        s: Seq<u8>,
+        res: Seq<C::Type>,
+        consumed: usize,
+        len: usize,
+    )
+        requires
+            consumed <= len,
+        ensures
+            self.spec_parse_helper(s, res, consumed, len) matches Ok((m, _)) ==> m <= len,
+        decreases s.len(),
+    {
+        match self.0.spec_parse(s) {
+            Ok((n, v)) => if 0 < n <= s.len() && consumed + n <= len {
+                self.lemma_parse_length_helper(
+                    s.skip(n as int),
+                    res.push(v),
+                    (consumed + n) as usize,
+                    len,
+                )
+            } else {
+            },
+            Err(..) => {},
+        }
+    }
 }
 
 impl<C: SecureSpecCombinator> SpecCombinator for Star<C> {
@@ -136,10 +142,6 @@ impl<C: SecureSpecCombinator> SpecCombinator for Star<C> {
         } else {
             self.spec_parse_helper(s, seq![], 0, s.len() as usize)
         }
-    }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.spec_parse_wf_helper(s, seq![], 0, s.len() as usize);
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()>
@@ -176,6 +178,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Star<C> {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.lemma_parse_length_helper(s, seq![], 0, s.len() as usize);
     }
 }
 

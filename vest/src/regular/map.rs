@@ -102,13 +102,6 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.inner.lemma_parse_length(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
-            M::spec_iso(v);
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.inner.spec_serialize(M::spec_rev_apply(v))
     }
@@ -144,6 +137,13 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
         if let Ok((n, v)) = self.inner.spec_parse(s1) {
             self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
+        if let Ok((n, v)) = self.inner.spec_parse(s) {
+            M::spec_iso(v);
         }
     }
 }
@@ -317,13 +317,6 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.inner.lemma_parse_length(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
-            M::spec_iso(v);
-        }
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         match M::spec_rev_apply(v) {
             Ok(v) => self.inner.spec_serialize(v),
@@ -362,6 +355,13 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
         if let Ok((n, v)) = self.inner.spec_parse(s1) {
             self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
+        if let Ok((n, v)) = self.inner.spec_parse(s) {
+            M::spec_iso(v);
         }
     }
 }

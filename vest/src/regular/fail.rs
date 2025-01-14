@@ -24,9 +24,6 @@ impl SpecCombinator for Fail {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         Err(())
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
 }
 
 impl SecureSpecCombinator for Fail {
@@ -41,6 +38,9 @@ impl SecureSpecCombinator for Fail {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 }
 

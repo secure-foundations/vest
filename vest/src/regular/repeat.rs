@@ -54,9 +54,6 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
-
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()>
         decreases v.len(),
     {
@@ -143,15 +140,15 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
 }
 
 impl<C> Repeat<C> where  {
     /// Helper function for parse()
     /// TODO: Recursion is not ideal, but hopefully tail call opt will kick in
-    fn parse_helper<I, O>(&self, s: I, res: &mut Vec<C::Type>) -> (r: Result<
-        (),
-        ParseError,
-    >) where
+    fn parse_helper<I, O>(&self, s: I, res: &mut Vec<C::Type>) -> (r: Result<(), ParseError>) where
         I: VestInput,
         O: VestOutput<I>,
         C: Combinator<I, O>,

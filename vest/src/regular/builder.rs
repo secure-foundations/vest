@@ -64,9 +64,6 @@ impl<T: Builder> SpecCombinator for BuilderCombinator<T> {
         }
     }
 
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
-
     open spec fn spec_serialize(&self, v: ()) -> Result<Seq<u8>, ()> {
         Ok(self.0.value())
     }
@@ -88,9 +85,15 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
 }
 
-impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where I: VestPublicInput, T: Builder + View {
+impl<I, T> Combinator<I, Vec<u8>> for BuilderCombinator<T> where
+    I: VestPublicInput,
+    T: Builder + View,
+ {
     type Type = ();
 
     open spec fn spec_length(&self) -> Option<usize> {

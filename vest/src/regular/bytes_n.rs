@@ -32,9 +32,6 @@ impl<const N: usize> SpecCombinator for BytesN<N> {
             Err(())
         }
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
 }
 
 impl<const N: usize> SecureSpecCombinator for BytesN<N> {
@@ -58,12 +55,12 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
     }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
 }
 
-impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where
-    I: VestInput,
-    O: VestOutput<I>,
- {
+impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where I: VestInput, O: VestOutput<I> {
     type Type = I;
 
     open spec fn spec_length(&self) -> Option<usize> {

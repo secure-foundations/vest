@@ -74,10 +74,6 @@ impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(self.0.predicate.0)
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.0.lemma_parse_length(s);
-    }
 }
 
 impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T> {
@@ -98,6 +94,10 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
         assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
             s1.add(s2),
         ) == self.spec_parse(s1));
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s);
     }
 }
 
@@ -131,10 +131,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         self.0.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         self.0.serialize(self.0.predicate.0, data, pos)
     }
 }

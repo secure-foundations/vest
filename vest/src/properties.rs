@@ -22,12 +22,6 @@ pub trait SpecCombinator {
 
     /// The specification of [`Combinator::serialize`].
     spec fn spec_serialize(&self, v: Self::Type) -> SResult<Seq<u8>, ()>;
-
-    /// A helper fact to ensure that the result of parsing is within the input bounds.
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-        ensures
-            self.spec_parse(s) matches Ok((n, _)) ==> n <= s.len(),
-    ;
 }
 
 /// Theorems and lemmas that must be proven for a combinator to be considered correct and secure.
@@ -132,6 +126,13 @@ pub trait SecureSpecCombinator: SpecCombinator {
             Self::is_prefix_secure() ==> self.spec_parse(s1) is Ok ==> self.spec_parse(s1.add(s2))
                 == self.spec_parse(s1),
     ;
+
+    /// The parser-length lemma is used in the proof of the roundtrip properties and the prefix-secure
+    /// lemma
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+        ensures
+            self.spec_parse(s) matches Ok((n, _)) ==> n <= s.len(),
+    ;
 }
 
 /// Implementation for parser and serializer combinators. A combinator's view must be a
@@ -224,10 +225,6 @@ impl<C: SpecCombinator> SpecCombinator for &C {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         (*self).spec_serialize(v)
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        (*self).lemma_parse_length(s)
-    }
 }
 
 impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
@@ -245,6 +242,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         (*self).lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        (*self).lemma_parse_length(s)
     }
 }
 
@@ -293,10 +294,6 @@ impl<C: SpecCombinator> SpecCombinator for Box<C> {
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         (**self).spec_serialize(v)
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        (**self).lemma_parse_length(s)
-    }
 }
 
 impl<C: SecureSpecCombinator> SecureSpecCombinator for Box<C> {
@@ -314,6 +311,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Box<C> {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         (**self).lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        (**self).lemma_parse_length(s)
     }
 }
 

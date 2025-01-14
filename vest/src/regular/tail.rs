@@ -32,9 +32,6 @@ impl SpecCombinator for Tail {
             Err(())
         }
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
 }
 
 impl SecureSpecCombinator for Tail {
@@ -50,6 +47,9 @@ impl SecureSpecCombinator for Tail {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 }
 

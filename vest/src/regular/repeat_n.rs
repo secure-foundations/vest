@@ -70,23 +70,6 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         }
     }
 
-    proof fn spec_parse_wf_helper(&self, s: Seq<u8>, n: usize)
-        ensures
-            self.spec_parse_helper(s, n) matches Ok((m, _)) ==> m <= s.len(),
-        decreases n,
-    {
-        if n == 0 {
-        } else {
-            self.spec_parse_wf_helper(s, (n - 1) as usize);
-            match self.spec_parse_helper(s, (n - 1) as usize) {
-                Ok((m, vs)) => {
-                    self.0.lemma_parse_length(s.skip(m as int));
-                },
-                Err(..) => {},
-            }
-        }
-    }
-
     proof fn lemma_spec_parse_err_unrecoverable(&self, s: Seq<u8>, n1: usize, n2: usize)
         ensures
             n1 <= n2 ==> self.spec_parse_helper(s, n1) is Err ==> self.spec_parse_helper(
@@ -177,7 +160,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
                 n,
             ).unwrap() == buf.take(m as int));
         } else {
-            self.spec_parse_wf_helper(buf, n);  // <-- this is the key
+            self.lemma_parse_length_helper(buf, n);  // <-- this is the key
             self.theorem_parse_serialize_roundtrip_helper(buf, (n - 1) as usize);
             if let Ok((m, vs)) = self.spec_parse_helper(buf, (n - 1) as usize) {
                 if let Ok((k, v)) = self.0.spec_parse(buf.skip(m as int)) {
@@ -206,13 +189,30 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         if n == 0 {
         } else {
             self.lemma_prefix_secure_helper(s1, s2, (n - 1) as usize);
-            self.spec_parse_wf_helper(s1, (n - 1) as usize);
-            self.spec_parse_wf_helper(s1.add(s2), (n - 1) as usize);
+            self.lemma_parse_length_helper(s1, (n - 1) as usize);
+            self.lemma_parse_length_helper(s1.add(s2), (n - 1) as usize);
             if let Ok((m1, vs1)) = self.spec_parse_helper(s1, (n - 1) as usize) {
                 self.0.lemma_prefix_secure(s1.skip(m1 as int), s2);
                 if let Ok((m2, vs2)) = self.spec_parse_helper(s1.add(s2), (n - 1) as usize) {
                     assert(s1.skip(m1 as int).add(s2) == s1.add(s2).skip(m2 as int));
                 }
+            }
+        }
+    }
+
+    proof fn lemma_parse_length_helper(&self, s: Seq<u8>, n: usize)
+        ensures
+            self.spec_parse_helper(s, n) matches Ok((m, _)) ==> m <= s.len(),
+        decreases n,
+    {
+        if n == 0 {
+        } else {
+            self.lemma_parse_length_helper(s, (n - 1) as usize);
+            match self.spec_parse_helper(s, (n - 1) as usize) {
+                Ok((m, vs)) => {
+                    self.0.lemma_parse_length(s.skip(m as int));
+                },
+                Err(..) => {},
             }
         }
     }
@@ -223,10 +223,6 @@ impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
         self.spec_parse_helper(s, self.1)
-    }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.spec_parse_wf_helper(s, self.1)
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
@@ -251,6 +247,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
         if C::is_prefix_secure() {
             self.lemma_prefix_secure_helper(s1, s2, self.1)
         }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.lemma_parse_length_helper(s, self.1)
     }
 }
 

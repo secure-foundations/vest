@@ -56,9 +56,6 @@ impl SpecCombinator for Bytes {
             Err(())
         }
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-    }
 }
 
 impl SecureSpecCombinator for Bytes {
@@ -81,6 +78,9 @@ impl SecureSpecCombinator for Bytes {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 }
 

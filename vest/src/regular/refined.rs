@@ -61,10 +61,6 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
             Err(())
         }
     }
-
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        self.inner.lemma_parse_length(s);
-    }
 }
 
 impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
@@ -88,6 +84,10 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
         assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
             s1.add(s2),
         ) == self.spec_parse(s1));
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
     }
 }
 
@@ -128,10 +128,7 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<
-        usize,
-        SerializeError,
-    > {
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         if self.predicate.apply(&v) {
             self.inner.serialize(v, data, pos)
         } else {
