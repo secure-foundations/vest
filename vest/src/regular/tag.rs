@@ -81,6 +81,10 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
         Inner::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        Inner::parse_productive()
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         self.0.theorem_serialize_parse_roundtrip(self.0.predicate.0);
     }
@@ -98,6 +102,10 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.0.lemma_parse_length(s);
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s);
     }
 }
 

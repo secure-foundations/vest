@@ -62,6 +62,16 @@ impl<
             (self.0, self.1).lemma_parse_length(s);
         }
     }
+
+    open spec fn parse_productive() -> bool {
+        Fst::parse_productive() || Snd::parse_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if let Ok((n, (v, ()))) = (self.0, self.1).spec_parse(s) {
+            (self.0, self.1).lemma_parse_productive(s);
+        }
+    }
 }
 
 impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where

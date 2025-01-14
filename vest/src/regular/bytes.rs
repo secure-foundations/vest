@@ -63,6 +63,10 @@ impl SecureSpecCombinator for Bytes {
         true
     }
 
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         assert(s1.add(s2).len() == s1.len() + s2.len());
         if let Ok((n, v)) = self.spec_parse(s1) {
@@ -81,6 +85,9 @@ impl SecureSpecCombinator for Bytes {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

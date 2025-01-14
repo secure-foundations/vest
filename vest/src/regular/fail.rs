@@ -31,6 +31,10 @@ impl SecureSpecCombinator for Fail {
         true
     }
 
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
 
@@ -41,6 +45,9 @@ impl SecureSpecCombinator for Fail {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

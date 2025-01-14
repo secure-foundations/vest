@@ -84,6 +84,13 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
             self.1.lemma_parse_length(v1);
         }
     }
+
+    open spec fn parse_productive() -> bool {
+        Bytes::parse_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+    }
 }
 
 impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> where

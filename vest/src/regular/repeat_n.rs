@@ -216,6 +216,26 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
             }
         }
     }
+
+    proof fn lemma_parse_productive_helper(&self, s: Seq<u8>, n: usize)
+        requires
+            C::parse_productive(),
+        ensures
+            self.spec_parse_helper(s, n) matches Ok((consumed, _)) ==> consumed > 0,
+        decreases n,
+    {
+        if n == 0 {
+            admit();
+        } else {
+            self.lemma_parse_productive_helper(s, (n - 1) as usize);
+            match self.spec_parse_helper(s, (n - 1) as usize) {
+                Ok((m, vs)) => {
+                    self.0.lemma_parse_productive(s.skip(m as int));
+                },
+                Err(..) => {},
+            }
+        }
+    }
 }
 
 impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
@@ -235,6 +255,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
         C::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        C::parse_productive()
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         self.theorem_serialize_parse_roundtrip_helper(v, self.1)
     }
@@ -251,6 +275,12 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.lemma_parse_length_helper(s, self.1)
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if C::parse_productive() {
+            self.lemma_parse_productive_helper(s, self.1)
+        }
     }
 }
 

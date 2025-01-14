@@ -74,6 +74,10 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
         false
     }
 
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: ()) {
         self.0.value_wf()
     }
@@ -87,6 +91,9 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

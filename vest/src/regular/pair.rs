@@ -39,6 +39,14 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
     }
+
+    open spec fn parse_productive() -> bool {
+        Fst::parse_productive() || Snd::parse_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_productive(s)
+    }
 }
 
 impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where

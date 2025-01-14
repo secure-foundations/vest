@@ -162,6 +162,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Star<C> {
         false
     }
 
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len(),
     {
@@ -182,6 +186,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Star<C> {
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.lemma_parse_length_helper(s, seq![], 0, s.len() as usize);
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

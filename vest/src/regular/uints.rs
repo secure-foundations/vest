@@ -130,6 +130,10 @@ macro_rules! impl_combinator_for_le_uint_type {
                     true
                 }
 
+                open spec fn parse_productive() -> bool {
+                    true
+                }
+
                 proof fn theorem_serialize_parse_roundtrip(&self, v: $int_type) {
                     $int_type::lemma_spec_to_from_le_bytes(&v);
                 }
@@ -150,6 +154,9 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
 
                 proof fn lemma_parse_length(&self, s: Seq<u8>) {
+                }
+
+                proof fn lemma_parse_productive(&self, s: Seq<u8>) {
                 }
             }
 
@@ -228,6 +235,10 @@ macro_rules! impl_combinator_for_be_uint_type {
                     true
                 }
 
+                open spec fn parse_productive() -> bool {
+                    true
+                }
+
                 proof fn theorem_serialize_parse_roundtrip(&self, v: $int_type) {
                     $int_type::lemma_spec_to_from_be_bytes(&v);
                 }
@@ -248,6 +259,9 @@ macro_rules! impl_combinator_for_be_uint_type {
                 }
 
                 proof fn lemma_parse_length(&self, s: Seq<u8>) {
+                }
+
+                proof fn lemma_parse_productive(&self, s: Seq<u8>) {
                 }
             }
 
@@ -1045,6 +1059,9 @@ impl SecureSpecCombinator for U24Le {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    open spec fn parse_productive() -> bool {
+        true
+    }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         BytesN::<3>.lemma_prefix_secure(s1, s2);
@@ -1077,6 +1094,9 @@ impl SecureSpecCombinator for U24Le {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 
@@ -1136,6 +1156,10 @@ impl SecureSpecCombinator for U24Be {
         true
     }
 
+    open spec fn parse_productive() -> bool {
+        true
+    }
+
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         BytesN::<3>.lemma_prefix_secure(s1, s2);
     }
@@ -1166,6 +1190,9 @@ impl SecureSpecCombinator for U24Be {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

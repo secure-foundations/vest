@@ -379,6 +379,10 @@ impl SecureSpecCombinator for BtcVarint {
         SpecBtcVarintInner::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        SpecBtcVarintInner::parse_productive()
+    }
+
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         spec_btc_varint_inner().lemma_prefix_secure(s1, s2);
     }
@@ -393,6 +397,10 @@ impl SecureSpecCombinator for BtcVarint {
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         spec_btc_varint_inner().lemma_parse_length(s);
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        spec_btc_varint_inner().lemma_parse_productive(s);
     }
 }
 

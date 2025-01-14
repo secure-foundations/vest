@@ -117,6 +117,10 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
         Inner::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        Inner::parse_productive()
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(buf) = self.inner.spec_serialize(M::spec_rev_apply(v)) {
             M::spec_iso_rev(v);
@@ -142,6 +146,13 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.inner.lemma_parse_length(s);
+        if let Ok((n, v)) = self.inner.spec_parse(s) {
+            M::spec_iso(v);
+        }
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_productive(s);
         if let Ok((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
@@ -335,6 +346,10 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
         Inner::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        Inner::parse_productive()
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         if let Ok(v_) = M::spec_rev_apply(v) {
             M::spec_iso_rev(v);
@@ -360,6 +375,13 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.inner.lemma_parse_length(s);
+        if let Ok((n, v)) = self.inner.spec_parse(s) {
+            M::spec_iso(v);
+        }
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_productive(s);
         if let Ok((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }

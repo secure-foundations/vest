@@ -51,6 +51,13 @@ impl SecureSpecCombinator for Tail {
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
+
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+    }
 }
 
 impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {

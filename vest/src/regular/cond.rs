@@ -67,6 +67,16 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
             self.inner.lemma_parse_length(s);
         }
     }
+
+    open spec fn parse_productive() -> bool {
+        Inner::parse_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if self.cond {
+            self.inner.lemma_parse_productive(s);
+        }
+    }
 }
 
 impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<

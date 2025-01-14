@@ -88,6 +88,10 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
         false
     }
 
+    open spec fn parse_productive() -> bool {
+        false
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len(),
     {
@@ -142,6 +146,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
     }
 }
 

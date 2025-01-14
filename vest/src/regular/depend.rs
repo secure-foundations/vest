@@ -126,6 +126,20 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
             }
         }
     }
+
+    open spec fn parse_productive() -> bool {
+        Fst::parse_productive() || Snd::parse_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if let Ok((n, v1)) = self.fst.spec_parse(s) {
+            let snd = (self.snd)(v1);
+            if let Ok((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
+                self.fst.lemma_parse_productive(s);
+                snd.lemma_parse_productive(s.subrange(n as int, s.len() as int));
+            }
+        }
+    }
 }
 
 /// Use this Continuation trait instead of Fn(Input) -> Output

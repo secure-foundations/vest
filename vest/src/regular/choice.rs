@@ -92,6 +92,10 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
+    open spec fn parse_productive() -> bool {
+        Fst::parse_productive() && Snd::parse_productive()
+    }
+
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         if self.1.disjoint_from(&self.0) {
             // must also explicitly state that parser1 will fail on anything that parser2 will succeed on
@@ -134,6 +138,16 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         } else {
             if let Ok((n, v)) = self.1.spec_parse(s) {
                 self.1.lemma_parse_length(s);
+            }
+        }
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if let Ok((n, v)) = self.0.spec_parse(s) {
+            self.0.lemma_parse_productive(s);
+        } else {
+            if let Ok((n, v)) = self.1.spec_parse(s) {
+                self.1.lemma_parse_productive(s);
             }
         }
     }
