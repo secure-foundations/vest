@@ -130,7 +130,7 @@ macro_rules! impl_combinator_for_le_uint_type {
                     true
                 }
 
-                open spec fn parse_productive() -> bool {
+                open spec fn is_productive(&self) -> bool {
                     true
                 }
 
@@ -235,7 +235,7 @@ macro_rules! impl_combinator_for_be_uint_type {
                     true
                 }
 
-                open spec fn parse_productive() -> bool {
+                open spec fn is_productive(&self) -> bool {
                     true
                 }
 
@@ -1059,7 +1059,8 @@ impl SecureSpecCombinator for U24Le {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    open spec fn parse_productive() -> bool {
+
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -1156,7 +1157,7 @@ impl SecureSpecCombinator for U24Be {
         true
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 

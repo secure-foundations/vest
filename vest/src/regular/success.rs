@@ -30,7 +30,8 @@ impl SecureSpecCombinator for Success {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    open spec fn parse_productive() -> bool {
+
+    open spec fn is_productive(&self) -> bool {
         false
     }
 

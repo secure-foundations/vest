@@ -81,8 +81,8 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
         Inner::is_prefix_secure()
     }
 
-    open spec fn parse_productive() -> bool {
-        Inner::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {

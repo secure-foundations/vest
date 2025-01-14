@@ -63,8 +63,8 @@ impl<
         }
     }
 
-    open spec fn parse_productive() -> bool {
-        Fst::parse_productive() || Snd::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        (self.0, self.1).is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {

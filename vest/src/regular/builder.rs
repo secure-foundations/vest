@@ -74,7 +74,7 @@ impl<T: Builder> SecureSpecCombinator for BuilderCombinator<T> {
         false
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         false
     }
 

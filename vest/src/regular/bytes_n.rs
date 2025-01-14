@@ -39,8 +39,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
         true
     }
 
-    open spec fn parse_productive() -> bool {
-        false
+    open spec fn is_productive(&self) -> bool {
+        N > 0
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {

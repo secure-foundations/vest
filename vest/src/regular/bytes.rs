@@ -63,8 +63,8 @@ impl SecureSpecCombinator for Bytes {
         true
     }
 
-    open spec fn parse_productive() -> bool {
-        false
+    open spec fn is_productive(&self) -> bool {
+        self.0 > 0
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {

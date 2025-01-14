@@ -68,14 +68,12 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
         }
     }
 
-    open spec fn parse_productive() -> bool {
-        Inner::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        self.inner.is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
-        if self.cond {
-            self.inner.lemma_parse_productive(s);
-        }
+        self.inner.lemma_parse_productive(s);
     }
 }
 

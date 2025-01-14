@@ -40,8 +40,8 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
     }
 
-    open spec fn parse_productive() -> bool {
-        Fst::parse_productive() || Snd::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {

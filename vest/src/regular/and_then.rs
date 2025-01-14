@@ -85,8 +85,8 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Bytes, Next> {
         }
     }
 
-    open spec fn parse_productive() -> bool {
-        Bytes::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {

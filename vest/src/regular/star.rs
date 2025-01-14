@@ -162,7 +162,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Star<C> {
         false
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         false
     }
 

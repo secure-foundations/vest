@@ -29,7 +29,7 @@ impl<T: View> View for RepeatResult<T> {
     }
 }
 
-impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
+impl<C: SecureSpecCombinator> SpecCombinator for Repeat<C> {
     type Type = Seq<C::Type>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()>
@@ -88,7 +88,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
         false
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         false
     }
 
@@ -164,6 +164,7 @@ impl<C> Repeat<C> where  {
         requires
             self.0.parse_requires(),
             C::V::is_prefix_secure(),
+            self.0@.is_productive(),
         ensures
             r is Ok ==> {
                 &&& self@.spec_parse(s@) is Ok
@@ -177,13 +178,12 @@ impl<C> Repeat<C> where  {
         }
         let (n, v) = self.0.parse(s.clone())?;
 
-        if n > 0 {
-            res.push(v);
-            // self.parse_helper(slice_subrange(s, n, s.len()), res)
-            self.parse_helper(s.subrange(n, s.len()), res)
-        } else {
-            Err(ParseError::RepeatEmptyElement)
+        assert(n > 0) by {
+            self.0@.lemma_parse_productive(s@);
         }
+        res.push(v);
+        // self.parse_helper(slice_subrange(s, n, s.len()), res)
+        self.parse_helper(s.subrange(n, s.len()), res)
     }
 
     fn serialize_helper<I, O>(
@@ -201,6 +201,7 @@ impl<C> Repeat<C> where  {
         requires
             self.0.serialize_requires(),
             C::V::is_prefix_secure(),
+            self.0@.is_productive(),
         ensures
             data@.len() == old(data)@.len(),
             res matches Ok(n) ==> {
@@ -220,16 +221,15 @@ impl<C> Repeat<C> where  {
 
         assert(v@ =~= old(v)@.drop_first());
 
-        if n1 > 0 {
-            let ghost data2 = data@;
+        assert(n1 > 0) by {
+            self.0@.lemma_serialize_productive(old(v)@[0]);
+        }
+        let ghost data2 = data@;
 
-            if let Some(next_len) = len.checked_add(n1) {
-                self.serialize_helper(v, data, pos, next_len)
-            } else {
-                Err(SerializeError::SizeOverflow)
-            }
+        if let Some(next_len) = len.checked_add(n1) {
+            self.serialize_helper(v, data, pos, next_len)
         } else {
-            Err(SerializeError::RepeatEmptyElement)
+            Err(SerializeError::SizeOverflow)
         }
     }
 }
@@ -253,6 +253,7 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
     open spec fn parse_requires(&self) -> bool {
         &&& <C as View>::V::is_prefix_secure()
         &&& self.0.parse_requires()
+        &&& self.0@.is_productive()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -264,6 +265,7 @@ impl<I, O, C> Combinator<I, O> for Repeat<C> where
     open spec fn serialize_requires(&self) -> bool {
         &&& <C as View>::V::is_prefix_secure()
         &&& self.0.serialize_requires()
+        &&& self.0@.is_productive()
     }
 
     fn serialize(&self, mut v: Self::Type, data: &mut O, pos: usize) -> (res: Result<

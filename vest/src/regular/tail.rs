@@ -52,7 +52,7 @@ impl SecureSpecCombinator for Tail {
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         false
     }
 

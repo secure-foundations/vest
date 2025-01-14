@@ -31,7 +31,7 @@ impl SecureSpecCombinator for Fail {
         true
     }
 
-    open spec fn parse_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         false
     }
 

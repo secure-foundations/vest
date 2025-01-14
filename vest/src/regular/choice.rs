@@ -92,8 +92,8 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
         Fst::is_prefix_secure() && Snd::is_prefix_secure()
     }
 
-    open spec fn parse_productive() -> bool {
-        Fst::parse_productive() && Snd::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        self.0.is_productive() && self.1.is_productive()
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {

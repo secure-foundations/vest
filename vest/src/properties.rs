@@ -135,14 +135,30 @@ pub trait SecureSpecCombinator: SpecCombinator {
     ;
 
     /// Like an associated constant, denotes whether the combinator is productive
-    spec fn parse_productive() -> bool;
+    spec fn is_productive(&self) -> bool;
 
     /// This lemma is used in the proof of the roundtrip properties for optional and unbouded
     /// repeating combinators.
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
+        requires
+            self.is_productive(),
         ensures
-            Self::parse_productive() ==> (self.spec_parse(s) matches Ok((n, _)) ==> n > 0),
+            self.spec_parse(s) matches Ok((n, _)) ==> n > 0,
     ;
+
+    /// This lemma is used in the proof of the roundtrip properties for optional and unbouded
+    /// repeating combinators.
+    proof fn lemma_serialize_productive(&self, v: Self::Type)
+        requires
+            self.is_productive(),
+        ensures
+            self.spec_serialize(v) matches Ok(b) ==> b.len() > 0,
+    {
+        self.theorem_serialize_parse_roundtrip(v);
+        if let Ok(buf) = self.spec_serialize(v) {
+            self.lemma_parse_productive(buf);
+        }
+    }
 }
 
 /// Implementation for parser and serializer combinators. A combinator's view must be a
@@ -242,8 +258,8 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for &C {
         C::is_prefix_secure()
     }
 
-    open spec fn parse_productive() -> bool {
-        C::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        (*self).is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -319,8 +335,8 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Box<C> {
         C::is_prefix_secure()
     }
 
-    open spec fn parse_productive() -> bool {
-        C::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        (**self).is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -548,313 +564,313 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C> where
 //     }
 // }
 } // verus!
-  ///////// Separating the parsing and serializing functions
-  ///////// Unsuccesful due to conflicting trait impls and Verus limitations (&mut support)
-  // pub trait Parser<I, O>
-  // where
-  //     I: VestInput,
-  // {
-  //     type Type;
-  //
-  //     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError>;
-  // }
-  //
-  // pub trait Serializer<I, O>
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  // {
-  //     type Type;
-  //
-  //     fn serialize_fn(
-  //         &self,
-  //         v: Self::Type,
-  //         data: &mut O,
-  //         pos: usize,
-  //     ) -> SResult<usize, SerializeError>;
-  // }
-  //
-  // impl<I, O, Type, F> Parser<I, O> for F
-  // where
-  //     I: VestInput,
-  //     F: Fn(I) -> PResult<Type, ParseError>,
-  // {
-  //     type Type = Type;
-  //
-  //     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
-  //         self(s)
-  //     }
-  // }
-  //
-  // impl<I, O, Fst, Snd> Parser<I, O> for (Fst, Snd)
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     Fst: Combinator<I, O>,
-  //     Snd: Combinator<I, O>,
-  //     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
-  //     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-  // {
-  //     type Type = (Fst::Type, Snd::Type);
-  //
-  //     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
-  //         (&self.0, &self.1).parse(s)
-  //     }
-  // }
-  //
-  // impl<I: VestPublicInput, O: VestPublicOutput<I>> Parser<I, O> for crate::regular::uints::U8 {
-  //     type Type = u8;
-  //
-  //     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
-  //         <_ as Combinator<I, O>>::parse(self, s)
-  //     }
-  // }
-  //
-  // fn parse_pair_of_u8<I, O>(s: I) -> PResult<(u8, u8), ParseError>
-  // where
-  //     I: VestPublicInput,
-  //     O: VestPublicOutput<I>,
-  // {
-  //     <_ as Parser<I, O>>::parse_fn(&(crate::regular::uints::U8, crate::regular::uints::U8), s)
-  // }
-  //
-  // fn test<I, O, P: Parser<I, O>>(p: P, s: I) -> PResult<P::Type, ParseError>
-  // where
-  //     I: VestPublicInput,
-  // {
-  //     p.parse_fn(s)
-  // }
-  //
-  // fn test2() {
-  //     let s = Vec::new();
-  //     let r = test::<_, Vec<u8>, _>(parse_pair_of_u8::<&[u8], Vec<u8>>, s.as_slice());
-  // }
-  // fn parse_pair<I, O, Fst, Snd>(
-  //     fst: Fst,
-  //     snd: Snd,
-  //     s: I,
-  // ) -> PResult<(Fst::Type, Snd::Type), ParseError>
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     Fst: Parser<I, O>,
-  //     Snd: Parser<I, O>,
-  // {
-  //     // (fst, snd).parse(s)
-  // }
-  // impl<I, O, C: Combinator<I, O>> Parser<I, O> for C
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
-  // {
-  //     type Type = C::Type;
-  //
-  //     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
-  //         self.parse(s)
-  //     }
-  // }
-  // impl<I, O, C: Combinator<I, O>> Serializer<I, O> for C
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
-  // {
-  //     type Type = C::Type;
-  //
-  //     fn serialize_fn(
-  //         &self,
-  //         v: Self::Type,
-  //         data: &mut O,
-  //         pos: usize,
-  //     ) -> SResult<usize, SerializeError> {
-  //         self.serialize(v, data, pos)
-  //     }
-  // }
-  // fn parse_pair<I, O, Fst, Snd>(
-  //     fst: &Fst,
-  //     snd: &Snd,
-  //     s: I,
-  // ) -> PResult<(Fst::Type, Snd::Type), ParseError>
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     Fst: Parser<I, Type = Fst::Type>,
-  //     Snd: Parser<I, Type = Snd::Type>,
-  // {
-  //     let (n, v1) = fst.parse(s.clone())?;
-  //     let s_ = s.subrange(n, s.len());
-  //     let (m, v2) = snd.parse(s_)?;
-  //     if let Some(nm) = n.checked_add(m) {
-  //         Ok((nm, (v1, v2)))
-  //     } else {
-  //         Err(ParseError::SizeOverflow)
-  //     }
-  // }
-  ///////// "Lazy" combinators (`dyn` not supported by Verus yet) to support recursive formats
-  // impl<C: View> View for dyn crate::regular::depend::Continuation<(), Output = C> {
-  //     type V = C::V;
-  //
-  //     // spec fn view(&self) -> Self::V;
-  // }
-  // impl<I, O, C: Combinator<I, O>> Combinator<I, O>
-  //     for Box<dyn crate::regular::depend::Continuation<(), Output = C>>
-  // where
-  //     I: VestInput,
-  //     O: VestOutput<I>,
-  //     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
-  // {
-  //     type Type = Box<C::Type>;
-  //
-  //     fn length(&self) -> Option<usize> {
-  //         None
-  //     }
-  //
-  //     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-  //         match self.apply(()).parse(s) {
-  //             Ok((n, v)) => Ok((n, Box::new(v))),
-  //             Err(e) => Err(e),
-  //         }
-  //     }
-  //
-  //     fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-  //         self.apply(()).serialize(*v, data, pos)
-  //     }
-  // }
-  //////// The following works, but currently we cannot verify it due to Verus limitations
-  // pub const INSTR_BASE: u8 = 0;
-  // pub const AUXBLOCK_BEGIN: u8 = 1;
-  // pub const AUXBLOCK_END: u8 = 11;
-  //
-  // #[derive(Debug)]
-  // struct InstrFmt(Either<u8, Box<AuxBlockFmt>>);
-  // #[derive(Debug)]
-  // struct AuxBlockFmt((u8, (RepeatResult<Box<InstrFmt>>, u8)));
-  //
-  // impl vstd::view::View for InstrFmt {
-  //     type V = Self;
-  // }
-  // impl vstd::view::View for AuxBlockFmt {
-  //     type V = Self;
-  // }
-  //
-  // struct InstrCom(
-  //     pub OrdChoice<Refined<U8, TagPred<u8>>, Box<dyn Continuation<(), Output = AuxBlockCom>>>,
-  // );
-  // struct AuxBlockCom(
-  //     pub  (
-  //         Refined<U8, TagPred<u8>>,
-  //         (
-  //             Star<Box<dyn Continuation<(), Output = InstrCom>>>,
-  //             Refined<U8, TagPred<u8>>,
-  //         ),
-  //     ),
-  // );
-  // impl vstd::view::View for InstrCom {
-  //     type V = Self;
-  // }
-  // impl vstd::view::View for AuxBlockCom {
-  //     type V = Self;
-  // }
-  // impl SpecCombinator for InstrCom {
-  //     type Type = InstrFmt;
-  // }
-  // impl SecureSpecCombinator for InstrCom {}
-  // impl SpecCombinator for AuxBlockCom {
-  //     type Type = AuxBlockFmt;
-  // }
-  // impl SecureSpecCombinator for AuxBlockCom {}
-  //
-  // impl DisjointFrom<Refined<U8, TagPred<u8>>> for AuxBlockCom {}
-  //
-  // impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrCom {
-  //     type Type = InstrFmt;
-  //     fn length(&self) -> Option<usize> {
-  //         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
-  //     }
-  //     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
-  //         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
-  //             Ok((n, Either::Left(v))) => Ok((n, InstrFmt(Either::Left(v)))),
-  //             Ok((n, Either::Right(v))) => Ok((n, InstrFmt(Either::Right(v)))),
-  //             Err(e) => Err(e),
-  //         }
-  //     }
-  //     fn serialize(
-  //         &self,
-  //         v: Self::Type,
-  //         data: &mut Vec<u8>,
-  //         pos: usize,
-  //     ) -> Result<usize, SerializeError> {
-  //         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
-  //     }
-  // }
-  //
-  // impl<'a> Combinator<&'a [u8], Vec<u8>> for AuxBlockCom {
-  //     type Type = AuxBlockFmt;
-  //     fn length(&self) -> Option<usize> {
-  //         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
-  //     }
-  //     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
-  //         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
-  //             Ok((n, (a, (b, c)))) => Ok((n, AuxBlockFmt((a, (b, c))))),
-  //             Err(e) => Err(e),
-  //         }
-  //     }
-  //     fn serialize(
-  //         &self,
-  //         v: Self::Type,
-  //         data: &mut Vec<u8>,
-  //         pos: usize,
-  //     ) -> Result<usize, SerializeError> {
-  //         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
-  //     }
-  // }
-  //
-  // struct AuxBlockCont;
-  // struct InstrCont;
-  //
-  // impl Continuation<()> for AuxBlockCont {
-  //     type Output = AuxBlockCom;
-  //
-  //     fn apply(&self, i: ()) -> Self::Output {
-  //         AuxBlockCom((
-  //             Refined {
-  //                 inner: U8,
-  //                 predicate: TagPred(AUXBLOCK_BEGIN),
-  //             },
-  //             (
-  //                 Star(Box::new(InstrCont)),
-  //                 Refined {
-  //                     inner: U8,
-  //                     predicate: TagPred(AUXBLOCK_END),
-  //                 },
-  //             ),
-  //         ))
-  //     }
-  // }
-  //
-  // impl Continuation<()> for InstrCont {
-  //     type Output = InstrCom;
-  //
-  //     fn apply(&self, i: ()) -> Self::Output {
-  //         InstrCom(OrdChoice(
-  //             Refined {
-  //                 inner: U8,
-  //                 predicate: TagPred(INSTR_BASE),
-  //             },
-  //             Box::new(AuxBlockCont),
-  //         ))
-  //     }
-  // }
-  //
-  // fn test() {
-  //     // let buf = vec![0x00];
-  //     let buf = vec![0x01, 0, 0, 0x01, 0, 0, 0, 0x0B, 0, 0x0B];
-  //     let aux_block = AuxBlockCont.apply(());
-  //     let instr = InstrCont.apply(());
-  //     let (consumed, parsed) = instr.parse(&buf).unwrap_or_else(|e| {
-  //         panic!("Failed to parse: {}", e);
-  //     });
-  //     println!("consumed: {}", consumed);
-  //     println!("parsed: {:?}", parsed);
-  // }
+///////// Separating the parsing and serializing functions
+///////// Unsuccesful due to conflicting trait impls and Verus limitations (&mut support)
+// pub trait Parser<I, O>
+// where
+//     I: VestInput,
+// {
+//     type Type;
+//
+//     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError>;
+// }
+//
+// pub trait Serializer<I, O>
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+// {
+//     type Type;
+//
+//     fn serialize_fn(
+//         &self,
+//         v: Self::Type,
+//         data: &mut O,
+//         pos: usize,
+//     ) -> SResult<usize, SerializeError>;
+// }
+//
+// impl<I, O, Type, F> Parser<I, O> for F
+// where
+//     I: VestInput,
+//     F: Fn(I) -> PResult<Type, ParseError>,
+// {
+//     type Type = Type;
+//
+//     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
+//         self(s)
+//     }
+// }
+//
+// impl<I, O, Fst, Snd> Parser<I, O> for (Fst, Snd)
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     Fst: Combinator<I, O>,
+//     Snd: Combinator<I, O>,
+//     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
+//     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
+// {
+//     type Type = (Fst::Type, Snd::Type);
+//
+//     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
+//         (&self.0, &self.1).parse(s)
+//     }
+// }
+//
+// impl<I: VestPublicInput, O: VestPublicOutput<I>> Parser<I, O> for crate::regular::uints::U8 {
+//     type Type = u8;
+//
+//     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
+//         <_ as Combinator<I, O>>::parse(self, s)
+//     }
+// }
+//
+// fn parse_pair_of_u8<I, O>(s: I) -> PResult<(u8, u8), ParseError>
+// where
+//     I: VestPublicInput,
+//     O: VestPublicOutput<I>,
+// {
+//     <_ as Parser<I, O>>::parse_fn(&(crate::regular::uints::U8, crate::regular::uints::U8), s)
+// }
+//
+// fn test<I, O, P: Parser<I, O>>(p: P, s: I) -> PResult<P::Type, ParseError>
+// where
+//     I: VestPublicInput,
+// {
+//     p.parse_fn(s)
+// }
+//
+// fn test2() {
+//     let s = Vec::new();
+//     let r = test::<_, Vec<u8>, _>(parse_pair_of_u8::<&[u8], Vec<u8>>, s.as_slice());
+// }
+// fn parse_pair<I, O, Fst, Snd>(
+//     fst: Fst,
+//     snd: Snd,
+//     s: I,
+// ) -> PResult<(Fst::Type, Snd::Type), ParseError>
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     Fst: Parser<I, O>,
+//     Snd: Parser<I, O>,
+// {
+//     // (fst, snd).parse(s)
+// }
+// impl<I, O, C: Combinator<I, O>> Parser<I, O> for C
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
+// {
+//     type Type = C::Type;
+//
+//     fn parse_fn(&self, s: I) -> PResult<Self::Type, ParseError> {
+//         self.parse(s)
+//     }
+// }
+// impl<I, O, C: Combinator<I, O>> Serializer<I, O> for C
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
+// {
+//     type Type = C::Type;
+//
+//     fn serialize_fn(
+//         &self,
+//         v: Self::Type,
+//         data: &mut O,
+//         pos: usize,
+//     ) -> SResult<usize, SerializeError> {
+//         self.serialize(v, data, pos)
+//     }
+// }
+// fn parse_pair<I, O, Fst, Snd>(
+//     fst: &Fst,
+//     snd: &Snd,
+//     s: I,
+// ) -> PResult<(Fst::Type, Snd::Type), ParseError>
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     Fst: Parser<I, Type = Fst::Type>,
+//     Snd: Parser<I, Type = Snd::Type>,
+// {
+//     let (n, v1) = fst.parse(s.clone())?;
+//     let s_ = s.subrange(n, s.len());
+//     let (m, v2) = snd.parse(s_)?;
+//     if let Some(nm) = n.checked_add(m) {
+//         Ok((nm, (v1, v2)))
+//     } else {
+//         Err(ParseError::SizeOverflow)
+//     }
+// }
+///////// "Lazy" combinators (`dyn` not supported by Verus yet) to support recursive formats
+// impl<C: View> View for dyn crate::regular::depend::Continuation<(), Output = C> {
+//     type V = C::V;
+//
+//     // spec fn view(&self) -> Self::V;
+// }
+// impl<I, O, C: Combinator<I, O>> Combinator<I, O>
+//     for Box<dyn crate::regular::depend::Continuation<(), Output = C>>
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
+// {
+//     type Type = Box<C::Type>;
+//
+//     fn length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+//         match self.apply(()).parse(s) {
+//             Ok((n, v)) => Ok((n, Box::new(v))),
+//             Err(e) => Err(e),
+//         }
+//     }
+//
+//     fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+//         self.apply(()).serialize(*v, data, pos)
+//     }
+// }
+//////// The following works, but currently we cannot verify it due to Verus limitations
+// pub const INSTR_BASE: u8 = 0;
+// pub const AUXBLOCK_BEGIN: u8 = 1;
+// pub const AUXBLOCK_END: u8 = 11;
+//
+// #[derive(Debug)]
+// struct InstrFmt(Either<u8, Box<AuxBlockFmt>>);
+// #[derive(Debug)]
+// struct AuxBlockFmt((u8, (RepeatResult<Box<InstrFmt>>, u8)));
+//
+// impl vstd::view::View for InstrFmt {
+//     type V = Self;
+// }
+// impl vstd::view::View for AuxBlockFmt {
+//     type V = Self;
+// }
+//
+// struct InstrCom(
+//     pub OrdChoice<Refined<U8, TagPred<u8>>, Box<dyn Continuation<(), Output = AuxBlockCom>>>,
+// );
+// struct AuxBlockCom(
+//     pub  (
+//         Refined<U8, TagPred<u8>>,
+//         (
+//             Star<Box<dyn Continuation<(), Output = InstrCom>>>,
+//             Refined<U8, TagPred<u8>>,
+//         ),
+//     ),
+// );
+// impl vstd::view::View for InstrCom {
+//     type V = Self;
+// }
+// impl vstd::view::View for AuxBlockCom {
+//     type V = Self;
+// }
+// impl SpecCombinator for InstrCom {
+//     type Type = InstrFmt;
+// }
+// impl SecureSpecCombinator for InstrCom {}
+// impl SpecCombinator for AuxBlockCom {
+//     type Type = AuxBlockFmt;
+// }
+// impl SecureSpecCombinator for AuxBlockCom {}
+//
+// impl DisjointFrom<Refined<U8, TagPred<u8>>> for AuxBlockCom {}
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrCom {
+//     type Type = InstrFmt;
+//     fn length(&self) -> Option<usize> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+//     }
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
+//             Ok((n, Either::Left(v))) => Ok((n, InstrFmt(Either::Left(v)))),
+//             Ok((n, Either::Right(v))) => Ok((n, InstrFmt(Either::Right(v)))),
+//             Err(e) => Err(e),
+//         }
+//     }
+//     fn serialize(
+//         &self,
+//         v: Self::Type,
+//         data: &mut Vec<u8>,
+//         pos: usize,
+//     ) -> Result<usize, SerializeError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
+//     }
+// }
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for AuxBlockCom {
+//     type Type = AuxBlockFmt;
+//     fn length(&self) -> Option<usize> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+//     }
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         match <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s) {
+//             Ok((n, (a, (b, c)))) => Ok((n, AuxBlockFmt((a, (b, c))))),
+//             Err(e) => Err(e),
+//         }
+//     }
+//     fn serialize(
+//         &self,
+//         v: Self::Type,
+//         data: &mut Vec<u8>,
+//         pos: usize,
+//     ) -> Result<usize, SerializeError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v.0, data, pos)
+//     }
+// }
+//
+// struct AuxBlockCont;
+// struct InstrCont;
+//
+// impl Continuation<()> for AuxBlockCont {
+//     type Output = AuxBlockCom;
+//
+//     fn apply(&self, i: ()) -> Self::Output {
+//         AuxBlockCom((
+//             Refined {
+//                 inner: U8,
+//                 predicate: TagPred(AUXBLOCK_BEGIN),
+//             },
+//             (
+//                 Star(Box::new(InstrCont)),
+//                 Refined {
+//                     inner: U8,
+//                     predicate: TagPred(AUXBLOCK_END),
+//                 },
+//             ),
+//         ))
+//     }
+// }
+//
+// impl Continuation<()> for InstrCont {
+//     type Output = InstrCom;
+//
+//     fn apply(&self, i: ()) -> Self::Output {
+//         InstrCom(OrdChoice(
+//             Refined {
+//                 inner: U8,
+//                 predicate: TagPred(INSTR_BASE),
+//             },
+//             Box::new(AuxBlockCont),
+//         ))
+//     }
+// }
+//
+// fn test() {
+//     // let buf = vec![0x00];
+//     let buf = vec![0x01, 0, 0, 0x01, 0, 0, 0, 0x0B, 0, 0x0B];
+//     let aux_block = AuxBlockCont.apply(());
+//     let instr = InstrCont.apply(());
+//     let (consumed, parsed) = instr.parse(&buf).unwrap_or_else(|e| {
+//         panic!("Failed to parse: {}", e);
+//     });
+//     println!("consumed: {}", consumed);
+//     println!("parsed: {:?}", parsed);
+// }

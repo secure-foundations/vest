@@ -219,13 +219,13 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 
     proof fn lemma_parse_productive_helper(&self, s: Seq<u8>, n: usize)
         requires
-            C::parse_productive(),
+            self.1 > 0,
+            self.0.is_productive(),
         ensures
-            self.spec_parse_helper(s, n) matches Ok((consumed, _)) ==> consumed > 0,
+            n > 0 ==> (self.spec_parse_helper(s, n) matches Ok((consumed, _)) ==> consumed > 0),
         decreases n,
     {
         if n == 0 {
-            admit();
         } else {
             self.lemma_parse_productive_helper(s, (n - 1) as usize);
             match self.spec_parse_helper(s, (n - 1) as usize) {
@@ -255,8 +255,8 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
         C::is_prefix_secure()
     }
 
-    open spec fn parse_productive() -> bool {
-        C::parse_productive()
+    open spec fn is_productive(&self) -> bool {
+        self.1 > 0 && self.0.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -278,9 +278,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
-        if C::parse_productive() {
-            self.lemma_parse_productive_helper(s, self.1)
-        }
+        self.lemma_parse_productive_helper(s, self.1)
     }
 }
 
