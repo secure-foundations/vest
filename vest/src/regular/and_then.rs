@@ -37,10 +37,10 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Bytes, Next> {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if let Ok((n, v1)) = self.0.spec_parse(s) {
-            self.0.spec_parse_wf(s);
-            self.1.spec_parse_wf(v1);
+            self.0.lemma_parse_length(s);
+            self.1.lemma_parse_length(v1);
         }
     }
 

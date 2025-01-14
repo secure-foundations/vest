@@ -373,8 +373,8 @@ impl SpecCombinator for BtcVarint {
         spec_btc_varint_inner().spec_serialize(v)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        spec_btc_varint_inner().spec_parse_wf(s);
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        spec_btc_varint_inner().lemma_parse_length(s);
     }
 }
 

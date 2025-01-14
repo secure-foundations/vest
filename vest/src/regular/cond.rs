@@ -30,9 +30,9 @@ impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if self.cond {
-            self.inner.spec_parse_wf(s);
+            self.inner.lemma_parse_length(s);
         }
     }
 

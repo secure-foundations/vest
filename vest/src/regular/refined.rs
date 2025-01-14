@@ -62,8 +62,8 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.inner.spec_parse_wf(s);
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
     }
 }
 

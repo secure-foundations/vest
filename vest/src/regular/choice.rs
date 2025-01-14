@@ -1,4 +1,4 @@
-use super::disjoint::DisjointFrom;
+use super::{disjoint::DisjointFrom, success::Success};
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -72,12 +72,12 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if let Ok((n, v)) = self.0.spec_parse(s) {
-            self.0.spec_parse_wf(s);
+            self.0.lemma_parse_length(s);
         } else {
             if let Ok((n, v)) = self.1.spec_parse(s) {
-                self.1.spec_parse_wf(s);
+                self.1.lemma_parse_length(s);
             }
         }
     }
@@ -204,6 +204,13 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
         }
     }
 }
+
+    // TODO: Add Non-emptiness proof
+// pub struct Opt<T>(pub OrdChoice<T, Success>);
+//
+//         fn test () {
+//             let _ = Opt(OrdChoice::new(super::uints::U8, Success));
+//     }
 
 /// This macro constructs a nested OrdChoice combinator
 /// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))

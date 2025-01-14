@@ -24,7 +24,7 @@ pub trait SpecCombinator {
     spec fn spec_serialize(&self, v: Self::Type) -> SResult<Seq<u8>, ()>;
 
     /// A helper fact to ensure that the result of parsing is within the input bounds.
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
         ensures
             self.spec_parse(s) matches Ok((n, _)) ==> n <= s.len(),
     ;
@@ -72,6 +72,16 @@ pub trait SecureSpecCombinator: SpecCombinator {
         ensures
             self.spec_serialize(v1) matches Ok(b1) ==> self.spec_serialize(v2) matches Ok(b2) ==> b1
                 == b2 ==> v1 == v2,
+    {
+        self.theorem_serialize_parse_roundtrip(v1);
+        self.theorem_serialize_parse_roundtrip(v2);
+    }
+
+    /// Followed from `theorem_serialize_parse_roundtrip`
+    proof fn corollary_serialize_injective_contraposition(&self, v1: Self::Type, v2: Self::Type)
+        ensures
+            self.spec_serialize(v1) matches Ok(b1) ==> self.spec_serialize(v2) matches Ok(b2) ==> v1
+                != v2 ==> b1 != b2,
     {
         self.theorem_serialize_parse_roundtrip(v1);
         self.theorem_serialize_parse_roundtrip(v2);
@@ -215,8 +225,8 @@ impl<C: SpecCombinator> SpecCombinator for &C {
         (*self).spec_serialize(v)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        (*self).spec_parse_wf(s)
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        (*self).lemma_parse_length(s)
     }
 }
 
@@ -284,8 +294,8 @@ impl<C: SpecCombinator> SpecCombinator for Box<C> {
         (**self).spec_serialize(v)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        (**self).spec_parse_wf(s)
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        (**self).lemma_parse_length(s)
     }
 }
 

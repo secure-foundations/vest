@@ -54,7 +54,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()>
@@ -109,7 +109,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
                 if C::is_prefix_secure() && s.len() + rest.len() <= usize::MAX {
                     self.0.lemma_prefix_secure(s, rest);
                     let (n, _) = self.0.spec_parse(s + rest).unwrap();
-                    self.0.spec_parse_wf(s + rest);
+                    self.0.lemma_parse_length(s + rest);
 
                     assert((s + rest).skip(n as int) =~= rest);
                     assert(seq![v[0]] + v.drop_first() == v);

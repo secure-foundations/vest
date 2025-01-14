@@ -120,7 +120,7 @@ macro_rules! impl_combinator_for_le_uint_type {
                     }
                 }
 
-                proof fn spec_parse_wf(&self, s: Seq<u8>) {
+                proof fn lemma_parse_length(&self, s: Seq<u8>) {
                 }
 
                 open spec fn spec_serialize(&self, v: $int_type) -> Result<Seq<u8>, ()> {
@@ -218,7 +218,7 @@ macro_rules! impl_combinator_for_be_uint_type {
                     }
                 }
 
-                proof fn spec_parse_wf(&self, s: Seq<u8>) {
+                proof fn lemma_parse_length(&self, s: Seq<u8>) {
                 }
 
                 open spec fn spec_serialize(&self, v: $int_type) -> Result<Seq<u8>, ()> {
@@ -1005,7 +1005,7 @@ impl SpecCombinator for U24Le {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 
     open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
@@ -1095,7 +1095,7 @@ impl SpecCombinator for U24Be {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 
     open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {

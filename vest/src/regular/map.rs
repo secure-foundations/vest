@@ -102,8 +102,8 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.inner.spec_parse_wf(s);
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
         if let Ok((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
@@ -132,7 +132,7 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        self.inner.spec_parse_wf(buf);
+        self.inner.lemma_parse_length(buf);
         self.inner.theorem_parse_serialize_roundtrip(buf);
         if let Ok((n, v)) = self.inner.spec_parse(buf) {
             M::spec_iso(v)
@@ -142,7 +142,7 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
         if let Ok((n, v)) = self.inner.spec_parse(s1) {
-            self.inner.spec_parse_wf(s1);
+            self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
         }
     }
@@ -317,8 +317,8 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.inner.spec_parse_wf(s);
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.inner.lemma_parse_length(s);
         if let Ok((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
@@ -350,7 +350,7 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        self.inner.spec_parse_wf(buf);
+        self.inner.lemma_parse_length(buf);
         self.inner.theorem_parse_serialize_roundtrip(buf);
         if let Ok((n, v)) = self.inner.spec_parse(buf) {
             M::spec_iso(v)
@@ -360,7 +360,7 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
         if let Ok((n, v)) = self.inner.spec_parse(s1) {
-            self.inner.spec_parse_wf(s1);
+            self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
         }
     }

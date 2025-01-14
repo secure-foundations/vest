@@ -28,9 +28,9 @@ impl<Fst: SecureSpecCombinator<Type = ()>, Snd: SpecCombinator> SpecCombinator f
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if let Ok((n, ((), v))) = (self.0, self.1).spec_parse(s) {
-            (self.0, self.1).spec_parse_wf(s);
+            (self.0, self.1).lemma_parse_length(s);
         }
     }
 

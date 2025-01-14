@@ -38,12 +38,12 @@ impl<Fst, Snd> SpecCombinator for SpecDepend<Fst, Snd> where
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if let Ok((n, v1)) = self.fst.spec_parse(s) {
             let snd = (self.snd)(v1);
             if let Ok((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
-                self.fst.spec_parse_wf(s);
-                snd.spec_parse_wf(s.subrange(n as int, s.len() as int));
+                self.fst.lemma_parse_length(s);
+                snd.lemma_parse_length(s.subrange(n as int, s.len() as int));
             }
         }
     }
@@ -88,14 +88,14 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
             let (n, v0_) = self.fst.spec_parse(buf).unwrap();
-            self.fst.spec_parse_wf(buf);
+            self.fst.lemma_parse_length(buf);
             let buf0 = buf.subrange(0, n as int);
             let buf1 = buf.subrange(n as int, buf.len() as int);
             assert(buf == buf0.add(buf1));
             self.fst.theorem_parse_serialize_roundtrip(buf);
             let (m, v1_) = (self.snd)(v0).spec_parse(buf1).unwrap();
             (self.snd)(v0).theorem_parse_serialize_roundtrip(buf1);
-            (self.snd)(v0).spec_parse_wf(buf1);
+            (self.snd)(v0).lemma_parse_length(buf1);
             let buf2 = self.spec_serialize((v0, v1)).unwrap();
             assert(buf2 == buf.subrange(0, nm as int));
         } else {
@@ -110,7 +110,7 @@ impl<Fst, Snd> SecureSpecCombinator for SpecDepend<Fst, Snd> where
         if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
             if let Ok((nm, (v0, v1))) = self.spec_parse(buf) {
                 let (n, _) = self.fst.spec_parse(buf).unwrap();
-                self.fst.spec_parse_wf(buf);
+                self.fst.lemma_parse_length(buf);
                 let buf0 = buf.subrange(0, n as int);
                 let buf1 = buf.subrange(n as int, buf.len() as int);
                 self.fst.lemma_prefix_secure(buf0, buf1);

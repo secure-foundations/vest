@@ -57,7 +57,7 @@ impl SpecCombinator for Bytes {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
     }
 }
 

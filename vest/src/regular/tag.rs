@@ -75,8 +75,8 @@ impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
         self.0.spec_serialize(self.0.predicate.0)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s);
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s);
     }
 }
 

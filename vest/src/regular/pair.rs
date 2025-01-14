@@ -12,8 +12,8 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
         SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse(s)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse_wf(s)
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        SpecDepend { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {

@@ -80,7 +80,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
             self.spec_parse_wf_helper(s, (n - 1) as usize);
             match self.spec_parse_helper(s, (n - 1) as usize) {
                 Ok((m, vs)) => {
-                    self.0.spec_parse_wf(s.skip(m as int));
+                    self.0.lemma_parse_length(s.skip(m as int));
                 },
                 Err(..) => {},
             }
@@ -225,7 +225,7 @@ impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
         self.spec_parse_helper(s, self.1)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.spec_parse_wf_helper(s, self.1)
     }
 
