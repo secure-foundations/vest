@@ -256,6 +256,7 @@ impl<C: View> Opt<C> where
 
 /// Wrapper for the `core::option::Option` type.
 /// Needed because currently Verus does not implement the `View` trait for `Option`.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Optional<T>(pub Option<T>);
 
 impl<T: View> View for Optional<T> where  {

@@ -444,9 +444,6 @@ impl SpecCombinator for Spec{name}Combinator {{
     {{ self.0.spec_parse(s) }}
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     {{ self.0.spec_serialize(v) }}
-    proof fn spec_parse_wf(&self, s: Seq<u8>)
-    {{ self.0.spec_parse_wf(s) }}
-
 }}
 impl SecureSpecCombinator for Spec{name}Combinator {{
     open spec fn is_prefix_secure() -> bool 
@@ -457,6 +454,12 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
     {{ self.0.theorem_parse_serialize_roundtrip(buf) }}
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     {{ self.0.lemma_prefix_secure(s1, s2) }}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    {{ self.0.lemma_parse_length(s) }}
+    closed spec fn is_productive(&self) -> bool 
+    {{ self.0.is_productive() }}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    {{ self.0.lemma_parse_productive(s) }}
 }}
 "#
                 ),
@@ -2153,7 +2156,10 @@ impl Codegen for VecCombinator {
                 combinator.gen_combinator_expr("", mode, ctx)
             }
         };
-        let combinator_expr = format!("Repeat({})", inner.0);
+        let combinator_expr = match mode {
+            Mode::Spec => format!("Repeat({})", inner.0),
+            _ => format!("Repeat::new({})", inner.0),
+        };
         (combinator_expr, inner.1)
     }
 }
@@ -2217,7 +2223,22 @@ impl Codegen for ApplyCombinator {
 
 impl Codegen for OptionCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        todo!()
+        let inner = &self.0.gen_msg_type("", mode, ctx);
+
+        let type_name = match mode {
+            Mode::Spec => format!("Option<{}>", inner),
+            _ => format!("Optional<{}>", inner),
+        };
+        if name.is_empty() {
+            type_name
+        } else {
+            let type_alias_name = match mode {
+                Mode::Spec => &format!("Spec{}", name),
+                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
+                Mode::Exec(LifetimeAnn::None) => name,
+            };
+            format!("pub type {} = {};\n", type_alias_name, type_name)
+        }
     }
 
     fn gen_combinator_type(
@@ -2226,11 +2247,17 @@ impl Codegen for OptionCombinator {
         mode: Mode,
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
-        todo!()
+        let inner = self.0.gen_combinator_type("", mode, ctx);
+        (format!("Opt<{}>", inner.0), inner.1)
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
+        let inner = self.0.gen_combinator_expr("", mode, ctx);
+        let combinator_expr = match mode {
+            Mode::Spec => format!("Opt({})", inner.0),
+            _ => format!("Opt::new({})", inner.0),
+        };
+        (combinator_expr, inner.1)
     }
 }
 
