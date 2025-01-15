@@ -13,3 +13,10 @@ optmsg = Option<msg>
 //   @x: u8,
 //   y: Option<msg2(@x)>,
 // }
+
+a = wrap(u8 = 1, u8 = 2, [u8; 10], u8 = 3)
+
+b = {
+  x: [u8; 10],
+  y: wrap([u8; 3] = [1, 2, 3], a, u8 = 1),
+}
