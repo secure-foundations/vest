@@ -219,12 +219,157 @@ impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
     }
 }
 
-// TODO: Add Non-emptiness proof
-// pub struct Opt<T>(pub OrdChoice<T, Success>);
-//
-//         fn test () {
-//             let _ = Opt(OrdChoice::new(super::uints::U8, Success));
-//     }
+/// The optional combinator that never fails.
+/// If the inner combinator fails, the result is `None`.
+///
+/// ## Note
+///
+/// One might think that the `Opt<T>` combinator can be encoded as `OrdChoice<T, Success>`.
+/// However, this is not the case because one cannot prove that `Success` is disjoint from `T`.
+/// In fact, there is a fundamental difference between `Opt<T>` and `OrdChoice<Fst, Snd>`:
+/// the `Disjoint` conditions can be aggregated for `OrdChoice`, making it "nestable", while
+/// the "productivity" condition cannot be aggregated for `Opt` (i.e., `Opt<Opt<T>>` can never be
+/// constructed).
+pub struct Opt<T>(pub T);
+
+impl<T: View> View for Opt<T> where  {
+    type V = Opt<T::V>;
+
+    open spec fn view(&self) -> Self::V {
+        Opt(self.0@)
+    }
+}
+
+impl<T: SecureSpecCombinator> SpecCombinator for Opt<T> where  {
+    type Type = Option<T::Type>;
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+        if !self.0.is_productive() {
+            Err(())
+        } else {
+            if let Ok((n, v)) = self.0.spec_parse(s) {
+                Ok((n, Some(v)))
+            } else {
+                Ok((0, None))
+            }
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+        if !self.0.is_productive() {
+            Err(())
+        } else {
+            match v {
+                Some(v) => self.0.spec_serialize(v),
+                None => Ok(Seq::empty()),
+            }
+        }
+    }
+}
+
+impl<T: SecureSpecCombinator> SecureSpecCombinator for Opt<T> where  {
+    open spec fn is_prefix_secure() -> bool {
+        false
+    }
+
+    open spec fn is_productive(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        if self.0.is_productive() {
+            match v {
+                Some(vv) => {
+                    self.0.lemma_serialize_productive(vv);
+                    self.0.theorem_serialize_parse_roundtrip(vv);
+                },
+                None => {
+                    // the following two lines establish a contradiction (n > 0 and n <= 0)
+                    self.0.lemma_parse_productive(Seq::empty());
+                    self.0.lemma_parse_length(Seq::empty());
+                },
+            }
+        } else {
+        }
+
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        if self.0.is_productive() {
+            if let Ok((n, v)) = self.0.spec_parse(buf) {
+                self.0.lemma_parse_productive(buf);
+                if n != 0 {
+                    self.0.theorem_parse_serialize_roundtrip(buf);
+                }
+            } else {
+                assert(Seq::<u8>::empty() == buf.take(0));
+            }
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Ok((n, v)) = self.0.spec_parse(s) {
+            self.0.lemma_parse_length(s);
+        }
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+    }
+}
+
+impl<I, O, T> Combinator<I, O> for Opt<T> where
+    I: VestInput,
+    O: VestOutput<I>,
+    T: Combinator<I, O>,
+    T::V: SecureSpecCombinator<Type = <T::Type as View>::V>,
+ {
+    type Type = Option<T::Type>;
+
+    open spec fn spec_length(&self) -> Option<usize> {
+        None
+    }
+
+    fn length(&self) -> Option<usize> {
+        None
+    }
+
+    open spec fn parse_requires(&self) -> bool {
+        self.0.parse_requires() && self.0@.is_productive()
+    }
+
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
+        if let Ok((n, v)) = self.0.parse(s) {
+            Ok((n, Some(v)))
+        } else {
+            Ok((0, None))
+        }
+    }
+
+    open spec fn serialize_requires(&self) -> bool {
+        self.0.serialize_requires() && self.0@.is_productive()
+    }
+
+    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
+        match v {
+            Some(v) => self.0.serialize(v, data, pos),
+            None => {
+                if pos <= data.len() {
+                    assert(seq_splice(old(data)@, pos, Seq::<u8>::empty()) == data@);
+                    Ok(0)
+                } else {
+                    Err(SerializeError::InsufficientBuffer)
+                }
+            },
+        }
+    }
+}
+
 /// This macro constructs a nested OrdChoice combinator
 /// in the form of OrdChoice(..., OrdChoice(..., OrdChoice(..., ...)))
 #[allow(unused_macros)]
