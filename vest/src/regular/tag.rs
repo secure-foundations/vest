@@ -24,11 +24,12 @@ impl<T> SpecPred for TagPred<T> {
     }
 }
 
-impl<T: FromToBytes> Pred for TagPred<T> {
+impl<T: Compare<T>> Pred for TagPred<T> {
     type Input = T;
 
     fn apply(&self, i: &Self::Input) -> bool {
-        self.0.eq(i)
+        // self.0.eq(i)
+        self.0.compare(i)
     }
 }
 
@@ -114,7 +115,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     O: VestOutput<I>,
     Inner: Combinator<I, O, Type = T>,
     Inner::V: SecureSpecCombinator<Type = T::V>,
-    T: FromToBytes,
+    T: Compare<T> + Copy,
  {
     type Type = ();
 
