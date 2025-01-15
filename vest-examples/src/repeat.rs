@@ -146,10 +146,6 @@ impl SpecCombinator for SpecOpaqueU16Combinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
 }
 
 impl SecureSpecCombinator for SpecOpaqueU16Combinator {
@@ -167,6 +163,18 @@ impl SecureSpecCombinator for SpecOpaqueU16Combinator {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s)
+    }
+
+    closed spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s)
     }
 }
 
@@ -324,10 +332,6 @@ impl SpecCombinator for SpecResponderIdCombinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
 }
 
 impl SecureSpecCombinator for SpecResponderIdCombinator {
@@ -345,6 +349,18 @@ impl SecureSpecCombinator for SpecResponderIdCombinator {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s)
+    }
+
+    closed spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s)
     }
 }
 
@@ -420,10 +436,6 @@ impl SpecCombinator for SpecResponderIdListListCombinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
 }
 
 impl SecureSpecCombinator for SpecResponderIdListListCombinator {
@@ -441,6 +453,18 @@ impl SecureSpecCombinator for SpecResponderIdListListCombinator {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s)
+    }
+
+    closed spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s)
     }
 }
 
@@ -612,10 +636,6 @@ impl SpecCombinator for SpecResponderIdListCombinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
         self.0.spec_serialize(v)
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
-    }
 }
 
 impl SecureSpecCombinator for SpecResponderIdListCombinator {
@@ -633,6 +653,18 @@ impl SecureSpecCombinator for SpecResponderIdListCombinator {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s)
+    }
+
+    closed spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s)
     }
 }
 

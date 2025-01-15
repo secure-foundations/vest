@@ -240,6 +240,21 @@ impl<T: View> View for Opt<T> where  {
     }
 }
 
+/// Wrapper for the `core::option::Option` type.
+/// Needed because currently Verus does not implement the `View` trait for `Option`.
+pub struct Optional<T>(pub Option<T>);
+
+impl<T: View> View for Optional<T> where  {
+    type V = Option<T::V>;
+
+    open spec fn view(&self) -> Self::V {
+        match &self.0 {
+            Some(v) => Some(v@),
+            None => None,
+        }
+    }
+}
+
 impl<T: SecureSpecCombinator> SpecCombinator for Opt<T> where  {
     type Type = Option<T::Type>;
 
@@ -326,7 +341,7 @@ impl<I, O, T> Combinator<I, O> for Opt<T> where
     T: Combinator<I, O>,
     T::V: SecureSpecCombinator<Type = <T::Type as View>::V>,
  {
-    type Type = Option<T::Type>;
+    type Type = Optional<T::Type>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -342,9 +357,9 @@ impl<I, O, T> Combinator<I, O> for Opt<T> where
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if let Ok((n, v)) = self.0.parse(s) {
-            Ok((n, Some(v)))
+            Ok((n, Optional(Some(v))))
         } else {
-            Ok((0, None))
+            Ok((0, Optional(None)))
         }
     }
 
@@ -356,7 +371,7 @@ impl<I, O, T> Combinator<I, O> for Opt<T> where
         usize,
         SerializeError,
     >) {
-        match v {
+        match v.0 {
             Some(v) => self.0.serialize(v, data, pos),
             None => {
                 if pos <= data.len() {
