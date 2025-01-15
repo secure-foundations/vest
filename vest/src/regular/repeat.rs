@@ -13,6 +13,20 @@ pub struct Repeat<C>(pub C);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RepeatResult<T>(pub Vec<T>);
 
+impl<C: View> Repeat<C> where
+    C::V: SecureSpecCombinator,
+ {
+    /// Constructs a new `Repeat` combinator, only if the inner combinator is productive.
+    pub fn new(c: C) -> (o: Self)
+        requires
+            c@.is_productive(),
+        ensures
+            o == Self(c),
+    {
+        Repeat(c)
+    }
+}
+
 impl<C: View> View for Repeat<C> {
     type V = Repeat<<C as View>::V>;
 

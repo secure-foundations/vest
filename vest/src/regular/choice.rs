@@ -240,6 +240,20 @@ impl<T: View> View for Opt<T> where  {
     }
 }
 
+impl<C: View> Opt<C> where
+    C::V: SecureSpecCombinator,
+ {
+    /// Constructs a new `Opt` combinator, only if the inner combinator is productive.
+    pub fn new(c: C) -> (o: Self)
+        requires
+            c@.is_productive(),
+        ensures
+            o == Opt(c),
+    {
+        Opt(c)
+    }
+}
+
 /// Wrapper for the `core::option::Option` type.
 /// Needed because currently Verus does not implement the `View` trait for `Option`.
 pub struct Optional<T>(pub Option<T>);
