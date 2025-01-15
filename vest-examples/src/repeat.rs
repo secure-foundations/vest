@@ -521,7 +521,7 @@ pub fn responder_id_list_list<'a>(l: u16) -> (o: ResponderIdListListCombinator<'
     ensures
         o@ == spec_responder_id_list_list(l@),
 {
-    ResponderIdListListCombinator(AndThen(Bytes(l.ex_into()), Repeat(responder_id())))
+    ResponderIdListListCombinator(AndThen(Bytes(l.ex_into()), Repeat::new(responder_id())))
 }
 
 pub struct SpecResponderIdList {

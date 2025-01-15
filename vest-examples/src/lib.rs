@@ -3,6 +3,7 @@ mod depend;
 mod enums;
 mod map;
 mod pair;
+mod opt;
 mod repeat;
 mod tlv;
 mod wireguard;
