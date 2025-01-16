@@ -209,6 +209,7 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
         Option(OptionCombinator(combinator)) => msg_need_lifetime(combinator, ctx),
         ConstraintInt(_) | Enum(_) | Apply(_) => false,
         Invocation(_) => unreachable!("invocation should be resolved by now"),
+        MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
     }
 }
 
@@ -294,6 +295,7 @@ fn comb_type_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
         Option(OptionCombinator(combinator)) => comb_type_need_lifetime(combinator, ctx),
         ConstraintInt(_) | Enum(_) | Apply(_) | Bytes(_) | Tail(_) => false,
         Invocation(_) => unreachable!("invocation should be resolved by now"),
+        MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
     }
 }
 
@@ -574,6 +576,9 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_msg_type(name, mode, ctx),
+            CombinatorInner::MacroInvocation { .. } => {
+                unreachable!("macro invocation should be resolved by now")
+            }
         }
     }
 
@@ -598,6 +603,9 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
+            CombinatorInner::MacroInvocation { .. } => {
+                unreachable!("macro invocation should be resolved by now")
+            }
         }
     }
 
@@ -616,6 +624,9 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_expr(name, mode, ctx),
+            CombinatorInner::MacroInvocation { .. } => {
+                unreachable!("macro invocation should be resolved by now")
+            }
         }
     }
 }
@@ -1831,9 +1842,42 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                 .unzip(),
         };
         let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
+        let disjointness_proof = match mode {
+            Mode::Spec => {
+                // generate disjointness proof for every pair of variants in `combinator_types`
+                // e.g. for `OrdChoice<A, OrdChoice<B, OrdChoice<C, D>>>`, generate
+                // `impl DisjointFrom<A> for D`,
+                // `impl DisjointFrom<B> for D`,
+                // `impl DisjointFrom<C> for D`
+                // `impl DisjointFrom<A> for C`,
+                // `impl DisjointFrom<B> for C`
+                // `impl DisjointFrom<A> for B`
+                let mut disjointness_proof = vec![];
+                let len = combinator_types.len();
+                for i in 0..len {
+                    for j in i + 1..len {
+                        disjointness_proof.push(format!(
+                            r#"
+impl DisjointFrom<{}> for {} {{
+    closed spec fn disjoint_from(&self, other: &{}) -> bool
+    {{ self.0.disjoint_from(&other.0) }}
+    proof fn parse_disjoint_on(&self, other: &{}, buf: Seq<u8>) 
+    {{ self.0.parse_disjoint_on(&other.0, buf); }}
+}}"#,
+                            combinator_types[i],
+                            combinator_types[j],
+                            combinator_types[i],
+                            combinator_types[i]
+                        ));
+                    }
+                }
+                disjointness_proof.join("\n")
+            }
+            _ => "".to_string(),
+        };
         (
             format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
-            additional_code.join(""),
+            additional_code.join("") + &disjointness_proof,
         )
     }
 
@@ -2683,6 +2727,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx) -> String {
         + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
         + "use vest::regular::preceded::*;\n"
         + "use vest::regular::terminated::*;\n"
+        + "use vest::regular::disjoint::DisjointFrom;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }
 
