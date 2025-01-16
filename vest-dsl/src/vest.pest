@@ -2,7 +2,7 @@
 
 grammar = _{ SOI ~ definition+ ~ EOI }
 
-definition = { combinator_defn | const_combinator_defn | endianess_defn }
+definition = { combinator_defn | const_combinator_defn | endianess_defn | macro_defn }
 
 combinator_defn = { secret? ~ var_id ~ param_defn_list? ~ "=" ~ combinator }
 param_defn_list = { "(" ~ param_defn ~ ("," ~ param_defn)* ~ ")" }
@@ -12,9 +12,13 @@ const_combinator_defn = { constant ~ const_id ~ ":" ~ const_combinator }
 
 endianess_defn = { ("!LITTLE_ENDIAN" | "!BIG_ENDIAN") }
 
+macro_defn       = { "macro" ~ var_id ~ "!" ~ "(" ~ macro_param_list ~ ")" ~ "=" ~ combinator }
+macro_param_list = { var_id ~ ("," ~ var_id)* }
+
 combinator       = { ("(" ~ combinator_inner ~ ")" | combinator_inner) ~ (">>=" ~ combinator)? }
 combinator_inner = {
     constraint_int_combinator
+  | macro_invocation
   | struct_combinator
   | wrap_combinator
   | enum_combinator
@@ -89,6 +93,10 @@ apply_combinator = { apply ~ "(" ~ stream_id ~ "," ~ combinator ~ ")" }
 combinator_invocation = { var_id ~ param_list? }
 param_list            = { "(" ~ param ~ ("," ~ param)* ~ ")" }
 param                 = { stream_id | depend_id }
+
+/// invoke a `macro` with `macro_param_list`
+macro_invocation = { var_id ~ "!" ~ "(" ~ macro_arg_list ~ ")" }
+macro_arg_list   = { combinator_inner ~ ("," ~ combinator_inner)* }
 
 const_combinator = {
     vec ~ "<" ~ const_combinator ~ ">"

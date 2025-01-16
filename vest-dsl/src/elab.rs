@@ -3,9 +3,13 @@ use std::collections::{HashMap, HashSet};
 use crate::{ast::*, utils::topological_sort};
 
 /// Elaborate the AST:
+/// - expand the macro invocations
 /// - expand the inlined, anonymous combinator definitions
 /// - reorder the definitions according to the call graph (topological sort of the invocations)
 pub fn elaborate(ast: &mut Vec<Definition>) {
+    // expand the macro invocations
+    expand_macros(ast);
+
     // expand the inlined, anonymous combinator definitions
     expand_definitions(ast);
 
@@ -34,6 +38,9 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
         .unwrap_or_else(|_| {
             panic!("Cycle detected in the format definitions");
         });
+    // for defn in ast.iter() {
+    //     println!("{}", defn);
+    // }
 }
 
 pub struct ElabCtx {
@@ -49,6 +56,195 @@ impl ElabCtx {
 
     pub fn reset(&mut self) {
         self.dependencies.clear();
+    }
+}
+
+type MacroDefn = (Vec<String>, Combinator);
+
+/// Expand the macro invocations
+fn expand_macros(ast: &mut Vec<Definition>) {
+    // collect the macro definitions
+    let mut macro_defns = HashMap::<String, MacroDefn>::new();
+    for defn in ast.iter() {
+        if let Definition::MacroDefn { name, params, body } = defn {
+            macro_defns.insert(name.to_owned(), (params.clone(), body.clone()));
+        }
+    }
+    // remove the macro definitions
+    ast.retain(|defn| !matches!(defn, Definition::MacroDefn { .. }));
+    // traverse the AST and expand the macro invocations "in-place"
+    for defn in ast.iter_mut() {
+        expand_macros_in_defn(defn, &macro_defns);
+    }
+}
+
+fn expand_macros_in_defn(defn: &mut Definition, macro_defns: &HashMap<String, MacroDefn>) {
+    match defn {
+        Definition::Combinator { combinator, .. } => {
+            expand_macros_in_combinator(combinator, macro_defns);
+        }
+        Definition::ConstCombinator { .. } => {
+            // TODO: we don't support top-level const definition rn; may add support in the future
+        }
+        _ => {}
+    }
+}
+
+/// Expand the macro invocations in the combinator with the given macro definitions
+fn expand_macros_in_combinator(
+    combinator: &mut Combinator,
+    macro_defns: &HashMap<String, MacroDefn>,
+) {
+    expand_macros_in_combinator_inner(&mut combinator.inner, macro_defns);
+    if let Some(and_then) = &mut combinator.and_then {
+        expand_macros_in_combinator(and_then, macro_defns);
+    }
+}
+
+fn expand_macros_in_combinator_inner(
+    combinator_inner: &mut CombinatorInner,
+    macro_defns: &HashMap<String, MacroDefn>,
+) {
+    match combinator_inner {
+        // base case
+        CombinatorInner::MacroInvocation { name, args } => {
+            if let Some((params, body)) = macro_defns.get(name) {
+                let mut body_expanded = body.clone();
+                for (param, arg) in std::iter::zip(params, args) {
+                    substitute_in_combinator(&mut body_expanded, param, arg.to_owned());
+                }
+                *combinator_inner = body_expanded.inner;
+            }
+        } // recursive cases
+        CombinatorInner::Struct(StructCombinator(fields)) => {
+            for field in fields {
+                match field {
+                    StructField::Ordinary { combinator, .. }
+                    | StructField::Dependent { combinator, .. } => {
+                        expand_macros_in_combinator(combinator, macro_defns);
+                    }
+                    StructField::Const { .. } => {
+                        // TODO: skip const fields for now
+                    }
+                    _ => {}
+                }
+            }
+        }
+        CombinatorInner::Wrap(WrapCombinator {
+            prior,
+            combinator,
+            post,
+        }) => {
+            for _combinator in prior {}
+            expand_macros_in_combinator(combinator, macro_defns);
+            for _combinator in post {}
+        }
+        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
+            Choices::Enums(enums) => {
+                for (_, combinator) in enums {
+                    expand_macros_in_combinator(combinator, macro_defns);
+                }
+            }
+            Choices::Ints(ints) => {
+                for (_, combinator) in ints {
+                    expand_macros_in_combinator(combinator, macro_defns);
+                }
+            }
+            Choices::Arrays(arrays) => {
+                for (_, combinator) in arrays {
+                    expand_macros_in_combinator(combinator, macro_defns);
+                }
+            }
+        },
+        CombinatorInner::Vec(combinator) => match combinator {
+            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
+                expand_macros_in_combinator(combinator, macro_defns);
+            }
+        },
+        CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            expand_macros_in_combinator(combinator, macro_defns);
+        }
+        CombinatorInner::Option(OptionCombinator(combinator)) => {
+            expand_macros_in_combinator(combinator, macro_defns);
+        }
+        _ => {}
+    }
+}
+
+/// Substitute all occurrences of `param` in `body` with `arg`
+/// - `param` implicitly refers to the `CombinatorInvocation`s with the same name
+fn substitute_in_combinator(body: &mut Combinator, param: &str, arg: CombinatorInner) {
+    substitute_in_combinator_inner(&mut body.inner, param, arg.clone());
+    if let Some(and_then) = &mut body.and_then {
+        substitute_in_combinator(and_then, param, arg);
+    }
+}
+
+fn substitute_in_combinator_inner(body: &mut CombinatorInner, param: &str, arg: CombinatorInner) {
+    match body {
+        // base case
+        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
+            if func == param {
+                *body = arg;
+            }
+        }
+        // recursive cases
+        CombinatorInner::Struct(StructCombinator(fields)) => {
+            for field in fields {
+                match field {
+                    StructField::Ordinary { combinator, .. }
+                    | StructField::Dependent { combinator, .. } => {
+                        substitute_in_combinator(combinator, param, arg.clone());
+                    }
+                    StructField::Const { .. } => {
+                        // TODO: skip const fields for now
+                    }
+                    _ => {}
+                }
+            }
+        }
+        CombinatorInner::Wrap(WrapCombinator {
+            prior,
+            combinator,
+            post,
+        }) => {
+            for _combinator in prior {
+                // TODO: skip const fields for now
+            }
+            substitute_in_combinator(combinator, param, arg.clone());
+            for _combinator in post {
+                // TODO: skip const fields for now
+            }
+        }
+        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
+            Choices::Enums(enums) => {
+                for (_, combinator) in enums {
+                    substitute_in_combinator(combinator, param, arg.clone());
+                }
+            }
+            Choices::Ints(ints) => {
+                for (_, combinator) in ints {
+                    substitute_in_combinator(combinator, param, arg.clone());
+                }
+            }
+            Choices::Arrays(arrays) => {
+                for (_, combinator) in arrays {
+                    substitute_in_combinator(combinator, param, arg.clone());
+                }
+            }
+        },
+        CombinatorInner::Vec(combinator) => match combinator {
+            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
+                substitute_in_combinator(combinator, param, arg.clone());
+            }
+        },
+        CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            substitute_in_combinator(combinator, param, arg.clone());
+        }
+        CombinatorInner::Option(OptionCombinator(combinator)) => {
+            substitute_in_combinator(combinator, param, arg.clone());
+        }
+        _ => {}
     }
 }
 
@@ -247,6 +443,10 @@ fn collect_params(combinator: &Combinator) -> HashSet<Param> {
         CombinatorInner::Enum(..)
         | CombinatorInner::ConstraintInt(..)
         | CombinatorInner::Apply(..) => {}
+
+        CombinatorInner::MacroInvocation { .. } => {
+            unreachable!("macro invocation should be resolved by now")
+        }
     }
     params
 }

@@ -25,6 +25,11 @@ pub enum Definition {
         const_combinator: ConstCombinator,
     },
     Endianess(Endianess),
+    MacroDefn {
+        name: String,
+        params: Vec<String>,
+        body: Combinator,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -65,6 +70,10 @@ pub enum CombinatorInner {
     Apply(ApplyCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
+    MacroInvocation {
+        name: String,
+        args: Vec<CombinatorInner>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -288,6 +297,19 @@ impl Display for Definition {
                 Endianess::Little => write!(f, "!LITTLE_ENDIAN"),
                 Endianess::Big => write!(f, "!BIG_ENDIAN"),
             },
+            Definition::MacroDefn {
+                name,
+                params,
+                body: combinator,
+            } => {
+                write!(
+                    f,
+                    "macro {}!({}) = {}",
+                    name,
+                    params.iter().join(","),
+                    combinator
+                )
+            }
         }
     }
 }
@@ -327,6 +349,9 @@ impl Display for CombinatorInner {
             CombinatorInner::Apply(a) => write!(f, "{}", a),
             CombinatorInner::Option(o) => write!(f, "{}", o),
             CombinatorInner::Invocation(i) => write!(f, "{}", i),
+            CombinatorInner::MacroInvocation { name, args } => {
+                write!(f, "{}({})", name, args.iter().join(","))
+            }
         }
     }
 }
@@ -598,7 +623,7 @@ impl Display for VecCombinator {
 
 impl Display for ArrayCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}_{}s", self.len, self.combinator)
+        write!(f, "[{}; {}]", self.combinator, self.len)
     }
 }
 
@@ -730,6 +755,22 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                 "!LITTLE_ENDIAN" => Definition::Endianess(Endianess::Little),
                 "!BIG_ENDIAN" => Definition::Endianess(Endianess::Big),
                 _ => unreachable!(),
+            }
+        }
+        Rule::macro_defn => {
+            let mut inner_rules = rule.into_inner();
+            let name = inner_rules.next().unwrap().as_str().to_string();
+            let params = inner_rules
+                .next()
+                .unwrap()
+                .into_inner()
+                .map(|r| r.as_str().to_string())
+                .collect();
+            let combinator = parse_combinator(inner_rules.next().unwrap());
+            Definition::MacroDefn {
+                name,
+                params,
+                body: combinator,
             }
         }
         _ => unreachable!(),
@@ -904,6 +945,17 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let func = inner_rules.next().unwrap().as_str().to_string();
             let args = inner_rules.next().map(parse_params).unwrap_or_default();
             CombinatorInner::Invocation(CombinatorInvocation { func, args })
+        }
+        Rule::macro_invocation => {
+            let mut inner_rules = rule.into_inner();
+            let name = inner_rules.next().unwrap().as_str().to_string();
+            let args = inner_rules
+                .next()
+                .unwrap()
+                .into_inner()
+                .map(parse_combinator_inner)
+                .collect();
+            CombinatorInner::MacroInvocation { name, args }
         }
         _ => unreachable!(),
     }

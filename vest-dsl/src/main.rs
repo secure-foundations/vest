@@ -34,6 +34,7 @@ fn main() {
     let mut ast = ast::from_str(&vest).expect("cannot parse the vest file");
 
     // elaborate the AST
+    println!("🔨 Elaborating the AST...");
     elab::elaborate(&mut ast);
 
     // type check the AST

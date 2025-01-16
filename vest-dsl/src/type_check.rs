@@ -397,6 +397,7 @@ fn check_combinator_inner(
         Invocation(CombinatorInvocation { func, args }) => {
             check_combinator_invocation(func, args, param_defns, local_ctx, global_ctx)
         }
+        MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
     }
 }
 
