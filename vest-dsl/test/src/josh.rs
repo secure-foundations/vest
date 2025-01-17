@@ -20,6 +20,7 @@ use vest::regular::repeat_n::*;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::preceded::*;
 use vest::regular::terminated::*;
+use vest::regular::disjoint::DisjointFrom;
 verus!{
 pub type SpecTstTag = u8;
 pub type TstTag = u8;

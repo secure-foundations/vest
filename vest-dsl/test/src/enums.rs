@@ -20,6 +20,7 @@ use vest::regular::repeat_n::*;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::preceded::*;
 use vest::regular::terminated::*;
+use vest::regular::disjoint::DisjointFrom;
 verus!{
 
 pub enum SpecARegularChoose {
@@ -278,9 +279,21 @@ impl SpecTryFromInto for AClosedEnumMapper {
     type Src = AClosedEnumInner;
     type Dst = AClosedEnum;
 
-    proof fn spec_iso(s: Self::Src) { }
+    proof fn spec_iso(s: Self::Src) { 
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
 
-    proof fn spec_iso_rev(s: Self::Dst) { }
+    proof fn spec_iso_rev(s: Self::Dst) { 
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
 }
 
 impl TryFromInto for AClosedEnumMapper {
@@ -349,6 +362,252 @@ pub fn a_closed_enum() -> (o: AClosedEnumCombinator)
     ensures o@ == spec_a_closed_enum(),
 {
     AClosedEnumCombinator(TryMap { inner: U8, mapper: AClosedEnumMapper })
+}
+
+                
+
+pub enum SpecANonDependentChoose {
+    Variant1(u8),
+    Variant2(u8),
+    Variant3(u8),
+}
+
+pub type SpecANonDependentChooseInner = Either<u8, Either<u8, u8>>;
+
+
+
+impl SpecFrom<SpecANonDependentChoose> for SpecANonDependentChooseInner {
+    open spec fn spec_from(m: SpecANonDependentChoose) -> SpecANonDependentChooseInner {
+        match m {
+            SpecANonDependentChoose::Variant1(m) => Either::Left(m),
+            SpecANonDependentChoose::Variant2(m) => Either::Right(Either::Left(m)),
+            SpecANonDependentChoose::Variant3(m) => Either::Right(Either::Right(m)),
+        }
+    }
+
+}
+
+impl SpecFrom<SpecANonDependentChooseInner> for SpecANonDependentChoose {
+    open spec fn spec_from(m: SpecANonDependentChooseInner) -> SpecANonDependentChoose {
+        match m {
+            Either::Left(m) => SpecANonDependentChoose::Variant1(m),
+            Either::Right(Either::Left(m)) => SpecANonDependentChoose::Variant2(m),
+            Either::Right(Either::Right(m)) => SpecANonDependentChoose::Variant3(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ANonDependentChoose {
+    Variant1(u8),
+    Variant2(u8),
+    Variant3(u8),
+}
+
+pub type ANonDependentChooseInner = Either<u8, Either<u8, u8>>;
+
+
+impl View for ANonDependentChoose {
+    type V = SpecANonDependentChoose;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            ANonDependentChoose::Variant1(m) => SpecANonDependentChoose::Variant1(m@),
+            ANonDependentChoose::Variant2(m) => SpecANonDependentChoose::Variant2(m@),
+            ANonDependentChoose::Variant3(m) => SpecANonDependentChoose::Variant3(m@),
+        }
+    }
+}
+
+
+impl From<ANonDependentChoose> for ANonDependentChooseInner {
+    fn ex_from(m: ANonDependentChoose) -> ANonDependentChooseInner {
+        match m {
+            ANonDependentChoose::Variant1(m) => Either::Left(m),
+            ANonDependentChoose::Variant2(m) => Either::Right(Either::Left(m)),
+            ANonDependentChoose::Variant3(m) => Either::Right(Either::Right(m)),
+        }
+    }
+
+}
+
+impl From<ANonDependentChooseInner> for ANonDependentChoose {
+    fn ex_from(m: ANonDependentChooseInner) -> ANonDependentChoose {
+        match m {
+            Either::Left(m) => ANonDependentChoose::Variant1(m),
+            Either::Right(Either::Left(m)) => ANonDependentChoose::Variant2(m),
+            Either::Right(Either::Right(m)) => ANonDependentChoose::Variant3(m),
+        }
+    }
+    
+}
+
+
+pub struct ANonDependentChooseMapper;
+impl ANonDependentChooseMapper {
+    pub closed spec fn spec_new() -> Self {
+        ANonDependentChooseMapper
+    }
+    pub fn new() -> Self {
+        ANonDependentChooseMapper
+    }
+}
+impl View for ANonDependentChooseMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ANonDependentChooseMapper {
+    type Src = SpecANonDependentChooseInner;
+    type Dst = SpecANonDependentChoose;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ANonDependentChooseMapper {
+    type Src = ANonDependentChooseInner;
+    type Dst = ANonDependentChoose;
+}
+
+
+pub struct SpecANonDependentChooseCombinator(SpecANonDependentChooseCombinatorAlias);
+
+impl SpecCombinator for SpecANonDependentChooseCombinator {
+    type Type = SpecANonDependentChoose;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecANonDependentChooseCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecANonDependentChooseCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecANonDependentChooseCombinatorAlias = Mapped<OrdChoice<Refined<U8, Predicate8434700403445569729>, OrdChoice<Refined<U8, Predicate3779459584691363859>, Refined<U8, Predicate16013864750610309580>>>, ANonDependentChooseMapper>;
+pub struct Predicate8434700403445569729;
+impl View for Predicate8434700403445569729 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate8434700403445569729 {
+    type Input = u8;
+
+    fn apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 0 && i <= 10)
+    }
+}
+impl SpecPred for Predicate8434700403445569729 {
+    type Input = u8;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 0 && i <= 10)
+    }
+}
+pub struct Predicate3779459584691363859;
+impl View for Predicate3779459584691363859 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate3779459584691363859 {
+    type Input = u8;
+
+    fn apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 11 && i <= 20)
+    }
+}
+impl SpecPred for Predicate3779459584691363859 {
+    type Input = u8;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 11 && i <= 20)
+    }
+}
+pub struct Predicate16013864750610309580;
+impl View for Predicate16013864750610309580 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred for Predicate16013864750610309580 {
+    type Input = u8;
+
+    fn apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 21)
+    }
+}
+impl SpecPred for Predicate16013864750610309580 {
+    type Input = u8;
+
+    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+        let i = (*i);
+        (i >= 21)
+    }
+}
+
+pub struct ANonDependentChooseCombinator(ANonDependentChooseCombinatorAlias);
+
+impl View for ANonDependentChooseCombinator {
+    type V = SpecANonDependentChooseCombinator;
+    closed spec fn view(&self) -> Self::V { SpecANonDependentChooseCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ANonDependentChooseCombinator {
+    type Type = ANonDependentChoose;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ANonDependentChooseCombinatorAlias = Mapped<OrdChoice<Refined<U8, Predicate8434700403445569729>, OrdChoice<Refined<U8, Predicate3779459584691363859>, Refined<U8, Predicate16013864750610309580>>>, ANonDependentChooseMapper>;
+
+
+pub closed spec fn spec_a_non_dependent_choose() -> SpecANonDependentChooseCombinator {
+    SpecANonDependentChooseCombinator(Mapped { inner: OrdChoice(Refined { inner: U8, predicate: Predicate8434700403445569729 }, OrdChoice(Refined { inner: U8, predicate: Predicate3779459584691363859 }, Refined { inner: U8, predicate: Predicate16013864750610309580 })), mapper: ANonDependentChooseMapper::spec_new() })
+}
+
+                
+pub fn a_non_dependent_choose() -> (o: ANonDependentChooseCombinator)
+    ensures o@ == spec_a_non_dependent_choose(),
+{
+    ANonDependentChooseCombinator(Mapped { inner: OrdChoice::new(Refined { inner: U8, predicate: Predicate8434700403445569729 }, OrdChoice::new(Refined { inner: U8, predicate: Predicate3779459584691363859 }, Refined { inner: U8, predicate: Predicate16013864750610309580 })), mapper: ANonDependentChooseMapper::new() })
 }
 
                 
@@ -597,252 +856,6 @@ pub fn a_choose_with_default<'a>(e: AnOpenEnum) -> (o: AChooseWithDefaultCombina
     ensures o@ == spec_a_choose_with_default(e@),
 {
     AChooseWithDefaultCombinator(Mapped { inner: OrdChoice::new(Cond { cond: e == 0, inner: U8 }, OrdChoice::new(Cond { cond: e == 1, inner: U16Le }, OrdChoice::new(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: Tail }))), mapper: AChooseWithDefaultMapper::new() })
-}
-
-                
-
-pub enum SpecANonDependentChoose {
-    Variant1(u8),
-    Variant2(u8),
-    Variant3(u8),
-}
-
-pub type SpecANonDependentChooseInner = Either<u8, Either<u8, u8>>;
-
-
-
-impl SpecFrom<SpecANonDependentChoose> for SpecANonDependentChooseInner {
-    open spec fn spec_from(m: SpecANonDependentChoose) -> SpecANonDependentChooseInner {
-        match m {
-            SpecANonDependentChoose::Variant1(m) => Either::Left(m),
-            SpecANonDependentChoose::Variant2(m) => Either::Right(Either::Left(m)),
-            SpecANonDependentChoose::Variant3(m) => Either::Right(Either::Right(m)),
-        }
-    }
-
-}
-
-impl SpecFrom<SpecANonDependentChooseInner> for SpecANonDependentChoose {
-    open spec fn spec_from(m: SpecANonDependentChooseInner) -> SpecANonDependentChoose {
-        match m {
-            Either::Left(m) => SpecANonDependentChoose::Variant1(m),
-            Either::Right(Either::Left(m)) => SpecANonDependentChoose::Variant2(m),
-            Either::Right(Either::Right(m)) => SpecANonDependentChoose::Variant3(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ANonDependentChoose {
-    Variant1(u8),
-    Variant2(u8),
-    Variant3(u8),
-}
-
-pub type ANonDependentChooseInner = Either<u8, Either<u8, u8>>;
-
-
-impl View for ANonDependentChoose {
-    type V = SpecANonDependentChoose;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            ANonDependentChoose::Variant1(m) => SpecANonDependentChoose::Variant1(m@),
-            ANonDependentChoose::Variant2(m) => SpecANonDependentChoose::Variant2(m@),
-            ANonDependentChoose::Variant3(m) => SpecANonDependentChoose::Variant3(m@),
-        }
-    }
-}
-
-
-impl From<ANonDependentChoose> for ANonDependentChooseInner {
-    fn ex_from(m: ANonDependentChoose) -> ANonDependentChooseInner {
-        match m {
-            ANonDependentChoose::Variant1(m) => Either::Left(m),
-            ANonDependentChoose::Variant2(m) => Either::Right(Either::Left(m)),
-            ANonDependentChoose::Variant3(m) => Either::Right(Either::Right(m)),
-        }
-    }
-
-}
-
-impl From<ANonDependentChooseInner> for ANonDependentChoose {
-    fn ex_from(m: ANonDependentChooseInner) -> ANonDependentChoose {
-        match m {
-            Either::Left(m) => ANonDependentChoose::Variant1(m),
-            Either::Right(Either::Left(m)) => ANonDependentChoose::Variant2(m),
-            Either::Right(Either::Right(m)) => ANonDependentChoose::Variant3(m),
-        }
-    }
-    
-}
-
-
-pub struct ANonDependentChooseMapper;
-impl ANonDependentChooseMapper {
-    pub closed spec fn spec_new() -> Self {
-        ANonDependentChooseMapper
-    }
-    pub fn new() -> Self {
-        ANonDependentChooseMapper
-    }
-}
-impl View for ANonDependentChooseMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ANonDependentChooseMapper {
-    type Src = SpecANonDependentChooseInner;
-    type Dst = SpecANonDependentChoose;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ANonDependentChooseMapper {
-    type Src = ANonDependentChooseInner;
-    type Dst = ANonDependentChoose;
-}
-
-
-pub struct SpecANonDependentChooseCombinator(SpecANonDependentChooseCombinatorAlias);
-
-impl SpecCombinator for SpecANonDependentChooseCombinator {
-    type Type = SpecANonDependentChoose;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecANonDependentChooseCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecANonDependentChooseCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecANonDependentChooseCombinatorAlias = Mapped<OrdChoice<Refined<U8, Predicate8434700403445569729>, OrdChoice<Refined<U8, Predicate3779459584691363859>, Refined<U8, Predicate16013864750610309580>>>, ANonDependentChooseMapper>;
-pub struct Predicate8434700403445569729;
-impl View for Predicate8434700403445569729 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate8434700403445569729 {
-    type Input = u8;
-
-    fn apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 0 && i <= 10)
-    }
-}
-impl SpecPred for Predicate8434700403445569729 {
-    type Input = u8;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 0 && i <= 10)
-    }
-}
-pub struct Predicate3779459584691363859;
-impl View for Predicate3779459584691363859 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate3779459584691363859 {
-    type Input = u8;
-
-    fn apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 11 && i <= 20)
-    }
-}
-impl SpecPred for Predicate3779459584691363859 {
-    type Input = u8;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 11 && i <= 20)
-    }
-}
-pub struct Predicate16013864750610309580;
-impl View for Predicate16013864750610309580 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred for Predicate16013864750610309580 {
-    type Input = u8;
-
-    fn apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 21)
-    }
-}
-impl SpecPred for Predicate16013864750610309580 {
-    type Input = u8;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        let i = (*i);
-        (i >= 21)
-    }
-}
-
-pub struct ANonDependentChooseCombinator(ANonDependentChooseCombinatorAlias);
-
-impl View for ANonDependentChooseCombinator {
-    type V = SpecANonDependentChooseCombinator;
-    closed spec fn view(&self) -> Self::V { SpecANonDependentChooseCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ANonDependentChooseCombinator {
-    type Type = ANonDependentChoose;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ANonDependentChooseCombinatorAlias = Mapped<OrdChoice<Refined<U8, Predicate8434700403445569729>, OrdChoice<Refined<U8, Predicate3779459584691363859>, Refined<U8, Predicate16013864750610309580>>>, ANonDependentChooseMapper>;
-
-
-pub closed spec fn spec_a_non_dependent_choose() -> SpecANonDependentChooseCombinator {
-    SpecANonDependentChooseCombinator(Mapped { inner: OrdChoice(Refined { inner: U8, predicate: Predicate8434700403445569729 }, OrdChoice(Refined { inner: U8, predicate: Predicate3779459584691363859 }, Refined { inner: U8, predicate: Predicate16013864750610309580 })), mapper: ANonDependentChooseMapper::spec_new() })
-}
-
-                
-pub fn a_non_dependent_choose() -> (o: ANonDependentChooseCombinator)
-    ensures o@ == spec_a_non_dependent_choose(),
-{
-    ANonDependentChooseCombinator(Mapped { inner: OrdChoice::new(Refined { inner: U8, predicate: Predicate8434700403445569729 }, OrdChoice::new(Refined { inner: U8, predicate: Predicate3779459584691363859 }, Refined { inner: U8, predicate: Predicate16013864750610309580 })), mapper: ANonDependentChooseMapper::new() })
 }
 
                 

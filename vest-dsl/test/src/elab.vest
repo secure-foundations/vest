@@ -1,8 +1,10 @@
 !BIG_ENDIAN
+const F5: [u8; 5] = [1; 5]
 
 msg_d = {
   const f1: [u8; 4] = [1; 4],
   const f2: u16 = 0x1234,
+  const c: F5,
 }
 
 msg_b = {
