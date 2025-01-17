@@ -1,48 +1,18 @@
 !BIG_ENDIAN
 
-uint_0_ff = u8
-uint_1_ff = u8 | { 1..0xff }
-uint_0_ffff = u16
-uint_1_ffff = u16 | { 1..0xffff }
-uint_2_ffff = u16 | { 2..0xffff }
-uint_0_fffe = u16 | { 0..0xfffe }
-uint_2_fffe = u16 | { 2..0xfffe }
+macro opaque!(int_type) = {
+  @l: int_type,
+  data: [u8; @l],
+}
 
 // opaque XXX<0..2^8-1>
-opaque_0_ff = {
-  @l: uint_0_ff,
-  data: [u8; @l],
-}
-
-opaque_1_ff = {
-  @l: uint_1_ff,
-  data: [u8; @l],
-}
-
-opaque_0_ffff = {
-  @l: uint_0_ffff,
-  data: [u8; @l],
-}
-
-opaque_1_ffff = {
-  @l: uint_1_ffff,
-  data: [u8; @l],
-}
-
-opaque_2_ffff = {
-  @l: uint_2_ffff,
-  data: [u8; @l],
-}
-
-opaque_0_ffffff = {
-  @l: u24,
-  data: [u8; @l],
-}
-
-opaque_1_ffffff = {
-  @l: u24 | { 1..0xffffff },
-  data: [u8; @l],
-}
+opaque_0_ff = opaque!(u8)
+opaque_1_ff = opaque!(u8 | { 1..0xff })
+opaque_0_ffff = opaque!(u16)
+opaque_1_ffff = opaque!(u16 | { 1..0xffff })
+opaque_2_ffff = opaque!(u16 | { 2..0xffff })
+opaque_0_ffffff = opaque!(u24)
+opaque_1_ffffff = opaque!(u24 | { 1..0xffffff })
 
 protocol_version = enum {
   SSLv3 = 0x0300,
@@ -102,7 +72,7 @@ server_name = {
 }
 
 server_name_list = {
-  @l: uint_1_ffff,
+  @l: u16 | 1..0xffff,
   list: [u8; @l] >>= Vec<server_name>,
 }
 
@@ -122,7 +92,7 @@ responder_id = opaque_1_ffff
 ocsp_extensions = opaque_0_ffff
 
 responder_id_list = {
-  @l: uint_0_ffff,
+  @l: u16,
   list: [u8; @l] >>= Vec<responder_id>,
 }
 
@@ -177,7 +147,7 @@ named_group = enum {
 }
 
 named_group_list = {
-  @l: uint_2_ffff,
+  @l: u16 | 2..0xffff,
   list: [u8; @l] >>= Vec<named_group>,
 }
 
@@ -189,7 +159,7 @@ ec_point_format = enum {
 }
 
 ec_point_format_list = {
-  @l: uint_1_ff,
+  @l: u8 | 1..0xff,
   list: [u8; @l] >>= Vec<ec_point_format>,
 }
 
@@ -232,13 +202,13 @@ signature_scheme = enum {
 //   SignatureScheme supported_signature_algorithms<2..2^16-2>;
 // } SignatureSchemeList;
 signature_scheme_list = {
-  @l: uint_2_fffe,
+  @l: u16 | 2..0xfffe,
   list: [u8; @l] >>= Vec<signature_scheme>,
 }
 
 srtp_protection_profile = [u8; 2]
 srtp_protection_profiles = {
-  @l: uint_2_ffff,
+  @l: u16 | 2..0xffff,
   list: [u8; @l] >>= Vec<srtp_protection_profile>,
 }
 
@@ -259,13 +229,13 @@ heartbeat_extension = {
 
 protocol_name = opaque_1_ff
 protocol_name_list = {
-  @l: uint_2_ffff,
+  @l: u16 | 2..0xffff,
   list: [u8; @l] >>= Vec<protocol_name>,
 }
 
 serialized_sct = opaque_1_ffff
 signed_certificate_timestamp_list = {
-  @l: uint_1_ffff,
+  @l: u16 | 1..0xffff,
   list: [u8; @l] >>= Vec<serialized_sct>,
 }
 
@@ -276,7 +246,7 @@ certificate_type = enum {
 }
 
 client_cert_type_client_extension = {
-  @l: uint_1_ff,
+  @l: u8 | 1..0xff,
   types: [u8; @l] >>= Vec<certificate_type>,
 }
 
@@ -285,7 +255,7 @@ client_cert_type_server_extension = {
 }
 
 server_cert_type_client_extension = {
-  @l: uint_1_ff,
+  @l: u8 | 1..0xff,
   types: [u8; @l] >>= Vec<certificate_type>,
 }
 
@@ -298,7 +268,7 @@ zero_byte = {
 }
 
 padding_extension = {
-  @l: uint_0_ffff,
+  @l: u16,
   padding: [u8; @l] >>= Vec<zero_byte>,
 }
 
@@ -366,7 +336,7 @@ psk_key_exchange_mode = enum {
 }
 
 psk_key_exchange_modes = {
-  @l: uint_1_ff,
+  @l: u8 | 1..0xff,
   modes: [u8; @l] >>= Vec<psk_key_exchange_mode>,
 }
 
@@ -383,43 +353,43 @@ oid_filter = {
 }
 
 oid_filter_extension = {
-  @l: uint_0_ffff,
+  @l: u16,
   filters: [u8; @l] >>= Vec<oid_filter>,
 }
 
-uncompressed_point_representation32 = {
-  const legacy_form: u8 = 4, 
-  x: [u8; 32],
-  y: [u8; 32],
-}
-
-uncompressed_point_representation48 = {
-  const legacy_form: u8 = 4,
-  x: [u8; 48],
-  y: [u8; 48],
-}
-
-uncompressed_point_representation66 = {
-  const legacy_form: u8 = 4,
-  x: [u8; 66],
-  y: [u8; 66],
-}
-
-montgomery_point32 = [u8; 32]
-
-montgomery_form56 = [u8; 56]
-
-sever_dh_params = {
-  dh_p: opaque_1_ffff,
-  dh_g: opaque_1_ffff,
-  dh_ys: opaque_1_ffff,
-}
-
-key_exchange_data = opaque_1_ffff
+// uncompressed_point_representation32 = {
+//   const legacy_form: u8 = 4, 
+//   x: [u8; 32],
+//   y: [u8; 32],
+// }
+// 
+// uncompressed_point_representation48 = {
+//   const legacy_form: u8 = 4,
+//   x: [u8; 48],
+//   y: [u8; 48],
+// }
+// 
+// uncompressed_point_representation66 = {
+//   const legacy_form: u8 = 4,
+//   x: [u8; 66],
+//   y: [u8; 66],
+// }
+// 
+// montgomery_point32 = [u8; 32]
+// 
+// montgomery_form56 = [u8; 56]
+// 
+// sever_dh_params = {
+//   dh_p: opaque_1_ffff,
+//   dh_g: opaque_1_ffff,
+//   dh_ys: opaque_1_ffff,
+// }
+// 
+// key_exchange_data = opaque_1_ffff
 
 key_share_entry = {
   @group: named_group,
-  @l: uint_1_ffff,
+  @l: u16 | 1..0xffff,
   key_exchange: [u8; @l],
   // key_exchange: [u8; @l] >>= choose(@group) {
   //   Secp256r1 => uncompressed_point_representation32,
@@ -440,7 +410,7 @@ key_share_entry = {
 }
 
 key_share_client_hello = {
-  @l: uint_0_ffff,
+  @l: u16,
   client_shares: [u8; @l] >>= Vec<key_share_entry>,
 }
 
@@ -688,7 +658,7 @@ hello_retry_request = {
 }
 
 cipher_suite_list = {
-  @l: uint_2_fffe,
+  @l: u16 | 2..0xfffe,
   list: [u8; @l] >>= Vec<cipher_suite>,
 }
 
@@ -716,22 +686,22 @@ hello_retry_extensions = {
 }
 
 certificate_request_extensions = {
-  @l: uint_2_ffff,
+  @l: u16 | 2..0xffff,
   extensions: [u8; @l] >>= Vec<certificate_request_extension>,
 }
 
 encrypted_extensions = {
-  @l: uint_0_ffff,
+  @l: u16,
   extensions: [u8; @l] >>= Vec<encrypted_extension>,
 }
 
 new_session_ticket_extensions = {
-  @l: uint_0_fffe,
+  @l: u16 | 0..0xfffe,
   extensions: [u8; @l] >>= Vec<new_session_ticket_extension>,
 }
 
 certificate_extensions = {
-  @l: uint_0_ffff,
+  @l: u16,
   extensions: [u8; @l] >>= Vec<certificate_extension>,
 }
 
@@ -751,14 +721,19 @@ certificate_request = {
 //     };
 //     Extension extensions<0..2^16-1>;
 // } CertificateEntry;
-certificate_entry = {
+certificate_entry(@cert_type: certificate_type) = choose(@cert_type) {
+  X509 => opaque_1_ffffff,
+  RawPublicKey => opaque_1_ffffff,
+}
+
+certificate_entry_opaque = {
   cert_data: opaque_1_ffffff,
   extensions: certificate_extensions,
 }
 
 certificate_list = {
   @l: u24,
-  list: [u8; @l] >>= Vec<certificate_entry>,
+  list: [u8; @l] >>= Vec<certificate_entry_opaque>,
 }
 
 certificate = {
@@ -774,7 +749,22 @@ certificate_verify = {
 // struct {
 //     opaque verify_data[Hash.length];
 // } Finished;
-finished(@digest_size: u24) = [u8; @digest_size]
+digest_size = enum {
+  Hash12 = 12,
+  Hash20 = 20,
+  Sha256 = 32,
+  Sha384 = 48,
+  Sha512 = 64,
+}
+
+finished(@size: digest_size) = choose(@size) {
+  Hash12 => [u8; 12],
+  Hash20 => [u8; 20],
+  Sha256 => [u8; 32],
+  Sha384 => [u8; 48],
+  Sha512 => [u8; 64],
+}
+finished_opaque(@digest_size: u24) = [u8; @digest_size]
 
 new_session_ticket = {
   ticket_lifetime: u32,
@@ -817,26 +807,16 @@ key_update = {
 //       (255)
 //   } HandshakeType;
 handshake_type = enum {
-  // HelloRequest = 0,
   ClientHello = 1,
   ServerHello = 2,
-  // HelloVerifyRequest = 3,
   NewSessionTicket = 4,
   EndOfEarlyData = 5,
-  // HelloRetryRequest = 6,
   EncryptedExtensions = 8,
   Certificate = 11,
-  // ServerKeyExchange = 12,
   CertificateRequest = 13,
-  // ServerHelloDone = 14,
   CertificateVerify = 15,
-  // ClientKeyExchange = 16,
   Finished = 20,
-  // CertificateUrl = 21,
-  // CertificateStatus = 22,
-  // SupplementalData = 23,
   KeyUpdate = 24,
-  // MessageHash = 254,
 }
 
 handshake = {
@@ -851,7 +831,7 @@ handshake = {
     Certificate => certificate,
     CertificateRequest => certificate_request,
     CertificateVerify => certificate_verify,
-    Finished => finished(@length),
+    Finished => finished_opaque(@length),
     KeyUpdate => key_update,
   },
 }
