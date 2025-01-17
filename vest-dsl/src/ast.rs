@@ -170,7 +170,7 @@ pub struct ChoiceCombinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Choices {
     Enums(Vec<(String, Combinator)>),
-    Ints(Vec<(Option<i128>, Combinator)>),
+    Ints(Vec<(Option<ConstraintElem>, Combinator)>),
     Arrays(Vec<(ConstArray, Combinator)>),
 }
 
@@ -533,15 +533,15 @@ impl Display for Param {
 
 impl Display for WrapCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[")?;
+        write!(f, "wrap(")?;
         for combinator in &self.prior {
-            write!(f, "{}", combinator)?;
+            write!(f, "{}, ", combinator)?;
         }
         write!(f, "{}", self.combinator)?;
         for combinator in &self.post {
-            write!(f, "{}", combinator)?;
+            write!(f, ", {}", combinator)?;
         }
-        write!(f, "]")
+        write!(f, ")")
     }
 }
 
@@ -590,8 +590,10 @@ impl Display for Choices {
                 Ok(())
             }
             Choices::Ints(ints) => {
-                for (value, combinator) in ints {
-                    let value = value.map_or("_".to_string(), |v| v.to_string());
+                for (pattern, combinator) in ints {
+                    let value = pattern
+                        .as_ref()
+                        .map_or("_".to_string(), |elem| elem.to_string());
                     writeln!(f, "{} => {},", value, combinator)?;
                 }
                 Ok(())
@@ -1146,14 +1148,14 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
             let choices = inner_rules.map(parse_enum_choice).collect();
             Choices::Enums(choices)
         }
-        Rule::const_int => {
+        Rule::constraint_elem => {
             let parse_int_choice = |pair: pest::iterators::Pair<Rule>| {
                 let mut inner_rules = pair.into_inner();
                 match inner_rules.peek().unwrap().as_rule() {
-                    Rule::const_int => {
-                        let value = parse_const_int(inner_rules.next().unwrap());
+                    Rule::constraint_elem => {
+                        let pattern = parse_constraint_elem(inner_rules.next().unwrap());
                         let combinator = parse_combinator(inner_rules.next().unwrap());
-                        (Some(value), combinator)
+                        (Some(pattern), combinator)
                     }
                     Rule::variant_id => {
                         let name = inner_rules.next().unwrap().as_str();

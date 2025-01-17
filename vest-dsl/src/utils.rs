@@ -2,11 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 #[derive(Debug, PartialEq)]
-pub enum TopoSortError {
-    CycleDetected,
+pub enum TopoSortError<E> {
+    CycleDetected(E),
 }
 
-pub fn topological_sort<K, V>(graph: &HashMap<K, V>) -> Result<Vec<K>, TopoSortError>
+pub fn topological_sort<K, V>(graph: &HashMap<K, V>) -> Result<Vec<K>, TopoSortError<K>>
 where
     K: Eq + Hash + Clone,
     V: AsRef<[K]>,
@@ -36,13 +36,13 @@ fn dfs<K, V>(
     visited: &mut HashSet<K>,
     visiting: &mut HashSet<K>,
     sorted: &mut Vec<K>,
-) -> Result<(), TopoSortError>
+) -> Result<(), TopoSortError<K>>
 where
     K: Eq + Hash + Clone,
     V: AsRef<[K]>,
 {
     if visiting.contains(&node) {
-        return Err(TopoSortError::CycleDetected);
+        return Err(TopoSortError::CycleDetected(node));
     }
 
     if !visited.contains(&node) {
@@ -74,7 +74,10 @@ mod tests {
         graph.insert("C", vec!["D"]);
         graph.insert("D", vec!["A"]);
 
-        assert_eq!(topological_sort(&graph), Err(TopoSortError::CycleDetected));
+        assert_eq!(
+            topological_sort(&graph),
+            Err(TopoSortError::CycleDetected("A"))
+        );
     }
 
     #[test]

@@ -668,11 +668,19 @@ fn check_choice_combinator(
                     ..
                 }) = combinator
                 {
+                    let int_combinator = match combinator {
+                        CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                            combinator,
+                            ..
+                        }) => combinator.clone(),
+                        _ => unreachable!(),
+                    };
                     let mut int_variants = HashSet::new();
-                    ints.iter().for_each(|(int, combinator)| {
-                        if let Some(int) = int {
-                            if !int_variants.insert(*int) {
-                                panic!("Duplicate int variant `{}`", int);
+                    ints.iter().for_each(|(pattern, combinator)| {
+                        if let Some(pattern) = pattern {
+                            check_constraint_elem(&int_combinator, pattern);
+                            if !int_variants.insert(pattern) {
+                                panic!("Duplicate int variant `{}`", pattern);
                             }
                         }
                         check_combinator(combinator, param_defns, local_ctx, global_ctx);
@@ -838,14 +846,21 @@ fn check_constraint_int_combinator(combinator: &IntCombinator, constraint: Optio
 fn check_constraint_elem(combinator: &IntCombinator, constraint_elem: &ConstraintElem) {
     match constraint_elem {
         ConstraintElem::Range { start, end } => {
-            if let Some(start) = start {
-                check_const_int_combinator(combinator, start);
-                if let Some(end) = end {
+            match (start, end) {
+                (Some(start), Some(end)) => {
+                    check_const_int_combinator(combinator, start);
                     check_const_int_combinator(combinator, end);
                     if start > end {
                         panic!("Invalid range constraint");
                     }
                 }
+                (Some(start), None) => {
+                    check_const_int_combinator(combinator, start);
+                }
+                (None, Some(end)) => {
+                    check_const_int_combinator(combinator, end);
+                }
+                _ => panic!("Invalid range constraint"),
             }
         }
         ConstraintElem::Single(value) => {

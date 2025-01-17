@@ -69,7 +69,7 @@ non_exhaustive_marker = _{ "..." }
 
 /// ordered choice `combinator`
 choice_combinator = { choose ~ ("(" ~ depend_id ~ ")")? ~ "{" ~ choice+ ~ "}" }
-choice            = { (variant_id | const_int | const_array) ~ "=>"? ~ combinator ~ "," }
+choice            = { (variant_id | constraint_elem | const_array) ~ "=>"? ~ combinator ~ "," }
 
 /// vec of `combinator` (`Vec` for zero or more and `Vec1` for one or more)
 vec_combinator = { (vec1 | vec) ~ "<" ~ combinator ~ ">" }

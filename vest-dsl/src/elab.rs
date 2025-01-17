@@ -9,6 +9,9 @@ use crate::{ast::*, utils::topological_sort};
 pub fn elaborate(ast: &mut Vec<Definition>) {
     // expand the macro invocations
     expand_macros(ast);
+    // for defn in ast.iter() {
+    //     println!("{}", defn);
+    // }
 
     // expand the inlined, anonymous combinator definitions
     expand_definitions(ast);
@@ -35,12 +38,9 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
                 }
             });
         })
-        .unwrap_or_else(|_| {
-            panic!("Cycle detected in the format definitions");
+        .unwrap_or_else(|e| {
+            panic!("Cycle detected in the format definitions: {:?}", e);
         });
-    // for defn in ast.iter() {
-    //     println!("{}", defn);
-    // }
 }
 
 pub struct ElabCtx {
@@ -95,10 +95,10 @@ fn expand_macros_in_combinator(
     combinator: &mut Combinator,
     macro_defns: &HashMap<String, MacroDefn>,
 ) {
-    expand_macros_in_combinator_inner(&mut combinator.inner, macro_defns);
     if let Some(and_then) = &mut combinator.and_then {
         expand_macros_in_combinator(and_then, macro_defns);
     }
+    expand_macros_in_combinator_inner(&mut combinator.inner, macro_defns);
 }
 
 fn expand_macros_in_combinator_inner(
@@ -174,10 +174,10 @@ fn expand_macros_in_combinator_inner(
 /// Substitute all occurrences of `param` in `body` with `arg`
 /// - `param` implicitly refers to the `CombinatorInvocation`s with the same name
 fn substitute_in_combinator(body: &mut Combinator, param: &str, arg: CombinatorInner) {
-    substitute_in_combinator_inner(&mut body.inner, param, arg.clone());
     if let Some(and_then) = &mut body.and_then {
-        substitute_in_combinator(and_then, param, arg);
+        substitute_in_combinator(and_then, param, arg.clone());
     }
+    substitute_in_combinator_inner(&mut body.inner, param, arg);
 }
 
 fn substitute_in_combinator_inner(body: &mut CombinatorInner, param: &str, arg: CombinatorInner) {
@@ -292,7 +292,11 @@ fn expand_combinator(
                             || (matches!(
                                 &combinator.inner,
                                 CombinatorInner::Bytes(_) | CombinatorInner::Tail(_)
-                            ) && combinator.and_then.is_some())
+                            ) && combinator.and_then.is_some()
+                                && matches!(
+                                    &combinator.and_then.as_ref().unwrap().inner,
+                                    CombinatorInner::Choice(_)
+                                ))
                         {
                             let params: HashSet<Param> = collect_params(combinator);
                             let param_defns: Vec<ParamDefn> = params
@@ -457,7 +461,8 @@ pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
             Definition::Combinator {
                 name, combinator, ..
             } => {
-                let invocations = collect_invocations(combinator);
+                let mut invocations = Vec::new();
+                collect_invocations(combinator, &mut invocations);
                 Some((name.to_owned(), invocations))
             }
             Definition::ConstCombinator {
@@ -472,122 +477,73 @@ pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
         .collect()
 }
 
-fn collect_invocations(combinator: &Combinator) -> Vec<String> {
-    fn get_invocation(combinator: &Combinator) -> Option<String> {
-        if let Combinator {
-            inner: CombinatorInner::Invocation(invocation),
-            ..
-        } = combinator
-        {
-            Some(invocation.func.to_owned())
-        } else {
-            None
-        }
+fn collect_invocations(combinator: &Combinator, invocations: &mut Vec<String>) {
+    if let Some(and_then) = &combinator.and_then {
+        collect_invocations(and_then, invocations);
     }
-    fn get_const_invocation(combinator: &ConstCombinator) -> Option<String> {
-        if let ConstCombinator::ConstCombinatorInvocation(invocation) = combinator {
-            Some(invocation.to_owned())
-        } else {
-            None
+    collect_invocations_inner(&combinator.inner, invocations);
+}
+
+fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &mut Vec<String>) {
+    match combinator_inner {
+        // base case: combinator invocation
+        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
+            invocations.push(func.to_owned());
         }
-    }
-    let mut invocations = Vec::new();
-    match &combinator.inner {
+        // recursive cases
         CombinatorInner::Struct(StructCombinator(fields)) => {
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
                     | StructField::Dependent { combinator, .. } => {
-                        if let Some(invocation) = get_invocation(combinator) {
-                            invocations.push(invocation);
-                        }
+                        collect_invocations(combinator, invocations);
                     }
-                    StructField::Const { combinator, .. } => {
-                        if let Some(invocation) = get_const_invocation(combinator) {
-                            invocations.push(invocation);
-                        }
-                    }
+                    StructField::Const { .. } => {}
                     _ => {}
                 }
             }
         }
         CombinatorInner::Wrap(WrapCombinator {
-            prior,
+            prior: _,
             combinator,
-            post,
+            post: _,
         }) => {
-            for combinator in prior {
-                if let Some(invocation) = get_const_invocation(combinator) {
-                    invocations.push(invocation);
-                }
-            }
-            if let Some(invocation) = get_invocation(combinator) {
-                invocations.push(invocation);
-            }
-            for combinator in post {
-                if let Some(invocation) = get_const_invocation(combinator) {
-                    invocations.push(invocation);
-                }
-            }
+            collect_invocations(combinator, invocations);
         }
         CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
             Choices::Enums(enums) => {
                 for (_, combinator) in enums {
-                    if let Some(invocation) = get_invocation(combinator) {
-                        invocations.push(invocation);
-                    }
+                    collect_invocations(combinator, invocations);
                 }
             }
             Choices::Ints(ints) => {
                 for (_, combinator) in ints {
-                    if let Some(invocation) = get_invocation(combinator) {
-                        invocations.push(invocation);
-                    }
+                    collect_invocations(combinator, invocations);
                 }
             }
             Choices::Arrays(arrays) => {
                 for (_, combinator) in arrays {
-                    if let Some(invocation) = get_invocation(combinator) {
-                        invocations.push(invocation);
-                    }
+                    collect_invocations(combinator, invocations);
                 }
             }
         },
-        CombinatorInner::SepBy(SepByCombinator { combinator, sep }) => {
-            match combinator {
-                VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                    if let Some(invocation) = get_invocation(combinator) {
-                        invocations.push(invocation);
-                    }
-                }
-            }
-            if let Some(invocation) = get_const_invocation(sep) {
-                invocations.push(invocation);
-            }
+        CombinatorInner::Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
+            collect_invocations(combinator, invocations);
         }
-        CombinatorInner::Vec(combinator) => match combinator {
-            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                if let Some(invocation) = get_invocation(combinator) {
-                    invocations.push(invocation);
-                }
-            }
-        },
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
-            if let Some(invocation) = get_invocation(combinator) {
-                invocations.push(invocation);
-            }
+            collect_invocations(combinator, invocations);
         }
-        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-            invocations.push(func.to_owned());
+        CombinatorInner::Option(OptionCombinator(combinator)) => {
+            collect_invocations(combinator, invocations);
         }
-        CombinatorInner::Bytes(_) => {
-            if let Some(and_then) = &combinator.and_then {
-                invocations.extend(collect_invocations(and_then));
-            }
-        }
-        _ => {}
+        CombinatorInner::Enum(..) => {}
+        CombinatorInner::ConstraintInt(..) => {}
+        CombinatorInner::Bytes(..) => {}
+        CombinatorInner::Tail(..) => {}
+        CombinatorInner::Apply(..) => {}
+        CombinatorInner::SepBy(..) => {}
+        CombinatorInner::MacroInvocation { .. } => {}
     }
-    invocations
 }
 
 fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> {
