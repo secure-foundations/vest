@@ -1,0 +1,34 @@
+[package]
+name = "wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
+builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
+vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
+vest = { path = "../../vest" }
+
+[package.metadata.verus.ide]
+extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern vest=../../vest/libvest.rlib src/lib.rs"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# [[bench]]
+# name = "tls_benchmark"
+# harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1

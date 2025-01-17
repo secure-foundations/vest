@@ -1,0 +1,713 @@
+/* Important notes:
+
+   + Whenever this file calls something "wrong" or "incorrect", it
+     means wrong wrt the official Wasm binary specification. For a
+     variety of reasons, the official Wasm binary specification cannot
+     be parsed by QuackyDucky+LowParse/EverParse and thus we pick
+     replacements for each such deviation. These replacements are
+     implemented in our `.vasm` file format, which we can produce from
+     `.wasm` files.
+
+   + Integers are implemented "wrongly" at the moment. LowParse doesn't
+     (yet) have the right combinators to support LEB128 integers.
+
+   + Due to things that quacky-ducky doesn't support out of the box,
+     we define what we call a "pre-rfc" which is run through the C
+     pre-processor, before then being put into quacky-ducky.
+ */
+
+/* WARN: Incorrect definition of vec. Need LEB128 instead of uint32. */
+/* XXX: We only allow a max vector size of L rather than what WASM spec allows- full uint32 */
+
+/* WARN: We define bytevec to be same as vec, but prefixed by a bytesize instead of count. This does NOT exist in WASM. */
+
+/* WARN: Inrorrect definition of optional. Need untagged optionals instead of tagged. */
+/* Optionals don't exist directly in the spec as a separate thing like
+   [vec], but it is useful to define them for our purposes. */
+enum { absent(0x00), present(0x01), (0xff) } optional_tag;
+/*  ____   ____   __     __    _                  */
+/* | ___| |___ \  \ \   / /_ _| |_   _  ___  ___  */
+/* |___ \   __) |  \ \ / / _` | | | | |/ _ \/ __| */
+/*  ___) | / __/    \ V / (_| | | |_| |  __/\__ \ */
+/* |____(_)_____|    \_/ \__,_|_|\__,_|\___||___/ */
+/*                                                */
+
+/* opaque cannot be typedef'd to byte in quacky-ducky. This is a
+   workaround for the same :) */
+
+/* WARN: 5.2.2 Incorrect defintions of integers. Should be using LEB128 here. */
+
+struct {
+  uint32 high;
+  uint32 low;
+} uint64;
+
+uint32 i32;
+uint64 i64;
+
+/* WARN: 5.2.3 Should be using IEEE754-2008 for for Floating Point */
+opaque f32[4];
+opaque f64[8];
+
+/* XXX: We don't specially handle/check unicode. We simply take a bunch of bytes. */
+
+ struct {
+ opaque x{0.. 2^8-1 : uint32};
+ } name;
+
+/*  ____   _____   _____                       */
+/* | ___| |___ /  |_   _|   _ _ __   ___  ___  */
+/* |___ \   |_ \    | || | | | '_ \ / _ \/ __| */
+/*  ___) | ___) |   | || |_| | |_) |  __/\__ \ */
+/* |____(_)____/    |_| \__, | .__/ \___||___/ */
+/*                      |___/|_|               */
+
+enum { i32(0x7f), i64(0x7e), f32(0x7d), f64(0x7c), (0xff) } valtype;
+
+ struct {
+ valtype x{0.. 2^12-1 : uint32};
+ } aux_vecvaltype;
+
+enum { r_none(0x40), r_i32(0x7f), r_i64(0x7e), r_f32(0x7d), r_f64(0x7c), (0xff) } blocktype;
+
+enum { functype(0x60), (0xff) } aux_functype_magic;
+struct {
+  aux_functype_magic m;
+  aux_vecvaltype params;
+  aux_vecvaltype results;
+} functype;
+
+enum { absent(0x00), present(0x01), (0xff) } aux_max_present;
+struct { uint32 min; } aux_only_min;
+struct { uint32 min; uint32 max; } aux_min_max;
+struct {
+  aux_max_present maxp;
+  select(maxp) {
+    case absent: aux_only_min;
+    case present: aux_min_max;
+  } l;
+} limits;
+
+limits memtype;
+
+enum { funcref(0x70), (0xff) } elemtype;
+
+struct {
+  elemtype et;
+  limits lim;
+} tabletype;
+
+enum { cnst(0x00), var(0x01), (0xff) } mut;
+
+struct {
+  valtype t;
+  mut m;
+} globaltype;
+
+/*  ____  _  _     ___           _                   _   _                  */
+/* | ___|| || |   |_ _|_ __  ___| |_ _ __ _   _  ___| |_(_) ___  _ __  ___  */
+/* |___ \| || |_   | || '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \/ __| */
+/*  ___) |__   _|  | || | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | \__ \ */
+/* |____(_) |_|   |___|_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/ */
+/*                                                                          */
+
+enum {
+  /* Control Instructions */
+  unreachable(0x00),
+  nop(0x01),
+  block(0x02),
+  loop(0x03),
+  if_(0x04),
+  br(0x0c),
+  br_if(0x0d),
+  br_table(0x0e),
+  ret(0x0f),
+  call(0x10),
+  call_indirect(0x11),
+  /* Parametric Instructions */
+  drop(0x1a),
+  select_(0x1b),
+  /* Variable Instructions */
+  local_get(0x20),
+  local_set(0x21),
+  local_tee(0x22),
+  global_get(0x23),
+  global_set(0x24),
+  /* Memory instructions */
+  i32_load(0x28),
+  i64_load(0x29),
+  f32_load(0x2A),
+  f64_load(0x2B),
+  i32_load8_s(0x2C),
+  i32_load8_u(0x2D),
+  i32_load16_s(0x2E),
+  i32_load16_u(0x2F),
+  i64_load8_s(0x30),
+  i64_load8_u(0x31),
+  i64_load16_s(0x32),
+  i64_load16_u(0x33),
+  i64_load32_s(0x34),
+  i64_load32_u(0x35),
+  i32_store(0x36),
+  i64_store(0x37),
+  f32_store(0x38),
+  f64_store(0x39),
+  i32_store8(0x3A),
+  i32_store16(0x3B),
+  i64_store8(0x3C),
+  i64_store16(0x3D),
+  i64_store32(0x3E),
+  memory_size(0x3F),
+  memory_grow(0x40),
+  /* Numeric Instructions: Const */
+  i32_const(0x41),
+  i64_const(0x42),
+  f32_const(0x43),
+  f64_const(0x44),
+  /* Numeric Instructions */
+  i32_eqz(0x45), i32_eq(0x46), i32_ne(0x47), i32_lt_s(0x48),
+  i32_lt_u(0x49), i32_gt_s(0x4a), i32_gt_u(0x4b), i32_le_s(0x4c),
+  i32_le_u(0x4d), i32_ge_s(0x4e), i32_ge_u(0x4f),
+
+  i64_eqz(0x50), i64_eq(0x51), i64_ne(0x52), i64_lt_s(0x53),
+  i64_lt_u(0x54), i64_gt_s(0x55), i64_gt_u(0x56), i64_le_s(0x57),
+  i64_le_u(0x58), i64_ge_s(0x59), i64_ge_u(0x5a),
+
+  f32_eq(0x5b), f32_ne(0x5c), f32_lt(0x5d), f32_gt(0x5e), f32_le(0x5f),
+  f32_ge(0x60),
+
+  f64_eq(0x61), f64_ne(0x62), f64_lt(0x63), f64_gt(0x64), f64_le(0x65),
+  f64_ge(0x66),
+
+  i32_clz(0x67), i32_ctz(0x68), i32_popcnt(0x69), i32_add(0x6a),
+  i32_sub(0x6b), i32_mul(0x6c), i32_div_s(0x6d), i32_div_u(0x6e),
+  i32_rem_s(0x6f), i32_rem_u(0x70), i32_and(0x71), i32_or(0x72),
+  i32_xor(0x73), i32_shl(0x74), i32_shr_s(0x75), i32_shr_u(0x76),
+  i32_rotl(0x77), i32_rotr(0x78),
+
+  i64_clz(0x79), i64_ctz(0x7a), i64_popcnt(0x7b), i64_add(0x7c),
+  i64_sub(0x7d), i64_mul(0x7e), i64_div_s(0x7f), i64_div_u(0x80),
+  i64_rem_s(0x81), i64_rem_u(0x82), i64_and(0x83), i64_or(0x84),
+  i64_xor(0x85), i64_shl(0x86), i64_shr_s(0x87), i64_shr_u(0x88),
+  i64_rotl(0x89), i64_rotr(0x8a),
+
+  f32_abs(0x8b), f32_neg(0x8c), f32_ceil(0x8d), f32_floor(0x8e),
+  f32_trunc(0x8f), f32_nearest(0x90), f32_sqrt(0x91), f32_add(0x92),
+  f32_sub(0x93), f32_mul(0x94), f32_div(0x95), f32_min(0x96),
+  f32_max(0x97), f32_copysign(0x98),
+
+  f64_abs(0x99), f64_neg(0x9a), f64_ceil(0x9b), f64_floor(0x9c),
+  f64_trunc(0x9d), f64_nearest(0x9e), f64_sqrt(0x9f), f64_add(0xa0),
+  f64_sub(0xa1), f64_mul(0xa2), f64_div(0xa3), f64_min(0xa4),
+  f64_max(0xa5), f64_copysign(0xa6),
+
+  i32_wrap_i64(0xa7), i32_trunc_f32_s(0xa8), i32_trunc_f32_u(0xa9),
+  i32_trunc_f64_s(0xaa), i32_trunc_f64_u(0xab), i64_extend_i32_s(0xac),
+  i64_extend_i32_u(0xad), i64_trunc_f32_s(0xae), i64_trunc_f32_u(0xaf),
+  i64_trunc_f64_s(0xb0), i64_trunc_f64_u(0xb1), f32_convert_i32_s(0xb2),
+  f32_convert_i32_u(0xb3), f32_convert_i64_s(0xb4),
+  f32_convert_i64_u(0xb5), f32_demote_f64(0xb6),
+  f64_convert_i32_s(0xb7), f64_convert_i32_u(0xb8),
+  f64_convert_i64_s(0xb9), f64_convert_i64_u(0xba),
+  f64_promote_f32(0xbb), i32_reinterpret_f32(0xbc),
+  i64_reinterpret_f64(0xbd), f32_reinterpret_i32(0xbe),
+  f64_reinterpret_i64(0xbf),
+
+  /* WARN: Not a real instruction. Artefact due to not supporting recursion */
+  end_of_contiguous_instructions(0xff),
+
+  /* Terminating the enum to specify overall size */
+  (0xff)
+} aux_insn_label;
+
+struct {
+  uint32 align;
+  uint32 offset;
+} memarg;
+
+/* Note: We define indices here instead of in section 5.5 because QD
+   doesn't support forward declarations. */
+struct { uint32 x; } typeidx;
+struct { uint32 x; } funcidx;
+struct { uint32 x; } tableidx;
+struct { uint32 x; } memidx;
+struct { uint32 x; } globalidx;
+struct { uint32 x; } localidx;
+struct { uint32 l; } labelidx;
+
+ struct {
+ labelidx x{0.. 2^8-1 : uint32};
+ } aux_veclabelidx;
+
+enum { zero(0x00), (0xff) } aux_constbyte0;
+struct {
+  aux_veclabelidx ls;
+  labelidx ln;
+} aux_br_table;
+struct {
+  typeidx x;
+  aux_constbyte0 z;
+} aux_call_indirect;
+struct {
+  blocktype rt;
+} aux_block;
+struct {
+  blocktype rt;
+} aux_loop;
+struct {
+  blocktype rt;
+} aux_if;
+struct {
+  aux_insn_label l;
+  select(l) {
+    case block: aux_block;
+    case loop: aux_loop;
+    case if_: aux_if;
+    case br: labelidx;
+    case br_if: labelidx;
+    case br_table: aux_br_table;
+    case call: funcidx;
+    case call_indirect: aux_call_indirect;
+    case local_get: localidx;
+    case local_set: localidx;
+    case local_tee: localidx;
+    case global_get: globalidx;
+    case global_set: globalidx;
+    case i32_load: memarg;
+    case i64_load: memarg;
+    case f32_load: memarg;
+    case f64_load: memarg;
+    case i32_load8_s: memarg;
+    case i32_load8_u: memarg;
+    case i32_load16_s: memarg;
+    case i32_load16_u: memarg;
+    case i64_load8_s: memarg;
+    case i64_load8_u: memarg;
+    case i64_load16_s: memarg;
+    case i64_load16_u: memarg;
+    case i64_load32_s: memarg;
+    case i64_load32_u: memarg;
+    case i32_store: memarg;
+    case i64_store: memarg;
+    case f32_store: memarg;
+    case f64_store: memarg;
+    case i32_store8: memarg;
+    case i32_store16: memarg;
+    case i64_store8: memarg;
+    case i64_store16: memarg;
+    case i64_store32: memarg;
+    case memory_size: aux_constbyte0;
+    case memory_grow: aux_constbyte0;
+    case i32_const: uint32;
+    case i64_const: uint64;
+    case f32_const: f32;
+    case f64_const: f64;
+    default: Empty;
+  } rest;
+} instr;
+
+/* WARN: 5.4.6 Incorrect. We use a vector here, instead of the expected 0x0B terminated list. */
+/* WARN: Since we don't support recursion, we add additional terminators, and blocks extend until a delimiter (end_of_contiguous_instructions) is seen. [If]s expect 2 delimiters ALWAYS. */
+/*
+
+Example:
+    A;
+    B;
+    C;
+    block {
+      D;
+      E;
+      F;
+    };
+    G;
+    H;
+    I;
+
+is written as
+
+    A;
+    B;
+    C;
+    block;
+    D;
+    E;
+    F;
+    END;
+    G;
+    H;
+    I;
+ */
+
+ struct {
+ instr x<0.. 2^20-1 >;
+ } expr;
+
+ struct {
+ instr x<0.. 2^10-1 >;
+ } constexpr; /* WARN: constexpr is not part of wasm spec. Only a convenience for handling limits. */
+
+/*  ____   ____    __  __           _       _            */
+/* | ___| | ___|  |  \/  | ___   __| |_   _| | ___  ___  */
+/* |___ \ |___ \  | |\/| |/ _ \ / _` | | | | |/ _ \/ __| */
+/*  ___) | ___) | | |  | | (_) | (_| | |_| | |  __/\__ \ */
+/* |____(_)____/  |_|  |_|\___/ \__,_|\__,_|_|\___||___/ */
+/*                                                       */
+
+/* Note: Indices have been moved up to be able to define
+   insns. Required since QD can't do forward definitions. */
+
+/* WARN: The u32 denoting a section is in LE rather than LEB128. */
+/* XXX: We only support sections upto 2^24 bytes in size. */
+/*
+// WARN: We don't support custom sections
+struct {
+  name n;
+  byte b{0..2^16}; // WARN: We allow a smaller custom section size than actually allowed
+} custom;
+
+section(0, custom) customsec;
+optional(customsec) opt_customsec;
+*/
+
+ struct {
+ functype x{0.. 2^13-1 : uint32};
+ } aux_vecfunctype;
+
+ enum { c(1), (0xff) } aux_section_const1;
+ struct {
+ aux_section_const1 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecfunctype cont[size];
+ } typesec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: typesec;
+ } x;
+ } opt_typesec;
+
+enum { func(0x00), table(0x01), mem(0x02), global(0x03), (0xff) } aux_importdesc_label;
+struct {
+  aux_importdesc_label l;
+  select(l) {
+    case func: typeidx;
+    case table: tabletype;
+    case mem: memtype;
+    case global: globaltype;
+  } t;
+} importdesc;
+struct {
+  name modu;
+  name nm;
+  importdesc d;
+} import;
+
+ struct {
+ import x{0.. 2^17-1 : uint32};
+ } aux_vecimport;
+
+ enum { c(2), (0xff) } aux_section_const2;
+ struct {
+ aux_section_const2 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecimport cont[size];
+ } importsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: importsec;
+ } x;
+ } opt_importsec;
+
+ struct {
+ typeidx x{0.. 2^11-1 : uint32};
+ } aux_vectypeidx;
+
+ enum { c(3), (0xff) } aux_section_const3;
+ struct {
+ aux_section_const3 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vectypeidx cont[size];
+ } funcsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: funcsec;
+ } x;
+ } opt_funcsec;
+
+struct {
+  tabletype tt;
+} table;
+
+ struct {
+ table x{0.. 2^25-1 : uint32};
+ } aux_vectable;
+
+ enum { c(4), (0xff) } aux_section_const4;
+ struct {
+ aux_section_const4 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vectable cont[size];
+ } tablesec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: tablesec;
+ } x;
+ } opt_tablesec;
+
+struct {
+  memtype mt;
+} mem;
+
+ struct {
+ mem x{0.. 2^25-1 : uint32};
+ } aux_vecmem;
+
+ enum { c(5), (0xff) } aux_section_const5;
+ struct {
+ aux_section_const5 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecmem cont[size];
+ } memsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: memsec;
+ } x;
+ } opt_memsec;
+
+struct {
+  globaltype gt;
+  constexpr e;
+} global;
+
+ struct {
+ global x{0.. 2^14-1 : uint32};
+ } aux_vecglobal;
+
+ enum { c(6), (0xff) } aux_section_const6;
+ struct {
+ aux_section_const6 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecglobal cont[size];
+ } globalsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: globalsec;
+ } x;
+ } opt_globalsec;
+
+enum { func(0x00), table(0x01), mem(0x02), global(0x03), (0xff) } aux_exportdesc_label;
+struct {
+  aux_exportdesc_label l;
+  select(l) {
+    case func: funcidx;
+    case table: tableidx;
+    case mem: memidx;
+    case global: globalidx;
+  } x;
+} exportdesc;
+struct {
+  name nm;
+  exportdesc d;
+} export;
+
+ struct {
+ export x{0.. 2^17-1 : uint32};
+ } aux_vecexport;
+
+ enum { c(7), (0xff) } aux_section_const7;
+ struct {
+ aux_section_const7 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecexport cont[size];
+ } exportsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: exportsec;
+ } x;
+ } opt_exportsec;
+
+struct {
+  funcidx x;
+} start;
+
+ enum { c(8), (0xff) } aux_section_const8;
+ struct {
+ aux_section_const8 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ start cont[size];
+ } startsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: startsec;
+ } x;
+ } opt_startsec;
+
+ struct {
+ funcidx x{0.. 2^10-1 : uint32};
+ } aux_vecfuncidx;
+struct {
+  tableidx x;
+  constexpr e;
+  aux_vecfuncidx y;
+} elem;
+
+ struct {
+ elem x{0.. 2^14-1 : uint32};
+ } aux_vecelem;
+
+ enum { c(9), (0xff) } aux_section_const9;
+ struct {
+ aux_section_const9 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecelem cont[size];
+ } elemsec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: elemsec;
+ } x;
+ } opt_elemsec;
+
+struct {
+  uint32 n;
+  valtype t;
+} locals;
+
+ struct {
+ locals x{0.. 2^5-1 : uint32};
+ } aux_veclocals;
+struct {
+  aux_veclocals t;
+  expr e;
+} func;
+struct {
+  uint32 size;
+  func code_;
+} code;
+
+ struct {
+ code x{0.. 2^11-1 : uint32};
+ } aux_veccode;
+
+ enum { c(10), (0xff) } aux_section_const10;
+ struct {
+ aux_section_const10 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_veccode cont[size];
+ } codesec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: codesec;
+ } x;
+ } opt_codesec;
+
+ struct {
+ opaque x{0.. 2^18-1 : uint32};
+ } aux_vecbyte;
+struct {
+  memidx x;
+  constexpr e;
+  aux_vecbyte b;
+} data;
+
+ struct {
+ data x{0.. 2^8-1 : uint32};
+ } aux_vecdata;
+
+ enum { c(11), (0xff) } aux_section_const11;
+ struct {
+ aux_section_const11 n;
+ aux_constbyte0 aux_ignore_byte;
+ uint24 size;
+ aux_vecdata cont[size];
+ } datasec;
+
+ struct {
+ optional_tag t;
+ select(t) {
+ case absent: Empty;
+ case present: datasec;
+ } x;
+ } opt_datasec;
+
+/*  ____   ____   _ ____    __  __           _       _            */
+/* | ___| | ___| / | ___|  |  \/  | ___   __| |_   _| | ___  ___  */
+/* |___ \ |___ \ | |___ \  | |\/| |/ _ \ / _` | | | | |/ _ \/ __| */
+/*  ___) | ___) || |___) | | |  | | (_) | (_| | |_| | |  __/\__ \ */
+/* |____(_)____(_)_|____/  |_|  |_|\___/ \__,_|\__,_|_|\___||___/ */
+/*                                                                */
+
+enum { magic_0(0x00), (0xff) } aux_magic_0;
+enum { magic_1(0x61), (0xff) } aux_magic_1;
+enum { magic_2(0x73), (0xff) } aux_magic_2;
+enum { magic_3(0x6d), (0xff) } aux_magic_3;
+enum { version_0(0x00), (0xff) } aux_version_0;
+enum { version_1(0x01), (0xff) } aux_version_1;
+struct {
+  aux_magic_0 m0;
+  aux_magic_1 m1;
+  aux_magic_2 m2;
+  aux_magic_3 m3;
+} magic_;
+struct {
+  aux_version_1 v0;
+  aux_version_0 v1;
+  aux_version_0 v2;
+  aux_version_0 v3;
+} version;
+
+/* WARN: 5.5.15. We don't check that the number of funcs is same as number of codes */
+/* WARN: 5.5.15. We don't support custom sections */
+struct {
+  magic_ _m;
+  version _v;
+  opt_typesec functype;
+  opt_importsec import;
+  opt_funcsec typeidx;
+  opt_tablesec table;
+  opt_memsec mem;
+  opt_globalsec global;
+  opt_exportsec export;
+  opt_startsec start;
+  opt_elemsec elem;
+  opt_codesec code;
+  opt_datasec data;
+} module_;

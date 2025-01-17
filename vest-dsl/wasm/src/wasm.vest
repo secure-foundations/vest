@@ -1,0 +1,904 @@
+////////////////////////
+// WASM Binary Format //
+////////////////////////
+
+// Vectors: Vectors are encoded with their length followed by the encoding of their element sequence.
+// We use the following pattern to encode vectors:
+// TODO: replace u32 with leb128_u32
+macro vec!(t) = {
+  @l: u32,
+  v: [t; @l],
+}
+
+// __     __    _                 
+// \ \   / /_ _| |_   _  ___  ___ 
+//  \ \ / / _` | | | | |/ _ \/ __|
+//   \ V / (_| | | |_| |  __/\__ \
+//    \_/ \__,_|_|\__,_|\___||___/
+//                                
+
+// Bytes: Vest has primitive support for "Bytes", which is a u8 or [u8; 1]
+
+// Integers: Vest has primitive support for LEB128 encoded integers: uleb128(N) and sleb128(N)
+
+// Floats: Vest does not support floating points, so we treat floats as unintepreted bytes
+
+signed_32 = [u8; 4]
+signed_64 = [u8; 8]
+
+f32 = [u8; 4]
+f64 = [u8; 8]
+
+// Names: Vest does not support utf8 encoding, so we treat names as an uninterpreted vec of bytes
+
+byte_vec = vec!(u8)
+name = byte_vec
+
+
+//  _____                      
+// |_   _|   _ _ __   ___  ___ 
+//   | || | | | '_ \ / _ \/ __|
+//   | || |_| | |_) |  __/\__ \
+//   |_| \__, | .__/ \___||___/
+//       |___/|_|              
+
+// Number Types
+numtype = enum {
+  I32 = 0x7F,
+  I64 = 0x7E,
+  F32 = 0x7D,
+  F64 = 0x7C,
+}
+
+// Vector Types
+vectype = enum {
+  V128 = 0x7B,
+}
+
+// Reference Types
+reftype = enum {
+  FuncRef = 0x70,
+  ExternRef = 0x6F,
+}
+
+// Value Types
+valtype = choose {
+  NumTy(numtype),
+  VecTy(vectype),
+  RefTy(reftype),
+}
+
+// Result Types
+resulttype = vec!(valtype)
+
+// Function Types
+functype = {
+  const tag: u8 = 0x60,
+  params: resulttype,
+  results: resulttype,
+}
+
+// Limits
+limits = choose {
+  NoMax(wrap(u8 = 0, limit_min)),
+  Max(wrap(u8 = 1, limit_min_max)),
+}
+
+limit_min = {
+  min: u32,
+}
+
+limit_min_max = {
+  min: u32,
+  max: u32,
+}
+
+// Memory Types
+memtype = limits
+
+// Table Types
+tabletype = {
+  elemtype: reftype,
+  limits: limits,
+}
+
+// Global Types
+globaltype = {
+  t: valtype,
+  m: mut_t,
+}
+
+mut_t = enum {
+  Const = 0x00,
+  Var = 0x01,
+}
+
+//  ___           _                   _   _                 
+// |_ _|_ __  ___| |_ _ __ _   _  ___| |_(_) ___  _ __  ___ 
+//  | || '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \/ __|
+//  | || | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | \__ \
+// |___|_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
+//                                                          
+
+// Control Instructions
+empty = [u8; 0]
+
+// Block Type
+blocktype = {
+  @tag: u8,
+  body: choose(@tag) {
+    0x40 => empty,
+    0x6F..0x70 => valtype,
+    0x7B..0x7F => valtype,
+    _ => u32,
+  },
+}
+
+// An alternative (uglier) definition:
+// blocktype = choose {
+//   Empty(empty_block),
+//   ValType(valtype_block),
+//   TypeIdx(typeidx_block),
+// }
+// 
+// empty_block = {
+//   tag: u8 | 0x40,
+//   // TODO: this is to make the generated code type-check 
+//   // (for technical issues with the DisjointFrom trait),
+//   // should be removed in the future
+//   body: empty,
+// }
+// 
+// // technically repeating the `valtype` definition, but this better suited for disjointness proof
+// valtype_block = {
+//   tag: u8 | { 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
+//   body: empty,
+// }
+// 
+// typeidx_block = {
+//   tag: u8 | !{ 0x40, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
+//   body: u32,
+// }
+
+// Instructions
+// > Gaps in the byte code ranges for encoding instructions are reserved for future extensions.
+// So we make it an *open* enum with `...`
+instr_bytecode = enum {
+  // Control Instructions
+  Unreachable = 0x00,
+  Nop = 0x01,
+  Block = 0x02,
+  Loop = 0x03,
+  If = 0x04,
+  Else = 0x05,
+  End = 0x0B,
+  Br = 0x0C,
+  BrIf = 0x0D,
+  BrTable = 0x0E,
+  Ret = 0x0F,
+  Call = 0x10,
+  CallIndirect = 0x11,
+  // Reference Instructions
+  RefNull = 0xD0,
+  RefIsNull = 0xD1,
+  RefFunc = 0xD2,
+  // Parametric Instructions
+  Drop = 0x1A,
+  Select = 0x1B,
+  SelectT = 0x1C,
+  // Variable Instructions
+  LocalGet = 0x20,
+  LocalSet = 0x21,
+  LocalTee = 0x22,
+  GlobalGet = 0x23,
+  GlobalSet = 0x24,
+  // Table Instructions
+  TableGet = 0x25,
+  TableSet = 0x26,
+  // The following includes table.init, table.copy, table.fill, table.size, table.grow, table.drop;
+  // memory.init, memory.copy, memory.fill, data.drop;
+  // and saturating truncation instructions
+  OpcodeFC = 0xFC,
+  // Memory Instructions
+  I32Load = 0x28,
+  I64Load = 0x29,
+  F32Load = 0x2A,
+  F64Load = 0x2B,
+  I32Load8S = 0x2C,
+  I32Load8U = 0x2D,
+  I32Load16S = 0x2E,
+  I32Load16U = 0x2F,
+  I64Load8S = 0x30,
+  I64Load8U = 0x31,
+  I64Load16S = 0x32,
+  I64Load16U = 0x33,
+  I64Load32S = 0x34,
+  I64Load32U = 0x35,
+  I32Store = 0x36,
+  I64Store = 0x37,
+  F32Store = 0x38,
+  F64Store = 0x39,
+  I32Store8 = 0x3A,
+  I32Store16 = 0x3B,
+  I64Store8 = 0x3C,
+  I64Store16 = 0x3D,
+  I64Store32 = 0x3E,
+  MemorySize = 0x3F,
+  MemoryGrow = 0x40,
+  // Numeric Instructions
+  I32Const = 0x41,
+  I64Const = 0x42,
+  F32Const = 0x43,
+  F64Const = 0x44,
+  I32Eqz = 0x45,
+  I32Eq = 0x46,
+  I32Ne = 0x47,
+  I32LtS = 0x48,
+  I32LtU = 0x49,
+  I32GtS = 0x4A,
+  I32GtU = 0x4B,
+  I32LeS = 0x4C,
+  I32LeU = 0x4D,
+  I32GeS = 0x4E,
+  I32GeU = 0x4F,
+  I64Eqz = 0x50,
+  I64Eq = 0x51,
+  I64Ne = 0x52,
+  I64LtS = 0x53,
+  I64LtU = 0x54,
+  I64GtS = 0x55,
+  I64GtU = 0x56,
+  I64LeS = 0x57,
+  I64LeU = 0x58,
+  I64GeS = 0x59,
+  I64GeU = 0x5A,
+  F32Eq = 0x5B,
+  F32Ne = 0x5C,
+  F32Lt = 0x5D,
+  F32Gt = 0x5E,
+  F32Le = 0x5F,
+  F32Ge = 0x60,
+  F64Eq = 0x61,
+  F64Ne = 0x62,
+  F64Lt = 0x63,
+  F64Gt = 0x64,
+  F64Le = 0x65,
+  F64Ge = 0x66,
+  I32Clz = 0x67,
+  I32Ctz = 0x68,
+  I32Popcnt = 0x69,
+  I32Add = 0x6A,
+  I32Sub = 0x6B,
+  I32Mul = 0x6C,
+  I32DivS = 0x6D,
+  I32DivU = 0x6E,
+  I32RemS = 0x6F,
+  I32RemU = 0x70,
+  I32And = 0x71,
+  I32Or = 0x72,
+  I32Xor = 0x73,
+  I32Shl = 0x74,
+  I32ShrS = 0x75,
+  I32ShrU = 0x76,
+  I32Rotl = 0x77,
+  I32Rotr = 0x78,
+  I64Clz = 0x79,
+  I64Ctz = 0x7A,
+  I64Popcnt = 0x7B,
+  I64Add = 0x7C,
+  I64Sub = 0x7D,
+  I64Mul = 0x7E,
+  I64DivS = 0x7F,
+  I64DivU = 0x80,
+  I64RemS = 0x81,
+  I64RemU = 0x82,
+  I64And = 0x83,
+  I64Or = 0x84,
+  I64Xor = 0x85,
+  I64Shl = 0x86,
+  I64ShrS = 0x87,
+  I64ShrU = 0x88,
+  I64Rotl = 0x89,
+  I64Rotr = 0x8A,
+  F32Abs = 0x8B,
+  F32Neg = 0x8C,
+  F32Ceil = 0x8D,
+  F32Floor = 0x8E,
+  F32Trunc = 0x8F,
+  F32Nearest = 0x90,
+  F32Sqrt = 0x91,
+  F32Add = 0x92,
+  F32Sub = 0x93,
+  F32Mul = 0x94,
+  F32Div = 0x95,
+  F32Min = 0x96,
+  F32Max = 0x97,
+  F32Copysign = 0x98,
+  F64Abs = 0x99,
+  F64Neg = 0x9A,
+  F64Ceil = 0x9B,
+  F64Floor = 0x9C,
+  F64Trunc = 0x9D,
+  F64Nearest = 0x9E,
+  F64Sqrt = 0x9F,
+  F64Add = 0xA0,
+  F64Sub = 0xA1,
+  F64Mul = 0xA2,
+  F64Div = 0xA3,
+  F64Min = 0xA4,
+  F64Max = 0xA5,
+  F64Copysign = 0xA6,
+  I32WrapI64 = 0xA7,
+  I32TruncF32S = 0xA8,
+  I32TruncF32U = 0xA9,
+  I32TruncF64S = 0xAA,
+  I32TruncF64U = 0xAB,
+  I64ExtendI32S = 0xAC,
+  I64ExtendI32U = 0xAD,
+  I64TruncF32S = 0xAE,
+  I64TruncF32U = 0xAF,
+  I64TruncF64S = 0xB0,
+  I64TruncF64U = 0xB1,
+  F32ConvertI32S = 0xB2,
+  F32ConvertI32U = 0xB3,
+  F32ConvertI64S = 0xB4,
+  F32ConvertI64U = 0xB5,
+  F32DemoteF64 = 0xB6,
+  F64ConvertI32S = 0xB7,
+  F64ConvertI32U = 0xB8,
+  F64ConvertI64S = 0xB9,
+  F64ConvertI64U = 0xBA,
+  F64PromoteF32 = 0xBB,
+  I32ReinterpretF32 = 0xBC,
+  I64ReinterpretF64 = 0xBD,
+  F32ReinterpretI32 = 0xBE,
+  F64ReinterpretI64 = 0xBF,
+  I32Extend8S = 0xC0,
+  I32Extend16S = 0xC1,
+  I64Extend8S = 0xC2,
+  I64Extend16S = 0xC3,
+  I64Extend32S = 0xC4,
+  // Vector Instructions
+  // const instruction
+  // shuffle instruction
+  // extract_lane and replace_lane instructions
+  OpcodeFD = 0xFD,
+  ...
+}
+
+byte_zero = {
+  const zero: u8 = 0x00,
+}
+
+instr = {
+  @opcode: instr_bytecode,
+  rest: choose(@opcode) {
+    // Control Instructions
+    // Since we don't support (verified) recursive formats rn, we parse the instruction as a flat vec (so we don't check "well-bracketedness")
+    Unreachable => empty,
+    Nop => empty,
+    Block => blocktype,
+    Loop => blocktype,
+    If => blocktype,
+    Br => labelidx,
+    BrIf => labelidx,
+    BrTable => br_table,
+    Ret => empty,
+    Call => funcidx,
+    CallIndirect => call_indirect,
+    // Reference Instructions
+    RefNull => reftype,
+    RefIsNull => empty,
+    RefFunc => funcidx,
+    // Parametric Instructions
+    Drop => empty,
+    Select => empty,
+    SelectT => select_t,
+    // Variable Instructions
+    LocalGet => localidx,
+    LocalSet => localidx,
+    LocalTee => localidx,
+    GlobalGet => globalidx,
+    GlobalSet => globalidx,
+    // Table Instructions
+    TableGet => tableidx,
+    TableSet => tableidx,
+    // Memory Instructions
+    I32Load => memarg,
+    I64Load => memarg,
+    F32Load => memarg,
+    F64Load => memarg,
+    I32Load8S => memarg,
+    I32Load8U => memarg,
+    I32Load16S => memarg,
+    I32Load16U => memarg,
+    I64Load8S => memarg,
+    I64Load8U => memarg,
+    I64Load16S => memarg,
+    I64Load16U => memarg,
+    I64Load32S => memarg,
+    I64Load32U => memarg,
+    I32Store => memarg,
+    I64Store => memarg,
+    F32Store => memarg,
+    F64Store => memarg,
+    I32Store8 => memarg,
+    I32Store16 => memarg,
+    I64Store8 => memarg,
+    I64Store16 => memarg,
+    I64Store32 => memarg,
+    MemorySize => byte_zero,
+    MemoryGrow => byte_zero,
+    // Numeric Instructions
+    I32Const => signed_32,
+    I64Const => signed_64,
+    F32Const => f32,
+    F64Const => f64,
+    // FC
+    OpcodeFC => instr_with_fc,
+    // FD
+    OpcodeFD => instr_with_fd,
+    // Numeric Instructions
+    // I32Eqz => empty,
+    // I32Eq => empty,
+    // I32Ne => empty,
+    // I32LtS => empty,
+    // I32LtU => empty,
+    // I32GtS => empty,
+    // I32GtU => empty,
+    // I32LeS => empty,
+    // I32LeU => empty,
+    // I32GeS => empty,
+    // I32GeU => empty,
+    // I64Eqz => empty,
+    // I64Eq => empty,
+    // I64Ne => empty,
+    // I64LtS => empty,
+    // I64LtU => empty,
+    // I64GtS => empty,
+    // I64GtU => empty,
+    // I64LeS => empty,
+    // I64LeU => empty,
+    // I64GeS => empty,
+    // I64GeU => empty,
+    // F32Eq => empty,
+    // F32Ne => empty,
+    // F32Lt => empty,
+    // F32Gt => empty,
+    // F32Le => empty,
+    // F32Ge => empty,
+    // F64Eq => empty,
+    // F64Ne => empty,
+    // F64Lt => empty,
+    // F64Gt => empty,
+    // F64Le => empty,
+    // F64Ge => empty,
+    // I32Clz => empty,
+    // I32Ctz => empty,
+    // I32Popcnt => empty,
+    // I32Add => empty,
+    // I32Sub => empty,
+    // I32Mul => empty,
+    // I32DivS => empty,
+    // I32DivU => empty,
+    // I32RemS => empty,
+    // I32RemU => empty,
+    // I32And => empty,
+    // I32Or => empty,
+    // I32Xor => empty,
+    // I32Shl => empty,
+    // I32ShrS => empty,
+    // I32ShrU => empty,
+    // I32Rotl => empty,
+    // I32Rotr => empty,
+    // I64Clz => empty,
+    // I64Ctz => empty,
+    // I64Popcnt => empty,
+    // I64Add => empty,
+    // I64Sub => empty,
+    // I64Mul => empty,
+    // I64DivS => empty,
+    // I64DivU => empty,
+    // I64RemS => empty,
+    // I64RemU => empty,
+    // I64And => empty,
+    // I64Or => empty,
+    // I64Xor => empty,
+    // I64Shl => empty,
+    // I64ShrS => empty,
+    // I64ShrU => empty,
+    // I64Rotl => empty,
+    // I64Rotr => empty,
+    // F32Abs => empty,
+    // F32Neg => empty,
+    // F32Ceil => empty,
+    // F32Floor => empty,
+    // F32Trunc => empty,
+    // F32Nearest => empty,
+    // F32Sqrt => empty,
+    // F32Add => empty,
+    // F32Sub => empty,
+    // F32Mul => empty,
+    // F32Div => empty,
+    // F32Min => empty,
+    // F32Max => empty,
+    // F32Copysign => empty,
+    // F64Abs => empty,
+    // F64Neg => empty,
+    // F64Ceil => empty,
+    // F64Floor => empty,
+    // F64Trunc => empty,
+    // F64Nearest => empty,
+    // F64Sqrt => empty,
+    // F64Add => empty,
+    // F64Sub => empty,
+    // F64Mul => empty,
+    // F64Div => empty,
+    // F64Min => empty,
+    // F64Max => empty,
+    // F64Copysign => empty,
+    // I32WrapI64 => empty,
+    // I32TruncF32S => empty,
+    // I32TruncF32U => empty,
+    // I32TruncF64S => empty,
+    // I32TruncF64U => empty,
+    // I64ExtendI32S => empty,
+    // I64ExtendI32U => empty,
+    // I64TruncF32S => empty,
+    // I64TruncF32U => empty,
+    // I64TruncF64S => empty,
+    // I64TruncF64U => empty,
+    // F32ConvertI32S => empty,
+    // F32ConvertI32U => empty,
+    // F32ConvertI64S => empty,
+    // F32ConvertI64U => empty,
+    // F32DemoteF64 => empty,
+    // F64ConvertI32S => empty,
+    // F64ConvertI32U => empty,
+    // F64ConvertI64S => empty,
+    // F64ConvertI64U => empty,
+    // F64PromoteF32 => empty,
+    // I32ReinterpretF32 => empty,
+    // I64ReinterpretF64 => empty,
+    // F32ReinterpretI32 => empty,
+    // F64ReinterpretI64 => empty,
+    // I32Extend8S => empty,
+    // I32Extend16S => empty,
+    // I64Extend8S => empty,
+    // I64Extend16S => empty,
+    // I64Extend32S => empty,
+    // default
+    _ => empty,
+  },
+}
+
+memarg = {
+  align: u32,
+  offset: u32,
+}
+
+labelidx_vec = vec!(labelidx)
+br_table = {
+  l: labelidx_vec,
+  l_n: labelidx,
+}
+
+call_indirect = {
+  y: typeidx,
+  x: tableidx,
+}
+
+select_t = vec!(valtype)
+
+instr_with_fc = {
+  @tag: u32,
+  rest: choose(@tag) {
+    // Table management instructions
+    12 => table_init,
+    13 => elem_drop,
+    14 => table_copy,
+    15 => table_grow,
+    16 => table_size,
+    17 => table_fill,
+    // Memory management instructions
+    8 => memory_init,
+    9 => data_drop,
+    10 => memory_copy,
+    11 => memory_fill,
+    // Saturation truncation instructions
+    _ => empty,
+  },
+}
+
+table_init = {
+  y: elemidx,
+  x: tableidx,
+}
+
+elem_drop = elemidx
+
+
+table_copy = {
+  x: tableidx,
+  y: tableidx,
+}
+
+table_grow = tableidx
+
+table_size = tableidx
+
+table_fill = tableidx
+
+memory_init = wrap(dataidx, u8 = 0x00)
+
+data_drop = dataidx
+
+memory_copy = {
+  const reserved: [u8; 2] = [0x00, 0x00],
+}
+
+memory_fill = {
+  const reserved: u8 = 0x00,
+}
+
+instr_with_fd = {
+  @tag: u32,
+  rest: choose(@tag) {
+    // Vector instructions
+    0..11 => memarg,
+    92 => memarg,
+    93 => memarg,
+    84..91 => v128_lane,
+    // const instruction
+    12 => v128_const,
+    // shuffle instruction
+    13 => shuffle,
+    // extract_lane and replace_lane instructions
+    21..34 => laneidx,
+    // all other vector instructions
+    _ => empty,
+  },
+}
+
+laneidx = u8
+
+v128_lane = {
+  m: memarg,
+  l: laneidx,
+}
+
+v128_const = [u8; 16]
+
+shuffle = [laneidx; 16]
+
+
+// no validation for well-bracketedness so no check for the 0x0B terminator as well
+expr = vec!(instr)
+
+//  __  __           _       _            
+// |  \/  | ___   __| |_   _| | ___  ___  
+// | |\/| |/ _ \ / _` | | | | |/ _ \/ __| 
+// | |  | | (_) | (_| | |_| | |  __/\__ \ 
+// |_|  |_|\___/ \__,_|\__,_|_|\___||___/ 
+//                                        
+
+// Indices
+
+typeidx = u32
+funcidx = u32
+tableidx = u32
+memidx = u32
+globalidx = u32
+elemidx = u32
+dataidx = u32
+localidx = u32
+labelidx = u32
+
+macro section!(b) = {
+  @size: u32,
+  // encode that size = |cont|
+  cont: [u8; @size] >>= b,
+}
+
+// Sections
+
+// Custom Section
+customsec = section!(custom)
+
+custom = {
+  name: name,
+  data: my_custom_section,
+}
+
+my_custom_section = byte_vec
+
+// Type Section
+typesec = section!(typesec_content)
+typesec_content = vec!(functype)
+
+// Import Section
+importsec = section!(imports)
+imports = vec!(import)
+import = {
+  module: name,
+  name: name,
+  desc: importdesc,
+}
+importdesc = choose {
+  Func(wrap(u8 = 0, typeidx)),
+  Table(wrap(u8 = 1, tabletype)),
+  Mem(wrap(u8 = 2, memtype)),
+  Global(wrap(u8 = 3, globaltype)),
+}
+
+// Function Section
+funcsec = section!(funcsec_content)
+funcsec_content = vec!(typeidx)
+
+// Table Section
+tablesec = section!(tablesec_content)
+tablesec_content = vec!(table)
+table = {
+  ty: tabletype,
+}
+
+// Memory Section
+memsec = section!(memsec_content)
+memsec_content = vec!(mem)
+mem = {
+  ty: memtype,
+}
+
+// Global Section
+globalsec = section!(globalsec_content)
+globalsec_content = vec!(global)
+global = {
+  gt: globaltype,
+  init: expr,
+}
+
+// Export Section
+exportsec = section!(exports)
+exports = vec!(export)
+export = {
+  nm: name,
+  d: exportdesc,
+}
+exportdesc = choose {
+  Func(wrap(u8 = 0, funcidx)),
+  Table(wrap(u8 = 1, tableidx)),
+  Mem(wrap(u8 = 2, memidx)),
+  Global(wrap(u8 = 3, globalidx)),
+}
+
+// Start Section
+startsec = section!(start)
+start = {
+  func: funcidx,
+}
+
+// Element Section
+elemsec = section!(elemsec_content)
+elemsec_content = vec!(elem)
+const ELEMKIND: u8 = 0x00
+elem = choose {
+  Elem0(wrap(u32 = 0, parsed_elem0)),
+  Elem1(wrap(u32 = 1, parsed_elem1)),
+  Elem2(wrap(u32 = 2, parsed_elem2)),
+  Elem3(wrap(u32 = 3, parsed_elem3)),
+  Elem4(wrap(u32 = 4, parsed_elem4)),
+  Elem5(wrap(u32 = 5, parsed_elem5)),
+  Elem6(wrap(u32 = 6, parsed_elem6)),
+  Elem7(wrap(u32 = 7, parsed_elem7)),
+}
+funcidxs = vec!(funcidx)
+parsed_elem0 = {
+  e: expr,
+  init: funcidxs,
+}
+parsed_elem1 = {
+  const et: ELEMKIND,
+  init: funcidxs,
+}
+parsed_elem2 = {
+  table: tableidx,
+  offset: expr,
+  const et: ELEMKIND,
+  init: funcidxs,
+}
+parsed_elem3 = parsed_elem1
+exprs = vec!(expr)
+parsed_elem4 = {
+  offset: expr,
+  init: exprs,
+}
+parsed_elem5 = {
+  et: reftype,
+  init: exprs,
+}
+parsed_elem6 = {
+  table: tableidx,
+  offset: expr,
+  et: reftype,
+  init: exprs,
+}
+parsed_elem7 = {
+  et: reftype,
+  init: exprs,
+}
+
+// Code Section
+codesec = section!(codesec_content)
+codesec_content = vec!(code)
+code = {
+  @size: u32,
+  // encode that size = |code|
+  code: [u8; @size] >>= func,
+}
+local_compressed = {
+  count: u32,
+  vt: valtype,
+}
+locals = vec!(local_compressed)
+func = {
+  locals: locals,
+  body: expr,
+}
+
+// Data Section
+datasec = section!(datasec_content)
+datasec_content = vec!(data)
+data = choose {
+  ActiveData0(wrap(u32 = 0, active_data0)),
+  PassiveData(wrap(u32 = 1, passive_data)),
+  ActiveDataX(wrap(u32 = 2, active_datax)),
+}
+active_data0 = {
+  offset: expr,
+  init: byte_vec,
+}
+passive_data = byte_vec
+active_datax = {
+  memory: memidx,
+  offset: expr,
+  init: byte_vec,
+}
+
+// Data count Section
+// TODO: inline this to allow single-pass validation
+datacountsec = section!(u32)
+
+// Module
+module = {
+  const magic: [u8; 4] = [0x00, 0x61, 0x73, 0x6D], // "\0asm"
+  const version: [u8; 4] = [0x01, 0x00, 0x00, 0x00], // 1
+  custom1: Option<wrap(u8 = 0, customsec)>,
+  types: Option<wrap(u8 = 1, typesec)>,
+  custom2: Option<wrap(u8 = 0, customsec)>,
+  imports: Option<wrap(u8 = 2, importsec)>,
+  custom3: Option<wrap(u8 = 0, customsec)>,
+  typeidxs: Option<wrap(u8 = 3, funcsec)>,
+  custom4: Option<wrap(u8 = 0, customsec)>,
+  tables: Option<wrap(u8 = 4, tablesec)>,
+  custom5: Option<wrap(u8 = 0, customsec)>,
+  mems: Option<wrap(u8 = 5, memsec)>,
+  custom6: Option<wrap(u8 = 0, customsec)>,
+  globals: Option<wrap(u8 = 6, globalsec)>,
+  custom7: Option<wrap(u8 = 0, customsec)>,
+  exports: Option<wrap(u8 = 7, exportsec)>,
+  custom8: Option<wrap(u8 = 0, customsec)>,
+  start: Option<wrap(u8 = 8, startsec)>,
+  custom9: Option<wrap(u8 = 0, customsec)>,
+  elems: Option<wrap(u8 = 9, elemsec)>,
+  custom10: Option<wrap(u8 = 0, customsec)>,
+  // record data count number
+  // const datacountid: u8 = 12,
+  // @datacount_size: u32,
+  // @datacount: [u8; @datacount_size] >>= u32,
+  datacount: Option<wrap(u8 = 12, datacountsec)>,
+  custom11: Option<wrap(u8 = 0, customsec)>,
+  codes: Option<wrap(u8 = 10, codesec)>,
+  custom12: Option<wrap(u8 = 0, customsec)>,
+  datas: Option<wrap(u8 = 11, datasec)>,
+  custom13: Option<wrap(u8 = 0, customsec)>,
+}
