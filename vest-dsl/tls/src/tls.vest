@@ -14,6 +14,11 @@ opaque_2_ffff = opaque!(u16 | { 2..0xffff })
 opaque_0_ffffff = opaque!(u24)
 opaque_1_ffffff = opaque!(u24 | { 1..0xffffff })
 
+macro bounded_vec!(bound, item) = {
+  @l: bound,
+  list: [u8; @l] >>= Vec<item>,
+}
+
 protocol_version = enum {
   SSLv3 = 0x0300,
   TLSv1_0 = 0x0301,
@@ -71,10 +76,7 @@ server_name = {
   },
 }
 
-server_name_list = {
-  @l: u16 | 1..0xffff,
-  list: [u8; @l] >>= Vec<server_name>,
-}
+server_name_list = bounded_vec!(u16 | 1..0xffff, server_name)
 
 max_fragment_length = enum {
   Pow2_9 = 1,
@@ -91,10 +93,7 @@ max_fragment_length = enum {
 responder_id = opaque_1_ffff
 ocsp_extensions = opaque_0_ffff
 
-responder_id_list = {
-  @l: u16,
-  list: [u8; @l] >>= Vec<responder_id>,
-}
+responder_id_list = bounded_vec!(u16, responder_id)
 
 oscp_status_request = {
   responder_id_list: responder_id_list,
@@ -146,10 +145,7 @@ named_group = enum {
   ...
 }
 
-named_group_list = {
-  @l: u16 | 2..0xffff,
-  list: [u8; @l] >>= Vec<named_group>,
-}
+named_group_list = bounded_vec!(u16 | 2..0xffff, named_group)
 
 ec_point_format = enum {
   Uncompressed = 0,
@@ -158,10 +154,7 @@ ec_point_format = enum {
   ...
 }
 
-ec_point_format_list = {
-  @l: u8 | 1..0xff,
-  list: [u8; @l] >>= Vec<ec_point_format>,
-}
+ec_point_format_list = bounded_vec!(u8 | 1..0xff, ec_point_format)
 
 signature_scheme = enum {
   // Legacy schemes
@@ -201,16 +194,10 @@ signature_scheme = enum {
 // struct {
 //   SignatureScheme supported_signature_algorithms<2..2^16-2>;
 // } SignatureSchemeList;
-signature_scheme_list = {
-  @l: u16 | 2..0xfffe,
-  list: [u8; @l] >>= Vec<signature_scheme>,
-}
+signature_scheme_list = bounded_vec!(u16 | 2..0xfffe, signature_scheme)
 
 srtp_protection_profile = [u8; 2]
-srtp_protection_profiles = {
-  @l: u16 | 2..0xffff,
-  list: [u8; @l] >>= Vec<srtp_protection_profile>,
-}
+srtp_protection_profiles = bounded_vec!(u16 | 2..0xffff, srtp_protection_profile)
 
 use_srtp_data = {
   profiles: srtp_protection_profiles,
@@ -228,16 +215,10 @@ heartbeat_extension = {
 }
 
 protocol_name = opaque_1_ff
-protocol_name_list = {
-  @l: u16 | 2..0xffff,
-  list: [u8; @l] >>= Vec<protocol_name>,
-}
+protocol_name_list = bounded_vec!(u16 | 2..0xffff, protocol_name)
 
 serialized_sct = opaque_1_ffff
-signed_certificate_timestamp_list = {
-  @l: u16 | 1..0xffff,
-  list: [u8; @l] >>= Vec<serialized_sct>,
-}
+signed_certificate_timestamp_list = bounded_vec!(u16 | 1..0xffff, serialized_sct)
 
 certificate_type = enum {
   X509 = 0,
@@ -245,19 +226,13 @@ certificate_type = enum {
   ...
 }
 
-client_cert_type_client_extension = {
-  @l: u8 | 1..0xff,
-  types: [u8; @l] >>= Vec<certificate_type>,
-}
+client_cert_type_client_extension = bounded_vec!(u8 | 1..0xff, certificate_type)
 
 client_cert_type_server_extension = {
   client_certificate_type: certificate_type,
 }
 
-server_cert_type_client_extension = {
-  @l: u8 | 1..0xff,
-  types: [u8; @l] >>= Vec<certificate_type>,
-}
+server_cert_type_client_extension = bounded_vec!(u8 | 1..0xff, certificate_type)
 
 server_cert_type_server_extension = {
   server_certificate_type: certificate_type,
@@ -267,10 +242,7 @@ zero_byte = {
   const zero: u8 = 0,
 }
 
-padding_extension = {
-  @l: u16,
-  padding: [u8; @l] >>= Vec<zero_byte>,
-}
+padding_extension = bounded_vec!(u16, zero_byte)
 
 // struct {
 //   opaque ticket_data<0..2^16-1>;
@@ -287,15 +259,9 @@ psk_binder_entry = {
   entries: [u8; @l],
 }
 
-psk_identities = {
-  @l: u16 | { 7..0xffff },
-  identities: [u8; @l] >>= Vec<psk_identity>,
-}
+psk_identities = bounded_vec!(u16 | 7..0xffff, psk_identity)
 
-psk_binder_entries = {
-  @l: u16 | { 33..0xffff },
-  binders: [u8; @l] >>= Vec<psk_binder_entry>,
-}
+psk_binder_entries = bounded_vec!(u16 | 33..0xffff, psk_binder_entry)
 
 // TODO: binders:  A series of HMAC values, one for each value in the
 // identities list and in the same order, computed as described
@@ -317,10 +283,7 @@ early_data_indication_new_session_ticket = {
   max_early_data_size: u32,
 }
 
-supported_versions_client = {
-  @l: u8 | { 2..254 },
-  versions: [u8; @l] >>= Vec<protocol_version>,
-}
+supported_versions_client = bounded_vec!(u8 | 2..254, protocol_version)
 
 supported_versions_server = protocol_version
 
@@ -335,27 +298,18 @@ psk_key_exchange_mode = enum {
   ...
 }
 
-psk_key_exchange_modes = {
-  @l: u8 | 1..0xff,
-  modes: [u8; @l] >>= Vec<psk_key_exchange_mode>,
-}
+psk_key_exchange_modes = bounded_vec!(u8 | 1..0xff, psk_key_exchange_mode)
 
 distinguished_name = opaque_1_ffff
 
-certificate_authorities_extension = {
-  @l: u16 | { 3..0xffff },
-  authorities: [u8; @l] >>= Vec<distinguished_name>,
-}
+certificate_authorities_extension = bounded_vec!(u16 | 3..0xffff, distinguished_name)
 
 oid_filter = {
   certificate_extension_oid: opaque_1_ff,
   certificate_extension_values: opaque_0_ffff,
 }
 
-oid_filter_extension = {
-  @l: u16,
-  filters: [u8; @l] >>= Vec<oid_filter>,
-}
+oid_filter_extension = bounded_vec!(u16, oid_filter)
 
 // uncompressed_point_representation32 = {
 //   const legacy_form: u8 = 4, 
@@ -409,10 +363,7 @@ key_share_entry = {
   // },
 }
 
-key_share_client_hello = {
-  @l: u16,
-  client_shares: [u8; @l] >>= Vec<key_share_entry>,
-}
+key_share_client_hello = bounded_vec!(u16, key_share_entry)
 
 unknown_extension = opaque_0_ffff
 
@@ -657,53 +608,26 @@ hello_retry_request = {
   extensions: hello_retry_extensions,
 }
 
-cipher_suite_list = {
-  @l: u16 | 2..0xfffe,
-  list: [u8; @l] >>= Vec<cipher_suite>,
-}
+cipher_suite_list = bounded_vec!(u16 | 2..0xfffe, cipher_suite)
 
 session_id = {
   @l: u8 | { 0..32 },
   id: [u8; @l],
 }
 
-client_extensions = {
-  @l: u16 | { 8..0xffff },
-  // extensions: [u8; @l],
-  // extensions: [u8; @l] >>= Vec<extension>,
-  extensions: [u8; @l] >>= Vec<client_hello_extension>,
-}
+client_extensions = bounded_vec!(u16 | 8..0xffff, client_hello_extension)
 
-server_extensions = {
-  @l: u16 | { 6..0xffff },
-  // extensions: [u8; @l] >>= Vec<extension>,
-  extensions: [u8; @l] >>= Vec<sever_hello_extension>,
-}
+server_extensions = bounded_vec!(u16 | 6..0xffff, sever_hello_extension)
 
-hello_retry_extensions = {
-  @l: u16 | { 6..0xffff },
-  extensions: [u8; @l] >>= Vec<hello_retry_extension>,
-}
+hello_retry_extensions = bounded_vec!(u16 | 6..0xffff, hello_retry_extension)
 
-certificate_request_extensions = {
-  @l: u16 | 2..0xffff,
-  extensions: [u8; @l] >>= Vec<certificate_request_extension>,
-}
+certificate_request_extensions = bounded_vec!(u16 | 2..0xffff, certificate_request_extension)
 
-encrypted_extensions = {
-  @l: u16,
-  extensions: [u8; @l] >>= Vec<encrypted_extension>,
-}
+encrypted_extensions = bounded_vec!(u16, encrypted_extension)
 
-new_session_ticket_extensions = {
-  @l: u16 | 0..0xfffe,
-  extensions: [u8; @l] >>= Vec<new_session_ticket_extension>,
-}
+new_session_ticket_extensions = bounded_vec!(u16 | 0..0xfffe, new_session_ticket_extension)
 
-certificate_extensions = {
-  @l: u16,
-  extensions: [u8; @l] >>= Vec<certificate_extension>,
-}
+certificate_extensions = bounded_vec!(u16, certificate_extension)
 
 certificate_request = {
   certificate_request_context: opaque_0_ff,
@@ -731,10 +655,7 @@ certificate_entry_opaque = {
   extensions: certificate_extensions,
 }
 
-certificate_list = {
-  @l: u24,
-  list: [u8; @l] >>= Vec<certificate_entry_opaque>,
-}
+certificate_list = bounded_vec!(u24, certificate_entry_opaque)
 
 certificate = {
   certificate_request_context: opaque_0_ff,
