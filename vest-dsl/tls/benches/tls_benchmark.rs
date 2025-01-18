@@ -191,24 +191,91 @@ fn rustls_parse_handshake_throughput(c: &mut Criterion) {
     group.finish();
 }
 
+const TRANCO_TEST_LIMIT: usize = 100;
+
 /// Benchmark parsing time of handshakes from Tranco list
 fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
-    let mut group = c.benchmark_group("parse_tranco_handshakes_bulk");
-    group.bench_function("vest", |b| b.iter(||
-        for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
-            for msg in *client_msgs {
-                black_box(handshake().parse(msg).unwrap());
-            }
-            for msg in *server_msgs {
-                black_box(handshake().parse(msg).unwrap());
+    let mut valid_server_hellos = vec![];
+
+    // Only use valid server hellos (some may be encrypted)
+    for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
+        for msg in *server_msgs {
+            if handshake().parse(msg).is_ok() {
+                valid_server_hellos.push(msg);
             }
         }
+    }
+
+    eprintln!("{} valid message(s) found", valid_server_hellos.len());
+
+    valid_server_hellos.truncate(TRANCO_TEST_LIMIT);
+
+    let mut group = c.benchmark_group("parse_tranco_handshakes_bulk");
+    group.sample_size(10000);
+
+    group.bench_function("vest", |b| b.iter(||
+        for msg in &valid_server_hellos {
+            black_box(handshake().parse(msg).unwrap());
+        }
     ));
-    // group.bench_function("rustls", |b| b.iter(||
-    //     for block_bytes in test_blocks.iter() {
-    //         bitcoin::Block::consensus_decode(&mut &block_bytes[..]).unwrap();
-    //     }
-    // ));
+    group.bench_function("rustls", |b| b.iter(||
+        for msg in &valid_server_hellos {
+            black_box(rustls::internal::msgs::message::MessagePayload::new(
+                rustls::ContentType::Handshake,
+                rustls::ProtocolVersion::TLSv1_3,
+                msg,
+            ).unwrap());
+        }
+    ));
+    group.finish();
+}
+
+/// Benchmark serializing time of handshakes from Tranco list
+fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
+    let mut vest_parsed = vec![];
+    let mut rustls_parsed = vec![];
+
+    let mut max_len = 0;
+
+    // Only use valid server hellos (some may be encrypted)
+    for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
+        for msg in *server_msgs {
+            if let Ok((_, handshake)) = handshake().parse(msg) {
+                max_len = max_len.max(msg.len());
+
+                vest_parsed.push(handshake);
+                rustls_parsed.push(match rustls::internal::msgs::message::MessagePayload::new(
+                    rustls::ContentType::Handshake,
+                    rustls::ProtocolVersion::TLSv1_3,
+                    msg,
+                ).unwrap() {
+                    rustls::internal::msgs::message::MessagePayload::Handshake { parsed, .. } => parsed,
+                    _ => unreachable!(),
+                });
+            }
+        }
+    }
+
+    eprintln!("{} valid message(s) found", vest_parsed.len());
+
+    vest_parsed.truncate(TRANCO_TEST_LIMIT);
+    rustls_parsed.truncate(TRANCO_TEST_LIMIT);
+
+    let mut group = c.benchmark_group("serialize_tranco_handshakes_bulk");
+    group.sample_size(10000);
+
+    group.bench_function("vest", |b| b.iter(||
+        for msg in vest_parsed.clone() {
+            let mut buf = vec![0; max_len];
+            black_box(handshake().serialize(msg, &mut buf, 0).unwrap());
+        }
+    ));
+    group.bench_function("rustls", |b| b.iter(||
+        for msg in &rustls_parsed {
+            let mut buf = Vec::with_capacity(max_len);
+            black_box(msg.encode(&mut buf));
+        }
+    ));
     group.finish();
 }
 
@@ -216,7 +283,8 @@ criterion_group!(
     benches,
     // vesttls_parse_handshake_throughput,
     // rustls_parse_handshake_throughput
-    bench_parse_tranco_handshakes_bulk
+    bench_parse_tranco_handshakes_bulk,
+    bench_serialize_tranco_handshakes_bulk,
 );
 // criterion_group!(
 //     benches,
