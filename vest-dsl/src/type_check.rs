@@ -437,13 +437,21 @@ fn check_combinator_invocation(
     zip(args, combinator_sig.param_defns).for_each(|(arg, param_defn)| match (arg, param_defn) {
         (Param::Stream(_), ParamDefn::Stream { .. }) => {}
         (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
+            let resolve_up_to_enums = |comb: &CombinatorInner| match comb {
+                CombinatorInner::Enum(
+                    EnumCombinator::Exhaustive { enums } | EnumCombinator::NonExhaustive { enums },
+                ) => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                    combinator: infer_enum_type(enums),
+                    constraint: None,
+                }),
+                l => l.clone(),
+            };
             // 1. try to find `depend_id` in local_ctx
             if let Some(arg_combinator) = local_ctx.dependent_fields.get(depend_id) {
-                if global_ctx.resolve(arg_combinator) != global_ctx.resolve_alias(combinator) {
-                    panic!(
-                        "Argument type mismatch: expected {}, got {}",
-                        combinator, arg_combinator
-                    );
+                let left = resolve_up_to_enums(global_ctx.resolve(arg_combinator));
+                let right = resolve_up_to_enums(global_ctx.resolve_alias(combinator));
+                if left != right {
+                    panic!("Argument type mismatch: expected {}, got {}", left, right);
                 }
             } else {
                 // 2. try to find `depend_id` in param_defns
@@ -461,9 +469,9 @@ fn check_combinator_invocation(
                         combinator: combinator_,
                         ..
                     } => {
-                        if global_ctx.resolve_alias(combinator_)
-                            != global_ctx.resolve_alias(combinator)
-                        {
+                        let left = resolve_up_to_enums(global_ctx.resolve_alias(combinator_));
+                        let right = resolve_up_to_enums(global_ctx.resolve_alias(combinator));
+                        if left != right {
                             panic!(
                                 "Argument type mismatch: expected {}, got {}",
                                 combinator, combinator_
@@ -754,6 +762,8 @@ pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
             IntCombinator::Unsigned(8)
         } else if max <= u16::MAX.into() {
             IntCombinator::Unsigned(16)
+        } else if max <= 0xFFFFFF {
+            IntCombinator::Unsigned(24)
         } else if max <= u32::MAX.into() {
             IntCombinator::Unsigned(32)
         } else if max <= u64::MAX.into() {
@@ -845,24 +855,22 @@ fn check_constraint_int_combinator(combinator: &IntCombinator, constraint: Optio
 
 fn check_constraint_elem(combinator: &IntCombinator, constraint_elem: &ConstraintElem) {
     match constraint_elem {
-        ConstraintElem::Range { start, end } => {
-            match (start, end) {
-                (Some(start), Some(end)) => {
-                    check_const_int_combinator(combinator, start);
-                    check_const_int_combinator(combinator, end);
-                    if start > end {
-                        panic!("Invalid range constraint");
-                    }
+        ConstraintElem::Range { start, end } => match (start, end) {
+            (Some(start), Some(end)) => {
+                check_const_int_combinator(combinator, start);
+                check_const_int_combinator(combinator, end);
+                if start > end {
+                    panic!("Invalid range constraint");
                 }
-                (Some(start), None) => {
-                    check_const_int_combinator(combinator, start);
-                }
-                (None, Some(end)) => {
-                    check_const_int_combinator(combinator, end);
-                }
-                _ => panic!("Invalid range constraint"),
             }
-        }
+            (Some(start), None) => {
+                check_const_int_combinator(combinator, start);
+            }
+            (None, Some(end)) => {
+                check_const_int_combinator(combinator, end);
+            }
+            _ => panic!("Invalid range constraint"),
+        },
         ConstraintElem::Single(value) => {
             check_const_int_combinator(combinator, value);
         }

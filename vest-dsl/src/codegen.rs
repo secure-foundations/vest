@@ -1330,13 +1330,20 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                 let (snd_combinator_types, (snd_exprs, snd_code)): (Vec<_>, (Vec<_>, Vec<_>)) = snd
                     .iter()
                     .map(|field| match field {
-                        StructField::Ordinary { combinator, .. }
-                        | StructField::Dependent { combinator, .. } => (
-                            combinator
-                                .gen_combinator_type("", mode, &mut ctx.disable_top_level())
-                                .0,
-                            combinator.gen_combinator_expr("", mode, &ctx.disable_top_level()),
-                        ),
+                        StructField::Ordinary { combinator, label }
+                        | StructField::Dependent { combinator, label } => {
+                            let name = &lower_snake_to_upper_snake(&(name.to_owned() + label));
+                            (
+                                combinator
+                                    .gen_combinator_type(name, mode, &mut ctx.disable_top_level())
+                                    .0,
+                                combinator.gen_combinator_expr(
+                                    name,
+                                    mode,
+                                    &ctx.disable_top_level(),
+                                ),
+                            )
+                        }
                         _ => todo!(),
                     })
                     .unzip();
@@ -1873,14 +1880,14 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             Choices::Ints(ints) => ints
                 .iter()
                 .map(|(_, combinator)| {
-                    combinator.gen_combinator_type("", mode, &mut ctx.disable_top_level())
+                    combinator.gen_combinator_type(name, mode, &mut ctx.disable_top_level())
                 })
                 .map(|(t, code)| (format!("Cond<{}>", t), code))
                 .unzip(),
             Choices::Arrays(arrays) => arrays
                 .iter()
                 .map(|(_, combinator)| {
-                    combinator.gen_combinator_type("", mode, &mut ctx.disable_top_level())
+                    combinator.gen_combinator_type(name, mode, &mut ctx.disable_top_level())
                 })
                 .map(|(t, code)| (format!("Cond<{}>", t), code))
                 .unzip(),
@@ -1962,10 +1969,15 @@ impl DisjointFrom<{}> for {} {{
                                 .iter()
                                 .map(|(variant, combinator)| {
                                     let (inner, code) =
-                                        combinator.gen_combinator_expr("", mode, &ctx.disable_top_level());
+                                        combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
                                     let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
                                     {
                                         EnumCombinator::NonExhaustive { enums } => {
+                                            let int_type = infer_enum_type(enums);
+                                            let (spec_cast, cast) = match int_type {
+                                                IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
+                                                _ => ("", ""),
+                                            };
                                             if variant == "_" {
                                                 // default case; the negation of all other cases
                                                 let other_variants = enums
@@ -1974,10 +1986,10 @@ impl DisjointFrom<{}> for {} {{
                                                         if name == "_" {
                                                             None
                                                         } else {
-                                                            Some(format!(
-                                                                "{} == {}",
-                                                                depend_id, value
-                                                            ))
+                                                            Some(match mode {
+                                                                Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
+                                                                _ => format!("{}{} == {}", depend_id, cast, value)
+                                                            })
                                                         }
                                                     })
                                                     .collect::<Vec<_>>();
@@ -1993,7 +2005,10 @@ impl DisjointFrom<{}> for {} {{
                                                         }
                                                     })
                                                     .unwrap();
-                                                format!("{} == {}", depend_id, value)
+                                                match mode {
+                                                    Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
+                                                    _ => format!("{}{} == {}", depend_id, cast, value)
+                                                }
                                             }
                                         }
                                         EnumCombinator::Exhaustive { .. } => {
@@ -2020,7 +2035,7 @@ impl DisjointFrom<{}> for {} {{
                                 .iter()
                                 .map(|(variant, combinator)| {
                                     let (inner, code) =
-                                        combinator.gen_combinator_expr("", mode, &ctx.disable_top_level());
+                                        combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
                                     let bool_exp = match variant {
                                         ConstArray::Int(ints) => {
                                             let ints = ints.iter().map(|i| format!("{}u8", i)).collect::<Vec<_>>().join(", ");
@@ -2069,7 +2084,7 @@ impl DisjointFrom<{}> for {} {{
                                 .iter()
                                 .map(|(variant, combinator)| {
                                     let (inner, code) =
-                                        combinator.gen_combinator_expr("", mode, &ctx.disable_top_level());
+                                        combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
                                     let (spec_cast, cast) = match int_type {
                                         IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
                                         IntCombinator::BtcVarint => (".spec_as_usize()", ".as_usize()"),
@@ -2246,7 +2261,7 @@ impl Codegen for ArrayCombinator {
     ) -> (String, String) {
         let inner = self
             .combinator
-            .gen_combinator_type("", mode, &mut ctx.disable_top_level());
+            .gen_combinator_type(name, mode, &mut ctx.disable_top_level());
         (format!("RepeatN<{}>", inner.0), inner.1)
     }
 
@@ -2257,7 +2272,7 @@ impl Codegen for ArrayCombinator {
         };
         let (inner, additional_code) =
             self.combinator
-                .gen_combinator_expr("", mode, &ctx.disable_top_level());
+                .gen_combinator_expr(name, mode, &ctx.disable_top_level());
         match &self.len {
             LengthSpecifier::Const(len) => {
                 (format!("RepeatN({}, {})", inner, len), additional_code)
@@ -2305,7 +2320,7 @@ impl Codegen for VecCombinator {
     ) -> (String, String) {
         let inner = match self {
             VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
-                combinator.gen_combinator_type("", mode, &mut ctx.disable_top_level())
+                combinator.gen_combinator_type(name, mode, &mut ctx.disable_top_level())
             }
         };
         (format!("Repeat<{}>", inner.0), inner.1)
@@ -2314,7 +2329,7 @@ impl Codegen for VecCombinator {
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
         let inner = match self {
             VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
-                combinator.gen_combinator_expr("", mode, &ctx.disable_top_level())
+                combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level())
             }
         };
         let combinator_expr = match mode {
@@ -2387,7 +2402,7 @@ impl Codegen for WrapCombinator {
             .unzip::<_, _, Vec<_>, Vec<_>>();
         let inner = self
             .combinator
-            .gen_combinator_type("", mode, &mut ctx.disable_top_level());
+            .gen_combinator_type(name, mode, &mut ctx.disable_top_level());
         let post = self
             .post
             .iter()
@@ -2447,7 +2462,7 @@ impl Codegen for WrapCombinator {
             .unzip::<_, _, Vec<_>, Vec<_>>();
         let inner = self
             .combinator
-            .gen_combinator_expr("", mode, &ctx.disable_top_level());
+            .gen_combinator_expr(name, mode, &ctx.disable_top_level());
         let post = self
             .post
             .iter()
