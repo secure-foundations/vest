@@ -109,6 +109,7 @@ def get_tls_handshake_data(args, domain):
 
         sock = socket.create_connection((args.proxy_host, args.proxy_port), timeout=5)
         context = ssl.create_default_context()
+        context.options |= ssl.OP_NO_TICKET # No session resumption
         tls_socket = context.wrap_socket(sock, server_hostname=domain)
 
         tls_socket.do_handshake()
