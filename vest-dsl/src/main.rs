@@ -17,6 +17,14 @@ struct Args {
     /// Name of the output verus file
     #[arg(short, long)]
     output: Option<String>,
+
+    /// Codegen options
+    /// all: Generate all the code
+    /// types: Only generate the format type definitions
+    /// impls: Only generate the implementation (and the data type definitions)
+    /// anns: Only generate the annotations (spec data types, spec combinators, etc.)
+    #[arg(short, long)]
+    codegen: Option<String>,
 }
 
 fn replace_extension(filename: &str, new_ext: &str) -> String {
@@ -50,7 +58,17 @@ fn main() {
     .expect("cannot create the verus file");
 
     println!("📝 Generating the verus file...");
-    let code = codegen::code_gen(&ast, &ctx);
+    let codegen_opt = args
+        .codegen
+        .map(|s| match s.as_str() {
+            "all" => codegen::CodegenOpts::All,
+            "types" => codegen::CodegenOpts::Types,
+            "impls" => codegen::CodegenOpts::Impls,
+            "anns" => codegen::CodegenOpts::Anns,
+            _ => panic!("Invalid codegen option"),
+        })
+        .unwrap_or(codegen::CodegenOpts::All);
+    let code = codegen::code_gen(&ast, &ctx, codegen_opt);
     verus
         .write_all(code.as_bytes())
         .expect("cannot write to the file");
