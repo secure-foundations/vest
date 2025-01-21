@@ -2,11 +2,17 @@
 // WASM Binary Format //
 ////////////////////////
 
+// TODO:
+// ULEB128 and SLEB128
+// blocktype: need disjointness proof of positive s33 vs valtype vs 0x40
+// expr and instr: need recursive format 
+// or, if we parse the instruction as a flat vec, we need to "re-write" the 0x0B terminated instruction list as a "count-bounded" vector of instructions
+
 // Vectors: Vectors are encoded with their length followed by the encoding of their element sequence.
 // We use the following pattern to encode vectors:
 // TODO: replace u32 with leb128_u32
 macro vec!(t) = {
-  @l: u32,
+  @l: uleb128,
   v: [t; @l],
 }
 
@@ -85,12 +91,12 @@ limits = choose {
 }
 
 limit_min = {
-  min: u32,
+  min: uleb128,
 }
 
 limit_min_max = {
-  min: u32,
-  max: u32,
+  min: uleb128,
+  max: uleb128,
 }
 
 // Memory Types
@@ -124,41 +130,47 @@ mut_t = enum {
 empty = [u8; 0]
 
 // Block Type
-blocktype = {
-  @tag: u8,
-  body: choose(@tag) {
-    0x40 => empty,
-    0x6F..0x70 => valtype,
-    0x7B..0x7F => valtype,
-    _ => u32,
-  },
+blocktype = choose {
+  Empty(empty_block),
+  ValType(valtype_block),
+  TypeIdx(typeidx_block),
+  // TypeIdx(sleb128 | 0.. ),
 }
+// incorrect
+// blocktype = {
+//   @tag: u8,
+//   body: choose(@tag) {
+//     0x40 => empty,
+//     0x6F..0x70 => valtype,
+//     0x7B..0x7F => valtype,
+//     _ => uleb128,
+//   },
+// }
 
-// An alternative (uglier) definition:
 // blocktype = choose {
 //   Empty(empty_block),
 //   ValType(valtype_block),
 //   TypeIdx(typeidx_block),
 // }
 // 
-// empty_block = {
-//   tag: u8 | 0x40,
-//   // TODO: this is to make the generated code type-check 
-//   // (for technical issues with the DisjointFrom trait),
-//   // should be removed in the future
-//   body: empty,
-// }
-// 
-// // technically repeating the `valtype` definition, but this better suited for disjointness proof
-// valtype_block = {
-//   tag: u8 | { 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
-//   body: empty,
-// }
-// 
-// typeidx_block = {
-//   tag: u8 | !{ 0x40, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
-//   body: u32,
-// }
+empty_block = {
+  tag: u8 | 0x40,
+  // TODO: this is to make the generated code type-check 
+  // (for technical issues with the DisjointFrom trait),
+  // should be removed in the future
+  body: empty,
+}
+
+// technically repeating the `valtype` definition, but this better suited for disjointness proof
+valtype_block = {
+  tag: u8 | { 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
+  body: empty,
+}
+
+typeidx_block = {
+  tag: u8 | !{ 0x40, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x6F, 0x70 },
+  body: uleb128,
+}
 
 // Instructions
 // > Gaps in the byte code ranges for encoding instructions are reserved for future extensions.
@@ -573,8 +585,8 @@ instr = {
 }
 
 memarg = {
-  align: u32,
-  offset: u32,
+  align: uleb128,
+  offset: uleb128,
 }
 
 labelidx_vec = vec!(labelidx)
@@ -591,7 +603,7 @@ call_indirect = {
 select_t = vec!(valtype)
 
 instr_with_fc = {
-  @tag: u32,
+  @tag: uleb128,
   rest: choose(@tag) {
     // Table management instructions
     12 => table_init,
@@ -642,7 +654,7 @@ memory_fill = {
 }
 
 instr_with_fd = {
-  @tag: u32,
+  @tag: uleb128,
   rest: choose(@tag) {
     // Vector instructions
     0..11 => memarg,
@@ -684,18 +696,18 @@ expr = vec!(instr)
 
 // Indices
 
-typeidx = u32
-funcidx = u32
-tableidx = u32
-memidx = u32
-globalidx = u32
-elemidx = u32
-dataidx = u32
-localidx = u32
-labelidx = u32
+typeidx = uleb128
+funcidx = uleb128
+tableidx = uleb128
+memidx = uleb128
+globalidx = uleb128
+elemidx = uleb128
+dataidx = uleb128
+localidx = uleb128
+labelidx = uleb128
 
 macro section!(b) = {
-  @size: u32,
+  @size: uleb128,
   // encode that size = |cont|
   cont: [u8; @size] >>= b,
 }
@@ -782,14 +794,14 @@ elemsec = section!(elemsec_content)
 elemsec_content = vec!(elem)
 const ELEMKIND: u8 = 0x00
 elem = choose {
-  Elem0(wrap(u32 = 0, parsed_elem0)),
-  Elem1(wrap(u32 = 1, parsed_elem1)),
-  Elem2(wrap(u32 = 2, parsed_elem2)),
-  Elem3(wrap(u32 = 3, parsed_elem3)),
-  Elem4(wrap(u32 = 4, parsed_elem4)),
-  Elem5(wrap(u32 = 5, parsed_elem5)),
-  Elem6(wrap(u32 = 6, parsed_elem6)),
-  Elem7(wrap(u32 = 7, parsed_elem7)),
+  Elem0(wrap(uleb128 = 0, parsed_elem0)),
+  Elem1(wrap(uleb128 = 1, parsed_elem1)),
+  Elem2(wrap(uleb128 = 2, parsed_elem2)),
+  Elem3(wrap(uleb128 = 3, parsed_elem3)),
+  Elem4(wrap(uleb128 = 4, parsed_elem4)),
+  Elem5(wrap(uleb128 = 5, parsed_elem5)),
+  Elem6(wrap(uleb128 = 6, parsed_elem6)),
+  Elem7(wrap(uleb128 = 7, parsed_elem7)),
 }
 funcidxs = vec!(funcidx)
 parsed_elem0 = {
@@ -831,12 +843,12 @@ parsed_elem7 = {
 codesec = section!(codesec_content)
 codesec_content = vec!(code)
 code = {
-  @size: u32,
+  @size: uleb128,
   // encode that size = |code|
   code: [u8; @size] >>= func,
 }
 local_compressed = {
-  count: u32,
+  count: uleb128,
   vt: valtype,
 }
 locals = vec!(local_compressed)
@@ -849,9 +861,9 @@ func = {
 datasec = section!(datasec_content)
 datasec_content = vec!(data)
 data = choose {
-  ActiveData0(wrap(u32 = 0, active_data0)),
-  PassiveData(wrap(u32 = 1, passive_data)),
-  ActiveDataX(wrap(u32 = 2, active_datax)),
+  ActiveData0(wrap(uleb128 = 0, active_data0)),
+  PassiveData(wrap(uleb128 = 1, passive_data)),
+  ActiveDataX(wrap(uleb128 = 2, active_datax)),
 }
 active_data0 = {
   offset: expr,
@@ -866,7 +878,7 @@ active_datax = {
 
 // Data count Section
 // TODO: inline this to allow single-pass validation
-datacountsec = section!(u32)
+datacountsec = section!(uleb128)
 
 // Module
 module = {
@@ -893,8 +905,8 @@ module = {
   custom10: Option<wrap(u8 = 0, customsec)>,
   // record data count number
   // const datacountid: u8 = 12,
-  // @datacount_size: u32,
-  // @datacount: [u8; @datacount_size] >>= u32,
+  // @datacount_size: uleb128,
+  // @datacount: [u8; @datacount_size] >>= uleb128,
   datacount: Option<wrap(u8 = 12, datacountsec)>,
   custom11: Option<wrap(u8 = 0, customsec)>,
   codes: Option<wrap(u8 = 10, codesec)>,
