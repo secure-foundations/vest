@@ -685,7 +685,11 @@ shuffle = [laneidx; 16]
 
 
 // no validation for well-bracketedness so no check for the 0x0B terminator as well
-expr = vec!(instr)
+// expr = vec!(instr)
+expr = {
+  instrs: Vec<instr>,
+  const end: u8 = 0xFF,
+}
 
 //  __  __           _       _            
 // |  \/  | ___   __| |_   _| | ___  ___  
