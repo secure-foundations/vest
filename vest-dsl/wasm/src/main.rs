@@ -18,20 +18,6 @@ use vest_wasm::*;
 // use wasm_data::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // parse_vestbtc_tx()?;
-    // parse_rustbtc_tx()?;
-    // serialize_vestbtc_tx()?;
-    // serialize_rustbtc_tx()?;
-    // bench_fn(parse_rustbtc_tx)?;
-    // bench_fn(parse_vestbtc_tx)?;
-    // bench_fn(serialize_rustbtc_tx)?;
-    // bench_fn(serialize_vestbtc_tx)?;
-    // test();
-
-    // for hex in wasm_data() {
-    //     println!("{:?}", hex_to_bytes(hex));
-    // }
-
     Ok(())
 }
 

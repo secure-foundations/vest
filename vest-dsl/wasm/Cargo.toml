@@ -14,10 +14,12 @@ extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+rwasm = { git = "https://github.com/zhengyao-lin/rWasm.git", branch = "main" }
+wasmparser = "0.223.0"
 
-# [[bench]]
-# name = "tls_benchmark"
-# harness = false
+[[bench]]
+name = "wasm_benchmark"
+harness = false
 
 [profile.profiling]
 inherits = "release"
