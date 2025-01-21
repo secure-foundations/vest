@@ -1,0 +1,21 @@
+[package]
+name = "wasmbin-derive"
+version = "0.1.0"
+authors = ["Ingvar Stepanyan <rreverser@google.com>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Derive crate for the wasmbin library"
+repository = "https://github.com/GoogleChromeLabs/wasmbin"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+synstructure = "0.12.4"
+quote = "1.0.9"
+proc-macro2 = "1.0.27"
+syn = "1.0.73"
+thiserror = "1.0.25"
+
+[features]
+nightly = []
