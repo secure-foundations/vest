@@ -645,9 +645,12 @@ certificate_request = {
 //     };
 //     Extension extensions<0..2^16-1>;
 // } CertificateEntry;
-certificate_entry(@cert_type: certificate_type) = choose(@cert_type) {
-  X509 => opaque_1_ffffff,
-  RawPublicKey => opaque_1_ffffff,
+certificate_entry(@cert_type: certificate_type) = {
+  data: choose(@cert_type) {
+    X509 => opaque_1_ffffff,
+    RawPublicKey => opaque_1_ffffff,
+  },
+  extensions: certificate_extensions,
 }
 
 certificate_entry_opaque = {
@@ -676,6 +679,8 @@ digest_size = enum {
   Sha256 = 32,
   Sha384 = 48,
   Sha512 = 64,
+  Max = 0xffffff,
+  ...
 }
 
 finished(@size: digest_size) = choose(@size) {
@@ -684,6 +689,7 @@ finished(@size: digest_size) = choose(@size) {
   Sha256 => [u8; 32],
   Sha384 => [u8; 48],
   Sha512 => [u8; 64],
+  _ => [u8; @size],
 }
 finished_opaque(@digest_size: u24) = [u8; @digest_size]
 
@@ -752,7 +758,7 @@ handshake = {
     Certificate => certificate,
     CertificateRequest => certificate_request,
     CertificateVerify => certificate_verify,
-    Finished => finished_opaque(@length),
+    Finished => finished(@length),
     KeyUpdate => key_update,
   },
 }
