@@ -141,7 +141,7 @@ fn bench_serialize_bitcoin_1k_blocks(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    // bench_parse_bitcoin_1k_blocks_bulk,
+    bench_parse_bitcoin_1k_blocks_bulk,
     // bench_parse_bitcoin_1k_blocks,
     bench_serialize_bitcoin_1k_blocks_bulk,
     // bench_serialize_bitcoin_1k_blocks,

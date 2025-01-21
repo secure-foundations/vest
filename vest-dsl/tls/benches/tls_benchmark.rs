@@ -211,7 +211,7 @@ fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
     valid_server_hellos.truncate(TRANCO_TEST_LIMIT);
 
     let mut group = c.benchmark_group("parse_tranco_handshakes_bulk");
-    group.sample_size(10000);
+    group.sample_size(1000);
 
     group.bench_function("vest", |b| b.iter(||
         for msg in &valid_server_hellos {
@@ -262,7 +262,7 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
     rustls_parsed.truncate(TRANCO_TEST_LIMIT);
 
     let mut group = c.benchmark_group("serialize_tranco_handshakes_bulk");
-    group.sample_size(10000);
+    group.sample_size(1000);
 
     group.bench_function("vest", |b| b.iter(||
         for msg in vest_parsed.clone() {
