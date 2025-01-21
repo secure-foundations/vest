@@ -695,6 +695,7 @@ impl Codegen for ConstraintIntCombinator {
             IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
             IntCombinator::BtcVarint => "BtcVarint".to_string(),
+            IntCombinator::ULEB128 => "UnsignedLEB128".to_string(),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -769,6 +770,7 @@ impl Codegen for ConstraintIntCombinator {
             IntCombinator::Unsigned(t) if *t == 8 => "U8".to_string(),
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
             IntCombinator::BtcVarint => "BtcVarint".to_string(),
+            IntCombinator::ULEB128 => "UnsignedLEB128".to_string(),
             IntCombinator::Signed(..) => unimplemented!(),
         };
         if let Some(constraint) = &self.constraint {
@@ -1598,7 +1600,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
-                    IntCombinator::BtcVarint => unreachable!(),
+                    _ => unreachable!(),
                 };
                 (
                     format!("TryMap<{}, {}Mapper>", int_type, name),
@@ -1611,7 +1613,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
                     IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
                     IntCombinator::Signed(..) => unimplemented!(),
-                    IntCombinator::BtcVarint => unreachable!(),
+                    _ => unreachable!(),
                 }
             }
         }
@@ -1633,7 +1635,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
-                    IntCombinator::BtcVarint => unreachable!(),
+                    _ => unreachable!(),
                 };
                 let combinator_expr =
                     format!("TryMap {{ inner: {}, mapper: {}Mapper }}", int_type, name);
@@ -1645,7 +1647,7 @@ impl TryFromInto for {msg_type_name}Mapper {{
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
                     IntCombinator::Signed(..) => unimplemented!(),
-                    IntCombinator::BtcVarint => unreachable!(),
+                    _ => unreachable!(),
                 };
                 let combinator_expr = int_combinator;
                 (combinator_expr, "".to_string())
@@ -2711,6 +2713,7 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianess), format!("u{}", t)),
             IntCombinator::Signed(..) => unimplemented!(),
             IntCombinator::BtcVarint => unimplemented!(),
+            IntCombinator::ULEB128 => ("UnsignedLEB128".to_string(), "u64".to_string()),
         };
         let name = format!("{}_CONST", name);
         let const_decl = format!("pub const {}: {} = {};\n", name, tag_type, self.value);
@@ -2737,6 +2740,7 @@ impl Codegen for ConstIntCombinator {
             IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
             IntCombinator::Signed(..) => unimplemented!(),
             IntCombinator::BtcVarint => unimplemented!(),
+            IntCombinator::ULEB128 => "UnsignedLEB128".to_string(),
         };
         let combinator_expr = if ctx.wrap {
             match mode {
@@ -2932,6 +2936,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Stri
         + "use vest::regular::preceded::*;\n"
         + "use vest::regular::terminated::*;\n"
         + "use vest::regular::disjoint::DisjointFrom;\n"
+        + "use vest::regular::leb128::*;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }
 

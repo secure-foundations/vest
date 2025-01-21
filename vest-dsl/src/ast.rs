@@ -87,6 +87,7 @@ pub enum IntCombinator {
     Signed(u8),
     Unsigned(u8),
     BtcVarint,
+    ULEB128,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -371,6 +372,7 @@ impl Display for IntCombinator {
             IntCombinator::Signed(n) => write!(f, "i{}", n),
             IntCombinator::Unsigned(n) => write!(f, "u{}", n),
             IntCombinator::BtcVarint => write!(f, "VarInt"),
+            IntCombinator::ULEB128 => write!(f, "u64"),
         }
     }
 }
@@ -971,6 +973,7 @@ fn parse_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
         Rule::unsigned => IntCombinator::Unsigned(parse_width()),
         Rule::signed => IntCombinator::Signed(parse_width()),
         Rule::btc_varint => IntCombinator::BtcVarint,
+        Rule::uleb128 => IntCombinator::ULEB128,
         _ => unreachable!(),
     }
 }

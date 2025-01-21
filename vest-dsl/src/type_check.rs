@@ -316,6 +316,11 @@ fn check_const_int_combinator(combinator: &IntCombinator, value: &i128) {
                 panic!("Value {} is out of range for btc_varint", value);
             }
         }
+        IntCombinator::ULEB128 => {
+            if *value < 0 || *value > u64::MAX.into() {
+                panic!("Value {} is out of range for uleb128", value);
+            }
+        }
         _ => panic!("Unsupported const int combinator"),
     }
 }
@@ -511,7 +516,10 @@ fn check_bytes_combinator(
             if let Some(combinator) = local_ctx.dependent_fields.get(depend_id) {
                 match global_ctx.resolve(combinator) {
                     CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                        combinator: IntCombinator::Unsigned(_) | IntCombinator::BtcVarint,
+                        combinator:
+                            IntCombinator::Unsigned(_)
+                            | IntCombinator::BtcVarint
+                            | IntCombinator::ULEB128,
                         ..
                     }) => {}
                     _ => panic!("Length specifier must be an unsigned int"),
@@ -672,7 +680,8 @@ fn check_choice_combinator(
                 let combinator = get_combinator_from_depend_id(depend_id);
                 // check if `combinator` is defined as an int
                 if let CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                    combinator: IntCombinator::Unsigned(_) | IntCombinator::BtcVarint,
+                    combinator:
+                        IntCombinator::Unsigned(_) | IntCombinator::BtcVarint | IntCombinator::ULEB128,
                     ..
                 }) = combinator
                 {

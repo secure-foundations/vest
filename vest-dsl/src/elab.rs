@@ -41,6 +41,7 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
         .unwrap_or_else(|e| {
             panic!("Cycle detected in the format definitions: {:?}", e);
         });
+    println!("Number of definitions: {}", ast.len());
 }
 
 pub struct ElabCtx {
