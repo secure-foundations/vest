@@ -20,6 +20,8 @@ pub mod depend;
 pub mod disjoint;
 /// Fail combinator
 pub mod fail;
+/// LEB128-encoded integers
+pub mod leb128;
 /// Mapped combinator
 pub mod map;
 /// Pair combinator
@@ -44,5 +46,3 @@ pub mod tail;
 pub mod terminated;
 /// Uints combinator
 pub mod uints;
-/// LEB128-encoded integers
-pub mod leb128;

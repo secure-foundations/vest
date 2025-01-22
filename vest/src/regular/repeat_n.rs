@@ -13,7 +13,6 @@ pub struct RepeatN<'x, C>(pub C, pub usize, pub &'x ());
 //         RepeatN(c, n, std::marker::PhantomData)
 //     }
 // }
-
 // impl<'x, C: View> RepeatN<'x, C> {
 //     pub closed spec fn spec_new(c: C::V, n: usize) -> <Self as View>::V
 //     {
@@ -25,7 +24,6 @@ pub struct RepeatN<'x, C>(pub C, pub usize, pub &'x ());
 //         RepeatN(c, n, std::marker::PhantomData)
 //     }
 // }
-
 impl<C: View, 'x> View for RepeatN<C, 'x> {
     type V = RepeatN<<C as View>::V, 'x>;
 
@@ -33,7 +31,6 @@ impl<C: View, 'x> View for RepeatN<C, 'x> {
         RepeatN(self.0@, self.1, self.2)
     }
 }
-
 
 impl<C: SecureSpecCombinator> RepeatN<C, '_> {
     /// Helper function for parsing [n] instances of [C] from [s].
@@ -63,10 +60,7 @@ impl<C: SecureSpecCombinator> RepeatN<C, '_> {
     }
 
     /// Helper function for serializing [n] instances of [C] from [v].
-    pub open spec fn spec_serialize_helper(&self, v: Seq<C::Type>, n: usize) -> Result<
-        Seq<u8>,
-        (),
-    >
+    pub open spec fn spec_serialize_helper(&self, v: Seq<C::Type>, n: usize) -> Result<Seq<u8>, ()>
         decreases n,
     {
         if !C::is_prefix_secure() {
@@ -443,7 +437,7 @@ impl<I, O, C, 'x> Combinator<I, O> for RepeatN<C, 'x> where
                 return Err(SerializeError::InsufficientBuffer);
             }
             match self.0.serialize(vs.0[i], data, pos + len) {
-            // match self.0.serialize(vs.0.remove(0), data, pos + len) {
+                // match self.0.serialize(vs.0.remove(0), data, pos + len) {
                 Ok(n) => {
                     if let Some(next_len) = len.checked_add(n) {
                         len = next_len;

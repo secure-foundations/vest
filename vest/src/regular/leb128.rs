@@ -424,6 +424,7 @@ impl SecureSpecCombinator for UnsignedLEB128 {
 
 impl<I, O> Combinator<I, O> for UnsignedLEB128 where I: VestPublicInput, O: VestPublicOutput<I> {
     type Type = UInt;
+
     type SType = UInt;
 
     open spec fn spec_length(&self) -> Option<usize> {

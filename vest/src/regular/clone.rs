@@ -42,9 +42,7 @@ impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 //         }
 //     };
 // }
-
 // impl_clone_for_int_tags!(Tag<U8, u8>, Tag<U16Le, u16>, Tag<U32Le, u32>, Tag<U64Le, u64>);
-
 // impl<T: FromToBytes + Copy> Clone for Tag<Int<T>, T> {
 //     fn clone(&self) -> (out: Self)
 //         ensures
@@ -71,7 +69,6 @@ impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 //         Tag::new(self.0.inner.clone(), self.0.predicate.0, self.0.predicate.1)
 //     }
 // }
-
 impl Clone for Bytes {
     fn clone(&self) -> (out: Self)
         ensures

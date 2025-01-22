@@ -32,6 +32,7 @@ pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
         ensures
             res == self@.spec_apply(&i@),
     ;
+
     /// Serialization equivalent of [`Self::p_apply`].
     fn s_apply(&self, i: Self::InputRef) -> (res: bool)
         requires
