@@ -6,62 +6,74 @@ use vstd::prelude::*;
 verus! {
 
 /// tag predicate that matches the input with a given value
-pub struct TagPred<T>(pub T);
+pub struct TagPred<PT, ST>(pub PT, pub ST);
 
-impl<T: View> View for TagPred<T> {
-    type V = TagPred<T::V>;
+impl<PT: View, ST: View> View for TagPred<PT, ST> {
+    type V = TagPred<PT::V, ST::V>;
 
     open spec fn view(&self) -> Self::V {
-        TagPred(self.0@)
+        TagPred(self.0@, self.1@)
     }
 }
 
-impl<T> SpecPred for TagPred<T> {
+impl<T> SpecPred for TagPred<T, T> {
     type Input = T;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        *i == self.0
+        self.0 == self.1 &&
+        (*i == self.0)
     }
 }
 
-impl<T: Compare<T>> Pred for TagPred<T> {
-    type Input = T;
+impl<PT: Compare<PT>, ST: Compare<ST>> Pred for TagPred<PT, ST> where
+    ST: View<V = PT::V>,
+{
+    type Input = PT;
+    type InputRef = ST;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    open spec fn wf(&self) -> bool {
+        self.0@ == self.1@
+    }
+
+    fn p_apply(&self, i: &Self::Input) -> bool {
         // self.0.eq(i)
         self.0.compare(i)
+    }
+
+    fn s_apply(&self, i: Self::InputRef) -> bool {
+        self.1.compare(&i)
     }
 }
 
 /// Generic tag combinator that matches the input with a given value and discards it
 /// e.g. `Tag(Int::<u8>, 0)` matches the byte `0`; `Tag(Bytes::<3>, &[1, 2, 3])` matches the
 /// bytes `[1, 2, 3]`
-pub struct Tag<Inner, T>(pub Refined<Inner, TagPred<T>>);
+pub struct Tag<Inner, PT, ST>(pub Refined<Inner, TagPred<PT, ST>>);
 
-impl<Inner, T> Tag<Inner, T> {
+impl<Inner, PT, ST> Tag<Inner, PT, ST> {
     /// Creates a new `Tag` combinator.
-    pub fn new(inner: Inner, tag: T) -> (o: Self)
+    pub fn new(inner: Inner, tag: PT, reftag: ST) -> (o: Self)
         ensures
-            o == Tag(Refined { inner, predicate: TagPred(tag) }),
+            o == Tag(Refined { inner, predicate: TagPred(tag, reftag) }),
     {
-        Tag(Refined { inner, predicate: TagPred(tag) })
+        Tag(Refined { inner, predicate: TagPred(tag, reftag) })
     }
 
     /// Creates a new `Tag` combinator.
-    pub open spec fn spec_new(inner: Inner, tag: T) -> Self {
-        Tag(Refined { inner, predicate: TagPred(tag) })
+    pub open spec fn spec_new(inner: Inner, tag: PT, reftag: ST) -> (o: Self) {
+        Tag(Refined { inner, predicate: TagPred(tag, reftag) })
     }
 }
 
-impl<Inner: View, T: View> View for Tag<Inner, T> {
-    type V = Tag<Inner::V, T::V>;
+impl<Inner: View, PT: View, ST: View> View for Tag<Inner, PT, ST> {
+    type V = Tag<Inner::V, PT::V, ST::V>;
 
     open spec fn view(&self) -> Self::V {
         Tag(self.0@)
     }
 }
 
-impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
+impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T, T> {
     type Type = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
@@ -77,7 +89,7 @@ impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
     }
 }
 
-impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T> {
+impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T, T> {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
@@ -110,14 +122,17 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
     }
 }
 
-impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
+impl<I, O, Inner, PT, ST> Combinator<I, O> for Tag<Inner, PT, ST> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O, Type = T>,
-    Inner::V: SecureSpecCombinator<Type = T::V>,
-    T: Compare<T> + Copy,
+    Inner: Combinator<I, O, Type = PT, SType = ST>,
+    Inner::V: SecureSpecCombinator<Type = PT::V>,
+    PT: Compare<PT> + Copy,
+    ST: Compare<ST> + Copy + View<V = PT::V>,
  {
     type Type = ();
+
+    type SType = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -128,7 +143,7 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     }
 
     open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
+        self.0.parse_requires() && self.0.predicate.wf()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -137,11 +152,11 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
+        self.0.serialize_requires() && self.0.predicate.wf()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        self.0.serialize(self.0.predicate.0, data, pos)
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        self.0.serialize(self.0.predicate.1, data, pos)
     }
 }
 

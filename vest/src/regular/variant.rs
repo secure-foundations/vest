@@ -164,6 +164,8 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Choice<Fst, Snd> where
  {
     type Type = Either<Fst::Type, Snd::Type>;
 
+    type SType = Either<Fst::SType, Snd::SType>;
+
     open spec fn spec_length(&self) -> Option<usize> {
         None
     }
@@ -194,7 +196,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Choice<Fst, Snd> where
         )
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -240,9 +242,7 @@ impl<T: View> View for Opt<T> where  {
     }
 }
 
-impl<C: View> Opt<C> where
-    C::V: SecureSpecCombinator,
- {
+impl<C: View> Opt<C> where C::V: SecureSpecCombinator {
     /// Constructs a new `Opt` combinator, only if the inner combinator is productive.
     pub fn new(c: C) -> (o: Self)
         requires
@@ -358,6 +358,8 @@ impl<I, O, T> Combinator<I, O> for Opt<T> where
  {
     type Type = Optional<T::Type>;
 
+    type SType = Optional<T::SType>;
+
     open spec fn spec_length(&self) -> Option<usize> {
         None
     }
@@ -382,7 +384,7 @@ impl<I, O, T> Combinator<I, O> for Opt<T> where
         self.0.serialize_requires() && self.0@.is_productive()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

@@ -120,7 +120,8 @@ fn btc_varint_inner<'a>() -> (o: BtcVarintInner<'a>)
     TryMap {
         inner: Pair {
             fst: U8,
-            snd: BtVarintCont,
+            p_snd: BtVarintPCont,
+            s_snd: BtVarintSCont,
             spec_snd: Ghost(spec_btc_varint_inner().inner.snd),
         },
         mapper: VarIntMapper::new(),
@@ -140,9 +141,14 @@ impl View for PredU16LeFit {
 
 impl Pred for PredU16LeFit {
     type Input = u16;
+    type InputRef = u16;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    fn p_apply(&self, i: &Self::Input) -> bool {
         *i >= 0xFD
+    }
+
+    fn s_apply(&self, i: Self::InputRef) -> bool {
+        i >= 0xFD
     }
 }
 
@@ -167,9 +173,13 @@ impl View for PredU32LeFit {
 
 impl Pred for PredU32LeFit {
     type Input = u32;
+    type InputRef = u32;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    fn p_apply(&self, i: &Self::Input) -> bool {
         *i >= 0x10000
+    }
+    fn s_apply(&self, i: Self::InputRef) -> bool {
+        i >= 0x10000
     }
 }
 
@@ -194,9 +204,13 @@ impl View for PredU64LeFit {
 
 impl Pred for PredU64LeFit {
     type Input = u64;
+    type InputRef = u64;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    fn p_apply(&self, i: &Self::Input) -> bool {
         *i >= 0x100000000
+    }
+    fn s_apply(&self, i: Self::Input) -> bool {
+        i >= 0x100000000
     }
 }
 
@@ -360,6 +374,10 @@ impl<'a> PartialIso for VarIntMapper<'a> {
     type Src = (u8, Either<&'a [u8], Either<u16, Either<u32, u64>>>);
 
     type Dst = VarInt;
+
+    type RefSrc = Self::Src;
+
+    type RefDst = Self::Dst;
 }
 
 impl SpecCombinator for BtcVarint {
@@ -405,9 +423,12 @@ impl SecureSpecCombinator for BtcVarint {
 }
 
 /// Continuation for parsing and serializing Bitcoin variable-length integers
-pub struct BtVarintCont;
+pub struct BtVarintPCont;
 
-impl Continuation<&u8> for BtVarintCont {
+/// The equivalent of [`BtVarintPCont`] for serializing
+pub struct BtVarintSCont;
+
+impl Continuation<&u8> for BtVarintPCont {
     type Output = VarintChoice;
 
     open spec fn requires(&self, t: &u8) -> bool {
@@ -428,8 +449,32 @@ impl Continuation<&u8> for BtVarintCont {
     }
 }
 
+impl Continuation<u8> for BtVarintSCont {
+    type Output = VarintChoice;
+
+    open spec fn requires(&self, t: u8) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, t: u8, o: Self::Output) -> bool {
+        o@ == (spec_btc_varint_inner().inner.snd)(t@)
+    }
+
+    fn apply(&self, t: u8) -> Self::Output {
+        ord_choice!(
+                    Cond { cond: t <= 0xFC, inner: BytesN::<0> },
+                    Cond { cond: t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
+                    Cond { cond: t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
+                    Cond { cond: t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
+                )
+    }
+}
+
+
 impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
     type Type = VarInt;
+
+    type SType = VarInt;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -443,7 +488,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
         btc_varint_inner().parse(s)
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

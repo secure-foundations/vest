@@ -163,6 +163,8 @@ macro_rules! impl_combinator_for_le_uint_type {
             impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
                 type Type = $int_type;
 
+                type SType = $int_type;
+
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
                 }
@@ -189,7 +191,7 @@ macro_rules! impl_combinator_for_le_uint_type {
                     }
                 }
 
-                fn serialize(&self, v: $int_type, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
+                fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
                     if pos <= data.len() {
                         if size_of::<$int_type>() <= data.len() - pos {
                             $int_type::ex_to_le_bytes(&v, data, pos);
@@ -268,6 +270,8 @@ macro_rules! impl_combinator_for_be_uint_type {
             impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
                 type Type = $int_type;
 
+                type SType = $int_type;
+
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
                 }
@@ -294,7 +298,7 @@ macro_rules! impl_combinator_for_be_uint_type {
                     }
                 }
 
-                fn serialize(&self, v: $int_type, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
+                fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
                     if pos <= data.len() {
                         if size_of::<$int_type>() <= data.len() - pos {
                             $int_type::ex_to_be_bytes(&v, data, pos);
@@ -1104,6 +1108,8 @@ impl SecureSpecCombinator for U24Le {
 impl Combinator<&[u8], Vec<u8>> for U24Le {
     type Type = u24;
 
+    type SType = u24;
+
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
     }
@@ -1117,7 +1123,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
         Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
     }
 
-    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -1209,6 +1215,8 @@ proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
 impl Combinator<&[u8], Vec<u8>> for U24Be {
     type Type = u24;
 
+    type SType = u24;
+
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
     }
@@ -1222,7 +1230,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 
-    fn serialize(&self, v: u24, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
