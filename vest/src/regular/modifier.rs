@@ -58,14 +58,15 @@ pub trait Iso: View where
  {
     /// The source type of the isomorphism.
     type Src: View;
-    // type Src: View + From<Self::Dst>;
 
+    // type Src: View + From<Self::Dst>;
     /// The reference of the [`Src`] type.
     type RefSrc: View<V = <Self::Src as View>::V> + From<Self::RefDst>;
+
     /// THe reference of the [`Dst`] type.
     type RefDst: View<V = <Self::Dst as View>::V>;
-    // type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
 
+    // type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
 }
@@ -114,6 +115,7 @@ impl<T: Iso> IsoFn for T where
     //         by (compute_only);
     //     Self::RefSrc::ex_from(s)
     // }
+
 }
 
 /// Combinator that maps the result of an `inner` combinator with an isomorphism that implements
@@ -330,6 +332,7 @@ pub trait PartialIso: View where
 
     /// The reference of the [`Src`] type.
     type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<Self::RefDst>;
+
     /// THe reference of the [`Dst`] type.
     type RefDst: View<V = <Self::Dst as View>::V>;
 
@@ -354,7 +357,10 @@ pub trait PartialIsoFn: PartialIso where
     ;
 
     /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::RefDst) -> (res: Result<Self::RefSrc, <Self::RefSrc as TryFrom<Self::RefDst>>::Error>)
+    fn rev_apply(s: Self::RefDst) -> (res: Result<
+        Self::RefSrc,
+        <Self::RefSrc as TryFrom<Self::RefDst>>::Error,
+    >)
         ensures
             res matches Ok(v) ==> {
                 &&& Self::V::spec_rev_apply(s@) is Ok
@@ -394,6 +400,7 @@ impl<T: PartialIso> PartialIsoFn for T where
     //         by (compute_only);
     //     Self::Src::ex_try_from(s)
     // }
+
 }
 
 /// Combinator that maps the result of an `inner` combinator with a faillible conversion
@@ -502,12 +509,12 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
-    // M: TryFromInto<Src = Inner::Type>,
-    // Inner::Type: TryFrom<M::Dst> + View,
-    // M::Dst: TryFrom<Inner::Type> + View,
-    // M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
-    // <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
-    // <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
+// M: TryFromInto<Src = Inner::Type>,
+// Inner::Type: TryFrom<M::Dst> + View,
+// M::Dst: TryFrom<Inner::Type> + View,
+// M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+// <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
+// <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
  {
     type Type = M::Dst;
 
