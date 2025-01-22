@@ -23,6 +23,2344 @@ use vest::regular::terminated::*;
 use vest::regular::disjoint::DisjointFrom;
 use vest::regular::leb128::*;
 verus!{
+pub type SpecSigned32 = Seq<u8>;
+pub type Signed32<'a> = &'a [u8];
+
+
+pub struct SpecSigned32Combinator(SpecSigned32CombinatorAlias);
+
+impl SpecCombinator for SpecSigned32Combinator {
+    type Type = SpecSigned32;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecSigned32Combinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecSigned32CombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecSigned32CombinatorAlias = BytesN<4>;
+
+pub struct Signed32Combinator(Signed32CombinatorAlias);
+
+impl View for Signed32Combinator {
+    type V = SpecSigned32Combinator;
+    closed spec fn view(&self) -> Self::V { SpecSigned32Combinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for Signed32Combinator {
+    type Type = Signed32<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type Signed32CombinatorAlias = BytesN<4>;
+
+
+pub closed spec fn spec_signed_32() -> SpecSigned32Combinator {
+    SpecSigned32Combinator(BytesN::<4>)
+}
+
+                
+pub fn signed_32() -> (o: Signed32Combinator)
+    ensures o@ == spec_signed_32(),
+{
+    Signed32Combinator(BytesN::<4>)
+}
+
+                
+
+pub struct SpecByteVec {
+    pub l: u64,
+    pub v: Seq<u8>,
+}
+
+pub type SpecByteVecInner = (u64, Seq<u8>);
+impl SpecFrom<SpecByteVec> for SpecByteVecInner {
+    open spec fn spec_from(m: SpecByteVec) -> SpecByteVecInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecByteVecInner> for SpecByteVec {
+    open spec fn spec_from(m: SpecByteVecInner) -> SpecByteVec {
+        let (l, v) = m;
+        SpecByteVec { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct ByteVec {
+    pub l: u64,
+    pub v: RepeatResult<u8>,
+}
+
+impl View for ByteVec {
+    type V = SpecByteVec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecByteVec {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type ByteVecInner = (u64, RepeatResult<u8>);
+impl From<ByteVec> for ByteVecInner {
+    fn ex_from(m: ByteVec) -> ByteVecInner {
+        (m.l, m.v)
+    }
+}
+impl From<ByteVecInner> for ByteVec {
+    fn ex_from(m: ByteVecInner) -> ByteVec {
+        let (l, v) = m;
+        ByteVec { l, v }
+    }
+}
+
+pub struct ByteVecMapper;
+impl ByteVecMapper {
+    pub closed spec fn spec_new() -> Self {
+        ByteVecMapper
+    }
+    pub fn new() -> Self {
+        ByteVecMapper
+    }
+}
+impl View for ByteVecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ByteVecMapper {
+    type Src = SpecByteVecInner;
+    type Dst = SpecByteVec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ByteVecMapper {
+    type Src = ByteVecInner;
+    type Dst = ByteVec;
+}
+
+pub struct SpecByteVecCombinator(SpecByteVecCombinatorAlias);
+
+impl SpecCombinator for SpecByteVecCombinator {
+    type Type = SpecByteVec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecByteVecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecByteVecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecByteVecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<U8>>, ByteVecMapper>;
+
+pub struct ByteVecCombinator<'a>(ByteVecCombinatorAlias<'a>);
+
+impl<'a> View for ByteVecCombinator<'a> {
+    type V = SpecByteVecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecByteVecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ByteVecCombinator<'a> {
+    type Type = ByteVec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ByteVecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<U8>, ByteVecCont0<'a>>, ByteVecMapper>;
+
+
+pub closed spec fn spec_byte_vec() -> SpecByteVecCombinator {
+    SpecByteVecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_byte_vec_cont0(deps) },
+        mapper: ByteVecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_byte_vec_cont0(deps: u64) -> RepeatN<U8> {
+    let l = deps;
+    RepeatN(U8, l.spec_into())
+}
+                
+pub fn byte_vec<'a>() -> (o: ByteVecCombinator<'a>)
+    ensures o@ == spec_byte_vec(),
+{
+    ByteVecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ByteVecCont0::new(), spec_snd: Ghost(|deps| spec_byte_vec_cont0(deps)) },
+        mapper: ByteVecMapper::new(),
+    })
+}
+
+pub struct ByteVecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ByteVecCont0<'a> {
+    pub fn new() -> Self {
+        ByteVecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ByteVecCont0<'a> {
+    type Output = RepeatN<U8>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_byte_vec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(U8, l.ex_into())
+    }
+}
+                
+pub type SpecName = SpecByteVec;
+pub type Name = ByteVec;
+
+
+pub struct SpecNameCombinator(SpecNameCombinatorAlias);
+
+impl SpecCombinator for SpecNameCombinator {
+    type Type = SpecName;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecNameCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecNameCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecNameCombinatorAlias = SpecByteVecCombinator;
+
+pub struct NameCombinator<'a>(NameCombinatorAlias<'a>);
+
+impl<'a> View for NameCombinator<'a> {
+    type V = SpecNameCombinator;
+    closed spec fn view(&self) -> Self::V { SpecNameCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for NameCombinator<'a> {
+    type Type = Name;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type NameCombinatorAlias<'a> = ByteVecCombinator<'a>;
+
+
+pub closed spec fn spec_name() -> SpecNameCombinator {
+    SpecNameCombinator(spec_byte_vec())
+}
+
+                
+pub fn name<'a>() -> (o: NameCombinator<'a>)
+    ensures o@ == spec_name(),
+{
+    NameCombinator(byte_vec())
+}
+
+                
+pub type SpecFuncidx = u64;
+pub type Funcidx = u64;
+
+
+pub struct SpecFuncidxCombinator(SpecFuncidxCombinatorAlias);
+
+impl SpecCombinator for SpecFuncidxCombinator {
+    type Type = SpecFuncidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecFuncidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecFuncidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecFuncidxCombinatorAlias = UnsignedLEB128;
+
+pub struct FuncidxCombinator(FuncidxCombinatorAlias);
+
+impl View for FuncidxCombinator {
+    type V = SpecFuncidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecFuncidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncidxCombinator {
+    type Type = Funcidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type FuncidxCombinatorAlias = UnsignedLEB128;
+
+
+pub closed spec fn spec_funcidx() -> SpecFuncidxCombinator {
+    SpecFuncidxCombinator(UnsignedLEB128)
+}
+
+                
+pub fn funcidx() -> (o: FuncidxCombinator)
+    ensures o@ == spec_funcidx(),
+{
+    FuncidxCombinator(UnsignedLEB128)
+}
+
+                
+pub type SpecTableidx = u64;
+pub type Tableidx = u64;
+
+
+pub struct SpecTableidxCombinator(SpecTableidxCombinatorAlias);
+
+impl SpecCombinator for SpecTableidxCombinator {
+    type Type = SpecTableidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTableidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTableidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTableidxCombinatorAlias = UnsignedLEB128;
+
+pub struct TableidxCombinator(TableidxCombinatorAlias);
+
+impl View for TableidxCombinator {
+    type V = SpecTableidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTableidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TableidxCombinator {
+    type Type = Tableidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TableidxCombinatorAlias = UnsignedLEB128;
+
+
+pub closed spec fn spec_tableidx() -> SpecTableidxCombinator {
+    SpecTableidxCombinator(UnsignedLEB128)
+}
+
+                
+pub fn tableidx() -> (o: TableidxCombinator)
+    ensures o@ == spec_tableidx(),
+{
+    TableidxCombinator(UnsignedLEB128)
+}
+
+                
+pub type SpecMemidx = u64;
+pub type Memidx = u64;
+
+
+pub struct SpecMemidxCombinator(SpecMemidxCombinatorAlias);
+
+impl SpecCombinator for SpecMemidxCombinator {
+    type Type = SpecMemidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMemidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMemidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMemidxCombinatorAlias = UnsignedLEB128;
+
+pub struct MemidxCombinator(MemidxCombinatorAlias);
+
+impl View for MemidxCombinator {
+    type V = SpecMemidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMemidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MemidxCombinator {
+    type Type = Memidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MemidxCombinatorAlias = UnsignedLEB128;
+
+
+pub closed spec fn spec_memidx() -> SpecMemidxCombinator {
+    SpecMemidxCombinator(UnsignedLEB128)
+}
+
+                
+pub fn memidx() -> (o: MemidxCombinator)
+    ensures o@ == spec_memidx(),
+{
+    MemidxCombinator(UnsignedLEB128)
+}
+
+                
+pub type SpecGlobalidx = u64;
+pub type Globalidx = u64;
+
+
+pub struct SpecGlobalidxCombinator(SpecGlobalidxCombinatorAlias);
+
+impl SpecCombinator for SpecGlobalidxCombinator {
+    type Type = SpecGlobalidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecGlobalidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecGlobalidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecGlobalidxCombinatorAlias = UnsignedLEB128;
+
+pub struct GlobalidxCombinator(GlobalidxCombinatorAlias);
+
+impl View for GlobalidxCombinator {
+    type V = SpecGlobalidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecGlobalidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalidxCombinator {
+    type Type = Globalidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type GlobalidxCombinatorAlias = UnsignedLEB128;
+
+
+pub closed spec fn spec_globalidx() -> SpecGlobalidxCombinator {
+    SpecGlobalidxCombinator(UnsignedLEB128)
+}
+
+                
+pub fn globalidx() -> (o: GlobalidxCombinator)
+    ensures o@ == spec_globalidx(),
+{
+    GlobalidxCombinator(UnsignedLEB128)
+}
+
+                
+
+pub enum SpecExportdesc {
+    Func(SpecFuncidx),
+    Table(SpecTableidx),
+    Mem(SpecMemidx),
+    Global(SpecGlobalidx),
+}
+
+pub type SpecExportdescInner = Either<SpecFuncidx, Either<SpecTableidx, Either<SpecMemidx, SpecGlobalidx>>>;
+
+
+
+impl SpecFrom<SpecExportdesc> for SpecExportdescInner {
+    open spec fn spec_from(m: SpecExportdesc) -> SpecExportdescInner {
+        match m {
+            SpecExportdesc::Func(m) => Either::Left(m),
+            SpecExportdesc::Table(m) => Either::Right(Either::Left(m)),
+            SpecExportdesc::Mem(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecExportdesc::Global(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+impl SpecFrom<SpecExportdescInner> for SpecExportdesc {
+    open spec fn spec_from(m: SpecExportdescInner) -> SpecExportdesc {
+        match m {
+            Either::Left(m) => SpecExportdesc::Func(m),
+            Either::Right(Either::Left(m)) => SpecExportdesc::Table(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecExportdesc::Mem(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecExportdesc::Global(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Exportdesc {
+    Func(Funcidx),
+    Table(Tableidx),
+    Mem(Memidx),
+    Global(Globalidx),
+}
+
+pub type ExportdescInner = Either<Funcidx, Either<Tableidx, Either<Memidx, Globalidx>>>;
+
+
+impl View for Exportdesc {
+    type V = SpecExportdesc;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            Exportdesc::Func(m) => SpecExportdesc::Func(m@),
+            Exportdesc::Table(m) => SpecExportdesc::Table(m@),
+            Exportdesc::Mem(m) => SpecExportdesc::Mem(m@),
+            Exportdesc::Global(m) => SpecExportdesc::Global(m@),
+        }
+    }
+}
+
+
+impl From<Exportdesc> for ExportdescInner {
+    fn ex_from(m: Exportdesc) -> ExportdescInner {
+        match m {
+            Exportdesc::Func(m) => Either::Left(m),
+            Exportdesc::Table(m) => Either::Right(Either::Left(m)),
+            Exportdesc::Mem(m) => Either::Right(Either::Right(Either::Left(m))),
+            Exportdesc::Global(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+impl From<ExportdescInner> for Exportdesc {
+    fn ex_from(m: ExportdescInner) -> Exportdesc {
+        match m {
+            Either::Left(m) => Exportdesc::Func(m),
+            Either::Right(Either::Left(m)) => Exportdesc::Table(m),
+            Either::Right(Either::Right(Either::Left(m))) => Exportdesc::Mem(m),
+            Either::Right(Either::Right(Either::Right(m))) => Exportdesc::Global(m),
+        }
+    }
+    
+}
+
+
+pub struct ExportdescMapper;
+impl ExportdescMapper {
+    pub closed spec fn spec_new() -> Self {
+        ExportdescMapper
+    }
+    pub fn new() -> Self {
+        ExportdescMapper
+    }
+}
+impl View for ExportdescMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExportdescMapper {
+    type Src = SpecExportdescInner;
+    type Dst = SpecExportdesc;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ExportdescMapper {
+    type Src = ExportdescInner;
+    type Dst = Exportdesc;
+}
+
+pub const EXPORTDESCFUNC_0_FRONT_CONST: u8 = 0;
+
+pub const EXPORTDESCTABLE_0_FRONT_CONST: u8 = 1;
+
+pub const EXPORTDESCMEM_0_FRONT_CONST: u8 = 2;
+
+pub const EXPORTDESCGLOBAL_0_FRONT_CONST: u8 = 3;
+
+
+pub struct SpecExportdescCombinator(SpecExportdescCombinatorAlias);
+
+impl SpecCombinator for SpecExportdescCombinator {
+    type Type = SpecExportdesc;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecExportdescCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecExportdescCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecExportdescCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, SpecFuncidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, SpecTableidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, SpecMemidxCombinator>, Preceded<Tag<U8, u8>, SpecGlobalidxCombinator>>>>, ExportdescMapper>;
+
+
+
+
+
+pub struct ExportdescCombinator(ExportdescCombinatorAlias);
+
+impl View for ExportdescCombinator {
+    type V = SpecExportdescCombinator;
+    closed spec fn view(&self) -> Self::V { SpecExportdescCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportdescCombinator {
+    type Type = Exportdesc;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ExportdescCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, FuncidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, TableidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, MemidxCombinator>, Preceded<Tag<U8, u8>, GlobalidxCombinator>>>>, ExportdescMapper>;
+
+
+pub closed spec fn spec_exportdesc() -> SpecExportdescCombinator {
+    SpecExportdescCombinator(Mapped { inner: OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCFUNC_0_FRONT_CONST), spec_funcidx()), OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCTABLE_0_FRONT_CONST), spec_tableidx()), OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCMEM_0_FRONT_CONST), spec_memidx()), Preceded(Tag::spec_new(U8, EXPORTDESCGLOBAL_0_FRONT_CONST), spec_globalidx())))), mapper: ExportdescMapper::spec_new() })
+}
+
+                
+pub fn exportdesc() -> (o: ExportdescCombinator)
+    ensures o@ == spec_exportdesc(),
+{
+    ExportdescCombinator(Mapped { inner: OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCFUNC_0_FRONT_CONST), funcidx()), OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCTABLE_0_FRONT_CONST), tableidx()), OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCMEM_0_FRONT_CONST), memidx()), Preceded(Tag::new(U8, EXPORTDESCGLOBAL_0_FRONT_CONST), globalidx())))), mapper: ExportdescMapper::new() })
+}
+
+                
+
+pub struct SpecExport {
+    pub nm: SpecName,
+    pub d: SpecExportdesc,
+}
+
+pub type SpecExportInner = (SpecName, SpecExportdesc);
+impl SpecFrom<SpecExport> for SpecExportInner {
+    open spec fn spec_from(m: SpecExport) -> SpecExportInner {
+        (m.nm, m.d)
+    }
+}
+impl SpecFrom<SpecExportInner> for SpecExport {
+    open spec fn spec_from(m: SpecExportInner) -> SpecExport {
+        let (nm, d) = m;
+        SpecExport { nm, d }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Export {
+    pub nm: Name,
+    pub d: Exportdesc,
+}
+
+impl View for Export {
+    type V = SpecExport;
+
+    open spec fn view(&self) -> Self::V {
+        SpecExport {
+            nm: self.nm@,
+            d: self.d@,
+        }
+    }
+}
+pub type ExportInner = (Name, Exportdesc);
+impl From<Export> for ExportInner {
+    fn ex_from(m: Export) -> ExportInner {
+        (m.nm, m.d)
+    }
+}
+impl From<ExportInner> for Export {
+    fn ex_from(m: ExportInner) -> Export {
+        let (nm, d) = m;
+        Export { nm, d }
+    }
+}
+
+pub struct ExportMapper;
+impl ExportMapper {
+    pub closed spec fn spec_new() -> Self {
+        ExportMapper
+    }
+    pub fn new() -> Self {
+        ExportMapper
+    }
+}
+impl View for ExportMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExportMapper {
+    type Src = SpecExportInner;
+    type Dst = SpecExport;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ExportMapper {
+    type Src = ExportInner;
+    type Dst = Export;
+}
+
+pub struct SpecExportCombinator(SpecExportCombinatorAlias);
+
+impl SpecCombinator for SpecExportCombinator {
+    type Type = SpecExport;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecExportCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecExportCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecExportCombinatorAlias = Mapped<(SpecNameCombinator, SpecExportdescCombinator), ExportMapper>;
+
+pub struct ExportCombinator<'a>(ExportCombinatorAlias<'a>);
+
+impl<'a> View for ExportCombinator<'a> {
+    type V = SpecExportCombinator;
+    closed spec fn view(&self) -> Self::V { SpecExportCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportCombinator<'a> {
+    type Type = Export;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ExportCombinatorAlias<'a> = Mapped<(NameCombinator<'a>, ExportdescCombinator), ExportMapper>;
+
+
+pub closed spec fn spec_export() -> SpecExportCombinator {
+    SpecExportCombinator(
+    Mapped {
+        inner: (spec_name(), spec_exportdesc()),
+        mapper: ExportMapper::spec_new(),
+    })
+}
+
+                
+pub fn export<'a>() -> (o: ExportCombinator<'a>)
+    ensures o@ == spec_export(),
+{
+    ExportCombinator(
+    Mapped {
+        inner: (name(), exportdesc()),
+        mapper: ExportMapper::new(),
+    })
+}
+
+                
+pub type SpecMyCustomSection = SpecByteVec;
+pub type MyCustomSection = ByteVec;
+
+
+pub struct SpecMyCustomSectionCombinator(SpecMyCustomSectionCombinatorAlias);
+
+impl SpecCombinator for SpecMyCustomSectionCombinator {
+    type Type = SpecMyCustomSection;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMyCustomSectionCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMyCustomSectionCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMyCustomSectionCombinatorAlias = SpecByteVecCombinator;
+
+pub struct MyCustomSectionCombinator<'a>(MyCustomSectionCombinatorAlias<'a>);
+
+impl<'a> View for MyCustomSectionCombinator<'a> {
+    type V = SpecMyCustomSectionCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMyCustomSectionCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MyCustomSectionCombinator<'a> {
+    type Type = MyCustomSection;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MyCustomSectionCombinatorAlias<'a> = ByteVecCombinator<'a>;
+
+
+pub closed spec fn spec_my_custom_section() -> SpecMyCustomSectionCombinator {
+    SpecMyCustomSectionCombinator(spec_byte_vec())
+}
+
+                
+pub fn my_custom_section<'a>() -> (o: MyCustomSectionCombinator<'a>)
+    ensures o@ == spec_my_custom_section(),
+{
+    MyCustomSectionCombinator(byte_vec())
+}
+
+                
+
+pub struct SpecCustom {
+    pub name: SpecName,
+    pub data: SpecMyCustomSection,
+}
+
+pub type SpecCustomInner = (SpecName, SpecMyCustomSection);
+impl SpecFrom<SpecCustom> for SpecCustomInner {
+    open spec fn spec_from(m: SpecCustom) -> SpecCustomInner {
+        (m.name, m.data)
+    }
+}
+impl SpecFrom<SpecCustomInner> for SpecCustom {
+    open spec fn spec_from(m: SpecCustomInner) -> SpecCustom {
+        let (name, data) = m;
+        SpecCustom { name, data }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Custom {
+    pub name: Name,
+    pub data: MyCustomSection,
+}
+
+impl View for Custom {
+    type V = SpecCustom;
+
+    open spec fn view(&self) -> Self::V {
+        SpecCustom {
+            name: self.name@,
+            data: self.data@,
+        }
+    }
+}
+pub type CustomInner = (Name, MyCustomSection);
+impl From<Custom> for CustomInner {
+    fn ex_from(m: Custom) -> CustomInner {
+        (m.name, m.data)
+    }
+}
+impl From<CustomInner> for Custom {
+    fn ex_from(m: CustomInner) -> Custom {
+        let (name, data) = m;
+        Custom { name, data }
+    }
+}
+
+pub struct CustomMapper;
+impl CustomMapper {
+    pub closed spec fn spec_new() -> Self {
+        CustomMapper
+    }
+    pub fn new() -> Self {
+        CustomMapper
+    }
+}
+impl View for CustomMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CustomMapper {
+    type Src = SpecCustomInner;
+    type Dst = SpecCustom;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for CustomMapper {
+    type Src = CustomInner;
+    type Dst = Custom;
+}
+
+pub struct SpecCustomCombinator(SpecCustomCombinatorAlias);
+
+impl SpecCombinator for SpecCustomCombinator {
+    type Type = SpecCustom;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecCustomCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecCustomCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecCustomCombinatorAlias = Mapped<(SpecNameCombinator, SpecMyCustomSectionCombinator), CustomMapper>;
+
+pub struct CustomCombinator<'a>(CustomCombinatorAlias<'a>);
+
+impl<'a> View for CustomCombinator<'a> {
+    type V = SpecCustomCombinator;
+    closed spec fn view(&self) -> Self::V { SpecCustomCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for CustomCombinator<'a> {
+    type Type = Custom;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type CustomCombinatorAlias<'a> = Mapped<(NameCombinator<'a>, MyCustomSectionCombinator<'a>), CustomMapper>;
+
+
+pub closed spec fn spec_custom() -> SpecCustomCombinator {
+    SpecCustomCombinator(
+    Mapped {
+        inner: (spec_name(), spec_my_custom_section()),
+        mapper: CustomMapper::spec_new(),
+    })
+}
+
+                
+pub fn custom<'a>() -> (o: CustomCombinator<'a>)
+    ensures o@ == spec_custom(),
+{
+    CustomCombinator(
+    Mapped {
+        inner: (name(), my_custom_section()),
+        mapper: CustomMapper::new(),
+    })
+}
+
+                
+pub type SpecTypeidx = u64;
+pub type Typeidx = u64;
+
+
+pub struct SpecTypeidxCombinator(SpecTypeidxCombinatorAlias);
+
+impl SpecCombinator for SpecTypeidxCombinator {
+    type Type = SpecTypeidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTypeidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTypeidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTypeidxCombinatorAlias = UnsignedLEB128;
+
+pub struct TypeidxCombinator(TypeidxCombinatorAlias);
+
+impl View for TypeidxCombinator {
+    type V = SpecTypeidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTypeidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TypeidxCombinator {
+    type Type = Typeidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TypeidxCombinatorAlias = UnsignedLEB128;
+
+
+pub closed spec fn spec_typeidx() -> SpecTypeidxCombinator {
+    SpecTypeidxCombinator(UnsignedLEB128)
+}
+
+                
+pub fn typeidx() -> (o: TypeidxCombinator)
+    ensures o@ == spec_typeidx(),
+{
+    TypeidxCombinator(UnsignedLEB128)
+}
+
+                
+pub type SpecLaneidx = u8;
+pub type Laneidx = u8;
+
+
+pub struct SpecLaneidxCombinator(SpecLaneidxCombinatorAlias);
+
+impl SpecCombinator for SpecLaneidxCombinator {
+    type Type = SpecLaneidx;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecLaneidxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecLaneidxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecLaneidxCombinatorAlias = U8;
+
+pub struct LaneidxCombinator(LaneidxCombinatorAlias);
+
+impl View for LaneidxCombinator {
+    type V = SpecLaneidxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecLaneidxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for LaneidxCombinator {
+    type Type = Laneidx;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type LaneidxCombinatorAlias = U8;
+
+
+pub closed spec fn spec_laneidx() -> SpecLaneidxCombinator {
+    SpecLaneidxCombinator(U8)
+}
+
+                
+pub fn laneidx() -> (o: LaneidxCombinator)
+    ensures o@ == spec_laneidx(),
+{
+    LaneidxCombinator(U8)
+}
+
+                
+pub type SpecShuffle = Seq<SpecLaneidx>;
+pub type Shuffle = RepeatResult<Laneidx>;
+
+
+pub struct SpecShuffleCombinator(SpecShuffleCombinatorAlias);
+
+impl SpecCombinator for SpecShuffleCombinator {
+    type Type = SpecShuffle;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecShuffleCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecShuffleCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecShuffleCombinatorAlias = RepeatN<SpecLaneidxCombinator>;
+
+pub struct ShuffleCombinator(ShuffleCombinatorAlias);
+
+impl View for ShuffleCombinator {
+    type V = SpecShuffleCombinator;
+    closed spec fn view(&self) -> Self::V { SpecShuffleCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ShuffleCombinator {
+    type Type = Shuffle;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ShuffleCombinatorAlias = RepeatN<LaneidxCombinator>;
+
+
+pub closed spec fn spec_shuffle() -> SpecShuffleCombinator {
+    SpecShuffleCombinator(RepeatN(spec_laneidx(), 16))
+}
+
+                
+pub fn shuffle() -> (o: ShuffleCombinator)
+    ensures o@ == spec_shuffle(),
+{
+    ShuffleCombinator(RepeatN(laneidx(), 16))
+}
+
+                
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Numtype {
+    I32 = 127,
+I64 = 126,
+F32 = 125,
+F64 = 124
+}
+pub type SpecNumtype = Numtype;
+
+pub type NumtypeInner = u8;
+
+impl View for Numtype {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<NumtypeInner> for Numtype {
+    type Error = ();
+
+    open spec fn spec_try_from(v: NumtypeInner) -> Result<Numtype, ()> {
+        match v {
+            127u8 => Ok(Numtype::I32),
+            126u8 => Ok(Numtype::I64),
+            125u8 => Ok(Numtype::F32),
+            124u8 => Ok(Numtype::F64),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<Numtype> for NumtypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: Numtype) -> Result<NumtypeInner, ()> {
+        match v {
+            Numtype::I32 => Ok(127u8),
+            Numtype::I64 => Ok(126u8),
+            Numtype::F32 => Ok(125u8),
+            Numtype::F64 => Ok(124u8),
+        }
+    }
+}
+
+impl TryFrom<NumtypeInner> for Numtype {
+    type Error = ();
+
+    fn ex_try_from(v: NumtypeInner) -> Result<Numtype, ()> {
+        match v {
+            127u8 => Ok(Numtype::I32),
+            126u8 => Ok(Numtype::I64),
+            125u8 => Ok(Numtype::F32),
+            124u8 => Ok(Numtype::F64),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<Numtype> for NumtypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: Numtype) -> Result<NumtypeInner, ()> {
+        match v {
+            Numtype::I32 => Ok(127u8),
+            Numtype::I64 => Ok(126u8),
+            Numtype::F32 => Ok(125u8),
+            Numtype::F64 => Ok(124u8),
+        }
+    }
+}
+
+pub struct NumtypeMapper;
+
+impl View for NumtypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for NumtypeMapper {
+    type Src = NumtypeInner;
+    type Dst = Numtype;
+
+    proof fn spec_iso(s: Self::Src) { 
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) { 
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+}
+
+impl TryFromInto for NumtypeMapper {
+    type Src = NumtypeInner;
+    type Dst = Numtype;
+}
+
+
+pub struct SpecNumtypeCombinator(SpecNumtypeCombinatorAlias);
+
+impl SpecCombinator for SpecNumtypeCombinator {
+    type Type = SpecNumtype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecNumtypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecNumtypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecNumtypeCombinatorAlias = TryMap<U8, NumtypeMapper>;
+
+pub struct NumtypeCombinator(NumtypeCombinatorAlias);
+
+impl View for NumtypeCombinator {
+    type V = SpecNumtypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecNumtypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for NumtypeCombinator {
+    type Type = Numtype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type NumtypeCombinatorAlias = TryMap<U8, NumtypeMapper>;
+
+
+pub closed spec fn spec_numtype() -> SpecNumtypeCombinator {
+    SpecNumtypeCombinator(TryMap { inner: U8, mapper: NumtypeMapper })
+}
+
+                
+pub fn numtype() -> (o: NumtypeCombinator)
+    ensures o@ == spec_numtype(),
+{
+    NumtypeCombinator(TryMap { inner: U8, mapper: NumtypeMapper })
+}
+
+                
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Vectype {
+    V128 = 123
+}
+pub type SpecVectype = Vectype;
+
+pub type VectypeInner = u8;
+
+impl View for Vectype {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<VectypeInner> for Vectype {
+    type Error = ();
+
+    open spec fn spec_try_from(v: VectypeInner) -> Result<Vectype, ()> {
+        match v {
+            123u8 => Ok(Vectype::V128),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<Vectype> for VectypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: Vectype) -> Result<VectypeInner, ()> {
+        match v {
+            Vectype::V128 => Ok(123u8),
+        }
+    }
+}
+
+impl TryFrom<VectypeInner> for Vectype {
+    type Error = ();
+
+    fn ex_try_from(v: VectypeInner) -> Result<Vectype, ()> {
+        match v {
+            123u8 => Ok(Vectype::V128),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<Vectype> for VectypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: Vectype) -> Result<VectypeInner, ()> {
+        match v {
+            Vectype::V128 => Ok(123u8),
+        }
+    }
+}
+
+pub struct VectypeMapper;
+
+impl View for VectypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for VectypeMapper {
+    type Src = VectypeInner;
+    type Dst = Vectype;
+
+    proof fn spec_iso(s: Self::Src) { 
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) { 
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+}
+
+impl TryFromInto for VectypeMapper {
+    type Src = VectypeInner;
+    type Dst = Vectype;
+}
+
+
+pub struct SpecVectypeCombinator(SpecVectypeCombinatorAlias);
+
+impl SpecCombinator for SpecVectypeCombinator {
+    type Type = SpecVectype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecVectypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecVectypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecVectypeCombinatorAlias = TryMap<U8, VectypeMapper>;
+
+pub struct VectypeCombinator(VectypeCombinatorAlias);
+
+impl View for VectypeCombinator {
+    type V = SpecVectypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecVectypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for VectypeCombinator {
+    type Type = Vectype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type VectypeCombinatorAlias = TryMap<U8, VectypeMapper>;
+
+
+pub closed spec fn spec_vectype() -> SpecVectypeCombinator {
+    SpecVectypeCombinator(TryMap { inner: U8, mapper: VectypeMapper })
+}
+
+                
+pub fn vectype() -> (o: VectypeCombinator)
+    ensures o@ == spec_vectype(),
+{
+    VectypeCombinator(TryMap { inner: U8, mapper: VectypeMapper })
+}
+
+                
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Reftype {
+    FuncRef = 112,
+ExternRef = 111
+}
+pub type SpecReftype = Reftype;
+
+pub type ReftypeInner = u8;
+
+impl View for Reftype {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<ReftypeInner> for Reftype {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ReftypeInner) -> Result<Reftype, ()> {
+        match v {
+            112u8 => Ok(Reftype::FuncRef),
+            111u8 => Ok(Reftype::ExternRef),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<Reftype> for ReftypeInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: Reftype) -> Result<ReftypeInner, ()> {
+        match v {
+            Reftype::FuncRef => Ok(112u8),
+            Reftype::ExternRef => Ok(111u8),
+        }
+    }
+}
+
+impl TryFrom<ReftypeInner> for Reftype {
+    type Error = ();
+
+    fn ex_try_from(v: ReftypeInner) -> Result<Reftype, ()> {
+        match v {
+            112u8 => Ok(Reftype::FuncRef),
+            111u8 => Ok(Reftype::ExternRef),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<Reftype> for ReftypeInner {
+    type Error = ();
+
+    fn ex_try_from(v: Reftype) -> Result<ReftypeInner, ()> {
+        match v {
+            Reftype::FuncRef => Ok(112u8),
+            Reftype::ExternRef => Ok(111u8),
+        }
+    }
+}
+
+pub struct ReftypeMapper;
+
+impl View for ReftypeMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for ReftypeMapper {
+    type Src = ReftypeInner;
+    type Dst = Reftype;
+
+    proof fn spec_iso(s: Self::Src) { 
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) { 
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+}
+
+impl TryFromInto for ReftypeMapper {
+    type Src = ReftypeInner;
+    type Dst = Reftype;
+}
+
+
+pub struct SpecReftypeCombinator(SpecReftypeCombinatorAlias);
+
+impl SpecCombinator for SpecReftypeCombinator {
+    type Type = SpecReftype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecReftypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecReftypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecReftypeCombinatorAlias = TryMap<U8, ReftypeMapper>;
+
+pub struct ReftypeCombinator(ReftypeCombinatorAlias);
+
+impl View for ReftypeCombinator {
+    type V = SpecReftypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecReftypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ReftypeCombinator {
+    type Type = Reftype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ReftypeCombinatorAlias = TryMap<U8, ReftypeMapper>;
+
+
+pub closed spec fn spec_reftype() -> SpecReftypeCombinator {
+    SpecReftypeCombinator(TryMap { inner: U8, mapper: ReftypeMapper })
+}
+
+                
+pub fn reftype() -> (o: ReftypeCombinator)
+    ensures o@ == spec_reftype(),
+{
+    ReftypeCombinator(TryMap { inner: U8, mapper: ReftypeMapper })
+}
+
+                
+
+pub enum SpecValtype {
+    NumTy(SpecNumtype),
+    VecTy(SpecVectype),
+    RefTy(SpecReftype),
+}
+
+pub type SpecValtypeInner = Either<SpecNumtype, Either<SpecVectype, SpecReftype>>;
+
+
+
+impl SpecFrom<SpecValtype> for SpecValtypeInner {
+    open spec fn spec_from(m: SpecValtype) -> SpecValtypeInner {
+        match m {
+            SpecValtype::NumTy(m) => Either::Left(m),
+            SpecValtype::VecTy(m) => Either::Right(Either::Left(m)),
+            SpecValtype::RefTy(m) => Either::Right(Either::Right(m)),
+        }
+    }
+
+}
+
+impl SpecFrom<SpecValtypeInner> for SpecValtype {
+    open spec fn spec_from(m: SpecValtypeInner) -> SpecValtype {
+        match m {
+            Either::Left(m) => SpecValtype::NumTy(m),
+            Either::Right(Either::Left(m)) => SpecValtype::VecTy(m),
+            Either::Right(Either::Right(m)) => SpecValtype::RefTy(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Valtype {
+    NumTy(Numtype),
+    VecTy(Vectype),
+    RefTy(Reftype),
+}
+
+pub type ValtypeInner = Either<Numtype, Either<Vectype, Reftype>>;
+
+
+impl View for Valtype {
+    type V = SpecValtype;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            Valtype::NumTy(m) => SpecValtype::NumTy(m@),
+            Valtype::VecTy(m) => SpecValtype::VecTy(m@),
+            Valtype::RefTy(m) => SpecValtype::RefTy(m@),
+        }
+    }
+}
+
+
+impl From<Valtype> for ValtypeInner {
+    fn ex_from(m: Valtype) -> ValtypeInner {
+        match m {
+            Valtype::NumTy(m) => Either::Left(m),
+            Valtype::VecTy(m) => Either::Right(Either::Left(m)),
+            Valtype::RefTy(m) => Either::Right(Either::Right(m)),
+        }
+    }
+
+}
+
+impl From<ValtypeInner> for Valtype {
+    fn ex_from(m: ValtypeInner) -> Valtype {
+        match m {
+            Either::Left(m) => Valtype::NumTy(m),
+            Either::Right(Either::Left(m)) => Valtype::VecTy(m),
+            Either::Right(Either::Right(m)) => Valtype::RefTy(m),
+        }
+    }
+    
+}
+
+
+pub struct ValtypeMapper;
+impl ValtypeMapper {
+    pub closed spec fn spec_new() -> Self {
+        ValtypeMapper
+    }
+    pub fn new() -> Self {
+        ValtypeMapper
+    }
+}
+impl View for ValtypeMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ValtypeMapper {
+    type Src = SpecValtypeInner;
+    type Dst = SpecValtype;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ValtypeMapper {
+    type Src = ValtypeInner;
+    type Dst = Valtype;
+}
+
+
+impl DisjointFrom<SpecNumtypeCombinator> for SpecVectypeCombinator {
+    closed spec fn disjoint_from(&self, other: &SpecNumtypeCombinator) -> bool
+    { self.0.disjoint_from(&other.0) }
+    proof fn parse_disjoint_on(&self, other: &SpecNumtypeCombinator, buf: Seq<u8>) 
+    { self.0.parse_disjoint_on(&other.0, buf); }
+}
+
+impl DisjointFrom<SpecNumtypeCombinator> for SpecReftypeCombinator {
+    closed spec fn disjoint_from(&self, other: &SpecNumtypeCombinator) -> bool
+    { self.0.disjoint_from(&other.0) }
+    proof fn parse_disjoint_on(&self, other: &SpecNumtypeCombinator, buf: Seq<u8>) 
+    { self.0.parse_disjoint_on(&other.0, buf); }
+}
+
+impl DisjointFrom<SpecVectypeCombinator> for SpecReftypeCombinator {
+    closed spec fn disjoint_from(&self, other: &SpecVectypeCombinator) -> bool
+    { self.0.disjoint_from(&other.0) }
+    proof fn parse_disjoint_on(&self, other: &SpecVectypeCombinator, buf: Seq<u8>) 
+    { self.0.parse_disjoint_on(&other.0, buf); }
+}
+pub struct SpecValtypeCombinator(SpecValtypeCombinatorAlias);
+
+impl SpecCombinator for SpecValtypeCombinator {
+    type Type = SpecValtype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecValtypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecValtypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecValtypeCombinatorAlias = Mapped<OrdChoice<SpecNumtypeCombinator, OrdChoice<SpecVectypeCombinator, SpecReftypeCombinator>>, ValtypeMapper>;
+
+pub struct ValtypeCombinator(ValtypeCombinatorAlias);
+
+impl View for ValtypeCombinator {
+    type V = SpecValtypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecValtypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ValtypeCombinator {
+    type Type = Valtype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ValtypeCombinatorAlias = Mapped<OrdChoice<NumtypeCombinator, OrdChoice<VectypeCombinator, ReftypeCombinator>>, ValtypeMapper>;
+
+
+pub closed spec fn spec_valtype() -> SpecValtypeCombinator {
+    SpecValtypeCombinator(Mapped { inner: OrdChoice(spec_numtype(), OrdChoice(spec_vectype(), spec_reftype())), mapper: ValtypeMapper::spec_new() })
+}
+
+                
+pub fn valtype() -> (o: ValtypeCombinator)
+    ensures o@ == spec_valtype(),
+{
+    ValtypeCombinator(Mapped { inner: OrdChoice::new(numtype(), OrdChoice::new(vectype(), reftype())), mapper: ValtypeMapper::new() })
+}
+
+                
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MutT {
+    Const = 0,
+Var = 1
+}
+pub type SpecMutT = MutT;
+
+pub type MutTInner = u8;
+
+impl View for MutT {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<MutTInner> for MutT {
+    type Error = ();
+
+    open spec fn spec_try_from(v: MutTInner) -> Result<MutT, ()> {
+        match v {
+            0u8 => Ok(MutT::Const),
+            1u8 => Ok(MutT::Var),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<MutT> for MutTInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: MutT) -> Result<MutTInner, ()> {
+        match v {
+            MutT::Const => Ok(0u8),
+            MutT::Var => Ok(1u8),
+        }
+    }
+}
+
+impl TryFrom<MutTInner> for MutT {
+    type Error = ();
+
+    fn ex_try_from(v: MutTInner) -> Result<MutT, ()> {
+        match v {
+            0u8 => Ok(MutT::Const),
+            1u8 => Ok(MutT::Var),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<MutT> for MutTInner {
+    type Error = ();
+
+    fn ex_try_from(v: MutT) -> Result<MutTInner, ()> {
+        match v {
+            MutT::Const => Ok(0u8),
+            MutT::Var => Ok(1u8),
+        }
+    }
+}
+
+pub struct MutTMapper;
+
+impl View for MutTMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFromInto for MutTMapper {
+    type Src = MutTInner;
+    type Dst = MutT;
+
+    proof fn spec_iso(s: Self::Src) { 
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) { 
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+}
+
+impl TryFromInto for MutTMapper {
+    type Src = MutTInner;
+    type Dst = MutT;
+}
+
+
+pub struct SpecMutTCombinator(SpecMutTCombinatorAlias);
+
+impl SpecCombinator for SpecMutTCombinator {
+    type Type = SpecMutT;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMutTCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMutTCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMutTCombinatorAlias = TryMap<U8, MutTMapper>;
+
+pub struct MutTCombinator(MutTCombinatorAlias);
+
+impl View for MutTCombinator {
+    type V = SpecMutTCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMutTCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MutTCombinator {
+    type Type = MutT;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MutTCombinatorAlias = TryMap<U8, MutTMapper>;
+
+
+pub closed spec fn spec_mut_t() -> SpecMutTCombinator {
+    SpecMutTCombinator(TryMap { inner: U8, mapper: MutTMapper })
+}
+
+                
+pub fn mut_t() -> (o: MutTCombinator)
+    ensures o@ == spec_mut_t(),
+{
+    MutTCombinator(TryMap { inner: U8, mapper: MutTMapper })
+}
+
+                
+
+pub struct SpecGlobaltype {
+    pub t: SpecValtype,
+    pub m: SpecMutT,
+}
+
+pub type SpecGlobaltypeInner = (SpecValtype, SpecMutT);
+impl SpecFrom<SpecGlobaltype> for SpecGlobaltypeInner {
+    open spec fn spec_from(m: SpecGlobaltype) -> SpecGlobaltypeInner {
+        (m.t, m.m)
+    }
+}
+impl SpecFrom<SpecGlobaltypeInner> for SpecGlobaltype {
+    open spec fn spec_from(m: SpecGlobaltypeInner) -> SpecGlobaltype {
+        let (t, m) = m;
+        SpecGlobaltype { t, m }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Globaltype {
+    pub t: Valtype,
+    pub m: MutT,
+}
+
+impl View for Globaltype {
+    type V = SpecGlobaltype;
+
+    open spec fn view(&self) -> Self::V {
+        SpecGlobaltype {
+            t: self.t@,
+            m: self.m@,
+        }
+    }
+}
+pub type GlobaltypeInner = (Valtype, MutT);
+impl From<Globaltype> for GlobaltypeInner {
+    fn ex_from(m: Globaltype) -> GlobaltypeInner {
+        (m.t, m.m)
+    }
+}
+impl From<GlobaltypeInner> for Globaltype {
+    fn ex_from(m: GlobaltypeInner) -> Globaltype {
+        let (t, m) = m;
+        Globaltype { t, m }
+    }
+}
+
+pub struct GlobaltypeMapper;
+impl GlobaltypeMapper {
+    pub closed spec fn spec_new() -> Self {
+        GlobaltypeMapper
+    }
+    pub fn new() -> Self {
+        GlobaltypeMapper
+    }
+}
+impl View for GlobaltypeMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for GlobaltypeMapper {
+    type Src = SpecGlobaltypeInner;
+    type Dst = SpecGlobaltype;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for GlobaltypeMapper {
+    type Src = GlobaltypeInner;
+    type Dst = Globaltype;
+}
+
+pub struct SpecGlobaltypeCombinator(SpecGlobaltypeCombinatorAlias);
+
+impl SpecCombinator for SpecGlobaltypeCombinator {
+    type Type = SpecGlobaltype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecGlobaltypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecGlobaltypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecGlobaltypeCombinatorAlias = Mapped<(SpecValtypeCombinator, SpecMutTCombinator), GlobaltypeMapper>;
+
+pub struct GlobaltypeCombinator(GlobaltypeCombinatorAlias);
+
+impl View for GlobaltypeCombinator {
+    type V = SpecGlobaltypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecGlobaltypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobaltypeCombinator {
+    type Type = Globaltype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type GlobaltypeCombinatorAlias = Mapped<(ValtypeCombinator, MutTCombinator), GlobaltypeMapper>;
+
+
+pub closed spec fn spec_globaltype() -> SpecGlobaltypeCombinator {
+    SpecGlobaltypeCombinator(
+    Mapped {
+        inner: (spec_valtype(), spec_mut_t()),
+        mapper: GlobaltypeMapper::spec_new(),
+    })
+}
+
+                
+pub fn globaltype() -> (o: GlobaltypeCombinator)
+    ensures o@ == spec_globaltype(),
+{
+    GlobaltypeCombinator(
+    Mapped {
+        inner: (valtype(), mut_t()),
+        mapper: GlobaltypeMapper::new(),
+    })
+}
+
+                
 pub type SpecInstrBytecode = u8;
 pub type InstrBytecode = u8;
 
@@ -1475,207 +3813,6 @@ pub fn br_table<'a>() -> (o: BrTableCombinator<'a>)
 }
 
                 
-pub type SpecFuncidx = u64;
-pub type Funcidx = u64;
-
-
-pub struct SpecFuncidxCombinator(SpecFuncidxCombinatorAlias);
-
-impl SpecCombinator for SpecFuncidxCombinator {
-    type Type = SpecFuncidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecFuncidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecFuncidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecFuncidxCombinatorAlias = UnsignedLEB128;
-
-pub struct FuncidxCombinator(FuncidxCombinatorAlias);
-
-impl View for FuncidxCombinator {
-    type V = SpecFuncidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecFuncidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncidxCombinator {
-    type Type = Funcidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type FuncidxCombinatorAlias = UnsignedLEB128;
-
-
-pub closed spec fn spec_funcidx() -> SpecFuncidxCombinator {
-    SpecFuncidxCombinator(UnsignedLEB128)
-}
-
-                
-pub fn funcidx() -> (o: FuncidxCombinator)
-    ensures o@ == spec_funcidx(),
-{
-    FuncidxCombinator(UnsignedLEB128)
-}
-
-                
-pub type SpecTypeidx = u64;
-pub type Typeidx = u64;
-
-
-pub struct SpecTypeidxCombinator(SpecTypeidxCombinatorAlias);
-
-impl SpecCombinator for SpecTypeidxCombinator {
-    type Type = SpecTypeidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTypeidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTypeidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTypeidxCombinatorAlias = UnsignedLEB128;
-
-pub struct TypeidxCombinator(TypeidxCombinatorAlias);
-
-impl View for TypeidxCombinator {
-    type V = SpecTypeidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTypeidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TypeidxCombinator {
-    type Type = Typeidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TypeidxCombinatorAlias = UnsignedLEB128;
-
-
-pub closed spec fn spec_typeidx() -> SpecTypeidxCombinator {
-    SpecTypeidxCombinator(UnsignedLEB128)
-}
-
-                
-pub fn typeidx() -> (o: TypeidxCombinator)
-    ensures o@ == spec_typeidx(),
-{
-    TypeidxCombinator(UnsignedLEB128)
-}
-
-                
-pub type SpecTableidx = u64;
-pub type Tableidx = u64;
-
-
-pub struct SpecTableidxCombinator(SpecTableidxCombinatorAlias);
-
-impl SpecCombinator for SpecTableidxCombinator {
-    type Type = SpecTableidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTableidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTableidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTableidxCombinatorAlias = UnsignedLEB128;
-
-pub struct TableidxCombinator(TableidxCombinatorAlias);
-
-impl View for TableidxCombinator {
-    type V = SpecTableidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTableidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TableidxCombinator {
-    type Type = Tableidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TableidxCombinatorAlias = UnsignedLEB128;
-
-
-pub closed spec fn spec_tableidx() -> SpecTableidxCombinator {
-    SpecTableidxCombinator(UnsignedLEB128)
-}
-
-                
-pub fn tableidx() -> (o: TableidxCombinator)
-    ensures o@ == spec_tableidx(),
-{
-    TableidxCombinator(UnsignedLEB128)
-}
-
-                
 
 pub struct SpecCallIndirect {
     pub y: SpecTypeidx,
@@ -1822,697 +3959,6 @@ pub fn call_indirect() -> (o: CallIndirectCombinator)
         inner: (typeidx(), tableidx()),
         mapper: CallIndirectMapper::new(),
     })
-}
-
-                
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Reftype {
-    FuncRef = 112,
-ExternRef = 111
-}
-pub type SpecReftype = Reftype;
-
-pub type ReftypeInner = u8;
-
-impl View for Reftype {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<ReftypeInner> for Reftype {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ReftypeInner) -> Result<Reftype, ()> {
-        match v {
-            112u8 => Ok(Reftype::FuncRef),
-            111u8 => Ok(Reftype::ExternRef),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<Reftype> for ReftypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: Reftype) -> Result<ReftypeInner, ()> {
-        match v {
-            Reftype::FuncRef => Ok(112u8),
-            Reftype::ExternRef => Ok(111u8),
-        }
-    }
-}
-
-impl TryFrom<ReftypeInner> for Reftype {
-    type Error = ();
-
-    fn ex_try_from(v: ReftypeInner) -> Result<Reftype, ()> {
-        match v {
-            112u8 => Ok(Reftype::FuncRef),
-            111u8 => Ok(Reftype::ExternRef),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<Reftype> for ReftypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: Reftype) -> Result<ReftypeInner, ()> {
-        match v {
-            Reftype::FuncRef => Ok(112u8),
-            Reftype::ExternRef => Ok(111u8),
-        }
-    }
-}
-
-pub struct ReftypeMapper;
-
-impl View for ReftypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for ReftypeMapper {
-    type Src = ReftypeInner;
-    type Dst = Reftype;
-
-    proof fn spec_iso(s: Self::Src) { 
-        assert(
-            Self::spec_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_rev_apply(v) is Ok
-            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) { 
-        assert(
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_apply(v) is Ok
-            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-}
-
-impl TryFromInto for ReftypeMapper {
-    type Src = ReftypeInner;
-    type Dst = Reftype;
-}
-
-
-pub struct SpecReftypeCombinator(SpecReftypeCombinatorAlias);
-
-impl SpecCombinator for SpecReftypeCombinator {
-    type Type = SpecReftype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecReftypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecReftypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecReftypeCombinatorAlias = TryMap<U8, ReftypeMapper>;
-
-pub struct ReftypeCombinator(ReftypeCombinatorAlias);
-
-impl View for ReftypeCombinator {
-    type V = SpecReftypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecReftypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ReftypeCombinator {
-    type Type = Reftype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ReftypeCombinatorAlias = TryMap<U8, ReftypeMapper>;
-
-
-pub closed spec fn spec_reftype() -> SpecReftypeCombinator {
-    SpecReftypeCombinator(TryMap { inner: U8, mapper: ReftypeMapper })
-}
-
-                
-pub fn reftype() -> (o: ReftypeCombinator)
-    ensures o@ == spec_reftype(),
-{
-    ReftypeCombinator(TryMap { inner: U8, mapper: ReftypeMapper })
-}
-
-                
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Numtype {
-    I32 = 127,
-I64 = 126,
-F32 = 125,
-F64 = 124
-}
-pub type SpecNumtype = Numtype;
-
-pub type NumtypeInner = u8;
-
-impl View for Numtype {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<NumtypeInner> for Numtype {
-    type Error = ();
-
-    open spec fn spec_try_from(v: NumtypeInner) -> Result<Numtype, ()> {
-        match v {
-            127u8 => Ok(Numtype::I32),
-            126u8 => Ok(Numtype::I64),
-            125u8 => Ok(Numtype::F32),
-            124u8 => Ok(Numtype::F64),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<Numtype> for NumtypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: Numtype) -> Result<NumtypeInner, ()> {
-        match v {
-            Numtype::I32 => Ok(127u8),
-            Numtype::I64 => Ok(126u8),
-            Numtype::F32 => Ok(125u8),
-            Numtype::F64 => Ok(124u8),
-        }
-    }
-}
-
-impl TryFrom<NumtypeInner> for Numtype {
-    type Error = ();
-
-    fn ex_try_from(v: NumtypeInner) -> Result<Numtype, ()> {
-        match v {
-            127u8 => Ok(Numtype::I32),
-            126u8 => Ok(Numtype::I64),
-            125u8 => Ok(Numtype::F32),
-            124u8 => Ok(Numtype::F64),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<Numtype> for NumtypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: Numtype) -> Result<NumtypeInner, ()> {
-        match v {
-            Numtype::I32 => Ok(127u8),
-            Numtype::I64 => Ok(126u8),
-            Numtype::F32 => Ok(125u8),
-            Numtype::F64 => Ok(124u8),
-        }
-    }
-}
-
-pub struct NumtypeMapper;
-
-impl View for NumtypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for NumtypeMapper {
-    type Src = NumtypeInner;
-    type Dst = Numtype;
-
-    proof fn spec_iso(s: Self::Src) { 
-        assert(
-            Self::spec_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_rev_apply(v) is Ok
-            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) { 
-        assert(
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_apply(v) is Ok
-            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-}
-
-impl TryFromInto for NumtypeMapper {
-    type Src = NumtypeInner;
-    type Dst = Numtype;
-}
-
-
-pub struct SpecNumtypeCombinator(SpecNumtypeCombinatorAlias);
-
-impl SpecCombinator for SpecNumtypeCombinator {
-    type Type = SpecNumtype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecNumtypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecNumtypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecNumtypeCombinatorAlias = TryMap<U8, NumtypeMapper>;
-
-pub struct NumtypeCombinator(NumtypeCombinatorAlias);
-
-impl View for NumtypeCombinator {
-    type V = SpecNumtypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecNumtypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for NumtypeCombinator {
-    type Type = Numtype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type NumtypeCombinatorAlias = TryMap<U8, NumtypeMapper>;
-
-
-pub closed spec fn spec_numtype() -> SpecNumtypeCombinator {
-    SpecNumtypeCombinator(TryMap { inner: U8, mapper: NumtypeMapper })
-}
-
-                
-pub fn numtype() -> (o: NumtypeCombinator)
-    ensures o@ == spec_numtype(),
-{
-    NumtypeCombinator(TryMap { inner: U8, mapper: NumtypeMapper })
-}
-
-                
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Vectype {
-    V128 = 123
-}
-pub type SpecVectype = Vectype;
-
-pub type VectypeInner = u8;
-
-impl View for Vectype {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<VectypeInner> for Vectype {
-    type Error = ();
-
-    open spec fn spec_try_from(v: VectypeInner) -> Result<Vectype, ()> {
-        match v {
-            123u8 => Ok(Vectype::V128),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<Vectype> for VectypeInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: Vectype) -> Result<VectypeInner, ()> {
-        match v {
-            Vectype::V128 => Ok(123u8),
-        }
-    }
-}
-
-impl TryFrom<VectypeInner> for Vectype {
-    type Error = ();
-
-    fn ex_try_from(v: VectypeInner) -> Result<Vectype, ()> {
-        match v {
-            123u8 => Ok(Vectype::V128),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<Vectype> for VectypeInner {
-    type Error = ();
-
-    fn ex_try_from(v: Vectype) -> Result<VectypeInner, ()> {
-        match v {
-            Vectype::V128 => Ok(123u8),
-        }
-    }
-}
-
-pub struct VectypeMapper;
-
-impl View for VectypeMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for VectypeMapper {
-    type Src = VectypeInner;
-    type Dst = Vectype;
-
-    proof fn spec_iso(s: Self::Src) { 
-        assert(
-            Self::spec_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_rev_apply(v) is Ok
-            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) { 
-        assert(
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_apply(v) is Ok
-            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-}
-
-impl TryFromInto for VectypeMapper {
-    type Src = VectypeInner;
-    type Dst = Vectype;
-}
-
-
-pub struct SpecVectypeCombinator(SpecVectypeCombinatorAlias);
-
-impl SpecCombinator for SpecVectypeCombinator {
-    type Type = SpecVectype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecVectypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecVectypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecVectypeCombinatorAlias = TryMap<U8, VectypeMapper>;
-
-pub struct VectypeCombinator(VectypeCombinatorAlias);
-
-impl View for VectypeCombinator {
-    type V = SpecVectypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecVectypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for VectypeCombinator {
-    type Type = Vectype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type VectypeCombinatorAlias = TryMap<U8, VectypeMapper>;
-
-
-pub closed spec fn spec_vectype() -> SpecVectypeCombinator {
-    SpecVectypeCombinator(TryMap { inner: U8, mapper: VectypeMapper })
-}
-
-                
-pub fn vectype() -> (o: VectypeCombinator)
-    ensures o@ == spec_vectype(),
-{
-    VectypeCombinator(TryMap { inner: U8, mapper: VectypeMapper })
-}
-
-                
-
-pub enum SpecValtype {
-    NumTy(SpecNumtype),
-    VecTy(SpecVectype),
-    RefTy(SpecReftype),
-}
-
-pub type SpecValtypeInner = Either<SpecNumtype, Either<SpecVectype, SpecReftype>>;
-
-
-
-impl SpecFrom<SpecValtype> for SpecValtypeInner {
-    open spec fn spec_from(m: SpecValtype) -> SpecValtypeInner {
-        match m {
-            SpecValtype::NumTy(m) => Either::Left(m),
-            SpecValtype::VecTy(m) => Either::Right(Either::Left(m)),
-            SpecValtype::RefTy(m) => Either::Right(Either::Right(m)),
-        }
-    }
-
-}
-
-impl SpecFrom<SpecValtypeInner> for SpecValtype {
-    open spec fn spec_from(m: SpecValtypeInner) -> SpecValtype {
-        match m {
-            Either::Left(m) => SpecValtype::NumTy(m),
-            Either::Right(Either::Left(m)) => SpecValtype::VecTy(m),
-            Either::Right(Either::Right(m)) => SpecValtype::RefTy(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Valtype {
-    NumTy(Numtype),
-    VecTy(Vectype),
-    RefTy(Reftype),
-}
-
-pub type ValtypeInner = Either<Numtype, Either<Vectype, Reftype>>;
-
-
-impl View for Valtype {
-    type V = SpecValtype;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            Valtype::NumTy(m) => SpecValtype::NumTy(m@),
-            Valtype::VecTy(m) => SpecValtype::VecTy(m@),
-            Valtype::RefTy(m) => SpecValtype::RefTy(m@),
-        }
-    }
-}
-
-
-impl From<Valtype> for ValtypeInner {
-    fn ex_from(m: Valtype) -> ValtypeInner {
-        match m {
-            Valtype::NumTy(m) => Either::Left(m),
-            Valtype::VecTy(m) => Either::Right(Either::Left(m)),
-            Valtype::RefTy(m) => Either::Right(Either::Right(m)),
-        }
-    }
-
-}
-
-impl From<ValtypeInner> for Valtype {
-    fn ex_from(m: ValtypeInner) -> Valtype {
-        match m {
-            Either::Left(m) => Valtype::NumTy(m),
-            Either::Right(Either::Left(m)) => Valtype::VecTy(m),
-            Either::Right(Either::Right(m)) => Valtype::RefTy(m),
-        }
-    }
-    
-}
-
-
-pub struct ValtypeMapper;
-impl ValtypeMapper {
-    pub closed spec fn spec_new() -> Self {
-        ValtypeMapper
-    }
-    pub fn new() -> Self {
-        ValtypeMapper
-    }
-}
-impl View for ValtypeMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ValtypeMapper {
-    type Src = SpecValtypeInner;
-    type Dst = SpecValtype;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ValtypeMapper {
-    type Src = ValtypeInner;
-    type Dst = Valtype;
-}
-
-
-impl DisjointFrom<SpecNumtypeCombinator> for SpecVectypeCombinator {
-    closed spec fn disjoint_from(&self, other: &SpecNumtypeCombinator) -> bool
-    { self.0.disjoint_from(&other.0) }
-    proof fn parse_disjoint_on(&self, other: &SpecNumtypeCombinator, buf: Seq<u8>) 
-    { self.0.parse_disjoint_on(&other.0, buf); }
-}
-
-impl DisjointFrom<SpecNumtypeCombinator> for SpecReftypeCombinator {
-    closed spec fn disjoint_from(&self, other: &SpecNumtypeCombinator) -> bool
-    { self.0.disjoint_from(&other.0) }
-    proof fn parse_disjoint_on(&self, other: &SpecNumtypeCombinator, buf: Seq<u8>) 
-    { self.0.parse_disjoint_on(&other.0, buf); }
-}
-
-impl DisjointFrom<SpecVectypeCombinator> for SpecReftypeCombinator {
-    closed spec fn disjoint_from(&self, other: &SpecVectypeCombinator) -> bool
-    { self.0.disjoint_from(&other.0) }
-    proof fn parse_disjoint_on(&self, other: &SpecVectypeCombinator, buf: Seq<u8>) 
-    { self.0.parse_disjoint_on(&other.0, buf); }
-}
-pub struct SpecValtypeCombinator(SpecValtypeCombinatorAlias);
-
-impl SpecCombinator for SpecValtypeCombinator {
-    type Type = SpecValtype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecValtypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecValtypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecValtypeCombinatorAlias = Mapped<OrdChoice<SpecNumtypeCombinator, OrdChoice<SpecVectypeCombinator, SpecReftypeCombinator>>, ValtypeMapper>;
-
-pub struct ValtypeCombinator(ValtypeCombinatorAlias);
-
-impl View for ValtypeCombinator {
-    type V = SpecValtypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecValtypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ValtypeCombinator {
-    type Type = Valtype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ValtypeCombinatorAlias = Mapped<OrdChoice<NumtypeCombinator, OrdChoice<VectypeCombinator, ReftypeCombinator>>, ValtypeMapper>;
-
-
-pub closed spec fn spec_valtype() -> SpecValtypeCombinator {
-    SpecValtypeCombinator(Mapped { inner: OrdChoice(spec_numtype(), OrdChoice(spec_vectype(), spec_reftype())), mapper: ValtypeMapper::spec_new() })
-}
-
-                
-pub fn valtype() -> (o: ValtypeCombinator)
-    ensures o@ == spec_valtype(),
-{
-    ValtypeCombinator(Mapped { inner: OrdChoice::new(numtype(), OrdChoice::new(vectype(), reftype())), mapper: ValtypeMapper::new() })
 }
 
                 
@@ -2688,73 +4134,6 @@ impl<'a> Continuation<&u64> for SelectTCont0<'a> {
         RepeatN(valtype(), l.ex_into())
     }
 }
-                
-pub type SpecGlobalidx = u64;
-pub type Globalidx = u64;
-
-
-pub struct SpecGlobalidxCombinator(SpecGlobalidxCombinatorAlias);
-
-impl SpecCombinator for SpecGlobalidxCombinator {
-    type Type = SpecGlobalidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecGlobalidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecGlobalidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecGlobalidxCombinatorAlias = UnsignedLEB128;
-
-pub struct GlobalidxCombinator(GlobalidxCombinatorAlias);
-
-impl View for GlobalidxCombinator {
-    type V = SpecGlobalidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecGlobalidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalidxCombinator {
-    type Type = Globalidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type GlobalidxCombinatorAlias = UnsignedLEB128;
-
-
-pub closed spec fn spec_globalidx() -> SpecGlobalidxCombinator {
-    SpecGlobalidxCombinator(UnsignedLEB128)
-}
-
-                
-pub fn globalidx() -> (o: GlobalidxCombinator)
-    ensures o@ == spec_globalidx(),
-{
-    GlobalidxCombinator(UnsignedLEB128)
-}
-
                 
 
 pub struct SpecByteZero {
@@ -4575,73 +5954,6 @@ impl<'a> Continuation<&u64> for InstrWithFcCont0<'a> {
     }
 }
                 
-pub type SpecLaneidx = u8;
-pub type Laneidx = u8;
-
-
-pub struct SpecLaneidxCombinator(SpecLaneidxCombinatorAlias);
-
-impl SpecCombinator for SpecLaneidxCombinator {
-    type Type = SpecLaneidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecLaneidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecLaneidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecLaneidxCombinatorAlias = U8;
-
-pub struct LaneidxCombinator(LaneidxCombinatorAlias);
-
-impl View for LaneidxCombinator {
-    type V = SpecLaneidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecLaneidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for LaneidxCombinator {
-    type Type = Laneidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type LaneidxCombinatorAlias = U8;
-
-
-pub closed spec fn spec_laneidx() -> SpecLaneidxCombinator {
-    SpecLaneidxCombinator(U8)
-}
-
-                
-pub fn laneidx() -> (o: LaneidxCombinator)
-    ensures o@ == spec_laneidx(),
-{
-    LaneidxCombinator(U8)
-}
-
-                
 
 pub struct SpecV128Lane {
     pub m: SpecMemarg,
@@ -4855,73 +6167,6 @@ pub fn v128_const() -> (o: V128ConstCombinator)
     ensures o@ == spec_v128_const(),
 {
     V128ConstCombinator(BytesN::<16>)
-}
-
-                
-pub type SpecShuffle = Seq<SpecLaneidx>;
-pub type Shuffle = RepeatResult<Laneidx>;
-
-
-pub struct SpecShuffleCombinator(SpecShuffleCombinatorAlias);
-
-impl SpecCombinator for SpecShuffleCombinator {
-    type Type = SpecShuffle;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecShuffleCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecShuffleCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecShuffleCombinatorAlias = RepeatN<SpecLaneidxCombinator>;
-
-pub struct ShuffleCombinator(ShuffleCombinatorAlias);
-
-impl View for ShuffleCombinator {
-    type V = SpecShuffleCombinator;
-    closed spec fn view(&self) -> Self::V { SpecShuffleCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ShuffleCombinator {
-    type Type = Shuffle;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ShuffleCombinatorAlias = RepeatN<LaneidxCombinator>;
-
-
-pub closed spec fn spec_shuffle() -> SpecShuffleCombinator {
-    SpecShuffleCombinator(RepeatN(spec_laneidx(), 16))
-}
-
-                
-pub fn shuffle() -> (o: ShuffleCombinator)
-    ensures o@ == spec_shuffle(),
-{
-    ShuffleCombinator(RepeatN(laneidx(), 16))
 }
 
                 
@@ -5317,21 +6562,26 @@ pub enum SpecInstrRest {
     I32Load(SpecMemarg),
     BrIf(SpecLabelidx),
     I32And(SpecEmpty),
+    If(SpecBlocktype),
+    Block(SpecBlocktype),
+    I32Eqz(SpecEmpty),
+    I32Sub(SpecEmpty),
+    Br(SpecLabelidx),
+    Call(SpecFuncidx),
+    I32Or(SpecEmpty),
+    Select(SpecEmpty),
+    I32ShrU(SpecEmpty),
+    I32Shl(SpecEmpty),
     Unreachable(SpecEmpty),
     Nop(SpecEmpty),
-    Block(SpecBlocktype),
     Loop(SpecBlocktype),
-    If(SpecBlocktype),
-    Br(SpecLabelidx),
     BrTable(SpecBrTable),
     Ret(SpecEmpty),
-    Call(SpecFuncidx),
     CallIndirect(SpecCallIndirect),
     RefNull(SpecReftype),
     RefIsNull(SpecEmpty),
     RefFunc(SpecFuncidx),
     Drop(SpecEmpty),
-    Select(SpecEmpty),
     SelectT(SpecSelectT),
     GlobalGet(SpecGlobalidx),
     GlobalSet(SpecGlobalidx),
@@ -5368,7 +6618,7 @@ pub enum SpecInstrRest {
     Unrecognized(SpecEmpty),
 }
 
-pub type SpecInstrRestInner = Either<SpecLocalidx, Either<u64, Either<SpecLocalidx, Either<SpecEmpty, Either<SpecEmpty, Either<SpecLocalidx, Either<SpecMemarg, Either<SpecMemarg, Either<SpecLabelidx, Either<SpecEmpty, Either<SpecEmpty, Either<SpecEmpty, Either<SpecBlocktype, Either<SpecBlocktype, Either<SpecBlocktype, Either<SpecLabelidx, Either<SpecBrTable, Either<SpecEmpty, Either<SpecFuncidx, Either<SpecCallIndirect, Either<SpecReftype, Either<SpecEmpty, Either<SpecFuncidx, Either<SpecEmpty, Either<SpecEmpty, Either<SpecSelectT, Either<SpecGlobalidx, Either<SpecGlobalidx, Either<SpecTableidx, Either<SpecTableidx, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecByteZero, Either<SpecByteZero, Either<u64, Either<SpecF32, Either<SpecF64, Either<SpecInstrWithFc, Either<SpecInstrWithFd, SpecEmpty>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+pub type SpecInstrRestInner = Either<SpecLocalidx, Either<u64, Either<SpecLocalidx, Either<SpecEmpty, Either<SpecEmpty, Either<SpecLocalidx, Either<SpecMemarg, Either<SpecMemarg, Either<SpecLabelidx, Either<SpecEmpty, Either<SpecBlocktype, Either<SpecBlocktype, Either<SpecEmpty, Either<SpecEmpty, Either<SpecLabelidx, Either<SpecFuncidx, Either<SpecEmpty, Either<SpecEmpty, Either<SpecEmpty, Either<SpecEmpty, Either<SpecEmpty, Either<SpecEmpty, Either<SpecBlocktype, Either<SpecBrTable, Either<SpecEmpty, Either<SpecCallIndirect, Either<SpecReftype, Either<SpecEmpty, Either<SpecFuncidx, Either<SpecEmpty, Either<SpecSelectT, Either<SpecGlobalidx, Either<SpecGlobalidx, Either<SpecTableidx, Either<SpecTableidx, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecMemarg, Either<SpecByteZero, Either<SpecByteZero, Either<u64, Either<SpecF32, Either<SpecF64, Either<SpecInstrWithFc, Either<SpecInstrWithFd, SpecEmpty>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 
 
 
@@ -5385,55 +6635,60 @@ impl SpecFrom<SpecInstrRest> for SpecInstrRestInner {
             SpecInstrRest::I32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
             SpecInstrRest::BrIf(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
             SpecInstrRest::I32And(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
-            SpecInstrRest::Unreachable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
-            SpecInstrRest::Nop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
-            SpecInstrRest::Block(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
-            SpecInstrRest::Loop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
-            SpecInstrRest::If(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
-            SpecInstrRest::Br(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
-            SpecInstrRest::BrTable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
-            SpecInstrRest::Ret(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
-            SpecInstrRest::Call(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
-            SpecInstrRest::CallIndirect(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
-            SpecInstrRest::RefNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
-            SpecInstrRest::RefIsNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
-            SpecInstrRest::RefFunc(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
-            SpecInstrRest::Drop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
-            SpecInstrRest::Select(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
-            SpecInstrRest::SelectT(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
-            SpecInstrRest::GlobalGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
-            SpecInstrRest::GlobalSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
-            SpecInstrRest::TableGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
-            SpecInstrRest::TableSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))),
-            SpecInstrRest::F32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))),
-            SpecInstrRest::F64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load32S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Load32U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::F32Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::F64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I32Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Store32(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::MemorySize(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::MemoryGrow(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::I64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::F32Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::F64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::OpcodeFC(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::OpcodeFD(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            SpecInstrRest::Unrecognized(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::If(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
+            SpecInstrRest::Block(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
+            SpecInstrRest::I32Eqz(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
+            SpecInstrRest::I32Sub(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
+            SpecInstrRest::Br(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
+            SpecInstrRest::Call(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
+            SpecInstrRest::I32Or(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
+            SpecInstrRest::Select(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
+            SpecInstrRest::I32ShrU(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
+            SpecInstrRest::I32Shl(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
+            SpecInstrRest::Unreachable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
+            SpecInstrRest::Nop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
+            SpecInstrRest::Loop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
+            SpecInstrRest::BrTable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
+            SpecInstrRest::Ret(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
+            SpecInstrRest::CallIndirect(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
+            SpecInstrRest::RefNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
+            SpecInstrRest::RefIsNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
+            SpecInstrRest::RefFunc(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
+            SpecInstrRest::Drop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
+            SpecInstrRest::SelectT(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))),
+            SpecInstrRest::GlobalGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))),
+            SpecInstrRest::GlobalSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))),
+            SpecInstrRest::TableGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))),
+            SpecInstrRest::TableSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load32S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Load32U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F32Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I32Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Store32(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::MemorySize(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::MemoryGrow(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::I64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F32Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::F64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::OpcodeFC(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::OpcodeFD(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            SpecInstrRest::Unrecognized(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
         }
     }
 
@@ -5452,55 +6707,60 @@ impl SpecFrom<SpecInstrRestInner> for SpecInstrRest {
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => SpecInstrRest::I32Load(m),
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => SpecInstrRest::BrIf(m),
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => SpecInstrRest::I32And(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => SpecInstrRest::Unreachable(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => SpecInstrRest::Nop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => SpecInstrRest::Block(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => SpecInstrRest::Loop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => SpecInstrRest::If(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => SpecInstrRest::Br(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => SpecInstrRest::BrTable(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => SpecInstrRest::Ret(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => SpecInstrRest::Call(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => SpecInstrRest::CallIndirect(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => SpecInstrRest::RefNull(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => SpecInstrRest::RefIsNull(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => SpecInstrRest::RefFunc(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => SpecInstrRest::Drop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => SpecInstrRest::Select(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => SpecInstrRest::SelectT(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => SpecInstrRest::GlobalGet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => SpecInstrRest::GlobalSet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => SpecInstrRest::TableGet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => SpecInstrRest::TableSet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))) => SpecInstrRest::F32Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load8S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load8U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load16S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load16U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load8S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load8U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load16S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load16U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load32S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load32U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F32Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Store8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Store16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store32(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::MemorySize(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::MemoryGrow(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F32Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::OpcodeFC(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::OpcodeFD(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::Unrecognized(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => SpecInstrRest::If(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => SpecInstrRest::Block(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => SpecInstrRest::I32Eqz(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => SpecInstrRest::I32Sub(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => SpecInstrRest::Br(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => SpecInstrRest::Call(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => SpecInstrRest::I32Or(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => SpecInstrRest::Select(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => SpecInstrRest::I32ShrU(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => SpecInstrRest::I32Shl(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => SpecInstrRest::Unreachable(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => SpecInstrRest::Nop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => SpecInstrRest::Loop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => SpecInstrRest::BrTable(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => SpecInstrRest::Ret(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => SpecInstrRest::CallIndirect(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => SpecInstrRest::RefNull(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => SpecInstrRest::RefIsNull(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => SpecInstrRest::RefFunc(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => SpecInstrRest::Drop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))) => SpecInstrRest::SelectT(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))) => SpecInstrRest::GlobalGet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))) => SpecInstrRest::GlobalSet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))) => SpecInstrRest::TableGet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))) => SpecInstrRest::TableSet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F32Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load8S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load8U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load16S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Load16U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load8S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load8U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load16S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load16U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load32S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Load32U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F32Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Store8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I32Store16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Store32(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::MemorySize(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::MemoryGrow(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::I64Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F32Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::F64Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::OpcodeFC(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::OpcodeFD(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => SpecInstrRest::Unrecognized(m),
         }
     }
 
@@ -5520,21 +6780,26 @@ pub enum InstrRest<'a> {
     I32Load(Memarg),
     BrIf(Labelidx),
     I32And(Empty<'a>),
+    If(Blocktype<'a>),
+    Block(Blocktype<'a>),
+    I32Eqz(Empty<'a>),
+    I32Sub(Empty<'a>),
+    Br(Labelidx),
+    Call(Funcidx),
+    I32Or(Empty<'a>),
+    Select(Empty<'a>),
+    I32ShrU(Empty<'a>),
+    I32Shl(Empty<'a>),
     Unreachable(Empty<'a>),
     Nop(Empty<'a>),
-    Block(Blocktype<'a>),
     Loop(Blocktype<'a>),
-    If(Blocktype<'a>),
-    Br(Labelidx),
     BrTable(BrTable),
     Ret(Empty<'a>),
-    Call(Funcidx),
     CallIndirect(CallIndirect),
     RefNull(Reftype),
     RefIsNull(Empty<'a>),
     RefFunc(Funcidx),
     Drop(Empty<'a>),
-    Select(Empty<'a>),
     SelectT(SelectT),
     GlobalGet(Globalidx),
     GlobalSet(Globalidx),
@@ -5571,7 +6836,7 @@ pub enum InstrRest<'a> {
     Unrecognized(Empty<'a>),
 }
 
-pub type InstrRestInner<'a> = Either<Localidx, Either<u64, Either<Localidx, Either<Empty<'a>, Either<Empty<'a>, Either<Localidx, Either<Memarg, Either<Memarg, Either<Labelidx, Either<Empty<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Blocktype<'a>, Either<Blocktype<'a>, Either<Blocktype<'a>, Either<Labelidx, Either<BrTable, Either<Empty<'a>, Either<Funcidx, Either<CallIndirect, Either<Reftype, Either<Empty<'a>, Either<Funcidx, Either<Empty<'a>, Either<Empty<'a>, Either<SelectT, Either<Globalidx, Either<Globalidx, Either<Tableidx, Either<Tableidx, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<ByteZero, Either<ByteZero, Either<u64, Either<F32<'a>, Either<F64<'a>, Either<InstrWithFc<'a>, Either<InstrWithFd<'a>, Empty<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+pub type InstrRestInner<'a> = Either<Localidx, Either<u64, Either<Localidx, Either<Empty<'a>, Either<Empty<'a>, Either<Localidx, Either<Memarg, Either<Memarg, Either<Labelidx, Either<Empty<'a>, Either<Blocktype<'a>, Either<Blocktype<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Labelidx, Either<Funcidx, Either<Empty<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Empty<'a>, Either<Blocktype<'a>, Either<BrTable, Either<Empty<'a>, Either<CallIndirect, Either<Reftype, Either<Empty<'a>, Either<Funcidx, Either<Empty<'a>, Either<SelectT, Either<Globalidx, Either<Globalidx, Either<Tableidx, Either<Tableidx, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<Memarg, Either<ByteZero, Either<ByteZero, Either<u64, Either<F32<'a>, Either<F64<'a>, Either<InstrWithFc<'a>, Either<InstrWithFd<'a>, Empty<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 
 
 impl<'a> View for InstrRest<'a> {
@@ -5588,21 +6853,26 @@ impl<'a> View for InstrRest<'a> {
             InstrRest::I32Load(m) => SpecInstrRest::I32Load(m@),
             InstrRest::BrIf(m) => SpecInstrRest::BrIf(m@),
             InstrRest::I32And(m) => SpecInstrRest::I32And(m@),
+            InstrRest::If(m) => SpecInstrRest::If(m@),
+            InstrRest::Block(m) => SpecInstrRest::Block(m@),
+            InstrRest::I32Eqz(m) => SpecInstrRest::I32Eqz(m@),
+            InstrRest::I32Sub(m) => SpecInstrRest::I32Sub(m@),
+            InstrRest::Br(m) => SpecInstrRest::Br(m@),
+            InstrRest::Call(m) => SpecInstrRest::Call(m@),
+            InstrRest::I32Or(m) => SpecInstrRest::I32Or(m@),
+            InstrRest::Select(m) => SpecInstrRest::Select(m@),
+            InstrRest::I32ShrU(m) => SpecInstrRest::I32ShrU(m@),
+            InstrRest::I32Shl(m) => SpecInstrRest::I32Shl(m@),
             InstrRest::Unreachable(m) => SpecInstrRest::Unreachable(m@),
             InstrRest::Nop(m) => SpecInstrRest::Nop(m@),
-            InstrRest::Block(m) => SpecInstrRest::Block(m@),
             InstrRest::Loop(m) => SpecInstrRest::Loop(m@),
-            InstrRest::If(m) => SpecInstrRest::If(m@),
-            InstrRest::Br(m) => SpecInstrRest::Br(m@),
             InstrRest::BrTable(m) => SpecInstrRest::BrTable(m@),
             InstrRest::Ret(m) => SpecInstrRest::Ret(m@),
-            InstrRest::Call(m) => SpecInstrRest::Call(m@),
             InstrRest::CallIndirect(m) => SpecInstrRest::CallIndirect(m@),
             InstrRest::RefNull(m) => SpecInstrRest::RefNull(m@),
             InstrRest::RefIsNull(m) => SpecInstrRest::RefIsNull(m@),
             InstrRest::RefFunc(m) => SpecInstrRest::RefFunc(m@),
             InstrRest::Drop(m) => SpecInstrRest::Drop(m@),
-            InstrRest::Select(m) => SpecInstrRest::Select(m@),
             InstrRest::SelectT(m) => SpecInstrRest::SelectT(m@),
             InstrRest::GlobalGet(m) => SpecInstrRest::GlobalGet(m@),
             InstrRest::GlobalSet(m) => SpecInstrRest::GlobalSet(m@),
@@ -5655,55 +6925,60 @@ impl<'a> From<InstrRest<'a>> for InstrRestInner<'a> {
             InstrRest::I32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
             InstrRest::BrIf(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
             InstrRest::I32And(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
-            InstrRest::Unreachable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
-            InstrRest::Nop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
-            InstrRest::Block(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
-            InstrRest::Loop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
-            InstrRest::If(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
-            InstrRest::Br(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
-            InstrRest::BrTable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
-            InstrRest::Ret(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
-            InstrRest::Call(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
-            InstrRest::CallIndirect(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
-            InstrRest::RefNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
-            InstrRest::RefIsNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
-            InstrRest::RefFunc(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
-            InstrRest::Drop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
-            InstrRest::Select(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
-            InstrRest::SelectT(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
-            InstrRest::GlobalGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
-            InstrRest::GlobalSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
-            InstrRest::TableGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
-            InstrRest::TableSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
-            InstrRest::I64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))),
-            InstrRest::F32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))),
-            InstrRest::F64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))),
-            InstrRest::I32Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))),
-            InstrRest::I32Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))),
-            InstrRest::I32Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))),
-            InstrRest::I32Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load32S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Load32U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::F32Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::F64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I32Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I32Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Store32(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::MemorySize(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::MemoryGrow(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::I64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::F32Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::F64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::OpcodeFC(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::OpcodeFD(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
-            InstrRest::Unrecognized(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::If(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
+            InstrRest::Block(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
+            InstrRest::I32Eqz(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
+            InstrRest::I32Sub(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
+            InstrRest::Br(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
+            InstrRest::Call(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
+            InstrRest::I32Or(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
+            InstrRest::Select(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
+            InstrRest::I32ShrU(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
+            InstrRest::I32Shl(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
+            InstrRest::Unreachable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
+            InstrRest::Nop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
+            InstrRest::Loop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
+            InstrRest::BrTable(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
+            InstrRest::Ret(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
+            InstrRest::CallIndirect(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
+            InstrRest::RefNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
+            InstrRest::RefIsNull(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
+            InstrRest::RefFunc(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
+            InstrRest::Drop(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
+            InstrRest::SelectT(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))),
+            InstrRest::GlobalGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))),
+            InstrRest::GlobalSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))),
+            InstrRest::TableGet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))),
+            InstrRest::TableSet(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))),
+            InstrRest::F32Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))),
+            InstrRest::F64Load(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load8S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load8U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load16S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load16U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load32S(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Load32U(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::F32Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::F64Store(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I32Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Store8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Store16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Store32(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::MemorySize(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::MemoryGrow(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::I64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::F32Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::F64Const(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::OpcodeFC(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::OpcodeFD(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
+            InstrRest::Unrecognized(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
         }
     }
 
@@ -5722,55 +6997,60 @@ impl<'a> From<InstrRestInner<'a>> for InstrRest<'a> {
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => InstrRest::I32Load(m),
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => InstrRest::BrIf(m),
             Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => InstrRest::I32And(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => InstrRest::Unreachable(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => InstrRest::Nop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => InstrRest::Block(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => InstrRest::Loop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => InstrRest::If(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => InstrRest::Br(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => InstrRest::BrTable(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => InstrRest::Ret(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => InstrRest::Call(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => InstrRest::CallIndirect(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => InstrRest::RefNull(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => InstrRest::RefIsNull(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => InstrRest::RefFunc(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => InstrRest::Drop(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => InstrRest::Select(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => InstrRest::SelectT(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => InstrRest::GlobalGet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => InstrRest::GlobalSet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => InstrRest::TableGet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => InstrRest::TableSet(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))) => InstrRest::I64Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))) => InstrRest::F32Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))) => InstrRest::F64Load(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))) => InstrRest::I32Load8S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))) => InstrRest::I32Load8U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))) => InstrRest::I32Load16S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))) => InstrRest::I32Load16U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load8S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load8U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load16S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load16U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load32S(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load32U(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F32Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F64Store(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Store8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Store16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store32(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::MemorySize(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::MemoryGrow(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F32Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F64Const(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::OpcodeFC(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::OpcodeFD(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::Unrecognized(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => InstrRest::If(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => InstrRest::Block(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => InstrRest::I32Eqz(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => InstrRest::I32Sub(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => InstrRest::Br(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => InstrRest::Call(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => InstrRest::I32Or(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => InstrRest::Select(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => InstrRest::I32ShrU(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => InstrRest::I32Shl(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => InstrRest::Unreachable(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => InstrRest::Nop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => InstrRest::Loop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => InstrRest::BrTable(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => InstrRest::Ret(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => InstrRest::CallIndirect(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => InstrRest::RefNull(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => InstrRest::RefIsNull(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => InstrRest::RefFunc(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => InstrRest::Drop(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))) => InstrRest::SelectT(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))) => InstrRest::GlobalGet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))) => InstrRest::GlobalSet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))) => InstrRest::TableGet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))) => InstrRest::TableSet(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))) => InstrRest::I64Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))) => InstrRest::F32Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))) => InstrRest::F64Load(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Load8S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Load8U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Load16S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Load16U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load8S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load8U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load16S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load16U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load32S(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Load32U(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F32Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F64Store(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Store8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I32Store16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Store32(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::MemorySize(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::MemoryGrow(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::I64Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F32Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::F64Const(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::OpcodeFC(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::OpcodeFD(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) => InstrRest::Unrecognized(m),
         }
     }
     
@@ -5833,7 +7113,7 @@ impl SecureSpecCombinator for SpecInstrRestCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecInstrRestCombinatorAlias = Mapped<OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecLabelidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecLabelidxCombinator>, OrdChoice<Cond<SpecBrTableCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecFuncidxCombinator>, OrdChoice<Cond<SpecCallIndirectCombinator>, OrdChoice<Cond<SpecReftypeCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecFuncidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecSelectTCombinator>, OrdChoice<Cond<SpecGlobalidxCombinator>, OrdChoice<Cond<SpecGlobalidxCombinator>, OrdChoice<Cond<SpecTableidxCombinator>, OrdChoice<Cond<SpecTableidxCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecByteZeroCombinator>, OrdChoice<Cond<SpecByteZeroCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<SpecF32Combinator>, OrdChoice<Cond<SpecF64Combinator>, OrdChoice<Cond<SpecInstrWithFcCombinator>, OrdChoice<Cond<SpecInstrWithFdCombinator>, Cond<SpecEmptyCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, InstrRestMapper<'static>>;
+pub type SpecInstrRestCombinatorAlias = Mapped<OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecLocalidxCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecLabelidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecLabelidxCombinator>, OrdChoice<Cond<SpecFuncidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecBlocktypeCombinator>, OrdChoice<Cond<SpecBrTableCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecCallIndirectCombinator>, OrdChoice<Cond<SpecReftypeCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecFuncidxCombinator>, OrdChoice<Cond<SpecEmptyCombinator>, OrdChoice<Cond<SpecSelectTCombinator>, OrdChoice<Cond<SpecGlobalidxCombinator>, OrdChoice<Cond<SpecGlobalidxCombinator>, OrdChoice<Cond<SpecTableidxCombinator>, OrdChoice<Cond<SpecTableidxCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecMemargCombinator>, OrdChoice<Cond<SpecByteZeroCombinator>, OrdChoice<Cond<SpecByteZeroCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<SpecF32Combinator>, OrdChoice<Cond<SpecF64Combinator>, OrdChoice<Cond<SpecInstrWithFcCombinator>, OrdChoice<Cond<SpecInstrWithFdCombinator>, Cond<SpecEmptyCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, InstrRestMapper<'static>>;
 
 pub struct InstrRestCombinator<'a>(InstrRestCombinatorAlias<'a>);
 
@@ -5856,17 +7136,17 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrRestCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type InstrRestCombinatorAlias<'a> = Mapped<OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<LabelidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<LabelidxCombinator>, OrdChoice<Cond<BrTableCombinator<'a>>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<FuncidxCombinator>, OrdChoice<Cond<CallIndirectCombinator>, OrdChoice<Cond<ReftypeCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<FuncidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<SelectTCombinator<'a>>, OrdChoice<Cond<GlobalidxCombinator>, OrdChoice<Cond<GlobalidxCombinator>, OrdChoice<Cond<TableidxCombinator>, OrdChoice<Cond<TableidxCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<ByteZeroCombinator>, OrdChoice<Cond<ByteZeroCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<F32Combinator>, OrdChoice<Cond<F64Combinator>, OrdChoice<Cond<InstrWithFcCombinator<'a>>, OrdChoice<Cond<InstrWithFdCombinator<'a>>, Cond<EmptyCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, InstrRestMapper<'a>>;
+pub type InstrRestCombinatorAlias<'a> = Mapped<OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<LocalidxCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<LabelidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<LabelidxCombinator>, OrdChoice<Cond<FuncidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<BlocktypeCombinator<'a>>, OrdChoice<Cond<BrTableCombinator<'a>>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<CallIndirectCombinator>, OrdChoice<Cond<ReftypeCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<FuncidxCombinator>, OrdChoice<Cond<EmptyCombinator>, OrdChoice<Cond<SelectTCombinator<'a>>, OrdChoice<Cond<GlobalidxCombinator>, OrdChoice<Cond<GlobalidxCombinator>, OrdChoice<Cond<TableidxCombinator>, OrdChoice<Cond<TableidxCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<MemargCombinator>, OrdChoice<Cond<ByteZeroCombinator>, OrdChoice<Cond<ByteZeroCombinator>, OrdChoice<Cond<UnsignedLEB128>, OrdChoice<Cond<F32Combinator>, OrdChoice<Cond<F64Combinator>, OrdChoice<Cond<InstrWithFcCombinator<'a>>, OrdChoice<Cond<InstrWithFdCombinator<'a>>, Cond<EmptyCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, InstrRestMapper<'a>>;
 
 
 pub closed spec fn spec_instr_rest(opcode: SpecInstrBytecode) -> SpecInstrRestCombinator {
-    SpecInstrRestCombinator(Mapped { inner: OrdChoice(Cond { cond: opcode == 32, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 65, inner: UnsignedLEB128 }, OrdChoice(Cond { cond: opcode == 34, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 106, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 11, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 33, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 54, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 40, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 13, inner: spec_labelidx() }, OrdChoice(Cond { cond: opcode == 113, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 0, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 1, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 2, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 3, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 4, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 12, inner: spec_labelidx() }, OrdChoice(Cond { cond: opcode == 14, inner: spec_br_table() }, OrdChoice(Cond { cond: opcode == 15, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 16, inner: spec_funcidx() }, OrdChoice(Cond { cond: opcode == 17, inner: spec_call_indirect() }, OrdChoice(Cond { cond: opcode == 208, inner: spec_reftype() }, OrdChoice(Cond { cond: opcode == 209, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 210, inner: spec_funcidx() }, OrdChoice(Cond { cond: opcode == 26, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 27, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 28, inner: spec_select_t() }, OrdChoice(Cond { cond: opcode == 35, inner: spec_globalidx() }, OrdChoice(Cond { cond: opcode == 36, inner: spec_globalidx() }, OrdChoice(Cond { cond: opcode == 37, inner: spec_tableidx() }, OrdChoice(Cond { cond: opcode == 38, inner: spec_tableidx() }, OrdChoice(Cond { cond: opcode == 41, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 42, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 43, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 44, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 45, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 46, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 47, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 48, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 49, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 50, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 51, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 52, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 53, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 55, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 56, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 57, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 58, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 59, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 60, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 61, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 62, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 63, inner: spec_byte_zero() }, OrdChoice(Cond { cond: opcode == 64, inner: spec_byte_zero() }, OrdChoice(Cond { cond: opcode == 66, inner: UnsignedLEB128 }, OrdChoice(Cond { cond: opcode == 67, inner: spec_f32() }, OrdChoice(Cond { cond: opcode == 68, inner: spec_f64() }, OrdChoice(Cond { cond: opcode == 252, inner: spec_instr_with_fc() }, OrdChoice(Cond { cond: opcode == 253, inner: spec_instr_with_fd() }, Cond { cond: !(opcode == 32 || opcode == 65 || opcode == 34 || opcode == 106 || opcode == 11 || opcode == 33 || opcode == 54 || opcode == 40 || opcode == 13 || opcode == 113 || opcode == 0 || opcode == 1 || opcode == 2 || opcode == 3 || opcode == 4 || opcode == 12 || opcode == 14 || opcode == 15 || opcode == 16 || opcode == 17 || opcode == 208 || opcode == 209 || opcode == 210 || opcode == 26 || opcode == 27 || opcode == 28 || opcode == 35 || opcode == 36 || opcode == 37 || opcode == 38 || opcode == 41 || opcode == 42 || opcode == 43 || opcode == 44 || opcode == 45 || opcode == 46 || opcode == 47 || opcode == 48 || opcode == 49 || opcode == 50 || opcode == 51 || opcode == 52 || opcode == 53 || opcode == 55 || opcode == 56 || opcode == 57 || opcode == 58 || opcode == 59 || opcode == 60 || opcode == 61 || opcode == 62 || opcode == 63 || opcode == 64 || opcode == 66 || opcode == 67 || opcode == 68 || opcode == 252 || opcode == 253), inner: spec_empty() })))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: InstrRestMapper::spec_new() })
+    SpecInstrRestCombinator(Mapped { inner: OrdChoice(Cond { cond: opcode == 32, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 65, inner: UnsignedLEB128 }, OrdChoice(Cond { cond: opcode == 34, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 106, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 11, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 33, inner: spec_localidx() }, OrdChoice(Cond { cond: opcode == 54, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 40, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 13, inner: spec_labelidx() }, OrdChoice(Cond { cond: opcode == 113, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 4, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 2, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 69, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 107, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 12, inner: spec_labelidx() }, OrdChoice(Cond { cond: opcode == 16, inner: spec_funcidx() }, OrdChoice(Cond { cond: opcode == 114, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 27, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 118, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 116, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 0, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 1, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 3, inner: spec_blocktype() }, OrdChoice(Cond { cond: opcode == 14, inner: spec_br_table() }, OrdChoice(Cond { cond: opcode == 15, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 17, inner: spec_call_indirect() }, OrdChoice(Cond { cond: opcode == 208, inner: spec_reftype() }, OrdChoice(Cond { cond: opcode == 209, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 210, inner: spec_funcidx() }, OrdChoice(Cond { cond: opcode == 26, inner: spec_empty() }, OrdChoice(Cond { cond: opcode == 28, inner: spec_select_t() }, OrdChoice(Cond { cond: opcode == 35, inner: spec_globalidx() }, OrdChoice(Cond { cond: opcode == 36, inner: spec_globalidx() }, OrdChoice(Cond { cond: opcode == 37, inner: spec_tableidx() }, OrdChoice(Cond { cond: opcode == 38, inner: spec_tableidx() }, OrdChoice(Cond { cond: opcode == 41, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 42, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 43, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 44, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 45, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 46, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 47, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 48, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 49, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 50, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 51, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 52, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 53, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 55, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 56, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 57, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 58, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 59, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 60, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 61, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 62, inner: spec_memarg() }, OrdChoice(Cond { cond: opcode == 63, inner: spec_byte_zero() }, OrdChoice(Cond { cond: opcode == 64, inner: spec_byte_zero() }, OrdChoice(Cond { cond: opcode == 66, inner: UnsignedLEB128 }, OrdChoice(Cond { cond: opcode == 67, inner: spec_f32() }, OrdChoice(Cond { cond: opcode == 68, inner: spec_f64() }, OrdChoice(Cond { cond: opcode == 252, inner: spec_instr_with_fc() }, OrdChoice(Cond { cond: opcode == 253, inner: spec_instr_with_fd() }, Cond { cond: !(opcode == 32 || opcode == 65 || opcode == 34 || opcode == 106 || opcode == 11 || opcode == 33 || opcode == 54 || opcode == 40 || opcode == 13 || opcode == 113 || opcode == 4 || opcode == 2 || opcode == 69 || opcode == 107 || opcode == 12 || opcode == 16 || opcode == 114 || opcode == 27 || opcode == 118 || opcode == 116 || opcode == 0 || opcode == 1 || opcode == 3 || opcode == 14 || opcode == 15 || opcode == 17 || opcode == 208 || opcode == 209 || opcode == 210 || opcode == 26 || opcode == 28 || opcode == 35 || opcode == 36 || opcode == 37 || opcode == 38 || opcode == 41 || opcode == 42 || opcode == 43 || opcode == 44 || opcode == 45 || opcode == 46 || opcode == 47 || opcode == 48 || opcode == 49 || opcode == 50 || opcode == 51 || opcode == 52 || opcode == 53 || opcode == 55 || opcode == 56 || opcode == 57 || opcode == 58 || opcode == 59 || opcode == 60 || opcode == 61 || opcode == 62 || opcode == 63 || opcode == 64 || opcode == 66 || opcode == 67 || opcode == 68 || opcode == 252 || opcode == 253), inner: spec_empty() }))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: InstrRestMapper::spec_new() })
 }
 
 pub fn instr_rest<'a>(opcode: InstrBytecode) -> (o: InstrRestCombinator<'a>)
     ensures o@ == spec_instr_rest(opcode@),
 {
-    InstrRestCombinator(Mapped { inner: OrdChoice::new(Cond { cond: opcode == 32, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 65, inner: UnsignedLEB128 }, OrdChoice::new(Cond { cond: opcode == 34, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 106, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 11, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 33, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 54, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 40, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 13, inner: labelidx() }, OrdChoice::new(Cond { cond: opcode == 113, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 0, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 1, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 2, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 3, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 4, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 12, inner: labelidx() }, OrdChoice::new(Cond { cond: opcode == 14, inner: br_table() }, OrdChoice::new(Cond { cond: opcode == 15, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 16, inner: funcidx() }, OrdChoice::new(Cond { cond: opcode == 17, inner: call_indirect() }, OrdChoice::new(Cond { cond: opcode == 208, inner: reftype() }, OrdChoice::new(Cond { cond: opcode == 209, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 210, inner: funcidx() }, OrdChoice::new(Cond { cond: opcode == 26, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 27, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 28, inner: select_t() }, OrdChoice::new(Cond { cond: opcode == 35, inner: globalidx() }, OrdChoice::new(Cond { cond: opcode == 36, inner: globalidx() }, OrdChoice::new(Cond { cond: opcode == 37, inner: tableidx() }, OrdChoice::new(Cond { cond: opcode == 38, inner: tableidx() }, OrdChoice::new(Cond { cond: opcode == 41, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 42, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 43, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 44, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 45, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 46, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 47, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 48, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 49, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 50, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 51, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 52, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 53, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 55, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 56, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 57, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 58, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 59, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 60, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 61, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 62, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 63, inner: byte_zero() }, OrdChoice::new(Cond { cond: opcode == 64, inner: byte_zero() }, OrdChoice::new(Cond { cond: opcode == 66, inner: UnsignedLEB128 }, OrdChoice::new(Cond { cond: opcode == 67, inner: f32() }, OrdChoice::new(Cond { cond: opcode == 68, inner: f64() }, OrdChoice::new(Cond { cond: opcode == 252, inner: instr_with_fc() }, OrdChoice::new(Cond { cond: opcode == 253, inner: instr_with_fd() }, Cond { cond: !(opcode == 32 || opcode == 65 || opcode == 34 || opcode == 106 || opcode == 11 || opcode == 33 || opcode == 54 || opcode == 40 || opcode == 13 || opcode == 113 || opcode == 0 || opcode == 1 || opcode == 2 || opcode == 3 || opcode == 4 || opcode == 12 || opcode == 14 || opcode == 15 || opcode == 16 || opcode == 17 || opcode == 208 || opcode == 209 || opcode == 210 || opcode == 26 || opcode == 27 || opcode == 28 || opcode == 35 || opcode == 36 || opcode == 37 || opcode == 38 || opcode == 41 || opcode == 42 || opcode == 43 || opcode == 44 || opcode == 45 || opcode == 46 || opcode == 47 || opcode == 48 || opcode == 49 || opcode == 50 || opcode == 51 || opcode == 52 || opcode == 53 || opcode == 55 || opcode == 56 || opcode == 57 || opcode == 58 || opcode == 59 || opcode == 60 || opcode == 61 || opcode == 62 || opcode == 63 || opcode == 64 || opcode == 66 || opcode == 67 || opcode == 68 || opcode == 252 || opcode == 253), inner: empty() })))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: InstrRestMapper::new() })
+    InstrRestCombinator(Mapped { inner: OrdChoice::new(Cond { cond: opcode == 32, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 65, inner: UnsignedLEB128 }, OrdChoice::new(Cond { cond: opcode == 34, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 106, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 11, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 33, inner: localidx() }, OrdChoice::new(Cond { cond: opcode == 54, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 40, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 13, inner: labelidx() }, OrdChoice::new(Cond { cond: opcode == 113, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 4, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 2, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 69, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 107, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 12, inner: labelidx() }, OrdChoice::new(Cond { cond: opcode == 16, inner: funcidx() }, OrdChoice::new(Cond { cond: opcode == 114, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 27, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 118, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 116, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 0, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 1, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 3, inner: blocktype() }, OrdChoice::new(Cond { cond: opcode == 14, inner: br_table() }, OrdChoice::new(Cond { cond: opcode == 15, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 17, inner: call_indirect() }, OrdChoice::new(Cond { cond: opcode == 208, inner: reftype() }, OrdChoice::new(Cond { cond: opcode == 209, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 210, inner: funcidx() }, OrdChoice::new(Cond { cond: opcode == 26, inner: empty() }, OrdChoice::new(Cond { cond: opcode == 28, inner: select_t() }, OrdChoice::new(Cond { cond: opcode == 35, inner: globalidx() }, OrdChoice::new(Cond { cond: opcode == 36, inner: globalidx() }, OrdChoice::new(Cond { cond: opcode == 37, inner: tableidx() }, OrdChoice::new(Cond { cond: opcode == 38, inner: tableidx() }, OrdChoice::new(Cond { cond: opcode == 41, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 42, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 43, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 44, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 45, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 46, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 47, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 48, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 49, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 50, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 51, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 52, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 53, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 55, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 56, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 57, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 58, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 59, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 60, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 61, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 62, inner: memarg() }, OrdChoice::new(Cond { cond: opcode == 63, inner: byte_zero() }, OrdChoice::new(Cond { cond: opcode == 64, inner: byte_zero() }, OrdChoice::new(Cond { cond: opcode == 66, inner: UnsignedLEB128 }, OrdChoice::new(Cond { cond: opcode == 67, inner: f32() }, OrdChoice::new(Cond { cond: opcode == 68, inner: f64() }, OrdChoice::new(Cond { cond: opcode == 252, inner: instr_with_fc() }, OrdChoice::new(Cond { cond: opcode == 253, inner: instr_with_fd() }, Cond { cond: !(opcode == 32 || opcode == 65 || opcode == 34 || opcode == 106 || opcode == 11 || opcode == 33 || opcode == 54 || opcode == 40 || opcode == 13 || opcode == 113 || opcode == 4 || opcode == 2 || opcode == 69 || opcode == 107 || opcode == 12 || opcode == 16 || opcode == 114 || opcode == 27 || opcode == 118 || opcode == 116 || opcode == 0 || opcode == 1 || opcode == 3 || opcode == 14 || opcode == 15 || opcode == 17 || opcode == 208 || opcode == 209 || opcode == 210 || opcode == 26 || opcode == 28 || opcode == 35 || opcode == 36 || opcode == 37 || opcode == 38 || opcode == 41 || opcode == 42 || opcode == 43 || opcode == 44 || opcode == 45 || opcode == 46 || opcode == 47 || opcode == 48 || opcode == 49 || opcode == 50 || opcode == 51 || opcode == 52 || opcode == 53 || opcode == 55 || opcode == 56 || opcode == 57 || opcode == 58 || opcode == 59 || opcode == 60 || opcode == 61 || opcode == 62 || opcode == 63 || opcode == 64 || opcode == 66 || opcode == 67 || opcode == 68 || opcode == 252 || opcode == 253), inner: empty() }))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: InstrRestMapper::new() })
 }
 
 
@@ -6286,71 +7566,71 @@ pub fn expr<'a>() -> (o: ExprCombinator<'a>)
 
                 
 
-pub struct SpecByteVec {
-    pub l: u64,
-    pub v: Seq<u8>,
+pub struct SpecGlobal {
+    pub gt: SpecGlobaltype,
+    pub init: SpecExpr,
 }
 
-pub type SpecByteVecInner = (u64, Seq<u8>);
-impl SpecFrom<SpecByteVec> for SpecByteVecInner {
-    open spec fn spec_from(m: SpecByteVec) -> SpecByteVecInner {
-        (m.l, m.v)
+pub type SpecGlobalInner = (SpecGlobaltype, SpecExpr);
+impl SpecFrom<SpecGlobal> for SpecGlobalInner {
+    open spec fn spec_from(m: SpecGlobal) -> SpecGlobalInner {
+        (m.gt, m.init)
     }
 }
-impl SpecFrom<SpecByteVecInner> for SpecByteVec {
-    open spec fn spec_from(m: SpecByteVecInner) -> SpecByteVec {
-        let (l, v) = m;
-        SpecByteVec { l, v }
+impl SpecFrom<SpecGlobalInner> for SpecGlobal {
+    open spec fn spec_from(m: SpecGlobalInner) -> SpecGlobal {
+        let (gt, init) = m;
+        SpecGlobal { gt, init }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 
-pub struct ByteVec {
-    pub l: u64,
-    pub v: RepeatResult<u8>,
+pub struct Global<'a> {
+    pub gt: Globaltype,
+    pub init: Expr<'a>,
 }
 
-impl View for ByteVec {
-    type V = SpecByteVec;
+impl View for Global<'_> {
+    type V = SpecGlobal;
 
     open spec fn view(&self) -> Self::V {
-        SpecByteVec {
-            l: self.l@,
-            v: self.v@,
+        SpecGlobal {
+            gt: self.gt@,
+            init: self.init@,
         }
     }
 }
-pub type ByteVecInner = (u64, RepeatResult<u8>);
-impl From<ByteVec> for ByteVecInner {
-    fn ex_from(m: ByteVec) -> ByteVecInner {
-        (m.l, m.v)
+pub type GlobalInner<'a> = (Globaltype, Expr<'a>);
+impl<'a> From<Global<'a>> for GlobalInner<'a> {
+    fn ex_from(m: Global) -> GlobalInner {
+        (m.gt, m.init)
     }
 }
-impl From<ByteVecInner> for ByteVec {
-    fn ex_from(m: ByteVecInner) -> ByteVec {
-        let (l, v) = m;
-        ByteVec { l, v }
+impl<'a> From<GlobalInner<'a>> for Global<'a> {
+    fn ex_from(m: GlobalInner) -> Global {
+        let (gt, init) = m;
+        Global { gt, init }
     }
 }
 
-pub struct ByteVecMapper;
-impl ByteVecMapper {
+pub struct GlobalMapper<'a>(PhantomData<&'a ()>);
+impl<'a> GlobalMapper<'a> {
     pub closed spec fn spec_new() -> Self {
-        ByteVecMapper
+        GlobalMapper(PhantomData)
     }
     pub fn new() -> Self {
-        ByteVecMapper
+        GlobalMapper(PhantomData)
     }
 }
-impl View for ByteVecMapper {
+impl View for GlobalMapper<'_> {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ByteVecMapper {
-    type Src = SpecByteVecInner;
-    type Dst = SpecByteVec;
+impl SpecIso for GlobalMapper<'_> {
+    type Src = SpecGlobalInner;
+    type Dst = SpecGlobal;
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -6358,23 +7638,23 @@ impl SpecIso for ByteVecMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl Iso for ByteVecMapper {
-    type Src = ByteVecInner;
-    type Dst = ByteVec;
+impl<'a> Iso for GlobalMapper<'a> {
+    type Src = GlobalInner<'a>;
+    type Dst = Global<'a>;
 }
 
-pub struct SpecByteVecCombinator(SpecByteVecCombinatorAlias);
+pub struct SpecGlobalCombinator(SpecGlobalCombinatorAlias);
 
-impl SpecCombinator for SpecByteVecCombinator {
-    type Type = SpecByteVec;
+impl SpecCombinator for SpecGlobalCombinator {
+    type Type = SpecGlobal;
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     { self.0.spec_parse(s) }
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecByteVecCombinator {
+impl SecureSpecCombinator for SpecGlobalCombinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecByteVecCombinatorAlias::is_prefix_secure() }
+    { SpecGlobalCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -6388,16 +7668,16 @@ impl SecureSpecCombinator for SpecByteVecCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecByteVecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<U8>>, ByteVecMapper>;
+pub type SpecGlobalCombinatorAlias = Mapped<(SpecGlobaltypeCombinator, SpecExprCombinator), GlobalMapper<'static>>;
 
-pub struct ByteVecCombinator<'a>(ByteVecCombinatorAlias<'a>);
+pub struct GlobalCombinator<'a>(GlobalCombinatorAlias<'a>);
 
-impl<'a> View for ByteVecCombinator<'a> {
-    type V = SpecByteVecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecByteVecCombinator(self.0@) }
+impl<'a> View for GlobalCombinator<'a> {
+    type V = SpecGlobalCombinator;
+    closed spec fn view(&self) -> Self::V { SpecGlobalCombinator(self.0@) }
 }
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ByteVecCombinator<'a> {
-    type Type = ByteVec;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalCombinator<'a> {
+    type Type = Global<'a>;
     closed spec fn spec_length(&self) -> Option<usize> 
     { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
     fn length(&self) -> Option<usize> 
@@ -6411,50 +7691,947 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ByteVecCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ByteVecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<U8>, ByteVecCont0<'a>>, ByteVecMapper>;
+pub type GlobalCombinatorAlias<'a> = Mapped<(GlobaltypeCombinator, ExprCombinator<'a>), GlobalMapper<'a>>;
 
 
-pub closed spec fn spec_byte_vec() -> SpecByteVecCombinator {
-    SpecByteVecCombinator(
+pub closed spec fn spec_global() -> SpecGlobalCombinator {
+    SpecGlobalCombinator(
     Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_byte_vec_cont0(deps) },
-        mapper: ByteVecMapper::spec_new(),
+        inner: (spec_globaltype(), spec_expr()),
+        mapper: GlobalMapper::spec_new(),
     })
 }
 
-pub open spec fn spec_byte_vec_cont0(deps: u64) -> RepeatN<U8> {
-    let l = deps;
-    RepeatN(U8, l.spec_into())
-}
                 
-pub fn byte_vec<'a>() -> (o: ByteVecCombinator<'a>)
-    ensures o@ == spec_byte_vec(),
+pub fn global<'a>() -> (o: GlobalCombinator<'a>)
+    ensures o@ == spec_global(),
 {
-    ByteVecCombinator(
+    GlobalCombinator(
     Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ByteVecCont0::new(), spec_snd: Ghost(|deps| spec_byte_vec_cont0(deps)) },
-        mapper: ByteVecMapper::new(),
+        inner: (globaltype(), expr()),
+        mapper: GlobalMapper::new(),
     })
 }
 
-pub struct ByteVecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ByteVecCont0<'a> {
-    pub fn new() -> Self {
-        ByteVecCont0(PhantomData)
+                
+pub type SpecSigned64 = Seq<u8>;
+pub type Signed64<'a> = &'a [u8];
+
+
+pub struct SpecSigned64Combinator(SpecSigned64CombinatorAlias);
+
+impl SpecCombinator for SpecSigned64Combinator {
+    type Type = SpecSigned64;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecSigned64Combinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecSigned64CombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecSigned64CombinatorAlias = BytesN<8>;
+
+pub struct Signed64Combinator(Signed64CombinatorAlias);
+
+impl View for Signed64Combinator {
+    type V = SpecSigned64Combinator;
+    closed spec fn view(&self) -> Self::V { SpecSigned64Combinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for Signed64Combinator {
+    type Type = Signed64<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type Signed64CombinatorAlias = BytesN<8>;
+
+
+pub closed spec fn spec_signed_64() -> SpecSigned64Combinator {
+    SpecSigned64Combinator(BytesN::<8>)
+}
+
+                
+pub fn signed_64() -> (o: Signed64Combinator)
+    ensures o@ == spec_signed_64(),
+{
+    Signed64Combinator(BytesN::<8>)
+}
+
+                
+
+pub struct SpecLimitMin {
+    pub min: u64,
+}
+
+pub type SpecLimitMinInner = u64;
+impl SpecFrom<SpecLimitMin> for SpecLimitMinInner {
+    open spec fn spec_from(m: SpecLimitMin) -> SpecLimitMinInner {
+        m.min
     }
 }
-impl<'a> Continuation<&u64> for ByteVecCont0<'a> {
-    type Output = RepeatN<U8>;
+impl SpecFrom<SpecLimitMinInner> for SpecLimitMin {
+    open spec fn spec_from(m: SpecLimitMinInner) -> SpecLimitMin {
+        let min = m;
+        SpecLimitMin { min }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct LimitMin {
+    pub min: u64,
+}
+
+impl View for LimitMin {
+    type V = SpecLimitMin;
+
+    open spec fn view(&self) -> Self::V {
+        SpecLimitMin {
+            min: self.min@,
+        }
+    }
+}
+pub type LimitMinInner = u64;
+impl From<LimitMin> for LimitMinInner {
+    fn ex_from(m: LimitMin) -> LimitMinInner {
+        m.min
+    }
+}
+impl From<LimitMinInner> for LimitMin {
+    fn ex_from(m: LimitMinInner) -> LimitMin {
+        let min = m;
+        LimitMin { min }
+    }
+}
+
+pub struct LimitMinMapper;
+impl LimitMinMapper {
+    pub closed spec fn spec_new() -> Self {
+        LimitMinMapper
+    }
+    pub fn new() -> Self {
+        LimitMinMapper
+    }
+}
+impl View for LimitMinMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for LimitMinMapper {
+    type Src = SpecLimitMinInner;
+    type Dst = SpecLimitMin;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for LimitMinMapper {
+    type Src = LimitMinInner;
+    type Dst = LimitMin;
+}
+
+pub struct SpecLimitMinCombinator(SpecLimitMinCombinatorAlias);
+
+impl SpecCombinator for SpecLimitMinCombinator {
+    type Type = SpecLimitMin;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecLimitMinCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecLimitMinCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecLimitMinCombinatorAlias = Mapped<UnsignedLEB128, LimitMinMapper>;
+
+pub struct LimitMinCombinator(LimitMinCombinatorAlias);
+
+impl View for LimitMinCombinator {
+    type V = SpecLimitMinCombinator;
+    closed spec fn view(&self) -> Self::V { SpecLimitMinCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitMinCombinator {
+    type Type = LimitMin;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type LimitMinCombinatorAlias = Mapped<UnsignedLEB128, LimitMinMapper>;
+
+
+pub closed spec fn spec_limit_min() -> SpecLimitMinCombinator {
+    SpecLimitMinCombinator(
+    Mapped {
+        inner: UnsignedLEB128,
+        mapper: LimitMinMapper::spec_new(),
+    })
+}
+
+                
+pub fn limit_min() -> (o: LimitMinCombinator)
+    ensures o@ == spec_limit_min(),
+{
+    LimitMinCombinator(
+    Mapped {
+        inner: UnsignedLEB128,
+        mapper: LimitMinMapper::new(),
+    })
+}
+
+                
+
+pub struct SpecLimitMinMax {
+    pub min: u64,
+    pub max: u64,
+}
+
+pub type SpecLimitMinMaxInner = (u64, u64);
+impl SpecFrom<SpecLimitMinMax> for SpecLimitMinMaxInner {
+    open spec fn spec_from(m: SpecLimitMinMax) -> SpecLimitMinMaxInner {
+        (m.min, m.max)
+    }
+}
+impl SpecFrom<SpecLimitMinMaxInner> for SpecLimitMinMax {
+    open spec fn spec_from(m: SpecLimitMinMaxInner) -> SpecLimitMinMax {
+        let (min, max) = m;
+        SpecLimitMinMax { min, max }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct LimitMinMax {
+    pub min: u64,
+    pub max: u64,
+}
+
+impl View for LimitMinMax {
+    type V = SpecLimitMinMax;
+
+    open spec fn view(&self) -> Self::V {
+        SpecLimitMinMax {
+            min: self.min@,
+            max: self.max@,
+        }
+    }
+}
+pub type LimitMinMaxInner = (u64, u64);
+impl From<LimitMinMax> for LimitMinMaxInner {
+    fn ex_from(m: LimitMinMax) -> LimitMinMaxInner {
+        (m.min, m.max)
+    }
+}
+impl From<LimitMinMaxInner> for LimitMinMax {
+    fn ex_from(m: LimitMinMaxInner) -> LimitMinMax {
+        let (min, max) = m;
+        LimitMinMax { min, max }
+    }
+}
+
+pub struct LimitMinMaxMapper;
+impl LimitMinMaxMapper {
+    pub closed spec fn spec_new() -> Self {
+        LimitMinMaxMapper
+    }
+    pub fn new() -> Self {
+        LimitMinMaxMapper
+    }
+}
+impl View for LimitMinMaxMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for LimitMinMaxMapper {
+    type Src = SpecLimitMinMaxInner;
+    type Dst = SpecLimitMinMax;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for LimitMinMaxMapper {
+    type Src = LimitMinMaxInner;
+    type Dst = LimitMinMax;
+}
+
+pub struct SpecLimitMinMaxCombinator(SpecLimitMinMaxCombinatorAlias);
+
+impl SpecCombinator for SpecLimitMinMaxCombinator {
+    type Type = SpecLimitMinMax;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecLimitMinMaxCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecLimitMinMaxCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecLimitMinMaxCombinatorAlias = Mapped<(UnsignedLEB128, UnsignedLEB128), LimitMinMaxMapper>;
+
+pub struct LimitMinMaxCombinator(LimitMinMaxCombinatorAlias);
+
+impl View for LimitMinMaxCombinator {
+    type V = SpecLimitMinMaxCombinator;
+    closed spec fn view(&self) -> Self::V { SpecLimitMinMaxCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitMinMaxCombinator {
+    type Type = LimitMinMax;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type LimitMinMaxCombinatorAlias = Mapped<(UnsignedLEB128, UnsignedLEB128), LimitMinMaxMapper>;
+
+
+pub closed spec fn spec_limit_min_max() -> SpecLimitMinMaxCombinator {
+    SpecLimitMinMaxCombinator(
+    Mapped {
+        inner: (UnsignedLEB128, UnsignedLEB128),
+        mapper: LimitMinMaxMapper::spec_new(),
+    })
+}
+
+                
+pub fn limit_min_max() -> (o: LimitMinMaxCombinator)
+    ensures o@ == spec_limit_min_max(),
+{
+    LimitMinMaxCombinator(
+    Mapped {
+        inner: (UnsignedLEB128, UnsignedLEB128),
+        mapper: LimitMinMaxMapper::new(),
+    })
+}
+
+                
+
+pub enum SpecLimits {
+    NoMax(SpecLimitMin),
+    Max(SpecLimitMinMax),
+}
+
+pub type SpecLimitsInner = Either<SpecLimitMin, SpecLimitMinMax>;
+
+
+
+impl SpecFrom<SpecLimits> for SpecLimitsInner {
+    open spec fn spec_from(m: SpecLimits) -> SpecLimitsInner {
+        match m {
+            SpecLimits::NoMax(m) => Either::Left(m),
+            SpecLimits::Max(m) => Either::Right(m),
+        }
+    }
+
+}
+
+impl SpecFrom<SpecLimitsInner> for SpecLimits {
+    open spec fn spec_from(m: SpecLimitsInner) -> SpecLimits {
+        match m {
+            Either::Left(m) => SpecLimits::NoMax(m),
+            Either::Right(m) => SpecLimits::Max(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Limits {
+    NoMax(LimitMin),
+    Max(LimitMinMax),
+}
+
+pub type LimitsInner = Either<LimitMin, LimitMinMax>;
+
+
+impl View for Limits {
+    type V = SpecLimits;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            Limits::NoMax(m) => SpecLimits::NoMax(m@),
+            Limits::Max(m) => SpecLimits::Max(m@),
+        }
+    }
+}
+
+
+impl From<Limits> for LimitsInner {
+    fn ex_from(m: Limits) -> LimitsInner {
+        match m {
+            Limits::NoMax(m) => Either::Left(m),
+            Limits::Max(m) => Either::Right(m),
+        }
+    }
+
+}
+
+impl From<LimitsInner> for Limits {
+    fn ex_from(m: LimitsInner) -> Limits {
+        match m {
+            Either::Left(m) => Limits::NoMax(m),
+            Either::Right(m) => Limits::Max(m),
+        }
+    }
+    
+}
+
+
+pub struct LimitsMapper;
+impl LimitsMapper {
+    pub closed spec fn spec_new() -> Self {
+        LimitsMapper
+    }
+    pub fn new() -> Self {
+        LimitsMapper
+    }
+}
+impl View for LimitsMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for LimitsMapper {
+    type Src = SpecLimitsInner;
+    type Dst = SpecLimits;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for LimitsMapper {
+    type Src = LimitsInner;
+    type Dst = Limits;
+}
+
+pub const LIMITSNOMAX_0_FRONT_CONST: u8 = 0;
+
+pub const LIMITSMAX_0_FRONT_CONST: u8 = 1;
+
+
+pub struct SpecLimitsCombinator(SpecLimitsCombinatorAlias);
+
+impl SpecCombinator for SpecLimitsCombinator {
+    type Type = SpecLimits;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecLimitsCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecLimitsCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecLimitsCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, SpecLimitMinCombinator>, Preceded<Tag<U8, u8>, SpecLimitMinMaxCombinator>>, LimitsMapper>;
+
+
+
+pub struct LimitsCombinator(LimitsCombinatorAlias);
+
+impl View for LimitsCombinator {
+    type V = SpecLimitsCombinator;
+    closed spec fn view(&self) -> Self::V { SpecLimitsCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitsCombinator {
+    type Type = Limits;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type LimitsCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, LimitMinCombinator>, Preceded<Tag<U8, u8>, LimitMinMaxCombinator>>, LimitsMapper>;
+
+
+pub closed spec fn spec_limits() -> SpecLimitsCombinator {
+    SpecLimitsCombinator(Mapped { inner: OrdChoice(Preceded(Tag::spec_new(U8, LIMITSNOMAX_0_FRONT_CONST), spec_limit_min()), Preceded(Tag::spec_new(U8, LIMITSMAX_0_FRONT_CONST), spec_limit_min_max())), mapper: LimitsMapper::spec_new() })
+}
+
+                
+pub fn limits() -> (o: LimitsCombinator)
+    ensures o@ == spec_limits(),
+{
+    LimitsCombinator(Mapped { inner: OrdChoice::new(Preceded(Tag::new(U8, LIMITSNOMAX_0_FRONT_CONST), limit_min()), Preceded(Tag::new(U8, LIMITSMAX_0_FRONT_CONST), limit_min_max())), mapper: LimitsMapper::new() })
+}
+
+                
+pub type SpecMemtype = SpecLimits;
+pub type Memtype = Limits;
+
+
+pub struct SpecMemtypeCombinator(SpecMemtypeCombinatorAlias);
+
+impl SpecCombinator for SpecMemtypeCombinator {
+    type Type = SpecMemtype;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMemtypeCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMemtypeCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMemtypeCombinatorAlias = SpecLimitsCombinator;
+
+pub struct MemtypeCombinator(MemtypeCombinatorAlias);
+
+impl View for MemtypeCombinator {
+    type V = SpecMemtypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMemtypeCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MemtypeCombinator {
+    type Type = Memtype;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MemtypeCombinatorAlias = LimitsCombinator;
+
+
+pub closed spec fn spec_memtype() -> SpecMemtypeCombinator {
+    SpecMemtypeCombinator(spec_limits())
+}
+
+                
+pub fn memtype() -> (o: MemtypeCombinator)
+    ensures o@ == spec_memtype(),
+{
+    MemtypeCombinator(limits())
+}
+
+                
+
+pub struct SpecMem {
+    pub ty: SpecMemtype,
+}
+
+pub type SpecMemInner = SpecMemtype;
+impl SpecFrom<SpecMem> for SpecMemInner {
+    open spec fn spec_from(m: SpecMem) -> SpecMemInner {
+        m.ty
+    }
+}
+impl SpecFrom<SpecMemInner> for SpecMem {
+    open spec fn spec_from(m: SpecMemInner) -> SpecMem {
+        let ty = m;
+        SpecMem { ty }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Mem {
+    pub ty: Memtype,
+}
+
+impl View for Mem {
+    type V = SpecMem;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMem {
+            ty: self.ty@,
+        }
+    }
+}
+pub type MemInner = Memtype;
+impl From<Mem> for MemInner {
+    fn ex_from(m: Mem) -> MemInner {
+        m.ty
+    }
+}
+impl From<MemInner> for Mem {
+    fn ex_from(m: MemInner) -> Mem {
+        let ty = m;
+        Mem { ty }
+    }
+}
+
+pub struct MemMapper;
+impl MemMapper {
+    pub closed spec fn spec_new() -> Self {
+        MemMapper
+    }
+    pub fn new() -> Self {
+        MemMapper
+    }
+}
+impl View for MemMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MemMapper {
+    type Src = SpecMemInner;
+    type Dst = SpecMem;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for MemMapper {
+    type Src = MemInner;
+    type Dst = Mem;
+}
+
+pub struct SpecMemCombinator(SpecMemCombinatorAlias);
+
+impl SpecCombinator for SpecMemCombinator {
+    type Type = SpecMem;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMemCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMemCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMemCombinatorAlias = Mapped<SpecMemtypeCombinator, MemMapper>;
+
+pub struct MemCombinator(MemCombinatorAlias);
+
+impl View for MemCombinator {
+    type V = SpecMemCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMemCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MemCombinator {
+    type Type = Mem;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MemCombinatorAlias = Mapped<MemtypeCombinator, MemMapper>;
+
+
+pub closed spec fn spec_mem() -> SpecMemCombinator {
+    SpecMemCombinator(
+    Mapped {
+        inner: spec_memtype(),
+        mapper: MemMapper::spec_new(),
+    })
+}
+
+                
+pub fn mem() -> (o: MemCombinator)
+    ensures o@ == spec_mem(),
+{
+    MemCombinator(
+    Mapped {
+        inner: memtype(),
+        mapper: MemMapper::new(),
+    })
+}
+
+                
+
+pub struct SpecMemsecContent {
+    pub l: u64,
+    pub v: Seq<SpecMem>,
+}
+
+pub type SpecMemsecContentInner = (u64, Seq<SpecMem>);
+impl SpecFrom<SpecMemsecContent> for SpecMemsecContentInner {
+    open spec fn spec_from(m: SpecMemsecContent) -> SpecMemsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecMemsecContentInner> for SpecMemsecContent {
+    open spec fn spec_from(m: SpecMemsecContentInner) -> SpecMemsecContent {
+        let (l, v) = m;
+        SpecMemsecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct MemsecContent {
+    pub l: u64,
+    pub v: RepeatResult<Mem>,
+}
+
+impl View for MemsecContent {
+    type V = SpecMemsecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMemsecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type MemsecContentInner = (u64, RepeatResult<Mem>);
+impl From<MemsecContent> for MemsecContentInner {
+    fn ex_from(m: MemsecContent) -> MemsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl From<MemsecContentInner> for MemsecContent {
+    fn ex_from(m: MemsecContentInner) -> MemsecContent {
+        let (l, v) = m;
+        MemsecContent { l, v }
+    }
+}
+
+pub struct MemsecContentMapper;
+impl MemsecContentMapper {
+    pub closed spec fn spec_new() -> Self {
+        MemsecContentMapper
+    }
+    pub fn new() -> Self {
+        MemsecContentMapper
+    }
+}
+impl View for MemsecContentMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MemsecContentMapper {
+    type Src = SpecMemsecContentInner;
+    type Dst = SpecMemsecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for MemsecContentMapper {
+    type Src = MemsecContentInner;
+    type Dst = MemsecContent;
+}
+
+pub struct SpecMemsecContentCombinator(SpecMemsecContentCombinatorAlias);
+
+impl SpecCombinator for SpecMemsecContentCombinator {
+    type Type = SpecMemsecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMemsecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMemsecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMemsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecMemCombinator>>, MemsecContentMapper>;
+
+pub struct MemsecContentCombinator<'a>(MemsecContentCombinatorAlias<'a>);
+
+impl<'a> View for MemsecContentCombinator<'a> {
+    type V = SpecMemsecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMemsecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MemsecContentCombinator<'a> {
+    type Type = MemsecContent;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MemsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<MemCombinator>, MemsecContentCont0<'a>>, MemsecContentMapper>;
+
+
+pub closed spec fn spec_memsec_content() -> SpecMemsecContentCombinator {
+    SpecMemsecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_memsec_content_cont0(deps) },
+        mapper: MemsecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_memsec_content_cont0(deps: u64) -> RepeatN<SpecMemCombinator> {
+    let l = deps;
+    RepeatN(spec_mem(), l.spec_into())
+}
+                
+pub fn memsec_content<'a>() -> (o: MemsecContentCombinator<'a>)
+    ensures o@ == spec_memsec_content(),
+{
+    MemsecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: MemsecContentCont0::new(), spec_snd: Ghost(|deps| spec_memsec_content_cont0(deps)) },
+        mapper: MemsecContentMapper::new(),
+    })
+}
+
+pub struct MemsecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> MemsecContentCont0<'a> {
+    pub fn new() -> Self {
+        MemsecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for MemsecContentCont0<'a> {
+    type Output = RepeatN<MemCombinator>;
 
     open spec fn requires(&self, deps: &u64) -> bool { true }
 
     open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_byte_vec_cont0(deps@)
+        o@ == spec_memsec_content_cont0(deps@)
     }
 
     fn apply(&self, deps: &u64) -> Self::Output {
         let l = *deps;
-        RepeatN(U8, l.ex_into())
+        RepeatN(mem(), l.ex_into())
     }
 }
                 
@@ -6671,73 +8848,6 @@ pub fn passive_data<'a>() -> (o: PassiveDataCombinator<'a>)
     ensures o@ == spec_passive_data(),
 {
     PassiveDataCombinator(byte_vec())
-}
-
-                
-pub type SpecMemidx = u64;
-pub type Memidx = u64;
-
-
-pub struct SpecMemidxCombinator(SpecMemidxCombinatorAlias);
-
-impl SpecCombinator for SpecMemidxCombinator {
-    type Type = SpecMemidx;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMemidxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMemidxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMemidxCombinatorAlias = UnsignedLEB128;
-
-pub struct MemidxCombinator(MemidxCombinatorAlias);
-
-impl View for MemidxCombinator {
-    type V = SpecMemidxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMemidxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MemidxCombinator {
-    type Type = Memidx;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MemidxCombinatorAlias = UnsignedLEB128;
-
-
-pub closed spec fn spec_memidx() -> SpecMemidxCombinator {
-    SpecMemidxCombinator(UnsignedLEB128)
-}
-
-                
-pub fn memidx() -> (o: MemidxCombinator)
-    ensures o@ == spec_memidx(),
-{
-    MemidxCombinator(UnsignedLEB128)
 }
 
                 
@@ -7250,6 +9360,999 @@ impl<'a> Continuation<&u64> for DatasecContentCont0<'a> {
 }
                 
 
+pub struct SpecDatasec {
+    pub size: u64,
+    pub cont: SpecDatasecContent,
+}
+
+pub type SpecDatasecInner = (u64, SpecDatasecContent);
+impl SpecFrom<SpecDatasec> for SpecDatasecInner {
+    open spec fn spec_from(m: SpecDatasec) -> SpecDatasecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecDatasecInner> for SpecDatasec {
+    open spec fn spec_from(m: SpecDatasecInner) -> SpecDatasec {
+        let (size, cont) = m;
+        SpecDatasec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Datasec<'a> {
+    pub size: u64,
+    pub cont: DatasecContent<'a>,
+}
+
+impl View for Datasec<'_> {
+    type V = SpecDatasec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecDatasec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type DatasecInner<'a> = (u64, DatasecContent<'a>);
+impl<'a> From<Datasec<'a>> for DatasecInner<'a> {
+    fn ex_from(m: Datasec) -> DatasecInner {
+        (m.size, m.cont)
+    }
+}
+impl<'a> From<DatasecInner<'a>> for Datasec<'a> {
+    fn ex_from(m: DatasecInner) -> Datasec {
+        let (size, cont) = m;
+        Datasec { size, cont }
+    }
+}
+
+pub struct DatasecMapper<'a>(PhantomData<&'a ()>);
+impl<'a> DatasecMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        DatasecMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        DatasecMapper(PhantomData)
+    }
+}
+impl View for DatasecMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for DatasecMapper<'_> {
+    type Src = SpecDatasecInner;
+    type Dst = SpecDatasec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for DatasecMapper<'a> {
+    type Src = DatasecInner<'a>;
+    type Dst = Datasec<'a>;
+}
+
+pub struct SpecDatasecCombinator(SpecDatasecCombinatorAlias);
+
+impl SpecCombinator for SpecDatasecCombinator {
+    type Type = SpecDatasec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecDatasecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecDatasecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecDatasecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecDatasecContentCombinator>>, DatasecMapper<'static>>;
+
+pub struct DatasecCombinator<'a>(DatasecCombinatorAlias<'a>);
+
+impl<'a> View for DatasecCombinator<'a> {
+    type V = SpecDatasecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecDatasecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for DatasecCombinator<'a> {
+    type Type = Datasec<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type DatasecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, DatasecContentCombinator<'a>>, DatasecCont0<'a>>, DatasecMapper<'a>>;
+
+
+pub closed spec fn spec_datasec() -> SpecDatasecCombinator {
+    SpecDatasecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_datasec_cont0(deps) },
+        mapper: DatasecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_datasec_cont0(deps: u64) -> AndThen<Bytes, SpecDatasecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_datasec_content())
+}
+                
+pub fn datasec<'a>() -> (o: DatasecCombinator<'a>)
+    ensures o@ == spec_datasec(),
+{
+    DatasecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: DatasecCont0::new(), spec_snd: Ghost(|deps| spec_datasec_cont0(deps)) },
+        mapper: DatasecMapper::new(),
+    })
+}
+
+pub struct DatasecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> DatasecCont0<'a> {
+    pub fn new() -> Self {
+        DatasecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for DatasecCont0<'a> {
+    type Output = AndThen<Bytes, DatasecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_datasec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), datasec_content())
+    }
+}
+                
+
+pub struct SpecExports {
+    pub l: u64,
+    pub v: Seq<SpecExport>,
+}
+
+pub type SpecExportsInner = (u64, Seq<SpecExport>);
+impl SpecFrom<SpecExports> for SpecExportsInner {
+    open spec fn spec_from(m: SpecExports) -> SpecExportsInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecExportsInner> for SpecExports {
+    open spec fn spec_from(m: SpecExportsInner) -> SpecExports {
+        let (l, v) = m;
+        SpecExports { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Exports {
+    pub l: u64,
+    pub v: RepeatResult<Export>,
+}
+
+impl View for Exports {
+    type V = SpecExports;
+
+    open spec fn view(&self) -> Self::V {
+        SpecExports {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type ExportsInner = (u64, RepeatResult<Export>);
+impl From<Exports> for ExportsInner {
+    fn ex_from(m: Exports) -> ExportsInner {
+        (m.l, m.v)
+    }
+}
+impl From<ExportsInner> for Exports {
+    fn ex_from(m: ExportsInner) -> Exports {
+        let (l, v) = m;
+        Exports { l, v }
+    }
+}
+
+pub struct ExportsMapper;
+impl ExportsMapper {
+    pub closed spec fn spec_new() -> Self {
+        ExportsMapper
+    }
+    pub fn new() -> Self {
+        ExportsMapper
+    }
+}
+impl View for ExportsMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExportsMapper {
+    type Src = SpecExportsInner;
+    type Dst = SpecExports;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ExportsMapper {
+    type Src = ExportsInner;
+    type Dst = Exports;
+}
+
+pub struct SpecExportsCombinator(SpecExportsCombinatorAlias);
+
+impl SpecCombinator for SpecExportsCombinator {
+    type Type = SpecExports;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecExportsCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecExportsCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecExportsCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecExportCombinator>>, ExportsMapper>;
+
+pub struct ExportsCombinator<'a>(ExportsCombinatorAlias<'a>);
+
+impl<'a> View for ExportsCombinator<'a> {
+    type V = SpecExportsCombinator;
+    closed spec fn view(&self) -> Self::V { SpecExportsCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportsCombinator<'a> {
+    type Type = Exports;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ExportsCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ExportCombinator<'a>>, ExportsCont0<'a>>, ExportsMapper>;
+
+
+pub closed spec fn spec_exports() -> SpecExportsCombinator {
+    SpecExportsCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exports_cont0(deps) },
+        mapper: ExportsMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_exports_cont0(deps: u64) -> RepeatN<SpecExportCombinator> {
+    let l = deps;
+    RepeatN(spec_export(), l.spec_into())
+}
+                
+pub fn exports<'a>() -> (o: ExportsCombinator<'a>)
+    ensures o@ == spec_exports(),
+{
+    ExportsCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ExportsCont0::new(), spec_snd: Ghost(|deps| spec_exports_cont0(deps)) },
+        mapper: ExportsMapper::new(),
+    })
+}
+
+pub struct ExportsCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ExportsCont0<'a> {
+    pub fn new() -> Self {
+        ExportsCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ExportsCont0<'a> {
+    type Output = RepeatN<ExportCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_exports_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(export(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecExprs {
+    pub l: u64,
+    pub v: Seq<SpecExpr>,
+}
+
+pub type SpecExprsInner = (u64, Seq<SpecExpr>);
+impl SpecFrom<SpecExprs> for SpecExprsInner {
+    open spec fn spec_from(m: SpecExprs) -> SpecExprsInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecExprsInner> for SpecExprs {
+    open spec fn spec_from(m: SpecExprsInner) -> SpecExprs {
+        let (l, v) = m;
+        SpecExprs { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Exprs<'a> {
+    pub l: u64,
+    pub v: RepeatResult<Expr<'a>>,
+}
+
+impl View for Exprs<'_> {
+    type V = SpecExprs;
+
+    open spec fn view(&self) -> Self::V {
+        SpecExprs {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type ExprsInner<'a> = (u64, RepeatResult<Expr<'a>>);
+impl<'a> From<Exprs<'a>> for ExprsInner<'a> {
+    fn ex_from(m: Exprs) -> ExprsInner {
+        (m.l, m.v)
+    }
+}
+impl<'a> From<ExprsInner<'a>> for Exprs<'a> {
+    fn ex_from(m: ExprsInner) -> Exprs {
+        let (l, v) = m;
+        Exprs { l, v }
+    }
+}
+
+pub struct ExprsMapper<'a>(PhantomData<&'a ()>);
+impl<'a> ExprsMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        ExprsMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        ExprsMapper(PhantomData)
+    }
+}
+impl View for ExprsMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExprsMapper<'_> {
+    type Src = SpecExprsInner;
+    type Dst = SpecExprs;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for ExprsMapper<'a> {
+    type Src = ExprsInner<'a>;
+    type Dst = Exprs<'a>;
+}
+
+pub struct SpecExprsCombinator(SpecExprsCombinatorAlias);
+
+impl SpecCombinator for SpecExprsCombinator {
+    type Type = SpecExprs;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecExprsCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecExprsCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecExprsCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecExprCombinator>>, ExprsMapper<'static>>;
+
+pub struct ExprsCombinator<'a>(ExprsCombinatorAlias<'a>);
+
+impl<'a> View for ExprsCombinator<'a> {
+    type V = SpecExprsCombinator;
+    closed spec fn view(&self) -> Self::V { SpecExprsCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ExprsCombinator<'a> {
+    type Type = Exprs<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ExprsCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ExprCombinator<'a>>, ExprsCont0<'a>>, ExprsMapper<'a>>;
+
+
+pub closed spec fn spec_exprs() -> SpecExprsCombinator {
+    SpecExprsCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exprs_cont0(deps) },
+        mapper: ExprsMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_exprs_cont0(deps: u64) -> RepeatN<SpecExprCombinator> {
+    let l = deps;
+    RepeatN(spec_expr(), l.spec_into())
+}
+                
+pub fn exprs<'a>() -> (o: ExprsCombinator<'a>)
+    ensures o@ == spec_exprs(),
+{
+    ExprsCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ExprsCont0::new(), spec_snd: Ghost(|deps| spec_exprs_cont0(deps)) },
+        mapper: ExprsMapper::new(),
+    })
+}
+
+pub struct ExprsCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ExprsCont0<'a> {
+    pub fn new() -> Self {
+        ExprsCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ExprsCont0<'a> {
+    type Output = RepeatN<ExprCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_exprs_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(expr(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecParsedElem6 {
+    pub table: SpecTableidx,
+    pub offset: SpecExpr,
+    pub et: SpecReftype,
+    pub init: SpecExprs,
+}
+
+pub type SpecParsedElem6Inner = (SpecTableidx, (SpecExpr, (SpecReftype, SpecExprs)));
+impl SpecFrom<SpecParsedElem6> for SpecParsedElem6Inner {
+    open spec fn spec_from(m: SpecParsedElem6) -> SpecParsedElem6Inner {
+        (m.table, (m.offset, (m.et, m.init)))
+    }
+}
+impl SpecFrom<SpecParsedElem6Inner> for SpecParsedElem6 {
+    open spec fn spec_from(m: SpecParsedElem6Inner) -> SpecParsedElem6 {
+        let (table, (offset, (et, init))) = m;
+        SpecParsedElem6 { table, offset, et, init }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct ParsedElem6<'a> {
+    pub table: Tableidx,
+    pub offset: Expr<'a>,
+    pub et: Reftype,
+    pub init: Exprs<'a>,
+}
+
+impl View for ParsedElem6<'_> {
+    type V = SpecParsedElem6;
+
+    open spec fn view(&self) -> Self::V {
+        SpecParsedElem6 {
+            table: self.table@,
+            offset: self.offset@,
+            et: self.et@,
+            init: self.init@,
+        }
+    }
+}
+pub type ParsedElem6Inner<'a> = (Tableidx, (Expr<'a>, (Reftype, Exprs<'a>)));
+impl<'a> From<ParsedElem6<'a>> for ParsedElem6Inner<'a> {
+    fn ex_from(m: ParsedElem6) -> ParsedElem6Inner {
+        (m.table, (m.offset, (m.et, m.init)))
+    }
+}
+impl<'a> From<ParsedElem6Inner<'a>> for ParsedElem6<'a> {
+    fn ex_from(m: ParsedElem6Inner) -> ParsedElem6 {
+        let (table, (offset, (et, init))) = m;
+        ParsedElem6 { table, offset, et, init }
+    }
+}
+
+pub struct ParsedElem6Mapper<'a>(PhantomData<&'a ()>);
+impl<'a> ParsedElem6Mapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        ParsedElem6Mapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        ParsedElem6Mapper(PhantomData)
+    }
+}
+impl View for ParsedElem6Mapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ParsedElem6Mapper<'_> {
+    type Src = SpecParsedElem6Inner;
+    type Dst = SpecParsedElem6;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for ParsedElem6Mapper<'a> {
+    type Src = ParsedElem6Inner<'a>;
+    type Dst = ParsedElem6<'a>;
+}
+
+pub struct SpecParsedElem6Combinator(SpecParsedElem6CombinatorAlias);
+
+impl SpecCombinator for SpecParsedElem6Combinator {
+    type Type = SpecParsedElem6;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecParsedElem6Combinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecParsedElem6CombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecParsedElem6CombinatorAlias = Mapped<(SpecTableidxCombinator, (SpecExprCombinator, (SpecReftypeCombinator, SpecExprsCombinator))), ParsedElem6Mapper<'static>>;
+
+pub struct ParsedElem6Combinator<'a>(ParsedElem6CombinatorAlias<'a>);
+
+impl<'a> View for ParsedElem6Combinator<'a> {
+    type V = SpecParsedElem6Combinator;
+    closed spec fn view(&self) -> Self::V { SpecParsedElem6Combinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem6Combinator<'a> {
+    type Type = ParsedElem6<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ParsedElem6CombinatorAlias<'a> = Mapped<(TableidxCombinator, (ExprCombinator<'a>, (ReftypeCombinator, ExprsCombinator<'a>))), ParsedElem6Mapper<'a>>;
+
+
+pub closed spec fn spec_parsed_elem6() -> SpecParsedElem6Combinator {
+    SpecParsedElem6Combinator(
+    Mapped {
+        inner: (spec_tableidx(), (spec_expr(), (spec_reftype(), spec_exprs()))),
+        mapper: ParsedElem6Mapper::spec_new(),
+    })
+}
+
+                
+pub fn parsed_elem6<'a>() -> (o: ParsedElem6Combinator<'a>)
+    ensures o@ == spec_parsed_elem6(),
+{
+    ParsedElem6Combinator(
+    Mapped {
+        inner: (tableidx(), (expr(), (reftype(), exprs()))),
+        mapper: ParsedElem6Mapper::new(),
+    })
+}
+
+                
+
+pub struct SpecStart {
+    pub func: SpecFuncidx,
+}
+
+pub type SpecStartInner = SpecFuncidx;
+impl SpecFrom<SpecStart> for SpecStartInner {
+    open spec fn spec_from(m: SpecStart) -> SpecStartInner {
+        m.func
+    }
+}
+impl SpecFrom<SpecStartInner> for SpecStart {
+    open spec fn spec_from(m: SpecStartInner) -> SpecStart {
+        let func = m;
+        SpecStart { func }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Start {
+    pub func: Funcidx,
+}
+
+impl View for Start {
+    type V = SpecStart;
+
+    open spec fn view(&self) -> Self::V {
+        SpecStart {
+            func: self.func@,
+        }
+    }
+}
+pub type StartInner = Funcidx;
+impl From<Start> for StartInner {
+    fn ex_from(m: Start) -> StartInner {
+        m.func
+    }
+}
+impl From<StartInner> for Start {
+    fn ex_from(m: StartInner) -> Start {
+        let func = m;
+        Start { func }
+    }
+}
+
+pub struct StartMapper;
+impl StartMapper {
+    pub closed spec fn spec_new() -> Self {
+        StartMapper
+    }
+    pub fn new() -> Self {
+        StartMapper
+    }
+}
+impl View for StartMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for StartMapper {
+    type Src = SpecStartInner;
+    type Dst = SpecStart;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for StartMapper {
+    type Src = StartInner;
+    type Dst = Start;
+}
+
+pub struct SpecStartCombinator(SpecStartCombinatorAlias);
+
+impl SpecCombinator for SpecStartCombinator {
+    type Type = SpecStart;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecStartCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecStartCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecStartCombinatorAlias = Mapped<SpecFuncidxCombinator, StartMapper>;
+
+pub struct StartCombinator(StartCombinatorAlias);
+
+impl View for StartCombinator {
+    type V = SpecStartCombinator;
+    closed spec fn view(&self) -> Self::V { SpecStartCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for StartCombinator {
+    type Type = Start;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type StartCombinatorAlias = Mapped<FuncidxCombinator, StartMapper>;
+
+
+pub closed spec fn spec_start() -> SpecStartCombinator {
+    SpecStartCombinator(
+    Mapped {
+        inner: spec_funcidx(),
+        mapper: StartMapper::spec_new(),
+    })
+}
+
+                
+pub fn start() -> (o: StartCombinator)
+    ensures o@ == spec_start(),
+{
+    StartCombinator(
+    Mapped {
+        inner: funcidx(),
+        mapper: StartMapper::new(),
+    })
+}
+
+                
+
+pub struct SpecStartsec {
+    pub size: u64,
+    pub cont: SpecStart,
+}
+
+pub type SpecStartsecInner = (u64, SpecStart);
+impl SpecFrom<SpecStartsec> for SpecStartsecInner {
+    open spec fn spec_from(m: SpecStartsec) -> SpecStartsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecStartsecInner> for SpecStartsec {
+    open spec fn spec_from(m: SpecStartsecInner) -> SpecStartsec {
+        let (size, cont) = m;
+        SpecStartsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Startsec {
+    pub size: u64,
+    pub cont: Start,
+}
+
+impl View for Startsec {
+    type V = SpecStartsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecStartsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type StartsecInner = (u64, Start);
+impl From<Startsec> for StartsecInner {
+    fn ex_from(m: Startsec) -> StartsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<StartsecInner> for Startsec {
+    fn ex_from(m: StartsecInner) -> Startsec {
+        let (size, cont) = m;
+        Startsec { size, cont }
+    }
+}
+
+pub struct StartsecMapper;
+impl StartsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        StartsecMapper
+    }
+    pub fn new() -> Self {
+        StartsecMapper
+    }
+}
+impl View for StartsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for StartsecMapper {
+    type Src = SpecStartsecInner;
+    type Dst = SpecStartsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for StartsecMapper {
+    type Src = StartsecInner;
+    type Dst = Startsec;
+}
+
+pub struct SpecStartsecCombinator(SpecStartsecCombinatorAlias);
+
+impl SpecCombinator for SpecStartsecCombinator {
+    type Type = SpecStartsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecStartsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecStartsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecStartsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecStartCombinator>>, StartsecMapper>;
+
+pub struct StartsecCombinator<'a>(StartsecCombinatorAlias<'a>);
+
+impl<'a> View for StartsecCombinator<'a> {
+    type V = SpecStartsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecStartsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for StartsecCombinator<'a> {
+    type Type = Startsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type StartsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, StartCombinator>, StartsecCont0<'a>>, StartsecMapper>;
+
+
+pub closed spec fn spec_startsec() -> SpecStartsecCombinator {
+    SpecStartsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_startsec_cont0(deps) },
+        mapper: StartsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_startsec_cont0(deps: u64) -> AndThen<Bytes, SpecStartCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_start())
+}
+                
+pub fn startsec<'a>() -> (o: StartsecCombinator<'a>)
+    ensures o@ == spec_startsec(),
+{
+    StartsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: StartsecCont0::new(), spec_snd: Ghost(|deps| spec_startsec_cont0(deps)) },
+        mapper: StartsecMapper::new(),
+    })
+}
+
+pub struct StartsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> StartsecCont0<'a> {
+    pub fn new() -> Self {
+        StartsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for StartsecCont0<'a> {
+    type Output = AndThen<Bytes, StartCombinator>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_startsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), start())
+    }
+}
+                
+
 pub struct SpecResulttype {
     pub l: u64,
     pub v: Seq<SpecValtype>,
@@ -7423,694 +10526,6 @@ impl<'a> Continuation<&u64> for ResulttypeCont0<'a> {
 }
                 
 
-pub struct SpecFunctype {
-    pub tag: u8,
-    pub params: SpecResulttype,
-    pub results: SpecResulttype,
-}
-
-pub type SpecFunctypeInner = (u8, (SpecResulttype, SpecResulttype));
-impl SpecFrom<SpecFunctype> for SpecFunctypeInner {
-    open spec fn spec_from(m: SpecFunctype) -> SpecFunctypeInner {
-        (m.tag, (m.params, m.results))
-    }
-}
-impl SpecFrom<SpecFunctypeInner> for SpecFunctype {
-    open spec fn spec_from(m: SpecFunctypeInner) -> SpecFunctype {
-        let (tag, (params, results)) = m;
-        SpecFunctype { tag, params, results }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Functype {
-    pub tag: u8,
-    pub params: Resulttype,
-    pub results: Resulttype,
-}
-
-impl View for Functype {
-    type V = SpecFunctype;
-
-    open spec fn view(&self) -> Self::V {
-        SpecFunctype {
-            tag: self.tag@,
-            params: self.params@,
-            results: self.results@,
-        }
-    }
-}
-pub type FunctypeInner = (u8, (Resulttype, Resulttype));
-impl From<Functype> for FunctypeInner {
-    fn ex_from(m: Functype) -> FunctypeInner {
-        (m.tag, (m.params, m.results))
-    }
-}
-impl From<FunctypeInner> for Functype {
-    fn ex_from(m: FunctypeInner) -> Functype {
-        let (tag, (params, results)) = m;
-        Functype { tag, params, results }
-    }
-}
-
-pub struct FunctypeMapper;
-impl FunctypeMapper {
-    pub closed spec fn spec_new() -> Self {
-        FunctypeMapper
-    }
-    pub fn new() -> Self {
-        FunctypeMapper
-    }
-}
-impl View for FunctypeMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for FunctypeMapper {
-    type Src = SpecFunctypeInner;
-    type Dst = SpecFunctype;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for FunctypeMapper {
-    type Src = FunctypeInner;
-    type Dst = Functype;
-}
-pub const FUNCTYPETAG_CONST: u8 = 96;
-
-pub struct SpecFunctypeCombinator(SpecFunctypeCombinatorAlias);
-
-impl SpecCombinator for SpecFunctypeCombinator {
-    type Type = SpecFunctype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecFunctypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecFunctypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecFunctypeCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, (SpecResulttypeCombinator, SpecResulttypeCombinator)), FunctypeMapper>;
-
-pub struct FunctypeCombinator<'a>(FunctypeCombinatorAlias<'a>);
-
-impl<'a> View for FunctypeCombinator<'a> {
-    type V = SpecFunctypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecFunctypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for FunctypeCombinator<'a> {
-    type Type = Functype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type FunctypeCombinatorAlias<'a> = Mapped<(Refined<U8, TagPred<u8>>, (ResulttypeCombinator<'a>, ResulttypeCombinator<'a>)), FunctypeMapper>;
-
-
-pub closed spec fn spec_functype() -> SpecFunctypeCombinator {
-    SpecFunctypeCombinator(
-    Mapped {
-        inner: (Refined { inner: U8, predicate: TagPred(FUNCTYPETAG_CONST) }, (spec_resulttype(), spec_resulttype())),
-        mapper: FunctypeMapper::spec_new(),
-    })
-}
-
-                
-pub fn functype<'a>() -> (o: FunctypeCombinator<'a>)
-    ensures o@ == spec_functype(),
-{
-    FunctypeCombinator(
-    Mapped {
-        inner: (Refined { inner: U8, predicate: TagPred(FUNCTYPETAG_CONST) }, (resulttype(), resulttype())),
-        mapper: FunctypeMapper::new(),
-    })
-}
-
-                
-pub type SpecName = SpecByteVec;
-pub type Name = ByteVec;
-
-
-pub struct SpecNameCombinator(SpecNameCombinatorAlias);
-
-impl SpecCombinator for SpecNameCombinator {
-    type Type = SpecName;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecNameCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecNameCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecNameCombinatorAlias = SpecByteVecCombinator;
-
-pub struct NameCombinator<'a>(NameCombinatorAlias<'a>);
-
-impl<'a> View for NameCombinator<'a> {
-    type V = SpecNameCombinator;
-    closed spec fn view(&self) -> Self::V { SpecNameCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for NameCombinator<'a> {
-    type Type = Name;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type NameCombinatorAlias<'a> = ByteVecCombinator<'a>;
-
-
-pub closed spec fn spec_name() -> SpecNameCombinator {
-    SpecNameCombinator(spec_byte_vec())
-}
-
-                
-pub fn name<'a>() -> (o: NameCombinator<'a>)
-    ensures o@ == spec_name(),
-{
-    NameCombinator(byte_vec())
-}
-
-                
-
-pub struct SpecLimitMin {
-    pub min: u64,
-}
-
-pub type SpecLimitMinInner = u64;
-impl SpecFrom<SpecLimitMin> for SpecLimitMinInner {
-    open spec fn spec_from(m: SpecLimitMin) -> SpecLimitMinInner {
-        m.min
-    }
-}
-impl SpecFrom<SpecLimitMinInner> for SpecLimitMin {
-    open spec fn spec_from(m: SpecLimitMinInner) -> SpecLimitMin {
-        let min = m;
-        SpecLimitMin { min }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct LimitMin {
-    pub min: u64,
-}
-
-impl View for LimitMin {
-    type V = SpecLimitMin;
-
-    open spec fn view(&self) -> Self::V {
-        SpecLimitMin {
-            min: self.min@,
-        }
-    }
-}
-pub type LimitMinInner = u64;
-impl From<LimitMin> for LimitMinInner {
-    fn ex_from(m: LimitMin) -> LimitMinInner {
-        m.min
-    }
-}
-impl From<LimitMinInner> for LimitMin {
-    fn ex_from(m: LimitMinInner) -> LimitMin {
-        let min = m;
-        LimitMin { min }
-    }
-}
-
-pub struct LimitMinMapper;
-impl LimitMinMapper {
-    pub closed spec fn spec_new() -> Self {
-        LimitMinMapper
-    }
-    pub fn new() -> Self {
-        LimitMinMapper
-    }
-}
-impl View for LimitMinMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for LimitMinMapper {
-    type Src = SpecLimitMinInner;
-    type Dst = SpecLimitMin;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for LimitMinMapper {
-    type Src = LimitMinInner;
-    type Dst = LimitMin;
-}
-
-pub struct SpecLimitMinCombinator(SpecLimitMinCombinatorAlias);
-
-impl SpecCombinator for SpecLimitMinCombinator {
-    type Type = SpecLimitMin;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecLimitMinCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecLimitMinCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecLimitMinCombinatorAlias = Mapped<UnsignedLEB128, LimitMinMapper>;
-
-pub struct LimitMinCombinator(LimitMinCombinatorAlias);
-
-impl View for LimitMinCombinator {
-    type V = SpecLimitMinCombinator;
-    closed spec fn view(&self) -> Self::V { SpecLimitMinCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitMinCombinator {
-    type Type = LimitMin;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type LimitMinCombinatorAlias = Mapped<UnsignedLEB128, LimitMinMapper>;
-
-
-pub closed spec fn spec_limit_min() -> SpecLimitMinCombinator {
-    SpecLimitMinCombinator(
-    Mapped {
-        inner: UnsignedLEB128,
-        mapper: LimitMinMapper::spec_new(),
-    })
-}
-
-                
-pub fn limit_min() -> (o: LimitMinCombinator)
-    ensures o@ == spec_limit_min(),
-{
-    LimitMinCombinator(
-    Mapped {
-        inner: UnsignedLEB128,
-        mapper: LimitMinMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecLimitMinMax {
-    pub min: u64,
-    pub max: u64,
-}
-
-pub type SpecLimitMinMaxInner = (u64, u64);
-impl SpecFrom<SpecLimitMinMax> for SpecLimitMinMaxInner {
-    open spec fn spec_from(m: SpecLimitMinMax) -> SpecLimitMinMaxInner {
-        (m.min, m.max)
-    }
-}
-impl SpecFrom<SpecLimitMinMaxInner> for SpecLimitMinMax {
-    open spec fn spec_from(m: SpecLimitMinMaxInner) -> SpecLimitMinMax {
-        let (min, max) = m;
-        SpecLimitMinMax { min, max }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct LimitMinMax {
-    pub min: u64,
-    pub max: u64,
-}
-
-impl View for LimitMinMax {
-    type V = SpecLimitMinMax;
-
-    open spec fn view(&self) -> Self::V {
-        SpecLimitMinMax {
-            min: self.min@,
-            max: self.max@,
-        }
-    }
-}
-pub type LimitMinMaxInner = (u64, u64);
-impl From<LimitMinMax> for LimitMinMaxInner {
-    fn ex_from(m: LimitMinMax) -> LimitMinMaxInner {
-        (m.min, m.max)
-    }
-}
-impl From<LimitMinMaxInner> for LimitMinMax {
-    fn ex_from(m: LimitMinMaxInner) -> LimitMinMax {
-        let (min, max) = m;
-        LimitMinMax { min, max }
-    }
-}
-
-pub struct LimitMinMaxMapper;
-impl LimitMinMaxMapper {
-    pub closed spec fn spec_new() -> Self {
-        LimitMinMaxMapper
-    }
-    pub fn new() -> Self {
-        LimitMinMaxMapper
-    }
-}
-impl View for LimitMinMaxMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for LimitMinMaxMapper {
-    type Src = SpecLimitMinMaxInner;
-    type Dst = SpecLimitMinMax;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for LimitMinMaxMapper {
-    type Src = LimitMinMaxInner;
-    type Dst = LimitMinMax;
-}
-
-pub struct SpecLimitMinMaxCombinator(SpecLimitMinMaxCombinatorAlias);
-
-impl SpecCombinator for SpecLimitMinMaxCombinator {
-    type Type = SpecLimitMinMax;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecLimitMinMaxCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecLimitMinMaxCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecLimitMinMaxCombinatorAlias = Mapped<(UnsignedLEB128, UnsignedLEB128), LimitMinMaxMapper>;
-
-pub struct LimitMinMaxCombinator(LimitMinMaxCombinatorAlias);
-
-impl View for LimitMinMaxCombinator {
-    type V = SpecLimitMinMaxCombinator;
-    closed spec fn view(&self) -> Self::V { SpecLimitMinMaxCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitMinMaxCombinator {
-    type Type = LimitMinMax;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type LimitMinMaxCombinatorAlias = Mapped<(UnsignedLEB128, UnsignedLEB128), LimitMinMaxMapper>;
-
-
-pub closed spec fn spec_limit_min_max() -> SpecLimitMinMaxCombinator {
-    SpecLimitMinMaxCombinator(
-    Mapped {
-        inner: (UnsignedLEB128, UnsignedLEB128),
-        mapper: LimitMinMaxMapper::spec_new(),
-    })
-}
-
-                
-pub fn limit_min_max() -> (o: LimitMinMaxCombinator)
-    ensures o@ == spec_limit_min_max(),
-{
-    LimitMinMaxCombinator(
-    Mapped {
-        inner: (UnsignedLEB128, UnsignedLEB128),
-        mapper: LimitMinMaxMapper::new(),
-    })
-}
-
-                
-
-pub enum SpecLimits {
-    NoMax(SpecLimitMin),
-    Max(SpecLimitMinMax),
-}
-
-pub type SpecLimitsInner = Either<SpecLimitMin, SpecLimitMinMax>;
-
-
-
-impl SpecFrom<SpecLimits> for SpecLimitsInner {
-    open spec fn spec_from(m: SpecLimits) -> SpecLimitsInner {
-        match m {
-            SpecLimits::NoMax(m) => Either::Left(m),
-            SpecLimits::Max(m) => Either::Right(m),
-        }
-    }
-
-}
-
-impl SpecFrom<SpecLimitsInner> for SpecLimits {
-    open spec fn spec_from(m: SpecLimitsInner) -> SpecLimits {
-        match m {
-            Either::Left(m) => SpecLimits::NoMax(m),
-            Either::Right(m) => SpecLimits::Max(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Limits {
-    NoMax(LimitMin),
-    Max(LimitMinMax),
-}
-
-pub type LimitsInner = Either<LimitMin, LimitMinMax>;
-
-
-impl View for Limits {
-    type V = SpecLimits;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            Limits::NoMax(m) => SpecLimits::NoMax(m@),
-            Limits::Max(m) => SpecLimits::Max(m@),
-        }
-    }
-}
-
-
-impl From<Limits> for LimitsInner {
-    fn ex_from(m: Limits) -> LimitsInner {
-        match m {
-            Limits::NoMax(m) => Either::Left(m),
-            Limits::Max(m) => Either::Right(m),
-        }
-    }
-
-}
-
-impl From<LimitsInner> for Limits {
-    fn ex_from(m: LimitsInner) -> Limits {
-        match m {
-            Either::Left(m) => Limits::NoMax(m),
-            Either::Right(m) => Limits::Max(m),
-        }
-    }
-    
-}
-
-
-pub struct LimitsMapper;
-impl LimitsMapper {
-    pub closed spec fn spec_new() -> Self {
-        LimitsMapper
-    }
-    pub fn new() -> Self {
-        LimitsMapper
-    }
-}
-impl View for LimitsMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for LimitsMapper {
-    type Src = SpecLimitsInner;
-    type Dst = SpecLimits;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for LimitsMapper {
-    type Src = LimitsInner;
-    type Dst = Limits;
-}
-
-pub const LIMITSNOMAX_0_FRONT_CONST: u8 = 0;
-
-pub const LIMITSMAX_0_FRONT_CONST: u8 = 1;
-
-
-pub struct SpecLimitsCombinator(SpecLimitsCombinatorAlias);
-
-impl SpecCombinator for SpecLimitsCombinator {
-    type Type = SpecLimits;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecLimitsCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecLimitsCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecLimitsCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, SpecLimitMinCombinator>, Preceded<Tag<U8, u8>, SpecLimitMinMaxCombinator>>, LimitsMapper>;
-
-
-
-pub struct LimitsCombinator(LimitsCombinatorAlias);
-
-impl View for LimitsCombinator {
-    type V = SpecLimitsCombinator;
-    closed spec fn view(&self) -> Self::V { SpecLimitsCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for LimitsCombinator {
-    type Type = Limits;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type LimitsCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, LimitMinCombinator>, Preceded<Tag<U8, u8>, LimitMinMaxCombinator>>, LimitsMapper>;
-
-
-pub closed spec fn spec_limits() -> SpecLimitsCombinator {
-    SpecLimitsCombinator(Mapped { inner: OrdChoice(Preceded(Tag::spec_new(U8, LIMITSNOMAX_0_FRONT_CONST), spec_limit_min()), Preceded(Tag::spec_new(U8, LIMITSMAX_0_FRONT_CONST), spec_limit_min_max())), mapper: LimitsMapper::spec_new() })
-}
-
-                
-pub fn limits() -> (o: LimitsCombinator)
-    ensures o@ == spec_limits(),
-{
-    LimitsCombinator(Mapped { inner: OrdChoice::new(Preceded(Tag::new(U8, LIMITSNOMAX_0_FRONT_CONST), limit_min()), Preceded(Tag::new(U8, LIMITSMAX_0_FRONT_CONST), limit_min_max())), mapper: LimitsMapper::new() })
-}
-
-                
-
 pub struct SpecTabletype {
     pub elemtype: SpecReftype,
     pub limits: SpecLimits,
@@ -8255,386 +10670,6 @@ pub fn tabletype() -> (o: TabletypeCombinator)
     Mapped {
         inner: (reftype(), limits()),
         mapper: TabletypeMapper::new(),
-    })
-}
-
-                
-pub type SpecMemtype = SpecLimits;
-pub type Memtype = Limits;
-
-
-pub struct SpecMemtypeCombinator(SpecMemtypeCombinatorAlias);
-
-impl SpecCombinator for SpecMemtypeCombinator {
-    type Type = SpecMemtype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMemtypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMemtypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMemtypeCombinatorAlias = SpecLimitsCombinator;
-
-pub struct MemtypeCombinator(MemtypeCombinatorAlias);
-
-impl View for MemtypeCombinator {
-    type V = SpecMemtypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMemtypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MemtypeCombinator {
-    type Type = Memtype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MemtypeCombinatorAlias = LimitsCombinator;
-
-
-pub closed spec fn spec_memtype() -> SpecMemtypeCombinator {
-    SpecMemtypeCombinator(spec_limits())
-}
-
-                
-pub fn memtype() -> (o: MemtypeCombinator)
-    ensures o@ == spec_memtype(),
-{
-    MemtypeCombinator(limits())
-}
-
-                
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MutT {
-    Const = 0,
-Var = 1
-}
-pub type SpecMutT = MutT;
-
-pub type MutTInner = u8;
-
-impl View for MutT {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<MutTInner> for MutT {
-    type Error = ();
-
-    open spec fn spec_try_from(v: MutTInner) -> Result<MutT, ()> {
-        match v {
-            0u8 => Ok(MutT::Const),
-            1u8 => Ok(MutT::Var),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<MutT> for MutTInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: MutT) -> Result<MutTInner, ()> {
-        match v {
-            MutT::Const => Ok(0u8),
-            MutT::Var => Ok(1u8),
-        }
-    }
-}
-
-impl TryFrom<MutTInner> for MutT {
-    type Error = ();
-
-    fn ex_try_from(v: MutTInner) -> Result<MutT, ()> {
-        match v {
-            0u8 => Ok(MutT::Const),
-            1u8 => Ok(MutT::Var),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<MutT> for MutTInner {
-    type Error = ();
-
-    fn ex_try_from(v: MutT) -> Result<MutTInner, ()> {
-        match v {
-            MutT::Const => Ok(0u8),
-            MutT::Var => Ok(1u8),
-        }
-    }
-}
-
-pub struct MutTMapper;
-
-impl View for MutTMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFromInto for MutTMapper {
-    type Src = MutTInner;
-    type Dst = MutT;
-
-    proof fn spec_iso(s: Self::Src) { 
-        assert(
-            Self::spec_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_rev_apply(v) is Ok
-            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) { 
-        assert(
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_apply(v) is Ok
-            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-}
-
-impl TryFromInto for MutTMapper {
-    type Src = MutTInner;
-    type Dst = MutT;
-}
-
-
-pub struct SpecMutTCombinator(SpecMutTCombinatorAlias);
-
-impl SpecCombinator for SpecMutTCombinator {
-    type Type = SpecMutT;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMutTCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMutTCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMutTCombinatorAlias = TryMap<U8, MutTMapper>;
-
-pub struct MutTCombinator(MutTCombinatorAlias);
-
-impl View for MutTCombinator {
-    type V = SpecMutTCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMutTCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MutTCombinator {
-    type Type = MutT;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MutTCombinatorAlias = TryMap<U8, MutTMapper>;
-
-
-pub closed spec fn spec_mut_t() -> SpecMutTCombinator {
-    SpecMutTCombinator(TryMap { inner: U8, mapper: MutTMapper })
-}
-
-                
-pub fn mut_t() -> (o: MutTCombinator)
-    ensures o@ == spec_mut_t(),
-{
-    MutTCombinator(TryMap { inner: U8, mapper: MutTMapper })
-}
-
-                
-
-pub struct SpecGlobaltype {
-    pub t: SpecValtype,
-    pub m: SpecMutT,
-}
-
-pub type SpecGlobaltypeInner = (SpecValtype, SpecMutT);
-impl SpecFrom<SpecGlobaltype> for SpecGlobaltypeInner {
-    open spec fn spec_from(m: SpecGlobaltype) -> SpecGlobaltypeInner {
-        (m.t, m.m)
-    }
-}
-impl SpecFrom<SpecGlobaltypeInner> for SpecGlobaltype {
-    open spec fn spec_from(m: SpecGlobaltypeInner) -> SpecGlobaltype {
-        let (t, m) = m;
-        SpecGlobaltype { t, m }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Globaltype {
-    pub t: Valtype,
-    pub m: MutT,
-}
-
-impl View for Globaltype {
-    type V = SpecGlobaltype;
-
-    open spec fn view(&self) -> Self::V {
-        SpecGlobaltype {
-            t: self.t@,
-            m: self.m@,
-        }
-    }
-}
-pub type GlobaltypeInner = (Valtype, MutT);
-impl From<Globaltype> for GlobaltypeInner {
-    fn ex_from(m: Globaltype) -> GlobaltypeInner {
-        (m.t, m.m)
-    }
-}
-impl From<GlobaltypeInner> for Globaltype {
-    fn ex_from(m: GlobaltypeInner) -> Globaltype {
-        let (t, m) = m;
-        Globaltype { t, m }
-    }
-}
-
-pub struct GlobaltypeMapper;
-impl GlobaltypeMapper {
-    pub closed spec fn spec_new() -> Self {
-        GlobaltypeMapper
-    }
-    pub fn new() -> Self {
-        GlobaltypeMapper
-    }
-}
-impl View for GlobaltypeMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for GlobaltypeMapper {
-    type Src = SpecGlobaltypeInner;
-    type Dst = SpecGlobaltype;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for GlobaltypeMapper {
-    type Src = GlobaltypeInner;
-    type Dst = Globaltype;
-}
-
-pub struct SpecGlobaltypeCombinator(SpecGlobaltypeCombinatorAlias);
-
-impl SpecCombinator for SpecGlobaltypeCombinator {
-    type Type = SpecGlobaltype;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecGlobaltypeCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecGlobaltypeCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecGlobaltypeCombinatorAlias = Mapped<(SpecValtypeCombinator, SpecMutTCombinator), GlobaltypeMapper>;
-
-pub struct GlobaltypeCombinator(GlobaltypeCombinatorAlias);
-
-impl View for GlobaltypeCombinator {
-    type V = SpecGlobaltypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecGlobaltypeCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobaltypeCombinator {
-    type Type = Globaltype;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type GlobaltypeCombinatorAlias = Mapped<(ValtypeCombinator, MutTCombinator), GlobaltypeMapper>;
-
-
-pub closed spec fn spec_globaltype() -> SpecGlobaltypeCombinator {
-    SpecGlobaltypeCombinator(
-    Mapped {
-        inner: (spec_valtype(), spec_mut_t()),
-        mapper: GlobaltypeMapper::spec_new(),
-    })
-}
-
-                
-pub fn globaltype() -> (o: GlobaltypeCombinator)
-    ensures o@ == spec_globaltype(),
-{
-    GlobaltypeCombinator(
-    Mapped {
-        inner: (valtype(), mut_t()),
-        mapper: GlobaltypeMapper::new(),
     })
 }
 
@@ -9331,71 +11366,71 @@ impl<'a> Continuation<&u64> for ImportsecCont0<'a> {
 }
                 
 
-pub struct SpecFuncsecContent {
-    pub l: u64,
-    pub v: Seq<SpecTypeidx>,
+pub struct SpecParsedElem4 {
+    pub offset: SpecExpr,
+    pub init: SpecExprs,
 }
 
-pub type SpecFuncsecContentInner = (u64, Seq<SpecTypeidx>);
-impl SpecFrom<SpecFuncsecContent> for SpecFuncsecContentInner {
-    open spec fn spec_from(m: SpecFuncsecContent) -> SpecFuncsecContentInner {
-        (m.l, m.v)
+pub type SpecParsedElem4Inner = (SpecExpr, SpecExprs);
+impl SpecFrom<SpecParsedElem4> for SpecParsedElem4Inner {
+    open spec fn spec_from(m: SpecParsedElem4) -> SpecParsedElem4Inner {
+        (m.offset, m.init)
     }
 }
-impl SpecFrom<SpecFuncsecContentInner> for SpecFuncsecContent {
-    open spec fn spec_from(m: SpecFuncsecContentInner) -> SpecFuncsecContent {
-        let (l, v) = m;
-        SpecFuncsecContent { l, v }
+impl SpecFrom<SpecParsedElem4Inner> for SpecParsedElem4 {
+    open spec fn spec_from(m: SpecParsedElem4Inner) -> SpecParsedElem4 {
+        let (offset, init) = m;
+        SpecParsedElem4 { offset, init }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 
-pub struct FuncsecContent {
-    pub l: u64,
-    pub v: RepeatResult<Typeidx>,
+pub struct ParsedElem4<'a> {
+    pub offset: Expr<'a>,
+    pub init: Exprs<'a>,
 }
 
-impl View for FuncsecContent {
-    type V = SpecFuncsecContent;
+impl View for ParsedElem4<'_> {
+    type V = SpecParsedElem4;
 
     open spec fn view(&self) -> Self::V {
-        SpecFuncsecContent {
-            l: self.l@,
-            v: self.v@,
+        SpecParsedElem4 {
+            offset: self.offset@,
+            init: self.init@,
         }
     }
 }
-pub type FuncsecContentInner = (u64, RepeatResult<Typeidx>);
-impl From<FuncsecContent> for FuncsecContentInner {
-    fn ex_from(m: FuncsecContent) -> FuncsecContentInner {
-        (m.l, m.v)
+pub type ParsedElem4Inner<'a> = (Expr<'a>, Exprs<'a>);
+impl<'a> From<ParsedElem4<'a>> for ParsedElem4Inner<'a> {
+    fn ex_from(m: ParsedElem4) -> ParsedElem4Inner {
+        (m.offset, m.init)
     }
 }
-impl From<FuncsecContentInner> for FuncsecContent {
-    fn ex_from(m: FuncsecContentInner) -> FuncsecContent {
-        let (l, v) = m;
-        FuncsecContent { l, v }
+impl<'a> From<ParsedElem4Inner<'a>> for ParsedElem4<'a> {
+    fn ex_from(m: ParsedElem4Inner) -> ParsedElem4 {
+        let (offset, init) = m;
+        ParsedElem4 { offset, init }
     }
 }
 
-pub struct FuncsecContentMapper;
-impl FuncsecContentMapper {
+pub struct ParsedElem4Mapper<'a>(PhantomData<&'a ()>);
+impl<'a> ParsedElem4Mapper<'a> {
     pub closed spec fn spec_new() -> Self {
-        FuncsecContentMapper
+        ParsedElem4Mapper(PhantomData)
     }
     pub fn new() -> Self {
-        FuncsecContentMapper
+        ParsedElem4Mapper(PhantomData)
     }
 }
-impl View for FuncsecContentMapper {
+impl View for ParsedElem4Mapper<'_> {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for FuncsecContentMapper {
-    type Src = SpecFuncsecContentInner;
-    type Dst = SpecFuncsecContent;
+impl SpecIso for ParsedElem4Mapper<'_> {
+    type Src = SpecParsedElem4Inner;
+    type Dst = SpecParsedElem4;
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -9403,23 +11438,23 @@ impl SpecIso for FuncsecContentMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl Iso for FuncsecContentMapper {
-    type Src = FuncsecContentInner;
-    type Dst = FuncsecContent;
+impl<'a> Iso for ParsedElem4Mapper<'a> {
+    type Src = ParsedElem4Inner<'a>;
+    type Dst = ParsedElem4<'a>;
 }
 
-pub struct SpecFuncsecContentCombinator(SpecFuncsecContentCombinatorAlias);
+pub struct SpecParsedElem4Combinator(SpecParsedElem4CombinatorAlias);
 
-impl SpecCombinator for SpecFuncsecContentCombinator {
-    type Type = SpecFuncsecContent;
+impl SpecCombinator for SpecParsedElem4Combinator {
+    type Type = SpecParsedElem4;
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     { self.0.spec_parse(s) }
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecFuncsecContentCombinator {
+impl SecureSpecCombinator for SpecParsedElem4Combinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecFuncsecContentCombinatorAlias::is_prefix_secure() }
+    { SpecParsedElem4CombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -9433,16 +11468,16 @@ impl SecureSpecCombinator for SpecFuncsecContentCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecFuncsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecTypeidxCombinator>>, FuncsecContentMapper>;
+pub type SpecParsedElem4CombinatorAlias = Mapped<(SpecExprCombinator, SpecExprsCombinator), ParsedElem4Mapper<'static>>;
 
-pub struct FuncsecContentCombinator<'a>(FuncsecContentCombinatorAlias<'a>);
+pub struct ParsedElem4Combinator<'a>(ParsedElem4CombinatorAlias<'a>);
 
-impl<'a> View for FuncsecContentCombinator<'a> {
-    type V = SpecFuncsecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecFuncsecContentCombinator(self.0@) }
+impl<'a> View for ParsedElem4Combinator<'a> {
+    type V = SpecParsedElem4Combinator;
+    closed spec fn view(&self) -> Self::V { SpecParsedElem4Combinator(self.0@) }
 }
-impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncsecContentCombinator<'a> {
-    type Type = FuncsecContent;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem4Combinator<'a> {
+    type Type = ParsedElem4<'a>;
     closed spec fn spec_length(&self) -> Option<usize> 
     { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
     fn length(&self) -> Option<usize> 
@@ -9456,52 +11491,28 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncsecContentCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type FuncsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<TypeidxCombinator>, FuncsecContentCont0<'a>>, FuncsecContentMapper>;
+pub type ParsedElem4CombinatorAlias<'a> = Mapped<(ExprCombinator<'a>, ExprsCombinator<'a>), ParsedElem4Mapper<'a>>;
 
 
-pub closed spec fn spec_funcsec_content() -> SpecFuncsecContentCombinator {
-    SpecFuncsecContentCombinator(
+pub closed spec fn spec_parsed_elem4() -> SpecParsedElem4Combinator {
+    SpecParsedElem4Combinator(
     Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_funcsec_content_cont0(deps) },
-        mapper: FuncsecContentMapper::spec_new(),
+        inner: (spec_expr(), spec_exprs()),
+        mapper: ParsedElem4Mapper::spec_new(),
     })
 }
 
-pub open spec fn spec_funcsec_content_cont0(deps: u64) -> RepeatN<SpecTypeidxCombinator> {
-    let l = deps;
-    RepeatN(spec_typeidx(), l.spec_into())
-}
                 
-pub fn funcsec_content<'a>() -> (o: FuncsecContentCombinator<'a>)
-    ensures o@ == spec_funcsec_content(),
+pub fn parsed_elem4<'a>() -> (o: ParsedElem4Combinator<'a>)
+    ensures o@ == spec_parsed_elem4(),
 {
-    FuncsecContentCombinator(
+    ParsedElem4Combinator(
     Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: FuncsecContentCont0::new(), spec_snd: Ghost(|deps| spec_funcsec_content_cont0(deps)) },
-        mapper: FuncsecContentMapper::new(),
+        inner: (expr(), exprs()),
+        mapper: ParsedElem4Mapper::new(),
     })
 }
 
-pub struct FuncsecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> FuncsecContentCont0<'a> {
-    pub fn new() -> Self {
-        FuncsecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for FuncsecContentCont0<'a> {
-    type Output = RepeatN<TypeidxCombinator>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_funcsec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(typeidx(), l.ex_into())
-    }
-}
                 
 
 pub struct SpecFuncidxs {
@@ -9675,421 +11686,6 @@ impl<'a> Continuation<&u64> for FuncidxsCont0<'a> {
         RepeatN(funcidx(), l.ex_into())
     }
 }
-                
-
-pub struct SpecParsedElem2 {
-    pub table: SpecTableidx,
-    pub offset: SpecExpr,
-    pub et: SpecELEMKIND,
-    pub init: SpecFuncidxs,
-}
-
-pub type SpecParsedElem2Inner = (SpecTableidx, (SpecExpr, (SpecELEMKIND, SpecFuncidxs)));
-impl SpecFrom<SpecParsedElem2> for SpecParsedElem2Inner {
-    open spec fn spec_from(m: SpecParsedElem2) -> SpecParsedElem2Inner {
-        (m.table, (m.offset, (m.et, m.init)))
-    }
-}
-impl SpecFrom<SpecParsedElem2Inner> for SpecParsedElem2 {
-    open spec fn spec_from(m: SpecParsedElem2Inner) -> SpecParsedElem2 {
-        let (table, (offset, (et, init))) = m;
-        SpecParsedElem2 { table, offset, et, init }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct ParsedElem2<'a> {
-    pub table: Tableidx,
-    pub offset: Expr<'a>,
-    pub et: ELEMKIND,
-    pub init: Funcidxs,
-}
-
-impl View for ParsedElem2<'_> {
-    type V = SpecParsedElem2;
-
-    open spec fn view(&self) -> Self::V {
-        SpecParsedElem2 {
-            table: self.table@,
-            offset: self.offset@,
-            et: self.et@,
-            init: self.init@,
-        }
-    }
-}
-pub type ParsedElem2Inner<'a> = (Tableidx, (Expr<'a>, (ELEMKIND, Funcidxs)));
-impl<'a> From<ParsedElem2<'a>> for ParsedElem2Inner<'a> {
-    fn ex_from(m: ParsedElem2) -> ParsedElem2Inner {
-        (m.table, (m.offset, (m.et, m.init)))
-    }
-}
-impl<'a> From<ParsedElem2Inner<'a>> for ParsedElem2<'a> {
-    fn ex_from(m: ParsedElem2Inner) -> ParsedElem2 {
-        let (table, (offset, (et, init))) = m;
-        ParsedElem2 { table, offset, et, init }
-    }
-}
-
-pub struct ParsedElem2Mapper<'a>(PhantomData<&'a ()>);
-impl<'a> ParsedElem2Mapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        ParsedElem2Mapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        ParsedElem2Mapper(PhantomData)
-    }
-}
-impl View for ParsedElem2Mapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ParsedElem2Mapper<'_> {
-    type Src = SpecParsedElem2Inner;
-    type Dst = SpecParsedElem2;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for ParsedElem2Mapper<'a> {
-    type Src = ParsedElem2Inner<'a>;
-    type Dst = ParsedElem2<'a>;
-}
-
-pub struct SpecParsedElem2Combinator(SpecParsedElem2CombinatorAlias);
-
-impl SpecCombinator for SpecParsedElem2Combinator {
-    type Type = SpecParsedElem2;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecParsedElem2Combinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecParsedElem2CombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecParsedElem2CombinatorAlias = Mapped<(SpecTableidxCombinator, (SpecExprCombinator, (SpecELEMKINDCombinator, SpecFuncidxsCombinator))), ParsedElem2Mapper<'static>>;
-
-pub struct ParsedElem2Combinator<'a>(ParsedElem2CombinatorAlias<'a>);
-
-impl<'a> View for ParsedElem2Combinator<'a> {
-    type V = SpecParsedElem2Combinator;
-    closed spec fn view(&self) -> Self::V { SpecParsedElem2Combinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem2Combinator<'a> {
-    type Type = ParsedElem2<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ParsedElem2CombinatorAlias<'a> = Mapped<(TableidxCombinator, (ExprCombinator<'a>, (ELEMKINDCombinator, FuncidxsCombinator<'a>))), ParsedElem2Mapper<'a>>;
-
-
-pub closed spec fn spec_parsed_elem2() -> SpecParsedElem2Combinator {
-    SpecParsedElem2Combinator(
-    Mapped {
-        inner: (spec_tableidx(), (spec_expr(), (spec_ELEMKIND(), spec_funcidxs()))),
-        mapper: ParsedElem2Mapper::spec_new(),
-    })
-}
-
-                
-pub fn parsed_elem2<'a>() -> (o: ParsedElem2Combinator<'a>)
-    ensures o@ == spec_parsed_elem2(),
-{
-    ParsedElem2Combinator(
-    Mapped {
-        inner: (tableidx(), (expr(), (ELEMKIND(), funcidxs()))),
-        mapper: ParsedElem2Mapper::new(),
-    })
-}
-
-                
-pub type SpecMyCustomSection = SpecByteVec;
-pub type MyCustomSection = ByteVec;
-
-
-pub struct SpecMyCustomSectionCombinator(SpecMyCustomSectionCombinatorAlias);
-
-impl SpecCombinator for SpecMyCustomSectionCombinator {
-    type Type = SpecMyCustomSection;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMyCustomSectionCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMyCustomSectionCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMyCustomSectionCombinatorAlias = SpecByteVecCombinator;
-
-pub struct MyCustomSectionCombinator<'a>(MyCustomSectionCombinatorAlias<'a>);
-
-impl<'a> View for MyCustomSectionCombinator<'a> {
-    type V = SpecMyCustomSectionCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMyCustomSectionCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MyCustomSectionCombinator<'a> {
-    type Type = MyCustomSection;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MyCustomSectionCombinatorAlias<'a> = ByteVecCombinator<'a>;
-
-
-pub closed spec fn spec_my_custom_section() -> SpecMyCustomSectionCombinator {
-    SpecMyCustomSectionCombinator(spec_byte_vec())
-}
-
-                
-pub fn my_custom_section<'a>() -> (o: MyCustomSectionCombinator<'a>)
-    ensures o@ == spec_my_custom_section(),
-{
-    MyCustomSectionCombinator(byte_vec())
-}
-
-                
-
-pub enum SpecExportdesc {
-    Func(SpecFuncidx),
-    Table(SpecTableidx),
-    Mem(SpecMemidx),
-    Global(SpecGlobalidx),
-}
-
-pub type SpecExportdescInner = Either<SpecFuncidx, Either<SpecTableidx, Either<SpecMemidx, SpecGlobalidx>>>;
-
-
-
-impl SpecFrom<SpecExportdesc> for SpecExportdescInner {
-    open spec fn spec_from(m: SpecExportdesc) -> SpecExportdescInner {
-        match m {
-            SpecExportdesc::Func(m) => Either::Left(m),
-            SpecExportdesc::Table(m) => Either::Right(Either::Left(m)),
-            SpecExportdesc::Mem(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecExportdesc::Global(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-impl SpecFrom<SpecExportdescInner> for SpecExportdesc {
-    open spec fn spec_from(m: SpecExportdescInner) -> SpecExportdesc {
-        match m {
-            Either::Left(m) => SpecExportdesc::Func(m),
-            Either::Right(Either::Left(m)) => SpecExportdesc::Table(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecExportdesc::Mem(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecExportdesc::Global(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Exportdesc {
-    Func(Funcidx),
-    Table(Tableidx),
-    Mem(Memidx),
-    Global(Globalidx),
-}
-
-pub type ExportdescInner = Either<Funcidx, Either<Tableidx, Either<Memidx, Globalidx>>>;
-
-
-impl View for Exportdesc {
-    type V = SpecExportdesc;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            Exportdesc::Func(m) => SpecExportdesc::Func(m@),
-            Exportdesc::Table(m) => SpecExportdesc::Table(m@),
-            Exportdesc::Mem(m) => SpecExportdesc::Mem(m@),
-            Exportdesc::Global(m) => SpecExportdesc::Global(m@),
-        }
-    }
-}
-
-
-impl From<Exportdesc> for ExportdescInner {
-    fn ex_from(m: Exportdesc) -> ExportdescInner {
-        match m {
-            Exportdesc::Func(m) => Either::Left(m),
-            Exportdesc::Table(m) => Either::Right(Either::Left(m)),
-            Exportdesc::Mem(m) => Either::Right(Either::Right(Either::Left(m))),
-            Exportdesc::Global(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-impl From<ExportdescInner> for Exportdesc {
-    fn ex_from(m: ExportdescInner) -> Exportdesc {
-        match m {
-            Either::Left(m) => Exportdesc::Func(m),
-            Either::Right(Either::Left(m)) => Exportdesc::Table(m),
-            Either::Right(Either::Right(Either::Left(m))) => Exportdesc::Mem(m),
-            Either::Right(Either::Right(Either::Right(m))) => Exportdesc::Global(m),
-        }
-    }
-    
-}
-
-
-pub struct ExportdescMapper;
-impl ExportdescMapper {
-    pub closed spec fn spec_new() -> Self {
-        ExportdescMapper
-    }
-    pub fn new() -> Self {
-        ExportdescMapper
-    }
-}
-impl View for ExportdescMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExportdescMapper {
-    type Src = SpecExportdescInner;
-    type Dst = SpecExportdesc;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ExportdescMapper {
-    type Src = ExportdescInner;
-    type Dst = Exportdesc;
-}
-
-pub const EXPORTDESCFUNC_0_FRONT_CONST: u8 = 0;
-
-pub const EXPORTDESCTABLE_0_FRONT_CONST: u8 = 1;
-
-pub const EXPORTDESCMEM_0_FRONT_CONST: u8 = 2;
-
-pub const EXPORTDESCGLOBAL_0_FRONT_CONST: u8 = 3;
-
-
-pub struct SpecExportdescCombinator(SpecExportdescCombinatorAlias);
-
-impl SpecCombinator for SpecExportdescCombinator {
-    type Type = SpecExportdesc;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecExportdescCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecExportdescCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecExportdescCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, SpecFuncidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, SpecTableidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, SpecMemidxCombinator>, Preceded<Tag<U8, u8>, SpecGlobalidxCombinator>>>>, ExportdescMapper>;
-
-
-
-
-
-pub struct ExportdescCombinator(ExportdescCombinatorAlias);
-
-impl View for ExportdescCombinator {
-    type V = SpecExportdescCombinator;
-    closed spec fn view(&self) -> Self::V { SpecExportdescCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportdescCombinator {
-    type Type = Exportdesc;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ExportdescCombinatorAlias = Mapped<OrdChoice<Preceded<Tag<U8, u8>, FuncidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, TableidxCombinator>, OrdChoice<Preceded<Tag<U8, u8>, MemidxCombinator>, Preceded<Tag<U8, u8>, GlobalidxCombinator>>>>, ExportdescMapper>;
-
-
-pub closed spec fn spec_exportdesc() -> SpecExportdescCombinator {
-    SpecExportdescCombinator(Mapped { inner: OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCFUNC_0_FRONT_CONST), spec_funcidx()), OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCTABLE_0_FRONT_CONST), spec_tableidx()), OrdChoice(Preceded(Tag::spec_new(U8, EXPORTDESCMEM_0_FRONT_CONST), spec_memidx()), Preceded(Tag::spec_new(U8, EXPORTDESCGLOBAL_0_FRONT_CONST), spec_globalidx())))), mapper: ExportdescMapper::spec_new() })
-}
-
-                
-pub fn exportdesc() -> (o: ExportdescCombinator)
-    ensures o@ == spec_exportdesc(),
-{
-    ExportdescCombinator(Mapped { inner: OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCFUNC_0_FRONT_CONST), funcidx()), OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCTABLE_0_FRONT_CONST), tableidx()), OrdChoice::new(Preceded(Tag::new(U8, EXPORTDESCMEM_0_FRONT_CONST), memidx()), Preceded(Tag::new(U8, EXPORTDESCGLOBAL_0_FRONT_CONST), globalidx())))), mapper: ExportdescMapper::new() })
-}
-
                 
 
 pub struct SpecParsedElem0 {
@@ -10389,6 +11985,161 @@ pub fn parsed_elem1<'a>() -> (o: ParsedElem1Combinator<'a>)
 }
 
                 
+
+pub struct SpecParsedElem2 {
+    pub table: SpecTableidx,
+    pub offset: SpecExpr,
+    pub et: SpecELEMKIND,
+    pub init: SpecFuncidxs,
+}
+
+pub type SpecParsedElem2Inner = (SpecTableidx, (SpecExpr, (SpecELEMKIND, SpecFuncidxs)));
+impl SpecFrom<SpecParsedElem2> for SpecParsedElem2Inner {
+    open spec fn spec_from(m: SpecParsedElem2) -> SpecParsedElem2Inner {
+        (m.table, (m.offset, (m.et, m.init)))
+    }
+}
+impl SpecFrom<SpecParsedElem2Inner> for SpecParsedElem2 {
+    open spec fn spec_from(m: SpecParsedElem2Inner) -> SpecParsedElem2 {
+        let (table, (offset, (et, init))) = m;
+        SpecParsedElem2 { table, offset, et, init }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct ParsedElem2<'a> {
+    pub table: Tableidx,
+    pub offset: Expr<'a>,
+    pub et: ELEMKIND,
+    pub init: Funcidxs,
+}
+
+impl View for ParsedElem2<'_> {
+    type V = SpecParsedElem2;
+
+    open spec fn view(&self) -> Self::V {
+        SpecParsedElem2 {
+            table: self.table@,
+            offset: self.offset@,
+            et: self.et@,
+            init: self.init@,
+        }
+    }
+}
+pub type ParsedElem2Inner<'a> = (Tableidx, (Expr<'a>, (ELEMKIND, Funcidxs)));
+impl<'a> From<ParsedElem2<'a>> for ParsedElem2Inner<'a> {
+    fn ex_from(m: ParsedElem2) -> ParsedElem2Inner {
+        (m.table, (m.offset, (m.et, m.init)))
+    }
+}
+impl<'a> From<ParsedElem2Inner<'a>> for ParsedElem2<'a> {
+    fn ex_from(m: ParsedElem2Inner) -> ParsedElem2 {
+        let (table, (offset, (et, init))) = m;
+        ParsedElem2 { table, offset, et, init }
+    }
+}
+
+pub struct ParsedElem2Mapper<'a>(PhantomData<&'a ()>);
+impl<'a> ParsedElem2Mapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        ParsedElem2Mapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        ParsedElem2Mapper(PhantomData)
+    }
+}
+impl View for ParsedElem2Mapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ParsedElem2Mapper<'_> {
+    type Src = SpecParsedElem2Inner;
+    type Dst = SpecParsedElem2;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for ParsedElem2Mapper<'a> {
+    type Src = ParsedElem2Inner<'a>;
+    type Dst = ParsedElem2<'a>;
+}
+
+pub struct SpecParsedElem2Combinator(SpecParsedElem2CombinatorAlias);
+
+impl SpecCombinator for SpecParsedElem2Combinator {
+    type Type = SpecParsedElem2;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecParsedElem2Combinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecParsedElem2CombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecParsedElem2CombinatorAlias = Mapped<(SpecTableidxCombinator, (SpecExprCombinator, (SpecELEMKINDCombinator, SpecFuncidxsCombinator))), ParsedElem2Mapper<'static>>;
+
+pub struct ParsedElem2Combinator<'a>(ParsedElem2CombinatorAlias<'a>);
+
+impl<'a> View for ParsedElem2Combinator<'a> {
+    type V = SpecParsedElem2Combinator;
+    closed spec fn view(&self) -> Self::V { SpecParsedElem2Combinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem2Combinator<'a> {
+    type Type = ParsedElem2<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ParsedElem2CombinatorAlias<'a> = Mapped<(TableidxCombinator, (ExprCombinator<'a>, (ELEMKINDCombinator, FuncidxsCombinator<'a>))), ParsedElem2Mapper<'a>>;
+
+
+pub closed spec fn spec_parsed_elem2() -> SpecParsedElem2Combinator {
+    SpecParsedElem2Combinator(
+    Mapped {
+        inner: (spec_tableidx(), (spec_expr(), (spec_ELEMKIND(), spec_funcidxs()))),
+        mapper: ParsedElem2Mapper::spec_new(),
+    })
+}
+
+                
+pub fn parsed_elem2<'a>() -> (o: ParsedElem2Combinator<'a>)
+    ensures o@ == spec_parsed_elem2(),
+{
+    ParsedElem2Combinator(
+    Mapped {
+        inner: (tableidx(), (expr(), (ELEMKIND(), funcidxs()))),
+        mapper: ParsedElem2Mapper::new(),
+    })
+}
+
+                
 pub type SpecParsedElem3 = SpecParsedElem1;
 pub type ParsedElem3 = ParsedElem1;
 
@@ -10453,328 +12204,6 @@ pub fn parsed_elem3<'a>() -> (o: ParsedElem3Combinator<'a>)
     ensures o@ == spec_parsed_elem3(),
 {
     ParsedElem3Combinator(parsed_elem1())
-}
-
-                
-
-pub struct SpecExprs {
-    pub l: u64,
-    pub v: Seq<SpecExpr>,
-}
-
-pub type SpecExprsInner = (u64, Seq<SpecExpr>);
-impl SpecFrom<SpecExprs> for SpecExprsInner {
-    open spec fn spec_from(m: SpecExprs) -> SpecExprsInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecExprsInner> for SpecExprs {
-    open spec fn spec_from(m: SpecExprsInner) -> SpecExprs {
-        let (l, v) = m;
-        SpecExprs { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Exprs<'a> {
-    pub l: u64,
-    pub v: RepeatResult<Expr<'a>>,
-}
-
-impl View for Exprs<'_> {
-    type V = SpecExprs;
-
-    open spec fn view(&self) -> Self::V {
-        SpecExprs {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type ExprsInner<'a> = (u64, RepeatResult<Expr<'a>>);
-impl<'a> From<Exprs<'a>> for ExprsInner<'a> {
-    fn ex_from(m: Exprs) -> ExprsInner {
-        (m.l, m.v)
-    }
-}
-impl<'a> From<ExprsInner<'a>> for Exprs<'a> {
-    fn ex_from(m: ExprsInner) -> Exprs {
-        let (l, v) = m;
-        Exprs { l, v }
-    }
-}
-
-pub struct ExprsMapper<'a>(PhantomData<&'a ()>);
-impl<'a> ExprsMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        ExprsMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        ExprsMapper(PhantomData)
-    }
-}
-impl View for ExprsMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExprsMapper<'_> {
-    type Src = SpecExprsInner;
-    type Dst = SpecExprs;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for ExprsMapper<'a> {
-    type Src = ExprsInner<'a>;
-    type Dst = Exprs<'a>;
-}
-
-pub struct SpecExprsCombinator(SpecExprsCombinatorAlias);
-
-impl SpecCombinator for SpecExprsCombinator {
-    type Type = SpecExprs;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecExprsCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecExprsCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecExprsCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecExprCombinator>>, ExprsMapper<'static>>;
-
-pub struct ExprsCombinator<'a>(ExprsCombinatorAlias<'a>);
-
-impl<'a> View for ExprsCombinator<'a> {
-    type V = SpecExprsCombinator;
-    closed spec fn view(&self) -> Self::V { SpecExprsCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ExprsCombinator<'a> {
-    type Type = Exprs<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ExprsCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ExprCombinator<'a>>, ExprsCont0<'a>>, ExprsMapper<'a>>;
-
-
-pub closed spec fn spec_exprs() -> SpecExprsCombinator {
-    SpecExprsCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exprs_cont0(deps) },
-        mapper: ExprsMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_exprs_cont0(deps: u64) -> RepeatN<SpecExprCombinator> {
-    let l = deps;
-    RepeatN(spec_expr(), l.spec_into())
-}
-                
-pub fn exprs<'a>() -> (o: ExprsCombinator<'a>)
-    ensures o@ == spec_exprs(),
-{
-    ExprsCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ExprsCont0::new(), spec_snd: Ghost(|deps| spec_exprs_cont0(deps)) },
-        mapper: ExprsMapper::new(),
-    })
-}
-
-pub struct ExprsCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ExprsCont0<'a> {
-    pub fn new() -> Self {
-        ExprsCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for ExprsCont0<'a> {
-    type Output = RepeatN<ExprCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_exprs_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(expr(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecParsedElem4 {
-    pub offset: SpecExpr,
-    pub init: SpecExprs,
-}
-
-pub type SpecParsedElem4Inner = (SpecExpr, SpecExprs);
-impl SpecFrom<SpecParsedElem4> for SpecParsedElem4Inner {
-    open spec fn spec_from(m: SpecParsedElem4) -> SpecParsedElem4Inner {
-        (m.offset, m.init)
-    }
-}
-impl SpecFrom<SpecParsedElem4Inner> for SpecParsedElem4 {
-    open spec fn spec_from(m: SpecParsedElem4Inner) -> SpecParsedElem4 {
-        let (offset, init) = m;
-        SpecParsedElem4 { offset, init }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct ParsedElem4<'a> {
-    pub offset: Expr<'a>,
-    pub init: Exprs<'a>,
-}
-
-impl View for ParsedElem4<'_> {
-    type V = SpecParsedElem4;
-
-    open spec fn view(&self) -> Self::V {
-        SpecParsedElem4 {
-            offset: self.offset@,
-            init: self.init@,
-        }
-    }
-}
-pub type ParsedElem4Inner<'a> = (Expr<'a>, Exprs<'a>);
-impl<'a> From<ParsedElem4<'a>> for ParsedElem4Inner<'a> {
-    fn ex_from(m: ParsedElem4) -> ParsedElem4Inner {
-        (m.offset, m.init)
-    }
-}
-impl<'a> From<ParsedElem4Inner<'a>> for ParsedElem4<'a> {
-    fn ex_from(m: ParsedElem4Inner) -> ParsedElem4 {
-        let (offset, init) = m;
-        ParsedElem4 { offset, init }
-    }
-}
-
-pub struct ParsedElem4Mapper<'a>(PhantomData<&'a ()>);
-impl<'a> ParsedElem4Mapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        ParsedElem4Mapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        ParsedElem4Mapper(PhantomData)
-    }
-}
-impl View for ParsedElem4Mapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ParsedElem4Mapper<'_> {
-    type Src = SpecParsedElem4Inner;
-    type Dst = SpecParsedElem4;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for ParsedElem4Mapper<'a> {
-    type Src = ParsedElem4Inner<'a>;
-    type Dst = ParsedElem4<'a>;
-}
-
-pub struct SpecParsedElem4Combinator(SpecParsedElem4CombinatorAlias);
-
-impl SpecCombinator for SpecParsedElem4Combinator {
-    type Type = SpecParsedElem4;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecParsedElem4Combinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecParsedElem4CombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecParsedElem4CombinatorAlias = Mapped<(SpecExprCombinator, SpecExprsCombinator), ParsedElem4Mapper<'static>>;
-
-pub struct ParsedElem4Combinator<'a>(ParsedElem4CombinatorAlias<'a>);
-
-impl<'a> View for ParsedElem4Combinator<'a> {
-    type V = SpecParsedElem4Combinator;
-    closed spec fn view(&self) -> Self::V { SpecParsedElem4Combinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem4Combinator<'a> {
-    type Type = ParsedElem4<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ParsedElem4CombinatorAlias<'a> = Mapped<(ExprCombinator<'a>, ExprsCombinator<'a>), ParsedElem4Mapper<'a>>;
-
-
-pub closed spec fn spec_parsed_elem4() -> SpecParsedElem4Combinator {
-    SpecParsedElem4Combinator(
-    Mapped {
-        inner: (spec_expr(), spec_exprs()),
-        mapper: ParsedElem4Mapper::spec_new(),
-    })
-}
-
-                
-pub fn parsed_elem4<'a>() -> (o: ParsedElem4Combinator<'a>)
-    ensures o@ == spec_parsed_elem4(),
-{
-    ParsedElem4Combinator(
-    Mapped {
-        inner: (expr(), exprs()),
-        mapper: ParsedElem4Mapper::new(),
-    })
 }
 
                 
@@ -10923,161 +12352,6 @@ pub fn parsed_elem5<'a>() -> (o: ParsedElem5Combinator<'a>)
     Mapped {
         inner: (reftype(), exprs()),
         mapper: ParsedElem5Mapper::new(),
-    })
-}
-
-                
-
-pub struct SpecParsedElem6 {
-    pub table: SpecTableidx,
-    pub offset: SpecExpr,
-    pub et: SpecReftype,
-    pub init: SpecExprs,
-}
-
-pub type SpecParsedElem6Inner = (SpecTableidx, (SpecExpr, (SpecReftype, SpecExprs)));
-impl SpecFrom<SpecParsedElem6> for SpecParsedElem6Inner {
-    open spec fn spec_from(m: SpecParsedElem6) -> SpecParsedElem6Inner {
-        (m.table, (m.offset, (m.et, m.init)))
-    }
-}
-impl SpecFrom<SpecParsedElem6Inner> for SpecParsedElem6 {
-    open spec fn spec_from(m: SpecParsedElem6Inner) -> SpecParsedElem6 {
-        let (table, (offset, (et, init))) = m;
-        SpecParsedElem6 { table, offset, et, init }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct ParsedElem6<'a> {
-    pub table: Tableidx,
-    pub offset: Expr<'a>,
-    pub et: Reftype,
-    pub init: Exprs<'a>,
-}
-
-impl View for ParsedElem6<'_> {
-    type V = SpecParsedElem6;
-
-    open spec fn view(&self) -> Self::V {
-        SpecParsedElem6 {
-            table: self.table@,
-            offset: self.offset@,
-            et: self.et@,
-            init: self.init@,
-        }
-    }
-}
-pub type ParsedElem6Inner<'a> = (Tableidx, (Expr<'a>, (Reftype, Exprs<'a>)));
-impl<'a> From<ParsedElem6<'a>> for ParsedElem6Inner<'a> {
-    fn ex_from(m: ParsedElem6) -> ParsedElem6Inner {
-        (m.table, (m.offset, (m.et, m.init)))
-    }
-}
-impl<'a> From<ParsedElem6Inner<'a>> for ParsedElem6<'a> {
-    fn ex_from(m: ParsedElem6Inner) -> ParsedElem6 {
-        let (table, (offset, (et, init))) = m;
-        ParsedElem6 { table, offset, et, init }
-    }
-}
-
-pub struct ParsedElem6Mapper<'a>(PhantomData<&'a ()>);
-impl<'a> ParsedElem6Mapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        ParsedElem6Mapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        ParsedElem6Mapper(PhantomData)
-    }
-}
-impl View for ParsedElem6Mapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ParsedElem6Mapper<'_> {
-    type Src = SpecParsedElem6Inner;
-    type Dst = SpecParsedElem6;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for ParsedElem6Mapper<'a> {
-    type Src = ParsedElem6Inner<'a>;
-    type Dst = ParsedElem6<'a>;
-}
-
-pub struct SpecParsedElem6Combinator(SpecParsedElem6CombinatorAlias);
-
-impl SpecCombinator for SpecParsedElem6Combinator {
-    type Type = SpecParsedElem6;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecParsedElem6Combinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecParsedElem6CombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecParsedElem6CombinatorAlias = Mapped<(SpecTableidxCombinator, (SpecExprCombinator, (SpecReftypeCombinator, SpecExprsCombinator))), ParsedElem6Mapper<'static>>;
-
-pub struct ParsedElem6Combinator<'a>(ParsedElem6CombinatorAlias<'a>);
-
-impl<'a> View for ParsedElem6Combinator<'a> {
-    type V = SpecParsedElem6Combinator;
-    closed spec fn view(&self) -> Self::V { SpecParsedElem6Combinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ParsedElem6Combinator<'a> {
-    type Type = ParsedElem6<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ParsedElem6CombinatorAlias<'a> = Mapped<(TableidxCombinator, (ExprCombinator<'a>, (ReftypeCombinator, ExprsCombinator<'a>))), ParsedElem6Mapper<'a>>;
-
-
-pub closed spec fn spec_parsed_elem6() -> SpecParsedElem6Combinator {
-    SpecParsedElem6Combinator(
-    Mapped {
-        inner: (spec_tableidx(), (spec_expr(), (spec_reftype(), spec_exprs()))),
-        mapper: ParsedElem6Mapper::spec_new(),
-    })
-}
-
-                
-pub fn parsed_elem6<'a>() -> (o: ParsedElem6Combinator<'a>)
-    ensures o@ == spec_parsed_elem6(),
-{
-    ParsedElem6Combinator(
-    Mapped {
-        inner: (tableidx(), (expr(), (reftype(), exprs()))),
-        mapper: ParsedElem6Mapper::new(),
     })
 }
 
@@ -11465,71 +12739,74 @@ pub fn elem<'a>() -> (o: ElemCombinator<'a>)
 
                 
 
-pub struct SpecElemsecContent {
-    pub l: u64,
-    pub v: Seq<SpecElem>,
+pub struct SpecFunctype {
+    pub tag: u8,
+    pub params: SpecResulttype,
+    pub results: SpecResulttype,
 }
 
-pub type SpecElemsecContentInner = (u64, Seq<SpecElem>);
-impl SpecFrom<SpecElemsecContent> for SpecElemsecContentInner {
-    open spec fn spec_from(m: SpecElemsecContent) -> SpecElemsecContentInner {
-        (m.l, m.v)
+pub type SpecFunctypeInner = (u8, (SpecResulttype, SpecResulttype));
+impl SpecFrom<SpecFunctype> for SpecFunctypeInner {
+    open spec fn spec_from(m: SpecFunctype) -> SpecFunctypeInner {
+        (m.tag, (m.params, m.results))
     }
 }
-impl SpecFrom<SpecElemsecContentInner> for SpecElemsecContent {
-    open spec fn spec_from(m: SpecElemsecContentInner) -> SpecElemsecContent {
-        let (l, v) = m;
-        SpecElemsecContent { l, v }
+impl SpecFrom<SpecFunctypeInner> for SpecFunctype {
+    open spec fn spec_from(m: SpecFunctypeInner) -> SpecFunctype {
+        let (tag, (params, results)) = m;
+        SpecFunctype { tag, params, results }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 
-pub struct ElemsecContent<'a> {
-    pub l: u64,
-    pub v: RepeatResult<Elem<'a>>,
+pub struct Functype {
+    pub tag: u8,
+    pub params: Resulttype,
+    pub results: Resulttype,
 }
 
-impl View for ElemsecContent<'_> {
-    type V = SpecElemsecContent;
+impl View for Functype {
+    type V = SpecFunctype;
 
     open spec fn view(&self) -> Self::V {
-        SpecElemsecContent {
-            l: self.l@,
-            v: self.v@,
+        SpecFunctype {
+            tag: self.tag@,
+            params: self.params@,
+            results: self.results@,
         }
     }
 }
-pub type ElemsecContentInner<'a> = (u64, RepeatResult<Elem<'a>>);
-impl<'a> From<ElemsecContent<'a>> for ElemsecContentInner<'a> {
-    fn ex_from(m: ElemsecContent) -> ElemsecContentInner {
-        (m.l, m.v)
+pub type FunctypeInner = (u8, (Resulttype, Resulttype));
+impl From<Functype> for FunctypeInner {
+    fn ex_from(m: Functype) -> FunctypeInner {
+        (m.tag, (m.params, m.results))
     }
 }
-impl<'a> From<ElemsecContentInner<'a>> for ElemsecContent<'a> {
-    fn ex_from(m: ElemsecContentInner) -> ElemsecContent {
-        let (l, v) = m;
-        ElemsecContent { l, v }
+impl From<FunctypeInner> for Functype {
+    fn ex_from(m: FunctypeInner) -> Functype {
+        let (tag, (params, results)) = m;
+        Functype { tag, params, results }
     }
 }
 
-pub struct ElemsecContentMapper<'a>(PhantomData<&'a ()>);
-impl<'a> ElemsecContentMapper<'a> {
+pub struct FunctypeMapper;
+impl FunctypeMapper {
     pub closed spec fn spec_new() -> Self {
-        ElemsecContentMapper(PhantomData)
+        FunctypeMapper
     }
     pub fn new() -> Self {
-        ElemsecContentMapper(PhantomData)
+        FunctypeMapper
     }
 }
-impl View for ElemsecContentMapper<'_> {
+impl View for FunctypeMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ElemsecContentMapper<'_> {
-    type Src = SpecElemsecContentInner;
-    type Dst = SpecElemsecContent;
+impl SpecIso for FunctypeMapper {
+    type Src = SpecFunctypeInner;
+    type Dst = SpecFunctype;
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -11537,23 +12814,24 @@ impl SpecIso for ElemsecContentMapper<'_> {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso for ElemsecContentMapper<'a> {
-    type Src = ElemsecContentInner<'a>;
-    type Dst = ElemsecContent<'a>;
+impl Iso for FunctypeMapper {
+    type Src = FunctypeInner;
+    type Dst = Functype;
 }
+pub const FUNCTYPETAG_CONST: u8 = 96;
 
-pub struct SpecElemsecContentCombinator(SpecElemsecContentCombinatorAlias);
+pub struct SpecFunctypeCombinator(SpecFunctypeCombinatorAlias);
 
-impl SpecCombinator for SpecElemsecContentCombinator {
-    type Type = SpecElemsecContent;
+impl SpecCombinator for SpecFunctypeCombinator {
+    type Type = SpecFunctype;
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     { self.0.spec_parse(s) }
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecElemsecContentCombinator {
+impl SecureSpecCombinator for SpecFunctypeCombinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecElemsecContentCombinatorAlias::is_prefix_secure() }
+    { SpecFunctypeCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -11567,16 +12845,16 @@ impl SecureSpecCombinator for SpecElemsecContentCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecElemsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecElemCombinator>>, ElemsecContentMapper<'static>>;
+pub type SpecFunctypeCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, (SpecResulttypeCombinator, SpecResulttypeCombinator)), FunctypeMapper>;
 
-pub struct ElemsecContentCombinator<'a>(ElemsecContentCombinatorAlias<'a>);
+pub struct FunctypeCombinator<'a>(FunctypeCombinatorAlias<'a>);
 
-impl<'a> View for ElemsecContentCombinator<'a> {
-    type V = SpecElemsecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecElemsecContentCombinator(self.0@) }
+impl<'a> View for FunctypeCombinator<'a> {
+    type V = SpecFunctypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecFunctypeCombinator(self.0@) }
 }
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ElemsecContentCombinator<'a> {
-    type Type = ElemsecContent<'a>;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for FunctypeCombinator<'a> {
+    type Type = Functype;
     closed spec fn spec_length(&self) -> Option<usize> 
     { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
     fn length(&self) -> Option<usize> 
@@ -11590,3705 +12868,28 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ElemsecContentCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ElemsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ElemCombinator<'a>>, ElemsecContentCont0<'a>>, ElemsecContentMapper<'a>>;
+pub type FunctypeCombinatorAlias<'a> = Mapped<(Refined<U8, TagPred<u8>>, (ResulttypeCombinator<'a>, ResulttypeCombinator<'a>)), FunctypeMapper>;
 
 
-pub closed spec fn spec_elemsec_content() -> SpecElemsecContentCombinator {
-    SpecElemsecContentCombinator(
+pub closed spec fn spec_functype() -> SpecFunctypeCombinator {
+    SpecFunctypeCombinator(
     Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_elemsec_content_cont0(deps) },
-        mapper: ElemsecContentMapper::spec_new(),
+        inner: (Refined { inner: U8, predicate: TagPred(FUNCTYPETAG_CONST) }, (spec_resulttype(), spec_resulttype())),
+        mapper: FunctypeMapper::spec_new(),
     })
 }
 
-pub open spec fn spec_elemsec_content_cont0(deps: u64) -> RepeatN<SpecElemCombinator> {
-    let l = deps;
-    RepeatN(spec_elem(), l.spec_into())
-}
                 
-pub fn elemsec_content<'a>() -> (o: ElemsecContentCombinator<'a>)
-    ensures o@ == spec_elemsec_content(),
+pub fn functype<'a>() -> (o: FunctypeCombinator<'a>)
+    ensures o@ == spec_functype(),
 {
-    ElemsecContentCombinator(
+    FunctypeCombinator(
     Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ElemsecContentCont0::new(), spec_snd: Ghost(|deps| spec_elemsec_content_cont0(deps)) },
-        mapper: ElemsecContentMapper::new(),
+        inner: (Refined { inner: U8, predicate: TagPred(FUNCTYPETAG_CONST) }, (resulttype(), resulttype())),
+        mapper: FunctypeMapper::new(),
     })
 }
 
-pub struct ElemsecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ElemsecContentCont0<'a> {
-    pub fn new() -> Self {
-        ElemsecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for ElemsecContentCont0<'a> {
-    type Output = RepeatN<ElemCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_elemsec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(elem(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecCustom {
-    pub name: SpecName,
-    pub data: SpecMyCustomSection,
-}
-
-pub type SpecCustomInner = (SpecName, SpecMyCustomSection);
-impl SpecFrom<SpecCustom> for SpecCustomInner {
-    open spec fn spec_from(m: SpecCustom) -> SpecCustomInner {
-        (m.name, m.data)
-    }
-}
-impl SpecFrom<SpecCustomInner> for SpecCustom {
-    open spec fn spec_from(m: SpecCustomInner) -> SpecCustom {
-        let (name, data) = m;
-        SpecCustom { name, data }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Custom {
-    pub name: Name,
-    pub data: MyCustomSection,
-}
-
-impl View for Custom {
-    type V = SpecCustom;
-
-    open spec fn view(&self) -> Self::V {
-        SpecCustom {
-            name: self.name@,
-            data: self.data@,
-        }
-    }
-}
-pub type CustomInner = (Name, MyCustomSection);
-impl From<Custom> for CustomInner {
-    fn ex_from(m: Custom) -> CustomInner {
-        (m.name, m.data)
-    }
-}
-impl From<CustomInner> for Custom {
-    fn ex_from(m: CustomInner) -> Custom {
-        let (name, data) = m;
-        Custom { name, data }
-    }
-}
-
-pub struct CustomMapper;
-impl CustomMapper {
-    pub closed spec fn spec_new() -> Self {
-        CustomMapper
-    }
-    pub fn new() -> Self {
-        CustomMapper
-    }
-}
-impl View for CustomMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CustomMapper {
-    type Src = SpecCustomInner;
-    type Dst = SpecCustom;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for CustomMapper {
-    type Src = CustomInner;
-    type Dst = Custom;
-}
-
-pub struct SpecCustomCombinator(SpecCustomCombinatorAlias);
-
-impl SpecCombinator for SpecCustomCombinator {
-    type Type = SpecCustom;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecCustomCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecCustomCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecCustomCombinatorAlias = Mapped<(SpecNameCombinator, SpecMyCustomSectionCombinator), CustomMapper>;
-
-pub struct CustomCombinator<'a>(CustomCombinatorAlias<'a>);
-
-impl<'a> View for CustomCombinator<'a> {
-    type V = SpecCustomCombinator;
-    closed spec fn view(&self) -> Self::V { SpecCustomCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for CustomCombinator<'a> {
-    type Type = Custom;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type CustomCombinatorAlias<'a> = Mapped<(NameCombinator<'a>, MyCustomSectionCombinator<'a>), CustomMapper>;
-
-
-pub closed spec fn spec_custom() -> SpecCustomCombinator {
-    SpecCustomCombinator(
-    Mapped {
-        inner: (spec_name(), spec_my_custom_section()),
-        mapper: CustomMapper::spec_new(),
-    })
-}
-
-                
-pub fn custom<'a>() -> (o: CustomCombinator<'a>)
-    ensures o@ == spec_custom(),
-{
-    CustomCombinator(
-    Mapped {
-        inner: (name(), my_custom_section()),
-        mapper: CustomMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecStart {
-    pub func: SpecFuncidx,
-}
-
-pub type SpecStartInner = SpecFuncidx;
-impl SpecFrom<SpecStart> for SpecStartInner {
-    open spec fn spec_from(m: SpecStart) -> SpecStartInner {
-        m.func
-    }
-}
-impl SpecFrom<SpecStartInner> for SpecStart {
-    open spec fn spec_from(m: SpecStartInner) -> SpecStart {
-        let func = m;
-        SpecStart { func }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Start {
-    pub func: Funcidx,
-}
-
-impl View for Start {
-    type V = SpecStart;
-
-    open spec fn view(&self) -> Self::V {
-        SpecStart {
-            func: self.func@,
-        }
-    }
-}
-pub type StartInner = Funcidx;
-impl From<Start> for StartInner {
-    fn ex_from(m: Start) -> StartInner {
-        m.func
-    }
-}
-impl From<StartInner> for Start {
-    fn ex_from(m: StartInner) -> Start {
-        let func = m;
-        Start { func }
-    }
-}
-
-pub struct StartMapper;
-impl StartMapper {
-    pub closed spec fn spec_new() -> Self {
-        StartMapper
-    }
-    pub fn new() -> Self {
-        StartMapper
-    }
-}
-impl View for StartMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for StartMapper {
-    type Src = SpecStartInner;
-    type Dst = SpecStart;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for StartMapper {
-    type Src = StartInner;
-    type Dst = Start;
-}
-
-pub struct SpecStartCombinator(SpecStartCombinatorAlias);
-
-impl SpecCombinator for SpecStartCombinator {
-    type Type = SpecStart;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecStartCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecStartCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecStartCombinatorAlias = Mapped<SpecFuncidxCombinator, StartMapper>;
-
-pub struct StartCombinator(StartCombinatorAlias);
-
-impl View for StartCombinator {
-    type V = SpecStartCombinator;
-    closed spec fn view(&self) -> Self::V { SpecStartCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for StartCombinator {
-    type Type = Start;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type StartCombinatorAlias = Mapped<FuncidxCombinator, StartMapper>;
-
-
-pub closed spec fn spec_start() -> SpecStartCombinator {
-    SpecStartCombinator(
-    Mapped {
-        inner: spec_funcidx(),
-        mapper: StartMapper::spec_new(),
-    })
-}
-
-                
-pub fn start() -> (o: StartCombinator)
-    ensures o@ == spec_start(),
-{
-    StartCombinator(
-    Mapped {
-        inner: funcidx(),
-        mapper: StartMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecStartsec {
-    pub size: u64,
-    pub cont: SpecStart,
-}
-
-pub type SpecStartsecInner = (u64, SpecStart);
-impl SpecFrom<SpecStartsec> for SpecStartsecInner {
-    open spec fn spec_from(m: SpecStartsec) -> SpecStartsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecStartsecInner> for SpecStartsec {
-    open spec fn spec_from(m: SpecStartsecInner) -> SpecStartsec {
-        let (size, cont) = m;
-        SpecStartsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Startsec {
-    pub size: u64,
-    pub cont: Start,
-}
-
-impl View for Startsec {
-    type V = SpecStartsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecStartsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type StartsecInner = (u64, Start);
-impl From<Startsec> for StartsecInner {
-    fn ex_from(m: Startsec) -> StartsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<StartsecInner> for Startsec {
-    fn ex_from(m: StartsecInner) -> Startsec {
-        let (size, cont) = m;
-        Startsec { size, cont }
-    }
-}
-
-pub struct StartsecMapper;
-impl StartsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        StartsecMapper
-    }
-    pub fn new() -> Self {
-        StartsecMapper
-    }
-}
-impl View for StartsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for StartsecMapper {
-    type Src = SpecStartsecInner;
-    type Dst = SpecStartsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for StartsecMapper {
-    type Src = StartsecInner;
-    type Dst = Startsec;
-}
-
-pub struct SpecStartsecCombinator(SpecStartsecCombinatorAlias);
-
-impl SpecCombinator for SpecStartsecCombinator {
-    type Type = SpecStartsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecStartsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecStartsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecStartsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecStartCombinator>>, StartsecMapper>;
-
-pub struct StartsecCombinator<'a>(StartsecCombinatorAlias<'a>);
-
-impl<'a> View for StartsecCombinator<'a> {
-    type V = SpecStartsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecStartsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for StartsecCombinator<'a> {
-    type Type = Startsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type StartsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, StartCombinator>, StartsecCont0<'a>>, StartsecMapper>;
-
-
-pub closed spec fn spec_startsec() -> SpecStartsecCombinator {
-    SpecStartsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_startsec_cont0(deps) },
-        mapper: StartsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_startsec_cont0(deps: u64) -> AndThen<Bytes, SpecStartCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_start())
-}
-                
-pub fn startsec<'a>() -> (o: StartsecCombinator<'a>)
-    ensures o@ == spec_startsec(),
-{
-    StartsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: StartsecCont0::new(), spec_snd: Ghost(|deps| spec_startsec_cont0(deps)) },
-        mapper: StartsecMapper::new(),
-    })
-}
-
-pub struct StartsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> StartsecCont0<'a> {
-    pub fn new() -> Self {
-        StartsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for StartsecCont0<'a> {
-    type Output = AndThen<Bytes, StartCombinator>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_startsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), start())
-    }
-}
-                
-
-pub struct SpecMem {
-    pub ty: SpecMemtype,
-}
-
-pub type SpecMemInner = SpecMemtype;
-impl SpecFrom<SpecMem> for SpecMemInner {
-    open spec fn spec_from(m: SpecMem) -> SpecMemInner {
-        m.ty
-    }
-}
-impl SpecFrom<SpecMemInner> for SpecMem {
-    open spec fn spec_from(m: SpecMemInner) -> SpecMem {
-        let ty = m;
-        SpecMem { ty }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Mem {
-    pub ty: Memtype,
-}
-
-impl View for Mem {
-    type V = SpecMem;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMem {
-            ty: self.ty@,
-        }
-    }
-}
-pub type MemInner = Memtype;
-impl From<Mem> for MemInner {
-    fn ex_from(m: Mem) -> MemInner {
-        m.ty
-    }
-}
-impl From<MemInner> for Mem {
-    fn ex_from(m: MemInner) -> Mem {
-        let ty = m;
-        Mem { ty }
-    }
-}
-
-pub struct MemMapper;
-impl MemMapper {
-    pub closed spec fn spec_new() -> Self {
-        MemMapper
-    }
-    pub fn new() -> Self {
-        MemMapper
-    }
-}
-impl View for MemMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MemMapper {
-    type Src = SpecMemInner;
-    type Dst = SpecMem;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for MemMapper {
-    type Src = MemInner;
-    type Dst = Mem;
-}
-
-pub struct SpecMemCombinator(SpecMemCombinatorAlias);
-
-impl SpecCombinator for SpecMemCombinator {
-    type Type = SpecMem;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMemCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMemCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMemCombinatorAlias = Mapped<SpecMemtypeCombinator, MemMapper>;
-
-pub struct MemCombinator(MemCombinatorAlias);
-
-impl View for MemCombinator {
-    type V = SpecMemCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMemCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MemCombinator {
-    type Type = Mem;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MemCombinatorAlias = Mapped<MemtypeCombinator, MemMapper>;
-
-
-pub closed spec fn spec_mem() -> SpecMemCombinator {
-    SpecMemCombinator(
-    Mapped {
-        inner: spec_memtype(),
-        mapper: MemMapper::spec_new(),
-    })
-}
-
-                
-pub fn mem() -> (o: MemCombinator)
-    ensures o@ == spec_mem(),
-{
-    MemCombinator(
-    Mapped {
-        inner: memtype(),
-        mapper: MemMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecMemsecContent {
-    pub l: u64,
-    pub v: Seq<SpecMem>,
-}
-
-pub type SpecMemsecContentInner = (u64, Seq<SpecMem>);
-impl SpecFrom<SpecMemsecContent> for SpecMemsecContentInner {
-    open spec fn spec_from(m: SpecMemsecContent) -> SpecMemsecContentInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecMemsecContentInner> for SpecMemsecContent {
-    open spec fn spec_from(m: SpecMemsecContentInner) -> SpecMemsecContent {
-        let (l, v) = m;
-        SpecMemsecContent { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct MemsecContent {
-    pub l: u64,
-    pub v: RepeatResult<Mem>,
-}
-
-impl View for MemsecContent {
-    type V = SpecMemsecContent;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMemsecContent {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type MemsecContentInner = (u64, RepeatResult<Mem>);
-impl From<MemsecContent> for MemsecContentInner {
-    fn ex_from(m: MemsecContent) -> MemsecContentInner {
-        (m.l, m.v)
-    }
-}
-impl From<MemsecContentInner> for MemsecContent {
-    fn ex_from(m: MemsecContentInner) -> MemsecContent {
-        let (l, v) = m;
-        MemsecContent { l, v }
-    }
-}
-
-pub struct MemsecContentMapper;
-impl MemsecContentMapper {
-    pub closed spec fn spec_new() -> Self {
-        MemsecContentMapper
-    }
-    pub fn new() -> Self {
-        MemsecContentMapper
-    }
-}
-impl View for MemsecContentMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MemsecContentMapper {
-    type Src = SpecMemsecContentInner;
-    type Dst = SpecMemsecContent;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for MemsecContentMapper {
-    type Src = MemsecContentInner;
-    type Dst = MemsecContent;
-}
-
-pub struct SpecMemsecContentCombinator(SpecMemsecContentCombinatorAlias);
-
-impl SpecCombinator for SpecMemsecContentCombinator {
-    type Type = SpecMemsecContent;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMemsecContentCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMemsecContentCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMemsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecMemCombinator>>, MemsecContentMapper>;
-
-pub struct MemsecContentCombinator<'a>(MemsecContentCombinatorAlias<'a>);
-
-impl<'a> View for MemsecContentCombinator<'a> {
-    type V = SpecMemsecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMemsecContentCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MemsecContentCombinator<'a> {
-    type Type = MemsecContent;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MemsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<MemCombinator>, MemsecContentCont0<'a>>, MemsecContentMapper>;
-
-
-pub closed spec fn spec_memsec_content() -> SpecMemsecContentCombinator {
-    SpecMemsecContentCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_memsec_content_cont0(deps) },
-        mapper: MemsecContentMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_memsec_content_cont0(deps: u64) -> RepeatN<SpecMemCombinator> {
-    let l = deps;
-    RepeatN(spec_mem(), l.spec_into())
-}
-                
-pub fn memsec_content<'a>() -> (o: MemsecContentCombinator<'a>)
-    ensures o@ == spec_memsec_content(),
-{
-    MemsecContentCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: MemsecContentCont0::new(), spec_snd: Ghost(|deps| spec_memsec_content_cont0(deps)) },
-        mapper: MemsecContentMapper::new(),
-    })
-}
-
-pub struct MemsecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> MemsecContentCont0<'a> {
-    pub fn new() -> Self {
-        MemsecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for MemsecContentCont0<'a> {
-    type Output = RepeatN<MemCombinator>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_memsec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(mem(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecDatasec {
-    pub size: u64,
-    pub cont: SpecDatasecContent,
-}
-
-pub type SpecDatasecInner = (u64, SpecDatasecContent);
-impl SpecFrom<SpecDatasec> for SpecDatasecInner {
-    open spec fn spec_from(m: SpecDatasec) -> SpecDatasecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecDatasecInner> for SpecDatasec {
-    open spec fn spec_from(m: SpecDatasecInner) -> SpecDatasec {
-        let (size, cont) = m;
-        SpecDatasec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Datasec<'a> {
-    pub size: u64,
-    pub cont: DatasecContent<'a>,
-}
-
-impl View for Datasec<'_> {
-    type V = SpecDatasec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecDatasec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type DatasecInner<'a> = (u64, DatasecContent<'a>);
-impl<'a> From<Datasec<'a>> for DatasecInner<'a> {
-    fn ex_from(m: Datasec) -> DatasecInner {
-        (m.size, m.cont)
-    }
-}
-impl<'a> From<DatasecInner<'a>> for Datasec<'a> {
-    fn ex_from(m: DatasecInner) -> Datasec {
-        let (size, cont) = m;
-        Datasec { size, cont }
-    }
-}
-
-pub struct DatasecMapper<'a>(PhantomData<&'a ()>);
-impl<'a> DatasecMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        DatasecMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        DatasecMapper(PhantomData)
-    }
-}
-impl View for DatasecMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for DatasecMapper<'_> {
-    type Src = SpecDatasecInner;
-    type Dst = SpecDatasec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for DatasecMapper<'a> {
-    type Src = DatasecInner<'a>;
-    type Dst = Datasec<'a>;
-}
-
-pub struct SpecDatasecCombinator(SpecDatasecCombinatorAlias);
-
-impl SpecCombinator for SpecDatasecCombinator {
-    type Type = SpecDatasec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecDatasecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecDatasecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecDatasecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecDatasecContentCombinator>>, DatasecMapper<'static>>;
-
-pub struct DatasecCombinator<'a>(DatasecCombinatorAlias<'a>);
-
-impl<'a> View for DatasecCombinator<'a> {
-    type V = SpecDatasecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecDatasecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for DatasecCombinator<'a> {
-    type Type = Datasec<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type DatasecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, DatasecContentCombinator<'a>>, DatasecCont0<'a>>, DatasecMapper<'a>>;
-
-
-pub closed spec fn spec_datasec() -> SpecDatasecCombinator {
-    SpecDatasecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_datasec_cont0(deps) },
-        mapper: DatasecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_datasec_cont0(deps: u64) -> AndThen<Bytes, SpecDatasecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_datasec_content())
-}
-                
-pub fn datasec<'a>() -> (o: DatasecCombinator<'a>)
-    ensures o@ == spec_datasec(),
-{
-    DatasecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: DatasecCont0::new(), spec_snd: Ghost(|deps| spec_datasec_cont0(deps)) },
-        mapper: DatasecMapper::new(),
-    })
-}
-
-pub struct DatasecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> DatasecCont0<'a> {
-    pub fn new() -> Self {
-        DatasecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for DatasecCont0<'a> {
-    type Output = AndThen<Bytes, DatasecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_datasec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), datasec_content())
-    }
-}
-                
-
-pub struct SpecCustomsec {
-    pub size: u64,
-    pub cont: SpecCustom,
-}
-
-pub type SpecCustomsecInner = (u64, SpecCustom);
-impl SpecFrom<SpecCustomsec> for SpecCustomsecInner {
-    open spec fn spec_from(m: SpecCustomsec) -> SpecCustomsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecCustomsecInner> for SpecCustomsec {
-    open spec fn spec_from(m: SpecCustomsecInner) -> SpecCustomsec {
-        let (size, cont) = m;
-        SpecCustomsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Customsec {
-    pub size: u64,
-    pub cont: Custom,
-}
-
-impl View for Customsec {
-    type V = SpecCustomsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecCustomsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type CustomsecInner = (u64, Custom);
-impl From<Customsec> for CustomsecInner {
-    fn ex_from(m: Customsec) -> CustomsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<CustomsecInner> for Customsec {
-    fn ex_from(m: CustomsecInner) -> Customsec {
-        let (size, cont) = m;
-        Customsec { size, cont }
-    }
-}
-
-pub struct CustomsecMapper;
-impl CustomsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        CustomsecMapper
-    }
-    pub fn new() -> Self {
-        CustomsecMapper
-    }
-}
-impl View for CustomsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CustomsecMapper {
-    type Src = SpecCustomsecInner;
-    type Dst = SpecCustomsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for CustomsecMapper {
-    type Src = CustomsecInner;
-    type Dst = Customsec;
-}
-
-pub struct SpecCustomsecCombinator(SpecCustomsecCombinatorAlias);
-
-impl SpecCombinator for SpecCustomsecCombinator {
-    type Type = SpecCustomsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecCustomsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecCustomsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecCustomsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecCustomCombinator>>, CustomsecMapper>;
-
-pub struct CustomsecCombinator<'a>(CustomsecCombinatorAlias<'a>);
-
-impl<'a> View for CustomsecCombinator<'a> {
-    type V = SpecCustomsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecCustomsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for CustomsecCombinator<'a> {
-    type Type = Customsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type CustomsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, CustomCombinator<'a>>, CustomsecCont0<'a>>, CustomsecMapper>;
-
-
-pub closed spec fn spec_customsec() -> SpecCustomsecCombinator {
-    SpecCustomsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_customsec_cont0(deps) },
-        mapper: CustomsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_customsec_cont0(deps: u64) -> AndThen<Bytes, SpecCustomCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_custom())
-}
-                
-pub fn customsec<'a>() -> (o: CustomsecCombinator<'a>)
-    ensures o@ == spec_customsec(),
-{
-    CustomsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: CustomsecCont0::new(), spec_snd: Ghost(|deps| spec_customsec_cont0(deps)) },
-        mapper: CustomsecMapper::new(),
-    })
-}
-
-pub struct CustomsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> CustomsecCont0<'a> {
-    pub fn new() -> Self {
-        CustomsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for CustomsecCont0<'a> {
-    type Output = AndThen<Bytes, CustomCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_customsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), custom())
-    }
-}
-                
-
-pub struct SpecTypesecContent {
-    pub l: u64,
-    pub v: Seq<SpecFunctype>,
-}
-
-pub type SpecTypesecContentInner = (u64, Seq<SpecFunctype>);
-impl SpecFrom<SpecTypesecContent> for SpecTypesecContentInner {
-    open spec fn spec_from(m: SpecTypesecContent) -> SpecTypesecContentInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecTypesecContentInner> for SpecTypesecContent {
-    open spec fn spec_from(m: SpecTypesecContentInner) -> SpecTypesecContent {
-        let (l, v) = m;
-        SpecTypesecContent { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct TypesecContent {
-    pub l: u64,
-    pub v: RepeatResult<Functype>,
-}
-
-impl View for TypesecContent {
-    type V = SpecTypesecContent;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTypesecContent {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type TypesecContentInner = (u64, RepeatResult<Functype>);
-impl From<TypesecContent> for TypesecContentInner {
-    fn ex_from(m: TypesecContent) -> TypesecContentInner {
-        (m.l, m.v)
-    }
-}
-impl From<TypesecContentInner> for TypesecContent {
-    fn ex_from(m: TypesecContentInner) -> TypesecContent {
-        let (l, v) = m;
-        TypesecContent { l, v }
-    }
-}
-
-pub struct TypesecContentMapper;
-impl TypesecContentMapper {
-    pub closed spec fn spec_new() -> Self {
-        TypesecContentMapper
-    }
-    pub fn new() -> Self {
-        TypesecContentMapper
-    }
-}
-impl View for TypesecContentMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TypesecContentMapper {
-    type Src = SpecTypesecContentInner;
-    type Dst = SpecTypesecContent;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for TypesecContentMapper {
-    type Src = TypesecContentInner;
-    type Dst = TypesecContent;
-}
-
-pub struct SpecTypesecContentCombinator(SpecTypesecContentCombinatorAlias);
-
-impl SpecCombinator for SpecTypesecContentCombinator {
-    type Type = SpecTypesecContent;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTypesecContentCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTypesecContentCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTypesecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecFunctypeCombinator>>, TypesecContentMapper>;
-
-pub struct TypesecContentCombinator<'a>(TypesecContentCombinatorAlias<'a>);
-
-impl<'a> View for TypesecContentCombinator<'a> {
-    type V = SpecTypesecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTypesecContentCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TypesecContentCombinator<'a> {
-    type Type = TypesecContent;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TypesecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<FunctypeCombinator<'a>>, TypesecContentCont0<'a>>, TypesecContentMapper>;
-
-
-pub closed spec fn spec_typesec_content() -> SpecTypesecContentCombinator {
-    SpecTypesecContentCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_typesec_content_cont0(deps) },
-        mapper: TypesecContentMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_typesec_content_cont0(deps: u64) -> RepeatN<SpecFunctypeCombinator> {
-    let l = deps;
-    RepeatN(spec_functype(), l.spec_into())
-}
-                
-pub fn typesec_content<'a>() -> (o: TypesecContentCombinator<'a>)
-    ensures o@ == spec_typesec_content(),
-{
-    TypesecContentCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: TypesecContentCont0::new(), spec_snd: Ghost(|deps| spec_typesec_content_cont0(deps)) },
-        mapper: TypesecContentMapper::new(),
-    })
-}
-
-pub struct TypesecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> TypesecContentCont0<'a> {
-    pub fn new() -> Self {
-        TypesecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for TypesecContentCont0<'a> {
-    type Output = RepeatN<FunctypeCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_typesec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(functype(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecTypesec {
-    pub size: u64,
-    pub cont: SpecTypesecContent,
-}
-
-pub type SpecTypesecInner = (u64, SpecTypesecContent);
-impl SpecFrom<SpecTypesec> for SpecTypesecInner {
-    open spec fn spec_from(m: SpecTypesec) -> SpecTypesecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecTypesecInner> for SpecTypesec {
-    open spec fn spec_from(m: SpecTypesecInner) -> SpecTypesec {
-        let (size, cont) = m;
-        SpecTypesec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Typesec {
-    pub size: u64,
-    pub cont: TypesecContent,
-}
-
-impl View for Typesec {
-    type V = SpecTypesec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTypesec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type TypesecInner = (u64, TypesecContent);
-impl From<Typesec> for TypesecInner {
-    fn ex_from(m: Typesec) -> TypesecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<TypesecInner> for Typesec {
-    fn ex_from(m: TypesecInner) -> Typesec {
-        let (size, cont) = m;
-        Typesec { size, cont }
-    }
-}
-
-pub struct TypesecMapper;
-impl TypesecMapper {
-    pub closed spec fn spec_new() -> Self {
-        TypesecMapper
-    }
-    pub fn new() -> Self {
-        TypesecMapper
-    }
-}
-impl View for TypesecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TypesecMapper {
-    type Src = SpecTypesecInner;
-    type Dst = SpecTypesec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for TypesecMapper {
-    type Src = TypesecInner;
-    type Dst = Typesec;
-}
-
-pub struct SpecTypesecCombinator(SpecTypesecCombinatorAlias);
-
-impl SpecCombinator for SpecTypesecCombinator {
-    type Type = SpecTypesec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTypesecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTypesecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTypesecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecTypesecContentCombinator>>, TypesecMapper>;
-
-pub struct TypesecCombinator<'a>(TypesecCombinatorAlias<'a>);
-
-impl<'a> View for TypesecCombinator<'a> {
-    type V = SpecTypesecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTypesecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TypesecCombinator<'a> {
-    type Type = Typesec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TypesecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, TypesecContentCombinator<'a>>, TypesecCont0<'a>>, TypesecMapper>;
-
-
-pub closed spec fn spec_typesec() -> SpecTypesecCombinator {
-    SpecTypesecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_typesec_cont0(deps) },
-        mapper: TypesecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_typesec_cont0(deps: u64) -> AndThen<Bytes, SpecTypesecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_typesec_content())
-}
-                
-pub fn typesec<'a>() -> (o: TypesecCombinator<'a>)
-    ensures o@ == spec_typesec(),
-{
-    TypesecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: TypesecCont0::new(), spec_snd: Ghost(|deps| spec_typesec_cont0(deps)) },
-        mapper: TypesecMapper::new(),
-    })
-}
-
-pub struct TypesecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> TypesecCont0<'a> {
-    pub fn new() -> Self {
-        TypesecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for TypesecCont0<'a> {
-    type Output = AndThen<Bytes, TypesecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_typesec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), typesec_content())
-    }
-}
-                
-
-pub struct SpecFuncsec {
-    pub size: u64,
-    pub cont: SpecFuncsecContent,
-}
-
-pub type SpecFuncsecInner = (u64, SpecFuncsecContent);
-impl SpecFrom<SpecFuncsec> for SpecFuncsecInner {
-    open spec fn spec_from(m: SpecFuncsec) -> SpecFuncsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecFuncsecInner> for SpecFuncsec {
-    open spec fn spec_from(m: SpecFuncsecInner) -> SpecFuncsec {
-        let (size, cont) = m;
-        SpecFuncsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Funcsec {
-    pub size: u64,
-    pub cont: FuncsecContent,
-}
-
-impl View for Funcsec {
-    type V = SpecFuncsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecFuncsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type FuncsecInner = (u64, FuncsecContent);
-impl From<Funcsec> for FuncsecInner {
-    fn ex_from(m: Funcsec) -> FuncsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<FuncsecInner> for Funcsec {
-    fn ex_from(m: FuncsecInner) -> Funcsec {
-        let (size, cont) = m;
-        Funcsec { size, cont }
-    }
-}
-
-pub struct FuncsecMapper;
-impl FuncsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        FuncsecMapper
-    }
-    pub fn new() -> Self {
-        FuncsecMapper
-    }
-}
-impl View for FuncsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for FuncsecMapper {
-    type Src = SpecFuncsecInner;
-    type Dst = SpecFuncsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for FuncsecMapper {
-    type Src = FuncsecInner;
-    type Dst = Funcsec;
-}
-
-pub struct SpecFuncsecCombinator(SpecFuncsecCombinatorAlias);
-
-impl SpecCombinator for SpecFuncsecCombinator {
-    type Type = SpecFuncsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecFuncsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecFuncsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecFuncsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecFuncsecContentCombinator>>, FuncsecMapper>;
-
-pub struct FuncsecCombinator<'a>(FuncsecCombinatorAlias<'a>);
-
-impl<'a> View for FuncsecCombinator<'a> {
-    type V = SpecFuncsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecFuncsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncsecCombinator<'a> {
-    type Type = Funcsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type FuncsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, FuncsecContentCombinator<'a>>, FuncsecCont0<'a>>, FuncsecMapper>;
-
-
-pub closed spec fn spec_funcsec() -> SpecFuncsecCombinator {
-    SpecFuncsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_funcsec_cont0(deps) },
-        mapper: FuncsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_funcsec_cont0(deps: u64) -> AndThen<Bytes, SpecFuncsecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_funcsec_content())
-}
-                
-pub fn funcsec<'a>() -> (o: FuncsecCombinator<'a>)
-    ensures o@ == spec_funcsec(),
-{
-    FuncsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: FuncsecCont0::new(), spec_snd: Ghost(|deps| spec_funcsec_cont0(deps)) },
-        mapper: FuncsecMapper::new(),
-    })
-}
-
-pub struct FuncsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> FuncsecCont0<'a> {
-    pub fn new() -> Self {
-        FuncsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for FuncsecCont0<'a> {
-    type Output = AndThen<Bytes, FuncsecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_funcsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), funcsec_content())
-    }
-}
-                
-
-pub struct SpecTable {
-    pub ty: SpecTabletype,
-}
-
-pub type SpecTableInner = SpecTabletype;
-impl SpecFrom<SpecTable> for SpecTableInner {
-    open spec fn spec_from(m: SpecTable) -> SpecTableInner {
-        m.ty
-    }
-}
-impl SpecFrom<SpecTableInner> for SpecTable {
-    open spec fn spec_from(m: SpecTableInner) -> SpecTable {
-        let ty = m;
-        SpecTable { ty }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Table {
-    pub ty: Tabletype,
-}
-
-impl View for Table {
-    type V = SpecTable;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTable {
-            ty: self.ty@,
-        }
-    }
-}
-pub type TableInner = Tabletype;
-impl From<Table> for TableInner {
-    fn ex_from(m: Table) -> TableInner {
-        m.ty
-    }
-}
-impl From<TableInner> for Table {
-    fn ex_from(m: TableInner) -> Table {
-        let ty = m;
-        Table { ty }
-    }
-}
-
-pub struct TableMapper;
-impl TableMapper {
-    pub closed spec fn spec_new() -> Self {
-        TableMapper
-    }
-    pub fn new() -> Self {
-        TableMapper
-    }
-}
-impl View for TableMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TableMapper {
-    type Src = SpecTableInner;
-    type Dst = SpecTable;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for TableMapper {
-    type Src = TableInner;
-    type Dst = Table;
-}
-
-pub struct SpecTableCombinator(SpecTableCombinatorAlias);
-
-impl SpecCombinator for SpecTableCombinator {
-    type Type = SpecTable;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTableCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTableCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTableCombinatorAlias = Mapped<SpecTabletypeCombinator, TableMapper>;
-
-pub struct TableCombinator(TableCombinatorAlias);
-
-impl View for TableCombinator {
-    type V = SpecTableCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTableCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TableCombinator {
-    type Type = Table;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TableCombinatorAlias = Mapped<TabletypeCombinator, TableMapper>;
-
-
-pub closed spec fn spec_table() -> SpecTableCombinator {
-    SpecTableCombinator(
-    Mapped {
-        inner: spec_tabletype(),
-        mapper: TableMapper::spec_new(),
-    })
-}
-
-                
-pub fn table() -> (o: TableCombinator)
-    ensures o@ == spec_table(),
-{
-    TableCombinator(
-    Mapped {
-        inner: tabletype(),
-        mapper: TableMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecTablesecContent {
-    pub l: u64,
-    pub v: Seq<SpecTable>,
-}
-
-pub type SpecTablesecContentInner = (u64, Seq<SpecTable>);
-impl SpecFrom<SpecTablesecContent> for SpecTablesecContentInner {
-    open spec fn spec_from(m: SpecTablesecContent) -> SpecTablesecContentInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecTablesecContentInner> for SpecTablesecContent {
-    open spec fn spec_from(m: SpecTablesecContentInner) -> SpecTablesecContent {
-        let (l, v) = m;
-        SpecTablesecContent { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct TablesecContent {
-    pub l: u64,
-    pub v: RepeatResult<Table>,
-}
-
-impl View for TablesecContent {
-    type V = SpecTablesecContent;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTablesecContent {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type TablesecContentInner = (u64, RepeatResult<Table>);
-impl From<TablesecContent> for TablesecContentInner {
-    fn ex_from(m: TablesecContent) -> TablesecContentInner {
-        (m.l, m.v)
-    }
-}
-impl From<TablesecContentInner> for TablesecContent {
-    fn ex_from(m: TablesecContentInner) -> TablesecContent {
-        let (l, v) = m;
-        TablesecContent { l, v }
-    }
-}
-
-pub struct TablesecContentMapper;
-impl TablesecContentMapper {
-    pub closed spec fn spec_new() -> Self {
-        TablesecContentMapper
-    }
-    pub fn new() -> Self {
-        TablesecContentMapper
-    }
-}
-impl View for TablesecContentMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TablesecContentMapper {
-    type Src = SpecTablesecContentInner;
-    type Dst = SpecTablesecContent;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for TablesecContentMapper {
-    type Src = TablesecContentInner;
-    type Dst = TablesecContent;
-}
-
-pub struct SpecTablesecContentCombinator(SpecTablesecContentCombinatorAlias);
-
-impl SpecCombinator for SpecTablesecContentCombinator {
-    type Type = SpecTablesecContent;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTablesecContentCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTablesecContentCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTablesecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecTableCombinator>>, TablesecContentMapper>;
-
-pub struct TablesecContentCombinator<'a>(TablesecContentCombinatorAlias<'a>);
-
-impl<'a> View for TablesecContentCombinator<'a> {
-    type V = SpecTablesecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTablesecContentCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TablesecContentCombinator<'a> {
-    type Type = TablesecContent;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TablesecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<TableCombinator>, TablesecContentCont0<'a>>, TablesecContentMapper>;
-
-
-pub closed spec fn spec_tablesec_content() -> SpecTablesecContentCombinator {
-    SpecTablesecContentCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_tablesec_content_cont0(deps) },
-        mapper: TablesecContentMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_tablesec_content_cont0(deps: u64) -> RepeatN<SpecTableCombinator> {
-    let l = deps;
-    RepeatN(spec_table(), l.spec_into())
-}
-                
-pub fn tablesec_content<'a>() -> (o: TablesecContentCombinator<'a>)
-    ensures o@ == spec_tablesec_content(),
-{
-    TablesecContentCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: TablesecContentCont0::new(), spec_snd: Ghost(|deps| spec_tablesec_content_cont0(deps)) },
-        mapper: TablesecContentMapper::new(),
-    })
-}
-
-pub struct TablesecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> TablesecContentCont0<'a> {
-    pub fn new() -> Self {
-        TablesecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for TablesecContentCont0<'a> {
-    type Output = RepeatN<TableCombinator>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_tablesec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(table(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecTablesec {
-    pub size: u64,
-    pub cont: SpecTablesecContent,
-}
-
-pub type SpecTablesecInner = (u64, SpecTablesecContent);
-impl SpecFrom<SpecTablesec> for SpecTablesecInner {
-    open spec fn spec_from(m: SpecTablesec) -> SpecTablesecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecTablesecInner> for SpecTablesec {
-    open spec fn spec_from(m: SpecTablesecInner) -> SpecTablesec {
-        let (size, cont) = m;
-        SpecTablesec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Tablesec {
-    pub size: u64,
-    pub cont: TablesecContent,
-}
-
-impl View for Tablesec {
-    type V = SpecTablesec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTablesec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type TablesecInner = (u64, TablesecContent);
-impl From<Tablesec> for TablesecInner {
-    fn ex_from(m: Tablesec) -> TablesecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<TablesecInner> for Tablesec {
-    fn ex_from(m: TablesecInner) -> Tablesec {
-        let (size, cont) = m;
-        Tablesec { size, cont }
-    }
-}
-
-pub struct TablesecMapper;
-impl TablesecMapper {
-    pub closed spec fn spec_new() -> Self {
-        TablesecMapper
-    }
-    pub fn new() -> Self {
-        TablesecMapper
-    }
-}
-impl View for TablesecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TablesecMapper {
-    type Src = SpecTablesecInner;
-    type Dst = SpecTablesec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for TablesecMapper {
-    type Src = TablesecInner;
-    type Dst = Tablesec;
-}
-
-pub struct SpecTablesecCombinator(SpecTablesecCombinatorAlias);
-
-impl SpecCombinator for SpecTablesecCombinator {
-    type Type = SpecTablesec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTablesecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTablesecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTablesecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecTablesecContentCombinator>>, TablesecMapper>;
-
-pub struct TablesecCombinator<'a>(TablesecCombinatorAlias<'a>);
-
-impl<'a> View for TablesecCombinator<'a> {
-    type V = SpecTablesecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTablesecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TablesecCombinator<'a> {
-    type Type = Tablesec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TablesecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, TablesecContentCombinator<'a>>, TablesecCont0<'a>>, TablesecMapper>;
-
-
-pub closed spec fn spec_tablesec() -> SpecTablesecCombinator {
-    SpecTablesecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_tablesec_cont0(deps) },
-        mapper: TablesecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_tablesec_cont0(deps: u64) -> AndThen<Bytes, SpecTablesecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_tablesec_content())
-}
-                
-pub fn tablesec<'a>() -> (o: TablesecCombinator<'a>)
-    ensures o@ == spec_tablesec(),
-{
-    TablesecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: TablesecCont0::new(), spec_snd: Ghost(|deps| spec_tablesec_cont0(deps)) },
-        mapper: TablesecMapper::new(),
-    })
-}
-
-pub struct TablesecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> TablesecCont0<'a> {
-    pub fn new() -> Self {
-        TablesecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for TablesecCont0<'a> {
-    type Output = AndThen<Bytes, TablesecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_tablesec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), tablesec_content())
-    }
-}
-                
-
-pub struct SpecMemsec {
-    pub size: u64,
-    pub cont: SpecMemsecContent,
-}
-
-pub type SpecMemsecInner = (u64, SpecMemsecContent);
-impl SpecFrom<SpecMemsec> for SpecMemsecInner {
-    open spec fn spec_from(m: SpecMemsec) -> SpecMemsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecMemsecInner> for SpecMemsec {
-    open spec fn spec_from(m: SpecMemsecInner) -> SpecMemsec {
-        let (size, cont) = m;
-        SpecMemsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Memsec {
-    pub size: u64,
-    pub cont: MemsecContent,
-}
-
-impl View for Memsec {
-    type V = SpecMemsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMemsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type MemsecInner = (u64, MemsecContent);
-impl From<Memsec> for MemsecInner {
-    fn ex_from(m: Memsec) -> MemsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<MemsecInner> for Memsec {
-    fn ex_from(m: MemsecInner) -> Memsec {
-        let (size, cont) = m;
-        Memsec { size, cont }
-    }
-}
-
-pub struct MemsecMapper;
-impl MemsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        MemsecMapper
-    }
-    pub fn new() -> Self {
-        MemsecMapper
-    }
-}
-impl View for MemsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MemsecMapper {
-    type Src = SpecMemsecInner;
-    type Dst = SpecMemsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for MemsecMapper {
-    type Src = MemsecInner;
-    type Dst = Memsec;
-}
-
-pub struct SpecMemsecCombinator(SpecMemsecCombinatorAlias);
-
-impl SpecCombinator for SpecMemsecCombinator {
-    type Type = SpecMemsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMemsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMemsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMemsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecMemsecContentCombinator>>, MemsecMapper>;
-
-pub struct MemsecCombinator<'a>(MemsecCombinatorAlias<'a>);
-
-impl<'a> View for MemsecCombinator<'a> {
-    type V = SpecMemsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecMemsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for MemsecCombinator<'a> {
-    type Type = Memsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MemsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, MemsecContentCombinator<'a>>, MemsecCont0<'a>>, MemsecMapper>;
-
-
-pub closed spec fn spec_memsec() -> SpecMemsecCombinator {
-    SpecMemsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_memsec_cont0(deps) },
-        mapper: MemsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_memsec_cont0(deps: u64) -> AndThen<Bytes, SpecMemsecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_memsec_content())
-}
-                
-pub fn memsec<'a>() -> (o: MemsecCombinator<'a>)
-    ensures o@ == spec_memsec(),
-{
-    MemsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: MemsecCont0::new(), spec_snd: Ghost(|deps| spec_memsec_cont0(deps)) },
-        mapper: MemsecMapper::new(),
-    })
-}
-
-pub struct MemsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> MemsecCont0<'a> {
-    pub fn new() -> Self {
-        MemsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for MemsecCont0<'a> {
-    type Output = AndThen<Bytes, MemsecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_memsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), memsec_content())
-    }
-}
-                
-
-pub struct SpecGlobal {
-    pub gt: SpecGlobaltype,
-    pub init: SpecExpr,
-}
-
-pub type SpecGlobalInner = (SpecGlobaltype, SpecExpr);
-impl SpecFrom<SpecGlobal> for SpecGlobalInner {
-    open spec fn spec_from(m: SpecGlobal) -> SpecGlobalInner {
-        (m.gt, m.init)
-    }
-}
-impl SpecFrom<SpecGlobalInner> for SpecGlobal {
-    open spec fn spec_from(m: SpecGlobalInner) -> SpecGlobal {
-        let (gt, init) = m;
-        SpecGlobal { gt, init }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Global<'a> {
-    pub gt: Globaltype,
-    pub init: Expr<'a>,
-}
-
-impl View for Global<'_> {
-    type V = SpecGlobal;
-
-    open spec fn view(&self) -> Self::V {
-        SpecGlobal {
-            gt: self.gt@,
-            init: self.init@,
-        }
-    }
-}
-pub type GlobalInner<'a> = (Globaltype, Expr<'a>);
-impl<'a> From<Global<'a>> for GlobalInner<'a> {
-    fn ex_from(m: Global) -> GlobalInner {
-        (m.gt, m.init)
-    }
-}
-impl<'a> From<GlobalInner<'a>> for Global<'a> {
-    fn ex_from(m: GlobalInner) -> Global {
-        let (gt, init) = m;
-        Global { gt, init }
-    }
-}
-
-pub struct GlobalMapper<'a>(PhantomData<&'a ()>);
-impl<'a> GlobalMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        GlobalMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        GlobalMapper(PhantomData)
-    }
-}
-impl View for GlobalMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for GlobalMapper<'_> {
-    type Src = SpecGlobalInner;
-    type Dst = SpecGlobal;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for GlobalMapper<'a> {
-    type Src = GlobalInner<'a>;
-    type Dst = Global<'a>;
-}
-
-pub struct SpecGlobalCombinator(SpecGlobalCombinatorAlias);
-
-impl SpecCombinator for SpecGlobalCombinator {
-    type Type = SpecGlobal;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecGlobalCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecGlobalCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecGlobalCombinatorAlias = Mapped<(SpecGlobaltypeCombinator, SpecExprCombinator), GlobalMapper<'static>>;
-
-pub struct GlobalCombinator<'a>(GlobalCombinatorAlias<'a>);
-
-impl<'a> View for GlobalCombinator<'a> {
-    type V = SpecGlobalCombinator;
-    closed spec fn view(&self) -> Self::V { SpecGlobalCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalCombinator<'a> {
-    type Type = Global<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type GlobalCombinatorAlias<'a> = Mapped<(GlobaltypeCombinator, ExprCombinator<'a>), GlobalMapper<'a>>;
-
-
-pub closed spec fn spec_global() -> SpecGlobalCombinator {
-    SpecGlobalCombinator(
-    Mapped {
-        inner: (spec_globaltype(), spec_expr()),
-        mapper: GlobalMapper::spec_new(),
-    })
-}
-
-                
-pub fn global<'a>() -> (o: GlobalCombinator<'a>)
-    ensures o@ == spec_global(),
-{
-    GlobalCombinator(
-    Mapped {
-        inner: (globaltype(), expr()),
-        mapper: GlobalMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecGlobalsecContent {
-    pub l: u64,
-    pub v: Seq<SpecGlobal>,
-}
-
-pub type SpecGlobalsecContentInner = (u64, Seq<SpecGlobal>);
-impl SpecFrom<SpecGlobalsecContent> for SpecGlobalsecContentInner {
-    open spec fn spec_from(m: SpecGlobalsecContent) -> SpecGlobalsecContentInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecGlobalsecContentInner> for SpecGlobalsecContent {
-    open spec fn spec_from(m: SpecGlobalsecContentInner) -> SpecGlobalsecContent {
-        let (l, v) = m;
-        SpecGlobalsecContent { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct GlobalsecContent<'a> {
-    pub l: u64,
-    pub v: RepeatResult<Global<'a>>,
-}
-
-impl View for GlobalsecContent<'_> {
-    type V = SpecGlobalsecContent;
-
-    open spec fn view(&self) -> Self::V {
-        SpecGlobalsecContent {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type GlobalsecContentInner<'a> = (u64, RepeatResult<Global<'a>>);
-impl<'a> From<GlobalsecContent<'a>> for GlobalsecContentInner<'a> {
-    fn ex_from(m: GlobalsecContent) -> GlobalsecContentInner {
-        (m.l, m.v)
-    }
-}
-impl<'a> From<GlobalsecContentInner<'a>> for GlobalsecContent<'a> {
-    fn ex_from(m: GlobalsecContentInner) -> GlobalsecContent {
-        let (l, v) = m;
-        GlobalsecContent { l, v }
-    }
-}
-
-pub struct GlobalsecContentMapper<'a>(PhantomData<&'a ()>);
-impl<'a> GlobalsecContentMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        GlobalsecContentMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        GlobalsecContentMapper(PhantomData)
-    }
-}
-impl View for GlobalsecContentMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for GlobalsecContentMapper<'_> {
-    type Src = SpecGlobalsecContentInner;
-    type Dst = SpecGlobalsecContent;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for GlobalsecContentMapper<'a> {
-    type Src = GlobalsecContentInner<'a>;
-    type Dst = GlobalsecContent<'a>;
-}
-
-pub struct SpecGlobalsecContentCombinator(SpecGlobalsecContentCombinatorAlias);
-
-impl SpecCombinator for SpecGlobalsecContentCombinator {
-    type Type = SpecGlobalsecContent;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecGlobalsecContentCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecGlobalsecContentCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecGlobalsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecGlobalCombinator>>, GlobalsecContentMapper<'static>>;
-
-pub struct GlobalsecContentCombinator<'a>(GlobalsecContentCombinatorAlias<'a>);
-
-impl<'a> View for GlobalsecContentCombinator<'a> {
-    type V = SpecGlobalsecContentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecGlobalsecContentCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalsecContentCombinator<'a> {
-    type Type = GlobalsecContent<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type GlobalsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<GlobalCombinator<'a>>, GlobalsecContentCont0<'a>>, GlobalsecContentMapper<'a>>;
-
-
-pub closed spec fn spec_globalsec_content() -> SpecGlobalsecContentCombinator {
-    SpecGlobalsecContentCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_globalsec_content_cont0(deps) },
-        mapper: GlobalsecContentMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_globalsec_content_cont0(deps: u64) -> RepeatN<SpecGlobalCombinator> {
-    let l = deps;
-    RepeatN(spec_global(), l.spec_into())
-}
-                
-pub fn globalsec_content<'a>() -> (o: GlobalsecContentCombinator<'a>)
-    ensures o@ == spec_globalsec_content(),
-{
-    GlobalsecContentCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: GlobalsecContentCont0::new(), spec_snd: Ghost(|deps| spec_globalsec_content_cont0(deps)) },
-        mapper: GlobalsecContentMapper::new(),
-    })
-}
-
-pub struct GlobalsecContentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> GlobalsecContentCont0<'a> {
-    pub fn new() -> Self {
-        GlobalsecContentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for GlobalsecContentCont0<'a> {
-    type Output = RepeatN<GlobalCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_globalsec_content_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(global(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecGlobalsec {
-    pub size: u64,
-    pub cont: SpecGlobalsecContent,
-}
-
-pub type SpecGlobalsecInner = (u64, SpecGlobalsecContent);
-impl SpecFrom<SpecGlobalsec> for SpecGlobalsecInner {
-    open spec fn spec_from(m: SpecGlobalsec) -> SpecGlobalsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecGlobalsecInner> for SpecGlobalsec {
-    open spec fn spec_from(m: SpecGlobalsecInner) -> SpecGlobalsec {
-        let (size, cont) = m;
-        SpecGlobalsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Globalsec<'a> {
-    pub size: u64,
-    pub cont: GlobalsecContent<'a>,
-}
-
-impl View for Globalsec<'_> {
-    type V = SpecGlobalsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecGlobalsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type GlobalsecInner<'a> = (u64, GlobalsecContent<'a>);
-impl<'a> From<Globalsec<'a>> for GlobalsecInner<'a> {
-    fn ex_from(m: Globalsec) -> GlobalsecInner {
-        (m.size, m.cont)
-    }
-}
-impl<'a> From<GlobalsecInner<'a>> for Globalsec<'a> {
-    fn ex_from(m: GlobalsecInner) -> Globalsec {
-        let (size, cont) = m;
-        Globalsec { size, cont }
-    }
-}
-
-pub struct GlobalsecMapper<'a>(PhantomData<&'a ()>);
-impl<'a> GlobalsecMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        GlobalsecMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        GlobalsecMapper(PhantomData)
-    }
-}
-impl View for GlobalsecMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for GlobalsecMapper<'_> {
-    type Src = SpecGlobalsecInner;
-    type Dst = SpecGlobalsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for GlobalsecMapper<'a> {
-    type Src = GlobalsecInner<'a>;
-    type Dst = Globalsec<'a>;
-}
-
-pub struct SpecGlobalsecCombinator(SpecGlobalsecCombinatorAlias);
-
-impl SpecCombinator for SpecGlobalsecCombinator {
-    type Type = SpecGlobalsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecGlobalsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecGlobalsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecGlobalsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecGlobalsecContentCombinator>>, GlobalsecMapper<'static>>;
-
-pub struct GlobalsecCombinator<'a>(GlobalsecCombinatorAlias<'a>);
-
-impl<'a> View for GlobalsecCombinator<'a> {
-    type V = SpecGlobalsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecGlobalsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalsecCombinator<'a> {
-    type Type = Globalsec<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type GlobalsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, GlobalsecContentCombinator<'a>>, GlobalsecCont0<'a>>, GlobalsecMapper<'a>>;
-
-
-pub closed spec fn spec_globalsec() -> SpecGlobalsecCombinator {
-    SpecGlobalsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_globalsec_cont0(deps) },
-        mapper: GlobalsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_globalsec_cont0(deps: u64) -> AndThen<Bytes, SpecGlobalsecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_globalsec_content())
-}
-                
-pub fn globalsec<'a>() -> (o: GlobalsecCombinator<'a>)
-    ensures o@ == spec_globalsec(),
-{
-    GlobalsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: GlobalsecCont0::new(), spec_snd: Ghost(|deps| spec_globalsec_cont0(deps)) },
-        mapper: GlobalsecMapper::new(),
-    })
-}
-
-pub struct GlobalsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> GlobalsecCont0<'a> {
-    pub fn new() -> Self {
-        GlobalsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for GlobalsecCont0<'a> {
-    type Output = AndThen<Bytes, GlobalsecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_globalsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), globalsec_content())
-    }
-}
-                
-
-pub struct SpecExport {
-    pub nm: SpecName,
-    pub d: SpecExportdesc,
-}
-
-pub type SpecExportInner = (SpecName, SpecExportdesc);
-impl SpecFrom<SpecExport> for SpecExportInner {
-    open spec fn spec_from(m: SpecExport) -> SpecExportInner {
-        (m.nm, m.d)
-    }
-}
-impl SpecFrom<SpecExportInner> for SpecExport {
-    open spec fn spec_from(m: SpecExportInner) -> SpecExport {
-        let (nm, d) = m;
-        SpecExport { nm, d }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Export {
-    pub nm: Name,
-    pub d: Exportdesc,
-}
-
-impl View for Export {
-    type V = SpecExport;
-
-    open spec fn view(&self) -> Self::V {
-        SpecExport {
-            nm: self.nm@,
-            d: self.d@,
-        }
-    }
-}
-pub type ExportInner = (Name, Exportdesc);
-impl From<Export> for ExportInner {
-    fn ex_from(m: Export) -> ExportInner {
-        (m.nm, m.d)
-    }
-}
-impl From<ExportInner> for Export {
-    fn ex_from(m: ExportInner) -> Export {
-        let (nm, d) = m;
-        Export { nm, d }
-    }
-}
-
-pub struct ExportMapper;
-impl ExportMapper {
-    pub closed spec fn spec_new() -> Self {
-        ExportMapper
-    }
-    pub fn new() -> Self {
-        ExportMapper
-    }
-}
-impl View for ExportMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExportMapper {
-    type Src = SpecExportInner;
-    type Dst = SpecExport;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ExportMapper {
-    type Src = ExportInner;
-    type Dst = Export;
-}
-
-pub struct SpecExportCombinator(SpecExportCombinatorAlias);
-
-impl SpecCombinator for SpecExportCombinator {
-    type Type = SpecExport;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecExportCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecExportCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecExportCombinatorAlias = Mapped<(SpecNameCombinator, SpecExportdescCombinator), ExportMapper>;
-
-pub struct ExportCombinator<'a>(ExportCombinatorAlias<'a>);
-
-impl<'a> View for ExportCombinator<'a> {
-    type V = SpecExportCombinator;
-    closed spec fn view(&self) -> Self::V { SpecExportCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportCombinator<'a> {
-    type Type = Export;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ExportCombinatorAlias<'a> = Mapped<(NameCombinator<'a>, ExportdescCombinator), ExportMapper>;
-
-
-pub closed spec fn spec_export() -> SpecExportCombinator {
-    SpecExportCombinator(
-    Mapped {
-        inner: (spec_name(), spec_exportdesc()),
-        mapper: ExportMapper::spec_new(),
-    })
-}
-
-                
-pub fn export<'a>() -> (o: ExportCombinator<'a>)
-    ensures o@ == spec_export(),
-{
-    ExportCombinator(
-    Mapped {
-        inner: (name(), exportdesc()),
-        mapper: ExportMapper::new(),
-    })
-}
-
-                
-
-pub struct SpecExports {
-    pub l: u64,
-    pub v: Seq<SpecExport>,
-}
-
-pub type SpecExportsInner = (u64, Seq<SpecExport>);
-impl SpecFrom<SpecExports> for SpecExportsInner {
-    open spec fn spec_from(m: SpecExports) -> SpecExportsInner {
-        (m.l, m.v)
-    }
-}
-impl SpecFrom<SpecExportsInner> for SpecExports {
-    open spec fn spec_from(m: SpecExportsInner) -> SpecExports {
-        let (l, v) = m;
-        SpecExports { l, v }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Exports {
-    pub l: u64,
-    pub v: RepeatResult<Export>,
-}
-
-impl View for Exports {
-    type V = SpecExports;
-
-    open spec fn view(&self) -> Self::V {
-        SpecExports {
-            l: self.l@,
-            v: self.v@,
-        }
-    }
-}
-pub type ExportsInner = (u64, RepeatResult<Export>);
-impl From<Exports> for ExportsInner {
-    fn ex_from(m: Exports) -> ExportsInner {
-        (m.l, m.v)
-    }
-}
-impl From<ExportsInner> for Exports {
-    fn ex_from(m: ExportsInner) -> Exports {
-        let (l, v) = m;
-        Exports { l, v }
-    }
-}
-
-pub struct ExportsMapper;
-impl ExportsMapper {
-    pub closed spec fn spec_new() -> Self {
-        ExportsMapper
-    }
-    pub fn new() -> Self {
-        ExportsMapper
-    }
-}
-impl View for ExportsMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExportsMapper {
-    type Src = SpecExportsInner;
-    type Dst = SpecExports;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ExportsMapper {
-    type Src = ExportsInner;
-    type Dst = Exports;
-}
-
-pub struct SpecExportsCombinator(SpecExportsCombinatorAlias);
-
-impl SpecCombinator for SpecExportsCombinator {
-    type Type = SpecExports;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecExportsCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecExportsCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecExportsCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecExportCombinator>>, ExportsMapper>;
-
-pub struct ExportsCombinator<'a>(ExportsCombinatorAlias<'a>);
-
-impl<'a> View for ExportsCombinator<'a> {
-    type V = SpecExportsCombinator;
-    closed spec fn view(&self) -> Self::V { SpecExportsCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportsCombinator<'a> {
-    type Type = Exports;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ExportsCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ExportCombinator<'a>>, ExportsCont0<'a>>, ExportsMapper>;
-
-
-pub closed spec fn spec_exports() -> SpecExportsCombinator {
-    SpecExportsCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exports_cont0(deps) },
-        mapper: ExportsMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_exports_cont0(deps: u64) -> RepeatN<SpecExportCombinator> {
-    let l = deps;
-    RepeatN(spec_export(), l.spec_into())
-}
-                
-pub fn exports<'a>() -> (o: ExportsCombinator<'a>)
-    ensures o@ == spec_exports(),
-{
-    ExportsCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ExportsCont0::new(), spec_snd: Ghost(|deps| spec_exports_cont0(deps)) },
-        mapper: ExportsMapper::new(),
-    })
-}
-
-pub struct ExportsCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ExportsCont0<'a> {
-    pub fn new() -> Self {
-        ExportsCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for ExportsCont0<'a> {
-    type Output = RepeatN<ExportCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_exports_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let l = *deps;
-        RepeatN(export(), l.ex_into())
-    }
-}
-                
-
-pub struct SpecExportsec {
-    pub size: u64,
-    pub cont: SpecExports,
-}
-
-pub type SpecExportsecInner = (u64, SpecExports);
-impl SpecFrom<SpecExportsec> for SpecExportsecInner {
-    open spec fn spec_from(m: SpecExportsec) -> SpecExportsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecExportsecInner> for SpecExportsec {
-    open spec fn spec_from(m: SpecExportsecInner) -> SpecExportsec {
-        let (size, cont) = m;
-        SpecExportsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Exportsec {
-    pub size: u64,
-    pub cont: Exports,
-}
-
-impl View for Exportsec {
-    type V = SpecExportsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecExportsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type ExportsecInner = (u64, Exports);
-impl From<Exportsec> for ExportsecInner {
-    fn ex_from(m: Exportsec) -> ExportsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<ExportsecInner> for Exportsec {
-    fn ex_from(m: ExportsecInner) -> Exportsec {
-        let (size, cont) = m;
-        Exportsec { size, cont }
-    }
-}
-
-pub struct ExportsecMapper;
-impl ExportsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        ExportsecMapper
-    }
-    pub fn new() -> Self {
-        ExportsecMapper
-    }
-}
-impl View for ExportsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ExportsecMapper {
-    type Src = SpecExportsecInner;
-    type Dst = SpecExportsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for ExportsecMapper {
-    type Src = ExportsecInner;
-    type Dst = Exportsec;
-}
-
-pub struct SpecExportsecCombinator(SpecExportsecCombinatorAlias);
-
-impl SpecCombinator for SpecExportsecCombinator {
-    type Type = SpecExportsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecExportsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecExportsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecExportsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecExportsCombinator>>, ExportsecMapper>;
-
-pub struct ExportsecCombinator<'a>(ExportsecCombinatorAlias<'a>);
-
-impl<'a> View for ExportsecCombinator<'a> {
-    type V = SpecExportsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecExportsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportsecCombinator<'a> {
-    type Type = Exportsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ExportsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, ExportsCombinator<'a>>, ExportsecCont0<'a>>, ExportsecMapper>;
-
-
-pub closed spec fn spec_exportsec() -> SpecExportsecCombinator {
-    SpecExportsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exportsec_cont0(deps) },
-        mapper: ExportsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_exportsec_cont0(deps: u64) -> AndThen<Bytes, SpecExportsCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_exports())
-}
-                
-pub fn exportsec<'a>() -> (o: ExportsecCombinator<'a>)
-    ensures o@ == spec_exportsec(),
-{
-    ExportsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ExportsecCont0::new(), spec_snd: Ghost(|deps| spec_exportsec_cont0(deps)) },
-        mapper: ExportsecMapper::new(),
-    })
-}
-
-pub struct ExportsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ExportsecCont0<'a> {
-    pub fn new() -> Self {
-        ExportsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for ExportsecCont0<'a> {
-    type Output = AndThen<Bytes, ExportsCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_exportsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), exports())
-    }
-}
-                
-
-pub struct SpecElemsec {
-    pub size: u64,
-    pub cont: SpecElemsecContent,
-}
-
-pub type SpecElemsecInner = (u64, SpecElemsecContent);
-impl SpecFrom<SpecElemsec> for SpecElemsecInner {
-    open spec fn spec_from(m: SpecElemsec) -> SpecElemsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecElemsecInner> for SpecElemsec {
-    open spec fn spec_from(m: SpecElemsecInner) -> SpecElemsec {
-        let (size, cont) = m;
-        SpecElemsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Elemsec<'a> {
-    pub size: u64,
-    pub cont: ElemsecContent<'a>,
-}
-
-impl View for Elemsec<'_> {
-    type V = SpecElemsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecElemsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type ElemsecInner<'a> = (u64, ElemsecContent<'a>);
-impl<'a> From<Elemsec<'a>> for ElemsecInner<'a> {
-    fn ex_from(m: Elemsec) -> ElemsecInner {
-        (m.size, m.cont)
-    }
-}
-impl<'a> From<ElemsecInner<'a>> for Elemsec<'a> {
-    fn ex_from(m: ElemsecInner) -> Elemsec {
-        let (size, cont) = m;
-        Elemsec { size, cont }
-    }
-}
-
-pub struct ElemsecMapper<'a>(PhantomData<&'a ()>);
-impl<'a> ElemsecMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        ElemsecMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        ElemsecMapper(PhantomData)
-    }
-}
-impl View for ElemsecMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for ElemsecMapper<'_> {
-    type Src = SpecElemsecInner;
-    type Dst = SpecElemsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for ElemsecMapper<'a> {
-    type Src = ElemsecInner<'a>;
-    type Dst = Elemsec<'a>;
-}
-
-pub struct SpecElemsecCombinator(SpecElemsecCombinatorAlias);
-
-impl SpecCombinator for SpecElemsecCombinator {
-    type Type = SpecElemsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecElemsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecElemsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecElemsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecElemsecContentCombinator>>, ElemsecMapper<'static>>;
-
-pub struct ElemsecCombinator<'a>(ElemsecCombinatorAlias<'a>);
-
-impl<'a> View for ElemsecCombinator<'a> {
-    type V = SpecElemsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecElemsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ElemsecCombinator<'a> {
-    type Type = Elemsec<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ElemsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, ElemsecContentCombinator<'a>>, ElemsecCont0<'a>>, ElemsecMapper<'a>>;
-
-
-pub closed spec fn spec_elemsec() -> SpecElemsecCombinator {
-    SpecElemsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_elemsec_cont0(deps) },
-        mapper: ElemsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_elemsec_cont0(deps: u64) -> AndThen<Bytes, SpecElemsecContentCombinator> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), spec_elemsec_content())
-}
-                
-pub fn elemsec<'a>() -> (o: ElemsecCombinator<'a>)
-    ensures o@ == spec_elemsec(),
-{
-    ElemsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: ElemsecCont0::new(), spec_snd: Ghost(|deps| spec_elemsec_cont0(deps)) },
-        mapper: ElemsecMapper::new(),
-    })
-}
-
-pub struct ElemsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> ElemsecCont0<'a> {
-    pub fn new() -> Self {
-        ElemsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for ElemsecCont0<'a> {
-    type Output = AndThen<Bytes, ElemsecContentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_elemsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), elemsec_content())
-    }
-}
-                
-
-pub struct SpecDatacountsec {
-    pub size: u64,
-    pub cont: u64,
-}
-
-pub type SpecDatacountsecInner = (u64, u64);
-impl SpecFrom<SpecDatacountsec> for SpecDatacountsecInner {
-    open spec fn spec_from(m: SpecDatacountsec) -> SpecDatacountsecInner {
-        (m.size, m.cont)
-    }
-}
-impl SpecFrom<SpecDatacountsecInner> for SpecDatacountsec {
-    open spec fn spec_from(m: SpecDatacountsecInner) -> SpecDatacountsec {
-        let (size, cont) = m;
-        SpecDatacountsec { size, cont }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Datacountsec {
-    pub size: u64,
-    pub cont: u64,
-}
-
-impl View for Datacountsec {
-    type V = SpecDatacountsec;
-
-    open spec fn view(&self) -> Self::V {
-        SpecDatacountsec {
-            size: self.size@,
-            cont: self.cont@,
-        }
-    }
-}
-pub type DatacountsecInner = (u64, u64);
-impl From<Datacountsec> for DatacountsecInner {
-    fn ex_from(m: Datacountsec) -> DatacountsecInner {
-        (m.size, m.cont)
-    }
-}
-impl From<DatacountsecInner> for Datacountsec {
-    fn ex_from(m: DatacountsecInner) -> Datacountsec {
-        let (size, cont) = m;
-        Datacountsec { size, cont }
-    }
-}
-
-pub struct DatacountsecMapper;
-impl DatacountsecMapper {
-    pub closed spec fn spec_new() -> Self {
-        DatacountsecMapper
-    }
-    pub fn new() -> Self {
-        DatacountsecMapper
-    }
-}
-impl View for DatacountsecMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for DatacountsecMapper {
-    type Src = SpecDatacountsecInner;
-    type Dst = SpecDatacountsec;
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl Iso for DatacountsecMapper {
-    type Src = DatacountsecInner;
-    type Dst = Datacountsec;
-}
-
-pub struct SpecDatacountsecCombinator(SpecDatacountsecCombinatorAlias);
-
-impl SpecCombinator for SpecDatacountsecCombinator {
-    type Type = SpecDatacountsec;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecDatacountsecCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecDatacountsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecDatacountsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, UnsignedLEB128>>, DatacountsecMapper>;
-
-pub struct DatacountsecCombinator<'a>(DatacountsecCombinatorAlias<'a>);
-
-impl<'a> View for DatacountsecCombinator<'a> {
-    type V = SpecDatacountsecCombinator;
-    closed spec fn view(&self) -> Self::V { SpecDatacountsecCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for DatacountsecCombinator<'a> {
-    type Type = Datacountsec;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type DatacountsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, UnsignedLEB128>, DatacountsecCont0<'a>>, DatacountsecMapper>;
-
-
-pub closed spec fn spec_datacountsec() -> SpecDatacountsecCombinator {
-    SpecDatacountsecCombinator(
-    Mapped {
-        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_datacountsec_cont0(deps) },
-        mapper: DatacountsecMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_datacountsec_cont0(deps: u64) -> AndThen<Bytes, UnsignedLEB128> {
-    let size = deps;
-    AndThen(Bytes(size.spec_into()), UnsignedLEB128)
-}
-                
-pub fn datacountsec<'a>() -> (o: DatacountsecCombinator<'a>)
-    ensures o@ == spec_datacountsec(),
-{
-    DatacountsecCombinator(
-    Mapped {
-        inner: Depend { fst: UnsignedLEB128, snd: DatacountsecCont0::new(), spec_snd: Ghost(|deps| spec_datacountsec_cont0(deps)) },
-        mapper: DatacountsecMapper::new(),
-    })
-}
-
-pub struct DatacountsecCont0<'a>(PhantomData<&'a ()>);
-impl<'a> DatacountsecCont0<'a> {
-    pub fn new() -> Self {
-        DatacountsecCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&u64> for DatacountsecCont0<'a> {
-    type Output = AndThen<Bytes, UnsignedLEB128>;
-
-    open spec fn requires(&self, deps: &u64) -> bool { true }
-
-    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
-        o@ == spec_datacountsec_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &u64) -> Self::Output {
-        let size = *deps;
-        AndThen(Bytes(size.ex_into()), UnsignedLEB128)
-    }
-}
                 
 
 pub struct SpecLocalCompressed {
@@ -16108,6 +13709,2592 @@ impl<'a> Continuation<&u64> for CodesecContentCont0<'a> {
 }
                 
 
+pub struct SpecTable {
+    pub ty: SpecTabletype,
+}
+
+pub type SpecTableInner = SpecTabletype;
+impl SpecFrom<SpecTable> for SpecTableInner {
+    open spec fn spec_from(m: SpecTable) -> SpecTableInner {
+        m.ty
+    }
+}
+impl SpecFrom<SpecTableInner> for SpecTable {
+    open spec fn spec_from(m: SpecTableInner) -> SpecTable {
+        let ty = m;
+        SpecTable { ty }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Table {
+    pub ty: Tabletype,
+}
+
+impl View for Table {
+    type V = SpecTable;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTable {
+            ty: self.ty@,
+        }
+    }
+}
+pub type TableInner = Tabletype;
+impl From<Table> for TableInner {
+    fn ex_from(m: Table) -> TableInner {
+        m.ty
+    }
+}
+impl From<TableInner> for Table {
+    fn ex_from(m: TableInner) -> Table {
+        let ty = m;
+        Table { ty }
+    }
+}
+
+pub struct TableMapper;
+impl TableMapper {
+    pub closed spec fn spec_new() -> Self {
+        TableMapper
+    }
+    pub fn new() -> Self {
+        TableMapper
+    }
+}
+impl View for TableMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TableMapper {
+    type Src = SpecTableInner;
+    type Dst = SpecTable;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for TableMapper {
+    type Src = TableInner;
+    type Dst = Table;
+}
+
+pub struct SpecTableCombinator(SpecTableCombinatorAlias);
+
+impl SpecCombinator for SpecTableCombinator {
+    type Type = SpecTable;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTableCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTableCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTableCombinatorAlias = Mapped<SpecTabletypeCombinator, TableMapper>;
+
+pub struct TableCombinator(TableCombinatorAlias);
+
+impl View for TableCombinator {
+    type V = SpecTableCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTableCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TableCombinator {
+    type Type = Table;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TableCombinatorAlias = Mapped<TabletypeCombinator, TableMapper>;
+
+
+pub closed spec fn spec_table() -> SpecTableCombinator {
+    SpecTableCombinator(
+    Mapped {
+        inner: spec_tabletype(),
+        mapper: TableMapper::spec_new(),
+    })
+}
+
+                
+pub fn table() -> (o: TableCombinator)
+    ensures o@ == spec_table(),
+{
+    TableCombinator(
+    Mapped {
+        inner: tabletype(),
+        mapper: TableMapper::new(),
+    })
+}
+
+                
+
+pub struct SpecTypesecContent {
+    pub l: u64,
+    pub v: Seq<SpecFunctype>,
+}
+
+pub type SpecTypesecContentInner = (u64, Seq<SpecFunctype>);
+impl SpecFrom<SpecTypesecContent> for SpecTypesecContentInner {
+    open spec fn spec_from(m: SpecTypesecContent) -> SpecTypesecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecTypesecContentInner> for SpecTypesecContent {
+    open spec fn spec_from(m: SpecTypesecContentInner) -> SpecTypesecContent {
+        let (l, v) = m;
+        SpecTypesecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct TypesecContent {
+    pub l: u64,
+    pub v: RepeatResult<Functype>,
+}
+
+impl View for TypesecContent {
+    type V = SpecTypesecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTypesecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type TypesecContentInner = (u64, RepeatResult<Functype>);
+impl From<TypesecContent> for TypesecContentInner {
+    fn ex_from(m: TypesecContent) -> TypesecContentInner {
+        (m.l, m.v)
+    }
+}
+impl From<TypesecContentInner> for TypesecContent {
+    fn ex_from(m: TypesecContentInner) -> TypesecContent {
+        let (l, v) = m;
+        TypesecContent { l, v }
+    }
+}
+
+pub struct TypesecContentMapper;
+impl TypesecContentMapper {
+    pub closed spec fn spec_new() -> Self {
+        TypesecContentMapper
+    }
+    pub fn new() -> Self {
+        TypesecContentMapper
+    }
+}
+impl View for TypesecContentMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TypesecContentMapper {
+    type Src = SpecTypesecContentInner;
+    type Dst = SpecTypesecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for TypesecContentMapper {
+    type Src = TypesecContentInner;
+    type Dst = TypesecContent;
+}
+
+pub struct SpecTypesecContentCombinator(SpecTypesecContentCombinatorAlias);
+
+impl SpecCombinator for SpecTypesecContentCombinator {
+    type Type = SpecTypesecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTypesecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTypesecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTypesecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecFunctypeCombinator>>, TypesecContentMapper>;
+
+pub struct TypesecContentCombinator<'a>(TypesecContentCombinatorAlias<'a>);
+
+impl<'a> View for TypesecContentCombinator<'a> {
+    type V = SpecTypesecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTypesecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TypesecContentCombinator<'a> {
+    type Type = TypesecContent;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TypesecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<FunctypeCombinator<'a>>, TypesecContentCont0<'a>>, TypesecContentMapper>;
+
+
+pub closed spec fn spec_typesec_content() -> SpecTypesecContentCombinator {
+    SpecTypesecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_typesec_content_cont0(deps) },
+        mapper: TypesecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_typesec_content_cont0(deps: u64) -> RepeatN<SpecFunctypeCombinator> {
+    let l = deps;
+    RepeatN(spec_functype(), l.spec_into())
+}
+                
+pub fn typesec_content<'a>() -> (o: TypesecContentCombinator<'a>)
+    ensures o@ == spec_typesec_content(),
+{
+    TypesecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: TypesecContentCont0::new(), spec_snd: Ghost(|deps| spec_typesec_content_cont0(deps)) },
+        mapper: TypesecContentMapper::new(),
+    })
+}
+
+pub struct TypesecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> TypesecContentCont0<'a> {
+    pub fn new() -> Self {
+        TypesecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for TypesecContentCont0<'a> {
+    type Output = RepeatN<FunctypeCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_typesec_content_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(functype(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecTypesec {
+    pub size: u64,
+    pub cont: SpecTypesecContent,
+}
+
+pub type SpecTypesecInner = (u64, SpecTypesecContent);
+impl SpecFrom<SpecTypesec> for SpecTypesecInner {
+    open spec fn spec_from(m: SpecTypesec) -> SpecTypesecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecTypesecInner> for SpecTypesec {
+    open spec fn spec_from(m: SpecTypesecInner) -> SpecTypesec {
+        let (size, cont) = m;
+        SpecTypesec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Typesec {
+    pub size: u64,
+    pub cont: TypesecContent,
+}
+
+impl View for Typesec {
+    type V = SpecTypesec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTypesec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type TypesecInner = (u64, TypesecContent);
+impl From<Typesec> for TypesecInner {
+    fn ex_from(m: Typesec) -> TypesecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<TypesecInner> for Typesec {
+    fn ex_from(m: TypesecInner) -> Typesec {
+        let (size, cont) = m;
+        Typesec { size, cont }
+    }
+}
+
+pub struct TypesecMapper;
+impl TypesecMapper {
+    pub closed spec fn spec_new() -> Self {
+        TypesecMapper
+    }
+    pub fn new() -> Self {
+        TypesecMapper
+    }
+}
+impl View for TypesecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TypesecMapper {
+    type Src = SpecTypesecInner;
+    type Dst = SpecTypesec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for TypesecMapper {
+    type Src = TypesecInner;
+    type Dst = Typesec;
+}
+
+pub struct SpecTypesecCombinator(SpecTypesecCombinatorAlias);
+
+impl SpecCombinator for SpecTypesecCombinator {
+    type Type = SpecTypesec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTypesecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTypesecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTypesecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecTypesecContentCombinator>>, TypesecMapper>;
+
+pub struct TypesecCombinator<'a>(TypesecCombinatorAlias<'a>);
+
+impl<'a> View for TypesecCombinator<'a> {
+    type V = SpecTypesecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTypesecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TypesecCombinator<'a> {
+    type Type = Typesec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TypesecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, TypesecContentCombinator<'a>>, TypesecCont0<'a>>, TypesecMapper>;
+
+
+pub closed spec fn spec_typesec() -> SpecTypesecCombinator {
+    SpecTypesecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_typesec_cont0(deps) },
+        mapper: TypesecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_typesec_cont0(deps: u64) -> AndThen<Bytes, SpecTypesecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_typesec_content())
+}
+                
+pub fn typesec<'a>() -> (o: TypesecCombinator<'a>)
+    ensures o@ == spec_typesec(),
+{
+    TypesecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: TypesecCont0::new(), spec_snd: Ghost(|deps| spec_typesec_cont0(deps)) },
+        mapper: TypesecMapper::new(),
+    })
+}
+
+pub struct TypesecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> TypesecCont0<'a> {
+    pub fn new() -> Self {
+        TypesecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for TypesecCont0<'a> {
+    type Output = AndThen<Bytes, TypesecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_typesec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), typesec_content())
+    }
+}
+                
+
+pub struct SpecExportsec {
+    pub size: u64,
+    pub cont: SpecExports,
+}
+
+pub type SpecExportsecInner = (u64, SpecExports);
+impl SpecFrom<SpecExportsec> for SpecExportsecInner {
+    open spec fn spec_from(m: SpecExportsec) -> SpecExportsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecExportsecInner> for SpecExportsec {
+    open spec fn spec_from(m: SpecExportsecInner) -> SpecExportsec {
+        let (size, cont) = m;
+        SpecExportsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Exportsec {
+    pub size: u64,
+    pub cont: Exports,
+}
+
+impl View for Exportsec {
+    type V = SpecExportsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecExportsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type ExportsecInner = (u64, Exports);
+impl From<Exportsec> for ExportsecInner {
+    fn ex_from(m: Exportsec) -> ExportsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<ExportsecInner> for Exportsec {
+    fn ex_from(m: ExportsecInner) -> Exportsec {
+        let (size, cont) = m;
+        Exportsec { size, cont }
+    }
+}
+
+pub struct ExportsecMapper;
+impl ExportsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        ExportsecMapper
+    }
+    pub fn new() -> Self {
+        ExportsecMapper
+    }
+}
+impl View for ExportsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ExportsecMapper {
+    type Src = SpecExportsecInner;
+    type Dst = SpecExportsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for ExportsecMapper {
+    type Src = ExportsecInner;
+    type Dst = Exportsec;
+}
+
+pub struct SpecExportsecCombinator(SpecExportsecCombinatorAlias);
+
+impl SpecCombinator for SpecExportsecCombinator {
+    type Type = SpecExportsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecExportsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecExportsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecExportsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecExportsCombinator>>, ExportsecMapper>;
+
+pub struct ExportsecCombinator<'a>(ExportsecCombinatorAlias<'a>);
+
+impl<'a> View for ExportsecCombinator<'a> {
+    type V = SpecExportsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecExportsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ExportsecCombinator<'a> {
+    type Type = Exportsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ExportsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, ExportsCombinator<'a>>, ExportsecCont0<'a>>, ExportsecMapper>;
+
+
+pub closed spec fn spec_exportsec() -> SpecExportsecCombinator {
+    SpecExportsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_exportsec_cont0(deps) },
+        mapper: ExportsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_exportsec_cont0(deps: u64) -> AndThen<Bytes, SpecExportsCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_exports())
+}
+                
+pub fn exportsec<'a>() -> (o: ExportsecCombinator<'a>)
+    ensures o@ == spec_exportsec(),
+{
+    ExportsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ExportsecCont0::new(), spec_snd: Ghost(|deps| spec_exportsec_cont0(deps)) },
+        mapper: ExportsecMapper::new(),
+    })
+}
+
+pub struct ExportsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ExportsecCont0<'a> {
+    pub fn new() -> Self {
+        ExportsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ExportsecCont0<'a> {
+    type Output = AndThen<Bytes, ExportsCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_exportsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), exports())
+    }
+}
+                
+
+pub struct SpecElemsecContent {
+    pub l: u64,
+    pub v: Seq<SpecElem>,
+}
+
+pub type SpecElemsecContentInner = (u64, Seq<SpecElem>);
+impl SpecFrom<SpecElemsecContent> for SpecElemsecContentInner {
+    open spec fn spec_from(m: SpecElemsecContent) -> SpecElemsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecElemsecContentInner> for SpecElemsecContent {
+    open spec fn spec_from(m: SpecElemsecContentInner) -> SpecElemsecContent {
+        let (l, v) = m;
+        SpecElemsecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct ElemsecContent<'a> {
+    pub l: u64,
+    pub v: RepeatResult<Elem<'a>>,
+}
+
+impl View for ElemsecContent<'_> {
+    type V = SpecElemsecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecElemsecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type ElemsecContentInner<'a> = (u64, RepeatResult<Elem<'a>>);
+impl<'a> From<ElemsecContent<'a>> for ElemsecContentInner<'a> {
+    fn ex_from(m: ElemsecContent) -> ElemsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl<'a> From<ElemsecContentInner<'a>> for ElemsecContent<'a> {
+    fn ex_from(m: ElemsecContentInner) -> ElemsecContent {
+        let (l, v) = m;
+        ElemsecContent { l, v }
+    }
+}
+
+pub struct ElemsecContentMapper<'a>(PhantomData<&'a ()>);
+impl<'a> ElemsecContentMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        ElemsecContentMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        ElemsecContentMapper(PhantomData)
+    }
+}
+impl View for ElemsecContentMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ElemsecContentMapper<'_> {
+    type Src = SpecElemsecContentInner;
+    type Dst = SpecElemsecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for ElemsecContentMapper<'a> {
+    type Src = ElemsecContentInner<'a>;
+    type Dst = ElemsecContent<'a>;
+}
+
+pub struct SpecElemsecContentCombinator(SpecElemsecContentCombinatorAlias);
+
+impl SpecCombinator for SpecElemsecContentCombinator {
+    type Type = SpecElemsecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecElemsecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecElemsecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecElemsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecElemCombinator>>, ElemsecContentMapper<'static>>;
+
+pub struct ElemsecContentCombinator<'a>(ElemsecContentCombinatorAlias<'a>);
+
+impl<'a> View for ElemsecContentCombinator<'a> {
+    type V = SpecElemsecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecElemsecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ElemsecContentCombinator<'a> {
+    type Type = ElemsecContent<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ElemsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<ElemCombinator<'a>>, ElemsecContentCont0<'a>>, ElemsecContentMapper<'a>>;
+
+
+pub closed spec fn spec_elemsec_content() -> SpecElemsecContentCombinator {
+    SpecElemsecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_elemsec_content_cont0(deps) },
+        mapper: ElemsecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_elemsec_content_cont0(deps: u64) -> RepeatN<SpecElemCombinator> {
+    let l = deps;
+    RepeatN(spec_elem(), l.spec_into())
+}
+                
+pub fn elemsec_content<'a>() -> (o: ElemsecContentCombinator<'a>)
+    ensures o@ == spec_elemsec_content(),
+{
+    ElemsecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ElemsecContentCont0::new(), spec_snd: Ghost(|deps| spec_elemsec_content_cont0(deps)) },
+        mapper: ElemsecContentMapper::new(),
+    })
+}
+
+pub struct ElemsecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ElemsecContentCont0<'a> {
+    pub fn new() -> Self {
+        ElemsecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ElemsecContentCont0<'a> {
+    type Output = RepeatN<ElemCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_elemsec_content_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(elem(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecTablesecContent {
+    pub l: u64,
+    pub v: Seq<SpecTable>,
+}
+
+pub type SpecTablesecContentInner = (u64, Seq<SpecTable>);
+impl SpecFrom<SpecTablesecContent> for SpecTablesecContentInner {
+    open spec fn spec_from(m: SpecTablesecContent) -> SpecTablesecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecTablesecContentInner> for SpecTablesecContent {
+    open spec fn spec_from(m: SpecTablesecContentInner) -> SpecTablesecContent {
+        let (l, v) = m;
+        SpecTablesecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct TablesecContent {
+    pub l: u64,
+    pub v: RepeatResult<Table>,
+}
+
+impl View for TablesecContent {
+    type V = SpecTablesecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTablesecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type TablesecContentInner = (u64, RepeatResult<Table>);
+impl From<TablesecContent> for TablesecContentInner {
+    fn ex_from(m: TablesecContent) -> TablesecContentInner {
+        (m.l, m.v)
+    }
+}
+impl From<TablesecContentInner> for TablesecContent {
+    fn ex_from(m: TablesecContentInner) -> TablesecContent {
+        let (l, v) = m;
+        TablesecContent { l, v }
+    }
+}
+
+pub struct TablesecContentMapper;
+impl TablesecContentMapper {
+    pub closed spec fn spec_new() -> Self {
+        TablesecContentMapper
+    }
+    pub fn new() -> Self {
+        TablesecContentMapper
+    }
+}
+impl View for TablesecContentMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TablesecContentMapper {
+    type Src = SpecTablesecContentInner;
+    type Dst = SpecTablesecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for TablesecContentMapper {
+    type Src = TablesecContentInner;
+    type Dst = TablesecContent;
+}
+
+pub struct SpecTablesecContentCombinator(SpecTablesecContentCombinatorAlias);
+
+impl SpecCombinator for SpecTablesecContentCombinator {
+    type Type = SpecTablesecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTablesecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTablesecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTablesecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecTableCombinator>>, TablesecContentMapper>;
+
+pub struct TablesecContentCombinator<'a>(TablesecContentCombinatorAlias<'a>);
+
+impl<'a> View for TablesecContentCombinator<'a> {
+    type V = SpecTablesecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTablesecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TablesecContentCombinator<'a> {
+    type Type = TablesecContent;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TablesecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<TableCombinator>, TablesecContentCont0<'a>>, TablesecContentMapper>;
+
+
+pub closed spec fn spec_tablesec_content() -> SpecTablesecContentCombinator {
+    SpecTablesecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_tablesec_content_cont0(deps) },
+        mapper: TablesecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_tablesec_content_cont0(deps: u64) -> RepeatN<SpecTableCombinator> {
+    let l = deps;
+    RepeatN(spec_table(), l.spec_into())
+}
+                
+pub fn tablesec_content<'a>() -> (o: TablesecContentCombinator<'a>)
+    ensures o@ == spec_tablesec_content(),
+{
+    TablesecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: TablesecContentCont0::new(), spec_snd: Ghost(|deps| spec_tablesec_content_cont0(deps)) },
+        mapper: TablesecContentMapper::new(),
+    })
+}
+
+pub struct TablesecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> TablesecContentCont0<'a> {
+    pub fn new() -> Self {
+        TablesecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for TablesecContentCont0<'a> {
+    type Output = RepeatN<TableCombinator>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_tablesec_content_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(table(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecTablesec {
+    pub size: u64,
+    pub cont: SpecTablesecContent,
+}
+
+pub type SpecTablesecInner = (u64, SpecTablesecContent);
+impl SpecFrom<SpecTablesec> for SpecTablesecInner {
+    open spec fn spec_from(m: SpecTablesec) -> SpecTablesecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecTablesecInner> for SpecTablesec {
+    open spec fn spec_from(m: SpecTablesecInner) -> SpecTablesec {
+        let (size, cont) = m;
+        SpecTablesec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Tablesec {
+    pub size: u64,
+    pub cont: TablesecContent,
+}
+
+impl View for Tablesec {
+    type V = SpecTablesec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTablesec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type TablesecInner = (u64, TablesecContent);
+impl From<Tablesec> for TablesecInner {
+    fn ex_from(m: Tablesec) -> TablesecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<TablesecInner> for Tablesec {
+    fn ex_from(m: TablesecInner) -> Tablesec {
+        let (size, cont) = m;
+        Tablesec { size, cont }
+    }
+}
+
+pub struct TablesecMapper;
+impl TablesecMapper {
+    pub closed spec fn spec_new() -> Self {
+        TablesecMapper
+    }
+    pub fn new() -> Self {
+        TablesecMapper
+    }
+}
+impl View for TablesecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TablesecMapper {
+    type Src = SpecTablesecInner;
+    type Dst = SpecTablesec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for TablesecMapper {
+    type Src = TablesecInner;
+    type Dst = Tablesec;
+}
+
+pub struct SpecTablesecCombinator(SpecTablesecCombinatorAlias);
+
+impl SpecCombinator for SpecTablesecCombinator {
+    type Type = SpecTablesec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTablesecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTablesecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTablesecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecTablesecContentCombinator>>, TablesecMapper>;
+
+pub struct TablesecCombinator<'a>(TablesecCombinatorAlias<'a>);
+
+impl<'a> View for TablesecCombinator<'a> {
+    type V = SpecTablesecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTablesecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TablesecCombinator<'a> {
+    type Type = Tablesec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TablesecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, TablesecContentCombinator<'a>>, TablesecCont0<'a>>, TablesecMapper>;
+
+
+pub closed spec fn spec_tablesec() -> SpecTablesecCombinator {
+    SpecTablesecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_tablesec_cont0(deps) },
+        mapper: TablesecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_tablesec_cont0(deps: u64) -> AndThen<Bytes, SpecTablesecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_tablesec_content())
+}
+                
+pub fn tablesec<'a>() -> (o: TablesecCombinator<'a>)
+    ensures o@ == spec_tablesec(),
+{
+    TablesecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: TablesecCont0::new(), spec_snd: Ghost(|deps| spec_tablesec_cont0(deps)) },
+        mapper: TablesecMapper::new(),
+    })
+}
+
+pub struct TablesecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> TablesecCont0<'a> {
+    pub fn new() -> Self {
+        TablesecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for TablesecCont0<'a> {
+    type Output = AndThen<Bytes, TablesecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_tablesec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), tablesec_content())
+    }
+}
+                
+pub type SpecELEMKIND = u8;
+pub type ELEMKIND = u8;
+
+pub const ELEMKIND_CONST: u8 = 0;
+pub type SpecELEMKINDCombinator = Refined<U8, TagPred<u8>>;
+pub type ELEMKINDCombinator = Refined<U8, TagPred<u8>>;
+
+
+pub closed spec fn spec_ELEMKIND() -> SpecELEMKINDCombinator {
+    Refined { inner: U8, predicate: TagPred(ELEMKIND_CONST) }
+}
+
+pub fn ELEMKIND() -> (o: ELEMKINDCombinator)
+    ensures o@ == spec_ELEMKIND(),
+{
+    Refined { inner: U8, predicate: TagPred(ELEMKIND_CONST) }
+}
+
+
+pub struct SpecFuncsecContent {
+    pub l: u64,
+    pub v: Seq<SpecTypeidx>,
+}
+
+pub type SpecFuncsecContentInner = (u64, Seq<SpecTypeidx>);
+impl SpecFrom<SpecFuncsecContent> for SpecFuncsecContentInner {
+    open spec fn spec_from(m: SpecFuncsecContent) -> SpecFuncsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecFuncsecContentInner> for SpecFuncsecContent {
+    open spec fn spec_from(m: SpecFuncsecContentInner) -> SpecFuncsecContent {
+        let (l, v) = m;
+        SpecFuncsecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct FuncsecContent {
+    pub l: u64,
+    pub v: RepeatResult<Typeidx>,
+}
+
+impl View for FuncsecContent {
+    type V = SpecFuncsecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecFuncsecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type FuncsecContentInner = (u64, RepeatResult<Typeidx>);
+impl From<FuncsecContent> for FuncsecContentInner {
+    fn ex_from(m: FuncsecContent) -> FuncsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl From<FuncsecContentInner> for FuncsecContent {
+    fn ex_from(m: FuncsecContentInner) -> FuncsecContent {
+        let (l, v) = m;
+        FuncsecContent { l, v }
+    }
+}
+
+pub struct FuncsecContentMapper;
+impl FuncsecContentMapper {
+    pub closed spec fn spec_new() -> Self {
+        FuncsecContentMapper
+    }
+    pub fn new() -> Self {
+        FuncsecContentMapper
+    }
+}
+impl View for FuncsecContentMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for FuncsecContentMapper {
+    type Src = SpecFuncsecContentInner;
+    type Dst = SpecFuncsecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for FuncsecContentMapper {
+    type Src = FuncsecContentInner;
+    type Dst = FuncsecContent;
+}
+
+pub struct SpecFuncsecContentCombinator(SpecFuncsecContentCombinatorAlias);
+
+impl SpecCombinator for SpecFuncsecContentCombinator {
+    type Type = SpecFuncsecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecFuncsecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecFuncsecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecFuncsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecTypeidxCombinator>>, FuncsecContentMapper>;
+
+pub struct FuncsecContentCombinator<'a>(FuncsecContentCombinatorAlias<'a>);
+
+impl<'a> View for FuncsecContentCombinator<'a> {
+    type V = SpecFuncsecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecFuncsecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncsecContentCombinator<'a> {
+    type Type = FuncsecContent;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type FuncsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<TypeidxCombinator>, FuncsecContentCont0<'a>>, FuncsecContentMapper>;
+
+
+pub closed spec fn spec_funcsec_content() -> SpecFuncsecContentCombinator {
+    SpecFuncsecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_funcsec_content_cont0(deps) },
+        mapper: FuncsecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_funcsec_content_cont0(deps: u64) -> RepeatN<SpecTypeidxCombinator> {
+    let l = deps;
+    RepeatN(spec_typeidx(), l.spec_into())
+}
+                
+pub fn funcsec_content<'a>() -> (o: FuncsecContentCombinator<'a>)
+    ensures o@ == spec_funcsec_content(),
+{
+    FuncsecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: FuncsecContentCont0::new(), spec_snd: Ghost(|deps| spec_funcsec_content_cont0(deps)) },
+        mapper: FuncsecContentMapper::new(),
+    })
+}
+
+pub struct FuncsecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> FuncsecContentCont0<'a> {
+    pub fn new() -> Self {
+        FuncsecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for FuncsecContentCont0<'a> {
+    type Output = RepeatN<TypeidxCombinator>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_funcsec_content_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(typeidx(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecCustomsec {
+    pub size: u64,
+    pub cont: SpecCustom,
+}
+
+pub type SpecCustomsecInner = (u64, SpecCustom);
+impl SpecFrom<SpecCustomsec> for SpecCustomsecInner {
+    open spec fn spec_from(m: SpecCustomsec) -> SpecCustomsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecCustomsecInner> for SpecCustomsec {
+    open spec fn spec_from(m: SpecCustomsecInner) -> SpecCustomsec {
+        let (size, cont) = m;
+        SpecCustomsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Customsec {
+    pub size: u64,
+    pub cont: Custom,
+}
+
+impl View for Customsec {
+    type V = SpecCustomsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecCustomsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type CustomsecInner = (u64, Custom);
+impl From<Customsec> for CustomsecInner {
+    fn ex_from(m: Customsec) -> CustomsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<CustomsecInner> for Customsec {
+    fn ex_from(m: CustomsecInner) -> Customsec {
+        let (size, cont) = m;
+        Customsec { size, cont }
+    }
+}
+
+pub struct CustomsecMapper;
+impl CustomsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        CustomsecMapper
+    }
+    pub fn new() -> Self {
+        CustomsecMapper
+    }
+}
+impl View for CustomsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CustomsecMapper {
+    type Src = SpecCustomsecInner;
+    type Dst = SpecCustomsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for CustomsecMapper {
+    type Src = CustomsecInner;
+    type Dst = Customsec;
+}
+
+pub struct SpecCustomsecCombinator(SpecCustomsecCombinatorAlias);
+
+impl SpecCombinator for SpecCustomsecCombinator {
+    type Type = SpecCustomsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecCustomsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecCustomsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecCustomsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecCustomCombinator>>, CustomsecMapper>;
+
+pub struct CustomsecCombinator<'a>(CustomsecCombinatorAlias<'a>);
+
+impl<'a> View for CustomsecCombinator<'a> {
+    type V = SpecCustomsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecCustomsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for CustomsecCombinator<'a> {
+    type Type = Customsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type CustomsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, CustomCombinator<'a>>, CustomsecCont0<'a>>, CustomsecMapper>;
+
+
+pub closed spec fn spec_customsec() -> SpecCustomsecCombinator {
+    SpecCustomsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_customsec_cont0(deps) },
+        mapper: CustomsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_customsec_cont0(deps: u64) -> AndThen<Bytes, SpecCustomCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_custom())
+}
+                
+pub fn customsec<'a>() -> (o: CustomsecCombinator<'a>)
+    ensures o@ == spec_customsec(),
+{
+    CustomsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: CustomsecCont0::new(), spec_snd: Ghost(|deps| spec_customsec_cont0(deps)) },
+        mapper: CustomsecMapper::new(),
+    })
+}
+
+pub struct CustomsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> CustomsecCont0<'a> {
+    pub fn new() -> Self {
+        CustomsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for CustomsecCont0<'a> {
+    type Output = AndThen<Bytes, CustomCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_customsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), custom())
+    }
+}
+                
+
+pub struct SpecFuncsec {
+    pub size: u64,
+    pub cont: SpecFuncsecContent,
+}
+
+pub type SpecFuncsecInner = (u64, SpecFuncsecContent);
+impl SpecFrom<SpecFuncsec> for SpecFuncsecInner {
+    open spec fn spec_from(m: SpecFuncsec) -> SpecFuncsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecFuncsecInner> for SpecFuncsec {
+    open spec fn spec_from(m: SpecFuncsecInner) -> SpecFuncsec {
+        let (size, cont) = m;
+        SpecFuncsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Funcsec {
+    pub size: u64,
+    pub cont: FuncsecContent,
+}
+
+impl View for Funcsec {
+    type V = SpecFuncsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecFuncsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type FuncsecInner = (u64, FuncsecContent);
+impl From<Funcsec> for FuncsecInner {
+    fn ex_from(m: Funcsec) -> FuncsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<FuncsecInner> for Funcsec {
+    fn ex_from(m: FuncsecInner) -> Funcsec {
+        let (size, cont) = m;
+        Funcsec { size, cont }
+    }
+}
+
+pub struct FuncsecMapper;
+impl FuncsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        FuncsecMapper
+    }
+    pub fn new() -> Self {
+        FuncsecMapper
+    }
+}
+impl View for FuncsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for FuncsecMapper {
+    type Src = SpecFuncsecInner;
+    type Dst = SpecFuncsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for FuncsecMapper {
+    type Src = FuncsecInner;
+    type Dst = Funcsec;
+}
+
+pub struct SpecFuncsecCombinator(SpecFuncsecCombinatorAlias);
+
+impl SpecCombinator for SpecFuncsecCombinator {
+    type Type = SpecFuncsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecFuncsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecFuncsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecFuncsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecFuncsecContentCombinator>>, FuncsecMapper>;
+
+pub struct FuncsecCombinator<'a>(FuncsecCombinatorAlias<'a>);
+
+impl<'a> View for FuncsecCombinator<'a> {
+    type V = SpecFuncsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecFuncsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for FuncsecCombinator<'a> {
+    type Type = Funcsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type FuncsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, FuncsecContentCombinator<'a>>, FuncsecCont0<'a>>, FuncsecMapper>;
+
+
+pub closed spec fn spec_funcsec() -> SpecFuncsecCombinator {
+    SpecFuncsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_funcsec_cont0(deps) },
+        mapper: FuncsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_funcsec_cont0(deps: u64) -> AndThen<Bytes, SpecFuncsecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_funcsec_content())
+}
+                
+pub fn funcsec<'a>() -> (o: FuncsecCombinator<'a>)
+    ensures o@ == spec_funcsec(),
+{
+    FuncsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: FuncsecCont0::new(), spec_snd: Ghost(|deps| spec_funcsec_cont0(deps)) },
+        mapper: FuncsecMapper::new(),
+    })
+}
+
+pub struct FuncsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> FuncsecCont0<'a> {
+    pub fn new() -> Self {
+        FuncsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for FuncsecCont0<'a> {
+    type Output = AndThen<Bytes, FuncsecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_funcsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), funcsec_content())
+    }
+}
+                
+
+pub struct SpecMemsec {
+    pub size: u64,
+    pub cont: SpecMemsecContent,
+}
+
+pub type SpecMemsecInner = (u64, SpecMemsecContent);
+impl SpecFrom<SpecMemsec> for SpecMemsecInner {
+    open spec fn spec_from(m: SpecMemsec) -> SpecMemsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecMemsecInner> for SpecMemsec {
+    open spec fn spec_from(m: SpecMemsecInner) -> SpecMemsec {
+        let (size, cont) = m;
+        SpecMemsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Memsec {
+    pub size: u64,
+    pub cont: MemsecContent,
+}
+
+impl View for Memsec {
+    type V = SpecMemsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMemsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type MemsecInner = (u64, MemsecContent);
+impl From<Memsec> for MemsecInner {
+    fn ex_from(m: Memsec) -> MemsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<MemsecInner> for Memsec {
+    fn ex_from(m: MemsecInner) -> Memsec {
+        let (size, cont) = m;
+        Memsec { size, cont }
+    }
+}
+
+pub struct MemsecMapper;
+impl MemsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        MemsecMapper
+    }
+    pub fn new() -> Self {
+        MemsecMapper
+    }
+}
+impl View for MemsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MemsecMapper {
+    type Src = SpecMemsecInner;
+    type Dst = SpecMemsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for MemsecMapper {
+    type Src = MemsecInner;
+    type Dst = Memsec;
+}
+
+pub struct SpecMemsecCombinator(SpecMemsecCombinatorAlias);
+
+impl SpecCombinator for SpecMemsecCombinator {
+    type Type = SpecMemsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMemsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecMemsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMemsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecMemsecContentCombinator>>, MemsecMapper>;
+
+pub struct MemsecCombinator<'a>(MemsecCombinatorAlias<'a>);
+
+impl<'a> View for MemsecCombinator<'a> {
+    type V = SpecMemsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecMemsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for MemsecCombinator<'a> {
+    type Type = Memsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type MemsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, MemsecContentCombinator<'a>>, MemsecCont0<'a>>, MemsecMapper>;
+
+
+pub closed spec fn spec_memsec() -> SpecMemsecCombinator {
+    SpecMemsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_memsec_cont0(deps) },
+        mapper: MemsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_memsec_cont0(deps: u64) -> AndThen<Bytes, SpecMemsecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_memsec_content())
+}
+                
+pub fn memsec<'a>() -> (o: MemsecCombinator<'a>)
+    ensures o@ == spec_memsec(),
+{
+    MemsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: MemsecCont0::new(), spec_snd: Ghost(|deps| spec_memsec_cont0(deps)) },
+        mapper: MemsecMapper::new(),
+    })
+}
+
+pub struct MemsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> MemsecCont0<'a> {
+    pub fn new() -> Self {
+        MemsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for MemsecCont0<'a> {
+    type Output = AndThen<Bytes, MemsecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_memsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), memsec_content())
+    }
+}
+                
+
+pub struct SpecGlobalsecContent {
+    pub l: u64,
+    pub v: Seq<SpecGlobal>,
+}
+
+pub type SpecGlobalsecContentInner = (u64, Seq<SpecGlobal>);
+impl SpecFrom<SpecGlobalsecContent> for SpecGlobalsecContentInner {
+    open spec fn spec_from(m: SpecGlobalsecContent) -> SpecGlobalsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl SpecFrom<SpecGlobalsecContentInner> for SpecGlobalsecContent {
+    open spec fn spec_from(m: SpecGlobalsecContentInner) -> SpecGlobalsecContent {
+        let (l, v) = m;
+        SpecGlobalsecContent { l, v }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct GlobalsecContent<'a> {
+    pub l: u64,
+    pub v: RepeatResult<Global<'a>>,
+}
+
+impl View for GlobalsecContent<'_> {
+    type V = SpecGlobalsecContent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecGlobalsecContent {
+            l: self.l@,
+            v: self.v@,
+        }
+    }
+}
+pub type GlobalsecContentInner<'a> = (u64, RepeatResult<Global<'a>>);
+impl<'a> From<GlobalsecContent<'a>> for GlobalsecContentInner<'a> {
+    fn ex_from(m: GlobalsecContent) -> GlobalsecContentInner {
+        (m.l, m.v)
+    }
+}
+impl<'a> From<GlobalsecContentInner<'a>> for GlobalsecContent<'a> {
+    fn ex_from(m: GlobalsecContentInner) -> GlobalsecContent {
+        let (l, v) = m;
+        GlobalsecContent { l, v }
+    }
+}
+
+pub struct GlobalsecContentMapper<'a>(PhantomData<&'a ()>);
+impl<'a> GlobalsecContentMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        GlobalsecContentMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        GlobalsecContentMapper(PhantomData)
+    }
+}
+impl View for GlobalsecContentMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for GlobalsecContentMapper<'_> {
+    type Src = SpecGlobalsecContentInner;
+    type Dst = SpecGlobalsecContent;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for GlobalsecContentMapper<'a> {
+    type Src = GlobalsecContentInner<'a>;
+    type Dst = GlobalsecContent<'a>;
+}
+
+pub struct SpecGlobalsecContentCombinator(SpecGlobalsecContentCombinatorAlias);
+
+impl SpecCombinator for SpecGlobalsecContentCombinator {
+    type Type = SpecGlobalsecContent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecGlobalsecContentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecGlobalsecContentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecGlobalsecContentCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, RepeatN<SpecGlobalCombinator>>, GlobalsecContentMapper<'static>>;
+
+pub struct GlobalsecContentCombinator<'a>(GlobalsecContentCombinatorAlias<'a>);
+
+impl<'a> View for GlobalsecContentCombinator<'a> {
+    type V = SpecGlobalsecContentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecGlobalsecContentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalsecContentCombinator<'a> {
+    type Type = GlobalsecContent<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type GlobalsecContentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, RepeatN<GlobalCombinator<'a>>, GlobalsecContentCont0<'a>>, GlobalsecContentMapper<'a>>;
+
+
+pub closed spec fn spec_globalsec_content() -> SpecGlobalsecContentCombinator {
+    SpecGlobalsecContentCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_globalsec_content_cont0(deps) },
+        mapper: GlobalsecContentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_globalsec_content_cont0(deps: u64) -> RepeatN<SpecGlobalCombinator> {
+    let l = deps;
+    RepeatN(spec_global(), l.spec_into())
+}
+                
+pub fn globalsec_content<'a>() -> (o: GlobalsecContentCombinator<'a>)
+    ensures o@ == spec_globalsec_content(),
+{
+    GlobalsecContentCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: GlobalsecContentCont0::new(), spec_snd: Ghost(|deps| spec_globalsec_content_cont0(deps)) },
+        mapper: GlobalsecContentMapper::new(),
+    })
+}
+
+pub struct GlobalsecContentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> GlobalsecContentCont0<'a> {
+    pub fn new() -> Self {
+        GlobalsecContentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for GlobalsecContentCont0<'a> {
+    type Output = RepeatN<GlobalCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_globalsec_content_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let l = *deps;
+        RepeatN(global(), l.ex_into())
+    }
+}
+                
+
+pub struct SpecGlobalsec {
+    pub size: u64,
+    pub cont: SpecGlobalsecContent,
+}
+
+pub type SpecGlobalsecInner = (u64, SpecGlobalsecContent);
+impl SpecFrom<SpecGlobalsec> for SpecGlobalsecInner {
+    open spec fn spec_from(m: SpecGlobalsec) -> SpecGlobalsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecGlobalsecInner> for SpecGlobalsec {
+    open spec fn spec_from(m: SpecGlobalsecInner) -> SpecGlobalsec {
+        let (size, cont) = m;
+        SpecGlobalsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Globalsec<'a> {
+    pub size: u64,
+    pub cont: GlobalsecContent<'a>,
+}
+
+impl View for Globalsec<'_> {
+    type V = SpecGlobalsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecGlobalsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type GlobalsecInner<'a> = (u64, GlobalsecContent<'a>);
+impl<'a> From<Globalsec<'a>> for GlobalsecInner<'a> {
+    fn ex_from(m: Globalsec) -> GlobalsecInner {
+        (m.size, m.cont)
+    }
+}
+impl<'a> From<GlobalsecInner<'a>> for Globalsec<'a> {
+    fn ex_from(m: GlobalsecInner) -> Globalsec {
+        let (size, cont) = m;
+        Globalsec { size, cont }
+    }
+}
+
+pub struct GlobalsecMapper<'a>(PhantomData<&'a ()>);
+impl<'a> GlobalsecMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        GlobalsecMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        GlobalsecMapper(PhantomData)
+    }
+}
+impl View for GlobalsecMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for GlobalsecMapper<'_> {
+    type Src = SpecGlobalsecInner;
+    type Dst = SpecGlobalsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for GlobalsecMapper<'a> {
+    type Src = GlobalsecInner<'a>;
+    type Dst = Globalsec<'a>;
+}
+
+pub struct SpecGlobalsecCombinator(SpecGlobalsecCombinatorAlias);
+
+impl SpecCombinator for SpecGlobalsecCombinator {
+    type Type = SpecGlobalsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecGlobalsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecGlobalsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecGlobalsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecGlobalsecContentCombinator>>, GlobalsecMapper<'static>>;
+
+pub struct GlobalsecCombinator<'a>(GlobalsecCombinatorAlias<'a>);
+
+impl<'a> View for GlobalsecCombinator<'a> {
+    type V = SpecGlobalsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecGlobalsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for GlobalsecCombinator<'a> {
+    type Type = Globalsec<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type GlobalsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, GlobalsecContentCombinator<'a>>, GlobalsecCont0<'a>>, GlobalsecMapper<'a>>;
+
+
+pub closed spec fn spec_globalsec() -> SpecGlobalsecCombinator {
+    SpecGlobalsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_globalsec_cont0(deps) },
+        mapper: GlobalsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_globalsec_cont0(deps: u64) -> AndThen<Bytes, SpecGlobalsecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_globalsec_content())
+}
+                
+pub fn globalsec<'a>() -> (o: GlobalsecCombinator<'a>)
+    ensures o@ == spec_globalsec(),
+{
+    GlobalsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: GlobalsecCont0::new(), spec_snd: Ghost(|deps| spec_globalsec_cont0(deps)) },
+        mapper: GlobalsecMapper::new(),
+    })
+}
+
+pub struct GlobalsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> GlobalsecCont0<'a> {
+    pub fn new() -> Self {
+        GlobalsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for GlobalsecCont0<'a> {
+    type Output = AndThen<Bytes, GlobalsecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_globalsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), globalsec_content())
+    }
+}
+                
+
+pub struct SpecElemsec {
+    pub size: u64,
+    pub cont: SpecElemsecContent,
+}
+
+pub type SpecElemsecInner = (u64, SpecElemsecContent);
+impl SpecFrom<SpecElemsec> for SpecElemsecInner {
+    open spec fn spec_from(m: SpecElemsec) -> SpecElemsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecElemsecInner> for SpecElemsec {
+    open spec fn spec_from(m: SpecElemsecInner) -> SpecElemsec {
+        let (size, cont) = m;
+        SpecElemsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Elemsec<'a> {
+    pub size: u64,
+    pub cont: ElemsecContent<'a>,
+}
+
+impl View for Elemsec<'_> {
+    type V = SpecElemsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecElemsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type ElemsecInner<'a> = (u64, ElemsecContent<'a>);
+impl<'a> From<Elemsec<'a>> for ElemsecInner<'a> {
+    fn ex_from(m: Elemsec) -> ElemsecInner {
+        (m.size, m.cont)
+    }
+}
+impl<'a> From<ElemsecInner<'a>> for Elemsec<'a> {
+    fn ex_from(m: ElemsecInner) -> Elemsec {
+        let (size, cont) = m;
+        Elemsec { size, cont }
+    }
+}
+
+pub struct ElemsecMapper<'a>(PhantomData<&'a ()>);
+impl<'a> ElemsecMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        ElemsecMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        ElemsecMapper(PhantomData)
+    }
+}
+impl View for ElemsecMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for ElemsecMapper<'_> {
+    type Src = SpecElemsecInner;
+    type Dst = SpecElemsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for ElemsecMapper<'a> {
+    type Src = ElemsecInner<'a>;
+    type Dst = Elemsec<'a>;
+}
+
+pub struct SpecElemsecCombinator(SpecElemsecCombinatorAlias);
+
+impl SpecCombinator for SpecElemsecCombinator {
+    type Type = SpecElemsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecElemsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecElemsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecElemsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, SpecElemsecContentCombinator>>, ElemsecMapper<'static>>;
+
+pub struct ElemsecCombinator<'a>(ElemsecCombinatorAlias<'a>);
+
+impl<'a> View for ElemsecCombinator<'a> {
+    type V = SpecElemsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecElemsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ElemsecCombinator<'a> {
+    type Type = Elemsec<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type ElemsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, ElemsecContentCombinator<'a>>, ElemsecCont0<'a>>, ElemsecMapper<'a>>;
+
+
+pub closed spec fn spec_elemsec() -> SpecElemsecCombinator {
+    SpecElemsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_elemsec_cont0(deps) },
+        mapper: ElemsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_elemsec_cont0(deps: u64) -> AndThen<Bytes, SpecElemsecContentCombinator> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), spec_elemsec_content())
+}
+                
+pub fn elemsec<'a>() -> (o: ElemsecCombinator<'a>)
+    ensures o@ == spec_elemsec(),
+{
+    ElemsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: ElemsecCont0::new(), spec_snd: Ghost(|deps| spec_elemsec_cont0(deps)) },
+        mapper: ElemsecMapper::new(),
+    })
+}
+
+pub struct ElemsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> ElemsecCont0<'a> {
+    pub fn new() -> Self {
+        ElemsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for ElemsecCont0<'a> {
+    type Output = AndThen<Bytes, ElemsecContentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_elemsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), elemsec_content())
+    }
+}
+                
+
+pub struct SpecDatacountsec {
+    pub size: u64,
+    pub cont: u64,
+}
+
+pub type SpecDatacountsecInner = (u64, u64);
+impl SpecFrom<SpecDatacountsec> for SpecDatacountsecInner {
+    open spec fn spec_from(m: SpecDatacountsec) -> SpecDatacountsecInner {
+        (m.size, m.cont)
+    }
+}
+impl SpecFrom<SpecDatacountsecInner> for SpecDatacountsec {
+    open spec fn spec_from(m: SpecDatacountsecInner) -> SpecDatacountsec {
+        let (size, cont) = m;
+        SpecDatacountsec { size, cont }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Datacountsec {
+    pub size: u64,
+    pub cont: u64,
+}
+
+impl View for Datacountsec {
+    type V = SpecDatacountsec;
+
+    open spec fn view(&self) -> Self::V {
+        SpecDatacountsec {
+            size: self.size@,
+            cont: self.cont@,
+        }
+    }
+}
+pub type DatacountsecInner = (u64, u64);
+impl From<Datacountsec> for DatacountsecInner {
+    fn ex_from(m: Datacountsec) -> DatacountsecInner {
+        (m.size, m.cont)
+    }
+}
+impl From<DatacountsecInner> for Datacountsec {
+    fn ex_from(m: DatacountsecInner) -> Datacountsec {
+        let (size, cont) = m;
+        Datacountsec { size, cont }
+    }
+}
+
+pub struct DatacountsecMapper;
+impl DatacountsecMapper {
+    pub closed spec fn spec_new() -> Self {
+        DatacountsecMapper
+    }
+    pub fn new() -> Self {
+        DatacountsecMapper
+    }
+}
+impl View for DatacountsecMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for DatacountsecMapper {
+    type Src = SpecDatacountsecInner;
+    type Dst = SpecDatacountsec;
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl Iso for DatacountsecMapper {
+    type Src = DatacountsecInner;
+    type Dst = Datacountsec;
+}
+
+pub struct SpecDatacountsecCombinator(SpecDatacountsecCombinatorAlias);
+
+impl SpecCombinator for SpecDatacountsecCombinator {
+    type Type = SpecDatacountsec;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecDatacountsecCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecDatacountsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecDatacountsecCombinatorAlias = Mapped<SpecDepend<UnsignedLEB128, AndThen<Bytes, UnsignedLEB128>>, DatacountsecMapper>;
+
+pub struct DatacountsecCombinator<'a>(DatacountsecCombinatorAlias<'a>);
+
+impl<'a> View for DatacountsecCombinator<'a> {
+    type V = SpecDatacountsecCombinator;
+    closed spec fn view(&self) -> Self::V { SpecDatacountsecCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for DatacountsecCombinator<'a> {
+    type Type = Datacountsec;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type DatacountsecCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, UnsignedLEB128, AndThen<Bytes, UnsignedLEB128>, DatacountsecCont0<'a>>, DatacountsecMapper>;
+
+
+pub closed spec fn spec_datacountsec() -> SpecDatacountsecCombinator {
+    SpecDatacountsecCombinator(
+    Mapped {
+        inner: SpecDepend { fst: UnsignedLEB128, snd: |deps| spec_datacountsec_cont0(deps) },
+        mapper: DatacountsecMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_datacountsec_cont0(deps: u64) -> AndThen<Bytes, UnsignedLEB128> {
+    let size = deps;
+    AndThen(Bytes(size.spec_into()), UnsignedLEB128)
+}
+                
+pub fn datacountsec<'a>() -> (o: DatacountsecCombinator<'a>)
+    ensures o@ == spec_datacountsec(),
+{
+    DatacountsecCombinator(
+    Mapped {
+        inner: Depend { fst: UnsignedLEB128, snd: DatacountsecCont0::new(), spec_snd: Ghost(|deps| spec_datacountsec_cont0(deps)) },
+        mapper: DatacountsecMapper::new(),
+    })
+}
+
+pub struct DatacountsecCont0<'a>(PhantomData<&'a ()>);
+impl<'a> DatacountsecCont0<'a> {
+    pub fn new() -> Self {
+        DatacountsecCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&u64> for DatacountsecCont0<'a> {
+    type Output = AndThen<Bytes, UnsignedLEB128>;
+
+    open spec fn requires(&self, deps: &u64) -> bool { true }
+
+    open spec fn ensures(&self, deps: &u64, o: Self::Output) -> bool {
+        o@ == spec_datacountsec_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &u64) -> Self::Output {
+        let size = *deps;
+        AndThen(Bytes(size.ex_into()), UnsignedLEB128)
+    }
+}
+                
+
 pub struct SpecCodesec {
     pub size: u64,
     pub cont: SpecCodesecContent,
@@ -16593,157 +16780,5 @@ pub fn module<'a>() -> (o: ModuleCombinator<'a>)
 }
 
                 
-pub type SpecSigned64 = Seq<u8>;
-pub type Signed64<'a> = &'a [u8];
-
-
-pub struct SpecSigned64Combinator(SpecSigned64CombinatorAlias);
-
-impl SpecCombinator for SpecSigned64Combinator {
-    type Type = SpecSigned64;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecSigned64Combinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecSigned64CombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecSigned64CombinatorAlias = BytesN<8>;
-
-pub struct Signed64Combinator(Signed64CombinatorAlias);
-
-impl View for Signed64Combinator {
-    type V = SpecSigned64Combinator;
-    closed spec fn view(&self) -> Self::V { SpecSigned64Combinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for Signed64Combinator {
-    type Type = Signed64<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type Signed64CombinatorAlias = BytesN<8>;
-
-
-pub closed spec fn spec_signed_64() -> SpecSigned64Combinator {
-    SpecSigned64Combinator(BytesN::<8>)
-}
-
-                
-pub fn signed_64() -> (o: Signed64Combinator)
-    ensures o@ == spec_signed_64(),
-{
-    Signed64Combinator(BytesN::<8>)
-}
-
-                
-pub type SpecSigned32 = Seq<u8>;
-pub type Signed32<'a> = &'a [u8];
-
-
-pub struct SpecSigned32Combinator(SpecSigned32CombinatorAlias);
-
-impl SpecCombinator for SpecSigned32Combinator {
-    type Type = SpecSigned32;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecSigned32Combinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecSigned32CombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecSigned32CombinatorAlias = BytesN<4>;
-
-pub struct Signed32Combinator(Signed32CombinatorAlias);
-
-impl View for Signed32Combinator {
-    type V = SpecSigned32Combinator;
-    closed spec fn view(&self) -> Self::V { SpecSigned32Combinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for Signed32Combinator {
-    type Type = Signed32<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type Signed32CombinatorAlias = BytesN<4>;
-
-
-pub closed spec fn spec_signed_32() -> SpecSigned32Combinator {
-    SpecSigned32Combinator(BytesN::<4>)
-}
-
-                
-pub fn signed_32() -> (o: Signed32Combinator)
-    ensures o@ == spec_signed_32(),
-{
-    Signed32Combinator(BytesN::<4>)
-}
-
-                
-pub type SpecELEMKIND = u8;
-pub type ELEMKIND = u8;
-
-pub const ELEMKIND_CONST: u8 = 0;
-pub type SpecELEMKINDCombinator = Refined<U8, TagPred<u8>>;
-pub type ELEMKINDCombinator = Refined<U8, TagPred<u8>>;
-
-
-pub closed spec fn spec_ELEMKIND() -> SpecELEMKINDCombinator {
-    Refined { inner: U8, predicate: TagPred(ELEMKIND_CONST) }
-}
-
-pub fn ELEMKIND() -> (o: ELEMKINDCombinator)
-    ensures o@ == spec_ELEMKIND(),
-{
-    Refined { inner: U8, predicate: TagPred(ELEMKIND_CONST) }
-}
-
 
 }

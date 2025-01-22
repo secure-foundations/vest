@@ -396,18 +396,24 @@ instr = {
     I32Load => memarg,
     BrIf => labelidx,
     I32And => empty,
+    If => blocktype,
+    Block => blocktype,
+    I32Eqz => empty,
+    I32Sub => empty,
+    Br => labelidx,
+    Call => funcidx,
+    I32Or => empty,
+    Select => empty,
+    I32ShrU => empty,
+    I32Shl => empty,
 
     // Control Instructions
     // Since we don't support (verified) recursive formats rn, we parse the instruction as a flat vec (so we don't check "well-bracketedness")
     Unreachable => empty,
     Nop => empty,
-    Block => blocktype,
     Loop => blocktype,
-    If => blocktype,
-    Br => labelidx,
     BrTable => br_table,
     Ret => empty,
-    Call => funcidx,
     CallIndirect => call_indirect,
     // Reference Instructions
     RefNull => reftype,
@@ -415,7 +421,6 @@ instr = {
     RefFunc => funcidx,
     // Parametric Instructions
     Drop => empty,
-    Select => empty,
     SelectT => select_t,
     // Variable Instructions
     GlobalGet => globalidx,
