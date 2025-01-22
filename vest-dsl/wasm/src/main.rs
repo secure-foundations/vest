@@ -142,7 +142,9 @@ pub const POLYBENCH_C_TESTS: &[(&str, &[u8])] = &[
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (_, bytes) in POLYBENCH_C_TESTS {
-        println!("{} ", bytes.len());
+        let (consumed, _) = module().parse(bytes)?;
+        println!("Consumed: {}", consumed);
+        // println!("{:?}", module().parse(bytes).unwrap());
         // println!("{} {:?}", bytes.len(), module().parse(bytes).unwrap());
         // println!("{:?}", rwasm::parser::parse(bytes).unwrap());
     }
