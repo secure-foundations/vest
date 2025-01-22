@@ -17,6 +17,7 @@ extra_args = "--crate-type=lib  --import vest=../../vest/vest.verusdata --extern
 criterion = { version = "0.5", features = ["html_reports"] }
 rwasm = { git = "https://github.com/zhengyao-lin/rWasm.git", branch = "main" }
 wasmparser = "0.223.0"
+wasmbin = { path = "../../tools/wasmbin" }
 
 [[bench]]
 name = "wasm_benchmark"

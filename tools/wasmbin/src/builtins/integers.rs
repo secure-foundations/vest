@@ -86,7 +86,7 @@ macro_rules! def_integer {
     ($ty:ident, $leb128_method:ident) => {
         impl Encode for $ty {
             fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
-                leb128::write::$leb128_method(w, (*self).into()).map(|_| ())
+                leb128::write::unsigned(w, *self as i128 as u64).map(|_| ())
             }
         }
 
