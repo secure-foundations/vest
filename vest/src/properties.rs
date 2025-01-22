@@ -171,8 +171,8 @@ pub trait Combinator<I, O>: View where
     /// The result type of parsing
     type Type: View;
 
-    /// The input type of serialization
-    type SType<'a>: View<V = <Self::Type as View>::V> where Self::Type: 'a;
+    /// The input type of serialization, often a reference to [`Self::Type`].
+    type SType: View<V = <Self::Type as View>::V>;
 
     /// Spec version of [`Self::length`].
     spec fn spec_length(&self) -> Option<usize>;
@@ -228,7 +228,7 @@ pub trait Combinator<I, O>: View where
     /// seialize "in-place" on a "sufficiently large" buffer with a pointer `pos` for efficiency.
     /// This means it's not neccessarily the case that when `serialize` fails, `spec_serialize`
     /// will also fail.
-    fn serialize<'a>(&self, v: Self::SType<'a>, buf: &mut O, pos: usize) -> (res: SResult<
+    fn serialize(&self, v: Self::SType, buf: &mut O, pos: usize) -> (res: SResult<
         usize,
         SerializeError,
     >)
@@ -293,6 +293,8 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
  {
     type Type = C::Type;
 
+    type SType = C::SType;
+
     open spec fn spec_length(&self) -> Option<usize> {
         (*self).spec_length()
     }
@@ -313,7 +315,7 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C where
         (*self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -370,6 +372,8 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C> where
  {
     type Type = C::Type;
 
+    type SType = C::SType;
+
     open spec fn spec_length(&self) -> Option<usize> {
         (**self).spec_length()
     }
@@ -390,7 +394,7 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C> where
         (**self).serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

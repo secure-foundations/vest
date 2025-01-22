@@ -55,6 +55,8 @@ impl SecureSpecCombinator for Success {
 impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
     type Type = ();
 
+    type SType = ();
+
     open spec fn spec_length(&self) -> Option<usize> {
         Some(0)
     }
@@ -67,7 +69,7 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
         Ok((0, ()))
     }
 
-    fn serialize(&self, _v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

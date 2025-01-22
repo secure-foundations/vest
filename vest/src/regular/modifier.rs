@@ -58,9 +58,13 @@ pub trait Iso: View where
  {
     /// The source type of the isomorphism.
     type Src: View;
+    // type Src: View + From<Self::Dst>;
 
     /// The reference of the [`Src`] type.
-    type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
+    type RefSrc: View<V = <Self::Src as View>::V> + From<Self::RefDst>;
+    /// THe reference of the [`Dst`] type.
+    type RefDst: View<V = <Self::Dst as View>::V>;
+    // type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
 
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
@@ -81,7 +85,7 @@ pub trait IsoFn: Iso where
     ;
 
     /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply<'a>(s: &'a Self::Dst) -> (res: Self::RefSrc<'a>)
+    fn rev_apply(s: Self::RefDst) -> (res: Self::RefSrc)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
     ;
@@ -100,6 +104,16 @@ impl<T: Iso> IsoFn for T where
     fn rev_apply(s: Self::Dst) -> (res: Self::Src) {
         Self::Src::ex_from(s)
     }
+
+    // /// Applies the reverse isomorphism to the destination type.
+    // fn rev_apply<'a>(s: &'a Self::Dst) -> (res: Self::RefSrc<'a>)
+    //     ensures
+    //         res@ == Self::V::spec_rev_apply(s@),
+    // {
+    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_from(s@))
+    //         by (compute_only);
+    //     Self::RefSrc::ex_from(s)
+    // }
 }
 
 /// Combinator that maps the result of an `inner` combinator with an isomorphism that implements
@@ -205,7 +219,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
  {
     type Type = M::Dst;
 
-    type SType<'a> = &'a M::Dst where <M as Iso>::Dst: 'a;
+    type SType = M::RefDst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -235,7 +249,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize<'a>(&self, v: Self::SType<'a>, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -312,7 +326,12 @@ pub trait PartialIso: View where
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
  {
     /// The source type
-    type Src: View + TryFrom<Self::Dst>;
+    type Src: View;
+
+    /// The reference of the [`Src`] type.
+    type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<Self::RefDst>;
+    /// THe reference of the [`Dst`] type.
+    type RefDst: View<V = <Self::Dst as View>::V>;
 
     /// The destination type
     type Dst: View + TryFrom<Self::Src>;
@@ -335,7 +354,7 @@ pub trait PartialIsoFn: PartialIso where
     ;
 
     /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
+    fn rev_apply(s: Self::RefDst) -> (res: Result<Self::RefSrc, <Self::RefSrc as TryFrom<Self::RefDst>>::Error>)
         ensures
             res matches Ok(v) ==> {
                 &&& Self::V::spec_rev_apply(s@) is Ok
@@ -361,6 +380,20 @@ impl<T: PartialIso> PartialIsoFn for T where
     >) {
         Self::Src::ex_try_from(s)
     }
+
+    // /// Applies the reverse faillible conversion to the destination type.
+    // fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
+    //     ensures
+    //         res matches Ok(v) ==> {
+    //             &&& Self::V::spec_rev_apply(s@) is Ok
+    //             &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
+    //         },
+    //         res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
+    // {
+    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_try_from(s@))
+    //         by (compute_only);
+    //     Self::Src::ex_try_from(s)
+    // }
 }
 
 /// Combinator that maps the result of an `inner` combinator with a faillible conversion
@@ -469,8 +502,16 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
+    // M: TryFromInto<Src = Inner::Type>,
+    // Inner::Type: TryFrom<M::Dst> + View,
+    // M::Dst: TryFrom<Inner::Type> + View,
+    // M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+    // <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
+    // <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
  {
     type Type = M::Dst;
+
+    type SType = M::RefDst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -498,7 +539,7 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
