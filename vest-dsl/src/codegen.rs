@@ -1967,7 +1967,7 @@ impl DisjointFrom<{}> for {} {{
                         func: enum_name, ..
                     }) => {
                         match &self.choices {
-                            Choices::Enums(enums) => enums
+                            Choices::Enums(variants) => variants
                                 .iter()
                                 .map(|(variant, combinator)| {
                                     let (inner, code) =
@@ -1982,19 +1982,39 @@ impl DisjointFrom<{}> for {} {{
                                             };
                                             if variant == "_" {
                                                 // default case; the negation of all other cases
-                                                let other_variants = enums
-                                                    .iter()
-                                                    .filter_map(|Enum { name, value }| {
-                                                        if name == "_" {
-                                                            None
-                                                        } else {
-                                                            Some(match mode {
-                                                                Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
-                                                                _ => format!("{}{} == {}", depend_id, cast, value)
+                                                let other_variants = variants.iter().filter_map(|(variant, _)| {
+                                                    if variant == "_" {
+                                                        None
+                                                    } else {
+                                                        let value = enums
+                                                            .iter()
+                                                            .find_map(|Enum { name, value }| {
+                                                                if name == variant {
+                                                                    Some(value.to_string())
+                                                                } else {
+                                                                    None
+                                                                }
                                                             })
-                                                        }
-                                                    })
-                                                    .collect::<Vec<_>>();
+                                                            .unwrap();
+                                                        Some(match mode {
+                                                            Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
+                                                            _ => format!("{}{} == {}", depend_id, cast, value)
+                                                        })
+                                                    }
+                                                }).collect::<Vec<_>>();
+                                                // let other_variants = enums
+                                                //     .iter()
+                                                //     .filter_map(|Enum { name, value }| {
+                                                //         if name == "_" {
+                                                //             None
+                                                //         } else {
+                                                //             Some(match mode {
+                                                //                 Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
+                                                //                 _ => format!("{}{} == {}", depend_id, cast, value)
+                                                //             })
+                                                //         }
+                                                //     })
+                                                //     .collect::<Vec<_>>();
                                                 format!("!({})", other_variants.join(" || "))
                                             } else {
                                                 let value = enums
