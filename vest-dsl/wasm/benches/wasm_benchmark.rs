@@ -43,6 +43,39 @@ pub const POLYBENCH_C_TESTS: &[(&str, &[u8])] = &[
     ("trmm", include_bytes!("data/polybench-c/trmm.wasm")),
 ];
 
+pub const POLYBENCH_C_TESTS_REWRITTEN: &[(&str, &[u8])] = &[
+    ("2mm", include_bytes!("data/polybench-c/2mm.wasm.rewritten")),
+    ("3mm", include_bytes!("data/polybench-c/3mm.wasm.rewritten")),
+    ("adi", include_bytes!("data/polybench-c/adi.wasm.rewritten")),
+    ("atax", include_bytes!("data/polybench-c/atax.wasm.rewritten")),
+    ("bicg", include_bytes!("data/polybench-c/bicg.wasm.rewritten")),
+    ("cholesky", include_bytes!("data/polybench-c/cholesky.wasm.rewritten")),
+    ("correlation", include_bytes!("data/polybench-c/correlation.wasm.rewritten")),
+    ("covariance", include_bytes!("data/polybench-c/covariance.wasm.rewritten")),
+    ("doitgen", include_bytes!("data/polybench-c/doitgen.wasm.rewritten")),
+    ("durbin", include_bytes!("data/polybench-c/durbin.wasm.rewritten")),
+    ("dynprog", include_bytes!("data/polybench-c/dynprog.wasm.rewritten")),
+    ("fdtd-2d", include_bytes!("data/polybench-c/fdtd-2d.wasm.rewritten")),
+    ("fdtd-apml", include_bytes!("data/polybench-c/fdtd-apml.wasm.rewritten")),
+    ("floyd-warshall", include_bytes!("data/polybench-c/floyd-warshall.wasm.rewritten")),
+    ("gemm", include_bytes!("data/polybench-c/gemm.wasm.rewritten")),
+    ("gemver", include_bytes!("data/polybench-c/gemver.wasm.rewritten")),
+    ("gesummv", include_bytes!("data/polybench-c/gesummv.wasm.rewritten")),
+    ("gramschmidt", include_bytes!("data/polybench-c/gramschmidt.wasm.rewritten")),
+    ("jacobi-1d-imper", include_bytes!("data/polybench-c/jacobi-1d-imper.wasm.rewritten")),
+    ("jacobi-2d-imper", include_bytes!("data/polybench-c/jacobi-2d-imper.wasm.rewritten")),
+    ("lu", include_bytes!("data/polybench-c/lu.wasm.rewritten")),
+    ("ludcmp", include_bytes!("data/polybench-c/ludcmp.wasm.rewritten")),
+    ("mvt", include_bytes!("data/polybench-c/mvt.wasm.rewritten")),
+    ("reg_detect", include_bytes!("data/polybench-c/reg_detect.wasm.rewritten")),
+    ("seidel-2d", include_bytes!("data/polybench-c/seidel-2d.wasm.rewritten")),
+    ("symm", include_bytes!("data/polybench-c/symm.wasm.rewritten")),
+    ("syr2k", include_bytes!("data/polybench-c/syr2k.wasm.rewritten")),
+    ("syrk", include_bytes!("data/polybench-c/syrk.wasm.rewritten")),
+    ("trisolv", include_bytes!("data/polybench-c/trisolv.wasm.rewritten")),
+    ("trmm", include_bytes!("data/polybench-c/trmm.wasm.rewritten")),
+];
+
 fn wasmparser_parse(bytes: &[u8]) {
     let mut parser = wasmparser::Parser::new(0);
 
@@ -104,16 +137,16 @@ fn wasmparser_parse(bytes: &[u8]) {
 /// Benchmark parsing time of polybench-c tests
 fn bench_parse_polybench_c_bulk(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse_polybench_c_bulk");
-    // group.bench_function("vest", |b| b.iter(||
-    //     for (_, bytes) in POLYBENCH_C_TESTS {
-    //         module().parse(black_box(bytes)).unwrap();
-    //     }
-    // ));
-    // group.bench_function("rwasm", |b| b.iter(||
-    //     for (_, bytes) in POLYBENCH_C_TESTS {
-    //         rwasm::parser::parse(black_box(bytes)).unwrap();
-    //     }
-    // ));
+    group.bench_function("vest", |b| b.iter(||
+        for (_, bytes) in POLYBENCH_C_TESTS_REWRITTEN {
+            module().parse(black_box(bytes)).unwrap();
+        }
+    ));
+    group.bench_function("rwasm", |b| b.iter(||
+        for (_, bytes) in POLYBENCH_C_TESTS {
+            rwasm::parser::parse(black_box(bytes)).unwrap();
+        }
+    ));
     group.bench_function("wasmparser", |b| b.iter(||
         for (_, bytes) in POLYBENCH_C_TESTS {
             wasmparser_parse(black_box(bytes));
