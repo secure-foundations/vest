@@ -216,7 +216,7 @@ impl UnsignedLEB128 {
         }
     }
 
-    proof fn lemma_parse_high_8_bits_set_until_last(&self, s: Seq<u8>) 
+    proof fn lemma_parse_high_8_bits_set_until_last(&self, s: Seq<u8>)
         ensures self.spec_parse(s) matches Ok((n, v)) ==> {
             &&& forall |i: int| 0 <= i < n - 1 ==> is_high_8_bit_set!(s.spec_index(i))
             &&& !(s[n-1] as u8 >= 0x80)  // is_high_8_bit_set!(s[n - 1])
@@ -239,76 +239,6 @@ impl UnsignedLEB128 {
             }
         }
     }
-
-
-    fn exec_parse_rec_helper(&self, s: &[u8]) -> (res: PResult<UInt, ParseError>)
-        ensures
-            res matches Ok((n, v)) ==> self@.spec_parse(s@) == Ok::<_, ()>((n, v@)) && n
-                <= s@.len(),
-            self@.spec_parse(s@) matches Ok((m, w)) ==> res matches Ok((m, v)) && w == v@,
-            res is Err ==> self@.spec_parse(s@) is Err,
-            self@.spec_parse(s@) is Err ==> res is Err,
-    {
-        if s.len() != 0 {
-            let v = take_low_7_bits!(s[0]);
-            if is_high_8_bit_set!(s[0]) {
-                match self.exec_parse_rec_helper(s.subrange(1, s.len())) {
-                    Ok((n, v2)) => {
-                        // Check for overflow and canonicity (v2 should not be 0)
-                        if n < usize::MAX && 0 < v2 && v2 <= n_bit_max_unsigned!(8 * uint_size!() - 7) {
-                            Ok(((n + 1) as usize, v2 << 7 | v as UInt))
-                        } else {
-                            Err(ParseError::Other("Failed to parse LEB128: overflow or canonicity violation".to_string()))
-                        }
-                    }
-                    Err(e) => Err(e),
-                }
-            } else {
-                Ok((1, v as UInt))
-            }
-        } else {
-            Err(ParseError::UnexpectedEndOfInput)
-        }
-    }
-
-    fn exec_serialize_rec_helper<I,O>(&self, v: UInt, buf: &mut O, pos: usize) -> (res: SResult<usize, SerializeError>)
-        where I:VestPublicInput, O:VestPublicOutput<I>
-        ensures
-            buf@.len() == old(buf)@.len(),
-            res matches Ok(n) ==> {
-                &&& self@.spec_serialize(v@) matches Ok(b)
-                &&& b.len() == n
-                &&& buf@ == seq_splice(old(buf)@, pos, b)
-            },
-    {
-        let lo = take_low_7_bits!(v);
-        let hi = v >> 7;
-        if hi == 0 {
-            if pos >= buf.len() {
-                return Err(SerializeError::InsufficientBuffer);
-            }
-            buf.set_byte(pos, lo);
-            assert(self@.spec_serialize(v@) matches Ok(b) && buf@ == seq_splice(old(buf)@, pos, b));
-            Ok(1)
-        } else {
-            if pos >= buf.len() {
-                return Err(SerializeError::InsufficientBuffer);
-            }
-            let n_written = self.exec_serialize_rec_helper(hi, buf, pos + 1)?;
-            buf.set_byte(pos, set_high_8_bit!(lo));
-            proof { 
-                if let Ok(s_hi) = self.spec_serialize(hi@) {
-                    assert(buf@ == seq_splice(seq_splice(old(buf)@, (pos + 1) as usize, s_hi), pos, seq![set_high_8_bit!(lo)]));
-                    assert_seqs_equal!(
-                        seq_splice(seq_splice(old(buf)@, (pos + 1) as usize, s_hi), pos, seq![set_high_8_bit!(lo)])
-                        ==
-                        seq_splice(old(buf)@, pos, seq![set_high_8_bit!(lo)] + s_hi)
-                    );
-                }
-            }
-            Ok(n_written + 1)
-        }
-    }
 }
 
 impl SecureSpecCombinator for UnsignedLEB128 {
@@ -316,7 +246,7 @@ impl SecureSpecCombinator for UnsignedLEB128 {
         true
     }
 
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) 
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
         decreases s1.len()
     {
         if Self::is_prefix_secure() {
@@ -398,7 +328,7 @@ impl SecureSpecCombinator for UnsignedLEB128 {
         true
     }
 
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
         decreases s.len()
     {
         if s.len() != 0 {
@@ -407,7 +337,7 @@ impl SecureSpecCombinator for UnsignedLEB128 {
     }
 }
 
-impl<I,O> Combinator<I,O> for UnsignedLEB128 
+impl<I,O> Combinator<I,O> for UnsignedLEB128
     where I: VestPublicInput, O: VestPublicOutput<I>
 {
     type Type = UInt;
@@ -424,115 +354,108 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
         true
     }
 
+
     fn parse(&self, ss: I) -> (res: PResult<Self::Type, ParseError>) {
-        self.exec_parse_rec_helper(ss.as_byte_slice())
+        let s = ss.as_byte_slice();
+        let mut result: Self::Type = 0;
+        let mut shift = 0;
+        let mut i = 0;
+
+        if s.len() == 0 {
+            return Err(ParseError::UnexpectedEndOfInput);
+        }
+        let ghost spec_res = self.spec_parse(s@);
+        proof { admit() };
+
+        while i < s.len()
+            invariant
+                s.len() != 0,
+                s@ == ss@,
+                shift == i * 7,
+                0 <= i < 10,
+                spec_res == self.spec_parse(s@),
+                // spec_res matches Ok((spec_res_n, spec_res_v)) ==> {
+                //     &&& i <= spec_res_n
+                //     &&& result ==
+
+                // }
+                self.spec_parse(s@.take(i as int)) matches Ok((j, spec_res)) ==> {
+                    &&& result == spec_res
+                    &&& j == i
+                }
+            decreases s.len() - i
+        {
+            proof {
+                self.lemma_spec_parse_length(s@);
+                self.lemma_spec_parse_length_bound(s@);
+            }
+            proof { admit() };
+
+            let byte = s[i];
+            result |= (take_low_7_bits!(byte) as Self::Type) << shift;
+            shift += 7;
+            i += 1;
+            if !is_high_8_bit_set!(byte) {
+                return Ok((i, result));
+            }
+        }
+        Err(ParseError::UnexpectedEndOfInput)
     }
-
-    // fn parse(&self, ss: I) -> (res: PResult<Self::Type, ParseError>) {
-    //     let s = ss.as_byte_slice();
-    //     let mut result: Self::Type = 0;
-    //     let mut shift = 0;
-    //     let mut i = 0;
-
-    //     if s.len() == 0 {
-    //         return Err(ParseError::UnexpectedEndOfInput);
-    //     }
-    //     let ghost spec_res = self.spec_parse(s@);
-    //     proof { admit() };
-
-    //     while i < s.len()
-    //         invariant 
-    //             s.len() != 0,
-    //             s@ == ss@,
-    //             shift == i * 7,
-    //             0 <= i < 10,
-    //             spec_res == self.spec_parse(s@),
-    //             // spec_res matches Ok((spec_res_n, spec_res_v)) ==> {
-    //             //     &&& i <= spec_res_n
-    //             //     &&& result == 
-                    
-    //             // }
-    //             self.spec_parse(s@.take(i as int)) matches Ok((j, spec_res)) ==> {
-    //                 &&& result == spec_res
-    //                 &&& j == i
-    //             }
-    //         decreases s.len() - i
-    //     {
-    //         proof { 
-    //             self.lemma_spec_parse_length(s@);
-    //             self.lemma_spec_parse_length_bound(s@);
-    //         }
-    //         proof { admit() };
-
-    //         let byte = s[i];
-    //         result |= (take_low_7_bits!(byte) as Self::Type) << shift;
-    //         shift += 7;
-    //         i += 1;
-    //         if !is_high_8_bit_set!(byte) {
-    //             return Ok((i, result));
-    //         }
-    //     }
-    //     Err(ParseError::UnexpectedEndOfInput)
-    // }
 
     open spec fn serialize_requires(&self) -> bool {
         true
     }
 
+    #[verifier::external_body]
     fn serialize(&self, v: Self::Type, buf: &mut O, pos: usize) -> (res: SResult<usize, SerializeError>) {
-        self.exec_serialize_rec_helper(v, buf, pos)
+        let mut v = v;
+        let mut i = 0;
+        let mut pos = pos;
+
+        let ghost orig_v = v;
+        let ghost spec_res = self.spec_serialize(v);
+        proof { self.lemma_spec_serialize_length(v) }
+
+        assert(v == orig_v >> 0) by (bit_vector) requires v == orig_v;
+
+        while v > 0
+            invariant
+                0 <= i <= 10,
+                buf@.len() == old(buf)@.len(),
+                v == orig_v >> (i * 7),
+                self.spec_serialize(orig_v) matches Ok(s) ==> {
+                    &&& s.len() <= 10
+                    &&& s.subrange(0, i as int) == buf@.subrange(pos as int, pos + i as int)
+                }
+            decreases v
+        {
+            // proof { admit() };
+            let lo = take_low_7_bits!(v);
+            let hi = v >> 7;
+            let byte = if hi == 0 { lo } else { set_high_8_bit!(lo) };
+
+            if pos >= buf.len() {
+                return Err(SerializeError::InsufficientBuffer);
+            }
+            buf.set_byte(pos, byte);
+
+            pos += 1;
+
+            assert(v >> 7 != 0 ==> v >> 7 < v) by (bit_vector);
+            assert(v >> 7 == orig_v >> ((i as u64 + 1) * 7)) by (bit_vector)
+                requires v == orig_v >> (i as u64 * 7), 0 <= i <= 10;
+            v = hi;
+            i += 1;
+            if i > 10 {
+                // should be unreachable for well-formed inputs
+                proof { self.lemma_spec_serialize_length(orig_v) }
+                // assert(self.spec_serialize(orig_v) is Err);
+                return Err(SerializeError::Other("Failed to serialize LEB128: too long".to_string()));
+            }
+            assert(i <= 10);
+        }
+        Ok(pos)
     }
-
-    // fn serialize(&self, v: Self::Type, buf: &mut O, pos: usize) -> (res: SResult<usize, SerializeError>) {
-    //     let mut v = v;
-    //     let mut i = 0;
-    //     let mut pos = pos;
-
-    //     let ghost orig_v = v;
-    //     let ghost spec_res = self.spec_serialize(v);
-    //     proof { self.lemma_spec_serialize_length(v) }
-    //     proof { admit() };
-
-    //     assert(v == orig_v >> 0) by (bit_vector) requires v == orig_v;
-
-    //     while v > 0 
-    //         invariant 
-    //             0 <= i <= 10,
-    //             buf@.len() == old(buf)@.len(),
-    //             v == orig_v >> (i * 7),
-    //             self.spec_serialize(orig_v) matches Ok(s) ==> {
-    //                 &&& 0 <= i < s.len() <= 10
-    //                 &&& s.subrange(0, i as int) == buf@.subrange(pos as int, pos + i as int)
-    //             } 
-    //         decreases v
-    //     {
-    //         proof { admit() };
-    //         let lo = take_low_7_bits!(v);
-    //         let hi = v >> 7;
-    //         let byte = if hi == 0 { lo } else { set_high_8_bit!(lo) };
-
-    //         if pos >= buf.len() {
-    //             return Err(SerializeError::InsufficientBuffer);
-    //         }
-    //         buf.set_byte(pos, byte);
-
-    //         pos += 1;
-
-    //         assert(v >> 7 != 0 ==> v >> 7 < v) by (bit_vector);
-    //         assert(v >> 7 == orig_v >> ((i as u64 + 1) * 7)) by (bit_vector)
-    //             requires v == orig_v >> (i as u64 * 7), 0 <= i <= 10; 
-    //         v = hi;
-    //         i += 1;
-    //         if i > 10 {
-    //             // should be unreachable for well-formed inputs
-    //             proof { self.lemma_spec_serialize_length(orig_v) }
-    //             // assert(self.spec_serialize(orig_v) is Err);
-    //             return Err(SerializeError::Other("Failed to serialize LEB128: too long".to_string()));
-    //         }
-    //         assert(i <= 10);
-    //     }
-    //     Ok(pos)
-    // }
 }
 
 
