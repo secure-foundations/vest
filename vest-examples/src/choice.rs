@@ -34,13 +34,13 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 exec fn choice_parse_serialize() -> Result<(), Error> {
-    let c1 = Tag::new(U8, 1);
-    let c2 = Tag::new(U8, 2);
-    let c3 = Tag::new(U8, 3);
-    let c4 = Tag::new(U8, 4);
+    let c1 = Tag::new(U8, 1, 1);
+    let c2 = Tag::new(U8, 2, 2);
+    let c3 = Tag::new(U8, 3, 3);
+    let c4 = Tag::new(U8, 4, 4);
     let g1 = (Bytes(4), Tail);
     let g2 = (U32Le, (U16Le, U8));
-    let g3 = (Tag::new(U8, 10), U32Le);
+    let g3 = (Tag::new(U8, 10, 10), U32Le);
     let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
     let ord_choice1 =
         ord_choice!(
@@ -107,13 +107,13 @@ exec fn choice_parse_serialize() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 exec fn choice_serialize_parse() -> Result<(), Error> {
-    let c1 = Tag::new(U8, 1);
-    let c2 = Tag::new(U8, 2);
-    let c3 = Tag::new(U8, 3);
-    let c4 = Tag::new(U8, 4);
+    let c1 = Tag::new(U8, 1, 1);
+    let c2 = Tag::new(U8, 2, 2);
+    let c3 = Tag::new(U8, 3, 3);
+    let c4 = Tag::new(U8, 4, 4);
     let g1 = (Bytes(4), Tail);
     let g2 = (U32Le, (U16Le, U8));
-    let g3 = (Tag::new(U8, 10), U32Le);
+    let g3 = (Tag::new(U8, 10, 10), U32Le);
     let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
     let ord_choice1 =
         ord_choice!(
