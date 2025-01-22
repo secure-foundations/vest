@@ -20,15 +20,13 @@ impl<T> SpecPred for TagPred<T, T> {
     type Input = T;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        self.0 == self.1 &&
-        (*i == self.0)
+        self.0 == self.1 && (*i == self.0)
     }
 }
 
-impl<PT: Compare<PT>, ST: Compare<ST>> Pred for TagPred<PT, ST> where
-    ST: View<V = PT::V>,
-{
+impl<PT: Compare<PT>, ST: Compare<ST>> Pred for TagPred<PT, ST> where ST: View<V = PT::V> {
     type Input = PT;
+
     type InputRef = ST;
 
     open spec fn wf(&self) -> bool {
