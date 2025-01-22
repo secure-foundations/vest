@@ -2,7 +2,7 @@
 /// AndThen combinator
 pub mod and_then;
 /// Builder combinator
-pub mod builder;
+// pub mod builder;
 /// Bytes combinator
 pub mod bytes;
 /// BytesN combinator
@@ -33,7 +33,7 @@ pub mod repeat;
 /// RepeatN combinator
 pub mod repeat_n;
 /// Star combinator
-pub mod star;
+// pub mod star;
 /// Success combinator
 pub mod success;
 /// Tag combinator

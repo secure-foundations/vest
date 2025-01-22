@@ -59,6 +59,8 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
  {
     type Type = (Fst::Type, Snd::Type);
 
+    type SType = (Fst::SType, Snd::SType);
+
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
             if let Some(m) = self.1.spec_length() {
@@ -110,7 +112,7 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

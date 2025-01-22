@@ -82,6 +82,8 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
 > where Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V> {
     type Type = Inner::Type;
 
+    type SType = Inner::SType;
+
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {
             self.inner.spec_length()
@@ -114,7 +116,7 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {

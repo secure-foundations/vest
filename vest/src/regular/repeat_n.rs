@@ -5,19 +5,39 @@ use vstd::prelude::*;
 verus! {
 
 /// Combinator that repeats [C] combinator [self.1] times.
-pub struct RepeatN<C>(pub C, pub usize);
+pub struct RepeatN<'x, C>(pub C, pub usize, pub &'x ());
 
-impl<C: View> View for RepeatN<C> {
-    type V = RepeatN<<C as View>::V>;
+// impl<'x, C> RepeatN<'x, C> {
+//     pub closed spec fn spec_new(c: C, n: usize) -> Self
+//     {
+//         RepeatN(c, n, std::marker::PhantomData)
+//     }
+// }
+
+// impl<'x, C: View> RepeatN<'x, C> {
+//     pub closed spec fn spec_new(c: C::V, n: usize) -> <Self as View>::V
+//     {
+//         RepeatN(c, n, std::marker::PhantomData)
+//     }
+//     pub fn new(c: C, n: usize) -> (o: Self)
+//         ensures o@ == Self::spec_new(c@, n),
+//     {
+//         RepeatN(c, n, std::marker::PhantomData)
+//     }
+// }
+
+impl<C: View, 'x> View for RepeatN<C, 'x> {
+    type V = RepeatN<<C as View>::V, 'x>;
 
     open spec fn view(&self) -> Self::V {
-        RepeatN(self.0@, self.1)
+        RepeatN(self.0@, self.1, self.2)
     }
 }
 
-impl<C: SecureSpecCombinator> RepeatN<C> {
+
+impl<C: SecureSpecCombinator> RepeatN<C, '_> {
     /// Helper function for parsing [n] instances of [C] from [s].
-    pub closed spec fn spec_parse_helper(&self, s: Seq<u8>, n: usize) -> Result<
+    pub open spec fn spec_parse_helper(&self, s: Seq<u8>, n: usize) -> Result<
         (usize, Seq<C::Type>),
         (),
     >
@@ -43,7 +63,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
     }
 
     /// Helper function for serializing [n] instances of [C] from [v].
-    pub closed spec fn spec_serialize_helper(&self, v: Seq<C::Type>, n: usize) -> Result<
+    pub open spec fn spec_serialize_helper(&self, v: Seq<C::Type>, n: usize) -> Result<
         Seq<u8>,
         (),
     >
@@ -111,7 +131,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
 
 }
 
-impl<C: SecureSpecCombinator> RepeatN<C> {
+impl<C: SecureSpecCombinator> RepeatN<C, '_> {
     proof fn theorem_serialize_parse_roundtrip_helper(&self, v: Seq<C::Type>, n: usize)
         ensures
             self.spec_serialize_helper(v, n) matches Ok(b) ==> self.spec_parse_helper(b, n) == Ok::<
@@ -238,7 +258,7 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
     }
 }
 
-impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
+impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C, '_> {
     type Type = Seq<C::Type>;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
@@ -250,7 +270,7 @@ impl<C: SecureSpecCombinator> SpecCombinator for RepeatN<C> {
     }
 }
 
-impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
+impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C, '_> {
     open spec fn is_prefix_secure() -> bool {
         C::is_prefix_secure()
     }
@@ -282,7 +302,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for RepeatN<C> {
     }
 }
 
-impl<C: SecureSpecCombinator> RepeatN<C> {
+impl<C: SecureSpecCombinator> RepeatN<C, '_> {
     spec fn parse_correct(
         &self,
         s: Seq<u8>,
@@ -320,13 +340,16 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
     }
 }
 
-impl<I, O, C> Combinator<I, O> for RepeatN<C> where
+impl<I, O, C, 'x> Combinator<I, O> for RepeatN<C, 'x> where
     I: VestInput,
     O: VestOutput<I>,
     C: Combinator<I, O>,
     C::V: SecureSpecCombinator<Type = <C::Type as View>::V>,
+    C::SType: 'x + Copy,
  {
     type Type = RepeatResult<C::Type>;
+
+    type SType = &'x RepeatResult<C::SType>;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -384,7 +407,7 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
         self.0.serialize_requires() && C::V::is_prefix_secure()
     }
 
-    fn serialize(&self, mut vs: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, mut vs: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -404,12 +427,11 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
         while i < self.1
             invariant
                 0 <= i <= self.1,
-                old_vs.len() == self.1,
-                old_vs.take(i as int) + vs@ == old_vs,
+                vs@.len() == self.1,
                 data@.len() == old(data)@.len(),
                 self.0.serialize_requires(),
                 self@.serialize_correct(
-                    old_vs.take(i as int),
+                    vs@.take(i as int),
                     i,
                     data@,
                     old_data,
@@ -420,15 +442,15 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
             if pos > usize::MAX - len || pos + len > data.len() {
                 return Err(SerializeError::InsufficientBuffer);
             }
-            match self.0.serialize(vs.0.remove(0), data, pos + len) {
+            match self.0.serialize(vs.0[i], data, pos + len) {
+            // match self.0.serialize(vs.0.remove(0), data, pos + len) {
                 Ok(n) => {
                     if let Some(next_len) = len.checked_add(n) {
                         len = next_len;
                         i += 1;
-                        assert(old_vs.take(i as int) + vs@ == old_vs);  // <-- important
-                        assert(old_vs.take(i as int).drop_last() == old_vs.take((i - 1) as int));  // <-- key
-                        let ghost spec_res = self@.spec_serialize_helper(old_vs.take(i as int), i);
-                        assert(data@ == seq_splice(old_data, pos, spec_res.unwrap()));
+                        assert(vs@.take(i as int).drop_last() == vs@.take((i - 1) as int));  // <-- key
+                        let ghost spec_bytes = self@.spec_serialize_helper(vs@.take(i as int), i);
+                        assert(data@ == seq_splice(old_data, pos, spec_bytes.unwrap()));
                     } else {
                         return Err(SerializeError::SizeOverflow);
                     }
@@ -437,6 +459,7 @@ impl<I, O, C> Combinator<I, O> for RepeatN<C> where
             }
         }
 
+        assert(vs@.take(i as int) =~= vs@);
         Ok(len)
     }
 }

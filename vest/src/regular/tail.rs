@@ -63,6 +63,8 @@ impl SecureSpecCombinator for Tail {
 impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
     type Type = I;
 
+    type SType = I;
+
     open spec fn spec_length(&self) -> Option<usize> {
         None
     }
@@ -75,7 +77,7 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
         Ok(((s.len()), s))
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

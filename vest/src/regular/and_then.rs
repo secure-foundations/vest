@@ -100,6 +100,8 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
  {
     type Type = Next::Type;
 
+    type SType = Next::SType;
+
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
         <_ as Combinator<I, O>>::spec_length(&self.0)
@@ -128,7 +130,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Bytes, Next> whe
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         let n = self.1.serialize(v, data, pos)?;
         if n == self.0.0 {
             Ok(n)

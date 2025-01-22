@@ -70,6 +70,8 @@ impl<const N: usize> SecureSpecCombinator for BytesN<N> {
 impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where I: VestInput, O: VestOutput<I> {
     type Type = I;
 
+    type SType = I;
+
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)
     }
@@ -87,7 +89,7 @@ impl<const N: usize, I, O> Combinator<I, O> for BytesN<N> where I: VestInput, O:
         }
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

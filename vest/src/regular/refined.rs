@@ -14,11 +14,28 @@ pub trait SpecPred {
 
 /// All predicates to be used in [`Refined`] combinator must implement this trait.
 pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
-    /// The input type of the predicate.
+    /// The input type of the predicate (for parsing).
     type Input: View + ?Sized;
 
+    /// The input type of the predicate (for serialization).
+    type InputRef: View<V = <Self::Input as View>::V>;
+
+    /// pre-condition for applying the predicate
+    open spec fn wf(&self) -> bool {
+        true
+    }
+
     /// Applies the predicate to the input.
-    fn apply(&self, i: &Self::Input) -> (res: bool)
+    fn p_apply(&self, i: &Self::Input) -> (res: bool)
+        requires
+            self.wf(),
+        ensures
+            res == self@.spec_apply(&i@),
+    ;
+    /// Serialization equivalent of [`Self::p_apply`].
+    fn s_apply(&self, i: Self::InputRef) -> (res: bool)
+        requires
+            self.wf(),
         ensures
             res == self@.spec_apply(&i@),
     ;
@@ -104,10 +121,13 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    P: Pred<Input = Inner::Type>,
+    P: Pred<Input = Inner::Type, InputRef = Inner::SType>,
     P::V: SpecPred<Input = <Inner::Type as View>::V>,
+    Inner::SType: Copy,
  {
     type Type = Inner::Type;
+
+    type SType = Inner::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -118,12 +138,12 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     }
 
     open spec fn parse_requires(&self) -> bool {
-        self.inner.parse_requires()
+        self.inner.parse_requires() && self.predicate.wf()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         match self.inner.parse(s) {
-            Ok((n, v)) => if self.predicate.apply(&v) {
+            Ok((n, v)) => if self.predicate.p_apply(&v) {
                 Ok((n, v))
             } else {
                 Err(ParseError::RefinedPredicateFailed)
@@ -133,11 +153,11 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        self.inner.serialize_requires()
+        self.inner.serialize_requires() && self.predicate.wf()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.predicate.apply(&v) {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        if self.predicate.s_apply(v) {
             self.inner.serialize(v, data, pos)
         } else {
             Err(SerializeError::RefinedPredicateFailed)

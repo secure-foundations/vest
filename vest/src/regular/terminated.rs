@@ -78,11 +78,13 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
-    Snd: Combinator<I, O, Type = ()>,
+    Snd: Combinator<I, O, Type = (), SType = ()>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = ()>,
  {
     type Type = Fst::Type;
+
+    type SType = Fst::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (self.0, self.1).spec_length()
@@ -105,7 +107,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
         (&self.0, &self.1).serialize_requires()
     }
 
-    fn serialize<'b>(&self, v: Self::Type, data: &'b mut O, pos: usize) -> Result<
+    fn serialize<'b>(&self, v: Self::SType, data: &'b mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {
