@@ -144,7 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for _ in 0..100 {
         for (_, bytes) in POLYBENCH_C_TESTS {
             let (consumed, _) = module().parse(bytes)?;
-            println!("Consumed: {}/{}", consumed, bytes.len());
+            // println!("Consumed: {}/{}", consumed, bytes.len());
             // println!("{:?}", module().parse(bytes).unwrap());
             // println!("{} {:?}", bytes.len(), module().parse(bytes).unwrap());
             // println!("{:?}", rwasm::parser::parse(bytes).unwrap());
