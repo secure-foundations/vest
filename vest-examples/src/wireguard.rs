@@ -7,7 +7,7 @@ verus! {
 
 spec const SPEC_BYTES_1000_CONST: Seq<u8> = seq![1, 0, 0, 0];
 
-exec const BYTES_1000_CONST: [u8; 4]
+exec static BYTES_1000_CONST: [u8; 4]
     ensures
         BYTES_1000_CONST@ == SPEC_BYTES_1000_CONST,
 {
@@ -18,7 +18,7 @@ exec const BYTES_1000_CONST: [u8; 4]
 
 spec const SPEC_BYTES_16_0S_CONST: Seq<u8> = seq![0; 16];
 
-exec const BYTES_16_0S_CONST: [u8; 16]
+exec static BYTES_16_0S_CONST: [u8; 16]
     ensures
         BYTES_16_0S_CONST@ == SPEC_BYTES_16_0S_CONST,
 {
@@ -37,30 +37,30 @@ impl View for ExampleBuilder {
     }
 }
 
-impl Builder for ExampleBuilder {
-    open spec fn value(&self) -> Seq<u8> {
-        seq![0, 0, 0, 0]
-    }
-
-    proof fn value_wf(&self) {
-    }
-
-    fn length(&self) -> usize {
-        4
-    }
-
-    fn into_mut_vec(&self, data: &mut Vec<u8>, pos: usize) {
-        assert(pos + 4 <= old(data)@.len());
-        assert(pos < old(data)@.len());
-        data.set(pos, 0);
-        data.set(pos + 1, 0);
-        data.set(pos + 2, 0);
-        data.set(pos + 3, 0);
-        assert(data@ =~= old(data)@.subrange(0, pos as int).add(self.value()).add(
-            old(data)@.subrange(pos + 4, old(data)@.len() as int),
-        ));
-    }
-}
+// impl Builder for ExampleBuilder {
+//     open spec fn value(&self) -> Seq<u8> {
+//         seq![0, 0, 0, 0]
+//     }
+//
+//     proof fn value_wf(&self) {
+//     }
+//
+//     fn length(&self) -> usize {
+//         4
+//     }
+//
+//     fn into_mut_vec(&self, data: &mut Vec<u8>, pos: usize) {
+//         assert(pos + 4 <= old(data)@.len());
+//         assert(pos < old(data)@.len());
+//         data.set(pos, 0);
+//         data.set(pos + 1, 0);
+//         data.set(pos + 2, 0);
+//         data.set(pos + 3, 0);
+//         assert(data@ =~= old(data)@.subrange(0, pos as int).add(self.value()).add(
+//             old(data)@.subrange(pos + 4, old(data)@.len() as int),
+//         ));
+//     }
+// }
 
 spec fn wg_msg1() -> (
     Tag<bytes::Fixed<4>, Seq<u8>>,

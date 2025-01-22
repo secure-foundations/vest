@@ -16,7 +16,8 @@ pub open spec fn msg1_snd(deps: (VarInt, u24)) -> (bytes::Variable, bytes::Varia
     (bytes::Variable(x.spec_into()), bytes::Variable(y.spec_into()))
 }
 
-pub struct Msg1Snd;
+pub struct Msg1PCont;
+pub struct Msg1SCont;
 
 impl Continuation<&(VarInt, u24)> for Msg1Snd {
     type Output = (bytes::Variable, bytes::Variable);
