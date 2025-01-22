@@ -389,6 +389,7 @@ instr = {
     // Since we don't support (verified) recursive formats rn, we parse the instruction as a flat vec (so we don't check "well-bracketedness")
     Unreachable => empty,
     Nop => empty,
+    End => empty,
     Block => blocktype,
     Loop => blocktype,
     If => blocktype,
@@ -685,7 +686,9 @@ shuffle = [laneidx; 16]
 
 
 // no validation for well-bracketedness so no check for the 0x0B terminator as well
-expr = vec!(instr)
+// expr = vec!(instr)
+expr_inner = vec!(instr)
+expr = wrap(expr_inner, u8 = 0x0B)
 // expr = wrap(Vec<instr>, u8 = 0xFF)
 // {
 //   instrs: Vec<instr>,
