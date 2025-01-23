@@ -231,30 +231,30 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for OpaqueU16Combinator<'a> {
     type SType = OpaqueU16<'a>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
     closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
     }
 
     closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
     }
 }
 
@@ -417,30 +417,30 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdCombinator<'a> {
     type SType = ResponderId<'a>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
     closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
     }
 
     closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
     }
 }
 
@@ -525,30 +525,30 @@ impl<'a: 's, 's> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator
     type SType = ResponderIdListListRef<'a, 's>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
     closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
     }
 
     closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
     }
 }
 
@@ -754,7 +754,7 @@ impl Pred for Predicate6556550293019859977 {
     }
 }
 
-pub struct ResponderIdListCombinator<'a: 's, 's>(ResponderIdListCombinatorAlias<'a, 's>);
+pub struct ResponderIdListCombinator<'a: 's, 's: 'a>(ResponderIdListCombinatorAlias<'a, 's>);
 
 impl<'a, 's> View for ResponderIdListCombinator<'a, 's> {
     type V = SpecResponderIdListCombinator;
@@ -771,30 +771,30 @@ impl<'a: 's, 's> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a,
     type SType = &'s ResponderIdList<'a>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
     closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        <_ as Combinator<&[u8], Vec<u8>>>::parse(&self.0, s)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
     }
 
     closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
     }
 }
 
@@ -891,5 +891,11 @@ impl<'a, 's> Continuation<u16> for ResponderIdListSCont<'a, 's> {
         responder_id_list_list(l)
     }
 }
+
+// fn test_comb(ibuf: &[u8], obuf: &mut Vec<u8>) {
+//     if let Ok((n, v)) = responder_id_list().parse(ibuf) {
+//         let len = responder_id_list().serialize(&v, obuf, 0);
+//     }
+// }
 
 } // verus!
