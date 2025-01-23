@@ -1,4 +1,5 @@
 #![allow(unused_imports)]
+#![allow(warnings)]
 mod choice;
 mod depend;
 mod enums;
@@ -44,7 +45,7 @@ impl View for Nominal {
 
 type Structural = (u24, RepeatResult<u8>);
 
-type StructuralRef<'x> = (u24, &'x RepeatResult<u8>);
+type StructuralRef<'a> = (u24, &'a RepeatResult<u8>);
 
 impl From<Structural> for Nominal {
     fn ex_from(s: Structural) -> Self {
@@ -53,8 +54,8 @@ impl From<Structural> for Nominal {
     }
 }
 
-impl<'x> From<&'x Nominal> for StructuralRef<'x> {
-    fn ex_from(n: &'x Nominal) -> Self {
+impl<'a> From<&'a Nominal> for StructuralRef<'a> {
+    fn ex_from(n: &'a Nominal) -> Self {
         (n.x, &n.y)
     }
 }
@@ -102,14 +103,14 @@ impl SpecIso for AIso<'_> {
     }
 }
 
-impl<'x> Iso for AIso<'x> {
+impl<'a> Iso for AIso<'a> {
     type Src = Structural;
 
     type Dst = Nominal;
 
-    type RefSrc = StructuralRef<'x>;
+    type RefSrc = StructuralRef<'a>;
 
-    type RefDst = &'x Nominal;
+    type RefDst = &'a Nominal;
 }
 
 pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8, 'static> {
@@ -119,7 +120,7 @@ pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8, 'static> {
 }
 
 struct APCont<'a>(std::marker::PhantomData<&'a ()>);
-struct ASCont<'x>(std::marker::PhantomData<&'x ()>);
+struct ASCont<'a>(std::marker::PhantomData<&'a ()>);
 
 
 impl<'a> APCont<'a> {
@@ -128,7 +129,7 @@ impl<'a> APCont<'a> {
     }
 }
 
-impl<'x> ASCont<'x> {
+impl<'a> ASCont<'a> {
     pub fn new() -> Self {
         ASCont(std::marker::PhantomData)
     }
@@ -151,8 +152,8 @@ impl<'a> Continuation<&u24> for APCont<'a> {
     }
 }
 
-impl<'x> Continuation<u24> for ASCont<'x> {
-    type Output = RepeatN<U8, 'x>;
+impl<'a> Continuation<u24> for ASCont<'a> {
+    type Output = RepeatN<U8, 'a>;
 
     open spec fn requires(&self, deps: u24) -> bool {
         true
@@ -176,7 +177,7 @@ spec fn spec_a() -> Mapped<SpecDepend<U24Le, RepeatN<U8, 'static>>, AIso<'static
     }
 }
 
-fn a<'a, 'x>() -> (o: Mapped<Depend<&'a [u8], Vec<u8>, U24Le, RepeatN<U8, 'x>, APCont<'x>, ASCont<'x>>, AIso<'x>>  )
+fn a<'a>() -> (o: Mapped<Depend<&'a [u8], Vec<u8>, U24Le, RepeatN<U8, 'a>, APCont<'a>, ASCont<'a>>, AIso<'a>>  )
     ensures
         o@ == spec_a(),
 {
