@@ -239,6 +239,45 @@ impl UnsignedLEB128 {
             }
         }
     }
+
+    proof fn lemma_spec_parse_low_7_bits(&self, s: Seq<u8>)
+        requires s.len() != 0
+        ensures
+            self.spec_parse(s) matches Ok((_, x))
+            ==> {
+                let s0 = s[0];
+                take_low_7_bits!(x) == take_low_7_bits!(s0)
+            },
+    {
+        let s0 = s[0];
+        if is_high_8_bit_set!(s0) {
+            if let Ok((_, rest)) = self.spec_parse(s.drop_first()) {
+                assert(
+                    take_low_7_bits!(rest << 7 | take_low_7_bits!(s0) as UInt)
+                    == take_low_7_bits!(s0)
+                ) by (bit_vector);
+            }
+        } else {
+            assert(take_low_7_bits!(take_low_7_bits!(s0)) == take_low_7_bits!(s0)) by (bit_vector);
+        }
+    }
+
+    proof fn lemma_spec_parse_non_zero(&self, s: Seq<u8>)
+        requires ({
+            let s0 = s[0];
+            is_high_8_bit_set!(s0)
+        })
+
+        ensures self.spec_parse(s) matches Ok((_, x)) ==> x > 1
+    {
+        if let Ok((_, x)) = self.spec_parse(s) {
+            let (_, rest) = self.spec_parse(s.drop_first()).unwrap();
+            let s0 = s[0];
+
+            assert(0 < rest <= n_bit_max_unsigned!(8 * uint_size!() - 7)
+                ==> rest << 7 | take_low_7_bits!(s0) as UInt > 1) by (bit_vector);
+        }
+    }
 }
 
 impl SecureSpecCombinator for UnsignedLEB128 {
@@ -354,11 +393,11 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
         true
     }
 
-
     fn parse(&self, ss: I) -> (res: PResult<Self::Type, ParseError>) {
         let s = ss.as_byte_slice();
         let mut acc: Self::Type = 0;
         let mut i = 0;
+        let mut shift = 0;
 
         // Invariants before the loop
         proof {
@@ -367,18 +406,24 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
                 let rest = self.spec_parse(s@).unwrap().1;
                 assert(0 | rest << 0 == rest) by (bit_vector);
             }
+
+            assert(n_bit_max_unsigned!(8 * uint_size!()) == UInt::MAX) by (bit_vector);
         }
 
         while i < s.len()
             invariant
                 0 <= i <= s@.len(),
+                i <= 9,
                 s@ == ss@,
+
+                shift == i * 7,
 
                 // IH 1
                 self.spec_parse(s@) matches Ok((n, res)) ==> {
                     &&& self.spec_parse(s@.skip(i as int)) matches Ok((n_rest, rest))
                     &&& res == acc | rest << (i * 7)
                     &&& n == i + n_rest
+                    // &&& rest <= n_bit_max_unsigned!(8 * uint_size!() - 7 * i)
                 },
 
                 // IH 2
@@ -403,13 +448,134 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
         {
             let s_i = s[i];
             let v = take_low_7_bits!(s_i);
+            let hi_set = is_high_8_bit_set!(s_i);
 
-            if i >= 9 {
-                // TODO: handle special case of v == 1
-                assume(false);
+            if i == 9 && (hi_set || v > 1) {
+                proof {
+                    if let Ok((n_rest, rest)) = self.spec_parse(s@.skip(i as int)) {
+                        if rest != 0 {
+                            // TODO: make this an inductive proof
+
+                            let s0 = s@[0];
+                            let s1 = s@[1];
+                            let s2 = s@[2];
+                            let s3 = s@[3];
+                            let s4 = s@[4];
+                            let s5 = s@[5];
+                            let s6 = s@[6];
+                            let s7 = s@[7];
+                            let s8 = s@[8];
+
+                            assert(rest > 1) by {
+                                assert(take_low_7_bits!(rest) == v && v > 1 ==> rest > 1) by (bit_vector);
+                                self.lemma_spec_parse_low_7_bits(s@.skip(i as int));
+
+                                if hi_set {
+                                    self.lemma_spec_parse_non_zero(s@.skip(i as int));
+                                }
+                            }
+
+                            assert(
+                                rest > 1
+                                ==> rest <= n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                ==> {
+                                    ||| ((((((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type)
+                                        << 7 | take_low_7_bits!(s4) as Self::Type)
+                                        << 7 | take_low_7_bits!(s3) as Self::Type)
+                                        << 7 | take_low_7_bits!(s2) as Self::Type)
+                                        << 7 | take_low_7_bits!(s1) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| (((((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type)
+                                        << 7 | take_low_7_bits!(s4) as Self::Type)
+                                        << 7 | take_low_7_bits!(s3) as Self::Type)
+                                        << 7 | take_low_7_bits!(s2) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| (((((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type)
+                                        << 7 | take_low_7_bits!(s4) as Self::Type)
+                                        << 7 | take_low_7_bits!(s3) as Self::Type)
+                                        << 7 | take_low_7_bits!(s2) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| ((((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type)
+                                        << 7 | take_low_7_bits!(s4) as Self::Type)
+                                        << 7 | take_low_7_bits!(s3) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| (((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type)
+                                        << 7 | take_low_7_bits!(s4) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| ((((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type)
+                                        << 7 | take_low_7_bits!(s5) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| (((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type)
+                                        << 7 | take_low_7_bits!(s6) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| ((rest << 7 | take_low_7_bits!(s8) as Self::Type)
+                                        << 7 | take_low_7_bits!(s7) as Self::Type) > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                    ||| rest << 7 | take_low_7_bits!(s8) as Self::Type > n_bit_max_unsigned!(8 * uint_size!() - 7)
+                                }
+                            ) by (bit_vector);
+
+                            assert(self.spec_parse(s@).is_err()) by {
+                                reveal_with_fuel(<UnsignedLEB128 as SpecCombinator>::spec_parse, 10);
+
+                                if self.spec_parse(s@).is_ok() {
+                                    assert(self.spec_parse(s@).unwrap().1
+                                        == self.spec_parse(s@.drop_first()).unwrap().1 << 7 | take_low_7_bits!(s0) as Self::Type);
+
+                                    assert(self.spec_parse(s@).unwrap().1
+                                        == (self.spec_parse(s@.drop_first().drop_first()).unwrap().1 << 7 | take_low_7_bits!(s1) as Self::Type)
+                                        << 7 | take_low_7_bits!(s0) as Self::Type);
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first().drop_first() == s@.skip(9));
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first() == s@.skip(8));
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first().drop_first()
+                                        .drop_first() == s@.skip(7));
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first().drop_first() == s@.skip(6));
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first().drop_first() == s@.skip(5));
+
+                                    assert(s@.drop_first().drop_first().drop_first()
+                                        .drop_first() == s@.skip(4));
+
+                                    assert(s@.drop_first().drop_first().drop_first() == s@.skip(3));
+
+                                    assert(s@.drop_first().drop_first() == s@.skip(2));
+                                    assert(s@.drop_first() == s@.skip(1));
+                                    assert(s@ == s@.skip(0));
+                                }
+                            }
+                        } else {
+                            // Otherwise parsing s@.skip(i - 1) should fail
+                            // due to failing canonicity
+                            assert(s@.skip(i - 1).drop_first() == s@.skip(i as int));
+                        }
+                    }
+                }
+
                 return Err(ParseError::Other("LEB128 overflow".to_string()));
             }
 
+            // No overflow for i < 9
             assert(
                 i < 9
                 ==> v == take_low_7_bits!(s_i)
@@ -417,10 +583,20 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
                 ==> acc | (v as Self::Type) << (i * 7) <= n_bit_max_unsigned!((i + 1) * 7)
             ) by (bit_vector);
 
-            let ghost prev_acc = acc;
-            acc = acc | (v as Self::Type) << (i * 7);
+            // No overflow for i == 9
+            assert(
+                v == 1 && i == 9 ==>
+                (v as u128) << (i * 7) <= UInt::MAX
+            ) by (bit_vector);
+            assert(
+                v == 1
+                ==> 0 < v <= n_bit_max_unsigned!(8 * uint_size!() - 7 * 9)
+            ) by (bit_vector);
 
-            if !is_high_8_bit_set!(s_i) {
+            let ghost prev_acc = acc;
+            acc = acc | (v as Self::Type) << shift;
+
+            if !hi_set {
                 // Defined by defn of spec_parse
                 let ghost (n_rest, rest) = self.spec_parse(s@.skip(i as int)).unwrap();
 
@@ -469,6 +645,13 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
                         ==> res == prev_acc | rest1 << (i * 7)
                         ==> res == acc | rest2 << ((i + 1) * 7)
                     ) by (bit_vector);
+
+                    // assert(
+                    //     i < 9
+                    //     ==> rest2 > n_bit_max_unsigned!(8 * uint_size!() - 7 * (i + 1))
+                    //     ==> rest2 << 7 | take_low_7_bits!(s_i) as Self::Type
+                    //         > n_bit_max_unsigned!(8 * uint_size!() - 7 * i)
+                    // ) by (bit_vector);
                 }
 
                 // Prove IH 2
@@ -495,53 +678,10 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
             }
 
             i += 1;
+            shift += 7;
         }
 
         Err(ParseError::UnexpectedEndOfInput)
-
-        // let mut result: Self::Type = 0;
-        // let mut shift = 0;
-        // let mut i = 0;
-
-        // if s.len() == 0 {
-        //     return Err(ParseError::UnexpectedEndOfInput);
-        // }
-        // let ghost spec_res = self.spec_parse(s@);
-        // proof { admit() };
-
-        // while i < s.len()
-        //     invariant
-        //         s.len() != 0,
-        //         s@ == ss@,
-        //         shift == i * 7,
-        //         0 <= i < 10,
-        //         spec_res == self.spec_parse(s@),
-        //         // spec_res matches Ok((spec_res_n, spec_res_v)) ==> {
-        //         //     &&& i <= spec_res_n
-        //         //     &&& result ==
-
-        //         // }
-        //         self.spec_parse(s@.take(i as int)) matches Ok((j, spec_res)) ==> {
-        //             &&& result == spec_res
-        //             &&& j == i
-        //         }
-        //     decreases s.len() - i
-        // {
-        //     proof {
-        //         self.lemma_spec_parse_length(s@);
-        //         self.lemma_spec_parse_length_bound(s@);
-        //     }
-        //     proof { admit() };
-
-        //     let byte = s[i];
-        //     result |= (take_low_7_bits!(byte) as Self::Type) << shift;
-        //     shift += 7;
-        //     i += 1;
-        //     if !is_high_8_bit_set!(byte) {
-        //         return Ok((i, result));
-        //     }
-        // }
-        // Err(ParseError::UnexpectedEndOfInput)
     }
 
     open spec fn serialize_requires(&self) -> bool {
