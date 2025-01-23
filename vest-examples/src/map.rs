@@ -404,7 +404,7 @@ pub enum Msg4<'a> {
 
 pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
 // pub type Msg4InnerRef<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
-pub type Msg4InnerRef<'a> = Either<Msg1<'a>, Either<Msg2, Msg3<'a>>>;
+pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
 
 impl View for Msg4<'_> {
     type V = SpecMsg4;
@@ -440,7 +440,7 @@ impl SpecFrom<SpecMsg4Inner> for SpecMsg4 {
 
 impl<'a> From<&'a Msg4<'a>> for Msg4InnerRef<'a> {
     fn ex_from(e: &'a Msg4<'a>) -> (res: Msg4InnerRef<'a>) {
-        match *e {
+        match e {
             Msg4::M1(m) => inj_ord_choice_result!(m, *, *),
             Msg4::M2(m) => inj_ord_choice_result!(*, m, *),
             Msg4::M3(m) => inj_ord_choice_result!(*, *, m),
@@ -516,22 +516,22 @@ fn parse_serialize4() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let (n, val) = msg.parse(data.as_slice())?;
-    // let len = msg.serialize(&val, &mut s, 0)?;
-    // proof {
-    //     msg.theorem_parse_serialize_roundtrip(data@);
-    //     assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
-    //     assert(s@.subrange(0, len as int) == seq![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]);
-    // }
-    // let mut data = my_vec![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    // let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    // let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
-    // let len = msg.serialize(&val, &mut s, 0)?;
-    // proof {
-    //     msg.theorem_parse_serialize_roundtrip(data@);
-    //     assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
-    //     assert(s@.subrange(0, len as int) == seq![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8]);
-    // }
+    let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
+    let len = msg.serialize(&val, &mut s, 0)?;
+    proof {
+        msg.theorem_parse_serialize_roundtrip(data@);
+        assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
+        assert(s@.subrange(0, len as int) == seq![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]);
+    }
+    let mut data = my_vec![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
+    let len = msg.serialize(&val, &mut s, 0)?;
+    proof {
+        msg.theorem_parse_serialize_roundtrip(data@);
+        assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
+        assert(s@.subrange(0, len as int) == seq![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8]);
+    }
     Ok(())
 }
 
@@ -542,47 +542,47 @@ fn serialize_parse4() -> Result<(), Error> {
     let tag1 = Tag::new(U8, 1, 1);
     let tag2 = Tag::new(U8, 2, 2);
     let tag3 = Tag::new(U8, 3, 3);
-    // let msg1 = Preceded(
-    //     tag1,
-    //     Mapped {
-    //         inner: (U8, (U16Le, (Bytes(3), Tail))),
-    //         mapper: Msg1Mapper(std::marker::PhantomData),
-    //     },
-    // );
-    // let msg2 = Preceded(
-    //     tag2,
-    //     Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper(std::marker::PhantomData) },
-    // );
-    // let msg3 = Preceded(
-    //     tag3,
-    //     Mapped { inner: BytesN::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
-    // );
-    // let msg_inner = ord_choice!(msg1, msg2, msg3);
-    // let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
-    // let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
-    // let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
-    // let val = Msg4::M1(Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() });
-    // let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    // let len = msg.serialize(&val, &mut s1, 0)?;
-    // let s_ = slice_subrange(s1.as_slice(), 0, len);
-    // let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
-    // proof {
-    //     msg@.theorem_serialize_parse_roundtrip(val@);
-    //     assert(n == len);
-    //     // assert(val@ == val_@);
-    //     // assert(val_@ == SpecMsg4::M1(SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ }));
-    // }
-    // let val = Msg4::M3(Msg3 { a: bytes1.as_slice() });
-    // let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    // let len = msg.serialize(&val, &mut s1, 0)?;
-    // let s_ = slice_subrange(s1.as_slice(), 0, len);
-    // let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
-    // proof {
-    //     msg@.theorem_serialize_parse_roundtrip(val@);
-    //     assert(n == len);
-    //     assert(val@ == val_@);
-    //     assert(val_@ == SpecMsg4::M3(SpecMsg3 { a: bytes1@ }));
-    // }
+    let msg1 = Preceded(
+        tag1,
+        Mapped {
+            inner: (U8, (U16Le, (Bytes(3), Tail))),
+            mapper: Msg1Mapper(std::marker::PhantomData),
+        },
+    );
+    let msg2 = Preceded(
+        tag2,
+        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper(std::marker::PhantomData) },
+    );
+    let msg3 = Preceded(
+        tag3,
+        Mapped { inner: BytesN::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
+    );
+    let msg_inner = ord_choice!(msg1, msg2, msg3);
+    let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
+    let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
+    let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
+    let val = Msg4::M1(Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() });
+    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let len = msg.serialize(&val, &mut s1, 0)?;
+    let s_ = slice_subrange(s1.as_slice(), 0, len);
+    let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
+    proof {
+        msg@.theorem_serialize_parse_roundtrip(val@);
+        assert(n == len);
+        // assert(val@ == val_@);
+        // assert(val_@ == SpecMsg4::M1(SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ }));
+    }
+    let val = Msg4::M3(Msg3 { a: bytes1.as_slice() });
+    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    let len = msg.serialize(&val, &mut s1, 0)?;
+    let s_ = slice_subrange(s1.as_slice(), 0, len);
+    let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
+    proof {
+        msg@.theorem_serialize_parse_roundtrip(val@);
+        assert(n == len);
+        assert(val@ == val_@);
+        assert(val_@ == SpecMsg4::M3(SpecMsg3 { a: bytes1@ }));
+    }
     Ok(())
 }
 
