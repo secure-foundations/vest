@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use vest::properties::*;
 use vest::regular::bytes::*;
 use vest::regular::depend::*;
