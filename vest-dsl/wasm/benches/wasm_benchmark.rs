@@ -78,54 +78,55 @@ pub const POLYBENCH_C_TESTS_REWRITTEN: &[(&str, &[u8])] = &[
 
 fn wasmparser_parse(bytes: &[u8]) {
     let mut parser = wasmparser::Parser::new(0);
+    let mut instrs = vec![];
 
     for payload in parser.parse_all(bytes) {
         match payload.unwrap() {
             Payload::Version { .. } => {}
             Payload::TypeSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
             Payload::ImportSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::FunctionSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::TableSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::MemorySection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::GlobalSection(mut reader) => {
                 for c in reader {
                     for d in c.unwrap().init_expr.get_operators_reader() {
-                        d.unwrap();
+                        black_box(d.unwrap());
                     }
                 }
             }
 
             Payload::ExportSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::ElementSection(mut reader) => {
                 for c in reader {
-                    c.unwrap();
+                    black_box(c.unwrap());
                 }
             }
 
             Payload::CodeSectionEntry(body) => {
-                for c in body.get_locals_reader().unwrap() { c.unwrap(); }
-                for c in body.get_operators_reader().unwrap() { c.unwrap(); }
+                for c in body.get_locals_reader().unwrap() { black_box(c.unwrap()); }
+                for c in body.get_operators_reader().unwrap() { instrs.push(black_box(c.unwrap())); }
             }
 
             Payload::DataSection(mut reader) => {
-                for c in reader { c.unwrap(); }
+                for c in reader { black_box(c.unwrap()); }
             }
 
             Payload::CustomSection { .. } => {}
@@ -152,11 +153,11 @@ fn bench_parse_polybench_c_bulk(c: &mut Criterion) {
     //         wasmbin::Module::decode_from(*bytes).unwrap();
     //     }
     // ));
-    // group.bench_function("wasmparser", |b| b.iter(||
-    //     for (_, bytes) in POLYBENCH_C_TESTS {
-    //         wasmparser_parse(black_box(bytes));
-    //     }
-    // ));
+    group.bench_function("wasmparser", |b| b.iter(||
+        for (_, bytes) in POLYBENCH_C_TESTS {
+            wasmparser_parse(black_box(bytes));
+        }
+    ));
     group.finish();
 }
 
