@@ -357,49 +357,191 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
 
     fn parse(&self, ss: I) -> (res: PResult<Self::Type, ParseError>) {
         let s = ss.as_byte_slice();
-        let mut result: Self::Type = 0;
-        let mut shift = 0;
+        let mut acc: Self::Type = 0;
         let mut i = 0;
 
-        if s.len() == 0 {
-            return Err(ParseError::UnexpectedEndOfInput);
+        // Invariants before the loop
+        proof {
+            assert(s@.skip(0) == s@);
+            if self.spec_parse(s@).is_ok() {
+                let rest = self.spec_parse(s@).unwrap().1;
+                assert(0 | rest << 0 == rest) by (bit_vector);
+            }
         }
-        let ghost spec_res = self.spec_parse(s@);
-        proof { admit() };
 
         while i < s.len()
             invariant
-                s.len() != 0,
+                0 <= i <= s@.len(),
                 s@ == ss@,
-                shift == i * 7,
-                0 <= i < 10,
-                spec_res == self.spec_parse(s@),
-                // spec_res matches Ok((spec_res_n, spec_res_v)) ==> {
-                //     &&& i <= spec_res_n
-                //     &&& result ==
 
-                // }
-                self.spec_parse(s@.take(i as int)) matches Ok((j, spec_res)) ==> {
-                    &&& result == spec_res
-                    &&& j == i
-                }
-            decreases s.len() - i
+                // IH 1
+                self.spec_parse(s@) matches Ok((n, res)) ==> {
+                    &&& self.spec_parse(s@.skip(i as int)) matches Ok((n_rest, rest))
+                    &&& res == acc | rest << (i * 7)
+                    &&& n == i + n_rest
+                },
+
+                // IH 2
+                ({
+                    &&& self.spec_parse(s@.skip(i as int)) matches Ok((n, rest))
+                    &&& n <= s@.len() - i
+                    &&& 0 < rest <= n_bit_max_unsigned!(8 * uint_size!() - 7 * i)
+                }) ==> self.spec_parse(s@).is_ok(),
+
+                // IH 3
+                forall |j| 0 <= j < i ==>
+                    self.spec_parse(#[trigger] s@.skip(j)).is_err()
+                        ==> self.spec_parse(s@).is_err(),
+
+                // IH 4
+                forall |j| 0 <= j < i ==> {
+                    let s_j = #[trigger] s@[j];
+                    is_high_8_bit_set!(s_j)
+                },
+
+                acc <= n_bit_max_unsigned!(i * 7),
         {
-            proof {
-                self.lemma_spec_parse_length(s@);
-                self.lemma_spec_parse_length_bound(s@);
-            }
-            proof { admit() };
+            let s_i = s[i];
+            let v = take_low_7_bits!(s_i);
 
-            let byte = s[i];
-            result |= (take_low_7_bits!(byte) as Self::Type) << shift;
-            shift += 7;
-            i += 1;
-            if !is_high_8_bit_set!(byte) {
-                return Ok((i, result));
+            if i >= 9 {
+                // TODO: handle special case of v == 1
+                assume(false);
+                return Err(ParseError::Other("LEB128 overflow".to_string()));
             }
+
+            assert(
+                i < 9
+                ==> v == take_low_7_bits!(s_i)
+                ==> acc <= n_bit_max_unsigned!(i * 7)
+                ==> acc | (v as Self::Type) << (i * 7) <= n_bit_max_unsigned!((i + 1) * 7)
+            ) by (bit_vector);
+
+            let ghost prev_acc = acc;
+            acc = acc | (v as Self::Type) << (i * 7);
+
+            if !is_high_8_bit_set!(s_i) {
+                // Defined by defn of spec_parse
+                let ghost (n_rest, rest) = self.spec_parse(s@.skip(i as int)).unwrap();
+
+                if i != 0 && v == 0 {
+                    assert(rest == 0);
+                    assert(s@.skip(i - 1).drop_first() == s@.skip(i as int));
+                    assert(self.spec_parse(s@.skip(i - 1)).is_err());
+                    return Err(ParseError::Other("failing LEB128 canonicity".to_string()));
+                }
+
+                proof {
+                    if i != 0 {
+                        assert(n_rest <= s@.len() - i);
+                        assert(
+                            i < 9
+                            ==> i != 0 && v != 0
+                            ==> v == take_low_7_bits!(s_i)
+                            ==> 0 < v <= n_bit_max_unsigned!(8 * uint_size!() - 7 * i)
+                        ) by (bit_vector);
+
+                        // Defined by IH 2
+                        let (n, res) = self.spec_parse(s@).unwrap();
+                        assert(acc == res);
+                    }
+                }
+
+                return Ok((i + 1, acc));
+            }
+
+            proof {
+                assert(s@.skip(i as int).drop_first() == s@.skip(i + 1));
+
+                // Prove IH 1
+                if let Ok((_, res)) = self.spec_parse(s@) {
+                    // Defined by IH
+                    let rest1 = self.spec_parse(s@.skip(i as int)).unwrap().1;
+                    // Defined by rest1
+                    let rest2 = self.spec_parse(s@.skip(i as int).drop_first()).unwrap().1;
+
+                    assert(
+                        v == take_low_7_bits!(s_i)
+                        ==> acc == prev_acc | (v as Self::Type) << (i * 7)
+                        // By defn of spec_parse
+                        ==> rest1 == rest2 << 7 | v as Self::Type
+                        // By IH
+                        ==> res == prev_acc | rest1 << (i * 7)
+                        ==> res == acc | rest2 << ((i + 1) * 7)
+                    ) by (bit_vector);
+                }
+
+                // Prove IH 2
+                if let Ok((n2, rest2)) = self.spec_parse(s@.skip(i as int).drop_first()) {
+                    if n2 <= s@.len() - (i + 1) &&
+                        0 < rest2 <= n_bit_max_unsigned!(8 * uint_size!() - 7 * (i + 1)) {
+
+                        assert(n2 + 1 <= s@.len() - i);
+
+                        // The inductive bound is less than the bound in parse_spec
+                        assert(i < 9 ==>
+                            n_bit_max_unsigned!(8 * uint_size!() - 7 * (i + 1))
+                            <= n_bit_max_unsigned!(8 * uint_size!() - 7)) by (bit_vector);
+
+                        // Prove precondition of IH 2
+                        assert(
+                            i < 9
+                            ==> v == take_low_7_bits!(s_i)
+                            ==> 0 < rest2 <= n_bit_max_unsigned!(8 * uint_size!() - 7 * (i + 1))
+                            ==> 0 < (rest2 << 7 | v as Self::Type) <= n_bit_max_unsigned!(8 * uint_size!() - 7 * i)
+                        ) by (bit_vector);
+                    }
+                }
+            }
+
+            i += 1;
         }
+
         Err(ParseError::UnexpectedEndOfInput)
+
+        // let mut result: Self::Type = 0;
+        // let mut shift = 0;
+        // let mut i = 0;
+
+        // if s.len() == 0 {
+        //     return Err(ParseError::UnexpectedEndOfInput);
+        // }
+        // let ghost spec_res = self.spec_parse(s@);
+        // proof { admit() };
+
+        // while i < s.len()
+        //     invariant
+        //         s.len() != 0,
+        //         s@ == ss@,
+        //         shift == i * 7,
+        //         0 <= i < 10,
+        //         spec_res == self.spec_parse(s@),
+        //         // spec_res matches Ok((spec_res_n, spec_res_v)) ==> {
+        //         //     &&& i <= spec_res_n
+        //         //     &&& result ==
+
+        //         // }
+        //         self.spec_parse(s@.take(i as int)) matches Ok((j, spec_res)) ==> {
+        //             &&& result == spec_res
+        //             &&& j == i
+        //         }
+        //     decreases s.len() - i
+        // {
+        //     proof {
+        //         self.lemma_spec_parse_length(s@);
+        //         self.lemma_spec_parse_length_bound(s@);
+        //     }
+        //     proof { admit() };
+
+        //     let byte = s[i];
+        //     result |= (take_low_7_bits!(byte) as Self::Type) << shift;
+        //     shift += 7;
+        //     i += 1;
+        //     if !is_high_8_bit_set!(byte) {
+        //         return Ok((i, result));
+        //     }
+        // }
+        // Err(ParseError::UnexpectedEndOfInput)
     }
 
     open spec fn serialize_requires(&self) -> bool {
