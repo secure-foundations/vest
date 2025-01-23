@@ -11,3 +11,21 @@ vest = { path = "../vest" }
 
 [package.metadata.verus.ide]
 extra_args = "--crate-type=lib --expand-errors --import vest=../vest/vest.verusdata --extern vest=../vest/libvest.rlib --rlimit=20"
+
+# [[bench]]
+# name = "example-bench"
+# harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
