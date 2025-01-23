@@ -7,7 +7,7 @@ mod map;
 mod pair;
 mod opt;
 mod refserializer;
-mod repeat;
+pub mod repeat;
 // mod tlv;
 mod wireguard;
 use vest::properties::*;
