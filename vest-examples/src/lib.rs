@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 mod choice;
 mod depend;
 mod enums;
@@ -5,7 +6,7 @@ mod map;
 mod pair;
 mod opt;
 mod refserializer;
-// mod repeat;
+mod repeat;
 // mod tlv;
 mod wireguard;
 use vest::properties::*;

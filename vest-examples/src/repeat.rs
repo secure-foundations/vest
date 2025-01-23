@@ -48,7 +48,7 @@ impl SpecFrom<SpecOpaqueU16Inner> for SpecOpaqueU16 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpaqueU16<'a> {
     pub l: u16,
     pub data: &'a [u8],
@@ -115,6 +115,10 @@ impl<'a> Iso for OpaqueU16Mapper<'a> {
     type Src = OpaqueU16Inner<'a>;
 
     type Dst = OpaqueU16<'a>;
+
+    type RefSrc = OpaqueU16Inner<'a>;
+
+    type RefDst = OpaqueU16<'a>;
 }
 
 impl SpecPred for Predicate11955646336730306823 {
@@ -191,9 +195,18 @@ impl View for Predicate11955646336730306823 {
 
 impl Pred for Predicate11955646336730306823 {
     type Input = u16;
+    type InputRef = u16;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    fn p_apply(&self, i: &Self::Input) -> bool {
         let i = (*i);
+        if (i >= 1 && i <= 65535) {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn s_apply(&self, i: Self::InputRef) -> bool {
         if (i >= 1 && i <= 65535) {
             true
         } else {
@@ -215,6 +228,8 @@ impl<'a> View for OpaqueU16Combinator<'a> {
 impl<'a> Combinator<&'a [u8], Vec<u8>> for OpaqueU16Combinator<'a> {
     type Type = OpaqueU16<'a>;
 
+    type SType = OpaqueU16<'a>;
+
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
     }
@@ -235,7 +250,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for OpaqueU16Combinator<'a> {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
@@ -249,7 +264,8 @@ pub type OpaqueU16CombinatorAlias<'a> = Mapped<
         Vec<u8>,
         Refined<U16Le, Predicate11955646336730306823>,
         bytes::Variable,
-        OpaqueU16Cont<'a>,
+        OpaqueU16PCont<'a>,
+        OpaqueU16SCont<'a>,
     >,
     OpaqueU16Mapper<'a>,
 >;
@@ -279,7 +295,8 @@ pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator<'a>)
         Mapped {
             inner: Pair {
                 fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
-                snd: OpaqueU16Cont::new(),
+                p_snd: OpaqueU16PCont::new(),
+                s_snd: OpaqueU16SCont::new(),
                 spec_snd: Ghost(|deps| spec_opaque_u16_cont(deps)),
             },
             mapper: OpaqueU16Mapper::new(),
@@ -287,15 +304,22 @@ pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator<'a>)
     )
 }
 
-pub struct OpaqueU16Cont<'a>(PhantomData<&'a ()>);
+pub struct OpaqueU16PCont<'a>(PhantomData<&'a ()>);
+pub struct OpaqueU16SCont<'a>(PhantomData<&'a ()>);
 
-impl<'a> OpaqueU16Cont<'a> {
+impl<'a> OpaqueU16PCont<'a> {
     pub fn new() -> Self {
-        OpaqueU16Cont(PhantomData)
+        OpaqueU16PCont(PhantomData)
     }
 }
 
-impl<'a> Continuation<&u16> for OpaqueU16Cont<'a> {
+impl<'a> OpaqueU16SCont<'a> {
+    pub fn new() -> Self {
+        OpaqueU16SCont(PhantomData)
+    }
+}
+
+impl<'a> Continuation<&u16> for OpaqueU16PCont<'a> {
     type Output = bytes::Variable;
 
     open spec fn requires(&self, deps: &u16) -> bool {
@@ -309,6 +333,22 @@ impl<'a> Continuation<&u16> for OpaqueU16Cont<'a> {
     fn apply(&self, deps: &u16) -> Self::Output {
         let l = *deps;
         bytes::Variable(l.ex_into())
+    }
+}
+impl<'a> Continuation<u16> for OpaqueU16SCont<'a> {
+    type Output = Bytes;
+
+    open spec fn requires(&self, deps: u16) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u16, o: Self::Output) -> bool {
+        o@ == spec_opaque_u16_cont(deps@)
+    }
+
+    fn apply(&self, deps: u16) -> Self::Output {
+        let l = deps;
+        Bytes(l.ex_into())
     }
 }
 
@@ -374,6 +414,7 @@ impl<'a> View for ResponderIdCombinator<'a> {
 
 impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdCombinator<'a> {
     type Type = ResponderId<'a>;
+    type SType = ResponderId<'a>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
@@ -395,7 +436,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdCombinator<'a> {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
@@ -419,6 +460,7 @@ pub fn responder_id<'a>() -> (o: ResponderIdCombinator<'a>)
 pub type SpecResponderIdListList = Seq<SpecResponderId>;
 
 pub type ResponderIdListList<'a> = RepeatResult<ResponderId<'a>>;
+pub type ResponderIdListListRef<'a, 's> = &'s RepeatResult<ResponderId<'a>>;
 
 pub struct SpecResponderIdListListCombinator(SpecResponderIdListListCombinatorAlias);
 
@@ -464,11 +506,11 @@ impl SecureSpecCombinator for SpecResponderIdListListCombinator {
     }
 }
 
-pub type SpecResponderIdListListCombinatorAlias = AndThen<bytes::Variable, Repeat<SpecResponderIdCombinator>>;
+pub type SpecResponderIdListListCombinatorAlias = AndThen<bytes::Variable, Repeat<SpecResponderIdCombinator, 'static>>;
 
-pub struct ResponderIdListListCombinator<'a>(ResponderIdListListCombinatorAlias<'a>);
+pub struct ResponderIdListListCombinator<'a, 's>(ResponderIdListListCombinatorAlias<'a, 's>);
 
-impl<'a> View for ResponderIdListListCombinator<'a> {
+impl<'a, 's> View for ResponderIdListListCombinator<'a, 's> {
     type V = SpecResponderIdListListCombinator;
 
     closed spec fn view(&self) -> Self::V {
@@ -476,8 +518,11 @@ impl<'a> View for ResponderIdListListCombinator<'a> {
     }
 }
 
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator<'a> {
+impl<'a: 's, 's> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator<'a, 's>
+{
     type Type = ResponderIdListList<'a>;
+
+    type SType = ResponderIdListListRef<'a, 's>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
@@ -499,7 +544,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator<'a> {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
@@ -507,13 +552,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator<'a> {
     }
 }
 
-pub type ResponderIdListListCombinatorAlias<'a> = AndThen<bytes::Variable, Repeat<ResponderIdCombinator<'a>>>;
+pub type ResponderIdListListCombinatorAlias<'a, 's> = AndThen<bytes::Variable, Repeat<ResponderIdCombinator<'a>, 's>>;
 
 pub closed spec fn spec_responder_id_list_list(l: u16) -> SpecResponderIdListListCombinator {
-    SpecResponderIdListListCombinator(AndThen(bytes::Variable(l.spec_into()), Repeat(spec_responder_id())))
+    SpecResponderIdListListCombinator(AndThen(bytes::Variable(l.spec_into()), Repeat(spec_responder_id(), &())))
 }
 
-pub fn responder_id_list_list<'a>(l: u16) -> (o: ResponderIdListListCombinator<'a>)
+pub fn responder_id_list_list<'a, 's>(l: u16) -> (o: ResponderIdListListCombinator<'a, 's>)
     ensures
         o@ == spec_responder_id_list_list(l@),
 {
@@ -547,6 +592,7 @@ pub struct ResponderIdList<'a> {
 }
 
 pub type ResponderIdListInner<'a> = (u16, ResponderIdListList<'a>);
+pub type ResponderIdListInnerRef<'a, 's> = (u16, ResponderIdListListRef<'a, 's>);
 
 impl View for ResponderIdList<'_> {
     type V = SpecResponderIdList;
@@ -556,9 +602,9 @@ impl View for ResponderIdList<'_> {
     }
 }
 
-impl<'a> From<ResponderIdList<'a>> for ResponderIdListInner<'a> {
-    fn ex_from(m: ResponderIdList<'a>) -> ResponderIdListInner<'a> {
-        (m.l, m.list)
+impl<'a, 's> From<&'s ResponderIdList<'a>> for ResponderIdListInnerRef<'a, 's> {
+    fn ex_from(m: &'s ResponderIdList<'a>) -> ResponderIdListInnerRef<'a, 's> {
+        (m.l, &m.list)
     }
 }
 
@@ -569,19 +615,19 @@ impl<'a> From<ResponderIdListInner<'a>> for ResponderIdList<'a> {
     }
 }
 
-pub struct ResponderIdListMapper<'a>(PhantomData<&'a ()>);
+pub struct ResponderIdListMapper<'a, 's>(PhantomData<&'a ()>, PhantomData<&'s ()>);
 
-impl<'a> ResponderIdListMapper<'a> {
+impl<'a, 's> ResponderIdListMapper<'a, 's> {
     pub closed spec fn spec_new() -> Self {
-        ResponderIdListMapper(PhantomData)
+        ResponderIdListMapper(PhantomData, PhantomData)
     }
 
     pub fn new() -> Self {
-        ResponderIdListMapper(PhantomData)
+        ResponderIdListMapper(PhantomData, PhantomData)
     }
 }
 
-impl View for ResponderIdListMapper<'_> {
+impl<'a, 's> View for ResponderIdListMapper<'a, 's> {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -589,7 +635,7 @@ impl View for ResponderIdListMapper<'_> {
     }
 }
 
-impl SpecIso for ResponderIdListMapper<'_> {
+impl<'a, 's> SpecIso for ResponderIdListMapper<'a, 's> {
     type Src = SpecResponderIdListInner;
 
     type Dst = SpecResponderIdList;
@@ -603,10 +649,15 @@ impl SpecIsoProof for ResponderIdListMapper<'_> {
     }
 }
 
-impl<'a> Iso for ResponderIdListMapper<'a> {
+impl<'a: 's, 's> Iso for ResponderIdListMapper<'a, 's>
+{
     type Src = ResponderIdListInner<'a>;
 
     type Dst = ResponderIdList<'a>;
+
+    type RefDst = &'s ResponderIdList<'a>;
+
+    type RefSrc = ResponderIdListInnerRef<'a, 's>;
 }
 
 impl SpecPred for Predicate6556550293019859977 {
@@ -668,7 +719,7 @@ impl SecureSpecCombinator for SpecResponderIdListCombinator {
 
 pub type SpecResponderIdListCombinatorAlias = Mapped<
     SpecPair<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
-    ResponderIdListMapper<'static>,
+    ResponderIdListMapper<'static, 'static>,
 >;
 
 pub struct Predicate6556550293019859977;
@@ -683,9 +734,18 @@ impl View for Predicate6556550293019859977 {
 
 impl Pred for Predicate6556550293019859977 {
     type Input = u16;
+    type InputRef = u16;
 
-    fn apply(&self, i: &Self::Input) -> bool {
+    fn p_apply(&self, i: &Self::Input) -> bool {
         let i = (*i);
+        if (i >= 0 && i <= 65535) {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn s_apply(&self, i: Self::InputRef) -> bool {
         if (i >= 0 && i <= 65535) {
             true
         } else {
@@ -694,9 +754,9 @@ impl Pred for Predicate6556550293019859977 {
     }
 }
 
-pub struct ResponderIdListCombinator<'a>(ResponderIdListCombinatorAlias<'a>);
+pub struct ResponderIdListCombinator<'a: 's, 's>(ResponderIdListCombinatorAlias<'a, 's>);
 
-impl<'a> View for ResponderIdListCombinator<'a> {
+impl<'a, 's> View for ResponderIdListCombinator<'a, 's> {
     type V = SpecResponderIdListCombinator;
 
     closed spec fn view(&self) -> Self::V {
@@ -704,8 +764,11 @@ impl<'a> View for ResponderIdListCombinator<'a> {
     }
 }
 
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a> {
+impl<'a: 's, 's> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a, 's>
+{
     type Type = ResponderIdList<'a>;
+
+    type SType = &'s ResponderIdList<'a>;
 
     closed spec fn spec_length(&self) -> Option<usize> {
         <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0)
@@ -727,7 +790,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a> {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
         usize,
         SerializeError,
     >) {
@@ -735,15 +798,16 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a> {
     }
 }
 
-pub type ResponderIdListCombinatorAlias<'a> = Mapped<
+pub type ResponderIdListCombinatorAlias<'a, 's> = Mapped<
     Pair<
         &'a [u8],
         Vec<u8>,
         Refined<U16Le, Predicate6556550293019859977>,
-        ResponderIdListListCombinator<'a>,
-        ResponderIdListCont<'a>,
+        ResponderIdListListCombinator<'a, 's>,
+        ResponderIdListPCont<'a, 's>,
+        ResponderIdListSCont<'a, 's>,
     >,
-    ResponderIdListMapper<'a>,
+    ResponderIdListMapper<'a, 's>,
 >;
 
 pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
@@ -763,7 +827,7 @@ pub open spec fn spec_responder_id_list_cont(deps: u16) -> SpecResponderIdListLi
     spec_responder_id_list_list(l)
 }
 
-pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator<'a>)
+pub fn responder_id_list<'a, 's>() -> (o: ResponderIdListCombinator<'a, 's>)
     ensures
         o@ == spec_responder_id_list(),
 {
@@ -771,7 +835,8 @@ pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator<'a>)
         Mapped {
             inner: Pair {
                 fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
-                snd: ResponderIdListCont::new(),
+                p_snd: ResponderIdListPCont::new(),
+                s_snd: ResponderIdListSCont::new(),
                 spec_snd: Ghost(|deps| spec_responder_id_list_cont(deps)),
             },
             mapper: ResponderIdListMapper::new(),
@@ -779,16 +844,22 @@ pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator<'a>)
     )
 }
 
-pub struct ResponderIdListCont<'a>(PhantomData<&'a ()>);
+pub struct ResponderIdListPCont<'a, 's>(PhantomData<&'a ()>, PhantomData<&'s ()>);
+pub struct ResponderIdListSCont<'a, 's>(PhantomData<&'a ()>, PhantomData<&'s ()>);
 
-impl<'a> ResponderIdListCont<'a> {
+impl<'a, 's> ResponderIdListPCont<'a, 's> {
     pub fn new() -> Self {
-        ResponderIdListCont(PhantomData)
+        ResponderIdListPCont(PhantomData, PhantomData)
+    }
+}
+impl<'a, 's> ResponderIdListSCont<'a, 's> {
+    pub fn new() -> Self {
+        ResponderIdListSCont(PhantomData, PhantomData)
     }
 }
 
-impl<'a> Continuation<&u16> for ResponderIdListCont<'a> {
-    type Output = ResponderIdListListCombinator<'a>;
+impl<'a, 's> Continuation<&u16> for ResponderIdListPCont<'a, 's> {
+    type Output = ResponderIdListListCombinator<'a, 'a>;
 
     open spec fn requires(&self, deps: &u16) -> bool {
         true
@@ -800,6 +871,23 @@ impl<'a> Continuation<&u16> for ResponderIdListCont<'a> {
 
     fn apply(&self, deps: &u16) -> Self::Output {
         let l = *deps;
+        responder_id_list_list(l)
+    }
+}
+
+impl<'a, 's> Continuation<u16> for ResponderIdListSCont<'a, 's> {
+    type Output = ResponderIdListListCombinator<'a, 's>;
+
+    open spec fn requires(&self, deps: u16) -> bool {
+        true
+    }
+
+    open spec fn ensures(&self, deps: u16, o: Self::Output) -> bool {
+        o@ == spec_responder_id_list_list(deps@)
+    }
+
+    fn apply(&self, deps: u16) -> Self::Output {
+        let l = deps;
         responder_id_list_list(l)
     }
 }
