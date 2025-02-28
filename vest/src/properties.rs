@@ -874,3 +874,768 @@ impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C> where
 //     println!("consumed: {}", consumed);
 //     println!("parsed: {:?}", parsed);
 // }
+
+// Monomorphized approach to lazy combinators
+// Would work if Verus fix https://github.com/verus-lang/verus/issues/1487
+// use crate::regular::choice::Either;
+// use crate::regular::choice::OrdChoice;
+// use crate::regular::depend::Continuation;
+// use crate::regular::disjoint::DisjointFrom;
+// use crate::regular::refined::Refined;
+// use crate::regular::repeat::RepeatResult;
+// use crate::regular::star::Star;
+// use crate::regular::tag::TagPred;
+// use crate::regular::uints::U8;
+// use crate::regular::map::Iso;
+// use crate::regular::map::Mapped;
+// use crate::regular::map::SpecIso;
+//
+// verus! {
+//
+// trait LazyCombinator {
+//     type Comb: View;
+//
+//     spec fn spec_thunk(&self) -> Option<<Self::Comb as View>::V>;
+//
+//     fn thunk(&self) -> (o: Option<Self::Comb>) ensures o matches Some(c) ==> c@ == self.spec_thunk().unwrap();
+// }
+//
+// struct LazyInstrCom(usize);
+// struct LazyAuxBlockCom(usize);
+//
+// impl View for LazyInstrCom {
+//     type V = Self;
+//
+//     open spec fn view(&self) -> Self::V {
+//         *self
+//     }
+// }
+//
+// impl View for LazyAuxBlockCom {
+//     type V = Self;
+//
+//     open spec fn view(&self) -> Self::V {
+//         *self
+//     }
+// }
+//
+// impl LazyCombinator for LazyInstrCom {
+//     type Comb = InstrCom;
+//
+//     closed spec fn spec_thunk(&self) -> Option<<InstrCom as View>::V> {
+//         match self.0 {
+//             0usize => None,
+//             _ => Some(
+//                 SpecInstrCom(
+//                     Mapped {
+//                         inner: OrdChoice(
+//                             Refined { inner: U8, predicate: TagPred(INSTR_BASE) },
+//                             LazyAuxBlockCom((self.0 - 1) as usize),
+//                         ),
+//                         mapper: InstrIso,
+//                     },
+//                 )
+//             )
+//         }
+//     }
+//
+//     fn thunk(&self) -> Option<InstrCom> {
+//         match self.0 {
+//             0 => None,
+//             _ => Some(
+//                 InstrCom(
+//                     Mapped {
+//                         inner: OrdChoice(
+//                             Refined { inner: U8, predicate: TagPred(INSTR_BASE) },
+//                             LazyAuxBlockCom(self.0 - 1),
+//                         ),
+//                         mapper: InstrIso,
+//                     },
+//                 )
+//             )
+//         }
+//     }
+// }
+//
+// impl LazyCombinator for LazyAuxBlockCom {
+//     type Comb = AuxBlockCom;
+//
+//     closed spec fn spec_thunk(&self) -> Option<<AuxBlockCom as View>::V> {
+//         match self.0 {
+//             0usize => None,
+//             _ => Some(
+//                 SpecAuxBlockCom(
+//                     Mapped {
+//                         inner: (
+//                             Refined { inner: U8, predicate: TagPred(AUXBLOCK_BEGIN) },
+//                             (
+//                                 Star(LazyInstrCom((self.0 - 1) as usize)),
+//                                 Refined { inner: U8, predicate: TagPred(AUXBLOCK_END) },
+//                             ),
+//                         ),
+//                         mapper: AuxBlockIso,
+//                     },
+//                 )
+//             )
+//         }
+//     }
+//
+//     fn thunk(&self) -> Option<AuxBlockCom> {
+//         match self.0 {
+//             0 => None,
+//             _ => Some(
+//                 AuxBlockCom(
+//                     Mapped {
+//                         inner: (
+//                             Refined { inner: U8, predicate: TagPred(AUXBLOCK_BEGIN) },
+//                             (
+//                                 Star(LazyInstrCom(self.0 - 1)),
+//                                 Refined { inner: U8, predicate: TagPred(AUXBLOCK_END) },
+//                             ),
+//                         ),
+//                         mapper: AuxBlockIso,
+//                     },
+//                 )
+//             )
+//         }
+//     }
+// }
+//
+// impl SpecCombinator for LazyInstrCom {
+//     type Type = SpecInstrFmt;
+//
+//     closed spec fn spec_parse(&self, s: Seq<u8>) -> PResult<Self::Type, ()> {
+//         match self.spec_thunk() {
+//             Some(c) => c.spec_parse(s),
+//             None => Err(()),
+//         }
+//         // Self::spec_thunk().spec_parse(s)
+//     }
+//
+//     closed spec fn spec_serialize(&self, v: Self::Type) -> SResult<Seq<u8>, ()> {
+//         match self.spec_thunk() {
+//             Some(c) => c.spec_serialize(v),
+//             None => Err(()),
+//         }
+//         // Self::spec_thunk().spec_serialize(v)
+//     }
+// }
+//
+// impl SecureSpecCombinator for LazyInstrCom {
+//     closed spec fn is_prefix_secure() -> bool {
+//         <<Self as LazyCombinator>::Comb as View>::V::is_prefix_secure()
+//     }
+//
+//     closed spec fn is_productive(&self) -> bool {
+//         match self.spec_thunk() {
+//             Some(c) => c.is_productive(),
+//             None => false,
+//         }
+//     }
+//
+//     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+//         match self.spec_thunk() {
+//             Some(c) => c.theorem_serialize_parse_roundtrip(v),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.theorem_parse_serialize_roundtrip(buf),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_prefix_secure(s1, s2),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_parse_length(s),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_parse_productive(s),
+//             None => {}
+//         }
+//     }
+// }
+//
+// impl SpecCombinator for LazyAuxBlockCom {
+//     type Type = SpecAuxBlockFmt;
+//
+//     closed spec fn spec_parse(&self, s: Seq<u8>) -> PResult<Self::Type, ()> {
+//         match self.spec_thunk() {
+//             Some(c) => c.spec_parse(s),
+//             None => Err(()),
+//         }
+//     }
+//
+//     closed spec fn spec_serialize(&self, v: Self::Type) -> SResult<Seq<u8>, ()> {
+//         match self.spec_thunk() {
+//             Some(c) => c.spec_serialize(v),
+//             None => Err(()),
+//         }
+//     }
+// }
+//
+// impl SecureSpecCombinator for LazyAuxBlockCom {
+//     closed spec fn is_prefix_secure() -> bool {
+//         <<Self as LazyCombinator>::Comb as View>::V::is_prefix_secure()
+//     }
+//
+//     closed spec fn is_productive(&self) -> bool {
+//         match self.spec_thunk() {
+//             Some(c) => c.is_productive(),
+//             None => false,
+//         }
+//     }
+//
+//     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+//         match self.spec_thunk() {
+//             Some(c) => c.theorem_serialize_parse_roundtrip(v),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.theorem_parse_serialize_roundtrip(buf),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_prefix_secure(s1, s2),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_parse_length(s),
+//             None => {}
+//         }
+//     }
+//
+//     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.lemma_parse_productive(s),
+//             None => {}
+//         }
+//     }
+// }
+//
+// impl DisjointFrom<Refined<U8, TagPred<u8>>> for LazyAuxBlockCom {
+//     closed spec fn disjoint_from(&self, other: &Refined<U8, TagPred<u8>>) -> bool {
+//         match self.spec_thunk() {
+//             Some(c) => c.0.inner.0.disjoint_from(other),
+//             None => false,
+//         }
+//         // Self::spec_thunk().0.inner.0.disjoint_from(other)
+//         // (self.0)().0.inner.0.disjoint_from(other)
+//     }
+//
+//     proof fn parse_disjoint_on(&self, other: &Refined<U8, TagPred<u8>>, buf: Seq<u8>) {
+//         match self.spec_thunk() {
+//             Some(c) => c.0.inner.0.parse_disjoint_on(other, buf),
+//             None => {}
+//         }
+//         // Self::spec_thunk().0.inner.0.parse_disjoint_on(other, buf)
+//         // (self.0)().0.inner.0.parse_disjoint_on(other, buf)
+//     }
+// }
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for LazyInstrCom
+// {
+//     type Type = Box<InstrFmt>;
+//
+//     closed spec fn spec_length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     closed spec fn parse_requires(&self) -> bool {
+//         forall |c: <Self as LazyCombinator>::Comb| c.parse_requires()
+//     }
+//
+//     fn parse(&self, s: &[u8]) -> PResult<Self::Type, ParseError> {
+//         match self.thunk() {
+//             Some(c) => match c.parse(s) {
+//                 Ok((n, v)) => Ok((n, Box::new(v))),
+//                 Err(e) => Err(e),
+//             },
+//             None => Err(ParseError::Other("Ran out of fuels".to_string())),
+//         }
+//     }
+//
+//     closed spec fn serialize_requires(&self) -> bool {
+//         forall |c: <Self as LazyCombinator>::Comb| c.serialize_requires()
+//     }
+//
+//     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> SResult<usize, SerializeError> {
+//         match self.thunk() {
+//             Some(c) => c.serialize(*v, data, pos),
+//             None => Err(SerializeError::Other("Ran out of fuels".to_string())),
+//         }
+//     }
+// }
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for LazyAuxBlockCom
+// {
+//     type Type = Box<AuxBlockFmt>;
+//
+//     closed spec fn spec_length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     closed spec fn parse_requires(&self) -> bool {
+//         forall |c: <Self as LazyCombinator>::Comb| c.parse_requires()
+//     }
+//
+//     fn parse(&self, s: &[u8]) -> PResult<Self::Type, ParseError> {
+//         match self.thunk() {
+//             Some(c) => match c.parse(s) {
+//                 Ok((n, v)) => Ok((n, Box::new(v))),
+//                 Err(e) => Err(e),
+//             },
+//             None => Err(ParseError::Other("Ran out of fuels".to_string())),
+//         }
+//     }
+//
+//     closed spec fn serialize_requires(&self) -> bool {
+//         forall |c: <Self as LazyCombinator>::Comb| c.serialize_requires()
+//     }
+//
+//     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> SResult<usize, SerializeError> {
+//         match self.thunk() {
+//             Some(c) => c.serialize(*v, data, pos),
+//             None => Err(SerializeError::Other("Ran out of fuels".to_string())),
+//         }
+//     }
+// }
+//
+//
+// // impl<T: SpecCombinator> SpecCombinator for spec_fn() -> T {
+// //     type Type = T::Type;
+// //
+// //     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+// //         self().spec_parse(s)
+// //     }
+// //
+// //     open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+// //         self().spec_serialize(v)
+// //     }
+// // }
+// //
+// // impl<T: SecureSpecCombinator> SecureSpecCombinator for spec_fn() -> T {
+// //     open spec fn is_prefix_secure() -> bool {
+// //         T::is_prefix_secure()
+// //     }
+// //
+// //     open spec fn is_productive(&self) -> bool {
+// //         self().is_productive()
+// //     }
+// //
+// //     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+// //         self().theorem_serialize_parse_roundtrip(v)
+// //     }
+// //
+// //     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+// //         self().theorem_parse_serialize_roundtrip(buf)
+// //     }
+// //
+// //     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+// //         self().lemma_prefix_secure(s1, s2)
+// //     }
+// //
+// //     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+// //         self().lemma_parse_length(s)
+// //     }
+// //
+// //     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+// //         self().lemma_parse_productive(s)
+// //     }
+// // }
+//
+//
+// pub const INSTR_BASE: u8 = 0;
+//
+// pub const AUXBLOCK_BEGIN: u8 = 1;
+//
+// pub const AUXBLOCK_END: u8 = 11;
+//
+// ghost enum SpecInstrFmt {
+//     Base(u8),
+//     Block(SpecAuxBlockFmt),
+// }
+//
+// type SpecInstrFmtAlias = Either<u8, SpecAuxBlockFmt>;
+//
+// ghost struct SpecAuxBlockFmt {
+//     begin: u8,
+//     instrs: Seq<SpecInstrFmt>,
+//     end: u8,
+// }
+//
+// type SpecAuxBlockFmtAlias = (u8, (Seq<SpecInstrFmt>, u8));
+//
+// #[derive(Debug)]
+// enum InstrFmt {
+//     Base(u8),
+//     Block(Box<AuxBlockFmt>),
+// }
+//
+// type InstrFmtAlias = Either<u8, Box<AuxBlockFmt>>;
+//
+// #[derive(Debug)]
+// struct AuxBlockFmt {
+//     begin: u8,
+//     instrs: RepeatResult<Box<InstrFmt>>,
+//     end: u8,
+// }
+//
+// type AuxBlockFmtAlias = (u8, (RepeatResult<Box<InstrFmt>>, u8));
+//
+// impl View for InstrFmt {
+//     type V = SpecInstrFmt;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         match self {
+//             InstrFmt::Base(v) => SpecInstrFmt::Base(*v),
+//             InstrFmt::Block(v) => SpecInstrFmt::Block(v@),
+//         }
+//     }
+// }
+//
+// impl View for AuxBlockFmt {
+//     type V = SpecAuxBlockFmt;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         SpecAuxBlockFmt { begin: self.begin, instrs: self.instrs.view(), end: self.end }
+//     }
+// }
+//
+// impl SpecFrom<SpecInstrFmtAlias> for SpecInstrFmt {
+//     closed spec fn spec_from(v: SpecInstrFmtAlias) -> Self {
+//         match v {
+//             Either::Left(v) => SpecInstrFmt::Base(v),
+//             Either::Right(v) => SpecInstrFmt::Block(v),
+//         }
+//     }
+// }
+//
+// impl SpecFrom<SpecInstrFmt> for SpecInstrFmtAlias {
+//     closed spec fn spec_from(v: SpecInstrFmt) -> Self {
+//         match v {
+//             SpecInstrFmt::Base(v) => Either::Left(v),
+//             SpecInstrFmt::Block(v) => Either::Right(v),
+//         }
+//     }
+// }
+//
+// impl SpecFrom<SpecAuxBlockFmtAlias> for SpecAuxBlockFmt {
+//     closed spec fn spec_from(v: SpecAuxBlockFmtAlias) -> Self {
+//         let (begin, (instrs, end)) = v;
+//         SpecAuxBlockFmt { begin, instrs, end }
+//     }
+// }
+//
+// impl SpecFrom<SpecAuxBlockFmt> for SpecAuxBlockFmtAlias {
+//     closed spec fn spec_from(v: SpecAuxBlockFmt) -> Self {
+//         (v.begin, (v.instrs, v.end))
+//     }
+// }
+//
+// impl From<InstrFmtAlias> for InstrFmt {
+//     fn ex_from(v: InstrFmtAlias) -> Self {
+//         match v {
+//             Either::Left(v) => InstrFmt::Base(v),
+//             Either::Right(v) => InstrFmt::Block(v),
+//         }
+//     }
+// }
+//
+// impl From<InstrFmt> for InstrFmtAlias {
+//     fn ex_from(v: InstrFmt) -> Self {
+//         match v {
+//             InstrFmt::Base(v) => Either::Left(v),
+//             InstrFmt::Block(v) => Either::Right(v),
+//         }
+//     }
+// }
+//
+// impl From<AuxBlockFmtAlias> for AuxBlockFmt {
+//     fn ex_from(v: AuxBlockFmtAlias) -> Self {
+//         let (begin, (instrs, end)) = v;
+//         AuxBlockFmt { begin, instrs, end }
+//     }
+// }
+//
+// impl From<AuxBlockFmt> for AuxBlockFmtAlias {
+//     fn ex_from(v: AuxBlockFmt) -> Self {
+//         (v.begin, (v.instrs, v.end))
+//     }
+// }
+//
+// struct InstrIso;
+//
+// impl View for InstrIso {
+//     type V = Self;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         InstrIso
+//     }
+// }
+//
+// impl SpecIso for InstrIso {
+//     type Src = SpecInstrFmtAlias;
+//
+//     type Dst = SpecInstrFmt;
+//
+//     proof fn spec_iso(s: Self::Src) {
+//     }
+//
+//     proof fn spec_iso_rev(s: Self::Dst) {
+//     }
+// }
+//
+// impl Iso for InstrIso {
+//     type Src = InstrFmtAlias;
+//
+//     type Dst = InstrFmt;
+// }
+//
+// struct AuxBlockIso;
+//
+// impl View for AuxBlockIso {
+//     type V = Self;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         AuxBlockIso
+//     }
+// }
+//
+// impl SpecIso for AuxBlockIso {
+//     type Src = SpecAuxBlockFmtAlias;
+//
+//     type Dst = SpecAuxBlockFmt;
+//
+//     proof fn spec_iso(s: Self::Src) {
+//     }
+//
+//     proof fn spec_iso_rev(s: Self::Dst) {
+//     }
+// }
+//
+// impl Iso for AuxBlockIso {
+//     type Src = AuxBlockFmtAlias;
+//
+//     type Dst = AuxBlockFmt;
+// }
+//
+// struct InstrCom(pub Mapped<OrdChoice<Refined<U8, TagPred<u8>>, LazyAuxBlockCom>, InstrIso>);
+//
+// struct AuxBlockCom(
+//     pub Mapped<
+//         (Refined<U8, TagPred<u8>>, (Star<LazyInstrCom>, Refined<U8, TagPred<u8>>)),
+//         AuxBlockIso,
+//     >,
+// );
+//
+// struct SpecInstrCom(pub SpecInstrComInner);
+//
+// struct SpecAuxBlockCom(pub SpecAuxBlockComInner);
+//
+// type SpecInstrComInner = Mapped<
+//     OrdChoice<Refined<U8, TagPred<u8>>, LazyAuxBlockCom>,
+//     InstrIso,
+// >;
+//
+// type SpecAuxBlockComInner = Mapped<
+//     (Refined<U8, TagPred<u8>>, (Star<LazyInstrCom>, Refined<U8, TagPred<u8>>)),
+//     AuxBlockIso,
+// >;
+//
+// impl View for InstrCom {
+//     type V = SpecInstrCom;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         SpecInstrCom(self.0@)
+//     }
+// }
+//
+// impl View for AuxBlockCom {
+//     type V = SpecAuxBlockCom;
+//
+//     closed spec fn view(&self) -> Self::V {
+//         SpecAuxBlockCom(self.0@)
+//     }
+// }
+//
+// impl SpecCombinator for SpecInstrCom {
+//     type Type = SpecInstrFmt;
+//
+//     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+//         self.0.spec_parse(s)
+//     }
+//
+//     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+//         self.0.spec_serialize(v)
+//     }
+// }
+//
+// impl SecureSpecCombinator for SpecInstrCom {
+//     open spec fn is_prefix_secure() -> bool {
+//         SpecInstrComInner::is_prefix_secure()
+//     }
+//
+//     open spec fn is_productive(&self) -> bool {
+//         self.0.is_productive()
+//     }
+//
+//     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+//         // self.0.theorem_serialize_parse_roundtrip(v.0)
+//         self.0.theorem_serialize_parse_roundtrip(v)
+//     }
+//
+//     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+//         self.0.theorem_parse_serialize_roundtrip(buf)
+//     }
+//
+//     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+//         self.0.lemma_prefix_secure(s1, s2)
+//     }
+//
+//     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+//         self.0.lemma_parse_length(s)
+//     }
+//
+//     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+//         self.0.lemma_parse_productive(s)
+//     }
+// }
+//
+// impl SpecCombinator for SpecAuxBlockCom {
+//     type Type = SpecAuxBlockFmt;
+//
+//     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+//         self.0.spec_parse(s)
+//     }
+//
+//     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+//         self.0.spec_serialize(v)
+//     }
+// }
+//
+// impl SecureSpecCombinator for SpecAuxBlockCom {
+//     open spec fn is_prefix_secure() -> bool {
+//         SpecAuxBlockComInner::is_prefix_secure()
+//     }
+//
+//     open spec fn is_productive(&self) -> bool {
+//         self.0.is_productive()
+//     }
+//
+//     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+//         self.0.theorem_serialize_parse_roundtrip(v)
+//
+//     }
+//
+//     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+//         self.0.theorem_parse_serialize_roundtrip(buf)
+//     }
+//
+//     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+//         self.0.lemma_prefix_secure(s1, s2)
+//     }
+//
+//     proof fn lemma_parse_length(&self, s: Seq<u8>) {
+//         self.0.lemma_parse_length(s)
+//     }
+//
+//     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+//         self.0.lemma_parse_productive(s)
+//     }
+// }
+//
+// // impl DisjointFrom<Refined<U8, TagPred<u8>>> for SpecAuxBlockCont {
+// //     closed spec fn disjoint_from(&self, other: &Refined<U8, TagPred<u8>>) -> bool {
+// //         (self.0)().0.inner.0.disjoint_from(other)
+// //     }
+// //
+// //     proof fn parse_disjoint_on(&self, other: &Refined<U8, TagPred<u8>>, buf: Seq<u8>) {
+// //         (self.0)().0.inner.0.parse_disjoint_on(other, buf)
+// //     }
+// // }
+//
+// // impl DisjointFrom<Refined<U8, TagPred<u8>>> for SpecInstrCom {}
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for InstrCom {
+//     type Type = InstrFmt;
+//
+//     open spec fn spec_length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::parse(
+//             &self.0,
+//             s,
+//         )
+//     }
+//
+//     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> Result<
+//         usize,
+//         SerializeError,
+//     > {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+//     }
+// }
+//
+// impl<'a> Combinator<&'a [u8], Vec<u8>> for AuxBlockCom {
+//     type Type = AuxBlockFmt;
+//
+//     open spec fn spec_length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn length(&self) -> Option<usize> {
+//         None
+//     }
+//
+//     fn parse(&self, s: &'a [u8]) -> Result<(usize, Self::Type), ParseError> {
+//         <_ as Combinator<&[u8], Vec<u8>>>::parse(
+//             &self.0,
+//             s,
+//         )
+//     }
+//
+//     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> Result<
+//         usize,
+//         SerializeError,
+//     > {
+//         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+//     }
+// }
+//
+// } // verus!
