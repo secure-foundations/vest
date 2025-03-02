@@ -1,12 +1,9 @@
 use crate::my_vec;
 use vest::properties::*;
-use vest::regular::bytes::Bytes;
-use vest::regular::bytes_n::BytesN;
-use vest::regular::choice::Either;
-use vest::regular::choice::*;
-use vest::regular::cond::Cond;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::modifier::Cond;
 use vest::regular::tag::*;
-use vest::regular::tail::Tail;
 use vest::regular::uints::*;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
@@ -38,10 +35,10 @@ exec fn choice_parse_serialize() -> Result<(), Error> {
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);
     let c4 = Tag::new(U8, 4);
-    let g1 = (Bytes(4), Tail);
+    let g1 = (bytes::Variable(4), bytes::Tail);
     let g2 = (U32Le, (U16Le, U8));
     let g3 = (Tag::new(U8, 10), U32Le);
-    let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
+    let g4 = (bytes::Fixed::<12>, (U16Le, (U8, U8)));
     let ord_choice1 =
         ord_choice!(
         (c1, g1),
@@ -111,10 +108,10 @@ exec fn choice_serialize_parse() -> Result<(), Error> {
     let c2 = Tag::new(U8, 2);
     let c3 = Tag::new(U8, 3);
     let c4 = Tag::new(U8, 4);
-    let g1 = (Bytes(4), Tail);
+    let g1 = (bytes::Variable(4), bytes::Tail);
     let g2 = (U32Le, (U16Le, U8));
     let g3 = (Tag::new(U8, 10), U32Le);
-    let g4 = (BytesN::<12>, (U16Le, (U8, U8)));
+    let g4 = (bytes::Fixed::<12>, (U16Le, (U8, U8)));
     let ord_choice1 =
         ord_choice!(
         (c1, g1),
