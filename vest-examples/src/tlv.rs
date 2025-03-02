@@ -89,7 +89,9 @@ impl SpecIso for MsgDMapper<'_> {
     type Src = SpecMsgDInner;
 
     type Dst = SpecMsgD;
+}
 
+impl SpecIsoProof for MsgDMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -173,7 +175,9 @@ impl SpecIso for MsgBMapper<'_> {
     type Src = SpecMsgBInner;
 
     type Dst = SpecMsgB;
+}
 
+impl SpecIsoProof for MsgBMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -294,7 +298,9 @@ impl SpecIso for MsgCF4Mapper<'_> {
     type Src = SpecMsgCF4Inner;
 
     type Dst = SpecMsgCF4;
+}
 
+impl SpecIsoProof for MsgCF4Mapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -382,7 +388,9 @@ impl SpecIso for MsgCMapper<'_> {
     type Src = SpecMsgCInner;
 
     type Dst = SpecMsgC;
+}
 
+impl SpecIsoProof for MsgCMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -468,7 +476,9 @@ impl SpecIso for MsgAMapper<'_> {
     type Src = SpecMsgAInner;
 
     type Dst = SpecMsgA;
+}
 
+impl SpecIsoProof for MsgAMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
