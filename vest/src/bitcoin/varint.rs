@@ -5,7 +5,7 @@ use crate::{
         choice::*,
         cond::Cond,
         depend::{Continuation, Depend, SpecDepend},
-        map::{SpecTryFromInto, TryFromInto, TryMap},
+        map::{SpecPartialIso, SpecPartialIsoProof, PartialIso, TryMap},
         refined::{Pred, Refined, SpecPred},
         uints::*,
     },
@@ -344,11 +344,13 @@ impl View for VarIntMapper<'_> {
     }
 }
 
-impl SpecTryFromInto for VarIntMapper<'_> {
+impl SpecPartialIso for VarIntMapper<'_> {
     type Src = (u8, Either<Seq<u8>, Either<u16, Either<u32, u64>>>);
 
     type Dst = VarInt;
+}
 
+impl SpecPartialIsoProof for VarIntMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -356,7 +358,7 @@ impl SpecTryFromInto for VarIntMapper<'_> {
     }
 }
 
-impl<'a> TryFromInto for VarIntMapper<'a> {
+impl<'a> PartialIso for VarIntMapper<'a> {
     type Src = (u8, Either<&'a [u8], Either<u16, Either<u32, u64>>>);
 
     type Dst = VarInt;

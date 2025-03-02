@@ -4,7 +4,7 @@ use super::choice::OrdChoice;
 use super::cond::Cond;
 use super::depend::SpecDepend;
 use super::fail::Fail;
-use super::map::{Mapped, SpecIso, SpecTryFromInto, TryMap};
+use super::map::{Mapped, SpecIso, SpecPartialIso, SpecPartialIsoFn, TryMap};
 use super::preceded::Preceded;
 use super::refined::{Refined, SpecPred};
 use super::tag::{Tag, TagPred};
@@ -135,8 +135,8 @@ impl<U1, U2, M1, M2> DisjointFrom<Mapped<U2, M2>> for Mapped<U1, M1> where
 // `TryMap<U, M2>`
 impl<U, M1, M2> DisjointFrom<TryMap<U, M2>> for TryMap<U, M1> where
     U: SpecCombinator,
-    M1: SpecTryFromInto<Src = U::Type>,
-    M2: SpecTryFromInto<Src = U::Type>,
+    M1: SpecPartialIsoFn<Src = U::Type>,
+    M2: SpecPartialIsoFn<Src = U::Type>,
     U::Type: SpecTryFrom<M1::Dst>,
     U::Type: SpecTryFrom<M2::Dst>,
     M1::Dst: SpecTryFrom<U::Type>,
@@ -145,8 +145,8 @@ impl<U, M1, M2> DisjointFrom<TryMap<U, M2>> for TryMap<U, M1> where
     open spec fn disjoint_from(&self, other: &TryMap<U, M2>) -> bool {
         self.inner == other.inner && forall|t|
             {
-                <M1 as SpecTryFromInto>::spec_apply(t) is Ok
-                    ==> <M2 as SpecTryFromInto>::spec_apply(t) is Err
+                <M1 as SpecPartialIsoFn>::spec_apply(t) is Ok
+                    ==> <M2 as SpecPartialIsoFn>::spec_apply(t) is Err
             }
     }
 
