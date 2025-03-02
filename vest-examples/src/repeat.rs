@@ -107,7 +107,9 @@ impl SpecIso for OpaqueU16Mapper<'_> {
     type Src = SpecOpaqueU16Inner;
 
     type Dst = SpecOpaqueU16;
+}
 
+impl SpecIsoProof for OpaqueU16Mapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -597,7 +599,9 @@ impl SpecIso for ResponderIdListMapper<'_> {
     type Src = SpecResponderIdListInner;
 
     type Dst = SpecResponderIdList;
+}
 
+impl SpecIsoProof for ResponderIdListMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
     }
 
