@@ -21,35 +21,39 @@ use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::preceded::*;
 use vest::regular::terminated::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::leb128::*;
 verus!{
 
-pub enum SpecARegularChoose {
+pub enum SpecAChooseWithDefault {
     A(u8),
     B(u16),
     C(u32),
+    Unrecognized(Seq<u8>),
 }
 
-pub type SpecARegularChooseInner = Either<u8, Either<u16, u32>>;
+pub type SpecAChooseWithDefaultInner = Either<u8, Either<u16, Either<u32, Seq<u8>>>>;
 
 
 
-impl SpecFrom<SpecARegularChoose> for SpecARegularChooseInner {
-    open spec fn spec_from(m: SpecARegularChoose) -> SpecARegularChooseInner {
+impl SpecFrom<SpecAChooseWithDefault> for SpecAChooseWithDefaultInner {
+    open spec fn spec_from(m: SpecAChooseWithDefault) -> SpecAChooseWithDefaultInner {
         match m {
-            SpecARegularChoose::A(m) => Either::Left(m),
-            SpecARegularChoose::B(m) => Either::Right(Either::Left(m)),
-            SpecARegularChoose::C(m) => Either::Right(Either::Right(m)),
+            SpecAChooseWithDefault::A(m) => Either::Left(m),
+            SpecAChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
+            SpecAChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecAChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
         }
     }
 
 }
 
-impl SpecFrom<SpecARegularChooseInner> for SpecARegularChoose {
-    open spec fn spec_from(m: SpecARegularChooseInner) -> SpecARegularChoose {
+impl SpecFrom<SpecAChooseWithDefaultInner> for SpecAChooseWithDefault {
+    open spec fn spec_from(m: SpecAChooseWithDefaultInner) -> SpecAChooseWithDefault {
         match m {
-            Either::Left(m) => SpecARegularChoose::A(m),
-            Either::Right(Either::Left(m)) => SpecARegularChoose::B(m),
-            Either::Right(Either::Right(m)) => SpecARegularChoose::C(m),
+            Either::Left(m) => SpecAChooseWithDefault::A(m),
+            Either::Right(Either::Left(m)) => SpecAChooseWithDefault::B(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecAChooseWithDefault::C(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecAChooseWithDefault::Unrecognized(m),
         }
     }
 
@@ -58,68 +62,74 @@ impl SpecFrom<SpecARegularChooseInner> for SpecARegularChoose {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ARegularChoose {
+pub enum AChooseWithDefault<'a> {
     A(u8),
     B(u16),
     C(u32),
+    Unrecognized(&'a [u8]),
 }
 
-pub type ARegularChooseInner = Either<u8, Either<u16, u32>>;
+pub type AChooseWithDefaultInner<'a> = Either<u8, Either<u16, Either<u32, &'a [u8]>>>;
 
 
-impl View for ARegularChoose {
-    type V = SpecARegularChoose;
+impl<'a> View for AChooseWithDefault<'a> {
+    type V = SpecAChooseWithDefault;
     open spec fn view(&self) -> Self::V {
         match self {
-            ARegularChoose::A(m) => SpecARegularChoose::A(m@),
-            ARegularChoose::B(m) => SpecARegularChoose::B(m@),
-            ARegularChoose::C(m) => SpecARegularChoose::C(m@),
+            AChooseWithDefault::A(m) => SpecAChooseWithDefault::A(m@),
+            AChooseWithDefault::B(m) => SpecAChooseWithDefault::B(m@),
+            AChooseWithDefault::C(m) => SpecAChooseWithDefault::C(m@),
+            AChooseWithDefault::Unrecognized(m) => SpecAChooseWithDefault::Unrecognized(m@),
         }
     }
 }
 
 
-impl From<ARegularChoose> for ARegularChooseInner {
-    fn ex_from(m: ARegularChoose) -> ARegularChooseInner {
+impl<'a> From<AChooseWithDefault<'a>> for AChooseWithDefaultInner<'a> {
+    fn ex_from(m: AChooseWithDefault<'a>) -> AChooseWithDefaultInner<'a> {
         match m {
-            ARegularChoose::A(m) => Either::Left(m),
-            ARegularChoose::B(m) => Either::Right(Either::Left(m)),
-            ARegularChoose::C(m) => Either::Right(Either::Right(m)),
+            AChooseWithDefault::A(m) => Either::Left(m),
+            AChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
+            AChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
+            AChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
         }
     }
 
 }
 
-impl From<ARegularChooseInner> for ARegularChoose {
-    fn ex_from(m: ARegularChooseInner) -> ARegularChoose {
+impl<'a> From<AChooseWithDefaultInner<'a>> for AChooseWithDefault<'a> {
+    fn ex_from(m: AChooseWithDefaultInner<'a>) -> AChooseWithDefault<'a> {
         match m {
-            Either::Left(m) => ARegularChoose::A(m),
-            Either::Right(Either::Left(m)) => ARegularChoose::B(m),
-            Either::Right(Either::Right(m)) => ARegularChoose::C(m),
+            Either::Left(m) => AChooseWithDefault::A(m),
+            Either::Right(Either::Left(m)) => AChooseWithDefault::B(m),
+            Either::Right(Either::Right(Either::Left(m))) => AChooseWithDefault::C(m),
+            Either::Right(Either::Right(Either::Right(m))) => AChooseWithDefault::Unrecognized(m),
         }
     }
     
 }
 
 
-pub struct ARegularChooseMapper;
-impl ARegularChooseMapper {
+pub struct AChooseWithDefaultMapper<'a>(PhantomData<&'a ()>);
+impl<'a> AChooseWithDefaultMapper<'a> {
     pub closed spec fn spec_new() -> Self {
-        ARegularChooseMapper
+        AChooseWithDefaultMapper(PhantomData)
     }
     pub fn new() -> Self {
-        ARegularChooseMapper
+        AChooseWithDefaultMapper(PhantomData)
     }
 }
-impl View for ARegularChooseMapper {
+impl View for AChooseWithDefaultMapper<'_> {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ARegularChooseMapper {
-    type Src = SpecARegularChooseInner;
-    type Dst = SpecARegularChoose;
+impl SpecIso for AChooseWithDefaultMapper<'_> {
+    type Src = SpecAChooseWithDefaultInner;
+    type Dst = SpecAChooseWithDefault;
+}
+impl SpecIsoProof for AChooseWithDefaultMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -127,24 +137,24 @@ impl SpecIso for ARegularChooseMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl Iso for ARegularChooseMapper {
-    type Src = ARegularChooseInner;
-    type Dst = ARegularChoose;
+impl<'a> Iso for AChooseWithDefaultMapper<'a> {
+    type Src = AChooseWithDefaultInner<'a>;
+    type Dst = AChooseWithDefault<'a>;
 }
 
 
-pub struct SpecARegularChooseCombinator(SpecARegularChooseCombinatorAlias);
+pub struct SpecAChooseWithDefaultCombinator(SpecAChooseWithDefaultCombinatorAlias);
 
-impl SpecCombinator for SpecARegularChooseCombinator {
-    type Type = SpecARegularChoose;
+impl SpecCombinator for SpecAChooseWithDefaultCombinator {
+    type Type = SpecAChooseWithDefault;
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     { self.0.spec_parse(s) }
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecARegularChooseCombinator {
+impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecARegularChooseCombinatorAlias::is_prefix_secure() }
+    { SpecAChooseWithDefaultCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -158,16 +168,16 @@ impl SecureSpecCombinator for SpecARegularChooseCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecARegularChooseCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>, ARegularChooseMapper>;
+pub type SpecAChooseWithDefaultCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, OrdChoice<Cond<U32Le>, Cond<Tail>>>>, AChooseWithDefaultMapper<'static>>;
 
-pub struct ARegularChooseCombinator(ARegularChooseCombinatorAlias);
+pub struct AChooseWithDefaultCombinator<'a>(AChooseWithDefaultCombinatorAlias<'a>);
 
-impl View for ARegularChooseCombinator {
-    type V = SpecARegularChooseCombinator;
-    closed spec fn view(&self) -> Self::V { SpecARegularChooseCombinator(self.0@) }
+impl<'a> View for AChooseWithDefaultCombinator<'a> {
+    type V = SpecAChooseWithDefaultCombinator;
+    closed spec fn view(&self) -> Self::V { SpecAChooseWithDefaultCombinator(self.0@) }
 }
-impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
-    type Type = ARegularChoose;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for AChooseWithDefaultCombinator<'a> {
+    type Type = AChooseWithDefault<'a>;
     closed spec fn spec_length(&self) -> Option<usize> 
     { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
     fn length(&self) -> Option<usize> 
@@ -181,21 +191,19 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ARegularChooseCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>, ARegularChooseMapper>;
+pub type AChooseWithDefaultCombinatorAlias<'a> = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, OrdChoice<Cond<U32Le>, Cond<Tail>>>>, AChooseWithDefaultMapper<'a>>;
 
 
-pub closed spec fn spec_a_regular_choose(e: SpecAClosedEnum) -> SpecARegularChooseCombinator {
-    SpecARegularChooseCombinator(Mapped { inner: OrdChoice(Cond { cond: e == AClosedEnum::A, inner: U8 }, OrdChoice(Cond { cond: e == AClosedEnum::B, inner: U16Le }, Cond { cond: e == AClosedEnum::C, inner: U32Le })), mapper: ARegularChooseMapper::spec_new() })
+pub closed spec fn spec_a_choose_with_default(e: SpecAnOpenEnum) -> SpecAChooseWithDefaultCombinator {
+    SpecAChooseWithDefaultCombinator(Mapped { inner: OrdChoice(Cond { cond: e == 0, inner: U8 }, OrdChoice(Cond { cond: e == 1, inner: U16Le }, OrdChoice(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: Tail }))), mapper: AChooseWithDefaultMapper::spec_new() })
 }
 
-                
-pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
-    ensures o@ == spec_a_regular_choose(e@),
+pub fn a_choose_with_default<'a>(e: AnOpenEnum) -> (o: AChooseWithDefaultCombinator<'a>)
+    ensures o@ == spec_a_choose_with_default(e@),
 {
-    ARegularChooseCombinator(Mapped { inner: OrdChoice::new(Cond { cond: e == AClosedEnum::A, inner: U8 }, OrdChoice::new(Cond { cond: e == AClosedEnum::B, inner: U16Le }, Cond { cond: e == AClosedEnum::C, inner: U32Le })), mapper: ARegularChooseMapper::new() })
+    AChooseWithDefaultCombinator(Mapped { inner: OrdChoice::new(Cond { cond: e == 0, inner: U8 }, OrdChoice::new(Cond { cond: e == 1, inner: U16Le }, OrdChoice::new(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: Tail }))), mapper: AChooseWithDefaultMapper::new() })
 }
 
-                
 
 #[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AClosedEnum {
@@ -275,10 +283,12 @@ impl View for AClosedEnumMapper {
     }
 }
 
-impl SpecTryFromInto for AClosedEnumMapper {
+impl SpecPartialIso for AClosedEnumMapper {
     type Src = AClosedEnumInner;
     type Dst = AClosedEnum;
+}
 
+impl SpecPartialIsoProof for AClosedEnumMapper {
     proof fn spec_iso(s: Self::Src) { 
         assert(
             Self::spec_apply(s) matches Ok(v) ==> {
@@ -296,7 +306,7 @@ impl SpecTryFromInto for AClosedEnumMapper {
     }
 }
 
-impl TryFromInto for AClosedEnumMapper {
+impl PartialIso for AClosedEnumMapper {
     type Src = AClosedEnumInner;
     type Dst = AClosedEnum;
 }
@@ -463,6 +473,8 @@ impl View for ANonDependentChooseMapper {
 impl SpecIso for ANonDependentChooseMapper {
     type Src = SpecANonDependentChooseInner;
     type Dst = SpecANonDependentChoose;
+}
+impl SpecIsoProof for ANonDependentChooseMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -679,36 +691,33 @@ pub fn an_open_enum() -> (o: AnOpenEnumCombinator)
 
                 
 
-pub enum SpecAChooseWithDefault {
+pub enum SpecARegularChoose {
     A(u8),
     B(u16),
     C(u32),
-    Unrecognized(Seq<u8>),
 }
 
-pub type SpecAChooseWithDefaultInner = Either<u8, Either<u16, Either<u32, Seq<u8>>>>;
+pub type SpecARegularChooseInner = Either<u8, Either<u16, u32>>;
 
 
 
-impl SpecFrom<SpecAChooseWithDefault> for SpecAChooseWithDefaultInner {
-    open spec fn spec_from(m: SpecAChooseWithDefault) -> SpecAChooseWithDefaultInner {
+impl SpecFrom<SpecARegularChoose> for SpecARegularChooseInner {
+    open spec fn spec_from(m: SpecARegularChoose) -> SpecARegularChooseInner {
         match m {
-            SpecAChooseWithDefault::A(m) => Either::Left(m),
-            SpecAChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
-            SpecAChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecAChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+            SpecARegularChoose::A(m) => Either::Left(m),
+            SpecARegularChoose::B(m) => Either::Right(Either::Left(m)),
+            SpecARegularChoose::C(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
-impl SpecFrom<SpecAChooseWithDefaultInner> for SpecAChooseWithDefault {
-    open spec fn spec_from(m: SpecAChooseWithDefaultInner) -> SpecAChooseWithDefault {
+impl SpecFrom<SpecARegularChooseInner> for SpecARegularChoose {
+    open spec fn spec_from(m: SpecARegularChooseInner) -> SpecARegularChoose {
         match m {
-            Either::Left(m) => SpecAChooseWithDefault::A(m),
-            Either::Right(Either::Left(m)) => SpecAChooseWithDefault::B(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecAChooseWithDefault::C(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecAChooseWithDefault::Unrecognized(m),
+            Either::Left(m) => SpecARegularChoose::A(m),
+            Either::Right(Either::Left(m)) => SpecARegularChoose::B(m),
+            Either::Right(Either::Right(m)) => SpecARegularChoose::C(m),
         }
     }
 
@@ -717,72 +726,70 @@ impl SpecFrom<SpecAChooseWithDefaultInner> for SpecAChooseWithDefault {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AChooseWithDefault<'a> {
+pub enum ARegularChoose {
     A(u8),
     B(u16),
     C(u32),
-    Unrecognized(&'a [u8]),
 }
 
-pub type AChooseWithDefaultInner<'a> = Either<u8, Either<u16, Either<u32, &'a [u8]>>>;
+pub type ARegularChooseInner = Either<u8, Either<u16, u32>>;
 
 
-impl<'a> View for AChooseWithDefault<'a> {
-    type V = SpecAChooseWithDefault;
+impl View for ARegularChoose {
+    type V = SpecARegularChoose;
     open spec fn view(&self) -> Self::V {
         match self {
-            AChooseWithDefault::A(m) => SpecAChooseWithDefault::A(m@),
-            AChooseWithDefault::B(m) => SpecAChooseWithDefault::B(m@),
-            AChooseWithDefault::C(m) => SpecAChooseWithDefault::C(m@),
-            AChooseWithDefault::Unrecognized(m) => SpecAChooseWithDefault::Unrecognized(m@),
+            ARegularChoose::A(m) => SpecARegularChoose::A(m@),
+            ARegularChoose::B(m) => SpecARegularChoose::B(m@),
+            ARegularChoose::C(m) => SpecARegularChoose::C(m@),
         }
     }
 }
 
 
-impl<'a> From<AChooseWithDefault<'a>> for AChooseWithDefaultInner<'a> {
-    fn ex_from(m: AChooseWithDefault<'a>) -> AChooseWithDefaultInner<'a> {
+impl From<ARegularChoose> for ARegularChooseInner {
+    fn ex_from(m: ARegularChoose) -> ARegularChooseInner {
         match m {
-            AChooseWithDefault::A(m) => Either::Left(m),
-            AChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
-            AChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
-            AChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+            ARegularChoose::A(m) => Either::Left(m),
+            ARegularChoose::B(m) => Either::Right(Either::Left(m)),
+            ARegularChoose::C(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
-impl<'a> From<AChooseWithDefaultInner<'a>> for AChooseWithDefault<'a> {
-    fn ex_from(m: AChooseWithDefaultInner<'a>) -> AChooseWithDefault<'a> {
+impl From<ARegularChooseInner> for ARegularChoose {
+    fn ex_from(m: ARegularChooseInner) -> ARegularChoose {
         match m {
-            Either::Left(m) => AChooseWithDefault::A(m),
-            Either::Right(Either::Left(m)) => AChooseWithDefault::B(m),
-            Either::Right(Either::Right(Either::Left(m))) => AChooseWithDefault::C(m),
-            Either::Right(Either::Right(Either::Right(m))) => AChooseWithDefault::Unrecognized(m),
+            Either::Left(m) => ARegularChoose::A(m),
+            Either::Right(Either::Left(m)) => ARegularChoose::B(m),
+            Either::Right(Either::Right(m)) => ARegularChoose::C(m),
         }
     }
     
 }
 
 
-pub struct AChooseWithDefaultMapper<'a>(PhantomData<&'a ()>);
-impl<'a> AChooseWithDefaultMapper<'a> {
+pub struct ARegularChooseMapper;
+impl ARegularChooseMapper {
     pub closed spec fn spec_new() -> Self {
-        AChooseWithDefaultMapper(PhantomData)
+        ARegularChooseMapper
     }
     pub fn new() -> Self {
-        AChooseWithDefaultMapper(PhantomData)
+        ARegularChooseMapper
     }
 }
-impl View for AChooseWithDefaultMapper<'_> {
+impl View for ARegularChooseMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for AChooseWithDefaultMapper<'_> {
-    type Src = SpecAChooseWithDefaultInner;
-    type Dst = SpecAChooseWithDefault;
+impl SpecIso for ARegularChooseMapper {
+    type Src = SpecARegularChooseInner;
+    type Dst = SpecARegularChoose;
+}
+impl SpecIsoProof for ARegularChooseMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -790,24 +797,24 @@ impl SpecIso for AChooseWithDefaultMapper<'_> {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso for AChooseWithDefaultMapper<'a> {
-    type Src = AChooseWithDefaultInner<'a>;
-    type Dst = AChooseWithDefault<'a>;
+impl Iso for ARegularChooseMapper {
+    type Src = ARegularChooseInner;
+    type Dst = ARegularChoose;
 }
 
 
-pub struct SpecAChooseWithDefaultCombinator(SpecAChooseWithDefaultCombinatorAlias);
+pub struct SpecARegularChooseCombinator(SpecARegularChooseCombinatorAlias);
 
-impl SpecCombinator for SpecAChooseWithDefaultCombinator {
-    type Type = SpecAChooseWithDefault;
+impl SpecCombinator for SpecARegularChooseCombinator {
+    type Type = SpecARegularChoose;
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
     { self.0.spec_parse(s) }
     closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
+impl SecureSpecCombinator for SpecARegularChooseCombinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecAChooseWithDefaultCombinatorAlias::is_prefix_secure() }
+    { SpecARegularChooseCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -821,16 +828,16 @@ impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecAChooseWithDefaultCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, OrdChoice<Cond<U32Le>, Cond<Tail>>>>, AChooseWithDefaultMapper<'static>>;
+pub type SpecARegularChooseCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>, ARegularChooseMapper>;
 
-pub struct AChooseWithDefaultCombinator<'a>(AChooseWithDefaultCombinatorAlias<'a>);
+pub struct ARegularChooseCombinator(ARegularChooseCombinatorAlias);
 
-impl<'a> View for AChooseWithDefaultCombinator<'a> {
-    type V = SpecAChooseWithDefaultCombinator;
-    closed spec fn view(&self) -> Self::V { SpecAChooseWithDefaultCombinator(self.0@) }
+impl View for ARegularChooseCombinator {
+    type V = SpecARegularChooseCombinator;
+    closed spec fn view(&self) -> Self::V { SpecARegularChooseCombinator(self.0@) }
 }
-impl<'a> Combinator<&'a [u8], Vec<u8>> for AChooseWithDefaultCombinator<'a> {
-    type Type = AChooseWithDefault<'a>;
+impl<'a> Combinator<&'a [u8], Vec<u8>> for ARegularChooseCombinator {
+    type Type = ARegularChoose;
     closed spec fn spec_length(&self) -> Option<usize> 
     { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
     fn length(&self) -> Option<usize> 
@@ -844,20 +851,18 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for AChooseWithDefaultCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type AChooseWithDefaultCombinatorAlias<'a> = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, OrdChoice<Cond<U32Le>, Cond<Tail>>>>, AChooseWithDefaultMapper<'a>>;
+pub type ARegularChooseCombinatorAlias = Mapped<OrdChoice<Cond<U8>, OrdChoice<Cond<U16Le>, Cond<U32Le>>>, ARegularChooseMapper>;
 
 
-pub closed spec fn spec_a_choose_with_default(e: SpecAnOpenEnum) -> SpecAChooseWithDefaultCombinator {
-    SpecAChooseWithDefaultCombinator(Mapped { inner: OrdChoice(Cond { cond: e == 0, inner: U8 }, OrdChoice(Cond { cond: e == 1, inner: U16Le }, OrdChoice(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: Tail }))), mapper: AChooseWithDefaultMapper::spec_new() })
+pub closed spec fn spec_a_regular_choose(e: SpecAClosedEnum) -> SpecARegularChooseCombinator {
+    SpecARegularChooseCombinator(Mapped { inner: OrdChoice(Cond { cond: e == AClosedEnum::A, inner: U8 }, OrdChoice(Cond { cond: e == AClosedEnum::B, inner: U16Le }, Cond { cond: e == AClosedEnum::C, inner: U32Le })), mapper: ARegularChooseMapper::spec_new() })
 }
 
-                
-pub fn a_choose_with_default<'a>(e: AnOpenEnum) -> (o: AChooseWithDefaultCombinator<'a>)
-    ensures o@ == spec_a_choose_with_default(e@),
+pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
+    ensures o@ == spec_a_regular_choose(e@),
 {
-    AChooseWithDefaultCombinator(Mapped { inner: OrdChoice::new(Cond { cond: e == 0, inner: U8 }, OrdChoice::new(Cond { cond: e == 1, inner: U16Le }, OrdChoice::new(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: Tail }))), mapper: AChooseWithDefaultMapper::new() })
+    ARegularChooseCombinator(Mapped { inner: OrdChoice::new(Cond { cond: e == AClosedEnum::A, inner: U8 }, OrdChoice::new(Cond { cond: e == AClosedEnum::B, inner: U16Le }, Cond { cond: e == AClosedEnum::C, inner: U32Le })), mapper: ARegularChooseMapper::new() })
 }
 
-                
 
 }
