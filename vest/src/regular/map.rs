@@ -236,7 +236,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     }
 }
 
-/// Spec version of [`TryFromInto`].
+/// Spec version of [`PartialIso`].
 pub trait SpecPartialIso {
     /// The source type
     type Src: SpecTryFrom<Self::Dst>;
@@ -245,6 +245,7 @@ pub trait SpecPartialIso {
     type Dst: SpecTryFrom<Self::Src>;
 }
 
+/// The faillible functions of [`SpecPartialIso`]
 pub trait SpecPartialIsoFn: SpecPartialIso {
     /// Applies the faillible conversion to the source type.
     spec fn spec_apply(s: Self::Src) -> Result<
@@ -259,6 +260,7 @@ pub trait SpecPartialIsoFn: SpecPartialIso {
     >;
 }
 
+// Blanket implementation for all types that implement `SpecPartialIso`
 impl<T: SpecPartialIso> SpecPartialIsoFn for T {
     open spec fn spec_apply(s: Self::Src) -> Result<
         Self::Dst,
@@ -275,6 +277,7 @@ impl<T: SpecPartialIso> SpecPartialIsoFn for T {
     }
 }
 
+/// The proof of [`SpecPartialIsoFn`]
 pub trait SpecPartialIsoProof: SpecPartialIsoFn {
     /// One direction of the isomorphism when the conversion is successful.
     proof fn spec_iso(s: Self::Src)
@@ -308,6 +311,7 @@ pub trait PartialIso: View where
     type Dst: View + TryFrom<Self::Src>;
 }
 
+/// The faillible functions of [`PartialIso`]
 pub trait PartialIsoFn: PartialIso where
     Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
@@ -334,6 +338,7 @@ pub trait PartialIsoFn: PartialIso where
     ;
 }
 
+// Blanket implementation for all types that implement `PartialIso`
 impl<T: PartialIso> PartialIsoFn for T where
     T::V: SpecPartialIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
     <T::Src as View>::V: SpecTryFrom<<T::Dst as View>::V>,
