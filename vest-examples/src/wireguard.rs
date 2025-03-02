@@ -1,6 +1,5 @@
 use vest::regular::builder::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::BytesN;
+use vest::regular::bytes;
 use vest::regular::tag::*;
 use vstd::prelude::*;
 
@@ -64,26 +63,26 @@ impl Builder for ExampleBuilder {
 }
 
 spec fn wg_msg1() -> (
-    Tag<BytesN<4>, Seq<u8>>,
-    (Bytes, (Bytes, (Bytes, (Bytes, (Bytes, Tag<BytesN<16>, Seq<u8>>))))),
+    Tag<bytes::Fixed<4>, Seq<u8>>,
+    (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, Seq<u8>>))))),
 ) {
     let grouplen = 32;
     let cipherlen_group = 48;
     let cipherlen_12 = 28;
     let maclen = 16;
-    let tag = Tag::spec_new(BytesN::<4>, SPEC_BYTES_1000_CONST);
-    let sender = Bytes(4);
-    let eph = Bytes(grouplen);
-    let statik = Bytes(cipherlen_group);
-    let timestamp = Bytes(cipherlen_12);
-    let mac1 = Bytes(maclen);
-    let mac2 = Tag::spec_new(BytesN::<16>, SPEC_BYTES_16_0S_CONST);
+    let tag = Tag::spec_new(bytes::Fixed::<4>, SPEC_BYTES_1000_CONST);
+    let sender = bytes::Variable(4);
+    let eph = bytes::Variable(grouplen);
+    let statik = bytes::Variable(cipherlen_group);
+    let timestamp = bytes::Variable(cipherlen_12);
+    let mac1 = bytes::Variable(maclen);
+    let mac2 = Tag::spec_new(bytes::Fixed::<16>, SPEC_BYTES_16_0S_CONST);
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 
 fn mk_wg_msg1() -> (res: (
-    Tag<BytesN<4>, [u8; 4]>,
-    (Bytes, (Bytes, (Bytes, (Bytes, (Bytes, Tag<BytesN<16>, [u8; 16]>))))),
+    Tag<bytes::Fixed<4>, [u8; 4]>,
+    (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, [u8; 16]>))))),
 ))
     ensures
         res@ == wg_msg1(),
@@ -92,41 +91,41 @@ fn mk_wg_msg1() -> (res: (
     let cipherlen_group = 48;
     let cipherlen_12 = 28;
     let maclen = 16;
-    let tag = Tag::new(BytesN::<4>, BYTES_1000_CONST);
-    let sender = Bytes(4);
-    let eph = Bytes(grouplen);
-    let statik = Bytes(cipherlen_group);
-    let timestamp = Bytes(cipherlen_12);
-    let mac1 = Bytes(maclen);
-    let mac2 = Tag::new(BytesN::<16>, BYTES_16_0S_CONST);
+    let tag = Tag::new(bytes::Fixed::<4>, BYTES_1000_CONST);
+    let sender = bytes::Variable(4);
+    let eph = bytes::Variable(grouplen);
+    let statik = bytes::Variable(cipherlen_group);
+    let timestamp = bytes::Variable(cipherlen_12);
+    let mac1 = bytes::Variable(maclen);
+    let mac2 = Tag::new(bytes::Fixed::<16>, BYTES_16_0S_CONST);
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 
 spec fn wg_msg1_builder() -> (
-    Tag<BytesN<4>, Seq<u8>>,
+    Tag<bytes::Fixed<4>, Seq<u8>>,
     (
-        Bytes,
-        (Bytes, (BuilderCombinator<ExampleBuilder>, (Bytes, (Bytes, Tag<BytesN<16>, Seq<u8>>)))),
+        bytes::Variable,
+        (bytes::Variable, (BuilderCombinator<ExampleBuilder>, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, Seq<u8>>)))),
     ),
 ) {
     let grouplen = 32;
     let cipherlen_12 = 28;
     let maclen = 16;
-    let tag = Tag::spec_new(BytesN::<4>, SPEC_BYTES_1000_CONST);
-    let sender = Bytes(4);
-    let eph = Bytes(grouplen);
+    let tag = Tag::spec_new(bytes::Fixed::<4>, SPEC_BYTES_1000_CONST);
+    let sender = bytes::Variable(4);
+    let eph = bytes::Variable(grouplen);
     let statik = BuilderCombinator(ExampleBuilder);
-    let timestamp = Bytes(cipherlen_12);
-    let mac1 = Bytes(maclen);
-    let mac2 = Tag::spec_new(BytesN::<16>, SPEC_BYTES_16_0S_CONST);
+    let timestamp = bytes::Variable(cipherlen_12);
+    let mac1 = bytes::Variable(maclen);
+    let mac2 = Tag::spec_new(bytes::Fixed::<16>, SPEC_BYTES_16_0S_CONST);
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 
 fn mk_msg1_builder() -> (res: (
-    Tag<BytesN<4>, [u8; 4]>,
+    Tag<bytes::Fixed<4>, [u8; 4]>,
     (
-        Bytes,
-        (Bytes, (BuilderCombinator<ExampleBuilder>, (Bytes, (Bytes, Tag<BytesN<16>, [u8; 16]>)))),
+        bytes::Variable,
+        (bytes::Variable, (BuilderCombinator<ExampleBuilder>, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, [u8; 16]>)))),
     ),
 ))
     ensures
@@ -135,13 +134,13 @@ fn mk_msg1_builder() -> (res: (
     let grouplen = 32;
     let cipherlen_12 = 28;
     let maclen = 16;
-    let tag = Tag::new(BytesN::<4>, BYTES_1000_CONST);
-    let sender = Bytes(4);
-    let eph = Bytes(grouplen);
+    let tag = Tag::new(bytes::Fixed::<4>, BYTES_1000_CONST);
+    let sender = bytes::Variable(4);
+    let eph = bytes::Variable(grouplen);
     let statik = BuilderCombinator(ExampleBuilder);
-    let timestamp = Bytes(cipherlen_12);
-    let mac1 = Bytes(maclen);
-    let mac2 = Tag::new(BytesN::<16>, BYTES_16_0S_CONST);
+    let timestamp = bytes::Variable(cipherlen_12);
+    let mac1 = bytes::Variable(maclen);
+    let mac2 = Tag::new(bytes::Fixed::<16>, BYTES_16_0S_CONST);
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 

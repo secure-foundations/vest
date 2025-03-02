@@ -1,12 +1,10 @@
 use crate::my_vec;
 use vest::properties::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::*;
-use vest::regular::choice::*;
-use vest::regular::map::*;
-use vest::regular::preceded::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::modifier::*;
+use vest::regular::sequence::*;
 use vest::regular::tag::*;
-use vest::regular::tail::*;
 use vest::regular::uints::*;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
@@ -116,7 +114,7 @@ impl<'a> Iso for Msg1Mapper<'a> {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 fn parse_serialize() -> Result<(), Error> {
-    let msg_inner = (U8, (U16Le, (Bytes(3), Tail)));
+    let msg_inner = (U8, (U16Le, (bytes::Variable(3), bytes::Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -134,7 +132,7 @@ fn parse_serialize() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 fn serialize_parse() -> Result<(), Error> {
-    let msg_inner = (U8, (U16Le, (Bytes(3), Tail)));
+    let msg_inner = (U8, (U16Le, (bytes::Variable(3), bytes::Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper(std::marker::PhantomData) };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
@@ -342,7 +340,7 @@ impl<'a> Iso for Msg3Mapper<'a> {
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 fn parse_serialize3() -> Result<(), Error> {
-    let msg_inner = BytesN::<6>;
+    let msg_inner = bytes::Fixed::<6>;
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper(std::marker::PhantomData) };
     let mut data = my_vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -361,7 +359,7 @@ fn parse_serialize3() -> Result<(), Error> {
 /// verify serialize-parse inverse ///
 //////////////////////////////////////
 fn serialize_parse3() -> Result<(), Error> {
-    let msg_inner = BytesN::<6>;
+    let msg_inner = bytes::Fixed::<6>;
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper(std::marker::PhantomData) };
     let bytes: [u8; 6] = [1, 2, 3, 4, 5, 6];
     let val = Msg3 { a: bytes.as_slice() };
@@ -487,7 +485,7 @@ fn parse_serialize4() -> Result<(), Error> {
     let msg1 = Preceded(
         tag1,
         Mapped {
-            inner: (U8, (U16Le, (Bytes(3), Tail))),
+            inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
             mapper: Msg1Mapper(std::marker::PhantomData),
         },
     );
@@ -497,7 +495,7 @@ fn parse_serialize4() -> Result<(), Error> {
     );
     let msg3 = Preceded(
         tag3,
-        Mapped { inner: BytesN::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
+        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
     );
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
@@ -532,7 +530,7 @@ fn serialize_parse4() -> Result<(), Error> {
     let msg1 = Preceded(
         tag1,
         Mapped {
-            inner: (U8, (U16Le, (Bytes(3), Tail))),
+            inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
             mapper: Msg1Mapper(std::marker::PhantomData),
         },
     );
@@ -542,7 +540,7 @@ fn serialize_parse4() -> Result<(), Error> {
     );
     let msg3 = Preceded(
         tag3,
-        Mapped { inner: BytesN::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
+        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
     );
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };

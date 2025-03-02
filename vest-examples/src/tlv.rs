@@ -1,16 +1,12 @@
 #![allow(unused_imports)]
 
 use vest::properties::*;
-use vest::regular::and_then::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::*;
-use vest::regular::choice::*;
-use vest::regular::cond::*;
-use vest::regular::depend::*;
-use vest::regular::map::*;
-use vest::regular::refined::*;
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
 use vest::regular::tag::*;
-use vest::regular::tail::*;
 use vest::regular::uints::*;
 use vest::utils::*;
 use vstd::prelude::*;
@@ -497,7 +493,7 @@ pub spec const SPEC_MSGD_F1: Seq<u8> = seq![1; 4];
 pub const MSGD_F2: u16 = 4660;
 
 pub type SpecMsgDCombinator = Mapped<
-    (Refined<BytesN<4>, BytesPredicate16235736133663645624<'static>>, Refined<U16Be, TagPred<u16>>),
+    (Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'static>>, Refined<U16Be, TagPred<u16>>),
     MsgDMapper<'static>,
 >;
 
@@ -547,7 +543,7 @@ impl<'a> Pred for BytesPredicate16235736133663645624<'a> {
 }
 
 pub type MsgDCombinator<'a> = Mapped<
-    (Refined<BytesN<4>, BytesPredicate16235736133663645624<'a>>, Refined<U16Be, TagPred<u16>>),
+    (Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'a>>, Refined<U16Be, TagPred<u16>>),
     MsgDMapper<'a>,
 >;
 
@@ -555,57 +551,57 @@ pub type SpecMsgBCombinator = Mapped<SpecMsgDCombinator, MsgBMapper<'static>>;
 
 pub type MsgBCombinator<'a> = Mapped<MsgDCombinator<'a>, MsgBMapper<'a>>;
 
-pub type SpecContent0Combinator = Bytes;
+pub type SpecContent0Combinator = bytes::Variable;
 
-pub type Content0Combinator = Bytes;
+pub type Content0Combinator = bytes::Variable;
 
 pub type SpecContentTypeCombinator = U8;
 
 pub type ContentTypeCombinator = U8;
 
 pub type SpecMsgCF4Combinator = AndThen<
-    Bytes,
+    bytes::Variable,
     Mapped<
-        OrdChoice<
+        Choice<
             Cond<SpecContent0Combinator>,
-            OrdChoice<Cond<U16Be>, OrdChoice<Cond<U32Be>, Cond<Tail>>>,
+            Choice<Cond<U16Be>, Choice<Cond<U32Be>, Cond<bytes::Tail>>>,
         >,
         MsgCF4Mapper<'static>,
     >,
 >;
 
 pub type MsgCF4Combinator<'a> = AndThen<
-    Bytes,
+    bytes::Variable,
     Mapped<
-        OrdChoice<
+        Choice<
             Cond<Content0Combinator>,
-            OrdChoice<Cond<U16Be>, OrdChoice<Cond<U32Be>, Cond<Tail>>>,
+            Choice<Cond<U16Be>, Choice<Cond<U32Be>, Cond<bytes::Tail>>>,
         >,
         MsgCF4Mapper<'a>,
     >,
 >;
 
 pub type SpecMsgCCombinator = Mapped<
-    SpecDepend<(SpecContentTypeCombinator, U24Be), SpecMsgCF4Combinator>,
+    SpecPair<(SpecContentTypeCombinator, U24Be), SpecMsgCF4Combinator>,
     MsgCMapper<'static>,
 >;
 
 pub struct MsgCCont<'a>(std::marker::PhantomData<&'a ()>);
 
 pub type MsgCCombinator<'a> = Mapped<
-    Depend<&'a [u8], Vec<u8>, (ContentTypeCombinator, U24Be), MsgCF4Combinator<'a>, MsgCCont<'a>>,
+    Pair<&'a [u8], Vec<u8>, (ContentTypeCombinator, U24Be), MsgCF4Combinator<'a>, MsgCCont<'a>>,
     MsgCMapper<'a>,
 >;
 
-pub type SpecMsgACombinator = Mapped<(SpecMsgBCombinator, Tail), MsgAMapper<'static>>;
+pub type SpecMsgACombinator = Mapped<(SpecMsgBCombinator, bytes::Tail), MsgAMapper<'static>>;
 
-pub type MsgACombinator<'a> = Mapped<(MsgBCombinator<'a>, Tail), MsgAMapper<'a>>;
+pub type MsgACombinator<'a> = Mapped<(MsgBCombinator<'a>, bytes::Tail), MsgAMapper<'a>>;
 
 pub open spec fn spec_msg_d() -> SpecMsgDCombinator {
     Mapped {
         inner: (
             Refined {
-                inner: BytesN::<4>,
+                inner: bytes::Fixed::<4>,
                 predicate: BytesPredicate16235736133663645624::spec_new(),
             },
             Refined { inner: U16Be, predicate: TagPred(MSGD_F2) },
@@ -620,7 +616,7 @@ pub fn msg_d<'a>() -> (o: MsgDCombinator<'a>)
 {
     Mapped {
         inner: (
-            Refined { inner: BytesN::<4>, predicate: BytesPredicate16235736133663645624::new() },
+            Refined { inner: bytes::Fixed::<4>, predicate: BytesPredicate16235736133663645624::new() },
             Refined { inner: U16Be, predicate: TagPred(MSGD_F2) },
         ),
         mapper: MsgDMapper::new(),
@@ -639,14 +635,14 @@ pub fn msg_b<'a>() -> (o: MsgBCombinator<'a>)
 }
 
 pub open spec fn spec_content_0(num: u24) -> SpecContent0Combinator {
-    Bytes(num.spec_into())
+    bytes::Variable(num.spec_into())
 }
 
 pub fn content_0<'a>(num: u24) -> (o: Content0Combinator)
     ensures
         o@ == spec_content_0(num@),
 {
-    Bytes(num.ex_into())
+    bytes::Variable(num.ex_into())
 }
 
 pub open spec fn spec_content_type() -> SpecContentTypeCombinator {
@@ -662,15 +658,15 @@ pub fn content_type() -> (o: ContentTypeCombinator)
 
 pub open spec fn spec_msg_c_f4(f2: SpecContentType, f3: u24) -> SpecMsgCF4Combinator {
     AndThen(
-        Bytes(f3.spec_into()),
+        bytes::Variable(f3.spec_into()),
         Mapped {
-            inner: OrdChoice(
+            inner: Choice(
                 Cond { cond: f2 == 0, inner: spec_content_0(f3) },
-                OrdChoice(
+                Choice(
                     Cond { cond: f2 == 1, inner: U16Be },
-                    OrdChoice(
+                    Choice(
                         Cond { cond: f2 == 2, inner: U32Be },
-                        Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: Tail },
+                        Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail },
                     ),
                 ),
             ),
@@ -684,15 +680,15 @@ pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator<'a>)
         o@ == spec_msg_c_f4(f2@, f3@),
 {
     AndThen(
-        Bytes(f3.ex_into()),
+        bytes::Variable(f3.ex_into()),
         Mapped {
-            inner: OrdChoice(
+            inner: Choice(
                 Cond { cond: f2 == 0, inner: content_0(f3) },
-                OrdChoice(
+                Choice(
                     Cond { cond: f2 == 1, inner: U16Be },
-                    OrdChoice(
+                    Choice(
                         Cond { cond: f2 == 2, inner: U32Be },
-                        Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: Tail },
+                        Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail },
                     ),
                 ),
             ),
@@ -704,7 +700,7 @@ pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator<'a>)
 pub open spec fn spec_msg_c() -> SpecMsgCCombinator {
     let fst = (spec_content_type(), U24Be);
     let snd = |deps| spec_msg_c_cont(deps);
-    Mapped { inner: SpecDepend { fst, snd }, mapper: MsgCMapper::spec_new() }
+    Mapped { inner: SpecPair { fst, snd }, mapper: MsgCMapper::spec_new() }
 }
 
 pub open spec fn spec_msg_c_cont(deps: (SpecContentType, u24)) -> SpecMsgCF4Combinator {
@@ -719,7 +715,7 @@ pub fn msg_c<'a>() -> (o: MsgCCombinator<'a>)
     let fst = (content_type(), U24Be);
     let snd = MsgCCont(std::marker::PhantomData);
     let spec_snd = Ghost(|deps| spec_msg_c_cont(deps));
-    Mapped { inner: Depend { fst, snd, spec_snd }, mapper: MsgCMapper::new() }
+    Mapped { inner: Pair { fst, snd, spec_snd }, mapper: MsgCMapper::new() }
 }
 
 impl<'a> Continuation<&(ContentType, u24)> for MsgCCont<'a> {
@@ -740,14 +736,14 @@ impl<'a> Continuation<&(ContentType, u24)> for MsgCCont<'a> {
 }
 
 pub open spec fn spec_msg_a() -> SpecMsgACombinator {
-    Mapped { inner: (spec_msg_b(), Tail), mapper: MsgAMapper::spec_new() }
+    Mapped { inner: (spec_msg_b(), bytes::Tail), mapper: MsgAMapper::spec_new() }
 }
 
 pub fn msg_a<'a>() -> (o: MsgACombinator<'a>)
     ensures
         o@ == spec_msg_a(),
 {
-    Mapped { inner: (msg_b(), Tail), mapper: MsgAMapper::new() }
+    Mapped { inner: (msg_b(), bytes::Tail), mapper: MsgAMapper::new() }
 }
 
 pub open spec fn parse_spec_msg_d(i: Seq<u8>) -> Result<(usize, SpecMsgD), ()> {

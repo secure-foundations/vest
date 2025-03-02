@@ -2,18 +2,12 @@
 use std::marker::PhantomData;
 
 use vest::properties::*;
-use vest::regular::and_then::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::*;
-use vest::regular::choice::*;
-use vest::regular::cond::*;
-use vest::regular::depend::*;
-use vest::regular::map::*;
-use vest::regular::refined::*;
-use vest::regular::repeat::Repeat;
-use vest::regular::repeat::RepeatResult;
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
 use vest::regular::tag::*;
-use vest::regular::tail::*;
 use vest::regular::uints::*;
 use vest::utils::*;
 use vstd::prelude::*;
@@ -181,7 +175,7 @@ impl SecureSpecCombinator for SpecOpaqueU16Combinator {
 }
 
 pub type SpecOpaqueU16CombinatorAlias = Mapped<
-    SpecDepend<Refined<U16Le, Predicate11955646336730306823>, Bytes>,
+    SpecPair<Refined<U16Le, Predicate11955646336730306823>, bytes::Variable>,
     OpaqueU16Mapper<'static>,
 >;
 
@@ -250,11 +244,11 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for OpaqueU16Combinator<'a> {
 }
 
 pub type OpaqueU16CombinatorAlias<'a> = Mapped<
-    Depend<
+    Pair<
         &'a [u8],
         Vec<u8>,
         Refined<U16Le, Predicate11955646336730306823>,
-        Bytes,
+        bytes::Variable,
         OpaqueU16Cont<'a>,
     >,
     OpaqueU16Mapper<'a>,
@@ -263,7 +257,7 @@ pub type OpaqueU16CombinatorAlias<'a> = Mapped<
 pub closed spec fn spec_opaque_u16() -> SpecOpaqueU16Combinator {
     SpecOpaqueU16Combinator(
         Mapped {
-            inner: SpecDepend {
+            inner: SpecPair {
                 fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
                 snd: |deps| spec_opaque_u16_cont(deps),
             },
@@ -272,9 +266,9 @@ pub closed spec fn spec_opaque_u16() -> SpecOpaqueU16Combinator {
     )
 }
 
-pub open spec fn spec_opaque_u16_cont(deps: u16) -> Bytes {
+pub open spec fn spec_opaque_u16_cont(deps: u16) -> bytes::Variable {
     let l = deps;
-    Bytes(l.spec_into())
+    bytes::Variable(l.spec_into())
 }
 
 pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator<'a>)
@@ -283,7 +277,7 @@ pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator<'a>)
 {
     OpaqueU16Combinator(
         Mapped {
-            inner: Depend {
+            inner: Pair {
                 fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
                 snd: OpaqueU16Cont::new(),
                 spec_snd: Ghost(|deps| spec_opaque_u16_cont(deps)),
@@ -302,7 +296,7 @@ impl<'a> OpaqueU16Cont<'a> {
 }
 
 impl<'a> Continuation<&u16> for OpaqueU16Cont<'a> {
-    type Output = Bytes;
+    type Output = bytes::Variable;
 
     open spec fn requires(&self, deps: &u16) -> bool {
         true
@@ -314,7 +308,7 @@ impl<'a> Continuation<&u16> for OpaqueU16Cont<'a> {
 
     fn apply(&self, deps: &u16) -> Self::Output {
         let l = *deps;
-        Bytes(l.ex_into())
+        bytes::Variable(l.ex_into())
     }
 }
 
@@ -470,7 +464,7 @@ impl SecureSpecCombinator for SpecResponderIdListListCombinator {
     }
 }
 
-pub type SpecResponderIdListListCombinatorAlias = AndThen<Bytes, Repeat<SpecResponderIdCombinator>>;
+pub type SpecResponderIdListListCombinatorAlias = AndThen<bytes::Variable, Repeat<SpecResponderIdCombinator>>;
 
 pub struct ResponderIdListListCombinator<'a>(ResponderIdListListCombinatorAlias<'a>);
 
@@ -513,17 +507,17 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListListCombinator<'a> {
     }
 }
 
-pub type ResponderIdListListCombinatorAlias<'a> = AndThen<Bytes, Repeat<ResponderIdCombinator<'a>>>;
+pub type ResponderIdListListCombinatorAlias<'a> = AndThen<bytes::Variable, Repeat<ResponderIdCombinator<'a>>>;
 
 pub closed spec fn spec_responder_id_list_list(l: u16) -> SpecResponderIdListListCombinator {
-    SpecResponderIdListListCombinator(AndThen(Bytes(l.spec_into()), Repeat(spec_responder_id())))
+    SpecResponderIdListListCombinator(AndThen(bytes::Variable(l.spec_into()), Repeat(spec_responder_id())))
 }
 
 pub fn responder_id_list_list<'a>(l: u16) -> (o: ResponderIdListListCombinator<'a>)
     ensures
         o@ == spec_responder_id_list_list(l@),
 {
-    ResponderIdListListCombinator(AndThen(Bytes(l.ex_into()), Repeat::new(responder_id())))
+    ResponderIdListListCombinator(AndThen(bytes::Variable(l.ex_into()), Repeat::new(responder_id())))
 }
 
 pub struct SpecResponderIdList {
@@ -673,7 +667,7 @@ impl SecureSpecCombinator for SpecResponderIdListCombinator {
 }
 
 pub type SpecResponderIdListCombinatorAlias = Mapped<
-    SpecDepend<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
+    SpecPair<Refined<U16Le, Predicate6556550293019859977>, SpecResponderIdListListCombinator>,
     ResponderIdListMapper<'static>,
 >;
 
@@ -742,7 +736,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ResponderIdListCombinator<'a> {
 }
 
 pub type ResponderIdListCombinatorAlias<'a> = Mapped<
-    Depend<
+    Pair<
         &'a [u8],
         Vec<u8>,
         Refined<U16Le, Predicate6556550293019859977>,
@@ -755,7 +749,7 @@ pub type ResponderIdListCombinatorAlias<'a> = Mapped<
 pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
     SpecResponderIdListCombinator(
         Mapped {
-            inner: SpecDepend {
+            inner: SpecPair {
                 fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
                 snd: |deps| spec_responder_id_list_cont(deps),
             },
@@ -775,7 +769,7 @@ pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator<'a>)
 {
     ResponderIdListCombinator(
         Mapped {
-            inner: Depend {
+            inner: Pair {
                 fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
                 snd: ResponderIdListCont::new(),
                 spec_snd: Ghost(|deps| spec_responder_id_list_cont(deps)),
