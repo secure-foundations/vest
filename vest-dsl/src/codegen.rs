@@ -1545,10 +1545,12 @@ impl View for {msg_type_name}Mapper {{
     }}
 }}
 
-impl SpecTryFromInto for {msg_type_name}Mapper {{
+impl SpecPartialIso for {msg_type_name}Mapper {{
     type Src = {msg_type_name}Inner;
     type Dst = {msg_type_name};
+}}
 
+impl SpecPartialIsoProof for {msg_type_name}Mapper {{
     proof fn spec_iso(s: Self::Src) {{ 
         assert(
             Self::spec_apply(s) matches Ok(v) ==> {{
@@ -1566,7 +1568,7 @@ impl SpecTryFromInto for {msg_type_name}Mapper {{
     }}
 }}
 
-impl TryFromInto for {msg_type_name}Mapper {{
+impl PartialIso for {msg_type_name}Mapper {{
     type Src = {msg_type_name}Inner;
     type Dst = {msg_type_name};
 }}
@@ -2239,6 +2241,8 @@ impl View for {name}Mapper{inferred_lifetime} {{
 impl SpecIso for {name}Mapper{inferred_lifetime} {{
     type Src = Spec{name}Inner;
     type Dst = Spec{name};
+}}
+impl SpecIsoProof for {name}Mapper{inferred_lifetime} {{
     proof fn spec_iso(s: Self::Src) {{
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }}
