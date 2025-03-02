@@ -5,24 +5,36 @@ use vstd::prelude::*;
 verus! {
 
 /// Spec version of [`Iso`].
-/// It mandates that the isomorphism is bijective.
 pub trait SpecIso {
     /// The source type of the isomorphism.
     type Src: SpecFrom<Self::Dst>;
 
     /// The destination type of the isomorphism.
     type Dst: SpecFrom<Self::Src>;
+}
 
+/// The bijective functions of [`SpecIso`]
+pub trait SpecIsoFn: SpecIso {
     /// Applies the isomorphism to the source type.
-    open spec fn spec_apply(s: Self::Src) -> Self::Dst {
-        Self::Dst::spec_from(s)
-    }
+    spec fn spec_apply(s: Self::Src) -> Self::Dst;
 
     /// Applies the reverse isomorphism to the destination type.
-    open spec fn spec_rev_apply(s: Self::Dst) -> Self::Src {
-        Self::Src::spec_from(s)
+    spec fn spec_rev_apply(s: Self::Dst) -> Self::Src;
+}
+
+// Blanket implementation for all types that implement `SpecIso`
+impl<T: SpecIso> SpecIsoFn for T {
+    open spec fn spec_apply(s: Self::Src) -> Self::Dst {
+        <Self::Dst as SpecFrom<Self::Src>>::spec_from(s)
     }
 
+    open spec fn spec_rev_apply(s: Self::Dst) -> Self::Src {
+        <Self::Src as SpecFrom<Self::Dst>>::spec_from(s)
+    }
+}
+
+/// The proof of [`SpecIsoFn`]
+pub trait SpecIsoProof: SpecIsoFn {
     /// One direction of the isomorphism.
     proof fn spec_iso(s: Self::Src)
         ensures
@@ -37,8 +49,6 @@ pub trait SpecIso {
 }
 
 /// All isomorphisms to be used in [`Mapped`] combinator must implement this trait.
-/// [`Self::apply`] and [`Self::rev_apply`] must be inverses of each other.
-/// See [`SpecIso::spec_iso`] and [`SpecIso::spec_iso_rev`] for more details.
 pub trait Iso: View where
     Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
@@ -49,23 +59,40 @@ pub trait Iso: View where
 
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
+}
 
+/// The bijective functions of [`Iso`]
+/// [`Self::apply`] and [`Self::rev_apply`] must be inverses of each other.
+/// See [`SpecIsoFn::spec_iso`] and [`SpecIsoFn::spec_iso_rev`] for more details.
+pub trait IsoFn: Iso where
+    Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
+    <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
+    <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
+ {
     /// Applies the isomorphism to the source type.
     fn apply(s: Self::Src) -> (res: Self::Dst)
         ensures
             res@ == Self::V::spec_apply(s@),
-    {
-        assert(Self::V::spec_apply(s@) == <Self::Dst as View>::V::spec_from(s@)) by (compute_only);
-        Self::Dst::ex_from(s)
-    }
+    ;
 
     /// Applies the reverse isomorphism to the destination type.
     fn rev_apply(s: Self::Dst) -> (res: Self::Src)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
-    {
-        assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_from(s@))
-            by (compute_only);
+    ;
+}
+
+// Blanket implementation for all types that implement `Iso`
+impl<T: Iso> IsoFn for T where
+    T::V: SpecIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
+    <T::Src as View>::V: SpecFrom<<T::Dst as View>::V>,
+    <T::Dst as View>::V: SpecFrom<<T::Src as View>::V>,
+ {
+    fn apply(s: Self::Src) -> (res: Self::Dst) {
+        Self::Dst::ex_from(s)
+    }
+
+    fn rev_apply(s: Self::Dst) -> (res: Self::Src) {
         Self::Src::ex_from(s)
     }
 }
@@ -109,7 +136,7 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
 
 impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     Inner: SecureSpecCombinator,
-    M: SpecIso<Src = Inner::Type>,
+    M: SpecIsoProof<Src = Inner::Type>,
     Inner::Type: SpecFrom<M::Dst>,
     M::Dst: SpecFrom<Inner::Type>,
  {
@@ -167,7 +194,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
     M: Iso<Src = Inner::Type>,
     Inner::Type: From<M::Dst> + View,
     M::Dst: From<Inner::Type> + View,
-    M::V: SpecIso<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+    M::V: SpecIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecFrom<<Inner::Type as View>::V>,
  {
@@ -210,14 +237,29 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
 }
 
 /// Spec version of [`TryFromInto`].
-pub trait SpecTryFromInto {
+pub trait SpecPartialIso {
     /// The source type
     type Src: SpecTryFrom<Self::Dst>;
 
     /// The destination type
     type Dst: SpecTryFrom<Self::Src>;
+}
 
+pub trait SpecPartialIsoFn: SpecPartialIso {
     /// Applies the faillible conversion to the source type.
+    spec fn spec_apply(s: Self::Src) -> Result<
+        Self::Dst,
+        <Self::Dst as SpecTryFrom<Self::Src>>::Error,
+    >;
+
+    /// Applies the reverse faillible conversion to the destination type.
+    spec fn spec_rev_apply(s: Self::Dst) -> Result<
+        Self::Src,
+        <Self::Src as SpecTryFrom<Self::Dst>>::Error,
+    >;
+}
+
+impl<T: SpecPartialIso> SpecPartialIsoFn for T {
     open spec fn spec_apply(s: Self::Src) -> Result<
         Self::Dst,
         <Self::Dst as SpecTryFrom<Self::Src>>::Error,
@@ -225,14 +267,15 @@ pub trait SpecTryFromInto {
         Self::Dst::spec_try_from(s)
     }
 
-    /// Applies the reverse faillible conversion to the destination type.
     open spec fn spec_rev_apply(s: Self::Dst) -> Result<
         Self::Src,
         <Self::Src as SpecTryFrom<Self::Dst>>::Error,
     > {
         Self::Src::spec_try_from(s)
     }
+}
 
+pub trait SpecPartialIsoProof: SpecPartialIsoFn {
     /// One direction of the isomorphism when the conversion is successful.
     proof fn spec_iso(s: Self::Src)
         ensures
@@ -253,8 +296,8 @@ pub trait SpecTryFromInto {
 }
 
 /// Faillible version of [`Iso`].
-pub trait TryFromInto: View where
-    Self::V: SpecTryFromInto<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
+pub trait PartialIso: View where
+    Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
  {
@@ -263,7 +306,13 @@ pub trait TryFromInto: View where
 
     /// The destination type
     type Dst: View + TryFrom<Self::Src>;
+}
 
+pub trait PartialIsoFn: PartialIso where
+    Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
+    <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
+    <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
+ {
     /// Applies the faillible conversion to the source type.
     fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>)
         ensures
@@ -272,11 +321,7 @@ pub trait TryFromInto: View where
                 &&& Self::V::spec_apply(s@) matches Ok(v_) && v@ == v_
             },
             res matches Err(e) ==> Self::V::spec_apply(s@) is Err,
-    {
-        assert(Self::V::spec_apply(s@) == <Self::Dst as View>::V::spec_try_from(s@))
-            by (compute_only);
-        Self::Dst::ex_try_from(s)
-    }
+    ;
 
     /// Applies the reverse faillible conversion to the destination type.
     fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
@@ -286,9 +331,22 @@ pub trait TryFromInto: View where
                 &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
             },
             res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
-    {
-        assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_try_from(s@))
-            by (compute_only);
+    ;
+}
+
+impl<T: PartialIso> PartialIsoFn for T where
+    T::V: SpecPartialIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
+    <T::Src as View>::V: SpecTryFrom<<T::Dst as View>::V>,
+    <T::Dst as View>::V: SpecTryFrom<<T::Src as View>::V>,
+ {
+    fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>) {
+        Self::Dst::ex_try_from(s)
+    }
+
+    fn rev_apply(s: Self::Dst) -> (res: Result<
+        Self::Src,
+        <Self::Src as TryFrom<Self::Dst>>::Error,
+    >) {
         Self::Src::ex_try_from(s)
     }
 }
@@ -312,7 +370,7 @@ impl<Inner: View, M: View> View for TryMap<Inner, M> {
 
 impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
     Inner: SpecCombinator,
-    M: SpecTryFromInto<Src = Inner::Type>,
+    M: SpecPartialIso<Src = Inner::Type>,
     Inner::Type: SpecTryFrom<M::Dst>,
     M::Dst: SpecTryFrom<Inner::Type>,
  {
@@ -338,7 +396,7 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
 
 impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     Inner: SecureSpecCombinator,
-    M: SpecTryFromInto<Src = Inner::Type>,
+    M: SpecPartialIsoProof<Src = Inner::Type>,
     Inner::Type: SpecTryFrom<M::Dst>,
     M::Dst: SpecTryFrom<Inner::Type>,
  {
@@ -393,10 +451,10 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: TryFromInto<Src = Inner::Type>,
+    M: PartialIso<Src = Inner::Type>,
     Inner::Type: TryFrom<M::Dst> + View,
     M::Dst: TryFrom<Inner::Type> + View,
-    M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
+    M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
  {
@@ -530,7 +588,7 @@ impl View for FieldLessMapper {
     }
 }
 
-impl SpecTryFromInto for FieldLessMapper {
+impl SpecPartialIso for FieldLessMapper {
     type Src = FieldLessInner;
     type Dst = FieldLess;
 
@@ -539,7 +597,7 @@ impl SpecTryFromInto for FieldLessMapper {
     proof fn spec_iso_rev(s: Self::Dst) {}
 }
 
-impl TryFromInto for FieldLessMapper {
+impl PartialIso for FieldLessMapper {
     type Src = FieldLessInner;
     type Dst = FieldLess;
 }
