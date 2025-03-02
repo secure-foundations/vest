@@ -21,6 +21,7 @@ use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::preceded::*;
 use vest::regular::terminated::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::leb128::*;
 verus!{
 
 pub struct SpecOpaqueU16 {
@@ -88,6 +89,8 @@ impl View for OpaqueU16Mapper<'_> {
 impl SpecIso for OpaqueU16Mapper<'_> {
     type Src = SpecOpaqueU16Inner;
     type Dst = SpecOpaqueU16;
+}
+impl SpecIsoProof for OpaqueU16Mapper<'_> {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -352,6 +355,8 @@ impl View for ResponderIdListMapper<'_> {
 impl SpecIso for ResponderIdListMapper<'_> {
     type Src = SpecResponderIdListInner;
     type Dst = SpecResponderIdList;
+}
+impl SpecIsoProof for ResponderIdListMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -549,6 +554,8 @@ impl View for RepeatDynMapper<'_> {
 impl SpecIso for RepeatDynMapper<'_> {
     type Src = SpecRepeatDynInner;
     type Dst = SpecRepeatDyn;
+}
+impl SpecIsoProof for RepeatDynMapper<'_> {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
