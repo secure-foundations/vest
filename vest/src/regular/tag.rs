@@ -1,4 +1,4 @@
-use super::refined::{Pred, Refined, SpecPred};
+use super::modifier::{Pred, Refined, SpecPred};
 use super::uints::FromToBytes;
 use crate::properties::*;
 use vstd::prelude::*;

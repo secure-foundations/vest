@@ -4,7 +4,7 @@ use vstd::prelude::*;
 use vstd::seq_lib::*;
 use vstd::slice::*;
 
-use super::bytes_n::BytesN;
+use super::bytes::Fixed;
 
 verus! {
 
@@ -1040,10 +1040,10 @@ impl SpecCombinator for U24Le {
     type Type = u24;
 
     // To parse a u24 in little-endian byte order, we simply reverse the 3 bytes parsed by the
-    // `BytesN<3>` combinator.
+    // `Fixed<3>` combinator.
     // Later when this `u24` is used, it's converted to a `u32` in big-endian byte order.
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
-        match BytesN::<3>.spec_parse(s) {
+        match Fixed::<3>.spec_parse(s) {
             Ok((n, bytes)) => Ok((n, u24([bytes[2], bytes[1], bytes[0]]))),
             _ => Err(()),
         }
@@ -1051,7 +1051,7 @@ impl SpecCombinator for U24Le {
 
     open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
         let bytes = v.0;
-        BytesN::<3>.spec_serialize([bytes[2], bytes[1], bytes[0]]@)
+        Fixed::<3>.spec_serialize([bytes[2], bytes[1], bytes[0]]@)
     }
 }
 
@@ -1065,15 +1065,15 @@ impl SecureSpecCombinator for U24Le {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        BytesN::<3>.lemma_prefix_secure(s1, s2);
+        Fixed::<3>.lemma_prefix_secure(s1, s2);
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
         let v_rev = u24([v.0[2], v.0[1], v.0[0]]);
-        BytesN::<3>.theorem_serialize_parse_roundtrip(v_rev.0@);
-        match BytesN::<3>.spec_serialize(v_rev.0@) {
+        Fixed::<3>.theorem_serialize_parse_roundtrip(v_rev.0@);
+        match Fixed::<3>.spec_serialize(v_rev.0@) {
             Ok(buf) => {
-                match BytesN::<3>.spec_parse(buf) {
+                match Fixed::<3>.spec_parse(buf) {
                     Ok((n, bytes)) => {
                         bytes_eq_view_implies_eq([bytes[2], bytes[1], bytes[0]], v.0);
                     },
@@ -1085,8 +1085,8 @@ impl SecureSpecCombinator for U24Le {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
-        BytesN::<3>.theorem_parse_serialize_roundtrip(s);
-        match BytesN::<3>.spec_parse(s) {
+        Fixed::<3>.theorem_parse_serialize_roundtrip(s);
+        match Fixed::<3>.spec_parse(s) {
             Ok((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
             },
@@ -1113,7 +1113,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
-        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&Fixed::<3>, s)?;
         Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
     }
 
@@ -1121,7 +1121,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
         usize,
         SerializeError,
     >) {
-        BytesN::<3>.serialize([v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
+        Fixed::<3>.serialize([v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
     }
 }
 
@@ -1140,7 +1140,7 @@ impl SpecCombinator for U24Be {
     type Type = u24;
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
-        match BytesN::<3>.spec_parse(s) {
+        match Fixed::<3>.spec_parse(s) {
             Ok((n, bytes)) => Ok((n, u24([bytes[0], bytes[1], bytes[2]]))),
             _ => Err(()),
         }
@@ -1148,7 +1148,7 @@ impl SpecCombinator for U24Be {
 
     open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
         let bytes = v.0;
-        BytesN::<3>.spec_serialize(bytes@)
+        Fixed::<3>.spec_serialize(bytes@)
     }
 }
 
@@ -1162,14 +1162,14 @@ impl SecureSpecCombinator for U24Be {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        BytesN::<3>.lemma_prefix_secure(s1, s2);
+        Fixed::<3>.lemma_prefix_secure(s1, s2);
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
-        BytesN::<3>.theorem_serialize_parse_roundtrip(v.0@);
-        match BytesN::<3>.spec_serialize(v.0@) {
+        Fixed::<3>.theorem_serialize_parse_roundtrip(v.0@);
+        match Fixed::<3>.spec_serialize(v.0@) {
             Ok(buf) => {
-                match BytesN::<3>.spec_parse(buf) {
+                match Fixed::<3>.spec_parse(buf) {
                     Ok((n, bytes)) => {
                         bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
                     },
@@ -1181,8 +1181,8 @@ impl SecureSpecCombinator for U24Be {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
-        BytesN::<3>.theorem_parse_serialize_roundtrip(s);
-        match BytesN::<3>.spec_parse(s) {
+        Fixed::<3>.theorem_parse_serialize_roundtrip(s);
+        match Fixed::<3>.spec_parse(s) {
             Ok((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
             },
@@ -1218,7 +1218,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
-        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&BytesN::<3>, s)?;
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&Fixed::<3>, s)?;
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 
@@ -1226,7 +1226,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
         usize,
         SerializeError,
     >) {
-        BytesN::<3>.serialize(v.0.as_slice(), data, pos)
+        Fixed::<3>.serialize(v.0.as_slice(), data, pos)
     }
 }
 

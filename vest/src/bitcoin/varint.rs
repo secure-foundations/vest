@@ -1,12 +1,10 @@
 use crate::{
     properties::*,
     regular::{
-        bytes_n::BytesN,
-        choice::*,
-        cond::Cond,
-        depend::{Continuation, Depend, SpecDepend},
-        map::{SpecPartialIso, SpecPartialIsoProof, PartialIso, TryMap},
-        refined::{Pred, Refined, SpecPred},
+        bytes::Fixed,
+        variant::*,
+        sequence::{Continuation, Pair, SpecPair},
+        modifier::{SpecPartialIso, SpecPartialIsoProof, PartialIso, TryMap, Cond, Pred, Refined, SpecPred},
         uints::*,
     },
 };
@@ -83,29 +81,29 @@ impl VarInt {
     }
 }
 
-type VarintChoice = OrdChoice<
-    Cond<BytesN<0>>,
-    OrdChoice<
+type VarintChoice = Choice<
+    Cond<Fixed<0>>,
+    Choice<
         Cond<Refined<U16Le, PredU16LeFit>>,
-        OrdChoice<Cond<Refined<U32Le, PredU32LeFit>>, Cond<Refined<U64Le, PredU64LeFit>>>,
+        Choice<Cond<Refined<U32Le, PredU32LeFit>>, Cond<Refined<U64Le, PredU64LeFit>>>,
     >,
 >;
 
-type SpecBtcVarintInner = TryMap<SpecDepend<U8, VarintChoice>, VarIntMapper<'static>>;
+type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper<'static>>;
 
 type BtcVarintInner<'a> = TryMap<
-    Depend<&'a [u8], Vec<u8>, U8, VarintChoice, BtVarintCont>,
+    Pair<&'a [u8], Vec<u8>, U8, VarintChoice, BtVarintCont>,
     VarIntMapper<'a>,
 >;
 
 /// Inner Spec combinator for parsing and serializing Bitcoin variable-length integers
 pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
     TryMap {
-        inner: SpecDepend {
+        inner: SpecPair {
             fst: U8,
             snd: |t: u8|
                 ord_choice!(
-                    Cond { cond: t <= 0xFC, inner: BytesN::<0> },
+                    Cond { cond: t <= 0xFC, inner: Fixed::<0> },
                     Cond { cond: t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
                     Cond { cond: t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
                     Cond { cond: t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
@@ -120,7 +118,7 @@ fn btc_varint_inner<'a>() -> (o: BtcVarintInner<'a>)
         o@ == spec_btc_varint_inner(),
 {
     TryMap {
-        inner: Depend {
+        inner: Pair {
             fst: U8,
             snd: BtVarintCont,
             spec_snd: Ghost(spec_btc_varint_inner().inner.snd),
@@ -422,7 +420,7 @@ impl Continuation<&u8> for BtVarintCont {
 
     fn apply(&self, t: &u8) -> Self::Output {
         ord_choice!(
-                    Cond { cond: *t <= 0xFC, inner: BytesN::<0> },
+                    Cond { cond: *t <= 0xFC, inner: Fixed::<0> },
                     Cond { cond: *t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
                     Cond { cond: *t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
                     Cond { cond: *t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },

@@ -1,12 +1,8 @@
-use super::bytes::Bytes;
-use super::bytes_n::BytesN;
-use super::choice::OrdChoice;
-use super::cond::Cond;
-use super::depend::SpecDepend;
+use super::bytes::{Variable, Fixed};
+use super::variant::Choice;
+use super::sequence::{SpecPair, Preceded};
 use super::fail::Fail;
-use super::map::{Mapped, SpecIso, SpecPartialIso, SpecPartialIsoFn, TryMap};
-use super::preceded::Preceded;
-use super::refined::{Refined, SpecPred};
+use super::modifier::{Mapped, SpecIso, SpecPartialIso, SpecPartialIsoFn, TryMap, Cond, Refined, SpecPred};
 use super::tag::{Tag, TagPred};
 use super::uints::*;
 use crate::properties::*;
@@ -14,7 +10,7 @@ use vstd::prelude::*;
 
 verus! {
 
-/// A helper trait for [`OrdChoice`] combinator.
+/// A helper trait for [`Choice`] combinator.
 pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator {
     /// pre-condition that must be held for [`Self`] and [`Other`] to be disjoint
     spec fn disjoint_from(&self, other: &Other) -> bool;
@@ -26,7 +22,7 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
             self.disjoint_from(
                 other,
             ),
-    // just one direction is enough for the proofs of `OrdChoice`
+    // just one direction is enough for the proofs of `Choice`
 
         ensures
             self.spec_parse(buf).is_ok() ==> other.spec_parse(buf).is_err(),
@@ -77,27 +73,27 @@ impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
     }
 }
 
-impl<U1, U2, V1, V2> DisjointFrom<SpecDepend<U2, V2>> for SpecDepend<U1, V1> where
+impl<U1, U2, V1, V2> DisjointFrom<SpecPair<U2, V2>> for SpecPair<U1, V1> where
     U1: DisjointFrom<U2>,
     U1: SecureSpecCombinator,
     U2: SecureSpecCombinator,
     V1: SpecCombinator,
     V2: SpecCombinator,
  {
-    open spec fn disjoint_from(&self, other: &SpecDepend<U2, V2>) -> bool {
+    open spec fn disjoint_from(&self, other: &SpecPair<U2, V2>) -> bool {
         self.fst.disjoint_from(&other.fst)
     }
 
-    proof fn parse_disjoint_on(&self, other: &SpecDepend<U2, V2>, buf: Seq<u8>) {
+    proof fn parse_disjoint_on(&self, other: &SpecPair<U2, V2>, buf: Seq<u8>) {
         self.fst.parse_disjoint_on(&other.fst, buf)
     }
 }
 
 // if `S1` and `S2` are both disjoint from `S3`, and `S2` is disjoint from `S1`,
-// then `OrdChoice<S1, S2>` is disjoint from `S3`,
+// then `Choice<S1, S2>` is disjoint from `S3`,
 //
-// this allows composition of the form `OrdChoice(..., OrdChoice(..., OrcChoice(...)))`
-impl<S1, S2, S3> DisjointFrom<S3> for OrdChoice<S1, S2> where
+// this allows composition of the form `Choice(..., Choice(..., OrcChoice(...)))`
+impl<S1, S2, S3> DisjointFrom<S3> for Choice<S1, S2> where
     S1: SpecCombinator + DisjointFrom<S3>,
     S2: SpecCombinator + DisjointFrom<S1> + DisjointFrom<S3>,
     S3: SpecCombinator,

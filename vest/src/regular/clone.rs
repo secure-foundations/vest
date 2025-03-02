@@ -1,7 +1,5 @@
-use super::bytes::Bytes;
-use super::bytes_n::BytesN;
+use super::bytes::{Variable, Fixed, Tail};
 use super::tag::Tag;
-use super::tail::Tail;
 use super::uints::{U16Le, U32Le, U64Le, U8};
 use vstd::prelude::*;
 
@@ -54,7 +52,7 @@ impl_clone_for_int_tags!(Tag<U8, u8>, Tag<U16Le, u16>, Tag<U32Le, u32>, Tag<U64L
 //     }
 // }
 //
-impl<'a> Clone for Tag<Bytes, &'a [u8]> {
+impl<'a> Clone for Tag<Variable, &'a [u8]> {
     fn clone(&self) -> (out: Self)
         ensures
             out == *self,
@@ -63,7 +61,7 @@ impl<'a> Clone for Tag<Bytes, &'a [u8]> {
     }
 }
 
-impl<'a, const N: usize> Clone for Tag<BytesN<N>, &'a [u8]> {
+impl<'a, const N: usize> Clone for Tag<Fixed<N>, &'a [u8]> {
     fn clone(&self) -> (out: Self)
         ensures
             out == *self,
@@ -72,21 +70,21 @@ impl<'a, const N: usize> Clone for Tag<BytesN<N>, &'a [u8]> {
     }
 }
 
-impl Clone for Bytes {
+impl Clone for Variable {
     fn clone(&self) -> (out: Self)
         ensures
             out == *self,
     {
-        Bytes(self.0)
+        Variable(self.0)
     }
 }
 
-impl<const N: usize> Clone for BytesN<N> {
+impl<const N: usize> Clone for Fixed<N> {
     fn clone(&self) -> (out: Self)
         ensures
             out == *self,
     {
-        BytesN
+        Fixed
     }
 }
 

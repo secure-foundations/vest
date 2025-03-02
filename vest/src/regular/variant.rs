@@ -1,4 +1,4 @@
-use super::{disjoint::DisjointFrom, success::Success};
+use super::disjoint::DisjointFrom;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -23,9 +23,9 @@ impl<A: View, B: View> View for Either<A, B> {
 }
 
 /// Combinator that tries the `Fst` combinator and if it fails, tries the `Snd` combinator.
-pub struct OrdChoice<Fst, Snd>(pub Fst, pub Snd);
+pub struct Choice<Fst, Snd>(pub Fst, pub Snd);
 
-impl<Fst, Snd> OrdChoice<Fst, Snd> where
+impl<Fst, Snd> Choice<Fst, Snd> where
     Fst: View,
     Snd: View,
     Fst::V: SpecCombinator,
@@ -36,21 +36,21 @@ impl<Fst, Snd> OrdChoice<Fst, Snd> where
         requires
             snd@.disjoint_from(&fst@),
         ensures
-            o == OrdChoice(fst, snd),
+            o == Choice(fst, snd),
     {
-        OrdChoice(fst, snd)
+        Choice(fst, snd)
     }
 }
 
-impl<Fst: View, Snd: View> View for OrdChoice<Fst, Snd> where  {
-    type V = OrdChoice<Fst::V, Snd::V>;
+impl<Fst: View, Snd: View> View for Choice<Fst, Snd> where  {
+    type V = Choice<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
-        OrdChoice(self.0@, self.1@)
+        Choice(self.0@, self.1@)
     }
 }
 
-impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
+impl<Fst, Snd> SpecCombinator for Choice<Fst, Snd> where
     Fst: SpecCombinator,
     Snd: SpecCombinator + DisjointFrom<Fst>,
  {
@@ -84,7 +84,7 @@ impl<Fst, Snd> SpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
+impl<Fst, Snd> SecureSpecCombinator for Choice<Fst, Snd> where
     Fst: SecureSpecCombinator,
     Snd: SecureSpecCombinator + DisjointFrom<Fst>,
  {
@@ -153,7 +153,7 @@ impl<Fst, Snd> SecureSpecCombinator for OrdChoice<Fst, Snd> where
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for OrdChoice<Fst, Snd> where
+impl<I, O, Fst, Snd> Combinator<I, O> for Choice<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
@@ -410,7 +410,7 @@ macro_rules! ord_choice {
     };
 
     ($c:expr, $($rest:expr),* $(,)?) => {
-        OrdChoice($c, ord_choice!($($rest),*))
+        Choice($c, ord_choice!($($rest),*))
     };
 }
 
