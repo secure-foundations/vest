@@ -2,25 +2,17 @@
 #![allow(unused)]
 use std::marker::PhantomData;
 use vstd::prelude::*;
-use vest::properties::*;
-use vest::utils::*;
-use vest::regular::map::*;
-use vest::regular::tag::*;
-use vest::regular::choice::*;
-use vest::regular::cond::*;
-use vest::regular::uints::*;
-use vest::regular::tail::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::*;
-use vest::regular::depend::*;
-use vest::regular::and_then::*;
-use vest::regular::refined::*;
-use vest::regular::repeat::*;
-use vest::regular::repeat_n::*;
-use vest::bitcoin::varint::{BtcVarint, VarInt};
-use vest::regular::preceded::*;
-use vest::regular::terminated::*;
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::tag::*;
+use vest::regular::uints::*;
+use vest::utils::*;
+use vest::properties::*;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
 verus!{
 
@@ -128,7 +120,7 @@ impl SecureSpecCombinator for SpecOutpointCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecOutpointCombinatorAlias = Mapped<(BytesN<32>, U32Le), OutpointMapper<'static>>;
+pub type SpecOutpointCombinatorAlias = Mapped<(bytes::Fixed<32>, U32Le), OutpointMapper<'static>>;
 
 pub struct OutpointCombinator<'a>(OutpointCombinatorAlias<'a>);
 
@@ -151,13 +143,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for OutpointCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type OutpointCombinatorAlias<'a> = Mapped<(BytesN<32>, U32Le), OutpointMapper<'a>>;
+pub type OutpointCombinatorAlias<'a> = Mapped<(bytes::Fixed<32>, U32Le), OutpointMapper<'a>>;
 
 
 pub closed spec fn spec_outpoint() -> SpecOutpointCombinator {
     SpecOutpointCombinator(
     Mapped {
-        inner: (BytesN::<32>, U32Le),
+        inner: (bytes::Fixed::<32>, U32Le),
         mapper: OutpointMapper::spec_new(),
     })
 }
@@ -168,7 +160,7 @@ pub fn outpoint<'a>() -> (o: OutpointCombinator<'a>)
 {
     OutpointCombinator(
     Mapped {
-        inner: (BytesN::<32>, U32Le),
+        inner: (bytes::Fixed::<32>, U32Le),
         mapper: OutpointMapper::new(),
     })
 }
@@ -279,7 +271,7 @@ impl SecureSpecCombinator for SpecScriptSigCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecScriptSigCombinatorAlias = Mapped<SpecDepend<BtcVarint, Bytes>, ScriptSigMapper<'static>>;
+pub type SpecScriptSigCombinatorAlias = Mapped<SpecPair<BtcVarint, bytes::Variable>, ScriptSigMapper<'static>>;
 
 pub struct ScriptSigCombinator<'a>(ScriptSigCombinatorAlias<'a>);
 
@@ -302,20 +294,20 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ScriptSigCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ScriptSigCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, BtcVarint, Bytes, ScriptSigCont0<'a>>, ScriptSigMapper<'a>>;
+pub type ScriptSigCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, BtcVarint, bytes::Variable, ScriptSigCont0<'a>>, ScriptSigMapper<'a>>;
 
 
 pub closed spec fn spec_script_sig() -> SpecScriptSigCombinator {
     SpecScriptSigCombinator(
     Mapped {
-        inner: SpecDepend { fst: BtcVarint, snd: |deps| spec_script_sig_cont0(deps) },
+        inner: SpecPair { fst: BtcVarint, snd: |deps| spec_script_sig_cont0(deps) },
         mapper: ScriptSigMapper::spec_new(),
     })
 }
 
-pub open spec fn spec_script_sig_cont0(deps: VarInt) -> Bytes {
+pub open spec fn spec_script_sig_cont0(deps: VarInt) -> bytes::Variable {
     let l = deps;
-    Bytes(l.spec_into())
+    bytes::Variable(l.spec_into())
 }
                 
 pub fn script_sig<'a>() -> (o: ScriptSigCombinator<'a>)
@@ -323,7 +315,7 @@ pub fn script_sig<'a>() -> (o: ScriptSigCombinator<'a>)
 {
     ScriptSigCombinator(
     Mapped {
-        inner: Depend { fst: BtcVarint, snd: ScriptSigCont0::new(), spec_snd: Ghost(|deps| spec_script_sig_cont0(deps)) },
+        inner: Pair { fst: BtcVarint, snd: ScriptSigCont0::new(), spec_snd: Ghost(|deps| spec_script_sig_cont0(deps)) },
         mapper: ScriptSigMapper::new(),
     })
 }
@@ -335,7 +327,7 @@ impl<'a> ScriptSigCont0<'a> {
     }
 }
 impl<'a> Continuation<&VarInt> for ScriptSigCont0<'a> {
-    type Output = Bytes;
+    type Output = bytes::Variable;
 
     open spec fn requires(&self, deps: &VarInt) -> bool { true }
 
@@ -345,7 +337,7 @@ impl<'a> Continuation<&VarInt> for ScriptSigCont0<'a> {
 
     fn apply(&self, deps: &VarInt) -> Self::Output {
         let l = *deps;
-        Bytes(l.ex_into())
+        bytes::Variable(l.ex_into())
     }
 }
                 
@@ -608,7 +600,7 @@ impl SecureSpecCombinator for SpecScriptCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecScriptCombinatorAlias = Mapped<SpecDepend<BtcVarint, Bytes>, ScriptMapper<'static>>;
+pub type SpecScriptCombinatorAlias = Mapped<SpecPair<BtcVarint, bytes::Variable>, ScriptMapper<'static>>;
 
 pub struct ScriptCombinator<'a>(ScriptCombinatorAlias<'a>);
 
@@ -631,20 +623,20 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for ScriptCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ScriptCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, BtcVarint, Bytes, ScriptCont0<'a>>, ScriptMapper<'a>>;
+pub type ScriptCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, BtcVarint, bytes::Variable, ScriptCont0<'a>>, ScriptMapper<'a>>;
 
 
 pub closed spec fn spec_script() -> SpecScriptCombinator {
     SpecScriptCombinator(
     Mapped {
-        inner: SpecDepend { fst: BtcVarint, snd: |deps| spec_script_cont0(deps) },
+        inner: SpecPair { fst: BtcVarint, snd: |deps| spec_script_cont0(deps) },
         mapper: ScriptMapper::spec_new(),
     })
 }
 
-pub open spec fn spec_script_cont0(deps: VarInt) -> Bytes {
+pub open spec fn spec_script_cont0(deps: VarInt) -> bytes::Variable {
     let l = deps;
-    Bytes(l.spec_into())
+    bytes::Variable(l.spec_into())
 }
                 
 pub fn script<'a>() -> (o: ScriptCombinator<'a>)
@@ -652,7 +644,7 @@ pub fn script<'a>() -> (o: ScriptCombinator<'a>)
 {
     ScriptCombinator(
     Mapped {
-        inner: Depend { fst: BtcVarint, snd: ScriptCont0::new(), spec_snd: Ghost(|deps| spec_script_cont0(deps)) },
+        inner: Pair { fst: BtcVarint, snd: ScriptCont0::new(), spec_snd: Ghost(|deps| spec_script_cont0(deps)) },
         mapper: ScriptMapper::new(),
     })
 }
@@ -664,7 +656,7 @@ impl<'a> ScriptCont0<'a> {
     }
 }
 impl<'a> Continuation<&VarInt> for ScriptCont0<'a> {
-    type Output = Bytes;
+    type Output = bytes::Variable;
 
     open spec fn requires(&self, deps: &VarInt) -> bool { true }
 
@@ -674,7 +666,7 @@ impl<'a> Continuation<&VarInt> for ScriptCont0<'a> {
 
     fn apply(&self, deps: &VarInt) -> Self::Output {
         let l = *deps;
-        Bytes(l.ex_into())
+        bytes::Variable(l.ex_into())
     }
 }
                 
@@ -830,356 +822,6 @@ pub fn txout<'a>() -> (o: TxoutCombinator<'a>)
 
                 
 
-pub struct SpecWitnessComponent {
-    pub l: VarInt,
-    pub data: Seq<u8>,
-}
-
-pub type SpecWitnessComponentInner = (VarInt, Seq<u8>);
-impl SpecFrom<SpecWitnessComponent> for SpecWitnessComponentInner {
-    open spec fn spec_from(m: SpecWitnessComponent) -> SpecWitnessComponentInner {
-        (m.l, m.data)
-    }
-}
-impl SpecFrom<SpecWitnessComponentInner> for SpecWitnessComponent {
-    open spec fn spec_from(m: SpecWitnessComponentInner) -> SpecWitnessComponent {
-        let (l, data) = m;
-        SpecWitnessComponent { l, data }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct WitnessComponent<'a> {
-    pub l: VarInt,
-    pub data: &'a [u8],
-}
-
-impl View for WitnessComponent<'_> {
-    type V = SpecWitnessComponent;
-
-    open spec fn view(&self) -> Self::V {
-        SpecWitnessComponent {
-            l: self.l@,
-            data: self.data@,
-        }
-    }
-}
-pub type WitnessComponentInner<'a> = (VarInt, &'a [u8]);
-impl<'a> From<WitnessComponent<'a>> for WitnessComponentInner<'a> {
-    fn ex_from(m: WitnessComponent) -> WitnessComponentInner {
-        (m.l, m.data)
-    }
-}
-impl<'a> From<WitnessComponentInner<'a>> for WitnessComponent<'a> {
-    fn ex_from(m: WitnessComponentInner) -> WitnessComponent {
-        let (l, data) = m;
-        WitnessComponent { l, data }
-    }
-}
-
-pub struct WitnessComponentMapper<'a>(PhantomData<&'a ()>);
-impl<'a> WitnessComponentMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        WitnessComponentMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        WitnessComponentMapper(PhantomData)
-    }
-}
-impl View for WitnessComponentMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for WitnessComponentMapper<'_> {
-    type Src = SpecWitnessComponentInner;
-    type Dst = SpecWitnessComponent;
-}
-impl SpecIsoProof for WitnessComponentMapper<'_> {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for WitnessComponentMapper<'a> {
-    type Src = WitnessComponentInner<'a>;
-    type Dst = WitnessComponent<'a>;
-}
-
-pub struct SpecWitnessComponentCombinator(SpecWitnessComponentCombinatorAlias);
-
-impl SpecCombinator for SpecWitnessComponentCombinator {
-    type Type = SpecWitnessComponent;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecWitnessComponentCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecWitnessComponentCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecWitnessComponentCombinatorAlias = Mapped<SpecDepend<BtcVarint, Bytes>, WitnessComponentMapper<'static>>;
-
-pub struct WitnessComponentCombinator<'a>(WitnessComponentCombinatorAlias<'a>);
-
-impl<'a> View for WitnessComponentCombinator<'a> {
-    type V = SpecWitnessComponentCombinator;
-    closed spec fn view(&self) -> Self::V { SpecWitnessComponentCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for WitnessComponentCombinator<'a> {
-    type Type = WitnessComponent<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type WitnessComponentCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, BtcVarint, Bytes, WitnessComponentCont0<'a>>, WitnessComponentMapper<'a>>;
-
-
-pub closed spec fn spec_witness_component() -> SpecWitnessComponentCombinator {
-    SpecWitnessComponentCombinator(
-    Mapped {
-        inner: SpecDepend { fst: BtcVarint, snd: |deps| spec_witness_component_cont0(deps) },
-        mapper: WitnessComponentMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_witness_component_cont0(deps: VarInt) -> Bytes {
-    let l = deps;
-    Bytes(l.spec_into())
-}
-                
-pub fn witness_component<'a>() -> (o: WitnessComponentCombinator<'a>)
-    ensures o@ == spec_witness_component(),
-{
-    WitnessComponentCombinator(
-    Mapped {
-        inner: Depend { fst: BtcVarint, snd: WitnessComponentCont0::new(), spec_snd: Ghost(|deps| spec_witness_component_cont0(deps)) },
-        mapper: WitnessComponentMapper::new(),
-    })
-}
-
-pub struct WitnessComponentCont0<'a>(PhantomData<&'a ()>);
-impl<'a> WitnessComponentCont0<'a> {
-    pub fn new() -> Self {
-        WitnessComponentCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&VarInt> for WitnessComponentCont0<'a> {
-    type Output = Bytes;
-
-    open spec fn requires(&self, deps: &VarInt) -> bool { true }
-
-    open spec fn ensures(&self, deps: &VarInt, o: Self::Output) -> bool {
-        o@ == spec_witness_component_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &VarInt) -> Self::Output {
-        let l = *deps;
-        Bytes(l.ex_into())
-    }
-}
-                
-
-pub struct SpecWitness {
-    pub count: VarInt,
-    pub data: Seq<SpecWitnessComponent>,
-}
-
-pub type SpecWitnessInner = (VarInt, Seq<SpecWitnessComponent>);
-impl SpecFrom<SpecWitness> for SpecWitnessInner {
-    open spec fn spec_from(m: SpecWitness) -> SpecWitnessInner {
-        (m.count, m.data)
-    }
-}
-impl SpecFrom<SpecWitnessInner> for SpecWitness {
-    open spec fn spec_from(m: SpecWitnessInner) -> SpecWitness {
-        let (count, data) = m;
-        SpecWitness { count, data }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct Witness<'a> {
-    pub count: VarInt,
-    pub data: RepeatResult<WitnessComponent<'a>>,
-}
-
-impl View for Witness<'_> {
-    type V = SpecWitness;
-
-    open spec fn view(&self) -> Self::V {
-        SpecWitness {
-            count: self.count@,
-            data: self.data@,
-        }
-    }
-}
-pub type WitnessInner<'a> = (VarInt, RepeatResult<WitnessComponent<'a>>);
-impl<'a> From<Witness<'a>> for WitnessInner<'a> {
-    fn ex_from(m: Witness) -> WitnessInner {
-        (m.count, m.data)
-    }
-}
-impl<'a> From<WitnessInner<'a>> for Witness<'a> {
-    fn ex_from(m: WitnessInner) -> Witness {
-        let (count, data) = m;
-        Witness { count, data }
-    }
-}
-
-pub struct WitnessMapper<'a>(PhantomData<&'a ()>);
-impl<'a> WitnessMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        WitnessMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        WitnessMapper(PhantomData)
-    }
-}
-impl View for WitnessMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for WitnessMapper<'_> {
-    type Src = SpecWitnessInner;
-    type Dst = SpecWitness;
-}
-impl SpecIsoProof for WitnessMapper<'_> {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for WitnessMapper<'a> {
-    type Src = WitnessInner<'a>;
-    type Dst = Witness<'a>;
-}
-
-pub struct SpecWitnessCombinator(SpecWitnessCombinatorAlias);
-
-impl SpecCombinator for SpecWitnessCombinator {
-    type Type = SpecWitness;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecWitnessCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecWitnessCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecWitnessCombinatorAlias = Mapped<SpecDepend<BtcVarint, RepeatN<SpecWitnessComponentCombinator>>, WitnessMapper<'static>>;
-
-pub struct WitnessCombinator<'a>(WitnessCombinatorAlias<'a>);
-
-impl<'a> View for WitnessCombinator<'a> {
-    type V = SpecWitnessCombinator;
-    closed spec fn view(&self) -> Self::V { SpecWitnessCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for WitnessCombinator<'a> {
-    type Type = Witness<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type WitnessCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, BtcVarint, RepeatN<WitnessComponentCombinator<'a>>, WitnessCont0<'a>>, WitnessMapper<'a>>;
-
-
-pub closed spec fn spec_witness() -> SpecWitnessCombinator {
-    SpecWitnessCombinator(
-    Mapped {
-        inner: SpecDepend { fst: BtcVarint, snd: |deps| spec_witness_cont0(deps) },
-        mapper: WitnessMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_witness_cont0(deps: VarInt) -> RepeatN<SpecWitnessComponentCombinator> {
-    let count = deps;
-    RepeatN(spec_witness_component(), count.spec_into())
-}
-                
-pub fn witness<'a>() -> (o: WitnessCombinator<'a>)
-    ensures o@ == spec_witness(),
-{
-    WitnessCombinator(
-    Mapped {
-        inner: Depend { fst: BtcVarint, snd: WitnessCont0::new(), spec_snd: Ghost(|deps| spec_witness_cont0(deps)) },
-        mapper: WitnessMapper::new(),
-    })
-}
-
-pub struct WitnessCont0<'a>(PhantomData<&'a ()>);
-impl<'a> WitnessCont0<'a> {
-    pub fn new() -> Self {
-        WitnessCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&VarInt> for WitnessCont0<'a> {
-    type Output = RepeatN<WitnessComponentCombinator<'a>>;
-
-    open spec fn requires(&self, deps: &VarInt) -> bool { true }
-
-    open spec fn ensures(&self, deps: &VarInt, o: Self::Output) -> bool {
-        o@ == spec_witness_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &VarInt) -> Self::Output {
-        let count = *deps;
-        RepeatN(witness_component(), count.ex_into())
-    }
-}
-                
-
 pub enum SpecLockTime {
     BlockNo(u32),
     Timestamp(u32),
@@ -1310,7 +952,7 @@ impl SecureSpecCombinator for SpecLockTimeCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecLockTimeCombinatorAlias = Mapped<OrdChoice<Refined<U32Le, Predicate675963002568997194>, Refined<U32Le, Predicate3133141078119142300>>, LockTimeMapper>;
+pub type SpecLockTimeCombinatorAlias = Mapped<Choice<Refined<U32Le, Predicate675963002568997194>, Refined<U32Le, Predicate3133141078119142300>>, LockTimeMapper>;
 pub struct Predicate675963002568997194;
 impl View for Predicate675963002568997194 {
     type V = Self;
@@ -1381,20 +1023,549 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for LockTimeCombinator {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type LockTimeCombinatorAlias = Mapped<OrdChoice<Refined<U32Le, Predicate675963002568997194>, Refined<U32Le, Predicate3133141078119142300>>, LockTimeMapper>;
+pub type LockTimeCombinatorAlias = Mapped<Choice<Refined<U32Le, Predicate675963002568997194>, Refined<U32Le, Predicate3133141078119142300>>, LockTimeMapper>;
 
 
 pub closed spec fn spec_lock_time() -> SpecLockTimeCombinator {
-    SpecLockTimeCombinator(Mapped { inner: OrdChoice(Refined { inner: U32Le, predicate: Predicate675963002568997194 }, Refined { inner: U32Le, predicate: Predicate3133141078119142300 }), mapper: LockTimeMapper::spec_new() })
+    SpecLockTimeCombinator(Mapped { inner: Choice(Refined { inner: U32Le, predicate: Predicate675963002568997194 }, Refined { inner: U32Le, predicate: Predicate3133141078119142300 }), mapper: LockTimeMapper::spec_new() })
 }
 
                 
 pub fn lock_time() -> (o: LockTimeCombinator)
     ensures o@ == spec_lock_time(),
 {
-    LockTimeCombinator(Mapped { inner: OrdChoice::new(Refined { inner: U32Le, predicate: Predicate675963002568997194 }, Refined { inner: U32Le, predicate: Predicate3133141078119142300 }), mapper: LockTimeMapper::new() })
+    LockTimeCombinator(Mapped { inner: Choice::new(Refined { inner: U32Le, predicate: Predicate675963002568997194 }, Refined { inner: U32Le, predicate: Predicate3133141078119142300 }), mapper: LockTimeMapper::new() })
 }
 
+                
+
+pub struct SpecTxNonsegwit {
+    pub txins: Seq<SpecTxin>,
+    pub txout_count: VarInt,
+    pub txouts: Seq<SpecTxout>,
+    pub lock_time: SpecLockTime,
+}
+
+pub type SpecTxNonsegwitInner = ((Seq<SpecTxin>, VarInt), (Seq<SpecTxout>, SpecLockTime));
+impl SpecFrom<SpecTxNonsegwit> for SpecTxNonsegwitInner {
+    open spec fn spec_from(m: SpecTxNonsegwit) -> SpecTxNonsegwitInner {
+        ((m.txins, m.txout_count), (m.txouts, m.lock_time))
+    }
+}
+impl SpecFrom<SpecTxNonsegwitInner> for SpecTxNonsegwit {
+    open spec fn spec_from(m: SpecTxNonsegwitInner) -> SpecTxNonsegwit {
+        let ((txins, txout_count), (txouts, lock_time)) = m;
+        SpecTxNonsegwit { txins, txout_count, txouts, lock_time }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct TxNonsegwit<'a> {
+    pub txins: RepeatResult<Txin<'a>>,
+    pub txout_count: VarInt,
+    pub txouts: RepeatResult<Txout<'a>>,
+    pub lock_time: LockTime,
+}
+
+impl View for TxNonsegwit<'_> {
+    type V = SpecTxNonsegwit;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTxNonsegwit {
+            txins: self.txins@,
+            txout_count: self.txout_count@,
+            txouts: self.txouts@,
+            lock_time: self.lock_time@,
+        }
+    }
+}
+pub type TxNonsegwitInner<'a> = ((RepeatResult<Txin<'a>>, VarInt), (RepeatResult<Txout<'a>>, LockTime));
+impl<'a> From<TxNonsegwit<'a>> for TxNonsegwitInner<'a> {
+    fn ex_from(m: TxNonsegwit) -> TxNonsegwitInner {
+        ((m.txins, m.txout_count), (m.txouts, m.lock_time))
+    }
+}
+impl<'a> From<TxNonsegwitInner<'a>> for TxNonsegwit<'a> {
+    fn ex_from(m: TxNonsegwitInner) -> TxNonsegwit {
+        let ((txins, txout_count), (txouts, lock_time)) = m;
+        TxNonsegwit { txins, txout_count, txouts, lock_time }
+    }
+}
+
+pub struct TxNonsegwitMapper<'a>(PhantomData<&'a ()>);
+impl<'a> TxNonsegwitMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        TxNonsegwitMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        TxNonsegwitMapper(PhantomData)
+    }
+}
+impl View for TxNonsegwitMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TxNonsegwitMapper<'_> {
+    type Src = SpecTxNonsegwitInner;
+    type Dst = SpecTxNonsegwit;
+}
+impl SpecIsoProof for TxNonsegwitMapper<'_> {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for TxNonsegwitMapper<'a> {
+    type Src = TxNonsegwitInner<'a>;
+    type Dst = TxNonsegwit<'a>;
+}
+
+pub struct SpecTxNonsegwitCombinator(SpecTxNonsegwitCombinatorAlias);
+
+impl SpecCombinator for SpecTxNonsegwitCombinator {
+    type Type = SpecTxNonsegwit;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTxNonsegwitCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTxNonsegwitCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTxNonsegwitCombinatorAlias = Mapped<SpecPair<(RepeatN<SpecTxinCombinator>, BtcVarint), (RepeatN<SpecTxoutCombinator>, SpecLockTimeCombinator)>, TxNonsegwitMapper<'static>>;
+
+pub struct TxNonsegwitCombinator<'a>(TxNonsegwitCombinatorAlias<'a>);
+
+impl<'a> View for TxNonsegwitCombinator<'a> {
+    type V = SpecTxNonsegwitCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTxNonsegwitCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TxNonsegwitCombinator<'a> {
+    type Type = TxNonsegwit<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TxNonsegwitCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, (RepeatN<TxinCombinator<'a>>, BtcVarint), (RepeatN<TxoutCombinator<'a>>, LockTimeCombinator), TxNonsegwitCont0<'a>>, TxNonsegwitMapper<'a>>;
+
+
+pub closed spec fn spec_tx_nonsegwit(txin_count: VarInt) -> SpecTxNonsegwitCombinator {
+    SpecTxNonsegwitCombinator(
+    Mapped {
+        inner: SpecPair { fst: (RepeatN(spec_txin(), txin_count.spec_into()), BtcVarint), snd: |deps| spec_tx_nonsegwit_cont0(deps) },
+        mapper: TxNonsegwitMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_tx_nonsegwit_cont0(deps: (Seq<SpecTxin>, VarInt)) -> (RepeatN<SpecTxoutCombinator>, SpecLockTimeCombinator) {
+    let (_, txout_count) = deps;
+    (RepeatN(spec_txout(), txout_count.spec_into()), spec_lock_time())
+}
+pub fn tx_nonsegwit<'a>(txin_count: VarInt) -> (o: TxNonsegwitCombinator<'a>)
+    ensures o@ == spec_tx_nonsegwit(txin_count@),
+{
+    TxNonsegwitCombinator(
+    Mapped {
+        inner: Pair { fst: (RepeatN(txin(), txin_count.ex_into()), BtcVarint), snd: TxNonsegwitCont0::new(), spec_snd: Ghost(|deps| spec_tx_nonsegwit_cont0(deps)) },
+        mapper: TxNonsegwitMapper::new(),
+    })
+}
+
+pub struct TxNonsegwitCont0<'a>(PhantomData<&'a ()>);
+impl<'a> TxNonsegwitCont0<'a> {
+    pub fn new() -> Self {
+        TxNonsegwitCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&(RepeatResult<Txin<'a>>, VarInt)> for TxNonsegwitCont0<'a> {
+    type Output = (RepeatN<TxoutCombinator<'a>>, LockTimeCombinator);
+
+    open spec fn requires(&self, deps: &(RepeatResult<Txin<'a>>, VarInt)) -> bool { true }
+
+    open spec fn ensures(&self, deps: &(RepeatResult<Txin<'a>>, VarInt), o: Self::Output) -> bool {
+        o@ == spec_tx_nonsegwit_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &(RepeatResult<Txin<'a>>, VarInt)) -> Self::Output {
+        let (_, txout_count) = *deps;
+        (RepeatN(txout(), txout_count.ex_into()), lock_time())
+    }
+}
+
+pub struct SpecWitnessComponent {
+    pub l: VarInt,
+    pub data: Seq<u8>,
+}
+
+pub type SpecWitnessComponentInner = (VarInt, Seq<u8>);
+impl SpecFrom<SpecWitnessComponent> for SpecWitnessComponentInner {
+    open spec fn spec_from(m: SpecWitnessComponent) -> SpecWitnessComponentInner {
+        (m.l, m.data)
+    }
+}
+impl SpecFrom<SpecWitnessComponentInner> for SpecWitnessComponent {
+    open spec fn spec_from(m: SpecWitnessComponentInner) -> SpecWitnessComponent {
+        let (l, data) = m;
+        SpecWitnessComponent { l, data }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct WitnessComponent<'a> {
+    pub l: VarInt,
+    pub data: &'a [u8],
+}
+
+impl View for WitnessComponent<'_> {
+    type V = SpecWitnessComponent;
+
+    open spec fn view(&self) -> Self::V {
+        SpecWitnessComponent {
+            l: self.l@,
+            data: self.data@,
+        }
+    }
+}
+pub type WitnessComponentInner<'a> = (VarInt, &'a [u8]);
+impl<'a> From<WitnessComponent<'a>> for WitnessComponentInner<'a> {
+    fn ex_from(m: WitnessComponent) -> WitnessComponentInner {
+        (m.l, m.data)
+    }
+}
+impl<'a> From<WitnessComponentInner<'a>> for WitnessComponent<'a> {
+    fn ex_from(m: WitnessComponentInner) -> WitnessComponent {
+        let (l, data) = m;
+        WitnessComponent { l, data }
+    }
+}
+
+pub struct WitnessComponentMapper<'a>(PhantomData<&'a ()>);
+impl<'a> WitnessComponentMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        WitnessComponentMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        WitnessComponentMapper(PhantomData)
+    }
+}
+impl View for WitnessComponentMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for WitnessComponentMapper<'_> {
+    type Src = SpecWitnessComponentInner;
+    type Dst = SpecWitnessComponent;
+}
+impl SpecIsoProof for WitnessComponentMapper<'_> {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for WitnessComponentMapper<'a> {
+    type Src = WitnessComponentInner<'a>;
+    type Dst = WitnessComponent<'a>;
+}
+
+pub struct SpecWitnessComponentCombinator(SpecWitnessComponentCombinatorAlias);
+
+impl SpecCombinator for SpecWitnessComponentCombinator {
+    type Type = SpecWitnessComponent;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecWitnessComponentCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecWitnessComponentCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecWitnessComponentCombinatorAlias = Mapped<SpecPair<BtcVarint, bytes::Variable>, WitnessComponentMapper<'static>>;
+
+pub struct WitnessComponentCombinator<'a>(WitnessComponentCombinatorAlias<'a>);
+
+impl<'a> View for WitnessComponentCombinator<'a> {
+    type V = SpecWitnessComponentCombinator;
+    closed spec fn view(&self) -> Self::V { SpecWitnessComponentCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for WitnessComponentCombinator<'a> {
+    type Type = WitnessComponent<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type WitnessComponentCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, BtcVarint, bytes::Variable, WitnessComponentCont0<'a>>, WitnessComponentMapper<'a>>;
+
+
+pub closed spec fn spec_witness_component() -> SpecWitnessComponentCombinator {
+    SpecWitnessComponentCombinator(
+    Mapped {
+        inner: SpecPair { fst: BtcVarint, snd: |deps| spec_witness_component_cont0(deps) },
+        mapper: WitnessComponentMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_witness_component_cont0(deps: VarInt) -> bytes::Variable {
+    let l = deps;
+    bytes::Variable(l.spec_into())
+}
+                
+pub fn witness_component<'a>() -> (o: WitnessComponentCombinator<'a>)
+    ensures o@ == spec_witness_component(),
+{
+    WitnessComponentCombinator(
+    Mapped {
+        inner: Pair { fst: BtcVarint, snd: WitnessComponentCont0::new(), spec_snd: Ghost(|deps| spec_witness_component_cont0(deps)) },
+        mapper: WitnessComponentMapper::new(),
+    })
+}
+
+pub struct WitnessComponentCont0<'a>(PhantomData<&'a ()>);
+impl<'a> WitnessComponentCont0<'a> {
+    pub fn new() -> Self {
+        WitnessComponentCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&VarInt> for WitnessComponentCont0<'a> {
+    type Output = bytes::Variable;
+
+    open spec fn requires(&self, deps: &VarInt) -> bool { true }
+
+    open spec fn ensures(&self, deps: &VarInt, o: Self::Output) -> bool {
+        o@ == spec_witness_component_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &VarInt) -> Self::Output {
+        let l = *deps;
+        bytes::Variable(l.ex_into())
+    }
+}
+                
+
+pub struct SpecWitness {
+    pub count: VarInt,
+    pub data: Seq<SpecWitnessComponent>,
+}
+
+pub type SpecWitnessInner = (VarInt, Seq<SpecWitnessComponent>);
+impl SpecFrom<SpecWitness> for SpecWitnessInner {
+    open spec fn spec_from(m: SpecWitness) -> SpecWitnessInner {
+        (m.count, m.data)
+    }
+}
+impl SpecFrom<SpecWitnessInner> for SpecWitness {
+    open spec fn spec_from(m: SpecWitnessInner) -> SpecWitness {
+        let (count, data) = m;
+        SpecWitness { count, data }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct Witness<'a> {
+    pub count: VarInt,
+    pub data: RepeatResult<WitnessComponent<'a>>,
+}
+
+impl View for Witness<'_> {
+    type V = SpecWitness;
+
+    open spec fn view(&self) -> Self::V {
+        SpecWitness {
+            count: self.count@,
+            data: self.data@,
+        }
+    }
+}
+pub type WitnessInner<'a> = (VarInt, RepeatResult<WitnessComponent<'a>>);
+impl<'a> From<Witness<'a>> for WitnessInner<'a> {
+    fn ex_from(m: Witness) -> WitnessInner {
+        (m.count, m.data)
+    }
+}
+impl<'a> From<WitnessInner<'a>> for Witness<'a> {
+    fn ex_from(m: WitnessInner) -> Witness {
+        let (count, data) = m;
+        Witness { count, data }
+    }
+}
+
+pub struct WitnessMapper<'a>(PhantomData<&'a ()>);
+impl<'a> WitnessMapper<'a> {
+    pub closed spec fn spec_new() -> Self {
+        WitnessMapper(PhantomData)
+    }
+    pub fn new() -> Self {
+        WitnessMapper(PhantomData)
+    }
+}
+impl View for WitnessMapper<'_> {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for WitnessMapper<'_> {
+    type Src = SpecWitnessInner;
+    type Dst = SpecWitness;
+}
+impl SpecIsoProof for WitnessMapper<'_> {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso for WitnessMapper<'a> {
+    type Src = WitnessInner<'a>;
+    type Dst = Witness<'a>;
+}
+
+pub struct SpecWitnessCombinator(SpecWitnessCombinatorAlias);
+
+impl SpecCombinator for SpecWitnessCombinator {
+    type Type = SpecWitness;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecWitnessCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecWitnessCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecWitnessCombinatorAlias = Mapped<SpecPair<BtcVarint, RepeatN<SpecWitnessComponentCombinator>>, WitnessMapper<'static>>;
+
+pub struct WitnessCombinator<'a>(WitnessCombinatorAlias<'a>);
+
+impl<'a> View for WitnessCombinator<'a> {
+    type V = SpecWitnessCombinator;
+    closed spec fn view(&self) -> Self::V { SpecWitnessCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for WitnessCombinator<'a> {
+    type Type = Witness<'a>;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type WitnessCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, BtcVarint, RepeatN<WitnessComponentCombinator<'a>>, WitnessCont0<'a>>, WitnessMapper<'a>>;
+
+
+pub closed spec fn spec_witness() -> SpecWitnessCombinator {
+    SpecWitnessCombinator(
+    Mapped {
+        inner: SpecPair { fst: BtcVarint, snd: |deps| spec_witness_cont0(deps) },
+        mapper: WitnessMapper::spec_new(),
+    })
+}
+
+pub open spec fn spec_witness_cont0(deps: VarInt) -> RepeatN<SpecWitnessComponentCombinator> {
+    let count = deps;
+    RepeatN(spec_witness_component(), count.spec_into())
+}
+                
+pub fn witness<'a>() -> (o: WitnessCombinator<'a>)
+    ensures o@ == spec_witness(),
+{
+    WitnessCombinator(
+    Mapped {
+        inner: Pair { fst: BtcVarint, snd: WitnessCont0::new(), spec_snd: Ghost(|deps| spec_witness_cont0(deps)) },
+        mapper: WitnessMapper::new(),
+    })
+}
+
+pub struct WitnessCont0<'a>(PhantomData<&'a ()>);
+impl<'a> WitnessCont0<'a> {
+    pub fn new() -> Self {
+        WitnessCont0(PhantomData)
+    }
+}
+impl<'a> Continuation<&VarInt> for WitnessCont0<'a> {
+    type Output = RepeatN<WitnessComponentCombinator<'a>>;
+
+    open spec fn requires(&self, deps: &VarInt) -> bool { true }
+
+    open spec fn ensures(&self, deps: &VarInt, o: Self::Output) -> bool {
+        o@ == spec_witness_cont0(deps@)
+    }
+
+    fn apply(&self, deps: &VarInt) -> Self::Output {
+        let count = *deps;
+        RepeatN(witness_component(), count.ex_into())
+    }
+}
                 
 
 pub struct SpecTxSegwit {
@@ -1517,7 +1688,7 @@ impl SecureSpecCombinator for SpecTxSegwitCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTxSegwitCombinatorAlias = Mapped<SpecDepend<SpecDepend<(Refined<U8, TagPred<u8>>, BtcVarint), (RepeatN<SpecTxinCombinator>, BtcVarint)>, (RepeatN<SpecTxoutCombinator>, (RepeatN<SpecWitnessCombinator>, SpecLockTimeCombinator))>, TxSegwitMapper<'static>>;
+pub type SpecTxSegwitCombinatorAlias = Mapped<SpecPair<SpecPair<(Refined<U8, TagPred<u8>>, BtcVarint), (RepeatN<SpecTxinCombinator>, BtcVarint)>, (RepeatN<SpecTxoutCombinator>, (RepeatN<SpecWitnessCombinator>, SpecLockTimeCombinator))>, TxSegwitMapper<'static>>;
 
 pub struct TxSegwitCombinator<'a>(TxSegwitCombinatorAlias<'a>);
 
@@ -1540,13 +1711,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for TxSegwitCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type TxSegwitCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, Depend<&'a [u8], Vec<u8>, (Refined<U8, TagPred<u8>>, BtcVarint), (RepeatN<TxinCombinator<'a>>, BtcVarint), TxSegwitCont1<'a>>, (RepeatN<TxoutCombinator<'a>>, (RepeatN<WitnessCombinator<'a>>, LockTimeCombinator)), TxSegwitCont0<'a>>, TxSegwitMapper<'a>>;
+pub type TxSegwitCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, Pair<&'a [u8], Vec<u8>, (Refined<U8, TagPred<u8>>, BtcVarint), (RepeatN<TxinCombinator<'a>>, BtcVarint), TxSegwitCont1<'a>>, (RepeatN<TxoutCombinator<'a>>, (RepeatN<WitnessCombinator<'a>>, LockTimeCombinator)), TxSegwitCont0<'a>>, TxSegwitMapper<'a>>;
 
 
 pub closed spec fn spec_tx_segwit() -> SpecTxSegwitCombinator {
     SpecTxSegwitCombinator(
     Mapped {
-        inner: SpecDepend { fst: SpecDepend { fst: (Refined { inner: U8, predicate: TagPred(TXSEGWITFLAG_CONST) }, BtcVarint), snd: |deps| spec_tx_segwit_cont1(deps) }, snd: |deps| spec_tx_segwit_cont0(deps) },
+        inner: SpecPair { fst: SpecPair { fst: (Refined { inner: U8, predicate: TagPred(TXSEGWITFLAG_CONST) }, BtcVarint), snd: |deps| spec_tx_segwit_cont1(deps) }, snd: |deps| spec_tx_segwit_cont0(deps) },
         mapper: TxSegwitMapper::spec_new(),
     })
 }
@@ -1565,7 +1736,7 @@ pub fn tx_segwit<'a>() -> (o: TxSegwitCombinator<'a>)
 {
     TxSegwitCombinator(
     Mapped {
-        inner: Depend { fst: Depend { fst: (Refined { inner: U8, predicate: TagPred(TXSEGWITFLAG_CONST) }, BtcVarint), snd: TxSegwitCont1::new(), spec_snd: Ghost(|deps| spec_tx_segwit_cont1(deps)) }, snd: TxSegwitCont0::new(), spec_snd: Ghost(|deps| spec_tx_segwit_cont0(deps)) },
+        inner: Pair { fst: Pair { fst: (Refined { inner: U8, predicate: TagPred(TXSEGWITFLAG_CONST) }, BtcVarint), snd: TxSegwitCont1::new(), spec_snd: Ghost(|deps| spec_tx_segwit_cont1(deps)) }, snd: TxSegwitCont0::new(), spec_snd: Ghost(|deps| spec_tx_segwit_cont0(deps)) },
         mapper: TxSegwitMapper::new(),
     })
 }
@@ -1611,185 +1782,6 @@ impl<'a> Continuation<&((u8, VarInt), (RepeatResult<Txin<'a>>, VarInt))> for TxS
     }
 }
                 
-
-pub struct SpecTxNonsegwit {
-    pub txins: Seq<SpecTxin>,
-    pub txout_count: VarInt,
-    pub txouts: Seq<SpecTxout>,
-    pub lock_time: SpecLockTime,
-}
-
-pub type SpecTxNonsegwitInner = ((Seq<SpecTxin>, VarInt), (Seq<SpecTxout>, SpecLockTime));
-impl SpecFrom<SpecTxNonsegwit> for SpecTxNonsegwitInner {
-    open spec fn spec_from(m: SpecTxNonsegwit) -> SpecTxNonsegwitInner {
-        ((m.txins, m.txout_count), (m.txouts, m.lock_time))
-    }
-}
-impl SpecFrom<SpecTxNonsegwitInner> for SpecTxNonsegwit {
-    open spec fn spec_from(m: SpecTxNonsegwitInner) -> SpecTxNonsegwit {
-        let ((txins, txout_count), (txouts, lock_time)) = m;
-        SpecTxNonsegwit { txins, txout_count, txouts, lock_time }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct TxNonsegwit<'a> {
-    pub txins: RepeatResult<Txin<'a>>,
-    pub txout_count: VarInt,
-    pub txouts: RepeatResult<Txout<'a>>,
-    pub lock_time: LockTime,
-}
-
-impl View for TxNonsegwit<'_> {
-    type V = SpecTxNonsegwit;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTxNonsegwit {
-            txins: self.txins@,
-            txout_count: self.txout_count@,
-            txouts: self.txouts@,
-            lock_time: self.lock_time@,
-        }
-    }
-}
-pub type TxNonsegwitInner<'a> = ((RepeatResult<Txin<'a>>, VarInt), (RepeatResult<Txout<'a>>, LockTime));
-impl<'a> From<TxNonsegwit<'a>> for TxNonsegwitInner<'a> {
-    fn ex_from(m: TxNonsegwit) -> TxNonsegwitInner {
-        ((m.txins, m.txout_count), (m.txouts, m.lock_time))
-    }
-}
-impl<'a> From<TxNonsegwitInner<'a>> for TxNonsegwit<'a> {
-    fn ex_from(m: TxNonsegwitInner) -> TxNonsegwit {
-        let ((txins, txout_count), (txouts, lock_time)) = m;
-        TxNonsegwit { txins, txout_count, txouts, lock_time }
-    }
-}
-
-pub struct TxNonsegwitMapper<'a>(PhantomData<&'a ()>);
-impl<'a> TxNonsegwitMapper<'a> {
-    pub closed spec fn spec_new() -> Self {
-        TxNonsegwitMapper(PhantomData)
-    }
-    pub fn new() -> Self {
-        TxNonsegwitMapper(PhantomData)
-    }
-}
-impl View for TxNonsegwitMapper<'_> {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TxNonsegwitMapper<'_> {
-    type Src = SpecTxNonsegwitInner;
-    type Dst = SpecTxNonsegwit;
-}
-impl SpecIsoProof for TxNonsegwitMapper<'_> {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso for TxNonsegwitMapper<'a> {
-    type Src = TxNonsegwitInner<'a>;
-    type Dst = TxNonsegwit<'a>;
-}
-
-pub struct SpecTxNonsegwitCombinator(SpecTxNonsegwitCombinatorAlias);
-
-impl SpecCombinator for SpecTxNonsegwitCombinator {
-    type Type = SpecTxNonsegwit;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTxNonsegwitCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTxNonsegwitCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTxNonsegwitCombinatorAlias = Mapped<SpecDepend<(RepeatN<SpecTxinCombinator>, BtcVarint), (RepeatN<SpecTxoutCombinator>, SpecLockTimeCombinator)>, TxNonsegwitMapper<'static>>;
-
-pub struct TxNonsegwitCombinator<'a>(TxNonsegwitCombinatorAlias<'a>);
-
-impl<'a> View for TxNonsegwitCombinator<'a> {
-    type V = SpecTxNonsegwitCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTxNonsegwitCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TxNonsegwitCombinator<'a> {
-    type Type = TxNonsegwit<'a>;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TxNonsegwitCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, (RepeatN<TxinCombinator<'a>>, BtcVarint), (RepeatN<TxoutCombinator<'a>>, LockTimeCombinator), TxNonsegwitCont0<'a>>, TxNonsegwitMapper<'a>>;
-
-
-pub closed spec fn spec_tx_nonsegwit(txin_count: VarInt) -> SpecTxNonsegwitCombinator {
-    SpecTxNonsegwitCombinator(
-    Mapped {
-        inner: SpecDepend { fst: (RepeatN(spec_txin(), txin_count.spec_into()), BtcVarint), snd: |deps| spec_tx_nonsegwit_cont0(deps) },
-        mapper: TxNonsegwitMapper::spec_new(),
-    })
-}
-
-pub open spec fn spec_tx_nonsegwit_cont0(deps: (Seq<SpecTxin>, VarInt)) -> (RepeatN<SpecTxoutCombinator>, SpecLockTimeCombinator) {
-    let (_, txout_count) = deps;
-    (RepeatN(spec_txout(), txout_count.spec_into()), spec_lock_time())
-}
-pub fn tx_nonsegwit<'a>(txin_count: VarInt) -> (o: TxNonsegwitCombinator<'a>)
-    ensures o@ == spec_tx_nonsegwit(txin_count@),
-{
-    TxNonsegwitCombinator(
-    Mapped {
-        inner: Depend { fst: (RepeatN(txin(), txin_count.ex_into()), BtcVarint), snd: TxNonsegwitCont0::new(), spec_snd: Ghost(|deps| spec_tx_nonsegwit_cont0(deps)) },
-        mapper: TxNonsegwitMapper::new(),
-    })
-}
-
-pub struct TxNonsegwitCont0<'a>(PhantomData<&'a ()>);
-impl<'a> TxNonsegwitCont0<'a> {
-    pub fn new() -> Self {
-        TxNonsegwitCont0(PhantomData)
-    }
-}
-impl<'a> Continuation<&(RepeatResult<Txin<'a>>, VarInt)> for TxNonsegwitCont0<'a> {
-    type Output = (RepeatN<TxoutCombinator<'a>>, LockTimeCombinator);
-
-    open spec fn requires(&self, deps: &(RepeatResult<Txin<'a>>, VarInt)) -> bool { true }
-
-    open spec fn ensures(&self, deps: &(RepeatResult<Txin<'a>>, VarInt), o: Self::Output) -> bool {
-        o@ == spec_tx_nonsegwit_cont0(deps@)
-    }
-
-    fn apply(&self, deps: &(RepeatResult<Txin<'a>>, VarInt)) -> Self::Output {
-        let (_, txout_count) = *deps;
-        (RepeatN(txout(), txout_count.ex_into()), lock_time())
-    }
-}
 
 pub enum SpecTxRest {
     Variant0(SpecTxSegwit),
@@ -1921,7 +1913,7 @@ impl SecureSpecCombinator for SpecTxRestCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTxRestCombinatorAlias = Mapped<OrdChoice<Cond<SpecTxSegwitCombinator>, Cond<SpecTxNonsegwitCombinator>>, TxRestMapper<'static>>;
+pub type SpecTxRestCombinatorAlias = Mapped<Choice<Cond<SpecTxSegwitCombinator>, Cond<SpecTxNonsegwitCombinator>>, TxRestMapper<'static>>;
 
 pub struct TxRestCombinator<'a>(TxRestCombinatorAlias<'a>);
 
@@ -1944,17 +1936,17 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for TxRestCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type TxRestCombinatorAlias<'a> = Mapped<OrdChoice<Cond<TxSegwitCombinator<'a>>, Cond<TxNonsegwitCombinator<'a>>>, TxRestMapper<'a>>;
+pub type TxRestCombinatorAlias<'a> = Mapped<Choice<Cond<TxSegwitCombinator<'a>>, Cond<TxNonsegwitCombinator<'a>>>, TxRestMapper<'a>>;
 
 
 pub closed spec fn spec_tx_rest(txin_count: VarInt) -> SpecTxRestCombinator {
-    SpecTxRestCombinator(Mapped { inner: OrdChoice(Cond { cond: txin_count.spec_as_usize() == 0, inner: spec_tx_segwit() }, Cond { cond: !(txin_count.spec_as_usize() == 0), inner: spec_tx_nonsegwit(txin_count) }), mapper: TxRestMapper::spec_new() })
+    SpecTxRestCombinator(Mapped { inner: Choice(Cond { cond: txin_count.spec_as_usize() == 0, inner: spec_tx_segwit() }, Cond { cond: !(txin_count.spec_as_usize() == 0), inner: spec_tx_nonsegwit(txin_count) }), mapper: TxRestMapper::spec_new() })
 }
 
 pub fn tx_rest<'a>(txin_count: VarInt) -> (o: TxRestCombinator<'a>)
     ensures o@ == spec_tx_rest(txin_count@),
 {
-    TxRestCombinator(Mapped { inner: OrdChoice::new(Cond { cond: txin_count.as_usize() == 0, inner: tx_segwit() }, Cond { cond: !(txin_count.as_usize() == 0), inner: tx_nonsegwit(txin_count) }), mapper: TxRestMapper::new() })
+    TxRestCombinator(Mapped { inner: Choice::new(Cond { cond: txin_count.as_usize() == 0, inner: tx_segwit() }, Cond { cond: !(txin_count.as_usize() == 0), inner: tx_nonsegwit(txin_count) }), mapper: TxRestMapper::new() })
 }
 
 
@@ -2065,7 +2057,7 @@ impl SecureSpecCombinator for SpecTxCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTxCombinatorAlias = Mapped<SpecDepend<(U32Le, BtcVarint), SpecTxRestCombinator>, TxMapper<'static>>;
+pub type SpecTxCombinatorAlias = Mapped<SpecPair<(U32Le, BtcVarint), SpecTxRestCombinator>, TxMapper<'static>>;
 
 pub struct TxCombinator<'a>(TxCombinatorAlias<'a>);
 
@@ -2088,13 +2080,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for TxCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type TxCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, (U32Le, BtcVarint), TxRestCombinator<'a>, TxCont0<'a>>, TxMapper<'a>>;
+pub type TxCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, (U32Le, BtcVarint), TxRestCombinator<'a>, TxCont0<'a>>, TxMapper<'a>>;
 
 
 pub closed spec fn spec_tx() -> SpecTxCombinator {
     SpecTxCombinator(
     Mapped {
-        inner: SpecDepend { fst: (U32Le, BtcVarint), snd: |deps| spec_tx_cont0(deps) },
+        inner: SpecPair { fst: (U32Le, BtcVarint), snd: |deps| spec_tx_cont0(deps) },
         mapper: TxMapper::spec_new(),
     })
 }
@@ -2109,7 +2101,7 @@ pub fn tx<'a>() -> (o: TxCombinator<'a>)
 {
     TxCombinator(
     Mapped {
-        inner: Depend { fst: (U32Le, BtcVarint), snd: TxCont0::new(), spec_snd: Ghost(|deps| spec_tx_cont0(deps)) },
+        inner: Pair { fst: (U32Le, BtcVarint), snd: TxCont0::new(), spec_snd: Ghost(|deps| spec_tx_cont0(deps)) },
         mapper: TxMapper::new(),
     })
 }
@@ -2258,7 +2250,7 @@ impl SecureSpecCombinator for SpecBlockCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecBlockCombinatorAlias = Mapped<SpecDepend<(U32Le, (BytesN<32>, (BytesN<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), RepeatN<SpecTxCombinator>>, BlockMapper<'static>>;
+pub type SpecBlockCombinatorAlias = Mapped<SpecPair<(U32Le, (bytes::Fixed<32>, (bytes::Fixed<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), RepeatN<SpecTxCombinator>>, BlockMapper<'static>>;
 
 pub struct BlockCombinator<'a>(BlockCombinatorAlias<'a>);
 
@@ -2281,13 +2273,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for BlockCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type BlockCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, (U32Le, (BytesN<32>, (BytesN<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), RepeatN<TxCombinator<'a>>, BlockCont0<'a>>, BlockMapper<'a>>;
+pub type BlockCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, (U32Le, (bytes::Fixed<32>, (bytes::Fixed<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), RepeatN<TxCombinator<'a>>, BlockCont0<'a>>, BlockMapper<'a>>;
 
 
 pub closed spec fn spec_block() -> SpecBlockCombinator {
     SpecBlockCombinator(
     Mapped {
-        inner: SpecDepend { fst: (U32Le, (BytesN::<32>, (BytesN::<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), snd: |deps| spec_block_cont0(deps) },
+        inner: SpecPair { fst: (U32Le, (bytes::Fixed::<32>, (bytes::Fixed::<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), snd: |deps| spec_block_cont0(deps) },
         mapper: BlockMapper::spec_new(),
     })
 }
@@ -2302,7 +2294,7 @@ pub fn block<'a>() -> (o: BlockCombinator<'a>)
 {
     BlockCombinator(
     Mapped {
-        inner: Depend { fst: (U32Le, (BytesN::<32>, (BytesN::<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), snd: BlockCont0::new(), spec_snd: Ghost(|deps| spec_block_cont0(deps)) },
+        inner: Pair { fst: (U32Le, (bytes::Fixed::<32>, (bytes::Fixed::<32>, (U32Le, (U32Le, (U32Le, BtcVarint)))))), snd: BlockCont0::new(), spec_snd: Ghost(|deps| spec_block_cont0(deps)) },
         mapper: BlockMapper::new(),
     })
 }
