@@ -1,0 +1,8 @@
+[package]
+name = "wasm_rewrite"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# wasmbin = { git = "https://github.com/zhengyao-lin/wasmbin.git", branch = "master" }
+wasmbin = { path = "../wasmbin" }
