@@ -160,7 +160,7 @@ pub struct CodegenCtx<'a> {
 /// Helper function to determine if a message type needs lifetime annotations
 ///
 /// A message type needs lifetime annotations if the combinator, after resolving,
-/// - is a `Bytes` or `Tail` combinator
+/// - is a `bytes::Variable` or `bytes::Tail` combinator
 /// - is any combinator that recursively contains a message type that needs lifetime
 ///   annotations
 fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
@@ -234,7 +234,7 @@ fn const_msg_need_lifetime(const_combinator: &ConstCombinator) -> bool {
 ///
 /// A combinator type needs lifetime annotations if the combinator, after resolving,
 /// - is a `Struct` combinator s.t.
-///   - it has internal dependencies (because `Depend` combinator needs lifetime annotations)
+///   - it has internal dependencies (because `Pair` combinator needs lifetime annotations)
 ///   - or, its message type needs lifetime annotations (because the `Mapper` needs to refer to it)
 /// - is a `Choice` combinator whose message types need lifetime annotations (because of the
 ///   `Mapper` as well)
@@ -510,7 +510,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
             }
         };
         if let Some(and_then) = &self.and_then {
-            let (comb_type, additional_code) = self.inner.gen_combinator_type(name, mode, ctx); // must be `Bytes` or `Tail`
+            let (comb_type, additional_code) = self.inner.gen_combinator_type(name, mode, ctx); // must be `bytes::Variable` or `bytes::Tail`
             let (and_then_comb_type, and_then_additional_code) =
                 and_then.inner.gen_combinator_type(name, mode, ctx);
             if !ctx.top_level {
@@ -811,8 +811,8 @@ impl Codegen for BytesCombinator {
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
         match &self.len {
-            LengthSpecifier::Const(len) => (format!("BytesN<{}>", len), "".to_string()),
-            LengthSpecifier::Dependent(..) => ("Bytes".to_string(), "".to_string()),
+            LengthSpecifier::Const(len) => (format!("bytes::Fixed<{}>", len), "".to_string()),
+            LengthSpecifier::Dependent(..) => ("bytes::Variable".to_string(), "".to_string()),
         }
     }
 
@@ -823,11 +823,11 @@ impl Codegen for BytesCombinator {
         };
         match &self.len {
             LengthSpecifier::Const(len) => {
-                let combinator_expr = format!("BytesN::<{}>", len);
+                let combinator_expr = format!("bytes::Fixed::<{}>", len);
                 (combinator_expr, "".to_string())
             }
             LengthSpecifier::Dependent(depend_id) => {
-                let combinator_expr = format!("Bytes({}{})", depend_id, into);
+                let combinator_expr = format!("bytes::Variable({}{})", depend_id, into);
                 (combinator_expr, "".to_string())
             }
         }
@@ -854,14 +854,14 @@ impl Codegen for TailCombinator {
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
         if !ctx.top_level {
-            ("Tail".to_string(), "".to_string())
+            ("bytes::Tail".to_string(), "".to_string())
         } else {
             panic!("`Tail` should not be a top-level definition")
         }
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        ("Tail".to_string(), "".to_string())
+        ("bytes::Tail".to_string(), "".to_string())
     }
 }
 
@@ -1244,12 +1244,12 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         };
         let mapped_inner = match mode {
             Mode::Spec => {
-                build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecDepend<", ">")
+                build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecPair<", ">")
             }
             _ => custom_build_nested_pairs(
                 &self.0,
                 &mut into_comb_type_pairs,
-                &|_| "Depend<&'a [u8], Vec<u8>, ".into(),
+                &|_| "Pair<&'a [u8], Vec<u8>, ".into(),
                 &|depth| format!(", {name}Cont{depth}{lifetime_ann_cont}>"),
                 0,
             ),
@@ -1362,12 +1362,12 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                 let expr = match mode {
                     Mode::Spec => {
                         format!(
-                            r#"SpecDepend {{ fst: {fst_expr}, snd: |deps| spec_{snaked_name}_cont{depth}(deps) }}"#,
+                            r#"SpecPair {{ fst: {fst_expr}, snd: |deps| spec_{snaked_name}_cont{depth}(deps) }}"#,
                         )
                     }
                     _ => {
                         format!(
-                            r#"Depend {{ fst: {fst_expr}, snd: {name}Cont{depth}::new(), spec_snd: Ghost(|deps| spec_{snaked_name}_cont{depth}(deps)) }}"#,
+                            r#"Pair {{ fst: {fst_expr}, snd: {name}Cont{depth}::new(), spec_snd: Ghost(|deps| spec_{snaked_name}_cont{depth}(deps)) }}"#,
                         )
                     }
                 };
@@ -1896,7 +1896,7 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                 .map(|(t, code)| (format!("Cond<{}>", t), code))
                 .unzip(),
         };
-        let inner = fmt_in_pairs(&combinator_types, "OrdChoice", Bracket::Angle);
+        let inner = fmt_in_pairs(&combinator_types, "Choice", Bracket::Angle);
 
         // generate DisjointFrom impls if
         // 1. it's a non-dependent choice
@@ -1905,7 +1905,7 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             match mode {
                 Mode::Spec => {
                     // generate disjointness proof for every pair of variants in `combinator_types`
-                    // e.g. for `OrdChoice<A, OrdChoice<B, OrdChoice<C, D>>>`, generate
+                    // e.g. for `Choice<A, Choice<B, Choice<C, D>>>`, generate
                     // `impl DisjointFrom<A> for D`,
                     // `impl DisjointFrom<B> for D`,
                     // `impl DisjointFrom<C> for D`
@@ -2200,8 +2200,8 @@ impl DisjointFrom<{}> for {} {{
             }
         };
         let ord_choice_constructor = match mode {
-            Mode::Spec => "OrdChoice",
-            _ => "OrdChoice::new",
+            Mode::Spec => "Choice",
+            _ => "Choice::new",
         };
         let inner = fmt_in_pairs(
             &combinator_exprs,
@@ -2855,17 +2855,17 @@ impl Codegen for ConstBytesCombinator {
         //         );
         if ctx.wrap {
             match mode {
-                Mode::Spec => (format!("Tag<BytesN<{}>, Seq<u8>>", len), spec_const_decl),
-                _ => (format!("Tag<BytesN<{}>, &'a [u8]>", len), exec_const_decl),
+                Mode::Spec => (format!("Tag<bytes::Fixed<{}>, Seq<u8>>", len), spec_const_decl),
+                _ => (format!("Tag<bytes::Fixed<{}>, &'a [u8]>", len), exec_const_decl),
             }
         } else {
             match mode {
                 Mode::Spec => (
-                    format!("Refined<BytesN<{}>, TagPred<Seq<u8>>>", len),
+                    format!("Refined<bytes::Fixed<{}>, TagPred<Seq<u8>>>", len),
                     spec_const_decl,
                 ),
                 _ => (
-                    format!("Refined<BytesN<{}>, TagPred<&'a [u8]>>", len),
+                    format!("Refined<bytes::Fixed<{}>, TagPred<&'a [u8]>>", len),
                     exec_const_decl,
                 ),
             }
@@ -2876,17 +2876,17 @@ impl Codegen for ConstBytesCombinator {
         let name = format!("{name}_CONST");
         let combinator_expr = if ctx.wrap {
             match mode {
-                Mode::Spec => format!("Tag::spec_new(BytesN::<{}>, SPEC_{})", self.len, name),
-                _ => format!("Tag::new(BytesN::<{}>, {}.as_slice())", self.len, name),
+                Mode::Spec => format!("Tag::spec_new(bytes::Fixed::<{}>, SPEC_{})", self.len, name),
+                _ => format!("Tag::new(bytes::Fixed::<{}>, {}.as_slice())", self.len, name),
             }
         } else {
             match mode {
                 Mode::Spec => format!(
-                    "Refined {{ inner: BytesN::<{}>, predicate: TagPred(SPEC_{}) }}",
+                    "Refined {{ inner: bytes::Fixed::<{}>, predicate: TagPred(SPEC_{}) }}",
                     self.len, name
                 ),
                 _ => format!(
-                    "Refined {{ inner: BytesN::<{}>, predicate: TagPred({}.as_slice()) }}",
+                    "Refined {{ inner: bytes::Fixed::<{}>, predicate: TagPred({}.as_slice()) }}",
                     self.len, name
                 ),
             }
@@ -2941,25 +2941,18 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Stri
     "#![allow(warnings)]\n#![allow(unused)]\n".to_string()
         + "use std::marker::PhantomData;\n"
         + "use vstd::prelude::*;\n"
-        + "use vest::properties::*;\n"
-        + "use vest::utils::*;\n"
-        + "use vest::regular::map::*;\n"
-        + "use vest::regular::tag::*;\n"
-        + "use vest::regular::choice::*;\n"
-        + "use vest::regular::cond::*;\n"
-        + "use vest::regular::uints::*;\n"
-        + "use vest::regular::tail::*;\n"
-        + "use vest::regular::bytes::*;\n"
-        + "use vest::regular::bytes_n::*;\n"
-        + "use vest::regular::depend::*;\n"
-        + "use vest::regular::and_then::*;\n"
-        + "use vest::regular::refined::*;\n"
-        + "use vest::regular::repeat::*;\n"
-        + "use vest::regular::repeat_n::*;\n"
-        + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
-        + "use vest::regular::preceded::*;\n"
-        + "use vest::regular::terminated::*;\n"
+
+        + "use vest::regular::modifier::*;\n"
+        + "use vest::regular::bytes;\n"
+        + "use vest::regular::variant::*;\n"
+        + "use vest::regular::sequence::*;\n"
+        + "use vest::regular::repetition::*;\n"
         + "use vest::regular::disjoint::DisjointFrom;\n"
+        + "use vest::regular::tag::*;\n"
+        + "use vest::regular::uints::*;\n"
+        + "use vest::utils::*;\n"
+        + "use vest::properties::*;\n"
+        + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
         + "use vest::regular::leb128::*;\n"
         + &format!("verus!{{\n{}\n}}\n", code)
 }

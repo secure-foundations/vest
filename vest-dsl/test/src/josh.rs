@@ -2,27 +2,86 @@
 #![allow(unused)]
 use std::marker::PhantomData;
 use vstd::prelude::*;
-use vest::properties::*;
-use vest::utils::*;
-use vest::regular::map::*;
-use vest::regular::tag::*;
-use vest::regular::choice::*;
-use vest::regular::cond::*;
-use vest::regular::uints::*;
-use vest::regular::tail::*;
-use vest::regular::bytes::*;
-use vest::regular::bytes_n::*;
-use vest::regular::depend::*;
-use vest::regular::and_then::*;
-use vest::regular::refined::*;
-use vest::regular::repeat::*;
-use vest::regular::repeat_n::*;
-use vest::bitcoin::varint::{BtcVarint, VarInt};
-use vest::regular::preceded::*;
-use vest::regular::terminated::*;
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::tag::*;
+use vest::regular::uints::*;
+use vest::utils::*;
+use vest::properties::*;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
 verus!{
+pub type SpecTstTag = u8;
+pub type TstTag = u8;
+
+
+pub struct SpecTstTagCombinator(SpecTstTagCombinatorAlias);
+
+impl SpecCombinator for SpecTstTagCombinator {
+    type Type = SpecTstTag;
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTstTagCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecTstTagCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTstTagCombinatorAlias = U8;
+
+pub struct TstTagCombinator(TstTagCombinatorAlias);
+
+impl View for TstTagCombinator {
+    type V = SpecTstTagCombinator;
+    closed spec fn view(&self) -> Self::V { SpecTstTagCombinator(self.0@) }
+}
+impl<'a> Combinator<&'a [u8], Vec<u8>> for TstTagCombinator {
+    type Type = TstTag;
+    closed spec fn spec_length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
+    fn length(&self) -> Option<usize> 
+    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
+    closed spec fn parse_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
+    closed spec fn serialize_requires(&self) -> bool 
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
+    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type TstTagCombinatorAlias = U8;
+
+
+pub closed spec fn spec_tst_tag() -> SpecTstTagCombinator {
+    SpecTstTagCombinator(U8)
+}
+
+                
+pub fn tst_tag() -> (o: TstTagCombinator)
+    ensures o@ == spec_tst_tag(),
+{
+    TstTagCombinator(U8)
+}
+
+                
 
 pub struct SpecMydata {
     pub foo: Seq<u8>,
@@ -128,7 +187,7 @@ impl SecureSpecCombinator for SpecMydataCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecMydataCombinatorAlias = Mapped<(BytesN<2>, BytesN<2>), MydataMapper<'static>>;
+pub type SpecMydataCombinatorAlias = Mapped<(bytes::Fixed<2>, bytes::Fixed<2>), MydataMapper<'static>>;
 
 pub struct MydataCombinator<'a>(MydataCombinatorAlias<'a>);
 
@@ -151,13 +210,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for MydataCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type MydataCombinatorAlias<'a> = Mapped<(BytesN<2>, BytesN<2>), MydataMapper<'a>>;
+pub type MydataCombinatorAlias<'a> = Mapped<(bytes::Fixed<2>, bytes::Fixed<2>), MydataMapper<'a>>;
 
 
 pub closed spec fn spec_mydata() -> SpecMydataCombinator {
     SpecMydataCombinator(
     Mapped {
-        inner: (BytesN::<2>, BytesN::<2>),
+        inner: (bytes::Fixed::<2>, bytes::Fixed::<2>),
         mapper: MydataMapper::spec_new(),
     })
 }
@@ -168,7 +227,7 @@ pub fn mydata<'a>() -> (o: MydataCombinator<'a>)
 {
     MydataCombinator(
     Mapped {
-        inner: (BytesN::<2>, BytesN::<2>),
+        inner: (bytes::Fixed::<2>, bytes::Fixed::<2>),
         mapper: MydataMapper::new(),
     })
 }
@@ -508,7 +567,7 @@ impl SecureSpecCombinator for SpecTstMydataCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTstMydataCombinatorAlias = Mapped<OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, OrdChoice<Cond<SpecMydataCombinator>, Cond<SpecMydataCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, TstMydataMapper<'static>>;
+pub type SpecTstMydataCombinatorAlias = Mapped<Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Choice<Cond<SpecMydataCombinator>, Cond<SpecMydataCombinator>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, TstMydataMapper<'static>>;
 
 pub struct TstMydataCombinator<'a>(TstMydataCombinatorAlias<'a>);
 
@@ -531,86 +590,19 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for TstMydataCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type TstMydataCombinatorAlias<'a> = Mapped<OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, OrdChoice<Cond<MydataCombinator<'a>>, Cond<MydataCombinator<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, TstMydataMapper<'a>>;
+pub type TstMydataCombinatorAlias<'a> = Mapped<Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Choice<Cond<MydataCombinator<'a>>, Cond<MydataCombinator<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>, TstMydataMapper<'a>>;
 
 
 pub closed spec fn spec_tst_mydata(tag: SpecTstTag) -> SpecTstMydataCombinator {
-    SpecTstMydataCombinator(Mapped { inner: OrdChoice(Cond { cond: tag == 0, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 1, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 2, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 3, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 4, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 5, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 6, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 7, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 8, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 9, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 10, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 11, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 12, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 13, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 14, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 15, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 16, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 17, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 18, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 19, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 20, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 21, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 22, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 23, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 24, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 25, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 26, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 27, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 28, inner: spec_mydata() }, OrdChoice(Cond { cond: tag == 29, inner: spec_mydata() }, Cond { cond: tag == 30, inner: spec_mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::spec_new() })
+    SpecTstMydataCombinator(Mapped { inner: Choice(Cond { cond: tag == 0, inner: spec_mydata() }, Choice(Cond { cond: tag == 1, inner: spec_mydata() }, Choice(Cond { cond: tag == 2, inner: spec_mydata() }, Choice(Cond { cond: tag == 3, inner: spec_mydata() }, Choice(Cond { cond: tag == 4, inner: spec_mydata() }, Choice(Cond { cond: tag == 5, inner: spec_mydata() }, Choice(Cond { cond: tag == 6, inner: spec_mydata() }, Choice(Cond { cond: tag == 7, inner: spec_mydata() }, Choice(Cond { cond: tag == 8, inner: spec_mydata() }, Choice(Cond { cond: tag == 9, inner: spec_mydata() }, Choice(Cond { cond: tag == 10, inner: spec_mydata() }, Choice(Cond { cond: tag == 11, inner: spec_mydata() }, Choice(Cond { cond: tag == 12, inner: spec_mydata() }, Choice(Cond { cond: tag == 13, inner: spec_mydata() }, Choice(Cond { cond: tag == 14, inner: spec_mydata() }, Choice(Cond { cond: tag == 15, inner: spec_mydata() }, Choice(Cond { cond: tag == 16, inner: spec_mydata() }, Choice(Cond { cond: tag == 17, inner: spec_mydata() }, Choice(Cond { cond: tag == 18, inner: spec_mydata() }, Choice(Cond { cond: tag == 19, inner: spec_mydata() }, Choice(Cond { cond: tag == 20, inner: spec_mydata() }, Choice(Cond { cond: tag == 21, inner: spec_mydata() }, Choice(Cond { cond: tag == 22, inner: spec_mydata() }, Choice(Cond { cond: tag == 23, inner: spec_mydata() }, Choice(Cond { cond: tag == 24, inner: spec_mydata() }, Choice(Cond { cond: tag == 25, inner: spec_mydata() }, Choice(Cond { cond: tag == 26, inner: spec_mydata() }, Choice(Cond { cond: tag == 27, inner: spec_mydata() }, Choice(Cond { cond: tag == 28, inner: spec_mydata() }, Choice(Cond { cond: tag == 29, inner: spec_mydata() }, Cond { cond: tag == 30, inner: spec_mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::spec_new() })
 }
 
 pub fn tst_mydata<'a>(tag: TstTag) -> (o: TstMydataCombinator<'a>)
     ensures o@ == spec_tst_mydata(tag@),
 {
-    TstMydataCombinator(Mapped { inner: OrdChoice::new(Cond { cond: tag == 0, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 1, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 2, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 3, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 4, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 5, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 6, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 7, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 8, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 9, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 10, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 11, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 12, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 13, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 14, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 15, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 16, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 17, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 18, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 19, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 20, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 21, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 22, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 23, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 24, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 25, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 26, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 27, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 28, inner: mydata() }, OrdChoice::new(Cond { cond: tag == 29, inner: mydata() }, Cond { cond: tag == 30, inner: mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::new() })
+    TstMydataCombinator(Mapped { inner: Choice::new(Cond { cond: tag == 0, inner: mydata() }, Choice::new(Cond { cond: tag == 1, inner: mydata() }, Choice::new(Cond { cond: tag == 2, inner: mydata() }, Choice::new(Cond { cond: tag == 3, inner: mydata() }, Choice::new(Cond { cond: tag == 4, inner: mydata() }, Choice::new(Cond { cond: tag == 5, inner: mydata() }, Choice::new(Cond { cond: tag == 6, inner: mydata() }, Choice::new(Cond { cond: tag == 7, inner: mydata() }, Choice::new(Cond { cond: tag == 8, inner: mydata() }, Choice::new(Cond { cond: tag == 9, inner: mydata() }, Choice::new(Cond { cond: tag == 10, inner: mydata() }, Choice::new(Cond { cond: tag == 11, inner: mydata() }, Choice::new(Cond { cond: tag == 12, inner: mydata() }, Choice::new(Cond { cond: tag == 13, inner: mydata() }, Choice::new(Cond { cond: tag == 14, inner: mydata() }, Choice::new(Cond { cond: tag == 15, inner: mydata() }, Choice::new(Cond { cond: tag == 16, inner: mydata() }, Choice::new(Cond { cond: tag == 17, inner: mydata() }, Choice::new(Cond { cond: tag == 18, inner: mydata() }, Choice::new(Cond { cond: tag == 19, inner: mydata() }, Choice::new(Cond { cond: tag == 20, inner: mydata() }, Choice::new(Cond { cond: tag == 21, inner: mydata() }, Choice::new(Cond { cond: tag == 22, inner: mydata() }, Choice::new(Cond { cond: tag == 23, inner: mydata() }, Choice::new(Cond { cond: tag == 24, inner: mydata() }, Choice::new(Cond { cond: tag == 25, inner: mydata() }, Choice::new(Cond { cond: tag == 26, inner: mydata() }, Choice::new(Cond { cond: tag == 27, inner: mydata() }, Choice::new(Cond { cond: tag == 28, inner: mydata() }, Choice::new(Cond { cond: tag == 29, inner: mydata() }, Cond { cond: tag == 30, inner: mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper::new() })
 }
 
-pub type SpecTstTag = u8;
-pub type TstTag = u8;
-
-
-pub struct SpecTstTagCombinator(SpecTstTagCombinatorAlias);
-
-impl SpecCombinator for SpecTstTagCombinator {
-    type Type = SpecTstTag;
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTstTagCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTstTagCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTstTagCombinatorAlias = U8;
-
-pub struct TstTagCombinator(TstTagCombinatorAlias);
-
-impl View for TstTagCombinator {
-    type V = SpecTstTagCombinator;
-    closed spec fn view(&self) -> Self::V { SpecTstTagCombinator(self.0@) }
-}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for TstTagCombinator {
-    type Type = TstTag;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn parse_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }
-    closed spec fn serialize_requires(&self) -> bool 
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TstTagCombinatorAlias = U8;
-
-
-pub closed spec fn spec_tst_tag() -> SpecTstTagCombinator {
-    SpecTstTagCombinator(U8)
-}
-
-                
-pub fn tst_tag() -> (o: TstTagCombinator)
-    ensures o@ == spec_tst_tag(),
-{
-    TstTagCombinator(U8)
-}
-
-                
 
 pub struct SpecTst {
     pub tag: SpecTstTag,
@@ -716,7 +708,7 @@ impl SecureSpecCombinator for SpecTstCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTstCombinatorAlias = Mapped<SpecDepend<SpecTstTagCombinator, SpecTstMydataCombinator>, TstMapper<'static>>;
+pub type SpecTstCombinatorAlias = Mapped<SpecPair<SpecTstTagCombinator, SpecTstMydataCombinator>, TstMapper<'static>>;
 
 pub struct TstCombinator<'a>(TstCombinatorAlias<'a>);
 
@@ -739,13 +731,13 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for TstCombinator<'a> {
     fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type TstCombinatorAlias<'a> = Mapped<Depend<&'a [u8], Vec<u8>, TstTagCombinator, TstMydataCombinator<'a>, TstCont0<'a>>, TstMapper<'a>>;
+pub type TstCombinatorAlias<'a> = Mapped<Pair<&'a [u8], Vec<u8>, TstTagCombinator, TstMydataCombinator<'a>, TstCont0<'a>>, TstMapper<'a>>;
 
 
 pub closed spec fn spec_tst() -> SpecTstCombinator {
     SpecTstCombinator(
     Mapped {
-        inner: SpecDepend { fst: spec_tst_tag(), snd: |deps| spec_tst_cont0(deps) },
+        inner: SpecPair { fst: spec_tst_tag(), snd: |deps| spec_tst_cont0(deps) },
         mapper: TstMapper::spec_new(),
     })
 }
@@ -760,7 +752,7 @@ pub fn tst<'a>() -> (o: TstCombinator<'a>)
 {
     TstCombinator(
     Mapped {
-        inner: Depend { fst: tst_tag(), snd: TstCont0::new(), spec_snd: Ghost(|deps| spec_tst_cont0(deps)) },
+        inner: Pair { fst: tst_tag(), snd: TstCont0::new(), spec_snd: Ghost(|deps| spec_tst_cont0(deps)) },
         mapper: TstMapper::new(),
     })
 }
