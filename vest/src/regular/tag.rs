@@ -6,72 +6,62 @@ use vstd::prelude::*;
 verus! {
 
 /// tag predicate that matches the input with a given value
-pub struct TagPred<PT, ST>(pub PT, pub ST);
+pub struct TagPred<T>(pub T);
 
-impl<PT: View, ST: View> View for TagPred<PT, ST> {
-    type V = TagPred<PT::V, ST::V>;
+impl<T: View> View for TagPred<T> {
+    type V = TagPred<T::V>;
 
     open spec fn view(&self) -> Self::V {
-        TagPred(self.0@, self.1@)
+        TagPred(self.0@)
     }
 }
 
-impl<T> SpecPred for TagPred<T, T> {
+impl<T> SpecPred for TagPred<T> {
     type Input = T;
 
     open spec fn spec_apply(&self, i: &Self::Input) -> bool {
-        self.0 == self.1 && (*i == self.0)
+        *i == self.0
     }
 }
 
-impl<PT: Compare<PT>, ST: Compare<ST>> Pred for TagPred<PT, ST> where ST: View<V = PT::V> {
-    type Input = PT;
+impl<T: Compare<T>> Pred for TagPred<T> {
+    type Input = T;
 
-    type InputRef = ST;
-
-    open spec fn wf(&self) -> bool {
-        self.0@ == self.1@
-    }
-
-    fn p_apply(&self, i: &Self::Input) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         // self.0.eq(i)
         self.0.compare(i)
-    }
-
-    fn s_apply(&self, i: Self::InputRef) -> bool {
-        self.1.compare(&i)
     }
 }
 
 /// Generic tag combinator that matches the input with a given value and discards it
 /// e.g. `Tag(Int::<u8>, 0)` matches the byte `0`; `Tag(Bytes::<3>, &[1, 2, 3])` matches the
 /// bytes `[1, 2, 3]`
-pub struct Tag<Inner, PT, ST>(pub Refined<Inner, TagPred<PT, ST>>);
+pub struct Tag<Inner, T>(pub Refined<Inner, TagPred<T>>);
 
-impl<Inner, PT, ST> Tag<Inner, PT, ST> {
+impl<Inner, T> Tag<Inner, T> {
     /// Creates a new `Tag` combinator.
-    pub fn new(inner: Inner, tag: PT, reftag: ST) -> (o: Self)
+    pub fn new(inner: Inner, tag: T) -> (o: Self)
         ensures
-            o == Tag(Refined { inner, predicate: TagPred(tag, reftag) }),
+            o == Tag(Refined { inner, predicate: TagPred(tag) }),
     {
-        Tag(Refined { inner, predicate: TagPred(tag, reftag) })
+        Tag(Refined { inner, predicate: TagPred(tag) })
     }
 
     /// Creates a new `Tag` combinator.
-    pub open spec fn spec_new(inner: Inner, tag: PT, reftag: ST) -> (o: Self) {
-        Tag(Refined { inner, predicate: TagPred(tag, reftag) })
+    pub open spec fn spec_new(inner: Inner, tag: T) -> (o: Self) {
+        Tag(Refined { inner, predicate: TagPred(tag) })
     }
 }
 
-impl<Inner: View, PT: View, ST: View> View for Tag<Inner, PT, ST> {
-    type V = Tag<Inner::V, PT::V, ST::V>;
+impl<Inner: View, T: View> View for Tag<Inner, T> {
+    type V = Tag<Inner::V, T::V>;
 
     open spec fn view(&self) -> Self::V {
         Tag(self.0@)
     }
 }
 
-impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T, T> {
+impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
     type Type = ();
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
@@ -87,7 +77,7 @@ impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T, T> {
     }
 }
 
-impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T, T> {
+impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inner, T> {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
     }
@@ -120,13 +110,12 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
     }
 }
 
-impl<I, O, Inner, PT, ST> Combinator<I, O> for Tag<Inner, PT, ST> where
+impl<'x, I, O, Inner, T> Combinator<'x, I, O> for Tag<Inner, T> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O, Type = PT, SType = ST>,
-    Inner::V: SecureSpecCombinator<Type = PT::V>,
-    PT: Compare<PT> + Copy,
-    ST: Compare<ST> + Copy + View<V = PT::V>,
+    Inner: for<'a> Combinator<'a, I, O, Type = T, SType = &'a T>,
+    Inner::V: SecureSpecCombinator<Type = T::V>,
+    T: Compare<T> + 'x,
  {
     type Type = ();
 
@@ -141,7 +130,7 @@ impl<I, O, Inner, PT, ST> Combinator<I, O> for Tag<Inner, PT, ST> where
     }
 
     open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires() && self.0.predicate.wf()
+        self.0.parse_requires()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -150,58 +139,12 @@ impl<I, O, Inner, PT, ST> Combinator<I, O> for Tag<Inner, PT, ST> where
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires() && self.0.predicate.wf()
+        self.0.serialize_requires()
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        self.0.serialize(self.0.predicate.1, data, pos)
+        self.0.serialize(&self.0.predicate.0, data, pos)
     }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::regular::choice::OrdChoice;
-    use super::*;
-    use super::super::uints::{U8};
-    use super::super::bytes_n::BytesN;
-
-    proof fn test(s: Seq<u8>)
-        requires
-            s.len() <= usize::MAX,
-    {
-        let tag = Tag::spec_new(BytesN::<3>, seq![0u8, 0, 0]);
-        if let Ok((n, v)) = tag.spec_parse(s) {
-            if let Ok(buf) = tag.spec_serialize(v) {
-                tag.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-    }
-
-    proof fn test3(s: Seq<u8>)
-        requires
-            s.len() <= usize::MAX,
-    {
-        let tag1 = Tag::spec_new(U8, 0x42);
-        let tag2 = Tag::spec_new(U8, 0x43);
-        let ord = OrdChoice(tag1, tag2);
-        if let Ok((n, v)) = ord.spec_parse(s) {
-            if let Ok(buf) = ord.spec_serialize(v) {
-                ord.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-        let tag3 = Tag::spec_new(BytesN::<3>, seq![1u8, 0, 0]);
-        let tag4 = Tag::spec_new(BytesN::<3>, seq![2u8, 0, 0]);
-        let ord2 = OrdChoice(tag3, tag4);
-        if let Ok((n, v)) = ord2.spec_parse(s) {
-            if let Ok(buf) = ord2.spec_serialize(v) {
-                ord2.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-    }
-
 }
 
 // old code

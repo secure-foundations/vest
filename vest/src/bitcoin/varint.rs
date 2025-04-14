@@ -89,12 +89,26 @@ type VarintChoice = Choice<
     >,
 >;
 
-type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper<'static>>;
+type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper>;
 
 type BtcVarintInner<'a> = TryMap<
-    Pair<&'a [u8], Vec<u8>, U8, VarintChoice, BtVarintCont>,
-    VarIntMapper<'a>,
+    Pair<'a, &'a [u8], Vec<u8>, U8, VarintChoice, BtVarintCont>,
+    VarIntMapper,
 >;
+
+pub spec const SPEC_TAG_U16: u8 = 0xFD;
+pub spec const SPEC_TAG_U32: u8 = 0xFE;
+pub spec const SPEC_TAG_U64: u8 = 0xFF;
+
+pub exec static TAG_U16: u8 ensures TAG_U16 == SPEC_TAG_U16 { 0xFD }
+pub exec static TAG_U32: u8 ensures TAG_U32 == SPEC_TAG_U32 { 0xFE }
+pub exec static TAG_U64: u8 ensures TAG_U64 == SPEC_TAG_U64 { 0xFF }
+
+pub exec static EMPTY_SLICE: &'static [u8] ensures EMPTY_SLICE@ == Seq::<u8>::empty() { 
+    assert(<_ as View>::view(&[]) =~= Seq::<u8>::empty());
+    &[] 
+}
+pub exec static EMPTY: &'static &'static [u8] ensures EMPTY@ == Seq::<u8>::empty() { &EMPTY_SLICE }
 
 /// Inner Spec combinator for parsing and serializing Bitcoin variable-length integers
 pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
@@ -104,12 +118,12 @@ pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
             snd: |t: u8|
                 ord_choice!(
                     Cond { cond: t <= 0xFC, inner: Fixed::<0> },
-                    Cond { cond: t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
-                    Cond { cond: t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
-                    Cond { cond: t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
+                    Cond { cond: t ==  SPEC_TAG_U16, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
+                    Cond { cond: t ==  SPEC_TAG_U32, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
+                    Cond { cond: t ==  SPEC_TAG_U64, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
                 ),
         },
-        mapper: VarIntMapper::spec_new(),
+        mapper: VarIntMapper,
     }
 }
 
@@ -120,11 +134,10 @@ fn btc_varint_inner<'a>() -> (o: BtcVarintInner<'a>)
     TryMap {
         inner: Pair {
             fst: U8,
-            p_snd: BtVarintPCont,
-            s_snd: BtVarintSCont,
+            snd: BtVarintCont,
             spec_snd: Ghost(spec_btc_varint_inner().inner.snd),
         },
-        mapper: VarIntMapper::new(),
+        mapper: VarIntMapper,
     }
 }
 
@@ -141,14 +154,9 @@ impl View for PredU16LeFit {
 
 impl Pred for PredU16LeFit {
     type Input = u16;
-    type InputRef = u16;
 
-    fn p_apply(&self, i: &Self::Input) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         *i >= 0xFD
-    }
-
-    fn s_apply(&self, i: Self::InputRef) -> bool {
-        i >= 0xFD
     }
 }
 
@@ -173,13 +181,9 @@ impl View for PredU32LeFit {
 
 impl Pred for PredU32LeFit {
     type Input = u32;
-    type InputRef = u32;
 
-    fn p_apply(&self, i: &Self::Input) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         *i >= 0x10000
-    }
-    fn s_apply(&self, i: Self::InputRef) -> bool {
-        i >= 0x10000
     }
 }
 
@@ -204,13 +208,9 @@ impl View for PredU64LeFit {
 
 impl Pred for PredU64LeFit {
     type Input = u64;
-    type InputRef = u64;
 
-    fn p_apply(&self, i: &Self::Input) -> bool {
+    fn apply(&self, i: &Self::Input) -> bool {
         *i >= 0x100000000
-    }
-    fn s_apply(&self, i: Self::Input) -> bool {
-        i >= 0x100000000
     }
 }
 
@@ -238,21 +238,21 @@ impl SpecTryFrom<(u8, Either<Seq<u8>, Either<u16, Either<u32, u64>>>)> for VarIn
                 }
             },
             inj_ord_choice_pat!(*, x, *, *) => {
-                if t.0 == 0xFD {
+                if t.0 == SPEC_TAG_U16 {
                     Ok(VarInt::U16(x))
                 } else {
                     Err(())
                 }
             },
             inj_ord_choice_pat!(*, *, x, *) => {
-                if t.0 == 0xFE {
+                if t.0 == SPEC_TAG_U32 {
                     Ok(VarInt::U32(x))
                 } else {
                     Err(())
                 }
             },
             inj_ord_choice_pat!(*, *, *, x) => {
-                if t.0 == 0xFF {
+                if t.0 == SPEC_TAG_U64 {
                     Ok(VarInt::U64(x))
                 } else {
                     Err(())
@@ -271,7 +271,7 @@ impl TryFrom<(u8, Either<&[u8], Either<u16, Either<u32, u64>>>)> for VarInt {
     > {
         match t.1 {
             inj_ord_choice_pat!(x, *, *, *) => {
-                if compare_slice((&[]).as_slice(), x) {
+                if compare_slice(EMPTY, x) {
                     assert(x@ == Seq::<u8>::empty());
                     Ok(VarInt::U8(t.0))
                 } else {
@@ -279,21 +279,21 @@ impl TryFrom<(u8, Either<&[u8], Either<u16, Either<u32, u64>>>)> for VarInt {
                 }
             },
             inj_ord_choice_pat!(*, x, *, *) => {
-                if t.0 == 0xFD {
+                if t.0 == TAG_U16 {
                     Ok(VarInt::U16(x))
                 } else {
                     Err(())
                 }
             },
             inj_ord_choice_pat!(*, *, x, *) => {
-                if t.0 == 0xFE {
+                if t.0 == TAG_U32 {
                     Ok(VarInt::U32(x))
                 } else {
                     Err(())
                 }
             },
             inj_ord_choice_pat!(*, *, *, x) => {
-                if t.0 == 0xFF {
+                if t.0 == TAG_U64 {
                     Ok(VarInt::U64(x))
                 } else {
                     Err(())
@@ -309,46 +309,32 @@ impl SpecTryFrom<VarInt> for (u8, Either<Seq<u8>, Either<u16, Either<u32, u64>>>
     open spec fn spec_try_from(t: VarInt) -> Result<Self, Self::Error> {
         match t {
             VarInt::U8(t) => Ok((t, inj_ord_choice_result!(Seq::<u8>::empty(), *, *, *))),
-            VarInt::U16(x) => Ok((0xFD, inj_ord_choice_result!(*, x, *, *))),
-            VarInt::U32(x) => Ok((0xFE, inj_ord_choice_result!(*, *, x, *))),
-            VarInt::U64(x) => Ok((0xFF, inj_ord_choice_result!(*, *, *, x))),
+            VarInt::U16(x) => Ok((SPEC_TAG_U16, inj_ord_choice_result!(*, x, *, *))),
+            VarInt::U32(x) => Ok((SPEC_TAG_U32, inj_ord_choice_result!(*, *, x, *))),
+            VarInt::U64(x) => Ok((SPEC_TAG_U64, inj_ord_choice_result!(*, *, *, x))),
         }
     }
 }
 
-impl TryFrom<VarInt> for (u8, Either<&[u8], Either<u16, Either<u32, u64>>>) {
+impl<'x> TryFrom<&'x VarInt> for (&'x u8, Either<&'x &'x [u8], Either<&'x u16, Either<&'x u32, &'x u64>>>) {
     type Error = ();
 
-    fn ex_try_from(t: VarInt) -> Result<Self, Self::Error> {
+    fn ex_try_from(t: &'x VarInt) -> Result<Self, Self::Error> {
         match t {
             VarInt::U8(t) => {
-                let empty = (&[]).as_slice();
-                assert(empty@ == Seq::<u8>::empty());
-                Ok((t, inj_ord_choice_result!(empty, *, *, *)))
+                Ok((t, inj_ord_choice_result!(EMPTY, *, *, *)))
             },
-            VarInt::U16(x) => Ok((0xFD, inj_ord_choice_result!(*, x, *, *))),
-            VarInt::U32(x) => Ok((0xFE, inj_ord_choice_result!(*, *, x, *))),
-            VarInt::U64(x) => Ok((0xFF, inj_ord_choice_result!(*, *, *, x))),
+            VarInt::U16(x) => Ok((&TAG_U16, inj_ord_choice_result!(*, x, *, *))),
+            VarInt::U32(x) => Ok((&TAG_U32, inj_ord_choice_result!(*, *, x, *))),
+            VarInt::U64(x) => Ok((&TAG_U64, inj_ord_choice_result!(*, *, *, x))),
         }
     }
 }
 
 /// Mapper for converting between Bitcoin variable-length integers and their internal representations
-pub struct VarIntMapper<'a>(std::marker::PhantomData<&'a ()>);
+pub struct VarIntMapper;
 
-impl<'a> VarIntMapper<'a> {
-    /// Spec version of [`VarIntMapper::new`]
-    pub closed spec fn spec_new() -> Self {
-        VarIntMapper(std::marker::PhantomData)
-    }
-
-    /// Creates a new `VarIntMapper`
-    pub fn new() -> Self {
-        VarIntMapper(std::marker::PhantomData)
-    }
-}
-
-impl View for VarIntMapper<'_> {
+impl View for VarIntMapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -356,13 +342,13 @@ impl View for VarIntMapper<'_> {
     }
 }
 
-impl SpecPartialIso for VarIntMapper<'_> {
+impl SpecPartialIso for VarIntMapper {
     type Src = (u8, Either<Seq<u8>, Either<u16, Either<u32, u64>>>);
 
     type Dst = VarInt;
 }
 
-impl SpecPartialIsoProof for VarIntMapper<'_> {
+impl SpecPartialIsoProof for VarIntMapper {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -370,14 +356,12 @@ impl SpecPartialIsoProof for VarIntMapper<'_> {
     }
 }
 
-impl<'a> PartialIso for VarIntMapper<'a> {
-    type Src = (u8, Either<&'a [u8], Either<u16, Either<u32, u64>>>);
+impl<'x> PartialIso<'x> for VarIntMapper {
+    type Src = (u8, Either<&'x [u8], Either<u16, Either<u32, u64>>>);
 
     type Dst = VarInt;
 
-    type RefSrc = Self::Src;
-
-    type RefDst = Self::Dst;
+    type RefSrc = (&'x u8, Either<&'x &'x [u8], Either<&'x u16, Either<&'x u32, &'x u64>>>);
 }
 
 impl SpecCombinator for BtcVarint {
@@ -423,12 +407,9 @@ impl SecureSpecCombinator for BtcVarint {
 }
 
 /// Continuation for parsing and serializing Bitcoin variable-length integers
-pub struct BtVarintPCont;
+pub struct BtVarintCont;
 
-/// The equivalent of [`BtVarintPCont`] for serializing
-pub struct BtVarintSCont;
-
-impl Continuation<&u8> for BtVarintPCont {
+impl Continuation<&u8> for BtVarintCont {
     type Output = VarintChoice;
 
     open spec fn requires(&self, t: &u8) -> bool {
@@ -449,32 +430,10 @@ impl Continuation<&u8> for BtVarintPCont {
     }
 }
 
-impl Continuation<u8> for BtVarintSCont {
-    type Output = VarintChoice;
-
-    open spec fn requires(&self, t: u8) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, t: u8, o: Self::Output) -> bool {
-        o@ == (spec_btc_varint_inner().inner.snd)(t@)
-    }
-
-    fn apply(&self, t: u8) -> Self::Output {
-        ord_choice!(
-                    Cond { cond: t <= 0xFC, inner: BytesN::<0> },
-                    Cond { cond: t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
-                    Cond { cond: t ==  0xFE, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
-                    Cond { cond: t ==  0xFF, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
-                )
-    }
-}
-
-
-impl<'a> Combinator<&'a [u8], Vec<u8>> for BtcVarint {
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BtcVarint {
     type Type = VarInt;
 
-    type SType = VarInt;
+    type SType = &'a VarInt;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None

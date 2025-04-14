@@ -160,10 +160,10 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
             }
 
-            impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
+            impl<'x, I: VestPublicInput, O: VestPublicOutput<I>> Combinator<'x, I, O> for $combinator {
                 type Type = $int_type;
 
-                type SType = $int_type;
+                type SType = &'x $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -267,10 +267,10 @@ macro_rules! impl_combinator_for_be_uint_type {
                 }
             }
 
-            impl<I: VestPublicInput, O: VestPublicOutput<I>> Combinator<I, O> for $combinator {
+            impl<'x, I: VestPublicInput, O: VestPublicOutput<I>> Combinator<'x, I, O> for $combinator {
                 type Type = $int_type;
 
-                type SType = $int_type;
+                type SType = &'x $int_type;
 
                 open spec fn spec_length(&self) -> Option<usize> {
                     Some(size_of::<$int_type>())
@@ -1105,10 +1105,10 @@ impl SecureSpecCombinator for U24Le {
     }
 }
 
-impl Combinator<&[u8], Vec<u8>> for U24Le {
+impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
     type Type = u24;
 
-    type SType = u24;
+    type SType = &'x u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
@@ -1127,7 +1127,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Le {
         usize,
         SerializeError,
     >) {
-        Fixed::<3>.serialize([v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
+        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &[v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
     }
 }
 
@@ -1212,10 +1212,10 @@ proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
     admit();
 }
 
-impl Combinator<&[u8], Vec<u8>> for U24Be {
+impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
     type Type = u24;
 
-    type SType = u24;
+    type SType = &'x u24;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(3)
@@ -1234,7 +1234,7 @@ impl Combinator<&[u8], Vec<u8>> for U24Be {
         usize,
         SerializeError,
     >) {
-        Fixed::<3>.serialize(v.0.as_slice(), data, pos)
+        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), data, pos)
     }
 }
 

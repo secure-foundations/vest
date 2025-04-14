@@ -51,20 +51,21 @@ pub trait SpecIsoProof: SpecIsoFn {
 }
 
 /// All isomorphisms to be used in [`Mapped`] combinator must implement this trait.
-pub trait Iso: View where
+pub trait Iso<'x>: View where
     Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// The source type of the isomorphism.
     type Src: View;
 
     // type Src: View + From<Self::Dst>;
     /// The reference of the [`Src`] type.
-    type RefSrc: View<V = <Self::Src as View>::V> + From<Self::RefDst>;
+    type RefSrc: View<V = <Self::Src as View>::V> + From<&'x Self::Dst>;
 
-    /// THe reference of the [`Dst`] type.
-    type RefDst: View<V = <Self::Dst as View>::V>;
+    // /// THe reference of the [`Dst`] type.
+    // type RefDst: View<V = <Self::Dst as View>::V>;
 
     // type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
     /// The destination type of the isomorphism.
@@ -74,10 +75,11 @@ pub trait Iso: View where
 /// The bijective functions of [`Iso`]
 /// [`Self::apply`] and [`Self::rev_apply`] must be inverses of each other.
 /// See [`SpecIsoFn::spec_iso`] and [`SpecIsoFn::spec_iso_rev`] for more details.
-pub trait IsoFn: Iso where
+pub trait IsoFn<'x>: Iso<'x> where
     Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// Applies the isomorphism to the source type.
     fn apply(s: Self::Src) -> (res: Self::Dst)
@@ -86,24 +88,25 @@ pub trait IsoFn: Iso where
     ;
 
     /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply(s: Self::RefDst) -> (res: Self::RefSrc)
+    fn rev_apply(s: &'x Self::Dst) -> (res: Self::RefSrc)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
     ;
 }
 
 // Blanket implementation for all types that implement `Iso`
-impl<T: Iso> IsoFn for T where
+impl<'x, T: Iso<'x>> IsoFn<'x> for T where
     T::V: SpecIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
     <T::Src as View>::V: SpecFrom<<T::Dst as View>::V>,
     <T::Dst as View>::V: SpecFrom<<T::Src as View>::V>,
+    Self::Dst: 'x,
  {
     fn apply(s: Self::Src) -> (res: Self::Dst) {
         Self::Dst::ex_from(s)
     }
 
-    fn rev_apply(s: Self::Dst) -> (res: Self::Src) {
-        Self::Src::ex_from(s)
+    fn rev_apply(s: &'x Self::Dst) -> (res: Self::RefSrc) {
+        Self::RefSrc::ex_from(s)
     }
 
     // /// Applies the reverse isomorphism to the destination type.
@@ -207,21 +210,21 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
+impl<'x, I, O, Inner, M> Combinator<'x, I, O> for Mapped<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: Iso<Src = Inner::Type>,
-    Inner::Type: From<M::Dst> + View,
+    M: Iso<'x, Src = Inner::Type, RefSrc = Inner::SType>,
     M::Dst: From<Inner::Type> + View,
+    Inner::SType: From<&'x M::Dst> + View,
     M::V: SpecIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecFrom<<Inner::Type as View>::V>,
  {
     type Type = M::Dst;
 
-    type SType = M::RefDst;
+    type SType = &'x M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -268,15 +271,15 @@ pub trait SpecPartialIso {
     type Dst: SpecTryFrom<Self::Src>;
 }
 
-/// The faillible functions of [`SpecPartialIso`]
+/// The fallible functions of [`SpecPartialIso`]
 pub trait SpecPartialIsoFn: SpecPartialIso {
-    /// Applies the faillible conversion to the source type.
+    /// Applies the fallible conversion to the source type.
     spec fn spec_apply(s: Self::Src) -> Result<
         Self::Dst,
         <Self::Dst as SpecTryFrom<Self::Src>>::Error,
     >;
 
-    /// Applies the reverse faillible conversion to the destination type.
+    /// Applies the reverse fallible conversion to the destination type.
     spec fn spec_rev_apply(s: Self::Dst) -> Result<
         Self::Src,
         <Self::Src as SpecTryFrom<Self::Dst>>::Error,
@@ -321,32 +324,34 @@ pub trait SpecPartialIsoProof: SpecPartialIsoFn {
     ;
 }
 
-/// Faillible version of [`Iso`].
-pub trait PartialIso: View where
+/// Fallible version of [`Iso`].
+pub trait PartialIso<'x>: View where
     Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// The source type
     type Src: View;
 
     /// The reference of the [`Src`] type.
-    type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<Self::RefDst>;
+    type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<&'x Self::Dst>;
 
     /// THe reference of the [`Dst`] type.
-    type RefDst: View<V = <Self::Dst as View>::V>;
+    // type RefDst: View<V = <Self::Dst as View>::V>;
 
     /// The destination type
     type Dst: View + TryFrom<Self::Src>;
 }
 
-/// The faillible functions of [`PartialIso`]
-pub trait PartialIsoFn: PartialIso where
+/// The fallible functions of [`PartialIso`]
+pub trait PartialIsoFn<'x>: PartialIso<'x> where
     Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
-    /// Applies the faillible conversion to the source type.
+    /// Applies the fallible conversion to the source type.
     fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>)
         ensures
             res matches Ok(v) ==> {
@@ -356,10 +361,10 @@ pub trait PartialIsoFn: PartialIso where
             res matches Err(e) ==> Self::V::spec_apply(s@) is Err,
     ;
 
-    /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::RefDst) -> (res: Result<
+    /// Applies the reverse fallible conversion to the destination type.
+    fn rev_apply(s: &'x Self::Dst) -> (res: Result<
         Self::RefSrc,
-        <Self::RefSrc as TryFrom<Self::RefDst>>::Error,
+        <Self::RefSrc as TryFrom<&'x Self::Dst>>::Error,
     >)
         ensures
             res matches Ok(v) ==> {
@@ -371,23 +376,24 @@ pub trait PartialIsoFn: PartialIso where
 }
 
 // Blanket implementation for all types that implement `PartialIso`
-impl<T: PartialIso> PartialIsoFn for T where
+impl<'x, T: PartialIso<'x>> PartialIsoFn<'x> for T where
     T::V: SpecPartialIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
     <T::Src as View>::V: SpecTryFrom<<T::Dst as View>::V>,
     <T::Dst as View>::V: SpecTryFrom<<T::Src as View>::V>,
+    Self::Dst: 'x,
  {
     fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>) {
         Self::Dst::ex_try_from(s)
     }
 
-    fn rev_apply(s: Self::Dst) -> (res: Result<
-        Self::Src,
-        <Self::Src as TryFrom<Self::Dst>>::Error,
+    fn rev_apply(s: &'x Self::Dst) -> (res: Result<
+        Self::RefSrc,
+        <Self::RefSrc as TryFrom<&'x Self::Dst>>::Error,
     >) {
-        Self::Src::ex_try_from(s)
+        Self::RefSrc::ex_try_from(s)
     }
 
-    // /// Applies the reverse faillible conversion to the destination type.
+    // /// Applies the reverse fallible conversion to the destination type.
     // fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
     //     ensures
     //         res matches Ok(v) ==> {
@@ -403,12 +409,12 @@ impl<T: PartialIso> PartialIsoFn for T where
 
 }
 
-/// Combinator that maps the result of an `inner` combinator with a faillible conversion
+/// Combinator that maps the result of an `inner` combinator with a fallible conversion
 /// that implements [`TryFromInto`].
 pub struct TryMap<Inner, M> {
     /// The inner combinator.
     pub inner: Inner,
-    /// The faillible conversion.
+    /// The fallible conversion.
     pub mapper: M,
 }
 
@@ -498,14 +504,14 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
+impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: PartialIso<Src = Inner::Type>,
-    Inner::Type: TryFrom<M::Dst> + View,
+    M: PartialIso<'x, Src = Inner::Type, RefSrc = Inner::SType>,
     M::Dst: TryFrom<Inner::Type> + View,
+    Inner::SType: TryFrom<&'x M::Dst> + View,
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
@@ -518,7 +524,7 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
  {
     type Type = M::Dst;
 
-    type SType = M::RefDst;
+    type SType = &'x M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -557,255 +563,6 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use super::super::uints::*;
-
-    verus! {
-
-// exhaustive enum
-
-#[derive(Structural, Copy, Clone, PartialEq, Eq)]
-pub enum FieldLess {
-    A = 0,
-    B = 1,
-    C = 2,
-}
-
-pub type FieldLessInner = u8;
-
-impl View for FieldLess {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl Compare<FieldLess> for FieldLess {
-    fn compare(&self, other: &FieldLess) -> bool {
-        *self == *other
-    }
-}
-impl SpecTryFrom<FieldLessInner> for FieldLess {
-    type Error = ();
-
-    open spec fn spec_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
-        match v {
-            0u8 => Ok(FieldLess::A),
-            1u8 => Ok(FieldLess::B),
-            2u8 => Ok(FieldLess::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<FieldLess> for FieldLessInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
-        match v {
-            FieldLess::A => Ok(0u8),
-            FieldLess::B => Ok(1u8),
-            FieldLess::C => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<FieldLessInner> for FieldLess {
-    type Error = ();
-
-    fn ex_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
-        match v {
-            0u8 => Ok(FieldLess::A),
-            1u8 => Ok(FieldLess::B),
-            2u8 => Ok(FieldLess::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<FieldLess> for FieldLessInner {
-    type Error = ();
-
-    fn ex_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
-        match v {
-            FieldLess::A => Ok(0u8),
-            FieldLess::B => Ok(1u8),
-            FieldLess::C => Ok(2u8),
-        }
-    }
-}
-
-struct FieldLessMapper;
-
-impl View for FieldLessMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecPartialIso for FieldLessMapper {
-    type Src = FieldLessInner;
-    type Dst = FieldLess;
-}
-
-impl SpecPartialIsoProof for FieldLessMapper {
-    proof fn spec_iso(s: Self::Src) {}
-
-    proof fn spec_iso_rev(s: Self::Dst) {}
-}
-
-impl PartialIso for FieldLessMapper {
-    type Src = FieldLessInner;
-    type Dst = FieldLess;
-}
-
-type FieldLessCombinator = TryMap<U8, FieldLessMapper>;
-
-spec fn spec_field_less() -> FieldLessCombinator {
-    TryMap { inner: U8, mapper: FieldLessMapper }
-}
-
-fn field_less() -> (o: FieldLessCombinator)
-    ensures o@ == spec_field_less(),
-{
-    TryMap { inner: U8, mapper: FieldLessMapper }
-}
-
-spec fn parse_spec_field_less(i: Seq<u8>) -> Result<(usize, FieldLess), ()> {
-    spec_field_less().spec_parse(i)
-}
-
-spec fn serialize_spec_field_less(msg: FieldLess) -> Result<Seq<u8>, ()> {
-    spec_field_less().spec_serialize(msg)
-}
-
-fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
-{
-    <_ as Combinator<&[u8], Vec<u8>>>::parse(&field_less(), i)
-}
-
-fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_field_less(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    <_ as Combinator<&[u8], Vec<u8>>>::serialize(&field_less(), msg, data, pos)
-}
-
-// non-exhaustive enum
-// NOTE: It turns out that the following encoding creates an anbiguous format, e.g. both
-// `NonExhaustive::X` and `NonExhaustive::Unknown(0)` would be serialized to `0x00`, which could
-// lead to format confusion attacks (though it's not immediately clear how). Interestingly,
-// [rustls](https://github.com/rustls/rustls/blob/main/rustls/src/msgs/macros.rs#L68) uses a
-// similar encoding for all its enums.
-//
-// For security, we should just use primitive uint combinators for non-exhaustive enums.
-
-// #[non_exhaustive]
-// #[repr(u8)]
-// pub enum NonExhaustive {
-//     X = 0,
-//     Y = 1,
-//     Z = 2,
-//     Unknown(u8),
-// }
-//
-// pub type NonExhaustiveInner = u8;
-//
-// impl View for NonExhaustive {
-//     type V = Self;
-//
-//     open spec fn view(&self) -> Self::V {
-//         *self
-//     }
-// }
-//
-// impl SpecFrom<NonExhaustiveInner> for NonExhaustive {
-//     open spec fn spec_from(v: NonExhaustiveInner) -> NonExhaustive {
-//         match v {
-//             0u8 => NonExhaustive::X,
-//             1u8 => NonExhaustive::Y,
-//             2u8 => NonExhaustive::Z,
-//             _ => NonExhaustive::Unknown(v),
-//         }
-//     }
-// }
-//
-// impl SpecFrom<NonExhaustive> for NonExhaustiveInner {
-//     open spec fn spec_from(v: NonExhaustive) -> NonExhaustiveInner {
-//         match v {
-//             NonExhaustive::X => 0u8,
-//             NonExhaustive::Y => 1u8,
-//             NonExhaustive::Z => 2u8,
-//             NonExhaustive::Unknown(v) => v,
-//         }
-//     }
-// }
-//
-// impl From<NonExhaustiveInner> for NonExhaustive {
-//     fn ex_from(v: NonExhaustiveInner) -> NonExhaustive {
-//         match v {
-//             0u8 => NonExhaustive::X,
-//             1u8 => NonExhaustive::Y,
-//             2u8 => NonExhaustive::Z,
-//             _ => NonExhaustive::Unknown(v),
-//         }
-//     }
-// }
-//
-// impl From<NonExhaustive> for NonExhaustiveInner {
-//     fn ex_from(v: NonExhaustive) -> NonExhaustiveInner {
-//         match v {
-//             NonExhaustive::X => 0u8,
-//             NonExhaustive::Y => 1u8,
-//             NonExhaustive::Z => 2u8,
-//             NonExhaustive::Unknown(v) => v,
-//         }
-//     }
-// }
-//
-// struct NonExhaustiveMapper;
-//
-// impl View for NonExhaustiveMapper {
-//     type V = Self;
-//
-//     open spec fn view(&self) -> Self::V {
-//         *self
-//     }
-// }
-//
-// impl SpecIso for NonExhaustiveMapper {
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-//
-//     proof fn spec_iso(s: Self::Src) {
-//     }
-//
-//     proof fn spec_iso_rev(s: Self::Dst) {
-//         // would fail because of the ambiguity in the encoding
-//     }
-// }
-//
-// impl Iso for NonExhaustiveMapper {
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-//
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-// }
-}
-
-}
-
 /// The spec version of [`Pred`].
 pub trait SpecPred {
     /// The input type of the predicate.
@@ -820,11 +577,29 @@ pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
     /// The input type of the predicate.
     type Input: View + ?Sized;
 
+    // /// The input type of the predicate (for serialization).
+    // type InputRef: View<V = <Self::Input as View>::V>;
+
+    // /// pre-condition for applying the predicate
+    // open spec fn wf(&self) -> bool {
+    //     true
+    // }
+
     /// Applies the predicate to the input.
     fn apply(&self, i: &Self::Input) -> (res: bool)
+        // requires
+        //     self.wf(),
         ensures
             res == self@.spec_apply(&i@),
     ;
+
+    // /// Serialization equivalent of [`Self::p_apply`].
+    // fn s_apply(&self, i: Self::InputRef) -> (res: bool)
+    //     requires
+    //         self.wf(),
+    //     ensures
+    //         res == self@.spec_apply(&i@),
+    // ;
 }
 
 /// Combinator that refines the result of an `inner` combinator with a predicate that implements
@@ -902,15 +677,19 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
+impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O, SType = &'x <P as Pred>::Input>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
     P: Pred<Input = Inner::Type>,
     P::V: SpecPred<Input = <Inner::Type as View>::V>,
+    <P as Pred>::Input: 'x,
+    // Inner::SType: Copy,
  {
     type Type = Inner::Type;
+
+    type SType = Inner::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -939,8 +718,8 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.predicate.apply(&v) {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        if self.predicate.apply(v) {
             self.inner.serialize(v, data, pos)
         } else {
             Err(SerializeError::RefinedPredicateFailed)
@@ -1022,10 +801,12 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
+impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator<'x, I, O> for Cond<
     Inner,
 > where Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V> {
     type Type = Inner::Type;
+
+    type SType = Inner::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {
@@ -1059,7 +840,7 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         self.inner.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {
@@ -1157,12 +938,14 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next
     }
 }
 
-impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Variable, Next> where
+impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Variable, Next> where
     I: VestInput,
     O: VestOutput<I>,
     Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
  {
     type Type = Next::Type;
+
+    type SType = Next::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
@@ -1192,7 +975,7 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Variable, Next> 
         self.1.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         let n = self.1.serialize(v, data, pos)?;
         if n == self.0.0 {
             Ok(n)

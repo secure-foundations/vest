@@ -153,11 +153,11 @@ impl<Fst, Snd> SecureSpecCombinator for Choice<Fst, Snd> where
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for Choice<Fst, Snd> where
+impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
     Snd::V: DisjointFrom<Fst::V>,
@@ -256,8 +256,14 @@ impl<C: View> Opt<C> where C::V: SecureSpecCombinator {
 
 /// Wrapper for the `core::option::Option` type.
 /// Needed because currently Verus does not implement the `View` trait for `Option`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Optional<T>(pub Option<T>);
+
+impl<T: Clone> Clone for Optional<T> {
+    fn clone(&self) -> Self {
+        Optional(self.0.clone())
+    }
+}
 
 impl<T: View> View for Optional<T> where  {
     type V = Option<T::V>;
@@ -350,10 +356,10 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Opt<T> where  {
     }
 }
 
-impl<I, O, T> Combinator<I, O> for Opt<T> where
+impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
     I: VestInput,
     O: VestOutput<I>,
-    T: Combinator<I, O>,
+    T: Combinator<'x, I, O>,
     T::V: SecureSpecCombinator<Type = <T::Type as View>::V>,
  {
     type Type = Optional<T::Type>;

@@ -170,32 +170,34 @@ pub trait Continuation<Input> {
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
 #[verifier::reject_recursive_types(Snd)]
-pub struct Pair<I, O, Fst, Snd, C> where
+pub struct Pair<'x, I, O, Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    C: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
  {
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
     // Replaces `for fn(Fst::Result) -> Snd` in Depend,
-    pub snd: C,
-    /// spec closure for well-formedness
+    pub snd: Cont,
+    // /// Serialization equivalent of `p_snd`
+    // pub s_snd: SC,
+    /// spec closure for continuation well-formedness
     pub spec_snd: Ghost<spec_fn(<Fst::Type as View>::V) -> Snd::V>,
 }
 
-impl<I, O, Fst, Snd, C> Pair<I, O, Fst, Snd, C> where
+impl<'x, I, O, Fst, Snd, Cont> Pair<'x, I, O, Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    C: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
  {
     /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
     pub open spec fn wf(&self) -> bool {
@@ -206,14 +208,14 @@ impl<I, O, Fst, Snd, C> Pair<I, O, Fst, Snd, C> where
 }
 
 /// Same [`View`] as [`Depend`]
-impl<I, O, Fst, Snd, C> View for Pair<I, O, Fst, Snd, C> where
+impl<'x, I, O, Fst, Snd, Cont> View for Pair<'x, I, O, Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    C: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
  {
     type V = SpecPair<Fst::V, Snd::V>;
 
@@ -223,17 +225,20 @@ impl<I, O, Fst, Snd, C> View for Pair<I, O, Fst, Snd, C> where
     }
 }
 
-/// Same impl as [`Depend`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<I, O, Fst, Snd, C> Combinator<I, O> for Pair<I, O, Fst, Snd, C> where
+/// Same impl as [`Pair`], except that snd is a [`Continuation`] instead of an `Fn`
+impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<'x, I, O, Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O, SType = &'x <Fst as Combinator<'x, I, O>>::Type>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    C: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    <Fst as Combinator<'x, I, O>>::Type: 'x,
  {
     type Type = (Fst::Type, Snd::Type);
+
+    type SType = (Fst::SType, Snd::SType);
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -269,11 +274,11 @@ impl<I, O, Fst, Snd, C> Combinator<I, O> for Pair<I, O, Fst, Snd, C> where
         &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        let snd = self.snd.apply(&v.0);
+        let snd = self.snd.apply(v.0);
         let n = self.fst.serialize(v.0, data, pos)?;
         if n <= usize::MAX - pos && n + pos <= data.len() {
             let m = snd.serialize(v.1, data, pos + n)?;
@@ -336,15 +341,17 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 }
 
-impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
+impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
  {
     type Type = (Fst::Type, Snd::Type);
+
+    type SType = (Fst::SType, Snd::SType);
 
     open spec fn spec_length(&self) -> Option<usize> {
         if let Some(n) = self.0.spec_length() {
@@ -397,7 +404,7 @@ impl<Fst, Snd, I, O> Combinator<I, O> for (Fst, Snd) where
         self.0.serialize_requires() && self.1.serialize_requires() && Fst::V::is_prefix_secure()
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -490,15 +497,17 @@ impl<
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd> where
+impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Preceded<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O, Type = ()>,
-    Snd: Combinator<I, O>,
+    Fst: Combinator<'x, I, O, Type = (), SType = ()>,
+    Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = ()>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
  {
     type Type = Snd::Type;
+
+    type SType = Snd::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (self.0, self.1).spec_length()
@@ -521,7 +530,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd> where
         (&self.0, &self.1).serialize_requires()
     }
 
-    fn serialize<'b>(&self, v: Self::Type, data: &'b mut O, pos: usize) -> Result<
+    fn serialize<'b>(&self, v: Self::SType, data: &'b mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {
@@ -600,15 +609,17 @@ impl<
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
+impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Terminated<Fst, Snd> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O>,
-    Snd: Combinator<I, O, Type = ()>,
+    Fst: Combinator<'x, I, O>,
+    Snd: Combinator<'x, I, O, Type = (), SType = ()>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = ()>,
  {
     type Type = Fst::Type;
+
+    type SType = Fst::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         (self.0, self.1).spec_length()
@@ -631,7 +642,7 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd> where
         (&self.0, &self.1).serialize_requires()
     }
 
-    fn serialize<'b>(&self, v: Self::Type, data: &'b mut O, pos: usize) -> Result<
+    fn serialize<'b>(&self, v: Self::SType, data: &'b mut O, pos: usize) -> Result<
         usize,
         SerializeError,
     > {
