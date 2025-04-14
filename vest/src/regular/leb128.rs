@@ -326,9 +326,7 @@ impl SecureSpecCombinator for UnsignedLEB128 {
     }
 }
 
-impl<I,O> Combinator<I,O> for UnsignedLEB128
-    where I: VestPublicInput, O: VestPublicOutput<I>
-{
+impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128 where I: VestPublicInput, O: VestPublicOutput<I> {
     type Type = UInt;
 
     type SType = UInt;

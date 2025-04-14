@@ -50,23 +50,23 @@ impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 //     }
 // }
 //
-impl<'a> Clone for Tag<Variable, &'a [u8]> {
-    fn clone(&self) -> (out: Self)
-        ensures
-            out == *self,
-    {
-        Tag::new(self.0.inner.clone(), self.0.predicate.0)
-    }
-}
+// impl<'a> Clone for Tag<Variable, &'a [u8]> {
+//     fn clone(&self) -> (out: Self)
+//         ensures
+//             out == *self,
+//     {
+//         Tag::new(self.0.inner.clone(), self.0.predicate.0)
+//     }
+// }
 
-impl<'a, const N: usize> Clone for Tag<Fixed<N>, &'a [u8]> {
-    fn clone(&self) -> (out: Self)
-        ensures
-            out == *self,
-    {
-        Tag::new(self.0.inner.clone(), self.0.predicate.0)
-    }
-}
+// impl<'a, const N: usize> Clone for Tag<Fixed<N>, &'a [u8]> {
+//     fn clone(&self) -> (out: Self)
+//         ensures
+//             out == *self,
+//     {
+//         Tag::new(self.0.inner.clone(), self.0.predicate.0)
+//     }
+// }
 
 impl Clone for Variable {
     fn clone(&self) -> (out: Self)

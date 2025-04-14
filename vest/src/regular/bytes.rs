@@ -23,7 +23,7 @@ impl Variable {
     }
 
     /// Chains this combinator with another combinator.
-    pub fn and_then<'a, I, O, Next: Combinator<I, O>>(self, next: Next) -> (o: AndThen<
+    pub fn and_then<'x, I, O, Next: Combinator<'x, I, O>>(self, next: Next) -> (o: AndThen<
         Variable,
         Next,
     >) where
@@ -91,10 +91,10 @@ impl SecureSpecCombinator for Variable {
     }
 }
 
-impl<I, O> Combinator<I, O> for Variable where I: VestInput, O: VestOutput<I> {
+impl<'x, I, O> Combinator<'x, I, O> for Variable where I: VestInput + 'x, O: VestOutput<I> {
     type Type = I;
 
-    type SType = I;
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)
@@ -193,8 +193,10 @@ impl<const N: usize> SecureSpecCombinator for Fixed<N> {
     }
 }
 
-impl<const N: usize, I, O> Combinator<I, O> for Fixed<N> where I: VestInput, O: VestOutput<I> {
+impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N> where I: VestInput + 'x, O: VestOutput<I> {
     type Type = I;
+
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)
@@ -213,7 +215,7 @@ impl<const N: usize, I, O> Combinator<I, O> for Fixed<N> where I: VestInput, O: 
         }
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -284,8 +286,10 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
+impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
     type Type = I;
+
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -299,7 +303,7 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
         Ok(((s.len()), s))
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
