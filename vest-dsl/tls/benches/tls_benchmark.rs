@@ -12,7 +12,7 @@ use tls::tls_combinators::ClientHelloExtensionExtensionData::*;
 use tls::tls_combinators::ServerNameName::HostName;
 use tls::tls_combinators::*;
 use vest::properties::*;
-use vest::regular::repeat::RepeatResult;
+use vest::regular::repetition::RepeatResult;
 
 use rustls::internal::msgs::codec::*;
 

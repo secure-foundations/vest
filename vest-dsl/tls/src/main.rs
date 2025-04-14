@@ -9,7 +9,7 @@ use tls_combinators::ClientHelloExtensionExtensionData::*;
 use tls_combinators::ServerNameName::HostName;
 use tls_combinators::*;
 use vest::properties::*;
-use vest::regular::repeat::RepeatResult;
+use vest::regular::repetition::RepeatResult;
 
 extern crate rustls;
 use rustls::internal::msgs::codec::*;

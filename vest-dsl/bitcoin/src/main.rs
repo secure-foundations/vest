@@ -7,19 +7,17 @@ use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
 use transaction_data::*;
-use vest::{
-    properties::*,
-    regular::{
-        choice::{Either, OrdChoice},
-        depend::Continuation,
-        disjoint::DisjointFrom,
-        refined::Refined,
-        repeat::{Repeat, RepeatResult},
-        star::Star,
-        tag::TagPred,
-        uints::U8,
-    },
-};
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
+use vest::regular::disjoint::DisjointFrom;
+use vest::regular::tag::*;
+use vest::regular::uints::*;
+use vest::utils::*;
+use vest::properties::*;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest_bitcoin::*;
 
 use bitcoin::consensus::{Decodable, Encodable};
