@@ -1,11 +1,11 @@
 use crate::my_vec;
 use vest::properties::*;
 use vest::regular::bytes;
-use vest::regular::variant::*;
 use vest::regular::modifier::*;
 use vest::regular::sequence::*;
 use vest::regular::tag::*;
 use vest::regular::uints::*;
+use vest::regular::variant::*;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
 
@@ -29,7 +29,7 @@ pub struct Msg1<'a> {
 }
 
 pub type Msg1Inner<'a> = (u8, (u16, (&'a [u8], &'a [u8])));
-pub type Msg1InnerRef<'a> = (u8, (u16, (&'a [u8], &'a [u8])));
+pub type Msg1InnerRef<'a> = (&'a u8, (&'a u16, (&'a &'a [u8], &'a &'a [u8])));
 
 impl View for Msg1<'_> {
     type V = SpecMsg1;
@@ -52,9 +52,9 @@ impl SpecFrom<SpecMsg1Inner> for SpecMsg1 {
     }
 }
 
-impl<'a> From<&Msg1<'a>> for Msg1InnerRef<'a> {
-    fn ex_from(e: &Msg1<'a>) -> Msg1InnerRef<'a> {
-        (e.a, (e.b, (e.c, e.d)))
+impl<'a> From<&'a Msg1<'a>> for Msg1InnerRef<'a> {
+    fn ex_from(e: &'a Msg1<'a>) -> Msg1InnerRef<'a> {
+        (&e.a, (&e.b, (&e.c, &e.d)))
     }
 }
 
@@ -69,21 +69,21 @@ fn test() {
     let bytes1: [u8; 3] = [1, 2, 3];
     let bytes2: [u8; 3] = [4, 5, 6];
     let e = Msg1 { a: 1, b: 2, c: bytes1.as_slice(), d: bytes2.as_slice() };
-    let (a, (b, (c, d))) = Msg1Inner::ex_from(&e);
+    let (a, (b, (c, d))) = Msg1InnerRef::ex_from(&e);
     assert(a == 1);
     assert(b == 2);
     assert(c@ == seq![1u8, 2, 3]);
     assert(d@ == seq![4u8, 5, 6]);
-    let e2 = Msg1::ex_from((a, (b, (c, d))));
+    let e2 = Msg1::ex_from((*a, (*b, (*c, *d))));
     assert(e2.a == 1);
     assert(e2.b == 2);
     assert(e2.c@ == seq![1u8, 2, 3]);
     assert(e2.d@ == seq![4u8, 5, 6]);
 }
 
-pub struct Msg1Mapper<'a>(std::marker::PhantomData<&'a ()>);
+pub struct Msg1Mapper;
 
-impl View for Msg1Mapper<'_> {
+impl View for Msg1Mapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -91,13 +91,13 @@ impl View for Msg1Mapper<'_> {
     }
 }
 
-impl SpecIso for Msg1Mapper<'_> {
+impl SpecIso for Msg1Mapper {
     type Src = SpecMsg1Inner;
 
     type Dst = SpecMsg1;
 }
 
-impl SpecIsoProof for Msg1Mapper<'_> {
+impl SpecIsoProof for Msg1Mapper {
     proof fn spec_iso(s: SpecMsg1Inner) {
     }
 
@@ -105,12 +105,10 @@ impl SpecIsoProof for Msg1Mapper<'_> {
     }
 }
 
-impl<'a> Iso for Msg1Mapper<'a> {
+impl<'a> Iso<'a> for Msg1Mapper {
     type Src = Msg1Inner<'a>;
 
     type Dst = Msg1<'a>;
-
-    type RefDst = &'a Msg1<'a>;
 
     type RefSrc = Msg1InnerRef<'a>;
 }
@@ -120,7 +118,7 @@ impl<'a> Iso for Msg1Mapper<'a> {
 //////////////////////////////////////
 fn parse_serialize() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, (bytes::Variable(3), bytes::Tail)));
-    let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
@@ -138,7 +136,7 @@ fn parse_serialize() -> Result<(), Error> {
 //////////////////////////////////////
 fn serialize_parse() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, (bytes::Variable(3), bytes::Tail)));
-    let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
     let val = Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() };
@@ -163,7 +161,7 @@ pub struct Msg2 {
 }
 
 pub type Msg2Inner = (u8, (u16, u32));
-pub type Msg2InnerRef = (u8, (u16, u32));
+pub type Msg2InnerRef<'a> = (&'a u8, (&'a u16, &'a u32));
 
 impl View for Msg2 {
     type V = Msg2;
@@ -179,9 +177,9 @@ impl SpecFrom<Msg2> for Msg2Inner {
     }
 }
 
-impl From<&Msg2> for Msg2Inner {
-    fn ex_from(e: &Msg2) -> (res: Msg2Inner) {
-        (e.a, (e.b, e.c))
+impl<'a> From<&'a Msg2> for Msg2InnerRef<'a> {
+    fn ex_from(e: &'a Msg2) -> (res: Msg2InnerRef<'a>) {
+        (&e.a, (&e.b, &e.c))
     }
 }
 
@@ -199,9 +197,9 @@ impl From<Msg2Inner> for Msg2 {
     }
 }
 
-pub struct Msg2Mapper<'a>(std::marker::PhantomData<&'a ()>);
+pub struct Msg2Mapper;
 
-impl View for Msg2Mapper<'_> {
+impl View for Msg2Mapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -209,13 +207,13 @@ impl View for Msg2Mapper<'_> {
     }
 }
 
-impl SpecIso for Msg2Mapper<'_> {
+impl SpecIso for Msg2Mapper {
     type Src = Msg2Inner;
 
     type Dst = Msg2;
 }
 
-impl SpecIsoProof for Msg2Mapper<'_> {
+impl SpecIsoProof for Msg2Mapper {
     proof fn spec_iso(s: Msg2Inner) {
     }
 
@@ -223,14 +221,12 @@ impl SpecIsoProof for Msg2Mapper<'_> {
     }
 }
 
-impl<'a> Iso for Msg2Mapper<'a> {
+impl<'a> Iso<'a> for Msg2Mapper {
     type Src = Msg2Inner;
 
     type Dst = Msg2;
 
-    type RefSrc = Msg2InnerRef;
-
-    type RefDst = &'a Msg2;
+    type RefSrc = Msg2InnerRef<'a>;
 }
 
 //////////////////////////////////////
@@ -238,7 +234,7 @@ impl<'a> Iso for Msg2Mapper<'a> {
 //////////////////////////////////////
 fn parse_serialize2() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, U32Le));
-    let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
@@ -256,7 +252,7 @@ fn parse_serialize2() -> Result<(), Error> {
 //////////////////////////////////////
 fn serialize_parse2() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, U32Le));
-    let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let val = Msg2 { a: 1, b: 123, c: 1 };
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&msg, &val, &mut s1, 0)?;
@@ -283,7 +279,7 @@ pub struct Msg3<'a> {
 }
 
 pub type Msg3Inner<'a> = (&'a [u8]);
-pub type Msg3InnerRef<'a> = (&'a [u8]);
+pub type Msg3InnerRef<'a> = (&'a &'a [u8]);
 
 impl View for Msg3<'_> {
     type V = SpecMsg3;
@@ -317,9 +313,9 @@ impl<'a> From<Msg3Inner<'a>> for Msg3<'a> {
     }
 }
 
-pub struct Msg3Mapper<'a>(std::marker::PhantomData<&'a ()>);
+pub struct Msg3Mapper;
 
-impl View for Msg3Mapper<'_> {
+impl View for Msg3Mapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -327,13 +323,13 @@ impl View for Msg3Mapper<'_> {
     }
 }
 
-impl SpecIso for Msg3Mapper<'_> {
+impl SpecIso for Msg3Mapper {
     type Src = SpecMsg3Inner;
 
     type Dst = SpecMsg3;
 }
 
-impl SpecIsoProof for Msg3Mapper<'_> {
+impl SpecIsoProof for Msg3Mapper {
     proof fn spec_iso(s: SpecMsg3Inner) {
     }
 
@@ -341,14 +337,12 @@ impl SpecIsoProof for Msg3Mapper<'_> {
     }
 }
 
-impl<'a> Iso for Msg3Mapper<'a> {
+impl<'a> Iso<'a> for Msg3Mapper {
     type Src = Msg3Inner<'a>;
 
     type Dst = Msg3<'a>;
 
     type RefSrc = Msg3InnerRef<'a>;
-
-    type RefDst = &'a Msg3<'a>;
 }
 
 //////////////////////////////////////
@@ -356,7 +350,7 @@ impl<'a> Iso for Msg3Mapper<'a> {
 //////////////////////////////////////
 fn parse_serialize3() -> Result<(), Error> {
     let msg_inner = bytes::Fixed::<6>;
-    let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
     let mut data = my_vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
@@ -375,7 +369,7 @@ fn parse_serialize3() -> Result<(), Error> {
 //////////////////////////////////////
 fn serialize_parse3() -> Result<(), Error> {
     let msg_inner = bytes::Fixed::<6>;
-    let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
     let bytes: [u8; 6] = [1, 2, 3, 4, 5, 6];
     let val = Msg3 { a: bytes.as_slice() };
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -407,8 +401,8 @@ pub enum Msg4<'a> {
 }
 
 pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
-// pub type Msg4InnerRef<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
-pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
+pub type Msg4InnerRef<'a> = ord_choice_result!(&'a Msg1<'a>, &'a Msg2, &'a Msg3<'a>);
+// pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
 
 impl View for Msg4<'_> {
     type V = SpecMsg4;
@@ -462,9 +456,9 @@ impl<'a> From<Msg4Inner<'a>> for Msg4<'a> {
     }
 }
 
-pub struct Msg4Mapper<'a>(std::marker::PhantomData<&'a ()>);
+pub struct Msg4Mapper;
 
-impl View for Msg4Mapper<'_> {
+impl View for Msg4Mapper {
     type V = Self;
 
     open spec fn view(&self) -> Self::V {
@@ -472,13 +466,13 @@ impl View for Msg4Mapper<'_> {
     }
 }
 
-impl SpecIso for Msg4Mapper<'_> {
+impl SpecIso for Msg4Mapper {
     type Src = SpecMsg4Inner;
 
     type Dst = SpecMsg4;
 }
 
-impl SpecIsoProof for Msg4Mapper<'_> {
+impl SpecIsoProof for Msg4Mapper {
     proof fn spec_iso(s: SpecMsg4Inner) {
     }
 
@@ -486,40 +480,38 @@ impl SpecIsoProof for Msg4Mapper<'_> {
     }
 }
 
-impl<'a> Iso for Msg4Mapper<'a> {
+impl<'a> Iso<'a> for Msg4Mapper {
     type Src = Msg4Inner<'a>;
 
     type Dst = Msg4<'a>;
 
     type RefSrc = Msg4InnerRef<'a>;
-
-    type RefDst = &'a Msg4<'a>;
 }
 
 //////////////////////////////////////
 /// verify parse-serialize inverse ///
 //////////////////////////////////////
 fn parse_serialize4() -> Result<(), Error> {
-    let tag1 = Tag::new(U8, 1, 1);
-    let tag2 = Tag::new(U8, 2, 2);
-    let tag3 = Tag::new(U8, 3, 3);
+    let tag1 = Tag::new(U8, 1);
+    let tag2 = Tag::new(U8, 2);
+    let tag3 = Tag::new(U8, 3);
     let msg1 = Preceded(
         tag1,
         Mapped {
             inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
-            mapper: Msg1Mapper(std::marker::PhantomData),
+            mapper: Msg1Mapper,
         },
     );
     let msg2 = Preceded(
         tag2,
-        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper(std::marker::PhantomData) },
+        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper },
     );
     let msg3 = Preceded(
         tag3,
-        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
+        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper },
     );
     let msg_inner = ord_choice!(msg1, msg2, msg3);
-    let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
     let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
@@ -552,19 +544,19 @@ fn serialize_parse4() -> Result<(), Error> {
         tag1,
         Mapped {
             inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
-            mapper: Msg1Mapper(std::marker::PhantomData),
+            mapper: Msg1Mapper,
         },
     );
     let msg2 = Preceded(
         tag2,
-        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper(std::marker::PhantomData) },
+        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper },
     );
     let msg3 = Preceded(
         tag3,
-        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper(std::marker::PhantomData) },
+        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper },
     );
     let msg_inner = ord_choice!(msg1, msg2, msg3);
-    let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper(std::marker::PhantomData) };
+    let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
     let val = Msg4::M1(Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() });

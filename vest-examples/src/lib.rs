@@ -4,18 +4,17 @@ mod choice;
 mod depend;
 mod enums;
 mod map;
-mod pair;
 mod opt;
+mod pair;
 mod refserializer;
 pub mod repeat;
 // mod tlv;
 mod wireguard;
 use vest::properties::*;
 use vest::regular::bytes::*;
-use vest::regular::depend::*;
-use vest::regular::map::*;
-use vest::regular::repeat_n::RepeatN;
-use vest::regular::repeat::RepeatResult;
+use vest::regular::modifier::*;
+use vest::regular::repetition::*;
+use vest::regular::sequence::*;
 use vest::regular::uints::*;
 use vest::utils::*;
 use vstd::prelude::*;
@@ -45,7 +44,7 @@ impl View for Nominal {
 
 type Structural = (u24, RepeatResult<u8>);
 
-type StructuralRef<'a> = (u24, &'a RepeatResult<u8>);
+type StructuralRef<'a> = (&'a u24, &'a RepeatResult<u8>);
 
 impl From<Structural> for Nominal {
     fn ex_from(s: Structural) -> Self {
@@ -56,7 +55,7 @@ impl From<Structural> for Nominal {
 
 impl<'a> From<&'a Nominal> for StructuralRef<'a> {
     fn ex_from(n: &'a Nominal) -> Self {
-        (n.x, &n.y)
+        (&n.x, &n.y)
     }
 }
 
@@ -73,17 +72,9 @@ impl SpecFrom<SpecNominal> for SpecStructural {
     }
 }
 
-struct AIso<'a>(std::marker::PhantomData<&'a ()>);
-impl AIso<'_> {
-    closed spec fn spec_new() -> Self {
-        AIso(std::marker::PhantomData)
-    }
-    fn new() -> Self {
-        AIso(std::marker::PhantomData)
-    }
-}
+struct AIso;
 
-impl View for AIso<'_> {
+impl View for AIso {
     type V = Self;
 
     closed spec fn view(&self) -> Self {
@@ -91,11 +82,13 @@ impl View for AIso<'_> {
     }
 }
 
-impl SpecIso for AIso<'_> {
+impl SpecIso for AIso {
     type Src = SpecStructural;
 
     type Dst = SpecNominal;
+}
 
+impl SpecIsoProof for AIso {
     proof fn spec_iso(s: Self::Src) {
     }
 
@@ -103,40 +96,24 @@ impl SpecIso for AIso<'_> {
     }
 }
 
-impl<'a> Iso for AIso<'a> {
+impl<'a> Iso<'a> for AIso {
     type Src = Structural;
 
     type Dst = Nominal;
 
     type RefSrc = StructuralRef<'a>;
-
-    type RefDst = &'a Nominal;
 }
 
-pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8, 'static> {
+pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8> {
     let l = deps;
     // RepeatN::spec_new(U8, l.spec_into())
-    RepeatN(U8, l.spec_into(), &())
+    RepeatN(U8, l.spec_into())
 }
 
-struct APCont<'a>(std::marker::PhantomData<&'a ()>);
-struct ASCont<'a>(std::marker::PhantomData<&'a ()>);
+struct ACont;
 
-
-impl<'a> APCont<'a> {
-    pub fn new() -> Self {
-        APCont(std::marker::PhantomData)
-    }
-}
-
-impl<'a> ASCont<'a> {
-    pub fn new() -> Self {
-        ASCont(std::marker::PhantomData)
-    }
-}
-
-impl<'a> Continuation<&u24> for APCont<'a> {
-    type Output = RepeatN<U8, 'a>;
+impl Continuation<&u24> for ACont {
+    type Output = RepeatN<U8>;
 
     open spec fn requires(&self, deps: &u24) -> bool {
         true
@@ -148,48 +125,30 @@ impl<'a> Continuation<&u24> for APCont<'a> {
 
     fn apply(&self, deps: &u24) -> Self::Output {
         let l = *deps;
-        RepeatN(U8, l.ex_into(), &())
+        RepeatN(U8, l.ex_into())
     }
 }
 
-impl<'a> Continuation<u24> for ASCont<'a> {
-    type Output = RepeatN<U8, 'a>;
-
-    open spec fn requires(&self, deps: u24) -> bool {
-        true
-    }
-
-    open spec fn ensures(&self, deps: u24, o: Self::Output) -> bool {
-        o@ == spec_a_cont(deps@)
-    }
-
-    fn apply(&self, deps: u24) -> Self::Output {
-        let l = deps;
-        RepeatN(U8, l.ex_into(), &())
-    }
-}
-
-spec fn spec_a() -> Mapped<SpecDepend<U24Le, RepeatN<U8, 'static>>, AIso<'static>> {
+spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
     Mapped {
         inner:
-        SpecDepend { fst: U24Le, snd: |deps| spec_a_cont(deps) },
-        mapper: AIso::spec_new(),
+        SpecPair { fst: U24Le, snd: |deps| spec_a_cont(deps) },
+        mapper: AIso,
     }
 }
 
-fn a<'a>() -> (o: Mapped<Depend<&'a [u8], Vec<u8>, U24Le, RepeatN<U8, 'a>, APCont<'a>, ASCont<'a>>, AIso<'a>>  )
+fn a<'a>() -> (o: Mapped<Pair<'a, &'a [u8], Vec<u8>, U24Le, RepeatN<U8>, ACont>, AIso>  )
     ensures
         o@ == spec_a(),
 {
     Mapped {
         inner:
-        Depend {
+        Pair {
             fst: U24Le,
-            p_snd: APCont::new(),
-            s_snd: ASCont::new(),
+            snd: ACont,
             spec_snd: Ghost(|deps| spec_a_cont(deps)),
         },
-        mapper: AIso::new(),
+        mapper: AIso,
     }
 }
 

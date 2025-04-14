@@ -80,7 +80,7 @@ spec fn wg_msg1() -> (
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 
-fn mk_wg_msg1() -> (res: (
+fn mk_wg_msg1<'x>() -> (res: (
     Tag<bytes::Fixed<4>, [u8; 4]>,
     (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, [u8; 16]>))))),
 ))

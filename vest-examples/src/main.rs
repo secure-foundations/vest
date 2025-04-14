@@ -1,5 +1,5 @@
 #![allow(warnings)]
-pub mod repeat;
+// pub mod repeat;
 use vest::{properties::Combinator, regular::repeat::RepeatResult};
 
 use crate::repeat::*;
