@@ -89,40 +89,6 @@ impl SpecCombinator for UnsignedLEB128 {
 }
 
 impl UnsignedLEB128 {
-    // /// Version of spec_parse that uses an accumulator pattern
-    // open spec fn spec_parse_alt(&self, s: Seq<u8>, acc: UInt, i: usize) -> Result<(usize, Self::Type), ()>
-    //     decreases s.len()
-    // {
-    //     if s.len() != 0 {
-    //         let v = take_low_7_bits!(s.first());
-    //         let new_acc = acc | ((v as Self::Type) << (i * 7));
-
-    //         if is_high_8_bit_set!(s.first()) {
-    //             if i < usize::MAX - 1 && new_acc <= n_bit_max_unsigned!(8 * uint_size!()) {
-    //                 self.spec_parse_alt(s.drop_first(), new_acc, i + 1)
-    //             } else {
-    //                 Err(())
-    //             }
-    //         } else {
-    //             Ok((i, new_acc))
-    //         }
-    //     } else {
-    //         Err(())
-    //     }
-    // }
-
-    // pub proof fn lemma_spec_parse_alt_partial(&self, s: Seq<u8>, acc: UInt, i: usize)
-    //     ensures self.spec_parse(s) == self.spec_parse_alt(s, acc, i)
-    // {
-    //     admit();
-    // }
-
-    // pub proof fn lemma_spec_parse_alt_equiv(&self, s: Seq<u8>)
-    //     ensures self.spec_parse(s) == self.spec_parse_alt(s, 0, 0)
-    // {
-    //     admit();
-    // }
-
     /// Helper function for spec_serialize
     pub open spec fn spec_serialize_helper(v: UInt) -> Result<Seq<u8>, ()>
         decreases v via Self::spec_serialize_decreases
@@ -153,46 +119,6 @@ impl UnsignedLEB128 {
         assert(
             v >> 7 >> 7 >> 7 >> 7 >> 7 >> 7 >> 7 >> 7 >> 7 >> 7 == 0
         ) by (bit_vector);
-    }
-
-    proof fn lemma_spec_parse_length(&self, s: Seq<u8>)
-        ensures self.spec_parse(s) matches Ok((n, v)) ==> v <= 1 << (7 * n)
-        decreases s.len()
-    {
-        admit();
-        // if s.len() != 0 {
-        //     let v = take_low_7_bits!(s.first());
-        //     let s0 = s.first();
-        //     assert(take_low_7_bits!(s0) as UInt <= 1 << 7) by (bit_vector);
-        //     assert(v as UInt <= 1 << 7);
-        //     if is_high_8_bit_set!(s.first()) {
-        //         match self.spec_parse(s.drop_first()) {
-        //             Ok((n, v2)) => {
-        //                 if n < usize::MAX && 0 < v2 <= n_bit_max_unsigned!(8 * uint_size!() - 7) {
-        //                     self.lemma_spec_parse_length(s.drop_first());
-        //                     assert(v2 <= 1 << (7 * n));
-        //                     assert(n <= 10) by (bit_vector)
-        //                         requires v2 <= 1 << (7 * n), v2 <= n_bit_max_unsigned!(8 * uint_size!() - 7);
-        //                     assert(v2 << 7 as UInt <= ((1 << (7 * n)) as UInt) << 7) by (bit_vector)
-        //                         requires v2 <= 1 << (7 * n);
-        //                     assert(((1 << (7 * n)) as UInt) << 7 == (1 << (7 * (n + 1)) as UInt)) by (bit_vector);
-        //                     assert(v2 << 7 as UInt <= 1 << (7 * (n+1)));
-        //                     assert(v2 << 7 | v as UInt <= 1 << (7 * (n+1))) by (bit_vector)
-        //                         requires v2 << 7 as UInt <= 1 << (7 * (n+1)), v2 <= 1 << (7 * n), v as UInt <= 1 << 7;
-        //                     assert(v2 << 7 | v as UInt <= 1 << (7 * (n+1)));
-        //                 }
-        //             }
-        //             Err(_) => { }
-        //         }
-        //     }
-        // }
-    }
-
-    proof fn lemma_spec_parse_length_bound(&self, s: Seq<u8>)
-        ensures self.spec_parse(s) matches Ok((n, v)) ==> n < 10
-        decreases s.len()
-    {
-        admit();
     }
 
     proof fn lemma_serialize_last_byte_high_8_bit_not_set(&self, v: UInt)
@@ -290,34 +216,8 @@ impl SecureSpecCombinator for UnsignedLEB128 {
     {
         if Self::is_prefix_secure() {
             if let Ok((n1, v1)) = self.spec_parse(s1) {
-                // assert(n1 <= s1.len()) by { self.lemma_parse_length(s1) };
-                // let s1_0 = s1[0];
-                // if n1 == 1 {
-                //     // assert(!is_high_8_bit_set!(s0));
-                //     if (is_high_8_bit_set!(s1_0)) {
-                //         assert(self.spec_parse(s1.drop_first()) matches Ok((n1_1, _)) && n1_1 == 0);
-                //         self.lemma_parse_productive(s1.drop_first());
-                //         assume(false);
-                //     }
-                //     assume(false);
-                // } else {
-                //     // assert(is_high_8_bit_set!(s0));
-                //     // self.lemma_parse_high_8_bits_set_until_last(s.drop_first());
-                //     self.lemma_prefix_secure(s1.drop_first(), s2);
-                //     assert_seqs_equal!(s1 == seq![s1_0] + s1.drop_first());
-                // }
-
-                // self.lemma_parse_high_8_bits_set_until_last(s1);
-                // assert(!(s1[n1-1] as u8 >= 0x80));
-                // if let Ok((n2, v2)) = self.spec_parse(s1.add(s2)) {
-                //     assert(n1 <= n2);
-                //     assume(false);
-                // } else {
-                //     assume(false);
-                //     // should be unreachable
-                //     assert(false);
-                // }
-                admit();
+                self.lemma_prefix_secure(s1.drop_first(), s2);
+                assert((s1 + s2).drop_first() == s1.drop_first() + s2);
             }
         }
     }
@@ -359,8 +259,52 @@ impl SecureSpecCombinator for UnsignedLEB128 {
         }
     }
 
-    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
-        assume(false);
+    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>)
+        decreases s.len()
+    {
+        if let Ok((n, v)) = self.spec_parse(s) {
+            let s0 = s.first();
+
+            if is_high_8_bit_set!(s.first()) {
+                self.theorem_parse_serialize_roundtrip(s.drop_first());
+
+                let (n2, v2) = self.spec_parse(s.drop_first()).unwrap();
+
+                if n2 < usize::MAX && 0 < v2 <= n_bit_max_unsigned!(8 * uint_size!() - 7) {
+                    self.lemma_parse_length(s.drop_first());
+
+                    assert(self.spec_serialize(v2).unwrap() == s.drop_first().take(n2 as int));
+                    assert(v == v2 << 7 | take_low_7_bits!(s0) as Self::Type);
+
+                    assert(
+                        0 < v2 <= n_bit_max_unsigned!(8 * uint_size!() - 7) ==>
+                        v == v2 << 7 | take_low_7_bits!(s0) as Self::Type ==>
+                        is_high_8_bit_set!(s0) ==>
+                        v >> 7 != 0 &&
+                        take_low_7_bits!(v) == take_low_7_bits!(s0) &&
+                        set_high_8_bit!(take_low_7_bits!(v)) == s0 &&
+                        v2 == v >> 7
+                    ) by (bit_vector);
+
+                    assert(self.spec_serialize(v).is_ok());
+                    assert(self.spec_serialize(v).unwrap() =~= seq![s0] + self.spec_serialize(v2).unwrap());
+
+                    assert(n == n2 + 1);
+                    assert(seq![s0] + s.drop_first().take(n2 as int) =~= s.take(n as int));
+                }
+            } else {
+                assert(
+                    !is_high_8_bit_set!(s0) ==>
+                    v == take_low_7_bits!(s0) ==>
+                    take_low_7_bits!(v) == v &&
+                    s0 == v &&
+                    v >> 7 == 0
+                ) by (bit_vector);
+                
+                assert(seq![v as u8] == s.take(1));
+                assert(self.spec_serialize(v) =~= Ok(seq![v as u8]));
+            }
+        }
     }
 
     open spec fn is_productive(&self) -> bool {
@@ -711,7 +655,6 @@ impl<I,O> Combinator<I,O> for UnsignedLEB128
                 }
             decreases v
         {
-            // proof { admit() };
             let lo = take_low_7_bits!(v);
             let hi = v >> 7;
             let byte = if hi == 0 { lo } else { set_high_8_bit!(lo) };
