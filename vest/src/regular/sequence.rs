@@ -3,7 +3,7 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Spec version of [`Depend`].
+/// Spec version of [`Pair`].
 pub struct SpecPair<Fst, Snd> where Fst: SecureSpecCombinator, Snd: SpecCombinator {
     /// combinators that contain dependencies
     pub fst: Fst,
@@ -169,54 +169,22 @@ pub trait Continuation<Input> {
 
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
 /// the result of the first one.
-#[verifier::reject_recursive_types(Snd)]
-pub struct Pair<'x, I, O, Fst, Snd, Cont> where
-    I: VestInput,
-    O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
-    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
-    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
- {
+pub struct Pair<Fst, FstT: View, Snd: View, Cont> {
     /// combinators that contain dependencies
     pub fst: Fst,
     /// closure that captures dependencies and maps them to the dependent combinators
-    // Replaces `for fn(Fst::Result) -> Snd` in Depend,
     pub snd: Cont,
-    // /// Serialization equivalent of `p_snd`
-    // pub s_snd: SC,
     /// spec closure for continuation well-formedness
-    pub spec_snd: Ghost<spec_fn(<Fst::Type as View>::V) -> Snd::V>,
+    pub spec_snd: Ghost<spec_fn(FstT::V) -> Snd::V>,
 }
 
-impl<'x, I, O, Fst, Snd, Cont> Pair<'x, I, O, Fst, Snd, Cont> where
-    I: VestInput,
-    O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
-    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
-    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
- {
-    /// well-formed [`DepPair`] should have its clousre [`snd`] well-formed w.r.t. [`spec_snd`]
-    pub open spec fn wf(&self) -> bool {
-        let Ghost(spec_snd_dep) = self.spec_snd;
-        &&& forall|i| #[trigger] self.snd.requires(i)
-        &&& forall|i, snd| self.snd.ensures(i, snd) ==> spec_snd_dep(i@) == snd@
-    }
-}
-
-/// Same [`View`] as [`Depend`]
-impl<'x, I, O, Fst, Snd, Cont> View for Pair<'x, I, O, Fst, Snd, Cont> where
-    I: VestInput,
-    O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
-    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
-    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
- {
+impl<Fst, FsrT, Snd, Cont> View for Pair<Fst, FsrT, Snd, Cont> where 
+    Fst: View,
+    FsrT: View,
+    Snd: View,
+    Fst::V: SecureSpecCombinator<Type = FsrT::V>,
+    Snd::V: SpecCombinator,
+{
     type V = SpecPair<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
@@ -225,8 +193,7 @@ impl<'x, I, O, Fst, Snd, Cont> View for Pair<'x, I, O, Fst, Snd, Cont> where
     }
 }
 
-/// Same impl as [`Pair`], except that snd is a [`Continuation`] instead of an `Fn`
-impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<'x, I, O, Fst, Snd, Cont> where
+impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<'x, I, O, SType = &'x <Fst as Combinator<'x, I, O>>::Type>,
@@ -235,7 +202,7 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<'x, I, O, Fst, Snd,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
     Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
     <Fst as Combinator<'x, I, O>>::Type: 'x,
- {
+{
     type Type = (Fst::Type, Snd::Type);
 
     type SType = (Fst::SType, Snd::SType);
@@ -249,10 +216,11 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<'x, I, O, Fst, Snd,
     }
 
     open spec fn parse_requires(&self) -> bool {
-        &&& self.wf()
+        let Ghost(spec_snd_dep) = self.spec_snd;
         &&& self.fst.parse_requires()
         &&& Fst::V::is_prefix_secure()
-        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires()
+        &&& forall|i| #[trigger] self.snd.requires(i)
+        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.parse_requires() && snd@ == spec_snd_dep(i@)
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -268,10 +236,11 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<'x, I, O, Fst, Snd,
     }
 
     open spec fn serialize_requires(&self) -> bool {
-        &&& self.wf()
+        let Ghost(spec_snd_dep) = self.spec_snd;
         &&& self.fst.serialize_requires()
         &&& Fst::V::is_prefix_secure()
-        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires()
+        &&& forall|i| #[trigger] self.snd.requires(i)
+        &&& forall|i, snd| self.snd.ensures(i, snd) ==> snd.serialize_requires() && snd@ == spec_snd_dep(i@)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
