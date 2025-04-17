@@ -91,8 +91,8 @@ type VarintChoice = Choice<
 
 type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper>;
 
-type BtcVarintInner<'a> = TryMap<
-    Pair<'a, &'a [u8], Vec<u8>, U8, VarintChoice, BtVarintCont>,
+type BtcVarintInner = TryMap<
+    Pair<U8, u8, VarintChoice, BtVarintCont>,
     VarIntMapper,
 >;
 
@@ -127,7 +127,7 @@ pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
     }
 }
 
-fn btc_varint_inner<'a>() -> (o: BtcVarintInner<'a>)
+fn btc_varint_inner() -> (o: BtcVarintInner)
     ensures
         o@ == spec_btc_varint_inner(),
 {
@@ -444,7 +444,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BtcVarint {
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        btc_varint_inner().parse(s)
+        <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&btc_varint_inner(), s)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<
