@@ -137,7 +137,7 @@ spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
     }
 }
 
-fn a<'a>() -> (o: Mapped<Pair<'a, &'a [u8], Vec<u8>, U24Le, RepeatN<U8>, ACont>, AIso>  )
+fn a() -> (o: Mapped<Pair<U24Le, u24, RepeatN<U8>, ACont>, AIso>  )
     ensures
         o@ == spec_a(),
 {
