@@ -12,8 +12,8 @@ vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 
 [dev-dependencies]
 
-[package.metadata.verus.ide]
-extra_args = "--crate-type=lib --expand-errors --test"
-
 [package.metadata.verus]
 verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
