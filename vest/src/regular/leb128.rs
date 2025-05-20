@@ -397,6 +397,7 @@ impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128 where I: VestPublicInput,
                 },
 
                 acc <= n_bit_max_unsigned!(i * 7),
+                decreases s.len() - i,
         {
             let s_i = s[i];
             let v = take_low_7_bits!(s_i);

@@ -358,6 +358,7 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
                 self.0.parse_requires(),
                 s@ =~= input@.skip(m as int),  // <-- this is the key
                 self@.parse_correct(input@, i, Ok::<_, ParseError>((m, RepeatResult(vs)@))),
+            decreases self.1 - i,
         {
             i += 1;
             match self.0.parse(s.clone()) {
@@ -661,6 +662,7 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for Repeat<C> where
                 offset < s@.len() ==> (self@.spec_parse(
                     s@.subrange(offset as int, s@.len() as int),
                 ) is Err ==> self@.spec_parse(s@) is Err),
+            decreases s@.len() - offset,
         {
             let (n, v) = self.0.parse(s.subrange(offset, s.len()))?;
             assert(n > 0) by {
