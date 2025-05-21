@@ -85,8 +85,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
             self.requires(),
         ensures
             self.wf(v1) && self.wf(v2) ==> self.spec_serialize(v1) == self.spec_serialize(v2) ==> v1
-                == v2
-            ,
+                == v2,
     {
         self.theorem_serialize_parse_roundtrip(v1);
         self.theorem_serialize_parse_roundtrip(v2);
@@ -98,9 +97,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
             self.requires(),
         ensures
             self.wf(v1) && self.wf(v2) ==> v1 != v2 ==> self.spec_serialize(v1)
-                != self.spec_serialize(
-                v2,
-            ),
+                != self.spec_serialize(v2),
     {
         self.theorem_serialize_parse_roundtrip(v1);
         self.theorem_serialize_parse_roundtrip(v2);
@@ -126,8 +123,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
             self.spec_parse(buf) matches Some((n, v)) ==> {
                 &&& self.wf(v)
                 &&& self.spec_serialize(v) == buf.take(n)
-            }
-            ,
+            },
     ;
 
     /// Followed from `theorem_parse_serialize_roundtrip`
@@ -137,9 +133,7 @@ pub trait SecureSpecCombinator: SpecCombinator {
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==> self.spec_parse(buf2) matches Some(
                 (n2, v2),
-            ) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(
-                n2,
-            ),
+            ) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
     {
         self.theorem_parse_serialize_roundtrip(buf1);
         self.theorem_parse_serialize_roundtrip(buf2);
@@ -204,6 +198,8 @@ pub trait Combinator<'x, I, O>: View where
     type Type: View;
 
     /// The input type of serialization, often a reference to [`Self::Type`].
+    /// For "structural" formats though (e.g., [`crate::regular::sequence::Pair`] and [`crate::regular::variant::Choice`]),
+    /// this is the tuple/sum of the corresponding [`Combinator::SType`] types.
     type SType: View<V = <Self::Type as View>::V>;
 
     /// Spec version of [`Self::length`].
@@ -226,6 +222,11 @@ pub trait Combinator<'x, I, O>: View where
     }
 
     /// The parsing function.
+    /// To enable "zero-copy" parsing, implementations of `parse` should not
+    /// consume/deepcopy the input buffer `I`, but rather return a slice of the
+    /// input buffer for `Self::Type` whenever possible.
+    /// See [`crate::buf_traits::VestInput`] and [`crate::buf_traits::VestPublicInput`] for
+    /// more details.
     ///
     /// ## Pre-conditions
     ///
@@ -249,6 +250,9 @@ pub trait Combinator<'x, I, O>: View where
     ;
 
     /// The serialization function.
+    /// The intended use of `serialize` is to serialize a value `v` into the
+    /// buffer `buf` at the position `pos` "in-place" (i.e., without
+    /// allocating a new buffer or extending the buffer).
     ///
     /// ## Pre-conditions
     ///
@@ -260,10 +264,10 @@ pub trait Combinator<'x, I, O>: View where
     ///
     /// ## Post-conditions
     /// `serialize` ensures that it is functionally correct with respect to the
-    /// specification `spec_serialize` when it returns `Ok`. This is because `serialize` is trying to
-    /// serialize "in-place" on a "sufficiently large" buffer with a pointer `pos` for efficiency.
-    /// This means it's not necessarily the case that when `serialize` fails, `spec_serialize`
-    /// will also fail.
+    /// specification `spec_serialize` when it returns `Ok`. This is because
+    /// `serialize` being a partial function can fail (e.g.,
+    /// insufficient buffer space), while `spec_serialize` is a
+    /// total function (with infinite buffer size) and will never fail.
     fn serialize(&self, v: Self::SType, buf: &mut O, pos: usize) -> (res: SResult<
         usize,
         SerializeError,
