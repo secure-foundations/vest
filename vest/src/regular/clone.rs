@@ -1,5 +1,4 @@
-use super::bytes::{Variable, Fixed, Tail};
-use super::tag::Tag;
+use super::bytes::{Fixed, Tail, Variable};
 use super::uints::{U16Le, U32Le, U64Le, U8};
 use vstd::prelude::*;
 
@@ -58,7 +57,6 @@ impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 //         Tag::new(self.0.inner.clone(), self.0.predicate.0)
 //     }
 // }
-
 // impl<'a, const N: usize> Clone for Tag<Fixed<N>, &'a [u8]> {
 //     fn clone(&self) -> (out: Self)
 //         ensures
@@ -67,7 +65,6 @@ impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
 //         Tag::new(self.0.inner.clone(), self.0.predicate.0)
 //     }
 // }
-
 impl Clone for Variable {
     fn clone(&self) -> (out: Self)
         ensures

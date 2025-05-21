@@ -17,12 +17,16 @@ impl View for Fail {
 impl SpecCombinator for Fail {
     type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        Err(())
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        false
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        Err(())
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        None
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        Seq::empty()
     }
 }
 

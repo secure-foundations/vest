@@ -17,12 +17,12 @@ impl View for Success {
 impl SpecCombinator for Success {
     type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        Ok((0, ()))
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        Some((0, ()))
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        Ok(Seq::empty())
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        Seq::empty()
     }
 }
 
@@ -73,12 +73,8 @@ impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for Success {
         usize,
         SerializeError,
     >) {
-        if pos <= data.len() {
-            assert(seq_splice(data@, pos, Seq::<u8>::empty()) == data@);
-            Ok(0)
-        } else {
-            Err(SerializeError::InsufficientBuffer)
-        }
+        assert(seq_splice(data@, pos, Seq::<u8>::empty()) == data@);
+        Ok(0)
     }
 }
 

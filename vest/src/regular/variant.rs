@@ -56,30 +56,33 @@ impl<Fst, Snd> SpecCombinator for Choice<Fst, Snd> where
  {
     type Type = Either<Fst::Type, Snd::Type>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        if self.1.disjoint_from(&self.0) {
-            if let Ok((n, v)) = self.0.spec_parse(s) {
-                Ok((n, Either::Left(v)))
-            } else {
-                if let Ok((n, v)) = self.1.spec_parse(s) {
-                    Ok((n, Either::Right(v)))
-                } else {
-                    Err(())
-                }
-            }
-        } else {
-            Err(())
+    open spec fn requires(&self) -> bool {
+        self.0.requires() && self.1.requires() && self.1.disjoint_from(&self.0)
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        match v {
+            Either::Left(v) => self.0.wf(v),
+            Either::Right(v) => self.1.wf(v),
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if self.1.disjoint_from(&self.0) {
-            match v {
-                Either::Left(v) => self.0.spec_serialize(v),
-                Either::Right(v) => self.1.spec_serialize(v),
-            }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        if let Some((n, v)) = self.0.spec_parse(s) {
+            Some((n, Either::Left(v)))
         } else {
-            Err(())
+            if let Some((n, v)) = self.1.spec_parse(s) {
+                Some((n, Either::Right(v)))
+            } else {
+                None
+            }
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        match v {
+            Either::Left(v) => self.0.spec_serialize(v),
+            Either::Right(v) => self.1.spec_serialize(v),
         }
     }
 }
@@ -114,7 +117,7 @@ impl<Fst, Snd> SecureSpecCombinator for Choice<Fst, Snd> where
             },
             Either::Right(v) => {
                 self.1.theorem_serialize_parse_roundtrip(v);
-                let buf = self.1.spec_serialize(v).unwrap();
+                let buf = self.1.spec_serialize(v);
                 if self.1.disjoint_from(&self.0) {
                     self.1.parse_disjoint_on(&self.0, buf);
                 }
@@ -123,30 +126,30 @@ impl<Fst, Snd> SecureSpecCombinator for Choice<Fst, Snd> where
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((n, v)) = self.0.spec_parse(buf) {
+        if let Some((n, v)) = self.0.spec_parse(buf) {
             self.0.theorem_parse_serialize_roundtrip(buf);
         } else {
-            if let Ok((n, v)) = self.1.spec_parse(buf) {
+            if let Some((n, v)) = self.1.spec_parse(buf) {
                 self.1.theorem_parse_serialize_roundtrip(buf);
             }
         }
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v)) = self.0.spec_parse(s) {
+        if let Some((n, v)) = self.0.spec_parse(s) {
             self.0.lemma_parse_length(s);
         } else {
-            if let Ok((n, v)) = self.1.spec_parse(s) {
+            if let Some((n, v)) = self.1.spec_parse(s) {
                 self.1.lemma_parse_length(s);
             }
         }
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
-        if let Ok((n, v)) = self.0.spec_parse(s) {
+        if let Some((n, v)) = self.0.spec_parse(s) {
             self.0.lemma_parse_productive(s);
         } else {
-            if let Ok((n, v)) = self.1.spec_parse(s) {
+            if let Some((n, v)) = self.1.spec_parse(s) {
                 self.1.lemma_parse_productive(s);
             }
         }
@@ -174,8 +177,8 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
         None
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires() && self.1.parse_requires() && self@.1.disjoint_from(&self@.0)
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires() && self.1.ex_requires()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -190,12 +193,6 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires() && self.1.serialize_requires() && self@.1.disjoint_from(
-            &self@.0,
-        )
-    }
-
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
@@ -203,19 +200,11 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
         match v {
             Either::Left(v) => {
                 let n = self.0.serialize(v, data, pos)?;
-                if n <= usize::MAX - pos && n + pos <= data.len() {
-                    Ok(n)
-                } else {
-                    Err(SerializeError::InsufficientBuffer)
-                }
+                Ok(n)
             },
             Either::Right(v) => {
                 let n = self.1.serialize(v, data, pos)?;
-                if n <= usize::MAX - pos && n + pos <= data.len() {
-                    Ok(n)
-                } else {
-                    Err(SerializeError::InsufficientBuffer)
-                }
+                Ok(n)
             },
         }
     }
@@ -279,26 +268,29 @@ impl<T: View> View for Optional<T> where  {
 impl<T: SecureSpecCombinator> SpecCombinator for Opt<T> where  {
     type Type = Option<T::Type>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        if !self.0.is_productive() {
-            Err(())
-        } else {
-            if let Ok((n, v)) = self.0.spec_parse(s) {
-                Ok((n, Some(v)))
-            } else {
-                Ok((0, None))
-            }
+    open spec fn requires(&self) -> bool {
+        self.0.requires() && self.0.is_productive()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        match v {
+            Some(vv) => self.0.wf(vv),
+            None => true,
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if !self.0.is_productive() {
-            Err(())
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        if let Some((n, v)) = self.0.spec_parse(s) {
+            Some((n, Some(v)))
         } else {
-            match v {
-                Some(v) => self.0.spec_serialize(v),
-                None => Ok(Seq::empty()),
-            }
+            Some((0, None))
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        match v {
+            Some(v) => self.0.spec_serialize(v),
+            None => Seq::empty(),
         }
     }
 }
@@ -316,9 +308,10 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Opt<T> where  {
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if self.0.is_productive() {
+        if self.wf(v) {
             match v {
                 Some(vv) => {
+                    assert(self.0.wf(vv));
                     self.0.lemma_serialize_productive(vv);
                     self.0.theorem_serialize_parse_roundtrip(vv);
                 },
@@ -328,26 +321,22 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Opt<T> where  {
                     self.0.lemma_parse_length(Seq::empty());
                 },
             }
-        } else {
         }
-
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if self.0.is_productive() {
-            if let Ok((n, v)) = self.0.spec_parse(buf) {
-                self.0.lemma_parse_productive(buf);
-                if n != 0 {
-                    self.0.theorem_parse_serialize_roundtrip(buf);
-                }
-            } else {
-                assert(Seq::<u8>::empty() == buf.take(0));
+        if let Some((n, v)) = self.0.spec_parse(buf) {
+            self.0.lemma_parse_productive(buf);
+            if n != 0 {
+                self.0.theorem_parse_serialize_roundtrip(buf);
             }
+        } else {
+            assert(Seq::<u8>::empty() == buf.take(0));
         }
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v)) = self.0.spec_parse(s) {
+        if let Some((n, v)) = self.0.spec_parse(s) {
             self.0.lemma_parse_length(s);
         }
     }
@@ -374,8 +363,8 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
         None
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires() && self.0@.is_productive()
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -384,10 +373,6 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
         } else {
             Ok((0, Optional(None)))
         }
-    }
-
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires() && self.0@.is_productive()
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
