@@ -33,7 +33,7 @@ impl<T: Compare<T>> Pred for TagPred<T> {
 }
 
 /// Generic tag combinator that matches the input with a given value and discards it
-/// e.g. `Tag(Int::<u8>, 0)` matches the byte `0`; `Tag(Bytes::<3>, &[1, 2, 3])` matches the
+/// e.g. `Tag(U8, 0)` matches the byte `0`; `Tag(Fixed::<3>, &[1, 2, 3])` matches the
 /// bytes `[1, 2, 3]`
 pub struct Tag<Inner, T>(pub Refined<Inner, TagPred<T>>);
 

@@ -1186,13 +1186,16 @@ impl SecureSpecCombinator for U24Be {
     }
 }
 
-proof fn bytes_eq_view_implies_eq<T: View, const N: usize>(a: [T; N], b: [T; N])
-    requires
-        a@ =~= b@,
+proof fn bytes_eq_view_implies_eq<const N: usize>(a: [u8; N], b: [u8; N])
     ensures
-        a == b,
+        a@ =~= b@ <==> a == b,
 {
-    admit();
+    if a@ == b@ {
+        assert(a.len() == N);
+        assert(a.len() == b.len());
+        assert forall|i: int| 0 <= i < N implies a[i] == b[i] by {}
+        admit();
+    }
 }
 
 impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {

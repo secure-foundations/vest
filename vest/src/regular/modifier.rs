@@ -60,13 +60,9 @@ pub trait Iso<'x>: View where
     /// The source type of the isomorphism.
     type Src: View;
 
-    // type Src: View + From<Self::Dst>;
     /// The reference of the [`Src`] type.
     type RefSrc: View<V = <Self::Src as View>::V> + From<&'x Self::Dst>;
 
-    // /// THe reference of the [`Dst`] type.
-    // type RefDst: View<V = <Self::Dst as View>::V>;
-    // type RefSrc<'a>: View<V = <Self::Src as View>::V> + From<&'a Self::Dst> where Self::Dst: 'a;
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
 }
@@ -106,17 +102,7 @@ impl<'x, T: Iso<'x>> IsoFn<'x> for T where
 
     fn rev_apply(s: &'x Self::Dst) -> (res: Self::RefSrc) {
         Self::RefSrc::ex_from(s)
-    }  // /
-    // Applies the reverse isomorphism to the destination type.
-    // fn rev_apply<'a>(s: &'a Self::Dst) -> (res: Self::RefSrc<'a>)
-    //     ensures
-    //         res@ == Self::V::spec_rev_apply(s@),
-    // {
-    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_from(s@))
-    //         by (compute_only);
-    //     Self::RefSrc::ex_from(s)
-    // }
-
+    }
 }
 
 /// Combinator that maps the result of an `inner` combinator with an isomorphism that implements
@@ -338,8 +324,6 @@ pub trait PartialIso<'x>: View where
     /// The reference of the [`Src`] type.
     type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<&'x Self::Dst>;
 
-    /// THe reference of the [`Dst`] type.
-    // type RefDst: View<V = <Self::Dst as View>::V>;
     /// The destination type
     type Dst: View + TryFrom<Self::Src>;
 }
@@ -391,21 +375,7 @@ impl<'x, T: PartialIso<'x>> PartialIsoFn<'x> for T where
         <Self::RefSrc as TryFrom<&'x Self::Dst>>::Error,
     >) {
         Self::RefSrc::ex_try_from(s)
-    }  // /
-    // Applies the reverse fallible conversion to the destination type.
-    // fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
-    //     ensures
-    //         res matches Ok(v) ==> {
-    //             &&& Self::V::spec_rev_apply(s@) is Ok
-    //             &&& Self::V::spec_rev_apply(s@) matches Ok(v_) && v@ == v_
-    //         },
-    //         res matches Err(e) ==> Self::V::spec_rev_apply(s@) is Err,
-    // {
-    //     assert(Self::V::spec_rev_apply(s@) == <Self::Src as View>::V::spec_try_from(s@))
-    //         by (compute_only);
-    //     Self::Src::ex_try_from(s)
-    // }
-
+    }
 }
 
 /// Combinator that maps the result of an `inner` combinator with a fallible conversion
@@ -525,12 +495,7 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
-// M: TryFromInto<Src = Inner::Type>,
-// Inner::Type: TryFrom<M::Dst> + View,
-// M::Dst: TryFrom<Inner::Type> + View,
-// M::V: SpecTryFromInto<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
-// <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
-// <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
+    <Inner::SType as TryFrom<&'x M::Dst>>::Error: std::fmt::Debug,
  {
     type Type = M::Dst;
 
@@ -562,10 +527,8 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
         usize,
         SerializeError,
     >) {
-        match M::rev_apply(v) {
-            Ok(v) => self.inner.serialize(v, data, pos),
-            Err(_) => Err(SerializeError::TryMapFailed),
-        }
+        // we know `v` is well-formed, so we can unwrap it
+        self.inner.serialize(M::rev_apply(v).unwrap(), data, pos)
     }
 }
 
@@ -583,28 +546,11 @@ pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
     /// The input type of the predicate.
     type Input: View + ?Sized;
 
-    // /// The input type of the predicate (for serialization).
-    // type InputRef: View<V = <Self::Input as View>::V>;
-    // /// pre-condition for applying the predicate
-    // open spec fn wf(&self) -> bool {
-    //     true
-    // }
     /// Applies the predicate to the input.
     fn apply(&self, i: &Self::Input) -> (res: bool)
-    // requires
-    //     self.wf(),
-
         ensures
             res == self@.spec_apply(&i@),
-    ;  // /
-    // Serialization equivalent of [`Self::p_apply`].
-    // fn s_apply(&self, i: Self::InputRef) -> (res: bool)
-    //     requires
-    //         self.wf(),
-    //     ensures
-    //         res == self@.spec_apply(&i@),
-    // ;
-
+    ;
 }
 
 /// Combinator that refines the result of an `inner` combinator with a predicate that implements
@@ -694,7 +640,6 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     P: Pred<Input = Inner::Type>,
     P::V: SpecPred<Input = <Inner::Type as View>::V>,
     <P as Pred>::Input: 'x,
-// Inner::SType: Copy,
  {
     type Type = Inner::Type;
 
@@ -724,11 +669,8 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.predicate.apply(v) {
-            self.inner.serialize(v, data, pos)
-        } else {
-            Err(SerializeError::RefinedPredicateFailed)
-        }
+        // we know `v` is well-formed, so we can skip the predicate check
+        self.inner.serialize(v, data, pos)
     }
 }
 
@@ -846,11 +788,9 @@ impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.cond {
-            self.inner.serialize(v, data, pos)
-        } else {
-            Err(SerializeError::CondFailed)
-        }
+        // we know `self.cond` must be true when `serialize` is called
+        // so we can skip the check
+        self.inner.serialize(v, data, pos)
     }
 }
 
@@ -978,6 +918,8 @@ impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Vari
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        // we can skip the call to `self.0.serialize` because we know that it
+        // will be an "no-op"
         let n = self.1.serialize(v, data, pos)?;
         Ok(n)
     }

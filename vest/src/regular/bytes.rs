@@ -1,7 +1,7 @@
 use crate::properties::*;
 use vstd::prelude::*;
 
-// use super::modifier::AndThen;
+use super::modifier::AndThen;
 
 verus! {
 
@@ -16,25 +16,31 @@ impl View for Variable {
     }
 }
 
-// impl Variable {
-//     /// Spec version of [`Self::and_then`]
-//     pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<Variable, Next> {
-//         AndThen(self, next)
-//     }
-//     /// Chains this combinator with another combinator.
-//     pub fn and_then<'x, I, O, Next: Combinator<'x, I, O>>(self, next: Next) -> (o: AndThen<
-//         Variable,
-//         Next,
-//     >) where
-//         I: VestPublicInput,
-//         O: VestPublicOutput<I>,
-//         Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
-//         ensures
-//             o@ == self@.spec_and_then(next@),
-//     {
-//         AndThen(self, next)
-//     }
-// }
+impl Variable {
+    /// Spec version of [`Self::and_then`]
+    pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<
+        Variable,
+        Next,
+    > {
+        AndThen(self, next)
+    }
+
+    /// Chains this combinator with another combinator.
+    pub fn and_then<'x, I, O, Next: Combinator<'x, I, O>>(self, next: Next) -> (o: AndThen<
+        Variable,
+        Next,
+    >) where
+        I: VestPublicInput,
+        O: VestPublicOutput<I>,
+        Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
+
+        ensures
+            o@ == self@.spec_and_then(next@),
+    {
+        AndThen(self, next)
+    }
+}
+
 impl SpecCombinator for Variable {
     type Type = Seq<u8>;
 

@@ -222,12 +222,6 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd
             snd@.lemma_parse_length(s@.skip(n as int));
         }
         Ok((n + m, (v1, v2)))
-        // if let Some(nm) = n.checked_add(m) {
-        //     Ok((nm, (v1, v2)))
-        // } else {
-        //     Err(ParseError::SizeOverflow)
-        // }
-
     }
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
@@ -237,12 +231,8 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd
         let snd = self.snd.apply(v.0);
         let n = self.fst.serialize(v.0, data, pos)?;
         let m = snd.serialize(v.1, data, pos + n)?;
-        if let Some(nm) = n.checked_add(m) {
-            assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
-            Ok(nm)
-        } else {
-            Err(SerializeError::SizeOverflow)
-        }
+        assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
+        Ok(n + m)
     }
 }
 
@@ -363,12 +353,8 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
     >) {
         let n = self.0.serialize(v.0, data, pos)?;
         let m = self.1.serialize(v.1, data, pos + n)?;
-        if m <= usize::MAX - n {
-            assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
-            Ok(n + m)
-        } else {
-            Err(SerializeError::SizeOverflow)
-        }
+        assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
+        Ok(n + m)
     }
 }
 
