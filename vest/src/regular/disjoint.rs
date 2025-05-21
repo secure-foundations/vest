@@ -1,10 +1,8 @@
-use super::bytes::{Variable, Fixed};
-use super::variant::Choice;
-use super::sequence::{SpecPair, Preceded};
 use super::fail::Fail;
-use super::modifier::{Mapped, SpecIso, SpecPartialIso, SpecPartialIsoFn, TryMap, Cond, Refined, SpecPred};
-use super::tag::{Tag, TagPred};
-use super::uints::*;
+use super::modifier::{Cond, Mapped, Refined, SpecIso, SpecPartialIsoFn, SpecPred, TryMap};
+use super::sequence::{Preceded, SpecPair};
+use super::tag::Tag;
+use super::variant::Choice;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -25,14 +23,12 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
     // just one direction is enough for the proofs of `Choice`
 
         ensures
-            self.spec_parse(buf).is_ok() ==> other.spec_parse(buf).is_err(),
+            self.spec_parse(buf) is Some ==> other.spec_parse(buf) is None,
     ;
 }
 
 // two `Tag(T, value)`s are disjoint if their inner `Refined` combinators are disjoint
-impl<Inner, T> DisjointFrom<Tag<Inner, T>> for Tag<Inner, T> where
-    Inner: SpecCombinator<Type = T>,
- {
+impl<Inner, T> DisjointFrom<Tag<Inner, T>> for Tag<Inner, T> where Inner: SpecCombinator<Type = T> {
     open spec fn disjoint_from(&self, other: &Tag<Inner, T>) -> bool {
         self.0.disjoint_from(&other.0)
     }

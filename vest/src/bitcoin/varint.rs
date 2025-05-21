@@ -2,10 +2,12 @@ use crate::{
     properties::*,
     regular::{
         bytes::Fixed,
-        variant::*,
+        modifier::{
+            Cond, PartialIso, Pred, Refined, SpecPartialIso, SpecPartialIsoProof, SpecPred, TryMap,
+        },
         sequence::{Continuation, Pair, SpecPair},
-        modifier::{SpecPartialIso, SpecPartialIsoProof, PartialIso, TryMap, Cond, Pred, Refined, SpecPred},
         uints::*,
+        variant::*,
     },
 };
 use vstd::prelude::*;
@@ -91,24 +93,49 @@ type VarintChoice = Choice<
 
 type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper>;
 
-type BtcVarintInner = TryMap<
-    Pair<U8, u8, VarintChoice, BtVarintCont>,
-    VarIntMapper,
->;
+type BtcVarintInner = TryMap<Pair<U8, u8, VarintChoice, BtVarintCont>, VarIntMapper>;
 
 pub spec const SPEC_TAG_U16: u8 = 0xFD;
+
 pub spec const SPEC_TAG_U32: u8 = 0xFE;
+
 pub spec const SPEC_TAG_U64: u8 = 0xFF;
 
-pub exec static TAG_U16: u8 ensures TAG_U16 == SPEC_TAG_U16 { 0xFD }
-pub exec static TAG_U32: u8 ensures TAG_U32 == SPEC_TAG_U32 { 0xFE }
-pub exec static TAG_U64: u8 ensures TAG_U64 == SPEC_TAG_U64 { 0xFF }
-
-pub exec static EMPTY_SLICE: &'static [u8] ensures EMPTY_SLICE@ == Seq::<u8>::empty() { 
-    assert(<_ as View>::view(&[]) =~= Seq::<u8>::empty());
-    &[] 
+pub exec static TAG_U16: u8
+    ensures
+        TAG_U16 == SPEC_TAG_U16,
+{
+    0xFD
 }
-pub exec static EMPTY: &'static &'static [u8] ensures EMPTY@ == Seq::<u8>::empty() { &EMPTY_SLICE }
+
+pub exec static TAG_U32: u8
+    ensures
+        TAG_U32 == SPEC_TAG_U32,
+{
+    0xFE
+}
+
+pub exec static TAG_U64: u8
+    ensures
+        TAG_U64 == SPEC_TAG_U64,
+{
+    0xFF
+}
+
+pub exec static EMPTY_SLICE: &'static [u8]
+    ensures
+        EMPTY_SLICE@ == Seq::<u8>::empty(),
+{
+    assert(<_ as View>::view(&[]) =~= Seq::<u8>::empty());
+    &[]
+}
+
+pub exec static EMPTY: &'static &'static [u8]
+    ensures
+        EMPTY@ == Seq::<u8>::empty(),
+{
+    &EMPTY_SLICE
+}
 
 /// Inner Spec combinator for parsing and serializing Bitcoin variable-length integers
 pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
@@ -316,14 +343,15 @@ impl SpecTryFrom<VarInt> for (u8, Either<Seq<u8>, Either<u16, Either<u32, u64>>>
     }
 }
 
-impl<'x> TryFrom<&'x VarInt> for (&'x u8, Either<&'x &'x [u8], Either<&'x u16, Either<&'x u32, &'x u64>>>) {
+impl<'x> TryFrom<&'x VarInt> for (
+    &'x u8,
+    Either<&'x &'x [u8], Either<&'x u16, Either<&'x u32, &'x u64>>>,
+) {
     type Error = ();
 
     fn ex_try_from(t: &'x VarInt) -> Result<Self, Self::Error> {
         match t {
-            VarInt::U8(t) => {
-                Ok((t, inj_ord_choice_result!(EMPTY, *, *, *)))
-            },
+            VarInt::U8(t) => { Ok((t, inj_ord_choice_result!(EMPTY, *, *, *))) },
             VarInt::U16(x) => Ok((&TAG_U16, inj_ord_choice_result!(*, x, *, *))),
             VarInt::U32(x) => Ok((&TAG_U32, inj_ord_choice_result!(*, *, x, *))),
             VarInt::U64(x) => Ok((&TAG_U64, inj_ord_choice_result!(*, *, *, x))),
@@ -367,11 +395,19 @@ impl<'x> PartialIso<'x> for VarIntMapper {
 impl SpecCombinator for BtcVarint {
     type Type = VarInt;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn requires(&self) -> bool {
+        spec_btc_varint_inner().requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        spec_btc_varint_inner().wf(v)
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         spec_btc_varint_inner().spec_parse(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         spec_btc_varint_inner().spec_serialize(v)
     }
 }
@@ -453,6 +489,33 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BtcVarint {
     >) {
         btc_varint_inner().serialize(v, data, pos)
     }
+}
+
+// verify well-formed VarInt
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    proof fn well_formed_varint() {
+        let good1 = VarInt::U8(0xFC);
+        let good2 = VarInt::U16(0xFD);
+        let good3 = VarInt::U32(0x10000);
+        let good4 = VarInt::U64(0x100000000);
+        assert(BtcVarint.wf(good1));
+        assert(BtcVarint.wf(good2));
+        assert(BtcVarint.wf(good3));
+        assert(BtcVarint.wf(good4));
+
+        let bad1 = VarInt::U8(0xFD);
+        let bad2 = VarInt::U16(0xFC);
+        let bad3 = VarInt::U32(0xFFFF);
+        let bad4 = VarInt::U64(0xFFFFFFFF);
+        assert(!BtcVarint.wf(bad1));
+        assert(!BtcVarint.wf(bad2));
+        assert(!BtcVarint.wf(bad3));
+        assert(!BtcVarint.wf(bad4));
+    }
+
 }
 
 } // verus!

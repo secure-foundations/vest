@@ -112,16 +112,16 @@ macro_rules! impl_combinator_for_le_uint_type {
             impl SpecCombinator for $combinator {
                 type Type = $int_type;
 
-                open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
+                open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, $int_type)> {
                     if s.len() >= size_of::<$int_type>() {
-                        Ok((size_of::<$int_type>() as usize, <$int_type>::spec_from_le_bytes(s)))
+                        Some((size_of::<$int_type>() as int, <$int_type>::spec_from_le_bytes(s)))
                     } else {
-                        Err(())
+                        None
                     }
                 }
 
-                open spec fn spec_serialize(&self, v: $int_type) -> Result<Seq<u8>, ()> {
-                    Ok(<$int_type>::spec_to_le_bytes(&v))
+                open spec fn spec_serialize(&self, v: $int_type) -> Seq<u8> {
+                    <$int_type>::spec_to_le_bytes(&v)
                 }
             }
 
@@ -192,18 +192,14 @@ macro_rules! impl_combinator_for_le_uint_type {
                 }
 
                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
-                    if pos <= data.len() {
-                        if size_of::<$int_type>() <= data.len() - pos {
-                            $int_type::ex_to_le_bytes(&v, data, pos);
-                            proof {
-                                v.reflex();
-                                assert(data@.subrange(pos as int, pos + size_of::<$int_type>() as int)
-                                    == self.spec_serialize(v@).unwrap());
-                            }
-                            Ok(size_of::<$int_type>())
-                        } else {
-                            Err(SerializeError::InsufficientBuffer)
+                    if size_of::<$int_type>() <= data.len() - pos {
+                        $int_type::ex_to_le_bytes(&v, data, pos);
+                        proof {
+                            v.reflex();
+                            assert(data@.subrange(pos as int, pos + size_of::<$int_type>() as int)
+                                == self.spec_serialize(v@));
                         }
+                        Ok(size_of::<$int_type>())
                     } else {
                         Err(SerializeError::InsufficientBuffer)
                     }
@@ -219,16 +215,16 @@ macro_rules! impl_combinator_for_be_uint_type {
             impl SpecCombinator for $combinator {
                 type Type = $int_type;
 
-                open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, $int_type), ()> {
+                open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, $int_type)> {
                     if s.len() >= size_of::<$int_type>() {
-                        Ok((size_of::<$int_type>() as usize, <$int_type>::spec_from_be_bytes(s)))
+                        Some((size_of::<$int_type>() as int, <$int_type>::spec_from_be_bytes(s)))
                     } else {
-                        Err(())
+                        None
                     }
                 }
 
-                open spec fn spec_serialize(&self, v: $int_type) -> Result<Seq<u8>, ()> {
-                    Ok(<$int_type>::spec_to_be_bytes(&v))
+                open spec fn spec_serialize(&self, v: $int_type) -> Seq<u8> {
+                    <$int_type>::spec_to_be_bytes(&v)
                 }
             }
 
@@ -299,18 +295,14 @@ macro_rules! impl_combinator_for_be_uint_type {
                 }
 
                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<usize, SerializeError>) {
-                    if pos <= data.len() {
-                        if size_of::<$int_type>() <= data.len() - pos {
-                            $int_type::ex_to_be_bytes(&v, data, pos);
-                            proof {
-                                v.reflex();
-                                assert(data@.subrange(pos as int, pos + size_of::<$int_type>() as int)
-                                    == self.spec_serialize(v@).unwrap());
-                            }
-                            Ok(size_of::<$int_type>())
-                        } else {
-                            Err(SerializeError::InsufficientBuffer)
+                    if size_of::<$int_type>() <= data.len() - pos {
+                        $int_type::ex_to_be_bytes(&v, data, pos);
+                        proof {
+                            v.reflex();
+                            assert(data@.subrange(pos as int, pos + size_of::<$int_type>() as int)
+                                == self.spec_serialize(v@));
                         }
+                        Ok(size_of::<$int_type>())
                     } else {
                         Err(SerializeError::InsufficientBuffer)
                     }
@@ -373,8 +365,6 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
 
     /// Helper lemma for proving [`SecureSpecCombinator::lemma_prefix_secure`]
     proof fn lemma_spec_from_le_bytes_no_lookahead(s1: Seq<u8>, s2: Seq<u8>)
-        requires
-            s1.len() + s2.len() <= usize::MAX,
         ensures
             s1.len() >= size_of::<Self>() ==> Self::spec_from_le_bytes(s1)
                 == Self::spec_from_le_bytes(s1.add(s2)),
@@ -398,8 +388,6 @@ pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
 
     /// Helper lemma for proving [`SecureSpecCombinator::lemma_prefix_secure`]
     proof fn lemma_spec_from_be_bytes_no_lookahead(s1: Seq<u8>, s2: Seq<u8>)
-        requires
-            s1.len() + s2.len() <= usize::MAX,
         ensures
             s1.len() >= size_of::<Self>() ==> Self::spec_from_be_bytes(s1)
                 == Self::spec_from_be_bytes(s1.add(s2)),
@@ -1046,14 +1034,14 @@ impl SpecCombinator for U24Le {
     // To parse a u24 in little-endian byte order, we simply reverse the 3 bytes parsed by the
     // `Fixed<3>` combinator.
     // Later when this `u24` is used, it's converted to a `u32` in big-endian byte order.
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, u24)> {
         match Fixed::<3>.spec_parse(s) {
-            Ok((n, bytes)) => Ok((n, u24([bytes[2], bytes[1], bytes[0]]))),
-            _ => Err(()),
+            Some((n, bytes)) => Some((n, u24([bytes[2], bytes[1], bytes[0]]))),
+            _ => None,
         }
     }
 
-    open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: u24) -> Seq<u8> {
         let bytes = v.0;
         Fixed::<3>.spec_serialize([bytes[2], bytes[1], bytes[0]]@)
     }
@@ -1075,14 +1063,9 @@ impl SecureSpecCombinator for U24Le {
     proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
         let v_rev = u24([v.0[2], v.0[1], v.0[0]]);
         Fixed::<3>.theorem_serialize_parse_roundtrip(v_rev.0@);
-        match Fixed::<3>.spec_serialize(v_rev.0@) {
-            Ok(buf) => {
-                match Fixed::<3>.spec_parse(buf) {
-                    Ok((n, bytes)) => {
-                        bytes_eq_view_implies_eq([bytes[2], bytes[1], bytes[0]], v.0);
-                    },
-                    _ => {},
-                }
+        match Fixed::<3>.spec_parse(Fixed::<3>.spec_serialize(v_rev.0@)) {
+            Some((n, bytes)) => {
+                bytes_eq_view_implies_eq([bytes[2], bytes[1], bytes[0]], v.0);
             },
             _ => {},
         }
@@ -1091,7 +1074,7 @@ impl SecureSpecCombinator for U24Le {
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
         Fixed::<3>.theorem_parse_serialize_roundtrip(s);
         match Fixed::<3>.spec_parse(s) {
-            Ok((n, bytes)) => {
+            Some((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
             },
             _ => {},
@@ -1127,7 +1110,12 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &[v.0[2], v.0[1], v.0[0]].as_slice(), data, pos)
+        <_ as Combinator<&[u8], Vec<u8>>>::serialize(
+            &Fixed::<3>,
+            &[v.0[2], v.0[1], v.0[0]].as_slice(),
+            data,
+            pos,
+        )
     }
 }
 
@@ -1145,14 +1133,14 @@ impl View for U24Be {
 impl SpecCombinator for U24Be {
     type Type = u24;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, u24), ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, u24)> {
         match Fixed::<3>.spec_parse(s) {
-            Ok((n, bytes)) => Ok((n, u24([bytes[0], bytes[1], bytes[2]]))),
-            _ => Err(()),
+            Some((n, bytes)) => Some((n, u24([bytes[0], bytes[1], bytes[2]]))),
+            _ => None,
         }
     }
 
-    open spec fn spec_serialize(&self, v: u24) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: u24) -> Seq<u8> {
         let bytes = v.0;
         Fixed::<3>.spec_serialize(bytes@)
     }
@@ -1173,14 +1161,9 @@ impl SecureSpecCombinator for U24Be {
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: u24) {
         Fixed::<3>.theorem_serialize_parse_roundtrip(v.0@);
-        match Fixed::<3>.spec_serialize(v.0@) {
-            Ok(buf) => {
-                match Fixed::<3>.spec_parse(buf) {
-                    Ok((n, bytes)) => {
-                        bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
-                    },
-                    _ => {},
-                }
+        match Fixed::<3>.spec_parse(Fixed::<3>.spec_serialize(v.0@)) {
+            Some((n, bytes)) => {
+                bytes_eq_view_implies_eq([bytes[0], bytes[1], bytes[2]], v.0);
             },
             _ => {},
         }
@@ -1189,7 +1172,7 @@ impl SecureSpecCombinator for U24Be {
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
         Fixed::<3>.theorem_parse_serialize_roundtrip(s);
         match Fixed::<3>.spec_parse(s) {
-            Ok((n, bytes)) => {
+            Some((n, bytes)) => {
                 assert([bytes[0], bytes[1], bytes[2]]@ == bytes);
             },
             _ => {},
