@@ -129,11 +129,19 @@ pub struct SpecOpaqueU16Combinator(SpecOpaqueU16CombinatorAlias);
 impl SpecCombinator for SpecOpaqueU16Combinator {
     type Type = SpecOpaqueU16;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    closed spec fn requires(&self) -> bool {
+        self.0.requires()
+    }
+
+    closed spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(v)
+    }
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
     }
 }
@@ -219,16 +227,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OpaqueU16Combinator {
         <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
-    closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
+    closed spec fn ex_requires(&self) -> bool {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::ex_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -311,11 +315,19 @@ pub struct SpecResponderIdCombinator(SpecResponderIdCombinatorAlias);
 impl SpecCombinator for SpecResponderIdCombinator {
     type Type = SpecResponderId;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    closed spec fn requires(&self) -> bool {
+        self.0.requires()
+    }
+
+    closed spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(v)
+    }
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
     }
 }
@@ -374,16 +386,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
         <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
-    closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
+    closed spec fn ex_requires(&self) -> bool {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::ex_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -417,11 +425,19 @@ pub struct SpecResponderIdListListCombinator(SpecResponderIdListListCombinatorAl
 impl SpecCombinator for SpecResponderIdListListCombinator {
     type Type = SpecResponderIdListList;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    closed spec fn requires(&self) -> bool {
+        self.0.requires()
+    }
+
+    closed spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(v)
+    }
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
     }
 }
@@ -482,16 +498,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListListCombinator
         <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
-    closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
+    closed spec fn ex_requires(&self) -> bool {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::ex_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<
@@ -617,11 +629,19 @@ pub struct SpecResponderIdListCombinator(SpecResponderIdListCombinatorAlias);
 impl SpecCombinator for SpecResponderIdListCombinator {
     type Type = SpecResponderIdList;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    closed spec fn requires(&self) -> bool {
+        self.0.requires()
+    }
+
+    closed spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(v)
+    }
+
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
     }
 }
@@ -708,16 +728,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator
         <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
     }
 
-    closed spec fn parse_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::parse_requires(&self.0)
+    closed spec fn ex_requires(&self) -> bool {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::ex_requires(&self.0)
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         <_ as Combinator<&'a [u8], Vec<u8>>>::parse(&self.0, s)
-    }
-
-    closed spec fn serialize_requires(&self) -> bool {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize_requires(&self.0)
     }
 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<

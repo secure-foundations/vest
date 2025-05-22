@@ -559,27 +559,31 @@ fn serialize_parse4() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
+    let bytes3: [u8; 6] = [0u8, 0u8, 1u8, 2u8, 3u8, 4u8];
     let val = Msg4::M1(Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() });
     let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(msg@.wf(val@));
     let len = msg.serialize(&val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
-    let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
-    proof {
-        msg@.theorem_serialize_parse_roundtrip(val@);
-        assert(n == len);
-        // assert(val@ == val_@);
-        // assert(val_@ == SpecMsg4::M1(SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ }));
-    }
-    let val = Msg4::M3(Msg3 { a: bytes1.as_slice() });
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    let len = msg.serialize(&val, &mut s1, 0)?;
-    let s_ = slice_subrange(s1.as_slice(), 0, len);
+    assert(s_@ == msg@.spec_serialize(val@));
     let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg@.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
         assert(val@ == val_@);
-        assert(val_@ == SpecMsg4::M3(SpecMsg3 { a: bytes1@ }));
+        // assert(val_@ == SpecMsg4::M1(SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ }));
+    }
+    let val = Msg4::M3(Msg3 { a: bytes3.as_slice() });
+    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    let len = msg.serialize(&val, &mut s1, 0)?;
+    let s_ = slice_subrange(s1.as_slice(), 0, len);
+    assert(s_@ == msg@.spec_serialize(val@));
+    let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
+    proof {
+        msg@.theorem_serialize_parse_roundtrip(val@);
+        assert(n == len);
+        assert(val@ == val_@);
+        assert(val_@ == SpecMsg4::M3(SpecMsg3 { a: bytes3@ }));
     }
     Ok(())
 }
