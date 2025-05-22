@@ -93,7 +93,10 @@ pub fn mk_msg2<'a>() -> (o: Pair<bytes::Fixed<2>, &'a[u8], Cond<U8>, Msg2Cont>)
     }
 }
 
-fn test(buf: &[u8]) -> Result<(), SerializeError> {
+fn test(buf: &[u8]) -> Result<(), SerializeError>
+    requires
+        buf.len() <= usize::MAX,
+{
     let msg2_combinator = mk_msg2();
     let mut outbuf: Vec<u8> = my_vec!(0, 0, 0, 0, 0, 0, 0, 0);
     let two_bytes = [0u8, 1];

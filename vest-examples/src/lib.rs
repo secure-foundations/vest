@@ -156,11 +156,13 @@ fn test_parse_serialize(buf: &[u8])
     requires buf@.len() <= usize::MAX,
 {
     if let Ok((consumed, val)) = a().parse(buf) {
+        proof {
+            spec_a().theorem_parse_serialize_roundtrip(buf@);
+            spec_a().lemma_parse_length(buf@);
+        }
         let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+        let ghost s = spec_a().spec_serialize(val@);
         if let Ok(len) = a().serialize(&val, &mut outbuf, 0) {
-            proof {
-                spec_a().theorem_parse_serialize_roundtrip(buf@);
-            }
             assert(len == consumed);
             assert(buf@.take(len as int) == outbuf@.take(len as int));
         }
