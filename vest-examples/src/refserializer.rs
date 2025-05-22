@@ -1,17 +1,7 @@
 #![allow(unused_imports)]
-#![allow(warnings)]
-mod choice;
-mod depend;
-mod enums;
-mod map;
-mod opt;
-mod pair;
-mod refserializer;
-pub mod repeat;
-// mod tlv;
-mod wireguard;
+use super::my_vec;
 use vest::properties::*;
-use vest::regular::bytes::*;
+use vest::regular::bytes;
 use vest::regular::modifier::*;
 use vest::regular::repetition::*;
 use vest::regular::sequence::*;
@@ -21,7 +11,6 @@ use vstd::prelude::*;
 
 verus! {
 
-
 struct SpecNominal {
     x: u24,
     y: Seq<u8>,
@@ -29,12 +18,12 @@ struct SpecNominal {
 
 type SpecStructural = (u24, Seq<u8>);
 
-struct Nominal {
+struct Nominal<'a> {
     x: u24,
-    y: RepeatResult<u8>,
+    y: &'a [u8],
 }
 
-impl View for Nominal {
+impl View for Nominal<'_> {
     type V = SpecNominal;
 
     closed spec fn view(&self) -> SpecNominal {
@@ -42,19 +31,19 @@ impl View for Nominal {
     }
 }
 
-type Structural = (u24, RepeatResult<u8>);
+type Structural<'a> = (u24, &'a [u8]);
 
-type StructuralRef<'a> = (&'a u24, &'a RepeatResult<u8>);
+type StructuralRef<'a> = (&'a u24, &'a &'a [u8]);
 
-impl From<Structural> for Nominal {
-    fn ex_from(s: Structural) -> Self {
+impl<'a> From<Structural<'a>> for Nominal<'a> {
+    fn ex_from(s: Structural<'a>) -> Self {
         let (x, y) = s;
         Nominal { x, y }
     }
 }
 
-impl<'a> From<&'a Nominal> for StructuralRef<'a> {
-    fn ex_from(n: &'a Nominal) -> Self {
+impl<'a> From<&'a Nominal<'a>> for StructuralRef<'a> {
+    fn ex_from(n: &'a Nominal<'a>) -> Self {
         (&n.x, &n.y)
     }
 }
@@ -97,23 +86,22 @@ impl SpecIsoProof for AIso {
 }
 
 impl<'a> Iso<'a> for AIso {
-    type Src = Structural;
+    type Src = Structural<'a>;
 
-    type Dst = Nominal;
+    type Dst = Nominal<'a>;
 
     type RefSrc = StructuralRef<'a>;
 }
 
-pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8> {
+pub open spec fn spec_a_cont(deps: u24) -> bytes::Variable {
     let l = deps;
-    // RepeatN::spec_new(U8, l.spec_into())
-    RepeatN(U8, l.spec_into())
+    bytes::Variable(l.spec_into())
 }
 
 struct ACont;
 
 impl Continuation<&u24> for ACont {
-    type Output = RepeatN<U8>;
+    type Output = bytes::Variable;
 
     open spec fn requires(&self, deps: &u24) -> bool {
         true
@@ -125,11 +113,11 @@ impl Continuation<&u24> for ACont {
 
     fn apply(&self, deps: &u24) -> Self::Output {
         let l = *deps;
-        RepeatN(U8, l.ex_into())
+        bytes::Variable(l.ex_into())
     }
 }
 
-spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
+spec fn spec_a() -> Mapped<SpecPair<U24Le, bytes::Variable>, AIso> {
     Mapped {
         inner:
         SpecPair { fst: U24Le, snd: |deps| spec_a_cont(deps) },
@@ -137,9 +125,9 @@ spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
     }
 }
 
-fn a() -> (o: Mapped<Pair<U24Le, u24, RepeatN<U8>, ACont>, AIso>  )
+fn a() -> (o: Mapped<Pair<U24Le, u24, bytes::Variable, ACont>, AIso>  )
     ensures
-        o@ == spec_a(),
+    o@ == spec_a(),
 {
     Mapped {
         inner:
@@ -156,35 +144,18 @@ fn test_parse_serialize(buf: &[u8])
     requires buf@.len() <= usize::MAX,
 {
     if let Ok((consumed, val)) = a().parse(buf) {
-        proof {
-            spec_a().theorem_parse_serialize_roundtrip(buf@);
-            spec_a().lemma_parse_length(buf@);
-        }
-        let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-        let ghost s = spec_a().spec_serialize(val@);
-        if let Ok(len) = a().serialize(&val, &mut outbuf, 0) {
-            assert(len == consumed);
-            assert(buf@.take(len as int) == outbuf@.take(len as int));
-        }
+    let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    if let Ok(len) = a().serialize(&val, &mut outbuf, 0) {
+    proof {
+    spec_a().theorem_parse_serialize_roundtrip(buf@);
+                }
+    assert(len == consumed);
+    assert(buf@.take(len as int) == outbuf@.take(len as int));
     }
-    // let (consumed, val) = a().parse(buf).unwrap();
-    // let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    // let len = a().serialize(&val, &mut outbuf, 0).unwrap();
+}
+// let (consumed, val) = a().parse(buf).unwrap();
+// let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+// let len = a().serialize(&val, &mut outbuf, 0).unwrap();
 }
 
 }
-
-macro_rules! my_vec {
-    // Match against any number of comma-separated expressions.
-    ($($x:expr),* $(,)?) => {
-        {
-            let mut temp_vec = Vec::new();
-            // $(temp_vec.push($x);)*
-            $(
-                temp_vec.push($x);
-            )*
-            temp_vec
-        }
-    };
-}
-pub(crate) use my_vec;

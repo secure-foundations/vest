@@ -1,10 +1,8 @@
-use super::bytes::{Variable, Fixed};
-use super::variant::Choice;
-use super::sequence::{SpecPair, Preceded};
 use super::fail::Fail;
-use super::modifier::{Mapped, SpecIso, SpecPartialIso, SpecPartialIsoFn, TryMap, Cond, Refined, SpecPred};
-use super::tag::{Tag, TagPred};
-use super::uints::*;
+use super::modifier::{Cond, Mapped, Refined, SpecIso, SpecPartialIsoFn, SpecPred, TryMap};
+use super::sequence::{Preceded, SpecPair};
+use super::tag::Tag;
+use super::variant::Choice;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -25,7 +23,7 @@ pub trait DisjointFrom<Other> where Self: SpecCombinator, Other: SpecCombinator 
     // just one direction is enough for the proofs of `Choice`
 
         ensures
-            self.spec_parse(buf).is_ok() ==> other.spec_parse(buf).is_err(),
+            self.spec_parse(buf) is Some ==> other.spec_parse(buf) is None,
     ;
 }
 

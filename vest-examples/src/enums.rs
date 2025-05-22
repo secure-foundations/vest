@@ -44,7 +44,7 @@ spec fn spec_parse(x: Seq<u8>) -> Option<MyEnum> {
     let case2 = (tag2, payload2);
     let case3 = (tag3, payload3);
     let comb = ord_choice!(case1, case2, case3);
-    if let Ok((_, eithers)) = comb.spec_parse(x) {
+    if let Some((_, eithers)) = comb.spec_parse(x) {
         match eithers {
             inj_ord_choice_pat!((_, x), *, *) => Some(MyEnum::A(x)),
             inj_ord_choice_pat!(*, (_, x), *) => Some(MyEnum::B(x)),
@@ -56,6 +56,8 @@ spec fn spec_parse(x: Seq<u8>) -> Option<MyEnum> {
 }
 
 fn exec_parse<'a>(x: &'a [u8]) -> (res: Option<MyEnumExec<'a>>)
+    requires
+        x.len() <= usize::MAX,
     ensures
         res is Some ==> spec_parse(x.view()) is Some,
         res matches Some(r) ==> r.view() == spec_parse(x.view())->Some_0,

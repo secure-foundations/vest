@@ -17,12 +17,12 @@ impl View for Success {
 impl SpecCombinator for Success {
     type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        Ok((0, ()))
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        Some((0, ()))
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        Ok(Seq::empty())
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        Seq::empty()
     }
 }
 
@@ -52,8 +52,10 @@ impl SecureSpecCombinator for Success {
     }
 }
 
-impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
+impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for Success {
     type Type = ();
+
+    type SType = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(0)
@@ -67,16 +69,12 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
         Ok((0, ()))
     }
 
-    fn serialize(&self, _v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        if pos <= data.len() {
-            assert(seq_splice(data@, pos, Seq::<u8>::empty()) == data@);
-            Ok(0)
-        } else {
-            Err(SerializeError::InsufficientBuffer)
-        }
+        assert(seq_splice(data@, pos, Seq::<u8>::empty()) == data@);
+        Ok(0)
     }
 }
 

@@ -1,5 +1,4 @@
 use super::modifier::{Pred, Refined, SpecPred};
-use super::uints::FromToBytes;
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -34,7 +33,7 @@ impl<T: Compare<T>> Pred for TagPred<T> {
 }
 
 /// Generic tag combinator that matches the input with a given value and discards it
-/// e.g. `Tag(Int::<u8>, 0)` matches the byte `0`; `Tag(Bytes::<3>, &[1, 2, 3])` matches the
+/// e.g. `Tag(U8, 0)` matches the byte `0`; `Tag(Fixed::<3>, &[1, 2, 3])` matches the
 /// bytes `[1, 2, 3]`
 pub struct Tag<Inner, T>(pub Refined<Inner, TagPred<T>>);
 
@@ -48,7 +47,7 @@ impl<Inner, T> Tag<Inner, T> {
     }
 
     /// Creates a new `Tag` combinator.
-    pub open spec fn spec_new(inner: Inner, tag: T) -> Self {
+    pub open spec fn spec_new(inner: Inner, tag: T) -> (o: Self) {
         Tag(Refined { inner, predicate: TagPred(tag) })
     }
 }
@@ -64,15 +63,23 @@ impl<Inner: View, T: View> View for Tag<Inner, T> {
 impl<Inner: SpecCombinator<Type = T>, T> SpecCombinator for Tag<Inner, T> {
     type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        if let Ok((n, _)) = self.0.spec_parse(s) {
-            Ok((n, ()))
+    open spec fn requires(&self) -> bool {
+        self.0.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(self.0.predicate.0)
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        if let Some((n, _)) = self.0.spec_parse(s) {
+            Some((n, ()))
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(self.0.predicate.0)
     }
 }
@@ -96,7 +103,7 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2);
-        assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+        assert(Self::is_prefix_secure() ==> self.spec_parse(s1) is Some ==> self.spec_parse(
             s1.add(s2),
         ) == self.spec_parse(s1));
     }
@@ -110,14 +117,16 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
     }
 }
 
-impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
+impl<'x, I, O, Inner, T> Combinator<'x, I, O> for Tag<Inner, T> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O, Type = T>,
+    Inner: for <'a>Combinator<'a, I, O, Type = T, SType = &'a T>,
     Inner::V: SecureSpecCombinator<Type = T::V>,
-    T: Compare<T> + Copy,
+    T: Compare<T> + 'x,
  {
     type Type = ();
+
+    type SType = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.0.spec_length()
@@ -127,8 +136,8 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         self.0.length()
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -136,59 +145,9 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T> where
         Ok((n, ()))
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        self.0.serialize(&self.0.predicate.0, data, pos)
     }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        self.0.serialize(self.0.predicate.0, data, pos)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::regular::choice::OrdChoice;
-    use super::*;
-    use super::super::uints::{U8};
-    use super::super::bytes_n::BytesN;
-
-    proof fn test(s: Seq<u8>)
-        requires
-            s.len() <= usize::MAX,
-    {
-        let tag = Tag::spec_new(BytesN::<3>, seq![0u8, 0, 0]);
-        if let Ok((n, v)) = tag.spec_parse(s) {
-            if let Ok(buf) = tag.spec_serialize(v) {
-                tag.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-    }
-
-    proof fn test3(s: Seq<u8>)
-        requires
-            s.len() <= usize::MAX,
-    {
-        let tag1 = Tag::spec_new(U8, 0x42);
-        let tag2 = Tag::spec_new(U8, 0x43);
-        let ord = OrdChoice(tag1, tag2);
-        if let Ok((n, v)) = ord.spec_parse(s) {
-            if let Ok(buf) = ord.spec_serialize(v) {
-                ord.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-        let tag3 = Tag::spec_new(BytesN::<3>, seq![1u8, 0, 0]);
-        let tag4 = Tag::spec_new(BytesN::<3>, seq![2u8, 0, 0]);
-        let ord2 = OrdChoice(tag3, tag4);
-        if let Ok((n, v)) = ord2.spec_parse(s) {
-            if let Ok(buf) = ord2.spec_serialize(v) {
-                ord2.theorem_parse_serialize_roundtrip(s);
-                assert(buf == s.subrange(0, n as int));
-            }
-        }
-    }
-
 }
 
 // old code

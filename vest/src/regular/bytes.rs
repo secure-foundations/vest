@@ -18,12 +18,15 @@ impl View for Variable {
 
 impl Variable {
     /// Spec version of [`Self::and_then`]
-    pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<Variable, Next> {
+    pub open spec fn spec_and_then<Next: SpecCombinator>(self, next: Next) -> AndThen<
+        Variable,
+        Next,
+    > {
         AndThen(self, next)
     }
 
     /// Chains this combinator with another combinator.
-    pub fn and_then<'a, I, O, Next: Combinator<I, O>>(self, next: Next) -> (o: AndThen<
+    pub fn and_then<'x, I, O, Next: Combinator<'x, I, O>>(self, next: Next) -> (o: AndThen<
         Variable,
         Next,
     >) where
@@ -41,20 +44,20 @@ impl Variable {
 impl SpecCombinator for Variable {
     type Type = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        v.len() == self.0
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if self.0 <= s.len() {
-            Ok((self.0, s.subrange(0, self.0 as int)))
+            Some((self.0 as int, s.take(self.0 as int)))
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if v.len() == self.0 {
-            Ok(v)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        v
     }
 }
 
@@ -69,16 +72,14 @@ impl SecureSpecCombinator for Variable {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         assert(s1.add(s2).len() == s1.len() + s2.len());
-        if let Ok((n, v)) = self.spec_parse(s1) {
+        if let Some((n, v)) = self.spec_parse(s1) {
             assert(s1.add(s2).subrange(0, n as int) == s1.subrange(0, n as int))
         } else {
         }
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if let Ok(buf) = self.spec_serialize(v) {
-            assert(v.subrange(0, v.len() as int) == v);
-        }
+        assert(v.take(v.len() as int) == v);
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
@@ -91,8 +92,10 @@ impl SecureSpecCombinator for Variable {
     }
 }
 
-impl<I, O> Combinator<I, O> for Variable where I: VestInput, O: VestOutput<I> {
+impl<'x, I, O> Combinator<'x, I, O> for Variable where I: VestInput + 'x, O: VestOutput<I> {
     type Type = I;
+
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(self.0)
@@ -111,15 +114,13 @@ impl<I, O> Combinator<I, O> for Variable where I: VestInput, O: VestOutput<I> {
         }
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        if v.len() <= data.len() && v.len() == self.0 && pos <= data.len() - v.len() {
+        if v.len() <= data.len() && pos <= data.len() - v.len() {
             data.set_range(pos, &v);
-            assert(data@.subrange(pos as int, pos + self.0 as int) == self@.spec_serialize(
-                v@,
-            ).unwrap());
+            assert(data@.subrange(pos as int, pos + self.0 as int) == self@.spec_serialize(v@));
             Ok(self.0)
         } else {
             Err(SerializeError::InsufficientBuffer)
@@ -141,20 +142,20 @@ impl<const N: usize> View for Fixed<N> {
 impl<const N: usize> SpecCombinator for Fixed<N> {
     type Type = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        v.len() == N
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if N <= s.len() {
-            Ok((N, s.subrange(0, N as int)))
+            Some((N as int, s.take(N as int)))
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if v.len() == N {
-            Ok(v)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        v
     }
 }
 
@@ -169,16 +170,14 @@ impl<const N: usize> SecureSpecCombinator for Fixed<N> {
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         assert(s1.add(s2).len() == s1.len() + s2.len());
-        if let Ok((n, v)) = self.spec_parse(s1) {
+        if let Some((n, v)) = self.spec_parse(s1) {
             assert(s1.add(s2).subrange(0, n as int) == s1.subrange(0, n as int))
         } else {
         }
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if let Ok(buf) = self.spec_serialize(v) {
-            assert(v.subrange(0, v.len() as int) == v);
-        }
+        assert(v.take(v.len() as int) == v);
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
@@ -191,8 +190,13 @@ impl<const N: usize> SecureSpecCombinator for Fixed<N> {
     }
 }
 
-impl<const N: usize, I, O> Combinator<I, O> for Fixed<N> where I: VestInput, O: VestOutput<I> {
+impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N> where
+    I: VestInput + 'x,
+    O: VestOutput<I>,
+ {
     type Type = I;
+
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         Some(N)
@@ -211,13 +215,13 @@ impl<const N: usize, I, O> Combinator<I, O> for Fixed<N> where I: VestInput, O: 
         }
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        if v.len() <= data.len() && v.len() == N && pos <= data.len() - v.len() {
+        if v.len() <= data.len() && pos <= data.len() - v.len() {
             data.set_range(pos, &v);
-            assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@).unwrap());
+            assert(data@.subrange(pos as int, pos + N as int) == self@.spec_serialize(v@));
             Ok(N)
         } else {
             Err(SerializeError::InsufficientBuffer)
@@ -239,20 +243,12 @@ impl View for Tail {
 impl SpecCombinator for Tail {
     type Type = Seq<u8>;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        if s.len() <= usize::MAX {
-            Ok((s.len() as usize, s))
-        } else {
-            Err(())
-        }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        Some((s.len() as int, s))
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if v.len() <= usize::MAX {
-            Ok(v)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        v
     }
 }
 
@@ -282,8 +278,10 @@ impl SecureSpecCombinator for Tail {
     }
 }
 
-impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
+impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
     type Type = I;
+
+    type SType = &'x I;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -297,20 +295,14 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
         Ok(((s.len()), s))
     }
 
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        if pos <= data.len() {
-            if v.len() <= data.len() - pos {
-                data.set_range(pos, &v);
-                assert(data@.subrange(pos as int, pos + v@.len() as int) == self@.spec_serialize(
-                    v@,
-                ).unwrap());
-                Ok(v.len())
-            } else {
-                Err(SerializeError::InsufficientBuffer)
-            }
+        if v.len() <= data.len() - pos {
+            data.set_range(pos, &v);
+            assert(data@.subrange(pos as int, pos + v@.len() as int) == self@.spec_serialize(v@));
+            Ok(v.len())
         } else {
             Err(SerializeError::InsufficientBuffer)
         }

@@ -51,13 +51,17 @@ pub trait SpecIsoProof: SpecIsoFn {
 }
 
 /// All isomorphisms to be used in [`Mapped`] combinator must implement this trait.
-pub trait Iso: View where
+pub trait Iso<'x>: View where
     Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// The source type of the isomorphism.
-    type Src: View + From<Self::Dst>;
+    type Src: View;
+
+    /// The reference of the [`Src`] type.
+    type RefSrc: View<V = <Self::Src as View>::V> + From<&'x Self::Dst>;
 
     /// The destination type of the isomorphism.
     type Dst: View + From<Self::Src>;
@@ -66,10 +70,11 @@ pub trait Iso: View where
 /// The bijective functions of [`Iso`]
 /// [`Self::apply`] and [`Self::rev_apply`] must be inverses of each other.
 /// See [`SpecIsoFn::spec_iso`] and [`SpecIsoFn::spec_iso_rev`] for more details.
-pub trait IsoFn: Iso where
+pub trait IsoFn<'x>: Iso<'x> where
     Self::V: SpecIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// Applies the isomorphism to the source type.
     fn apply(s: Self::Src) -> (res: Self::Dst)
@@ -78,24 +83,25 @@ pub trait IsoFn: Iso where
     ;
 
     /// Applies the reverse isomorphism to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Self::Src)
+    fn rev_apply(s: &'x Self::Dst) -> (res: Self::RefSrc)
         ensures
             res@ == Self::V::spec_rev_apply(s@),
     ;
 }
 
 // Blanket implementation for all types that implement `Iso`
-impl<T: Iso> IsoFn for T where
+impl<'x, T: Iso<'x>> IsoFn<'x> for T where
     T::V: SpecIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
     <T::Src as View>::V: SpecFrom<<T::Dst as View>::V>,
     <T::Dst as View>::V: SpecFrom<<T::Src as View>::V>,
+    Self::Dst: 'x,
  {
     fn apply(s: Self::Src) -> (res: Self::Dst) {
         Self::Dst::ex_from(s)
     }
 
-    fn rev_apply(s: Self::Dst) -> (res: Self::Src) {
-        Self::Src::ex_from(s)
+    fn rev_apply(s: &'x Self::Dst) -> (res: Self::RefSrc) {
+        Self::RefSrc::ex_from(s)
     }
 }
 
@@ -124,14 +130,22 @@ impl<Inner, M> SpecCombinator for Mapped<Inner, M> where
  {
     type Type = M::Dst;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn requires(&self) -> bool {
+        self.inner.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.inner.wf(M::spec_rev_apply(v))
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match self.inner.spec_parse(s) {
-            Err(e) => Err(e),
-            Ok((n, v)) => Ok((n, M::spec_apply(v))),
+            Some((n, v)) => Some((n, M::spec_apply(v))),
+            None => None,
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.inner.spec_serialize(M::spec_rev_apply(v))
     }
 }
@@ -151,23 +165,22 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if let Ok(buf) = self.inner.spec_serialize(M::spec_rev_apply(v)) {
-            M::spec_iso_rev(v);
-            self.inner.theorem_serialize_parse_roundtrip(M::spec_rev_apply(v))
-        }
+        let buf = self.inner.spec_serialize(M::spec_rev_apply(v));
+        M::spec_iso_rev(v);
+        self.inner.theorem_serialize_parse_roundtrip(M::spec_rev_apply(v))
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         self.inner.lemma_parse_length(buf);
         self.inner.theorem_parse_serialize_roundtrip(buf);
-        if let Ok((n, v)) = self.inner.spec_parse(buf) {
+        if let Some((n, v)) = self.inner.spec_parse(buf) {
             M::spec_iso(v)
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
-        if let Ok((n, v)) = self.inner.spec_parse(s1) {
+        if let Some((n, v)) = self.inner.spec_parse(s1) {
             self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
         }
@@ -175,32 +188,34 @@ impl<Inner, M> SecureSpecCombinator for Mapped<Inner, M> where
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.inner.lemma_parse_length(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
+        if let Some((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
         self.inner.lemma_parse_productive(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
+        if let Some((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
+impl<'x, I, O, Inner, M> Combinator<'x, I, O> for Mapped<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: Iso<Src = Inner::Type>,
-    Inner::Type: From<M::Dst> + View,
+    M: Iso<'x, Src = Inner::Type, RefSrc = Inner::SType>,
     M::Dst: From<Inner::Type> + View,
+    Inner::SType: From<&'x M::Dst> + View,
     M::V: SpecIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecFrom<<Inner::Type as View>::V>,
  {
     type Type = M::Dst;
+
+    type SType = &'x M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -210,8 +225,8 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         self.inner.length()
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.inner.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.inner.ex_requires()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -226,11 +241,7 @@ impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M> where
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.inner.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
@@ -247,15 +258,15 @@ pub trait SpecPartialIso {
     type Dst: SpecTryFrom<Self::Src>;
 }
 
-/// The faillible functions of [`SpecPartialIso`]
+/// The fallible functions of [`SpecPartialIso`]
 pub trait SpecPartialIsoFn: SpecPartialIso {
-    /// Applies the faillible conversion to the source type.
+    /// Applies the fallible conversion to the source type.
     spec fn spec_apply(s: Self::Src) -> Result<
         Self::Dst,
         <Self::Dst as SpecTryFrom<Self::Src>>::Error,
     >;
 
-    /// Applies the reverse faillible conversion to the destination type.
+    /// Applies the reverse fallible conversion to the destination type.
     spec fn spec_rev_apply(s: Self::Dst) -> Result<
         Self::Src,
         <Self::Src as SpecTryFrom<Self::Dst>>::Error,
@@ -284,42 +295,47 @@ pub trait SpecPartialIsoProof: SpecPartialIsoFn {
     /// One direction of the isomorphism when the conversion is successful.
     proof fn spec_iso(s: Self::Src)
         ensures
-            Self::spec_apply(s) matches Ok(v) ==> {
-                &&& Self::spec_rev_apply(v) is Ok
-                &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-            },
+            Self::spec_apply(s) matches Ok(d) ==> Self::spec_rev_apply(d) == Ok::<
+                _,
+                <Self::Src as SpecTryFrom<Self::Dst>>::Error,
+            >(s),
     ;
 
     /// The other direction of the isomorphism when the conversion is successful.
-    proof fn spec_iso_rev(s: Self::Dst)
+    proof fn spec_iso_rev(d: Self::Dst)
         ensures
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-                &&& Self::spec_apply(v) is Ok
-                &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-            },
+            Self::spec_rev_apply(d) matches Ok(s) ==> Self::spec_apply(s) == Ok::<
+                _,
+                <Self::Dst as SpecTryFrom<Self::Src>>::Error,
+            >(d),
     ;
 }
 
-/// Faillible version of [`Iso`].
-pub trait PartialIso: View where
+/// Fallible version of [`Iso`].
+pub trait PartialIso<'x>: View where
     Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
     /// The source type
-    type Src: View + TryFrom<Self::Dst>;
+    type Src: View;
+
+    /// The reference of the [`Src`] type.
+    type RefSrc: View<V = <Self::Src as View>::V> + TryFrom<&'x Self::Dst>;
 
     /// The destination type
     type Dst: View + TryFrom<Self::Src>;
 }
 
-/// The faillible functions of [`PartialIso`]
-pub trait PartialIsoFn: PartialIso where
+/// The fallible functions of [`PartialIso`]
+pub trait PartialIsoFn<'x>: PartialIso<'x> where
     Self::V: SpecPartialIso<Src = <Self::Src as View>::V, Dst = <Self::Dst as View>::V>,
     <Self::Src as View>::V: SpecTryFrom<<Self::Dst as View>::V>,
     <Self::Dst as View>::V: SpecTryFrom<<Self::Src as View>::V>,
+    Self::Dst: 'x,
  {
-    /// Applies the faillible conversion to the source type.
+    /// Applies the fallible conversion to the source type.
     fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>)
         ensures
             res matches Ok(v) ==> {
@@ -329,8 +345,11 @@ pub trait PartialIsoFn: PartialIso where
             res matches Err(e) ==> Self::V::spec_apply(s@) is Err,
     ;
 
-    /// Applies the reverse faillible conversion to the destination type.
-    fn rev_apply(s: Self::Dst) -> (res: Result<Self::Src, <Self::Src as TryFrom<Self::Dst>>::Error>)
+    /// Applies the reverse fallible conversion to the destination type.
+    fn rev_apply(s: &'x Self::Dst) -> (res: Result<
+        Self::RefSrc,
+        <Self::RefSrc as TryFrom<&'x Self::Dst>>::Error,
+    >)
         ensures
             res matches Ok(v) ==> {
                 &&& Self::V::spec_rev_apply(s@) is Ok
@@ -341,29 +360,30 @@ pub trait PartialIsoFn: PartialIso where
 }
 
 // Blanket implementation for all types that implement `PartialIso`
-impl<T: PartialIso> PartialIsoFn for T where
+impl<'x, T: PartialIso<'x>> PartialIsoFn<'x> for T where
     T::V: SpecPartialIso<Src = <T::Src as View>::V, Dst = <T::Dst as View>::V>,
     <T::Src as View>::V: SpecTryFrom<<T::Dst as View>::V>,
     <T::Dst as View>::V: SpecTryFrom<<T::Src as View>::V>,
+    Self::Dst: 'x,
  {
     fn apply(s: Self::Src) -> (res: Result<Self::Dst, <Self::Dst as TryFrom<Self::Src>>::Error>) {
         Self::Dst::ex_try_from(s)
     }
 
-    fn rev_apply(s: Self::Dst) -> (res: Result<
-        Self::Src,
-        <Self::Src as TryFrom<Self::Dst>>::Error,
+    fn rev_apply(s: &'x Self::Dst) -> (res: Result<
+        Self::RefSrc,
+        <Self::RefSrc as TryFrom<&'x Self::Dst>>::Error,
     >) {
-        Self::Src::ex_try_from(s)
+        Self::RefSrc::ex_try_from(s)
     }
 }
 
-/// Combinator that maps the result of an `inner` combinator with a faillible conversion
+/// Combinator that maps the result of an `inner` combinator with a fallible conversion
 /// that implements [`TryFromInto`].
 pub struct TryMap<Inner, M> {
     /// The inner combinator.
     pub inner: Inner,
-    /// The faillible conversion.
+    /// The fallible conversion.
     pub mapper: M,
 }
 
@@ -383,20 +403,31 @@ impl<Inner, M> SpecCombinator for TryMap<Inner, M> where
  {
     type Type = M::Dst;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        match self.inner.spec_parse(s) {
-            Err(e) => Err(e),
-            Ok((n, v)) => match M::spec_apply(v) {
-                Ok(v) => Ok((n, v)),
-                Err(_) => Err(()),
-            },
+    open spec fn requires(&self) -> bool {
+        self.inner.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        match M::spec_rev_apply(v) {
+            Ok(v) => self.inner.wf(v),
+            Err(_) => false,
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        match self.inner.spec_parse(s) {
+            Some((n, v)) => match M::spec_apply(v) {
+                Ok(v) => Some((n, v)),
+                Err(_) => None,
+            },
+            None => None,
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         match M::spec_rev_apply(v) {
             Ok(v) => self.inner.spec_serialize(v),
-            Err(_) => Err(()),
+            Err(_) => Seq::empty(),  // won't happen when `self.wf(v)`
         }
     }
 }
@@ -425,14 +456,14 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         self.inner.lemma_parse_length(buf);
         self.inner.theorem_parse_serialize_roundtrip(buf);
-        if let Ok((n, v)) = self.inner.spec_parse(buf) {
+        if let Some((n, v)) = self.inner.spec_parse(buf) {
             M::spec_iso(v)
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
-        if let Ok((n, v)) = self.inner.spec_parse(s1) {
+        if let Some((n, v)) = self.inner.spec_parse(s1) {
             self.inner.lemma_parse_length(s1);
             M::spec_iso(v)
         }
@@ -440,32 +471,35 @@ impl<Inner, M> SecureSpecCombinator for TryMap<Inner, M> where
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.inner.lemma_parse_length(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
+        if let Some((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
         self.inner.lemma_parse_productive(s);
-        if let Ok((n, v)) = self.inner.spec_parse(s) {
+        if let Some((n, v)) = self.inner.spec_parse(s) {
             M::spec_iso(v);
         }
     }
 }
 
-impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
+impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    M: PartialIso<Src = Inner::Type>,
-    Inner::Type: TryFrom<M::Dst> + View,
+    M: PartialIso<'x, Src = Inner::Type, RefSrc = Inner::SType>,
     M::Dst: TryFrom<Inner::Type> + View,
+    Inner::SType: TryFrom<&'x M::Dst> + View,
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
+    <Inner::SType as TryFrom<&'x M::Dst>>::Error: std::fmt::Debug,
  {
     type Type = M::Dst;
+
+    type SType = &'x M::Dst;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -475,8 +509,8 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
         self.inner.length()
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.inner.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.inner.ex_requires()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -489,268 +523,13 @@ impl<I, O, Inner, M> Combinator<I, O> for TryMap<Inner, M> where
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.inner.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        match M::rev_apply(v) {
-            Ok(v) => self.inner.serialize(v, data, pos),
-            Err(_) => Err(SerializeError::TryMapFailed),
-        }
+        // we know `v` is well-formed, so we can unwrap it
+        self.inner.serialize(M::rev_apply(v).unwrap(), data, pos)
     }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use super::super::uints::*;
-
-    verus! {
-
-// exhaustive enum
-
-#[derive(Structural, Copy, Clone, PartialEq, Eq)]
-pub enum FieldLess {
-    A = 0,
-    B = 1,
-    C = 2,
-}
-
-pub type FieldLessInner = u8;
-
-impl View for FieldLess {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl Compare<FieldLess> for FieldLess {
-    fn compare(&self, other: &FieldLess) -> bool {
-        *self == *other
-    }
-}
-impl SpecTryFrom<FieldLessInner> for FieldLess {
-    type Error = ();
-
-    open spec fn spec_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
-        match v {
-            0u8 => Ok(FieldLess::A),
-            1u8 => Ok(FieldLess::B),
-            2u8 => Ok(FieldLess::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<FieldLess> for FieldLessInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
-        match v {
-            FieldLess::A => Ok(0u8),
-            FieldLess::B => Ok(1u8),
-            FieldLess::C => Ok(2u8),
-        }
-    }
-}
-
-impl TryFrom<FieldLessInner> for FieldLess {
-    type Error = ();
-
-    fn ex_try_from(v: FieldLessInner) -> Result<FieldLess, ()> {
-        match v {
-            0u8 => Ok(FieldLess::A),
-            1u8 => Ok(FieldLess::B),
-            2u8 => Ok(FieldLess::C),
-            _ => Err(()),
-        }
-    }
-}
-
-impl TryFrom<FieldLess> for FieldLessInner {
-    type Error = ();
-
-    fn ex_try_from(v: FieldLess) -> Result<FieldLessInner, ()> {
-        match v {
-            FieldLess::A => Ok(0u8),
-            FieldLess::B => Ok(1u8),
-            FieldLess::C => Ok(2u8),
-        }
-    }
-}
-
-struct FieldLessMapper;
-
-impl View for FieldLessMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecPartialIso for FieldLessMapper {
-    type Src = FieldLessInner;
-    type Dst = FieldLess;
-}
-
-impl SpecPartialIsoProof for FieldLessMapper {
-    proof fn spec_iso(s: Self::Src) {}
-
-    proof fn spec_iso_rev(s: Self::Dst) {}
-}
-
-impl PartialIso for FieldLessMapper {
-    type Src = FieldLessInner;
-    type Dst = FieldLess;
-}
-
-type FieldLessCombinator = TryMap<U8, FieldLessMapper>;
-
-spec fn spec_field_less() -> FieldLessCombinator {
-    TryMap { inner: U8, mapper: FieldLessMapper }
-}
-
-fn field_less() -> (o: FieldLessCombinator)
-    ensures o@ == spec_field_less(),
-{
-    TryMap { inner: U8, mapper: FieldLessMapper }
-}
-
-spec fn parse_spec_field_less(i: Seq<u8>) -> Result<(usize, FieldLess), ()> {
-    spec_field_less().spec_parse(i)
-}
-
-spec fn serialize_spec_field_less(msg: FieldLess) -> Result<Seq<u8>, ()> {
-    spec_field_less().spec_serialize(msg)
-}
-
-fn parse_field_less(i: &[u8]) -> (o: Result<(usize, FieldLess), ParseError>)
-    ensures
-        o matches Ok(r) ==> parse_spec_field_less(i@) matches Ok(r_) && r@ == r_,
-{
-    <_ as Combinator<&[u8], Vec<u8>>>::parse(&field_less(), i)
-}
-
-fn serialize_field_less(msg: FieldLess, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    ensures
-        o matches Ok(n) ==> {
-            &&& serialize_spec_field_less(msg@) matches Ok(buf)
-            &&& n == buf.len() && data@ == seq_splice(old(data)@, pos, buf)
-        },
-{
-    <_ as Combinator<&[u8], Vec<u8>>>::serialize(&field_less(), msg, data, pos)
-}
-
-// non-exhaustive enum
-// NOTE: It turns out that the following encoding creates an anbiguous format, e.g. both
-// `NonExhaustive::X` and `NonExhaustive::Unknown(0)` would be serialized to `0x00`, which could
-// lead to format confusion attacks (though it's not immediately clear how). Interestingly,
-// [rustls](https://github.com/rustls/rustls/blob/main/rustls/src/msgs/macros.rs#L68) uses a
-// similar encoding for all its enums.
-//
-// For security, we should just use primitive uint combinators for non-exhaustive enums.
-
-// #[non_exhaustive]
-// #[repr(u8)]
-// pub enum NonExhaustive {
-//     X = 0,
-//     Y = 1,
-//     Z = 2,
-//     Unknown(u8),
-// }
-//
-// pub type NonExhaustiveInner = u8;
-//
-// impl View for NonExhaustive {
-//     type V = Self;
-//
-//     open spec fn view(&self) -> Self::V {
-//         *self
-//     }
-// }
-//
-// impl SpecFrom<NonExhaustiveInner> for NonExhaustive {
-//     open spec fn spec_from(v: NonExhaustiveInner) -> NonExhaustive {
-//         match v {
-//             0u8 => NonExhaustive::X,
-//             1u8 => NonExhaustive::Y,
-//             2u8 => NonExhaustive::Z,
-//             _ => NonExhaustive::Unknown(v),
-//         }
-//     }
-// }
-//
-// impl SpecFrom<NonExhaustive> for NonExhaustiveInner {
-//     open spec fn spec_from(v: NonExhaustive) -> NonExhaustiveInner {
-//         match v {
-//             NonExhaustive::X => 0u8,
-//             NonExhaustive::Y => 1u8,
-//             NonExhaustive::Z => 2u8,
-//             NonExhaustive::Unknown(v) => v,
-//         }
-//     }
-// }
-//
-// impl From<NonExhaustiveInner> for NonExhaustive {
-//     fn ex_from(v: NonExhaustiveInner) -> NonExhaustive {
-//         match v {
-//             0u8 => NonExhaustive::X,
-//             1u8 => NonExhaustive::Y,
-//             2u8 => NonExhaustive::Z,
-//             _ => NonExhaustive::Unknown(v),
-//         }
-//     }
-// }
-//
-// impl From<NonExhaustive> for NonExhaustiveInner {
-//     fn ex_from(v: NonExhaustive) -> NonExhaustiveInner {
-//         match v {
-//             NonExhaustive::X => 0u8,
-//             NonExhaustive::Y => 1u8,
-//             NonExhaustive::Z => 2u8,
-//             NonExhaustive::Unknown(v) => v,
-//         }
-//     }
-// }
-//
-// struct NonExhaustiveMapper;
-//
-// impl View for NonExhaustiveMapper {
-//     type V = Self;
-//
-//     open spec fn view(&self) -> Self::V {
-//         *self
-//     }
-// }
-//
-// impl SpecIso for NonExhaustiveMapper {
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-//
-//     proof fn spec_iso(s: Self::Src) {
-//     }
-//
-//     proof fn spec_iso_rev(s: Self::Dst) {
-//         // would fail because of the ambiguity in the encoding
-//     }
-// }
-//
-// impl Iso for NonExhaustiveMapper {
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-//
-//     type Src = NonExhaustiveInner;
-//     type Dst = NonExhaustive;
-// }
-}
-
 }
 
 /// The spec version of [`Pred`].
@@ -797,19 +576,23 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
  {
     type Type = Inner::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn requires(&self) -> bool {
+        self.inner.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.inner.wf(v) && self.predicate.spec_apply(&v)
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match self.inner.spec_parse(s) {
-            Ok((n, v)) if self.predicate.spec_apply(&v) => Ok((n, v)),
-            _ => Err(()),
+            Some((n, v)) if self.predicate.spec_apply(&v) => Some((n, v)),
+            _ => None,
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if self.predicate.spec_apply(&v) {
-            self.inner.spec_serialize(v)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        self.inner.spec_serialize(v)
     }
 }
 
@@ -835,7 +618,7 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.inner.lemma_prefix_secure(s1, s2);
-        assert(Self::is_prefix_secure() ==> self.spec_parse(s1).is_ok() ==> self.spec_parse(
+        assert(Self::is_prefix_secure() ==> self.spec_parse(s1) is Some ==> self.spec_parse(
             s1.add(s2),
         ) == self.spec_parse(s1));
     }
@@ -849,15 +632,18 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     }
 }
 
-impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
+impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<I, O>,
+    Inner: Combinator<'x, I, O, SType = &'x <P as Pred>::Input>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
     P: Pred<Input = Inner::Type>,
     P::V: SpecPred<Input = <Inner::Type as View>::V>,
+    <P as Pred>::Input: 'x,
  {
     type Type = Inner::Type;
+
+    type SType = Inner::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         self.inner.spec_length()
@@ -867,8 +653,8 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         self.inner.length()
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.inner.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.inner.ex_requires()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -882,16 +668,9 @@ impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P> where
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.inner.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.predicate.apply(&v) {
-            self.inner.serialize(v, data, pos)
-        } else {
-            Err(SerializeError::RefinedPredicateFailed)
-        }
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        // we know `v` is well-formed, so we can skip the predicate check
+        self.inner.serialize(v, data, pos)
     }
 }
 
@@ -914,28 +693,32 @@ impl<Inner: View> View for Cond<Inner> {
 impl<Inner: SpecCombinator> SpecCombinator for Cond<Inner> {
     type Type = Inner::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
+    open spec fn requires(&self) -> bool {
+        self.inner.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        &&& self.inner.wf(v)
+        // call `serializer` only if `cond` is true
+        &&& self.cond
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if self.cond {
             self.inner.spec_parse(s)
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if self.cond {
-            self.inner.spec_serialize(v)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        self.inner.spec_serialize(v)
     }
 }
 
 impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if self.cond {
-            self.inner.theorem_serialize_parse_roundtrip(v);
-        }
+        self.inner.theorem_serialize_parse_roundtrip(v);
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
@@ -969,10 +752,12 @@ impl<Inner: SecureSpecCombinator> SecureSpecCombinator for Cond<Inner> {
     }
 }
 
-impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> for Cond<
+impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator<'x, I, O> for Cond<
     Inner,
 > where Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V> {
     type Type = Inner::Type;
+
+    type SType = Inner::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         if self.cond@ {
@@ -990,8 +775,8 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         }
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.inner.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.inner.ex_requires()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -1002,19 +787,12 @@ impl<I: VestInput, O: VestOutput<I>, Inner: Combinator<I, O>> Combinator<I, O> f
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.inner.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        if self.cond {
-            self.inner.serialize(v, data, pos)
-        } else {
-            Err(SerializeError::CondFailed)
-        }
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        // we know `self.cond` must be true when `serialize` is called
+        // so we can skip the check
+        self.inner.serialize(v, data, pos)
     }
 }
-
 
 /// Combinator that monadically chains two combinators.
 pub struct AndThen<Prev, Next>(pub Prev, pub Next);
@@ -1030,52 +808,54 @@ impl<Prev: View, Next: View> View for AndThen<Prev, Next> {
 impl<Next: SpecCombinator> SpecCombinator for AndThen<Variable, Next> {
     type Type = Next::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> {
-        if let Ok((n, v1)) = self.0.spec_parse(s) {
-            if let Ok((m, v2)) = self.1.spec_parse(v1) {
+    open spec fn requires(&self) -> bool {
+        self.0.requires() && self.1.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.1.wf(v) && self.0.wf(self.1.spec_serialize(v))
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        if let Some((n, v1)) = self.0.spec_parse(s) {
+            if let Some((m, v2)) = self.1.spec_parse(v1) {
                 // !! for security, can only proceed if the `Next` parser consumed the entire
                 // !! output from the `Prev` parser
                 if m == n {
-                    Ok((n, v2))
+                    Some((n, v2))
                 } else {
-                    Err(())
+                    None
                 }
             } else {
-                Err(())
+                None
             }
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> {
-        if let Ok(buf1) = self.1.spec_serialize(v) {
-            self.0.spec_serialize(buf1)
-        } else {
-            Err(())
-        }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let buf1 = self.1.spec_serialize(v);
+        self.0.spec_serialize(buf1)
     }
 }
 
 impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        if let Ok(buf1) = self.1.spec_serialize(v) {
-            self.1.theorem_serialize_parse_roundtrip(v);
-            self.0.theorem_serialize_parse_roundtrip(buf1);
-        }
+        let buf1 = self.1.spec_serialize(v);
+        self.1.theorem_serialize_parse_roundtrip(v);
+        self.0.theorem_serialize_parse_roundtrip(buf1);
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((n, v1)) = self.0.spec_parse(buf) {
-            if let Ok((m, v2)) = self.1.spec_parse(v1) {
+        if let Some((n, v1)) = self.0.spec_parse(buf) {
+            if let Some((m, v2)) = self.1.spec_parse(v1) {
                 self.0.theorem_parse_serialize_roundtrip(buf);
                 self.1.theorem_parse_serialize_roundtrip(v1);
                 if m == n {
-                    if let Ok(buf2) = self.1.spec_serialize(v2) {
-                        if let Ok(buf1) = self.0.spec_serialize(buf2) {
-                            assert(buf1 == buf.subrange(0, n as int));
-                        }
-                    }
+                    let buf2 = self.1.spec_serialize(v2);
+                    let buf1 = self.0.spec_serialize(buf2);
+                    assert(buf1 == buf.subrange(0, n as int));
                 }
             }
         }
@@ -1090,7 +870,7 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        if let Ok((n, v1)) = self.0.spec_parse(s) {
+        if let Some((n, v1)) = self.0.spec_parse(s) {
             self.0.lemma_parse_length(s);
             self.1.lemma_parse_length(v1);
         }
@@ -1104,12 +884,14 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next
     }
 }
 
-impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Variable, Next> where
+impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Variable, Next> where
     I: VestInput,
     O: VestOutput<I>,
     Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
  {
     type Type = Next::Type;
+
+    type SType = Next::SType;
 
     open spec fn spec_length(&self) -> Option<usize> {
         // self.0.spec_length()
@@ -1121,8 +903,8 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Variable, Next> 
         <_ as Combinator<I, O>>::length(&self.0)
     }
 
-    open spec fn parse_requires(&self) -> bool {
-        self.1.parse_requires()
+    open spec fn ex_requires(&self) -> bool {
+        self.1.ex_requires()
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -1135,17 +917,11 @@ impl<I, O, Next: Combinator<I, O>> Combinator<I, O> for AndThen<Variable, Next> 
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.1.serialize_requires()
-    }
-
-    fn serialize(&self, v: Self::Type, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+        // we can skip the call to `self.0.serialize` because we know that it
+        // will be an "no-op"
         let n = self.1.serialize(v, data, pos)?;
-        if n == self.0.0 {
-            Ok(n)
-        } else {
-            Err(SerializeError::AndThenUnusedBytes)
-        }
+        Ok(n)
     }
 }
 
