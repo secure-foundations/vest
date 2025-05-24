@@ -24,6 +24,14 @@ pub open spec fn msg1_snd(deps: (VarInt, u24)) -> (Variable, Variable) {
 
 pub struct Msg1Cont;
 
+impl View for Msg1Cont {
+    type V = spec_fn((VarInt, u24)) -> (Variable, Variable);
+
+    open spec fn view(&self) -> Self::V {
+        |deps| msg1_snd(deps)
+    }
+}
+
 impl Continuation<&(VarInt, u24)> for Msg1Cont {
     type Output = (Variable, Variable);
 
@@ -41,11 +49,11 @@ impl Continuation<&(VarInt, u24)> for Msg1Cont {
     }
 }
 
-pub fn mk_msg1() -> (o: Pair<(BtcVarint, U24Be), (VarInt, u24), (Variable, Variable), Msg1Cont>)
+pub fn mk_msg1() -> (o: Pair<(BtcVarint, U24Be), (Variable, Variable), Msg1Cont>)
     ensures
         o@ == msg1(),
 {
-    Pair { fst: (BtcVarint, U24Be), snd: Msg1Cont, spec_snd: Ghost(|deps| msg1_snd(deps)) }
+    Pair::new((BtcVarint, U24Be), Msg1Cont)
 }
 
 pub open spec fn msg2() -> SpecPair<bytes::Fixed<2>, Cond<U8>> {
@@ -54,13 +62,18 @@ pub open spec fn msg2() -> SpecPair<bytes::Fixed<2>, Cond<U8>> {
 
 pub open spec fn msg2_snd(deps: Seq<u8>) -> Cond<U8> {
     let bytes = deps;
-    Cond {
-        cond: bytes == seq![0u8, 1],
-        inner: U8,
-    }
+    Cond { cond: bytes == seq![0u8, 1], inner: U8 }
 }
 
 pub struct Msg2Cont;
+
+impl View for Msg2Cont {
+    type V = spec_fn(Seq<u8>) -> Cond<U8>;
+
+    open spec fn view(&self) -> Self::V {
+        |deps| msg2_snd(deps)
+    }
+}
 
 impl<'a> Continuation<&'a &[u8]> for Msg2Cont {
     type Output = Cond<U8>;
@@ -75,22 +88,15 @@ impl<'a> Continuation<&'a &[u8]> for Msg2Cont {
 
     fn apply(&self, deps: &'a &[u8]) -> Cond<U8> {
         let bytes = deps;
-        Cond {
-            cond: bytes.compare(&[0, 1].as_slice()),
-            inner: U8,
-        }
+        Cond { cond: bytes.compare(&[0, 1].as_slice()), inner: U8 }
     }
 }
 
-pub fn mk_msg2<'a>() -> (o: Pair<bytes::Fixed<2>, &'a[u8], Cond<U8>, Msg2Cont>)
+pub fn mk_msg2() -> (o: Pair<bytes::Fixed<2>, Cond<U8>, Msg2Cont>)
     ensures
         o@ == msg2(),
 {
-    Pair {
-        fst: bytes::Fixed::<2>,
-        snd: Msg2Cont,
-        spec_snd: Ghost(|deps| msg2_snd(deps)),
-    }
+    Pair::new(bytes::Fixed::<2>, Msg2Cont)
 }
 
 fn test(buf: &[u8]) -> Result<(), SerializeError>

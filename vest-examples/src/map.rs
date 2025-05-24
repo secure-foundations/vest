@@ -29,6 +29,7 @@ pub struct Msg1<'a> {
 }
 
 pub type Msg1Inner<'a> = (u8, (u16, (&'a [u8], &'a [u8])));
+
 pub type Msg1InnerRef<'a> = (&'a u8, (&'a u16, (&'a &'a [u8], &'a &'a [u8])));
 
 impl View for Msg1<'_> {
@@ -161,6 +162,7 @@ pub struct Msg2 {
 }
 
 pub type Msg2Inner = (u8, (u16, u32));
+
 pub type Msg2InnerRef<'a> = (&'a u8, (&'a u16, &'a u32));
 
 impl View for Msg2 {
@@ -279,6 +281,7 @@ pub struct Msg3<'a> {
 }
 
 pub type Msg3Inner<'a> = (&'a [u8]);
+
 pub type Msg3InnerRef<'a> = (&'a &'a [u8]);
 
 impl View for Msg3<'_> {
@@ -401,9 +404,10 @@ pub enum Msg4<'a> {
 }
 
 pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
-pub type Msg4InnerRef<'a> = ord_choice_result!(&'a Msg1<'a>, &'a Msg2, &'a Msg3<'a>);
-// pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
 
+pub type Msg4InnerRef<'a> = ord_choice_result!(&'a Msg1<'a>, &'a Msg2, &'a Msg3<'a>);
+
+// pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
 impl View for Msg4<'_> {
     type V = SpecMsg4;
 
@@ -497,19 +501,10 @@ fn parse_serialize4() -> Result<(), Error> {
     let tag3 = Tag::new(U8, 3);
     let msg1 = Preceded(
         tag1,
-        Mapped {
-            inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
-            mapper: Msg1Mapper,
-        },
+        Mapped { inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))), mapper: Msg1Mapper },
     );
-    let msg2 = Preceded(
-        tag2,
-        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper },
-    );
-    let msg3 = Preceded(
-        tag3,
-        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper },
-    );
+    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
+    let msg3 = Preceded(tag3, Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
@@ -542,19 +537,10 @@ fn serialize_parse4() -> Result<(), Error> {
     let tag3 = Tag::new(U8, 3);
     let msg1 = Preceded(
         tag1,
-        Mapped {
-            inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))),
-            mapper: Msg1Mapper,
-        },
+        Mapped { inner: (U8, (U16Le, (bytes::Variable(3), bytes::Tail))), mapper: Msg1Mapper },
     );
-    let msg2 = Preceded(
-        tag2,
-        Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper },
-    );
-    let msg3 = Preceded(
-        tag3,
-        Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper },
-    );
+    let msg2 = Preceded(tag2, Mapped { inner: (U8, (U16Le, U32Le)), mapper: Msg2Mapper });
+    let msg3 = Preceded(tag3, Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];

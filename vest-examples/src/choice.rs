@@ -32,5 +32,4 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
     Ok(())
 }
 
-
 } // verus!
