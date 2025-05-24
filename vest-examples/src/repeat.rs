@@ -253,10 +253,10 @@ pub type OpaqueU16CombinatorAlias = Mapped<
 pub closed spec fn spec_opaque_u16() -> SpecOpaqueU16Combinator {
     SpecOpaqueU16Combinator(
         Mapped {
-            inner: SpecPair {
-                fst: Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
-                snd: |deps| spec_opaque_u16_cont(deps),
-            },
+            inner: Pair::spec_new(
+                Refined { inner: U16Le, predicate: Predicate11955646336730306823 },
+                |deps| spec_opaque_u16_cont(deps),
+            ),
             mapper: OpaqueU16Mapper,
         },
     )
@@ -772,10 +772,10 @@ pub type ResponderIdListCombinatorAlias = Mapped<
 pub closed spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
     SpecResponderIdListCombinator(
         Mapped {
-            inner: SpecPair {
-                fst: Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
-                snd: |deps| spec_responder_id_list_cont(deps),
-            },
+            inner: SpecPair::spec_new(
+                Refined { inner: U16Le, predicate: Predicate6556550293019859977 },
+                |deps| spec_responder_id_list_cont(deps),
+            ),
             mapper: ResponderIdListMapper,
         },
     )

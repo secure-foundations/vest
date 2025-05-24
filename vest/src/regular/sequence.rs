@@ -3,13 +3,11 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Spec version of [`Pair`].
-pub struct SpecPair<Fst, Snd> where Fst: SecureSpecCombinator, Snd: SpecCombinator {
-    /// combinators that contain dependencies
-    pub fst: Fst,
-    /// closure that captures dependencies and maps them to the dependent combinators
-    pub snd: spec_fn(Fst::Type) -> Snd,
-}
+/// Alias for Verus's spec function type.
+pub type GhostFn<I, O> = spec_fn(I) -> O;
+
+/// Alias for a spec dependent pair combinator.
+pub type SpecPair<Fst, Snd> = Pair<Fst, Snd, GhostFn<<Fst as SpecCombinator>::Type, Snd>>;
 
 impl<Fst, Snd> SpecCombinator for SpecPair<Fst, Snd> where
     Fst: SecureSpecCombinator,
@@ -179,8 +177,18 @@ impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
     /// Creates a new `Pair` combinator.
     pub fn new(fst: Fst, snd: Cont) -> (o: Self)
         ensures
-            o@ == (SpecPair { fst: fst@, snd: snd@ }),
+            o@ == Pair::spec_new(fst@, snd@),
     {
+        Pair { fst, _snd: std::marker::PhantomData, snd }
+    }
+}
+
+impl<Fst, Snd> Pair<Fst, Snd, GhostFn<Fst::Type, Snd>> where
+    Fst: SecureSpecCombinator,
+    Snd: SpecCombinator,
+ {
+    /// Creates a new `Pair` combinator.
+    pub open spec fn spec_new(fst: Fst, snd: GhostFn<Fst::Type, Snd>) -> Self {
         Pair { fst, _snd: std::marker::PhantomData, snd }
     }
 }
@@ -188,14 +196,14 @@ impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
 impl<Fst, Snd, Cont> View for Pair<Fst, Snd, Cont> where
     Fst: View,
     Snd: View,
-    Cont: View<V = spec_fn(<Fst::V as SpecCombinator>::Type) -> Snd::V>,
+    Cont: View<V = GhostFn<<Fst::V as SpecCombinator>::Type, Snd::V>>,
     Fst::V: SecureSpecCombinator,
     Snd::V: SpecCombinator,
  {
-    type V = SpecPair<Fst::V, Snd::V>;
+    type V = Pair<Fst::V, Snd::V, GhostFn<<Fst::V as SpecCombinator>::Type, Snd::V>>;
 
     open spec fn view(&self) -> Self::V {
-        SpecPair { fst: self.fst@, snd: self.snd@ }
+        Pair::spec_new(self.fst@, self.snd@)
     }
 }
 
@@ -260,29 +268,29 @@ impl<Fst: SecureSpecCombinator, Snd: SpecCombinator> SpecCombinator for (Fst, Sn
     type Type = (Fst::Type, Snd::Type);
 
     open spec fn requires(&self) -> bool {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.requires()
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).requires()
     }
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.wf(v)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).wf(v)
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_parse(s)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).spec_parse(s)
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.spec_serialize(v)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).spec_serialize(v)
     }
 }
 
 impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator for (Fst, Snd) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.theorem_serialize_parse_roundtrip(v)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).theorem_serialize_parse_roundtrip(v)
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.theorem_parse_serialize_roundtrip(buf)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).theorem_parse_serialize_roundtrip(buf)
     }
 
     open spec fn is_prefix_secure() -> bool {
@@ -290,19 +298,19 @@ impl<Fst: SecureSpecCombinator, Snd: SecureSpecCombinator> SecureSpecCombinator 
     }
 
     proof fn lemma_prefix_secure(&self, buf: Seq<u8>, s2: Seq<u8>) {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_prefix_secure(buf, s2)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).lemma_prefix_secure(buf, s2)
     }
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_length(s)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).lemma_parse_length(s)
     }
 
     open spec fn is_productive(&self) -> bool {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.is_productive()
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
-        SpecPair { fst: self.0, snd: |r: Fst::Type| self.1 }.lemma_parse_productive(s)
+        Pair::spec_new(self.0, |r: Fst::Type| self.1).lemma_parse_productive(s)
     }
 }
 

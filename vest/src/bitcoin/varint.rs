@@ -140,16 +140,16 @@ pub exec static EMPTY: &'static &'static [u8]
 /// Inner Spec combinator for parsing and serializing Bitcoin variable-length integers
 pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
     TryMap {
-        inner: SpecPair {
-            fst: U8,
-            snd: |t: u8|
+        inner: Pair::spec_new(
+            U8,
+            |t: u8|
                 ord_choice!(
                     Cond { cond: t <= 0xFC, inner: Fixed::<0> },
                     Cond { cond: t ==  SPEC_TAG_U16, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },
                     Cond { cond: t ==  SPEC_TAG_U32, inner: Refined { inner: U32Le, predicate: PredU32LeFit } },
                     Cond { cond: t ==  SPEC_TAG_U64, inner: Refined { inner: U64Le, predicate: PredU64LeFit } },
                 ),
-        },
+        ),
         mapper: VarIntMapper,
     }
 }

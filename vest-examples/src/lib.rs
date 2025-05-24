@@ -137,7 +137,7 @@ impl Continuation<&u24> for ACont {
 }
 
 spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
-    Mapped { inner: SpecPair { fst: U24Le, snd: |deps| spec_a_cont(deps) }, mapper: AIso }
+    Mapped { inner: Pair::spec_new(U24Le, |deps| spec_a_cont(deps)), mapper: AIso }
 }
 
 fn a() -> (o: Mapped<Pair<U24Le, RepeatN<U8>, ACont>, AIso>)
