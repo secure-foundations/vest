@@ -93,7 +93,7 @@ type VarintChoice = Choice<
 
 type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper>;
 
-type BtcVarintInner = TryMap<Pair<U8, u8, VarintChoice, BtVarintCont>, VarIntMapper>;
+type BtcVarintInner = TryMap<Pair<U8, VarintChoice, BtVarintCont>, VarIntMapper>;
 
 pub spec const SPEC_TAG_U16: u8 = 0xFD;
 
@@ -158,14 +158,7 @@ fn btc_varint_inner() -> (o: BtcVarintInner)
     ensures
         o@ == spec_btc_varint_inner(),
 {
-    TryMap {
-        inner: Pair {
-            fst: U8,
-            snd: BtVarintCont,
-            spec_snd: Ghost(spec_btc_varint_inner().inner.snd),
-        },
-        mapper: VarIntMapper,
-    }
+    TryMap { inner: Pair::new(U8, BtVarintCont), mapper: VarIntMapper }
 }
 
 /// Predicate for checking if a u16 is greater than or equal to 0xFD
@@ -445,6 +438,14 @@ impl SecureSpecCombinator for BtcVarint {
 /// Continuation for parsing and serializing Bitcoin variable-length integers
 pub struct BtVarintCont;
 
+impl View for BtVarintCont {
+    type V = spec_fn(u8) -> VarintChoice;
+
+    open spec fn view(&self) -> Self::V {
+        spec_btc_varint_inner().inner.snd
+    }
+}
+
 impl Continuation<&u8> for BtVarintCont {
     type Output = VarintChoice;
 
@@ -453,7 +454,8 @@ impl Continuation<&u8> for BtVarintCont {
     }
 
     open spec fn ensures(&self, t: &u8, o: Self::Output) -> bool {
-        o@ == (spec_btc_varint_inner().inner.snd)(t@)
+        // o@ == (spec_btc_varint_inner().inner.snd)(t@)
+        o@ == (self@)(t@)
     }
 
     fn apply(&self, t: &u8) -> Self::Output {

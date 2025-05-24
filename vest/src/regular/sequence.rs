@@ -155,32 +155,50 @@ pub trait Continuation<Input> {
 }
 
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
-/// the result of the first one.
-pub struct Pair<Fst, FstT: View, Snd: View, Cont> {
+pub struct Pair<Fst, Snd, Cont> {
     /// combinators that contain dependencies
     pub fst: Fst,
+    // _snd: std::marker::PhantomData<Snd>,
+    /// phantom data representing the second combinator
+    /// (it really should be private, but this is a workaround for Verus's
+    /// conservative treatment of opaque types, which doesn't allow field access
+    /// of opaque types in open spec functions)
+    pub _snd: std::marker::PhantomData<Snd>,
     /// closure that captures dependencies and maps them to the dependent combinators
     pub snd: Cont,
-    /// spec closure for continuation well-formedness
-    pub spec_snd: Ghost<spec_fn(FstT::V) -> Snd::V>,
 }
 
-impl<Fst, FsrT, Snd, Cont> View for Pair<Fst, FsrT, Snd, Cont> where
+impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
     Fst: View,
-    FsrT: View,
     Snd: View,
-    Fst::V: SecureSpecCombinator<Type = FsrT::V>,
+    Cont: View<V = spec_fn(<Fst::V as SpecCombinator>::Type) -> Snd::V>,
+    Fst::V: SecureSpecCombinator,
+    Snd::V: SpecCombinator,
+ {
+    /// Creates a new `Pair` combinator.
+    pub fn new(fst: Fst, snd: Cont) -> (o: Self)
+        ensures
+            o@ == (SpecPair { fst: fst@, snd: snd@ }),
+    {
+        Pair { fst, _snd: std::marker::PhantomData, snd }
+    }
+}
+
+impl<Fst, Snd, Cont> View for Pair<Fst, Snd, Cont> where
+    Fst: View,
+    Snd: View,
+    Cont: View<V = spec_fn(<Fst::V as SpecCombinator>::Type) -> Snd::V>,
+    Fst::V: SecureSpecCombinator,
     Snd::V: SpecCombinator,
  {
     type V = SpecPair<Fst::V, Snd::V>;
 
     open spec fn view(&self) -> Self::V {
-        let Ghost(spec_snd) = self.spec_snd;
-        SpecPair { fst: self.fst@, snd: spec_snd }
+        SpecPair { fst: self.fst@, snd: self.snd@ }
     }
 }
 
-impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd, Cont> where
+impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<'x, I, O, SType = &'x <Fst as Combinator<'x, I, O>>::Type>,
@@ -188,6 +206,7 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
     Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
+    Cont: View<V = spec_fn(<Fst::Type as View>::V) -> Snd::V>,
     <Fst as Combinator<'x, I, O>>::Type: 'x,
  {
     type Type = (Fst::Type, Snd::Type);
@@ -203,7 +222,7 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Fst::Type, Snd
     }
 
     open spec fn ex_requires(&self) -> bool {
-        let Ghost(spec_snd_dep) = self.spec_snd;
+        let spec_snd_dep = self.snd@;
         &&& self.fst.ex_requires()
         &&& forall|i| #[trigger] self.snd.requires(i)
         &&& forall|i, snd| #[trigger]
