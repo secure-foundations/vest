@@ -155,6 +155,7 @@ pub trait Continuation<Input> {
 }
 
 /// Combinator that sequentially applies two combinators, where the second combinator depends on
+/// the first one.
 pub struct Pair<Fst, Snd, Cont> {
     /// combinators that contain dependencies
     pub fst: Fst,
