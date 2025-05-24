@@ -60,10 +60,15 @@ impl View for ExampleBuilder {
 //         ));
 //     }
 // }
-
 spec fn wg_msg1() -> (
     Tag<bytes::Fixed<4>, Seq<u8>>,
-    (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, Seq<u8>>))))),
+    (
+        bytes::Variable,
+        (
+            bytes::Variable,
+            (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, Seq<u8>>))),
+        ),
+    ),
 ) {
     let grouplen = 32;
     let cipherlen_group = 48;
@@ -81,7 +86,16 @@ spec fn wg_msg1() -> (
 
 fn mk_wg_msg1<'x>() -> (res: (
     Tag<bytes::Fixed<4>, [u8; 4]>,
-    (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, [u8; 16]>))))),
+    (
+        bytes::Variable,
+        (
+            bytes::Variable,
+            (
+                bytes::Variable,
+                (bytes::Variable, (bytes::Variable, Tag<bytes::Fixed<16>, [u8; 16]>)),
+            ),
+        ),
+    ),
 ))
     ensures
         res@ == wg_msg1(),

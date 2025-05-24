@@ -21,7 +21,6 @@ use vstd::prelude::*;
 
 verus! {
 
-
 struct SpecNominal {
     x: u24,
     y: Seq<u8>,
@@ -112,6 +111,14 @@ pub open spec fn spec_a_cont(deps: u24) -> RepeatN<U8> {
 
 struct ACont;
 
+impl View for ACont {
+    type V = spec_fn(u24) -> RepeatN<U8>;
+
+    open spec fn view(&self) -> Self::V {
+        |deps| spec_a_cont(deps)
+    }
+}
+
 impl Continuation<&u24> for ACont {
     type Output = RepeatN<U8>;
 
@@ -130,30 +137,19 @@ impl Continuation<&u24> for ACont {
 }
 
 spec fn spec_a() -> Mapped<SpecPair<U24Le, RepeatN<U8>>, AIso> {
-    Mapped {
-        inner:
-        SpecPair { fst: U24Le, snd: |deps| spec_a_cont(deps) },
-        mapper: AIso,
-    }
+    Mapped { inner: SpecPair { fst: U24Le, snd: |deps| spec_a_cont(deps) }, mapper: AIso }
 }
 
-fn a() -> (o: Mapped<Pair<U24Le, u24, RepeatN<U8>, ACont>, AIso>  )
+fn a() -> (o: Mapped<Pair<U24Le, RepeatN<U8>, ACont>, AIso>)
     ensures
         o@ == spec_a(),
 {
-    Mapped {
-        inner:
-        Pair {
-            fst: U24Le,
-            snd: ACont,
-            spec_snd: Ghost(|deps| spec_a_cont(deps)),
-        },
-        mapper: AIso,
-    }
+    Mapped { inner: Pair::new(U24Le, ACont), mapper: AIso }
 }
 
 fn test_parse_serialize(buf: &[u8])
-    requires buf@.len() <= usize::MAX,
+    requires
+        buf@.len() <= usize::MAX,
 {
     if let Ok((consumed, val)) = a().parse(buf) {
         proof {
@@ -170,10 +166,10 @@ fn test_parse_serialize(buf: &[u8])
     // let (consumed, val) = a().parse(buf).unwrap();
     // let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
     // let len = a().serialize(&val, &mut outbuf, 0).unwrap();
-}
 
 }
 
+} // verus!
 macro_rules! my_vec {
     // Match against any number of comma-separated expressions.
     ($($x:expr),* $(,)?) => {

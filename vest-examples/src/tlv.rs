@@ -1,13 +1,13 @@
 #![allow(unused_imports)]
 
 use vest::properties::*;
-use vest::regular::modifier::*;
 use vest::regular::bytes;
-use vest::regular::variant::*;
-use vest::regular::sequence::*;
+use vest::regular::modifier::*;
 use vest::regular::repetition::*;
+use vest::regular::sequence::*;
 use vest::regular::tag::*;
 use vest::regular::uints::*;
+use vest::regular::variant::*;
 use vest::utils::*;
 use vstd::prelude::*;
 
@@ -493,7 +493,10 @@ pub spec const SPEC_MSGD_F1: Seq<u8> = seq![1; 4];
 pub const MSGD_F2: u16 = 4660;
 
 pub type SpecMsgDCombinator = Mapped<
-    (Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'static>>, Refined<U16Be, TagPred<u16>>),
+    (
+        Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'static>>,
+        Refined<U16Be, TagPred<u16>>,
+    ),
     MsgDMapper<'static>,
 >;
 
@@ -543,7 +546,10 @@ impl<'a> Pred for BytesPredicate16235736133663645624<'a> {
 }
 
 pub type MsgDCombinator<'a> = Mapped<
-    (Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'a>>, Refined<U16Be, TagPred<u16>>),
+    (
+        Refined<bytes::Fixed<4>, BytesPredicate16235736133663645624<'a>>,
+        Refined<U16Be, TagPred<u16>>,
+    ),
     MsgDMapper<'a>,
 >;
 
@@ -616,7 +622,10 @@ pub fn msg_d<'a>() -> (o: MsgDCombinator<'a>)
 {
     Mapped {
         inner: (
-            Refined { inner: bytes::Fixed::<4>, predicate: BytesPredicate16235736133663645624::new() },
+            Refined {
+                inner: bytes::Fixed::<4>,
+                predicate: BytesPredicate16235736133663645624::new(),
+            },
             Refined { inner: U16Be, predicate: TagPred(MSGD_F2) },
         ),
         mapper: MsgDMapper::new(),

@@ -1,16 +1,17 @@
 use crate::my_vec;
 use vest::properties::*;
 use vest::regular::bytes;
-use vest::regular::variant::{Opt, Choice};
 use vest::regular::tag::*;
 use vest::regular::uints::*;
+use vest::regular::variant::{Choice, Opt};
 use vstd::prelude::*;
 
 verus! {
 
 exec fn parse_opt(x: usize) -> Result<(), Error>
-    requires x > 0
- {
+    requires
+        x > 0,
+{
     let msg1 = Opt::new(((Tag::new(U8, 1), bytes::Fixed::<0>), bytes::Variable(3)));
     let msg2 = Opt::new(bytes::Variable(x));
     let msg3 = Opt::new(Choice::new(Tag::new(U8, 1u8), Tag::new(U8, 2u8)));
