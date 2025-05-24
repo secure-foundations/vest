@@ -1,7 +1,8 @@
 use modifier::Cond;
+use sequence::GhostFn;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::errors::{ParseError, SerializeError};
-use vest::properties::Combinator;
+use vest::properties::{Combinator, SpecCombinator};
 use vest::regular::bytes::*;
 use vest::regular::sequence::{Continuation, Pair, SpecPair};
 use vest::regular::uints::*;
@@ -14,7 +15,7 @@ use crate::my_vec;
 verus! {
 
 pub open spec fn msg1() -> SpecPair<(BtcVarint, U24Be), (Variable, Variable)> {
-    SpecPair { fst: (BtcVarint, U24Be), snd: |deps| msg1_snd(deps) }
+    Pair::spec_new((BtcVarint, U24Be), |deps| msg1_snd(deps))
 }
 
 pub open spec fn msg1_snd(deps: (VarInt, u24)) -> (Variable, Variable) {
@@ -57,7 +58,7 @@ pub fn mk_msg1() -> (o: Pair<(BtcVarint, U24Be), (Variable, Variable), Msg1Cont>
 }
 
 pub open spec fn msg2() -> SpecPair<bytes::Fixed<2>, Cond<U8>> {
-    SpecPair { fst: bytes::Fixed::<2>, snd: |deps| msg2_snd(deps) }
+    Pair::spec_new(bytes::Fixed::<2>, |deps| msg2_snd(deps))
 }
 
 pub open spec fn msg2_snd(deps: Seq<u8>) -> Cond<U8> {
