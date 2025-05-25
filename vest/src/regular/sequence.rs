@@ -170,7 +170,7 @@ pub struct Pair<Fst, Snd, Cont> {
 impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
     Fst: View,
     Snd: View,
-    Cont: View<V = spec_fn(<Fst::V as SpecCombinator>::Type) -> Snd::V>,
+    Cont: View<V = GhostFn<<Fst::V as SpecCombinator>::Type, Snd::V>>,
     Fst::V: SecureSpecCombinator,
     Snd::V: SpecCombinator,
  {
@@ -207,15 +207,37 @@ impl<Fst, Snd, Cont> View for Pair<Fst, Snd, Cont> where
     }
 }
 
+/// A type that can be either a `PType` or an `SType`, whose `View` is the same as `PType`.
+/// This is used for the continuation in `Pair`.
+#[allow(missing_docs)]
+pub enum POrSType<PType, SType> {
+    /// Represents the (reference of) parsed type
+    P(PType),
+    /// Represents the type to be serialized
+    S(SType),
+}
+
+impl<PType: View, SType: View<V = <PType as View>::V>> View for POrSType<PType, SType> {
+    type V = PType::V;
+
+    open spec fn view(&self) -> Self::V {
+        match self {
+            POrSType::P(p) => p@,
+            POrSType::S(s) => s@,
+        }
+    }
+}
+
 impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O, SType = &'x <Fst as Combinator<'x, I, O>>::Type>,
+    Fst: Combinator<'x, I, O>,
     Snd: Combinator<'x, I, O>,
     Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
     Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
-    Cont: for <'a>Continuation<&'a Fst::Type, Output = Snd>,
-    Cont: View<V = spec_fn(<Fst::Type as View>::V) -> Snd::V>,
+    Fst::SType: Copy,
+    Cont: for <'a>Continuation<POrSType<&'a Fst::Type, Fst::SType>, Output = Snd>,
+    Cont: View<V = GhostFn<<Fst::Type as View>::V, Snd::V>>,
     <Fst as Combinator<'x, I, O>>::Type: 'x,
  {
     type Type = (Fst::Type, Snd::Type);
@@ -244,7 +266,7 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
             self@.fst.lemma_parse_length(s@);
         }
         let s_ = s.subrange(n, s.len());
-        let snd = self.snd.apply(&v1);
+        let snd = self.snd.apply(POrSType::P(&v1));
         let (m, v2) = snd.parse(s_)?;
         proof {
             snd@.lemma_parse_length(s@.skip(n as int));
@@ -256,7 +278,7 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
         usize,
         SerializeError,
     >) {
-        let snd = self.snd.apply(v.0);
+        let snd = self.snd.apply(POrSType::S(v.0));
         let n = self.fst.serialize(v.0, data, pos)?;
         let m = snd.serialize(v.1, data, pos + n)?;
         assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
