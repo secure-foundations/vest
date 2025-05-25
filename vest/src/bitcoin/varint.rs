@@ -5,7 +5,7 @@ use crate::{
         modifier::{
             Cond, PartialIso, Pred, Refined, SpecPartialIso, SpecPartialIsoProof, SpecPred, TryMap,
         },
-        sequence::{Continuation, Pair, SpecPair},
+        sequence::{Continuation, POrSType, Pair, SpecPair},
         uints::*,
         variant::*,
     },
@@ -446,19 +446,23 @@ impl View for BtVarintCont {
     }
 }
 
-impl Continuation<&u8> for BtVarintCont {
+impl<'a> Continuation<POrSType<&'a u8, &u8>> for BtVarintCont {
     type Output = VarintChoice;
 
-    open spec fn requires(&self, t: &u8) -> bool {
+    open spec fn requires(&self, t: POrSType<&'a u8, &u8>) -> bool {
         true
     }
 
-    open spec fn ensures(&self, t: &u8, o: Self::Output) -> bool {
+    open spec fn ensures(&self, t: POrSType<&'a u8, &u8>, o: Self::Output) -> bool {
         // o@ == (spec_btc_varint_inner().inner.snd)(t@)
         o@ == (self@)(t@)
     }
 
-    fn apply(&self, t: &u8) -> Self::Output {
+    fn apply(&self, t: POrSType<&'a u8, &u8>) -> Self::Output {
+        let t = match t {
+            POrSType::P(t) => t,
+            POrSType::S(t) => t,
+        };
         ord_choice!(
                     Cond { cond: *t <= 0xFC, inner: Fixed::<0> },
                     Cond { cond: *t ==  0xFD, inner: Refined { inner: U16Le, predicate: PredU16LeFit } },

@@ -13,6 +13,7 @@ pub mod modifier;
 /// Repetition combinators
 pub mod repetition;
 /// Sequencing combinators
+#[allow(missing_docs)]
 pub mod sequence;
 /// Success combinator
 pub mod success;
