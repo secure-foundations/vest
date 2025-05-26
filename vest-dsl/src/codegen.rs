@@ -2705,10 +2705,6 @@ impl Codegen for ConstCombinator {
                 }
             }
         };
-        let lifetime_ann = match mode {
-            Mode::Exec(LifetimeAnn::Some) => "<'a>",
-            _ => "",
-        };
         if !ctx.top_level {
             (combinator_type, additional_code)
         } else {
@@ -2718,7 +2714,7 @@ impl Codegen for ConstCombinator {
                     Mode::Spec => {
                         format!("pub type Spec{name}Combinator = {combinator_type};\n")
                     }
-                    _ => format!("pub type {name}Combinator{lifetime_ann} = {combinator_type};\n"),
+                    _ => format!("pub type {name}Combinator = {combinator_type};\n"),
                 },
                 additional_code,
             )
