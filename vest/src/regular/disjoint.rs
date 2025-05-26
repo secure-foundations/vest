@@ -165,8 +165,8 @@ impl<Inner1, Inner2> DisjointFrom<Cond<Inner2>> for Cond<Inner1> where
 // fails, then `self` is disjoint from `other`
 impl<Inner, P1, P2> DisjointFrom<Refined<Inner, P2>> for Refined<Inner, P1> where
     Inner: SpecCombinator,
-    P1: SpecPred<Input = Inner::Type>,
-    P2: SpecPred<Input = Inner::Type>,
+    P1: SpecPred<Inner::Type>,
+    P2: SpecPred<Inner::Type>,
  {
     open spec fn disjoint_from(&self, other: &Refined<Inner, P2>) -> bool {
         self.inner == other.inner && forall|i|

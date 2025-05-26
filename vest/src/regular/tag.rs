@@ -1,4 +1,4 @@
-use super::modifier::{Pred, Refined, SpecPred};
+use super::{bytes, leb128::{UnsignedLEB128, UInt}, modifier::{Pred, Refined, SpecPred}, uints::*};
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -15,20 +15,9 @@ impl<T: View> View for TagPred<T> {
     }
 }
 
-impl<T> SpecPred for TagPred<T> {
-    type Input = T;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl<T> SpecPred<T> for TagPred<T> {
+    open spec fn spec_apply(&self, i: &T) -> bool {
         *i == self.0
-    }
-}
-
-impl<T: Compare<T>> Pred for TagPred<T> {
-    type Input = T;
-
-    fn apply(&self, i: &Self::Input) -> bool {
-        // self.0.eq(i)
-        self.0.compare(i)
     }
 }
 
@@ -117,36 +106,108 @@ impl<Inner: SecureSpecCombinator<Type = T>, T> SecureSpecCombinator for Tag<Inne
     }
 }
 
-impl<'x, I, O, Inner, T> Combinator<'x, I, O> for Tag<Inner, T> where
-    I: VestInput,
-    O: VestOutput<I>,
-    Inner: for <'a>Combinator<'a, I, O, Type = T, SType = &'a T>,
-    Inner::V: SecureSpecCombinator<Type = T::V>,
-    T: Compare<T> + 'x,
- {
+impl Pred<u8> for TagPred<u8> {
+    fn apply(&self, i: &u8) -> bool {
+        *i == self.0
+    }
+}
+
+impl Pred<u16> for TagPred<u16> {
+    fn apply(&self, i: &u16) -> bool {
+        *i == self.0
+    }
+}
+
+impl Pred<u32> for TagPred<u32> {
+    fn apply(&self, i: &u32) -> bool {
+        *i == self.0
+    }
+}
+
+impl Pred<u64> for TagPred<u64> {
+    fn apply(&self, i: &u64) -> bool {
+        *i == self.0
+    }
+}
+
+impl<'a, const N: usize> Pred<&'a [u8]> for TagPred<[u8; N]> {
+    fn apply(&self, i: &&'a [u8]) -> bool {
+        self.0.as_slice().compare(i)
+    }
+}
+
+macro_rules! impl_combinator_for_uint_tag {
+    ($combinator:ty, $int_type:ty) => {
+        ::builtin_macros::verus! {
+            impl<'x, I, O> Combinator<'x, I, O> for Tag<$combinator, $int_type> where
+                I: VestPublicInput,
+                O: VestPublicOutput<I>,
+            {
+                type Type = ();
+
+                type SType = ();
+
+                open spec fn spec_length(&self) -> Option<usize> {
+                    <_ as Combinator<'x, I, O>>::spec_length(&self.0)
+                }
+
+                fn length(&self) -> Option<usize> {
+                    <_ as Combinator<'x, I, O>>::length(&self.0)
+                }
+
+                open spec fn ex_requires(&self) -> bool {
+                    <_ as Combinator<'x, I, O>>::ex_requires(&self.0)
+                }
+
+                fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+                    let (n, _) = <_ as Combinator<'x, I, O>>::parse(&self.0, s)?;
+                    Ok((n, ()))
+                }
+
+                fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+                    self.0.serialize(&self.0.predicate.0, data, pos)
+                }
+            }
+        } // verus!
+    };
+}
+
+impl_combinator_for_uint_tag!(U8, u8);
+impl_combinator_for_uint_tag!(U16Le, u16);
+// impl_combinator_for_uint_tag!(U24Le, u24);
+impl_combinator_for_uint_tag!(U32Le, u32);
+impl_combinator_for_uint_tag!(U64Le, u64);
+impl_combinator_for_uint_tag!(U16Be, u16);
+// impl_combinator_for_uint_tag!(U24Be, u24);
+impl_combinator_for_uint_tag!(U32Be, u32);
+impl_combinator_for_uint_tag!(U64Be, u64);
+impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
+
+impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<bytes::Fixed::<N>, [u8; N]> where
+{
     type Type = ();
 
     type SType = ();
 
     open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
+        <_ as Combinator<'x, &'x [u8], Vec<u8>>>::spec_length(&self.0)
     }
 
     fn length(&self) -> Option<usize> {
-        self.0.length()
+        <_ as Combinator<'x, &'x [u8], Vec<u8>>>::length(&self.0)
     }
 
     open spec fn ex_requires(&self) -> bool {
-        self.0.ex_requires()
+        <_ as Combinator<'x, &'x [u8], Vec<u8>>>::ex_requires(&self.0)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-        let (n, _) = self.0.parse(s)?;
+    fn parse(&self, s: &'x [u8]) -> Result<(usize, Self::Type), ParseError> {
+        let (n, _) = <_ as Combinator<'x, &'x [u8], Vec<u8>>>::parse(&self.0, s)?;
         Ok((n, ()))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        self.0.serialize(&self.0.predicate.0, data, pos)
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+        self.0.serialize(&self.0.predicate.0.as_slice(), data, pos)
     }
 }
 
