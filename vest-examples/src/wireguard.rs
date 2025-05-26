@@ -1,3 +1,5 @@
+use vest::errors::ParseError;
+use vest::properties::Combinator;
 use vest::regular::bytes;
 use vest::regular::tag::*;
 use vstd::prelude::*;
@@ -84,7 +86,7 @@ spec fn wg_msg1() -> (
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
 }
 
-fn mk_wg_msg1<'x>() -> (res: (
+type WGCombinator = (
     Tag<bytes::Fixed<4>, [u8; 4]>,
     (
         bytes::Variable,
@@ -96,7 +98,9 @@ fn mk_wg_msg1<'x>() -> (res: (
             ),
         ),
     ),
-))
+);
+
+fn mk_wg_msg1() -> (res: WGCombinator)
     ensures
         res@ == wg_msg1(),
 {
@@ -112,6 +116,14 @@ fn mk_wg_msg1<'x>() -> (res: (
     let mac1 = bytes::Variable(maclen);
     let mac2 = Tag::new(bytes::Fixed::<16>, BYTES_16_0S_CONST);
     (tag, (sender, (eph, (statik, (timestamp, (mac1, mac2))))))
+}
+
+fn wg_msg1_parse<'a>(buf: &'a [u8]) -> Result<(usize, <WGCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type), ParseError>
+    requires
+        buf@.len() <= usize::MAX,
+    {
+    let wg_msg1_combinator = mk_wg_msg1();
+    <WGCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&wg_msg1_combinator, buf)
 }
 
 } // verus!

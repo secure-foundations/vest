@@ -1,5 +1,5 @@
 use modifier::Cond;
-use sequence::GhostFn;
+use sequence::{GhostFn, POrSType};
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::errors::{ParseError, SerializeError};
 use vest::properties::{Combinator, SpecCombinator};
@@ -76,18 +76,22 @@ impl View for Msg2Cont {
     }
 }
 
-impl<'a> Continuation<&'a &[u8]> for Msg2Cont {
+impl<'b, 'a> Continuation<POrSType<&'b &'a [u8], &&'a [u8]>> for Msg2Cont {
     type Output = Cond<U8>;
 
-    open spec fn requires(&self, i: &'a &[u8]) -> bool {
+    open spec fn requires(&self, i: POrSType<&'b &'a [u8], &&'a [u8]>) -> bool {
         true
     }
 
-    open spec fn ensures(&self, i: &'a &[u8], o: Cond<U8>) -> bool {
+    open spec fn ensures(&self, i: POrSType<&'b &'a [u8], &&'a [u8]>, o: Cond<U8>) -> bool {
         o@ == msg2_snd(i@)
     }
 
-    fn apply(&self, deps: &'a &[u8]) -> Cond<U8> {
+    fn apply(&self, deps: POrSType<&'b &'a [u8], &&'a [u8]>) -> Cond<U8> {
+        let deps = match deps {
+            POrSType::P(deps) => deps,
+            POrSType::S(deps) => deps,
+        };
         let bytes = deps;
         Cond { cond: bytes.compare(&[0, 1].as_slice()), inner: U8 }
     }

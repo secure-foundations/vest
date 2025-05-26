@@ -108,18 +108,22 @@ impl View for ACont {
     }
 }
 
-impl Continuation<&u24> for ACont {
+impl<'a> Continuation<POrSType<&'a u24, &u24>> for ACont {
     type Output = bytes::Variable;
 
-    open spec fn requires(&self, deps: &u24) -> bool {
+    open spec fn requires(&self, deps: POrSType<&'a u24, &u24>) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: &u24, o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: POrSType<&'a u24, &u24>, o: Self::Output) -> bool {
         o@ == spec_a_cont(deps@)
     }
 
-    fn apply(&self, deps: &u24) -> Self::Output {
+    fn apply(&self, deps: POrSType<&'a u24, &u24>) -> Self::Output {
+        let deps = match deps {
+            POrSType::P(deps) => deps,
+            POrSType::S(deps) => deps,
+        };
         let l = *deps;
         bytes::Variable(l.ex_into())
     }
