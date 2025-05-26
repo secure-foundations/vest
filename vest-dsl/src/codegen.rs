@@ -147,7 +147,6 @@ impl Display for LifetimeAnn {
 #[derive(Debug, Clone)]
 pub struct CodegenCtx<'a> {
     pub msg_lifetimes: HashMap<String, LifetimeAnn>,
-    pub combinator_lifetimes: HashMap<String, LifetimeAnn>,
     pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
     pub constraint_int_combs: HashSet<u64>,
     pub param_defns: Vec<ParamDefn>,
@@ -230,87 +229,15 @@ fn const_msg_need_lifetime(const_combinator: &ConstCombinator) -> bool {
     }
 }
 
-/// Helper function to determine if a combinator type needs lifetime annotations
-///
-/// A combinator type needs lifetime annotations if the combinator, after resolving,
-/// - is a `Struct` combinator s.t.
-///   - it has internal dependencies (because `Pair` combinator needs lifetime annotations)
-///   - or, its message type needs lifetime annotations (because the `Mapper` needs to refer to it)
-/// - is a `Choice` combinator whose message types need lifetime annotations (because of the
-///   `Mapper` as well)
-/// - is any combinator that recursively contains a combinator type that needs lifetime
-///
-/// **NOTE**: this is relying on the fact that structs are always top-level definitions
-fn comb_type_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
-    use CombinatorInner::*;
-    let msg_has_lifetime = msg_need_lifetime(combinator, ctx);
-    let resolved = ctx.resolve(combinator);
-    // after resolving, we don't need to consider `and_then` or `invocation` anymore
-    match resolved {
-        Struct(comb @ StructCombinator(fields)) => {
-            comb.has_dependent_fields()
-                || msg_has_lifetime
-                || fields.iter().any(|field| match field {
-                    StructField::Ordinary { combinator, .. } => {
-                        comb_type_need_lifetime(combinator, ctx)
-                    }
-
-                    StructField::Dependent { combinator, .. } => {
-                        comb_type_need_lifetime(combinator, ctx)
-                    }
-
-                    StructField::Const { combinator, .. } => false,
-                    _ => unimplemented!(),
-                })
-        }
-        Choice(ChoiceCombinator { choices, .. }) => {
-            msg_has_lifetime
-                || match choices {
-                    Choices::Enums(enums) => enums
-                        .iter()
-                        .any(|(_, combinator)| comb_type_need_lifetime(combinator, ctx)),
-                    Choices::Ints(ints) => ints
-                        .iter()
-                        .any(|(_, combinator)| comb_type_need_lifetime(combinator, ctx)),
-                    Choices::Arrays(arrays) => arrays
-                        .iter()
-                        .any(|(_, combinator)| comb_type_need_lifetime(combinator, ctx)),
-                }
-        }
-        Wrap(WrapCombinator {
-            prior,
-            combinator,
-            post,
-        }) => comb_type_need_lifetime(combinator, ctx),
-        SepBy(SepByCombinator { combinator, sep }) => {
-            let combinator = Combinator {
-                inner: Vec(combinator.clone()),
-                and_then: None,
-            };
-            comb_type_need_lifetime(&combinator, ctx)
-        }
-        Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
-            comb_type_need_lifetime(combinator, ctx)
-        }
-        Array(ArrayCombinator { combinator, .. }) => comb_type_need_lifetime(combinator, ctx),
-        Option(OptionCombinator(combinator)) => comb_type_need_lifetime(combinator, ctx),
-        ConstraintInt(_) | Enum(_) | Apply(_) | Bytes(_) | Tail(_) => false,
-        Invocation(_) => unreachable!("invocation should be resolved by now"),
-        MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
-    }
-}
-
 impl<'a> CodegenCtx<'a> {
     pub fn new(
         msg_lifetimes: HashMap<String, LifetimeAnn>,
-        combinator_lifetimes: HashMap<String, LifetimeAnn>,
         enums: HashMap<&'a str, EnumCombinator>,
         endianness: Endianess,
         flags: CodegenOpts,
     ) -> Self {
         Self {
             msg_lifetimes,
-            combinator_lifetimes,
             enums,
             constraint_int_combs: HashSet::new(),
             param_defns: Vec::new(),
@@ -333,16 +260,13 @@ impl<'a> CodegenCtx<'a> {
 
         // init the format lifetimes with None
         let mut msg_lifetimes: HashMap<String, LifetimeAnn> = HashMap::new();
-        let mut combinator_lifetimes: HashMap<String, LifetimeAnn> = HashMap::new();
         for defn in ast {
             match defn {
                 Definition::Combinator { name, .. } => {
                     msg_lifetimes.insert(name.to_string(), LifetimeAnn::None);
-                    combinator_lifetimes.insert(name.to_string(), LifetimeAnn::None);
                 }
                 Definition::ConstCombinator { name, .. } => {
                     msg_lifetimes.insert(name.to_string(), LifetimeAnn::None);
-                    combinator_lifetimes.insert(name.to_string(), LifetimeAnn::None);
                 }
                 _ => {}
             }
@@ -362,12 +286,6 @@ impl<'a> CodegenCtx<'a> {
                     LifetimeAnn::None
                 };
                 msg_lifetimes.insert(name.to_string(), msg_lifetime);
-                let combinator_lifetime = if comb_type_need_lifetime(combinator, ctx) {
-                    LifetimeAnn::Some
-                } else {
-                    LifetimeAnn::None
-                };
-                combinator_lifetimes.insert(name.to_string(), combinator_lifetime);
             }
             Definition::ConstCombinator {
                 name,
@@ -384,7 +302,6 @@ impl<'a> CodegenCtx<'a> {
                     LifetimeAnn::None
                 };
                 msg_lifetimes.insert(name.to_string(), lifetime);
-                combinator_lifetimes.insert(name.to_string(), lifetime);
             }
             Definition::Endianess(end) => {
                 endianness = *end;
@@ -392,13 +309,7 @@ impl<'a> CodegenCtx<'a> {
             _ => {}
         });
 
-        Self::new(
-            msg_lifetimes,
-            combinator_lifetimes,
-            ctx.enums.clone(),
-            endianness,
-            flags,
-        )
+        Self::new(msg_lifetimes, ctx.enums.clone(), endianness, flags)
     }
 }
 
@@ -438,10 +349,6 @@ impl Codegen for Combinator {
         mode: Mode,
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
-        let lifetime_ann = match mode {
-            Mode::Exec(LifetimeAnn::Some) => "<'a>",
-            _ => "",
-        };
         let wrapper_code = if !ctx.top_level {
             "".to_string()
         } else {
@@ -457,9 +364,13 @@ pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
     type Type = Spec{name};
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::Type), ()> 
+    closed spec fn requires(&self) -> bool
+    {{ self.0.requires() }}
+    closed spec fn wf(&self, v: Self::Type) -> bool
+    {{ self.0.wf(v) }}
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
     {{ self.0.spec_parse(s) }}
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Result<Seq<u8>, ()> 
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
     {{ self.0.spec_serialize(v) }}
 }}
 impl SecureSpecCombinator for Spec{name}Combinator {{
@@ -483,26 +394,25 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
                 Mode::Exec(_) => {
                     format!(
                         r#"
-pub struct {name}Combinator{lifetime_ann}({name}CombinatorAlias{lifetime_ann});
+pub struct {name}Combinator({name}CombinatorAlias);
 
-impl{lifetime_ann} View for {name}Combinator{lifetime_ann} {{
+impl View for {name}Combinator {{
     type V = Spec{name}Combinator;
     closed spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
 }}
-impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     type Type = {name}{msg_has_lifetime};
+    type SType = &'a Self::Type;
     closed spec fn spec_length(&self) -> Option<usize> 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::spec_length(&self.0) }}
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }}
     fn length(&self) -> Option<usize> 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::length(&self.0) }}
-    closed spec fn parse_requires(&self) -> bool 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::parse_requires(&self.0) }}
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }}
+    closed spec fn ex_requires(&self) -> bool 
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }}
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    {{ <_ as Combinator<&[u8],Vec<u8>>>::parse(&self.0, s) }}
-    closed spec fn serialize_requires(&self) -> bool 
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::serialize_requires(&self.0) }}
-    fn serialize(&self, v: Self::Type, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {{ <_ as Combinator<&[u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }}
+    {{ <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }}
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }}
 }} 
 "#
                     )
@@ -526,7 +436,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
                             "pub type Spec{name}CombinatorAlias = AndThen<{comb_type}, {and_then_comb_type}>;\n"
                         ),
                         _ => format!(
-                            "pub type {name}CombinatorAlias{lifetime_ann} = AndThen<{comb_type}, {and_then_comb_type}>;\n"),
+                            "pub type {name}CombinatorAlias = AndThen<{comb_type}, {and_then_comb_type}>;\n"),
                 },
                     additional_code + &and_then_additional_code + &wrapper_code,
                 )
@@ -542,9 +452,7 @@ impl<'a> Combinator<&'a [u8], Vec<u8>> for {name}Combinator{lifetime_ann} {{
                     Mode::Spec => {
                         format!("pub type Spec{name}CombinatorAlias = {combinator_type};\n")
                     }
-                    _ => format!(
-                        "pub type {name}CombinatorAlias{lifetime_ann} = {combinator_type};\n"
-                    ),
+                    _ => format!("pub type {name}CombinatorAlias = {combinator_type};\n"),
                 },
                 additional_code + &wrapper_code,
             )
@@ -641,12 +549,13 @@ impl Codegen for ConstraintIntCombinator {
         if !ctx.top_level {
             int_type
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(_) => name,
-            };
-
-            format!("pub type {} = {};\n", type_alias_name, int_type)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {int_type};\n"),
+                Mode::Exec(_) => {
+                    format!("pub type {name} = {int_type};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {int_type};\n")
+                }
+            }
         }
     }
 
@@ -721,10 +630,8 @@ impl Codegen for ConstraintIntCombinator {
             };
             let constraints = gen_constraints(constraint);
             let impl_spec_pred = format!(
-                r#"impl SpecPred for Predicate{hash} {{
-    type Input = {input_type};
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {{
+                r#"impl SpecPred<{input_type}> for Predicate{hash} {{
+    open spec fn spec_apply(&self, i: &{input_type}) -> bool {{
         let i = (*i){spec_cast};
         {constraints}
     }}
@@ -732,10 +639,8 @@ impl Codegen for ConstraintIntCombinator {
 "#
             );
             let impl_exec_pred = format!(
-                r#"impl Pred for Predicate{hash} {{
-    type Input = {input_type};
-
-    fn apply(&self, i: &Self::Input) -> bool {{
+                r#"impl Pred<{input_type}> for Predicate{hash} {{
+    fn apply(&self, i: &{input_type}) -> bool {{
         let i = (*i){cast};
         {constraints}
     }}
@@ -796,11 +701,13 @@ impl Codegen for BytesCombinator {
         if !ctx.top_level {
             type_name
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(_) => &format!("{}{}", name, "<'a>"),
-            };
-            format!("pub type {} = {};\n", type_alias_name, type_name)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {type_name};\n"),
+                Mode::Exec(_) => {
+                    format!("pub type {name}<'a> = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+            }
         }
     }
 
@@ -890,14 +797,13 @@ impl Codegen for CombinatorInvocation {
         if !ctx.top_level {
             format!("{}{}", invocked, lifetime)
         } else {
-            let name = match mode {
-                Mode::Spec => format!("Spec{}", name),
-                Mode::Exec(_) => name.to_owned(),
-            };
-            format!(
-                "pub type {}{} = {}{};\n",
-                name, lifetime, invocked, lifetime
-            )
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {invocked};\n"),
+                Mode::Exec(_) => {
+                    format!("pub type {name}{lifetime} = {invocked}{lifetime};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {invocked}{lifetime};\n")
+                }
+            }
         }
     }
 
@@ -907,19 +813,10 @@ impl Codegen for CombinatorInvocation {
         mode: Mode,
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
-        let lifetime_ann = ctx.combinator_lifetimes.get(&self.func).unwrap_or_else(|| {
-            panic!(
-                "format lifetime not found for combinator invocation: {}",
-                self.func
-            )
-        });
         let invocked = snake_to_upper_caml(&self.func);
         match mode {
             Mode::Spec => (format!("Spec{invocked}Combinator"), "".to_string()),
-            _ => (
-                format!("{invocked}Combinator{lifetime_ann}"),
-                "".to_string(),
-            ),
+            _ => (format!("{invocked}Combinator"), "".to_string()),
         }
     }
 
@@ -1100,7 +997,22 @@ impl View for {msg_type_name}{view_lifetime} {{
                 Bracket::Parentheses,
             )
         };
+        let mut into_msg_ref_type_pairs = |fields: &[StructField]| {
+            fmt_in_pairs(
+                &fields
+                    .iter()
+                    .map(|field| {
+                        let (_, field_type) = label_and_msg_type_from_field(field, mode, ctx);
+                        "&'a ".to_string() + &field_type
+                    })
+                    .collect::<Vec<_>>(),
+                "",
+                Bracket::Parentheses,
+            )
+        };
         let msg_type_pairs = build_nested_pairs(&self.0, &mut into_msg_type_pairs, "(", ")");
+        let msg_ref_type_pairs =
+            build_nested_pairs(&self.0, &mut into_msg_ref_type_pairs, "(", ")");
         let from_trait = match mode {
             Mode::Spec => "SpecFrom",
             _ => "From",
@@ -1117,7 +1029,10 @@ impl View for {msg_type_name}{view_lifetime} {{
                     .iter()
                     .map(|field| {
                         let (label, _) = label_and_msg_type_from_field(field, mode, ctx);
-                        format!("m.{}", label)
+                        match mode {
+                            Mode::Spec => format!("m.{}", label),
+                            Mode::Exec(_) => format!("&m.{}", label),
+                        }
                     })
                     .collect::<Vec<_>>(),
                 "",
@@ -1130,7 +1045,7 @@ impl View for {msg_type_name}{view_lifetime} {{
             Mode::Spec => {
                 format!("open spec fn spec_from(m: {msg_type_name}) -> {msg_type_name}Inner")
             }
-            _ => format!("fn ex_from(m: {msg_type_name}) -> {msg_type_name}Inner"),
+            _ => format!("fn ex_from(m: &'a {msg_type_name}) -> {msg_type_name}InnerRef<'a>"),
         };
         let mut into_field_name_pairs = |fields: &[StructField]| {
             fmt_in_pairs(
@@ -1161,11 +1076,30 @@ pub struct {msg_type_name}{lifetime_ann} {{
                 r#"
 {impl_view}
 pub type {msg_type_name}Inner{lifetime_ann} = {msg_type_pairs};
-impl{lifetime_ann} {from_trait}<{msg_type_name}{lifetime_ann}> for {msg_type_name}Inner{lifetime_ann} {{
+"#
+            ) + &(match mode {
+                Mode::Spec => format!(
+                    r#"
+
+impl {from_trait}<{msg_type_name}> for {msg_type_name}Inner {{
     {from_fn_sig_for_msg_type_inner} {{
         {field_access_pairs}
     }}
 }}
+"#
+                ),
+                _ => format!(
+                    r#"
+pub type {msg_type_name}InnerRef<'a> = {msg_ref_type_pairs};
+impl<'a> {from_trait}<&'a {msg_type_name}{lifetime_ann}> for {msg_type_name}InnerRef<'a> {{
+    {from_fn_sig_for_msg_type_inner} {{
+        {field_access_pairs}
+    }}
+}}
+"#
+                ),
+            }) + &format!(
+                r#"
 impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_type_name}{lifetime_ann} {{
     {from_fn_sig_for_msg_type} {{
         let {field_name_pairs} = m;
@@ -1189,21 +1123,6 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         // TODO: this is ugly, need to refactor
         let old_top_level = ctx.top_level;
         ctx.top_level = false;
-        let msg_has_lifetime = ctx
-            .msg_lifetimes
-            .get(name)
-            .unwrap_or_else(|| panic!("format lifetime not found for combinator: {}", name));
-        let lifetime_ann_mapper = match msg_has_lifetime {
-            LifetimeAnn::Some => match mode {
-                Mode::Spec => "<'static>",
-                _ => "<'a>",
-            },
-            LifetimeAnn::None => "",
-        };
-        let lifetime_ann_cont = match mode {
-            Mode::Exec(LifetimeAnn::Some) => "<'a>",
-            _ => "",
-        };
         let name = &snake_to_upper_caml(name);
         fn comb_type_and_code_from_field(
             field: &StructField,
@@ -1236,6 +1155,7 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             fmt_in_pairs(
                 &fields
                     .iter()
+                    // .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
                     .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
                     .collect::<Vec<_>>(),
                 "",
@@ -1243,24 +1163,19 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
             )
         };
         let mapped_inner = match mode {
-            Mode::Spec => {
-                build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecPair<", ">")
-            }
+            Mode::Spec => build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecPair<", ">"),
             _ => custom_build_nested_pairs(
                 &self.0,
                 &mut into_comb_type_pairs,
-                &|_| "Pair<&'a [u8], Vec<u8>, ".into(),
-                &|depth| format!(", {name}Cont{depth}{lifetime_ann_cont}>"),
+                &|_| "Pair<".into(),
+                &|depth| format!(", {name}Cont{depth}>"),
                 0,
             ),
         };
         // restore the top level flag
         ctx.top_level = old_top_level;
         (
-            format!(
-                "Mapped<{}, {}Mapper{}>",
-                mapped_inner, name, lifetime_ann_mapper
-            ),
+            format!("Mapped<{}, {}Mapper>", mapped_inner, name),
             additional_code,
         )
     }
@@ -1309,6 +1224,19 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                         Bracket::Parentheses,
                     )
                 };
+                let mut into_msg_ref_type_pairs = |fields: &[StructField]| {
+                    fmt_in_pairs(
+                        &fields
+                            .iter()
+                            .map(|field| {
+                                "&'x ".to_string()
+                                    + &label_and_msg_type_from_field(field, mode, ctx).1
+                            })
+                            .collect::<Vec<_>>(),
+                        "",
+                        Bracket::Parentheses,
+                    )
+                };
                 let mut into_binding_pairs = |fields: &[StructField]| {
                     fmt_in_pairs(
                         &fields
@@ -1326,9 +1254,41 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                         Bracket::Parentheses,
                     )
                 };
+                let mut into_binding_pairs_only_dependent = |fields: &[StructField]| {
+                    fmt_in_pairs(
+                        &fields
+                            .iter()
+                            .filter_map(|field| match field {
+                                StructField::Dependent { label, .. } => Some(label.to_string()),
+                                _ => None,
+                            })
+                            .collect::<Vec<_>>(),
+                        "",
+                        Bracket::Parentheses,
+                    )
+                };
+                let mut into_binding_pairs_only_dependent_deref = |fields: &[StructField]| {
+                    fmt_in_pairs(
+                        &fields
+                            .iter()
+                            .filter_map(|field| match field {
+                                StructField::Dependent { label, .. } => Some(format!("*{}", label)),
+                                _ => None,
+                            })
+                            .collect::<Vec<_>>(),
+                        "",
+                        Bracket::Parentheses,
+                    )
+                };
                 let fst_msg_type_pairs =
                     build_nested_pairs(fst, &mut into_msg_type_pairs, "(", ")");
+                let fst_msg_ref_type_pairs =
+                    build_nested_pairs(fst, &mut into_msg_ref_type_pairs, "(", ")");
                 let fst_binding_pairs = build_nested_pairs(fst, &mut into_binding_pairs, "(", ")");
+                let fst_binding_pairs_only_dependent =
+                    build_nested_pairs(fst, &mut into_binding_pairs_only_dependent, "(", ")");
+                let fst_binding_pairs_only_dependent_deref =
+                    build_nested_pairs(fst, &mut into_binding_pairs_only_dependent_deref, "(", ")");
                 let (snd_combinator_types, (snd_exprs, snd_code)): (Vec<_>, (Vec<_>, Vec<_>)) = snd
                     .iter()
                     .map(|field| match field {
@@ -1353,22 +1313,14 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                     fmt_in_pairs(&snd_combinator_types, "", Bracket::Parentheses);
                 let snd_exprs = fmt_in_pairs(&snd_exprs, "", Bracket::Parentheses);
                 let snaked_name = upper_camel_to_snake(name);
-                let (lifetime_ann, phantom, phantom_data) = match mode {
-                    Mode::Exec(LifetimeAnn::Some) => {
-                        ("<'a>", "(PhantomData<&'a ()>)", "(PhantomData)")
-                    }
-                    _ => ("", "", ""),
-                };
                 let expr = match mode {
                     Mode::Spec => {
                         format!(
-                            r#"SpecPair {{ fst: {fst_expr}, snd: |deps| spec_{snaked_name}_cont{depth}(deps) }}"#,
+                            r#"Pair::spec_new({fst_expr}, |deps| spec_{snaked_name}_cont{depth}(deps))"#,
                         )
                     }
                     _ => {
-                        format!(
-                            r#"Pair {{ fst: {fst_expr}, snd: {name}Cont{depth}::new(), spec_snd: Ghost(|deps| spec_{snaked_name}_cont{depth}(deps)) }}"#,
-                        )
+                        format!(r#"Pair::new({fst_expr}, {name}Cont{depth})"#,)
                     }
                 };
                 let additional_code = match mode {
@@ -1378,30 +1330,48 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
 pub open spec fn spec_{snaked_name}_cont{depth}(deps: {fst_msg_type_pairs}) -> {snd_combinator_types} {{
     let {fst_binding_pairs} = deps;
     {snd_exprs}
-}}"#
+}}
+
+impl View for {name}Cont{depth} {{
+    type V = spec_fn({fst_msg_type_pairs}) -> {snd_combinator_types};
+
+    open spec fn view(&self) -> Self::V {{
+        |deps: {fst_msg_type_pairs}| {{
+            spec_{snaked_name}_cont{depth}(deps)
+        }}
+    }}
+}}
+"#
                         )
                     }
                     _ => {
                         format!(
                             r#"
-pub struct {name}Cont{depth}{lifetime_ann}{phantom};
-impl{lifetime_ann} {name}Cont{depth}{lifetime_ann} {{
-    pub fn new() -> Self {{
-        {name}Cont{depth}{phantom_data}
-    }}
-}}
-impl{lifetime_ann} Continuation<&{fst_msg_type_pairs}> for {name}Cont{depth}{lifetime_ann} {{
+pub struct {name}Cont{depth};
+type {name}Cont{depth}Type<'a, 'b> = &'b {fst_msg_type_pairs};
+type {name}Cont{depth}SType<'a, 'x> = {fst_msg_ref_type_pairs};
+type {name}Cont{depth}Input<'a, 'b, 'x> = POrSType<{name}Cont{depth}Type<'a, 'b>, {name}Cont{depth}SType<'a, 'x>>;
+impl<'a, 'b, 'x> Continuation<{name}Cont{depth}Input<'a, 'b, 'x>> for {name}Cont{depth} {{
     type Output = {snd_combinator_types};
 
-    open spec fn requires(&self, deps: &{fst_msg_type_pairs}) -> bool {{ true }}
+    open spec fn requires(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>) -> bool {{ true }}
 
-    open spec fn ensures(&self, deps: &{fst_msg_type_pairs}, o: Self::Output) -> bool {{
+    open spec fn ensures(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>, o: Self::Output) -> bool {{
         o@ == spec_{snaked_name}_cont{depth}(deps@)
     }}
 
-    fn apply(&self, deps: &{fst_msg_type_pairs}) -> Self::Output {{
-        let {fst_binding_pairs} = *deps;
-        {snd_exprs}
+    fn apply(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>) -> Self::Output {{
+        match deps {{
+            POrSType::P(deps) => {{
+                let {fst_binding_pairs} = *deps;
+                {snd_exprs}
+            }}
+            POrSType::S(deps) => {{
+                let {fst_binding_pairs} = deps;
+                let {fst_binding_pairs_only_dependent} = {fst_binding_pairs_only_dependent_deref};
+                {snd_exprs}
+            }}
+        }}
     }}
 }}"#
                         )
@@ -1410,17 +1380,13 @@ impl{lifetime_ann} Continuation<&{fst_msg_type_pairs}> for {name}Cont{depth}{lif
                 (expr, fst_code + &snd_code.join("") + &additional_code)
             }
         }
-        let mapper_new = match mode {
-            Mode::Spec => "::spec_new()",
-            _ => "::new()",
-        };
         let (inner, additional_code) = gen_combinator_expr_helper(&self.0, name, mode, ctx, 0);
         (
             format!(
                 r#"
     Mapped {{
         inner: {inner},
-        mapper: {name}Mapper{mapper_new},
+        mapper: {name}Mapper,
     }}"#,
             ),
             additional_code,
@@ -1437,11 +1403,13 @@ impl Codegen for EnumCombinator {
                     panic!("`Enum` should be a top-level definition")
                 } else {
                     // alias to the inferred type
-                    let alias_name = match mode {
-                        Mode::Spec => format!("Spec{}", name),
-                        Mode::Exec(..) => name.to_string(),
-                    };
-                    format!("pub type {} = {};\n", alias_name, inferred)
+                    match mode {
+                        Mode::Spec => format!("pub type Spec{name} = {inferred};\n"),
+                        Mode::Exec(..) => {
+                            format!("pub type {name} = {inferred};\n")
+                                + &format!("pub type {name}Ref<'a> = &'a {inferred};\n")
+                        }
+                    }
                 }
             }
             EnumCombinator::Exhaustive { enums } => {
@@ -1458,6 +1426,20 @@ impl Codegen for EnumCombinator {
                             .map(|e| format!("{e}"))
                             .collect::<Vec<_>>()
                             .join(",\n");
+                        let spec_const_decl = enums
+                            .iter()
+                            .map(|Enum { name, value }| {
+                                format!("pub spec const SPEC_{msg_type_name}_{name}: {inferred} = {value};")
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n");
+                        let exec_static_decl = enums
+                            .iter()
+                            .map(|Enum { name, value }| {
+                                format!("pub exec static EXEC_{msg_type_name}_{name}: {inferred} ensures EXEC_{msg_type_name}_{name} == SPEC_{msg_type_name}_{name} {{ {value} }}")
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n");
                         let try_from_int_match_arms = enums
                             .iter()
                             .map(|Enum { name, value }| {
@@ -1465,15 +1447,27 @@ impl Codegen for EnumCombinator {
                             })
                             .collect::<Vec<_>>()
                             .join("\n            ");
-                        let try_from_enum_match_arms = enums
+                        let (spec_try_from_enum_match_arms, try_from_enum_match_arms): (
+                            Vec<_>,
+                            Vec<_>,
+                        ) = enums
                             .iter()
                             .map(|Enum { name, value }| {
-                                format!("{}::{} => Ok({}{}),", msg_type_name, name, value, inferred)
+                                (
+                                    format!("{msg_type_name}::{name} => Ok(SPEC_{msg_type_name}_{name}),",),
+                                    format!("{msg_type_name}::{name} => Ok(&EXEC_{msg_type_name}_{name}),",),
+                                )
                             })
-                            .collect::<Vec<_>>()
-                            .join("\n            ");
+                            .unzip();
+                        let (spec_try_from_enum_match_arms, try_from_enum_match_arms) = (
+                            spec_try_from_enum_match_arms.join("\n            "),
+                            try_from_enum_match_arms.join("\n            "),
+                        );
                         format!(
                             r#"
+{spec_const_decl}
+{exec_static_decl}
+
 #[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum {msg_type_name} {{
     {enum_variants}
@@ -1481,6 +1475,8 @@ pub enum {msg_type_name} {{
 pub type Spec{msg_type_name} = {msg_type_name};
 
 pub type {msg_type_name}Inner = {inferred};
+
+pub type {msg_type_name}InnerRef<'a> = &'a {inferred};
 "#
                         ) + &(if matches!(ctx.flags, CodegenOpts::All | CodegenOpts::Impls) {
                             format!(
@@ -1509,7 +1505,7 @@ impl SpecTryFrom<{msg_type_name}> for {msg_type_name}Inner {{
 
     open spec fn spec_try_from(v: {msg_type_name}) -> Result<{msg_type_name}Inner, ()> {{
         match v {{
-            {try_from_enum_match_arms}
+            {spec_try_from_enum_match_arms}
         }}
     }}
 }}
@@ -1525,10 +1521,10 @@ impl TryFrom<{msg_type_name}Inner> for {msg_type_name} {{
     }}
 }}
 
-impl TryFrom<{msg_type_name}> for {msg_type_name}Inner {{
+impl<'a> TryFrom<&'a {msg_type_name}> for {msg_type_name}InnerRef<'a> {{
     type Error = ();
 
-    fn ex_try_from(v: {msg_type_name}) -> Result<{msg_type_name}Inner, ()> {{
+    fn ex_try_from(v: &'a {msg_type_name}) -> Result<{msg_type_name}InnerRef<'a>, ()> {{
         match v {{
             {try_from_enum_match_arms}
         }}
@@ -1568,9 +1564,10 @@ impl SpecPartialIsoProof for {msg_type_name}Mapper {{
     }}
 }}
 
-impl PartialIso for {msg_type_name}Mapper {{
+impl<'a> PartialIso<'a> for {msg_type_name}Mapper {{
     type Src = {msg_type_name}Inner;
     type Dst = {msg_type_name};
+    type RefSrc = {msg_type_name}InnerRef<'a>;
 }}
 "#
                             )
@@ -1713,21 +1710,28 @@ impl Codegen for ChoiceCombinator {
             "Either",
             Bracket::Angle,
         );
+        let ref_structural_sum = fmt_in_pairs(
+            &variants
+                .iter()
+                .map(|(_, variant_type)| format!("&'a {}", variant_type))
+                .collect::<Vec<_>>(),
+            "Either",
+            Bracket::Angle,
+        );
         // impl View for exec enums
-        let impl_view = match mode {
-            Mode::Exec(_) => {
-                let impl_view_body = variants
-                    .iter()
-                    .map(|(label, variant_type)| {
-                        format!(
-                            "            {}::{}(m) => Spec{}::{}(m@),",
-                            msg_type_name, label, name, label
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                format!(
-                    r#"
+        let impl_view = {
+            let impl_view_body = variants
+                .iter()
+                .map(|(label, variant_type)| {
+                    format!(
+                        "            {}::{}(m) => Spec{}::{}(m@),",
+                        msg_type_name, label, name, label
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!(
+                r#"
 impl{lifetime_ann} View for {msg_type_name}{lifetime_ann} {{
     type V = Spec{msg_type_name};
     open spec fn view(&self) -> Self::V {{
@@ -1737,9 +1741,7 @@ impl{lifetime_ann} View for {msg_type_name}{lifetime_ann} {{
     }}
 }}
 "#
-                )
-            }
-            Mode::Spec => "".to_string(),
+            )
         };
         // impl (Spec)From
         let trait_name = match mode {
@@ -1773,7 +1775,7 @@ impl{lifetime_ann} View for {msg_type_name}{lifetime_ann} {{
                 )
             }
             Mode::Exec(_) => format!(
-                r#"    fn {assoc_func_name}(m: {msg_type_name}{lifetime_ann}) -> {msg_type_name}Inner{lifetime_ann} {{
+                r#"    fn {assoc_func_name}(m: &'a {msg_type_name}{lifetime_ann}) -> {msg_type_name}InnerRef<'a> {{
         match m {{
 {impl_inner_from_body}
         }}
@@ -1817,15 +1819,35 @@ impl{lifetime_ann} View for {msg_type_name}{lifetime_ann} {{
 
 pub type {msg_type_name}Inner{lifetime_ann} = {structural_sum};
 "#
-        ) + &(if matches!(ctx.flags, CodegenOpts::All | CodegenOpts::Impls) {
+        ) + &(if matches!(mode, Mode::Exec(_)) {
             format!(
                 r#"
-{impl_view}
-
-impl{lifetime_ann} {trait_name}<{msg_type_name}{lifetime_ann}> for {msg_type_name}Inner{lifetime_ann} {{
+pub type {msg_type_name}InnerRef<'a> = {ref_structural_sum};
+"#
+            )
+        } else {
+            "".to_string()
+        }) + &(if matches!(ctx.flags, CodegenOpts::All | CodegenOpts::Impls) {
+            (match mode {
+                Mode::Spec => format!(
+                    r#"
+impl {trait_name}<{msg_type_name}{lifetime_ann}> for {msg_type_name}Inner {{
 {impl_inner_from}
 }}
 
+                "#
+                ),
+                Mode::Exec(_) => format!(
+                    r#"
+{impl_view}
+
+impl<'a> {trait_name}<&'a {msg_type_name}{lifetime_ann}> for {msg_type_name}InnerRef<'a> {{
+{impl_inner_from}
+}}
+"#
+                ),
+            }) + &format!(
+                r#"
 impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_type_name}{lifetime_ann} {{
 {impl_from_inner}
 }}
@@ -1939,16 +1961,47 @@ impl DisjointFrom<{}> for {} {{
             "".to_string()
         };
         (
-            format!("Mapped<{}, {}Mapper{}>", inner, name, lifetime_ann_mapper),
+            format!("Mapped<{}, {}Mapper>", inner, name),
             additional_code.join("") + &disjointness_proof,
         )
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        let mapper_new = match mode {
-            Mode::Spec => "::spec_new()",
-            _ => "::new()",
-        };
+        fn pattern_to_boolexpr(
+            pattern: &ConstraintElem,
+            mode: Mode,
+            depend_id: &str,
+            spec_cast: &str,
+            cast: &str,
+        ) -> String {
+            match pattern {
+                ConstraintElem::Range { start, end } => match (start, end) {
+                    (Some(start), Some(end)) => match mode {
+                        Mode::Spec => format!(
+                            "{}{} >= {} && {}{} <= {}",
+                            depend_id, spec_cast, start, depend_id, spec_cast, end
+                        ),
+                        _ => format!(
+                            "{}{} >= {} && {}{} <= {}",
+                            depend_id, cast, start, depend_id, cast, end
+                        ),
+                    },
+                    (Some(start), None) => match mode {
+                        Mode::Spec => format!("{}{} >= {}", depend_id, spec_cast, start),
+                        _ => format!("{}{} >= {}", depend_id, cast, start),
+                    },
+                    (None, Some(end)) => match mode {
+                        Mode::Spec => format!("{}{} <= {}", depend_id, spec_cast, end),
+                        _ => format!("{}{} <= {}", depend_id, cast, end),
+                    },
+                    (None, None) => unreachable!(),
+                },
+                ConstraintElem::Single(value) => match mode {
+                    Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
+                    _ => format!("{}{} == {}", depend_id, cast, value),
+                },
+            }
+        }
         let (combinator_exprs, additional_code): (Vec<String>, Vec<String>) = match &self.depend_id
         {
             Some(depend_id) => {
@@ -2049,7 +2102,35 @@ impl DisjointFrom<{}> for {} {{
                                     )
                                 })
                                 .unzip(),
-                            Choices::Ints(..) | Choices::Arrays(..) => unreachable!(),
+                            Choices::Ints(ints)=> ints
+                                .iter()
+                                .map(|(variant, combinator)| {
+                                    let (inner, code) =
+                                        combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
+                                    let bool_exp = match variant {
+                                        Some(pattern) => {
+                                            pattern_to_boolexpr(pattern, mode, depend_id, "", "")
+                                        }
+                                        None => {
+                                             // default case; the negation of all other cases
+                                             let other_variants = ints
+                                                 .iter()
+                                                 .filter_map(|(variant, _)| {
+                                                    variant.as_ref().map(|variant| {
+                                                        pattern_to_boolexpr(variant, mode, depend_id, "", "")
+                                                    })
+                                                 })
+                                                 .collect::<Vec<_>>();
+                                             format!("!({})", other_variants.join(" || "))
+                                        }
+                                    };
+                                    (
+                                        format!("Cond {{ cond: {}, inner: {} }}", bool_exp, inner),
+                                        code,
+                                    )
+                                })
+                                .unzip(),
+                            Choices::Arrays(..) => unreachable!(),
                         }
                     }
                     // bytes
@@ -2114,45 +2195,6 @@ impl DisjointFrom<{}> for {} {{
                                         IntCombinator::BtcVarint => (".spec_as_usize()", ".as_usize()"),
                                         _ => ("", ""),
                                     };
-                                    fn pattern_to_boolexpr(
-                                        pattern: &ConstraintElem,
-                                        mode: Mode,
-                                        depend_id: &str,
-                                        spec_cast: &str,
-                                        cast: &str,
-                                    ) -> String {
-                                        match pattern {
-                                            ConstraintElem::Range { start, end } => {
-                                                match (start, end) {
-                                                    (Some(start), Some(end)) => {
-                                                        match mode {
-                                                            Mode::Spec => format!("{}{} >= {} && {}{} <= {}", depend_id, spec_cast, start, depend_id, spec_cast, end),
-                                                            _ => format!("{}{} >= {} && {}{} <= {}", depend_id, cast, start, depend_id, cast, end)
-                                                        }
-                                                    }
-                                                    (Some(start), None) => {
-                                                        match mode {
-                                                            Mode::Spec => format!("{}{} >= {}", depend_id, spec_cast, start),
-                                                            _ => format!("{}{} >= {}", depend_id, cast, start)
-                                                        }
-                                                    }
-                                                    (None, Some(end)) => {
-                                                        match mode {
-                                                            Mode::Spec => format!("{}{} <= {}", depend_id, spec_cast, end),
-                                                            _ => format!("{}{} <= {}", depend_id, cast, end)
-                                                        }
-                                                    }
-                                                    (None, None) => unreachable!()
-                                                }
-                                            }
-                                            ConstraintElem::Single(value) => {
-                                                match mode {
-                                                    Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
-                                                    _ => format!("{}{} == {}", depend_id, cast, value)
-                                                }
-                                            }
-                                        }
-                                    }
                                     let bool_exp = match variant {
                                         Some(pattern) => {
                                             pattern_to_boolexpr(pattern, mode, depend_id, spec_cast, cast)
@@ -2208,41 +2250,26 @@ impl DisjointFrom<{}> for {} {{
             ord_choice_constructor,
             Bracket::Parentheses,
         );
-        let combinator_expr = format!(
-            "Mapped {{ inner: {}, mapper: {}Mapper{} }}",
-            inner, name, mapper_new
-        );
+        let combinator_expr = format!("Mapped {{ inner: {}, mapper: {}Mapper }}", inner, name);
         (combinator_expr, additional_code.join(""))
     }
 }
 
 fn gen_mapper(name: &str, msg_type_name: &str, lifetime_ann: &str) -> String {
-    let (phantom, phantom_data, inferred_lifetime) = match lifetime_ann {
-        "" => ("", "", ""),
-        _ => ("(PhantomData<&'a ()>)", "(PhantomData)", "<'_>"),
-    };
     format!(
         r#"
-pub struct {name}Mapper{lifetime_ann}{phantom};
-impl{lifetime_ann} {name}Mapper{lifetime_ann} {{
-    pub closed spec fn spec_new() -> Self {{
-        {name}Mapper{phantom_data}
-    }}
-    pub fn new() -> Self {{
-        {name}Mapper{phantom_data}
-    }}
-}}
-impl View for {name}Mapper{inferred_lifetime} {{
+pub struct {name}Mapper;
+impl View for {name}Mapper {{
     type V = Self;
     open spec fn view(&self) -> Self::V {{
         *self
     }}
 }}
-impl SpecIso for {name}Mapper{inferred_lifetime} {{
+impl SpecIso for {name}Mapper {{
     type Src = Spec{name}Inner;
     type Dst = Spec{name};
 }}
-impl SpecIsoProof for {name}Mapper{inferred_lifetime} {{
+impl SpecIsoProof for {name}Mapper {{
     proof fn spec_iso(s: Self::Src) {{
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }}
@@ -2250,9 +2277,10 @@ impl SpecIsoProof for {name}Mapper{inferred_lifetime} {{
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }}
 }}
-impl{lifetime_ann} Iso for {name}Mapper{lifetime_ann} {{
+impl<'a> Iso<'a> for {name}Mapper {{
     type Src = {msg_type_name}Inner{lifetime_ann};
     type Dst = {msg_type_name}{lifetime_ann};
+    type RefSrc = {msg_type_name}InnerRef<'a>;
 }}"#
     )
 }
@@ -2270,12 +2298,17 @@ impl Codegen for ArrayCombinator {
         if !ctx.top_level {
             type_name
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
-                Mode::Exec(LifetimeAnn::None) => name,
-            };
-            format!("pub type {} = {};\n", type_alias_name, type_name)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {type_name};\n"),
+                Mode::Exec(LifetimeAnn::Some) => {
+                    format!("pub type {name}<'a> = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+                Mode::Exec(LifetimeAnn::None) => {
+                    format!("pub type {name} = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+            }
         }
     }
 
@@ -2329,12 +2362,17 @@ impl Codegen for VecCombinator {
         if !ctx.top_level {
             type_name
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
-                Mode::Exec(LifetimeAnn::None) => name,
-            };
-            format!("pub type {} = {};\n", type_alias_name, type_name)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {type_name};\n"),
+                Mode::Exec(LifetimeAnn::Some) => {
+                    format!("pub type {name}<'a> = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+                Mode::Exec(LifetimeAnn::None) => {
+                    format!("pub type {name} = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+            }
         }
     }
 
@@ -2394,12 +2432,17 @@ impl Codegen for WrapCombinator {
         if !ctx.top_level {
             inner.to_string()
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
-                Mode::Exec(LifetimeAnn::None) => name,
-            };
-            format!("pub type {} = {};\n", type_alias_name, inner)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {inner};\n"),
+                Mode::Exec(LifetimeAnn::Some) => {
+                    format!("pub type {name}<'a> = {inner};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {inner};\n")
+                }
+                Mode::Exec(LifetimeAnn::None) => {
+                    format!("pub type {name} = {inner};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {inner};\n")
+                }
+            }
         }
     }
 
@@ -2559,12 +2602,17 @@ impl Codegen for OptionCombinator {
         if !ctx.top_level {
             type_name
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(LifetimeAnn::Some) => &format!("{}{}", name, "<'a>"),
-                Mode::Exec(LifetimeAnn::None) => name,
-            };
-            format!("pub type {} = {};\n", type_alias_name, type_name)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {type_name};\n"),
+                Mode::Exec(LifetimeAnn::Some) => {
+                    format!("pub type {name}<'a> = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+                Mode::Exec(LifetimeAnn::None) => {
+                    format!("pub type {name} = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+            }
         }
     }
 
@@ -2624,14 +2672,13 @@ impl Codegen for ConstCombinator {
                 if !ctx.top_level {
                     format!("{}{}", invocked, lifetime)
                 } else {
-                    let name = match mode {
-                        Mode::Spec => format!("Spec{}", name),
-                        Mode::Exec(_) => name.to_owned(),
-                    };
-                    format!(
-                        "pub type {}{} = {}{};\n",
-                        name, lifetime, invocked, lifetime
-                    )
+                    match mode {
+                        Mode::Spec => format!("pub type Spec{name} = {};\n", invocked),
+                        Mode::Exec(..) => {
+                            format!("pub type {name}{lifetime} = {invocked}{lifetime};\n",)
+                                + &format!("pub type {name}Ref<'a> = &'a {invocked}{lifetime};\n")
+                        }
+                    }
                 }
             }
         }
@@ -2651,19 +2698,10 @@ impl Codegen for ConstCombinator {
             ConstCombinator::ConstStruct(..) => todo!(),
             ConstCombinator::ConstChoice(..) => todo!(),
             ConstCombinator::ConstCombinatorInvocation(name) => {
-                let lifetime_ann = ctx.combinator_lifetimes.get(name).unwrap_or_else(|| {
-                    panic!(
-                        "format lifetime not found for combinator invocation: {}",
-                        name
-                    )
-                });
                 let invocked = snake_to_upper_caml(name);
                 match mode {
                     Mode::Spec => (format!("Spec{invocked}Combinator"), "".to_string()),
-                    _ => (
-                        format!("{invocked}Combinator{lifetime_ann}"),
-                        "".to_string(),
-                    ),
+                    _ => (format!("{invocked}Combinator"), "".to_string()),
                 }
             }
         };
@@ -2713,12 +2751,13 @@ impl Codegen for ConstIntCombinator {
         if !ctx.top_level {
             int_type
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(_) => name,
-            };
-
-            format!("pub type {} = {};\n", type_alias_name, int_type)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {int_type};\n"),
+                Mode::Exec(..) => {
+                    format!("pub type {name} = {int_type};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {int_type};\n")
+                }
+            }
         }
     }
 
@@ -2791,11 +2830,13 @@ impl Codegen for ConstBytesCombinator {
         if !ctx.top_level {
             type_name
         } else {
-            let type_alias_name = match mode {
-                Mode::Spec => &format!("Spec{}", name),
-                Mode::Exec(_) => &format!("{}{}", name, "<'a>"),
-            };
-            format!("pub type {} = {};\n", type_alias_name, type_name)
+            match mode {
+                Mode::Spec => format!("pub type Spec{name} = {type_name};\n"),
+                Mode::Exec(..) => {
+                    format!("pub type {name}<'a> = {type_name};\n")
+                        + &format!("pub type {name}Ref<'a> = &'a {type_name};\n")
+                }
+            }
         }
     }
 
@@ -2855,8 +2896,14 @@ impl Codegen for ConstBytesCombinator {
         //         );
         if ctx.wrap {
             match mode {
-                Mode::Spec => (format!("Tag<bytes::Fixed<{}>, Seq<u8>>", len), spec_const_decl),
-                _ => (format!("Tag<bytes::Fixed<{}>, &'a [u8]>", len), exec_const_decl),
+                Mode::Spec => (
+                    format!("Tag<bytes::Fixed<{}>, Seq<u8>>", len),
+                    spec_const_decl,
+                ),
+                _ => (
+                    format!("Tag<bytes::Fixed<{}>, [u8; {len}]>", len),
+                    exec_const_decl,
+                ),
             }
         } else {
             match mode {
@@ -2865,7 +2912,7 @@ impl Codegen for ConstBytesCombinator {
                     spec_const_decl,
                 ),
                 _ => (
-                    format!("Refined<bytes::Fixed<{}>, TagPred<&'a [u8]>>", len),
+                    format!("Refined<bytes::Fixed<{}>, TagPred<[u8; {len}]>>", len),
                     exec_const_decl,
                 ),
             }
@@ -2877,7 +2924,7 @@ impl Codegen for ConstBytesCombinator {
         let combinator_expr = if ctx.wrap {
             match mode {
                 Mode::Spec => format!("Tag::spec_new(bytes::Fixed::<{}>, SPEC_{})", self.len, name),
-                _ => format!("Tag::new(bytes::Fixed::<{}>, {}.as_slice())", self.len, name),
+                _ => format!("Tag::new(bytes::Fixed::<{}>, {})", self.len, name),
             }
         } else {
             match mode {
@@ -2886,7 +2933,7 @@ impl Codegen for ConstBytesCombinator {
                     self.len, name
                 ),
                 _ => format!(
-                    "Refined {{ inner: bytes::Fixed::<{}>, predicate: TagPred({}.as_slice()) }}",
+                    "Refined {{ inner: bytes::Fixed::<{}>, predicate: TagPred({}) }}",
                     self.len, name
                 ),
             }
@@ -2908,7 +2955,6 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Stri
     let mut code = String::new();
     let ast = filter_endianess(ast);
     let msg_lifetimes = &codegen_ctx.msg_lifetimes.clone();
-    let combinator_lifetimes = &codegen_ctx.combinator_lifetimes.clone();
     for defn in &ast {
         let msg_lifetime_ann = msg_lifetimes
             .get(match defn {
@@ -2917,31 +2963,13 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Stri
                 _ => unimplemented!(),
             })
             .unwrap();
-        let combinator_lifetime_ann = combinator_lifetimes
-            .get(match defn {
-                Definition::Combinator { name, .. } => name,
-                Definition::ConstCombinator { name, .. } => name,
-                _ => unimplemented!(),
-            })
-            .unwrap();
         gen_msg_type_for_definition(defn, &mut code, *msg_lifetime_ann, &codegen_ctx);
-        gen_combinator_type_for_definition(
-            defn,
-            &mut code,
-            *combinator_lifetime_ann,
-            &mut codegen_ctx,
-        );
-        gen_combinator_expr_for_definition(
-            defn,
-            &mut code,
-            *combinator_lifetime_ann,
-            &mut codegen_ctx,
-        );
+        gen_combinator_type_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
+        gen_combinator_expr_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
     }
     "#![allow(warnings)]\n#![allow(unused)]\n".to_string()
         + "use std::marker::PhantomData;\n"
         + "use vstd::prelude::*;\n"
-
         + "use vest::regular::modifier::*;\n"
         + "use vest::regular::bytes;\n"
         + "use vest::regular::variant::*;\n"
@@ -3084,7 +3112,7 @@ pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
                     );
                     code.push_str(&format!(
                         r#"
-pub fn {name}{lifetime_ann}() -> (o: {upper_caml_name}Combinator{lifetime_ann})
+pub fn {name}() -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}(),
 {{
     {upper_caml_name}Combinator({expr})
@@ -3155,7 +3183,7 @@ pub closed spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator
                     );
                     code.push_str(&format!(
                         r#"
-pub fn {name}<'a>({exec_params}) -> (o: {upper_caml_name}Combinator{lifetime_ann})
+pub fn {name}<'a>({exec_params}) -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}({args_view}),
 {{
     {upper_caml_name}Combinator({expr})
@@ -3191,7 +3219,7 @@ pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
                 );
                 code.push_str(&format!(
                     r#"
-pub fn {name}{lifetime_ann}() -> (o: {upper_caml_name}Combinator{lifetime_ann})
+pub fn {name}() -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}(),
 {{
     {expr}
