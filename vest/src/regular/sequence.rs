@@ -244,12 +244,9 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
 
     type SType = (Fst::SType, Snd::SType);
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        let snd = self.snd.apply(POrSType::S(v.0));
+        self.fst.length(v.0) + snd.length(v.1)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -348,36 +345,8 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
 
     type SType = (Fst::SType, Snd::SType);
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        if let Some(n) = self.0.spec_length() {
-            if let Some(m) = self.1.spec_length() {
-                if n <= usize::MAX - m {
-                    Some((n + m) as usize)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn length(&self) -> Option<usize> {
-        if let Some(n) = self.0.length() {
-            if let Some(m) = self.1.length() {
-                if n <= usize::MAX - m {
-                    Some(n + m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    fn length(&self, v: Self::SType) -> usize {
+        self.0.length(v.0) + self.1.length(v.1)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -499,12 +468,8 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Preceded<Fst, Snd> where
 
     type SType = Snd::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        (self.0, self.1).spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        (&self.0, &self.1).length()
+    fn length(&self, v: Self::SType) -> usize {
+        (&self.0, &self.1).length(((), v))
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -615,12 +580,8 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Terminated<Fst, Snd> where
 
     type SType = Fst::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        (self.0, self.1).spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        (&self.0, &self.1).length()
+    fn length(&self, v: Self::SType) -> usize {
+        (&self.0, &self.1).length((v, ()))
     }
 
     open spec fn ex_requires(&self) -> bool {

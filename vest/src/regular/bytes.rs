@@ -97,12 +97,8 @@ impl<'x, I, O> Combinator<'x, I, O> for Variable where I: VestInput + 'x, O: Ves
 
     type SType = &'x I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(self.0)
+    fn length(&self, v: Self::SType) -> usize {
+        self.0
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -198,12 +194,8 @@ impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N> where
 
     type SType = &'x I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(N)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(N)
+    fn length(&self, v: Self::SType) -> usize {
+        N
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -283,12 +275,8 @@ impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
 
     type SType = &'x I;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        v.len()
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {

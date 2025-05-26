@@ -60,12 +60,8 @@ impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for Fail {
 
     type SType = ();
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(0)
+    fn length(&self, _v: Self::SType) -> usize {
+        0
     }
 
     fn parse(&self, _s: I) -> (res: Result<(usize, Self::Type), ParseError>) {

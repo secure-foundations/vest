@@ -194,10 +194,10 @@ pub fn set_range<'a>(data: &mut Vec<u8>, i: usize, input: &[u8])
     requires
         0 <= i + input@.len() <= old(data)@.len() <= usize::MAX,
     ensures
-        data@.len() == old(data)@.len() && data@ == old(data)@.subrange(0, i as int).add(
-            input@,
-        ).add(old(data)@.subrange(i + input@.len(), data@.len() as int)),
+        data@.len() == old(data)@.len()
+        && data@ == seq_splice(old(data)@, i, input@),
 {
+    // data[i..i + input.len()].copy_from_slice(input);
     let mut j = 0;
     while j < input.len()
         invariant

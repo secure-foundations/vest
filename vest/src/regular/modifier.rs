@@ -217,12 +217,8 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for Mapped<Inner, M> where
 
     type SType = &'x M::Dst;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: Self::SType) -> usize {
+        self.inner.length(M::rev_apply(v))
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -501,12 +497,8 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
 
     type SType = &'x M::Dst;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: Self::SType) -> usize {
+        self.inner.length(M::rev_apply(v).unwrap())
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -643,12 +635,8 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
 
     type SType = Inner::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.inner.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.inner.length()
+    fn length(&self, v: Self::SType) -> usize {
+        self.inner.length(v)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -757,20 +745,8 @@ impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator
 
     type SType = Inner::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        if self.cond@ {
-            self.inner.spec_length()
-        } else {
-            None
-        }
-    }
-
-    fn length(&self) -> Option<usize> {
-        if self.cond {
-            self.inner.length()
-        } else {
-            None
-        }
+    fn length(&self, v: Self::SType) -> usize {
+        self.inner.length(v)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -891,14 +867,8 @@ impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Vari
 
     type SType = Next::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        // self.0.spec_length()
-        <_ as Combinator<I, O>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        // self.0.length()
-        <_ as Combinator<I, O>>::length(&self.0)
+    fn length(&self, _v: Self::SType) -> usize {
+        self.0.0
     }
 
     open spec fn ex_requires(&self) -> bool {

@@ -169,12 +169,11 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
 
     type SType = Either<Fst::SType, Snd::SType>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        match v {
+            Either::Left(v) => self.0.length(v),
+            Either::Right(v) => self.1.length(v),
+        }
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -356,12 +355,11 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
 
     type SType = &'x Self::Type;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        match &v.0 {
+            Some(v) => self.0.length(v),
+            None => 0,
+        }
     }
 
     open spec fn ex_requires(&self) -> bool {

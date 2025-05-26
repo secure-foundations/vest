@@ -262,12 +262,26 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
 
     type SType = &'x RepeatResult<C::Type>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    #[verifier::external_body]
+    fn length(&self, vs: Self::SType) -> usize {
+        let mut len = 0;
+        for i in 0..vs.0.len()
+            invariant
+                0 <= i <= vs.0.len(),
+                self@.wf(vs@),
+                self.ex_requires(),
+                self@.requires(),
+                self@.spec_serialize(vs@).len() <= usize::MAX,
+                // self@.0.spec_serialize(vs@[i as int]).len() <= usize::MAX,
+                len == self@.spec_serialize(vs@.take(i as int)).len(),
+        {
+            let v = &vs.0[i];
+            assert(v@ == vs@[i as int]);
+            assert(vs@.take((i + 1) as int).drop_last() == vs@.take(i as int));
+            len += self.0.length(v);
+        }
+        assert(vs@.take(vs.0.len() as int) == vs@);
+        len
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -539,12 +553,13 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for Repeat<C> where
 
     type SType = &'x RepeatResult<C::Type>;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    #[verifier::external_body]
+    fn length(&self, vs: Self::SType) -> usize {
+        let mut len = 0;
+        for i in 0..vs.0.len() {
+            len += self.0.length(&vs.0[i]);
+        }
+        len
     }
 
     open spec fn ex_requires(&self) -> bool {

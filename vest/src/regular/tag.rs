@@ -1,4 +1,9 @@
-use super::{bytes, leb128::{UnsignedLEB128, UInt}, modifier::{Pred, Refined, SpecPred}, uints::*};
+use super::{
+    bytes,
+    leb128::{UInt, UnsignedLEB128},
+    modifier::{Pred, Refined, SpecPred},
+    uints::*,
+};
 use crate::properties::*;
 use vstd::prelude::*;
 
@@ -147,12 +152,8 @@ macro_rules! impl_combinator_for_uint_tag {
 
                 type SType = ();
 
-                open spec fn spec_length(&self) -> Option<usize> {
-                    <_ as Combinator<'x, I, O>>::spec_length(&self.0)
-                }
-
-                fn length(&self) -> Option<usize> {
-                    <_ as Combinator<'x, I, O>>::length(&self.0)
+                fn length(&self, v: Self::SType) -> usize {
+                    <_ as Combinator<I, O>>::length(&self.0, &self.0.predicate.0)
                 }
 
                 open spec fn ex_requires(&self) -> bool {
@@ -173,28 +174,33 @@ macro_rules! impl_combinator_for_uint_tag {
 }
 
 impl_combinator_for_uint_tag!(U8, u8);
+
 impl_combinator_for_uint_tag!(U16Le, u16);
+
 // impl_combinator_for_uint_tag!(U24Le, u24);
 impl_combinator_for_uint_tag!(U32Le, u32);
+
 impl_combinator_for_uint_tag!(U64Le, u64);
+
 impl_combinator_for_uint_tag!(U16Be, u16);
+
 // impl_combinator_for_uint_tag!(U24Be, u24);
 impl_combinator_for_uint_tag!(U32Be, u32);
+
 impl_combinator_for_uint_tag!(U64Be, u64);
+
 impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
 
-impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<bytes::Fixed::<N>, [u8; N]> where
-{
+impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<
+    bytes::Fixed::<N>,
+    [u8; N],
+> where  {
     type Type = ();
 
     type SType = ();
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<'x, &'x [u8], Vec<u8>>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<'x, &'x [u8], Vec<u8>>>::length(&self.0)
+    fn length(&self, _v: Self::SType) -> usize {
+        N
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -206,7 +212,10 @@ impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<bytes::Fixed:
         Ok((n, ()))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> Result<
+        usize,
+        SerializeError,
+    > {
         self.0.serialize(&self.0.predicate.0.as_slice(), data, pos)
     }
 }

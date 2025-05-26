@@ -314,14 +314,17 @@ impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128 where
 
     type SType = &'x UInt;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None  // TODO
+    #[verifier::external_body]
+    fn length(&self, v: Self::SType) -> usize {
+        let mut acc = 0;
+        let mut v = *v;
 
-    }
+        while v > 0 {
+            acc += 1;
+            v >>= 7;
+        }
 
-    fn length(&self) -> Option<usize> {
-        None  // TODO
-
+        acc
     }
 
     fn parse(&self, ss: I) -> (res: PResult<Self::Type, ParseError>) {
