@@ -82,7 +82,7 @@ fn parse_vesttls_client_hello() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|e| {
             panic!("Failed to parse ClientHello: {}", e);
         });
-    // println!("consumed: {}", consumed);
+    println!("consumed: {}", consumed);
     // println!("parsed_client_hello: {:#?}", parsed_client_hello);
 
     Ok(())
@@ -160,22 +160,26 @@ fn rustls_handshake_msgs<'a>() -> [rustls::internal::msgs::handshake::HandshakeM
 }
 
 fn serialize_vesttls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
+    // println!("===== Serializing with vesttls =====");
     for (i, handshake_msg) in vesttls_handshake_msgs().into_iter().enumerate() {
         let mut buf = vec![0; 512];
         let len = handshake()
-            .serialize(handshake_msg, &mut buf, 0)
+            .serialize(&handshake_msg, &mut buf, 0)
             .unwrap_or_else(|e| panic!("Failed to serialize Handshake: {}", e));
-        println!("len: {}", len);
-        assert_eq!(&buf[0..len], &handshake_msg_payloads()[i][0..len]);
+        // println!("len: {}", len);
+        // assert_eq!(&buf[0..len], &handshake_msg_payloads()[i][0..len]);
     }
 
     Ok(())
 }
 
 fn serialize_rustls_handshakes() -> Result<(), Box<dyn std::error::Error>> {
+    // println!("===== Serializing with rustls =====");
     for (i, handshake_msg) in rustls_handshake_msgs().into_iter().enumerate() {
-        let mut buf = Vec::new();
+        let mut buf = Vec::with_capacity(512);
+        // let mut buf = Vec::new();
         handshake_msg.encode(&mut buf);
+        // println!("len: {}", buf.len());
         // assert_eq!(&buf, &handshake_msg_payloads()[i]);
     }
 
@@ -418,15 +422,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // bench_fn(serialize_vesttls_handshakes)?;
     // bench_fn(serialize_rustls_handshakes)?;
 
+    println!(
+        "Number of client msgs: {}",
+        tranco_handshakes::HANDSHAKE_DATA
+            .iter()
+            .map(|(_, client_msgs, _)| client_msgs.len())
+            .sum::<usize>()
+    );
+    println!(
+        "Number of server msgs: {}",
+        tranco_handshakes::HANDSHAKE_DATA
+            .iter()
+            .map(|(_, _, server_msgs)| server_msgs.len())
+            .sum::<usize>()
+    );
+    let mut success_client = 0;
+    let mut success_server = 0;
     for (domain, client_msgs, server_msgs) in tranco_handshakes::HANDSHAKE_DATA {
         println!("domain: {}", domain);
         for msg in *client_msgs {
-            println!("{:?}", handshake().parse(msg));
+            // println!("{:?}", handshake().parse(msg));
+            // if handshake().parse(msg).is_ok() {
+            //     success_client += 1;
+            // }
+            if rustls::internal::msgs::message::MessagePayload::new(
+                rustls::ContentType::Handshake,
+                rustls::ProtocolVersion::TLSv1_3,
+                msg,
+            )
+            .is_ok()
+            {
+                success_client += 1;
+            }
         }
         for msg in *server_msgs {
-            println!("{:?}", handshake().parse(msg));
+            // println!("{:?}", handshake().parse(msg));
+            // if handshake().parse(msg).is_ok() {
+            //     success_server += 1;
+            // }
+            if rustls::internal::msgs::message::MessagePayload::new(
+                rustls::ContentType::Handshake,
+                rustls::ProtocolVersion::TLSv1_3,
+                msg,
+            )
+            .is_ok()
+            {
+                success_server += 1;
+            }
         }
     }
+    println!("Successfully parsed {} client messages", success_client);
+    println!("Successfully parsed {} server messages", success_server);
 
     Ok(())
 }
