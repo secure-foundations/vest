@@ -312,7 +312,7 @@ impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128 where
  {
     type Type = UInt;
 
-    type SType = UInt;
+    type SType = &'x UInt;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None  // TODO
@@ -601,11 +601,11 @@ impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128 where
     }
 
     #[verifier::external_body]
-    fn serialize(&self, v: Self::Type, buf: &mut O, pos: usize) -> (res: SResult<
+    fn serialize(&self, v: Self::SType, buf: &mut O, pos: usize) -> (res: SResult<
         usize,
         SerializeError,
     >) {
-        let mut v = v;
+        let mut v = *v;
         let mut i = 0;
         let mut pos = pos;
 

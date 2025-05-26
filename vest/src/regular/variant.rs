@@ -348,12 +348,13 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Opt<T> where  {
 impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
     I: VestInput,
     O: VestOutput<I>,
-    T: Combinator<'x, I, O>,
+    T: Combinator<'x, I, O, SType = &'x <T as Combinator<'x, I, O>>::Type>,
     T::V: SecureSpecCombinator<Type = <T::Type as View>::V>,
+    T::Type: 'x,
  {
     type Type = Optional<T::Type>;
 
-    type SType = Optional<T::SType>;
+    type SType = &'x Self::Type;
 
     open spec fn spec_length(&self) -> Option<usize> {
         None
@@ -379,7 +380,7 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
         usize,
         SerializeError,
     >) {
-        match v.0 {
+        match &v.0 {
             Some(v) => self.0.serialize(v, data, pos),
             None => {
                 if pos <= data.len() {
