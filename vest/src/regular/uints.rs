@@ -165,12 +165,8 @@ macro_rules! impl_combinator_for_le_uint_type {
 
                 type SType = &'x $int_type;
 
-                open spec fn spec_length(&self) -> Option<usize> {
-                    Some(size_of::<$int_type>())
-                }
-
-                fn length(&self) -> Option<usize> {
-                    Some(size_of::<$int_type>())
+                fn length(&self, _v: Self::SType) -> usize {
+                    size_of::<$int_type>()
                 }
 
                 fn parse(&self, s: I) -> (res: Result<(usize, $int_type), ParseError>) {
@@ -268,12 +264,8 @@ macro_rules! impl_combinator_for_be_uint_type {
 
                 type SType = &'x $int_type;
 
-                open spec fn spec_length(&self) -> Option<usize> {
-                    Some(size_of::<$int_type>())
-                }
-
-                fn length(&self) -> Option<usize> {
-                    Some(size_of::<$int_type>())
+                fn length(&self, _v: Self::SType) -> usize {
+                    size_of::<$int_type>()
                 }
 
                 fn parse(&self, s: I) -> (res: Result<(usize, $int_type), ParseError>) {
@@ -1093,12 +1085,8 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
 
     type SType = &'x u24;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(3)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(3)
+    fn length(&self, v: Self::SType) -> usize {
+        3
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
@@ -1203,12 +1191,8 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
 
     type SType = &'x u24;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(3)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(3)
+    fn length(&self, v: Self::SType) -> usize {
+        3
     }
 
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {

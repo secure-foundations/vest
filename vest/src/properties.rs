@@ -202,14 +202,16 @@ pub trait Combinator<'x, I, O>: View where
     /// this is the tuple/sum of the corresponding [`Combinator::SType`] types.
     type SType: View<V = <Self::Type as View>::V>;
 
-    /// Spec version of [`Self::length`].
-    spec fn spec_length(&self) -> Option<usize>;
-
-    /// The length of the output buffer, if known.
+    /// The length of the output buffer.
     /// This can be used to optimize serialization by pre-allocating the buffer.
-    fn length(&self) -> (res: Option<usize>)
+    fn length(&self, v: Self::SType) -> (len: usize)
+        requires
+            self@.requires(),
+            self.ex_requires(),
+            self@.wf(v@),
+            self@.spec_serialize(v@).len() <= usize::MAX,
         ensures
-            res == self.spec_length(),
+            len == self@.spec_serialize(v@).len(),
     ;
 
     /// Additional pre-conditions for parsing and serialization
@@ -346,12 +348,9 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for &C where
 
     type SType = C::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        (*self).spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        (*self).length()
+    fn length(&self, v: Self::SType) -> usize {
+        assert(self.ex_requires());
+        (*self).length(v)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -429,12 +428,8 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for Box<C> where
 
     type SType = C::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        (**self).spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        (**self).length()
+    fn length(&self, v: Self::SType) -> usize {
+        (**self).length(v)
     }
 
     open spec fn ex_requires(&self) -> bool {

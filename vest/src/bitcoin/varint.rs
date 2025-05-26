@@ -465,12 +465,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BtcVarint {
 
     type SType = &'a VarInt;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        match v {
+            VarInt::U8(_) => 1,
+            VarInt::U16(_) => 3,
+            VarInt::U32(_) => 5,
+            VarInt::U64(_) => 9,
+        }
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
