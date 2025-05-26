@@ -1,77 +1,284 @@
-tst_tag = enum {
-    C0 = 0,
-    C1 = 1,
-    C2 = 2,
-    C3 = 3,
-    C4 = 4,
-    C5 = 5,
-    C6 = 6,
-    C7 = 7,
-    C8 = 8,
-    C9 = 9,
-    C10 = 10,
-    C11 = 11,
-    C12 = 12,
-    C13 = 13,
-    C14 = 14,
-    C15 = 15,
-    C16 = 16,
-    C17 = 17,
-    C18 = 18,
-    C19 = 19,
-    C20 = 20,
-    C21 = 21,
-    C22 = 22,
-    C23 = 23,
-    C24 = 24,
-    C25 = 25,
-    C26 = 26,
-    C27 = 27,
-    C28 = 28,
-    C29 = 29,
-    C30 = 30,
-    ...
-}
+// tst_tag = enum {
+//     C0 = 0,
+//     C1 = 1,
+//     C2 = 2,
+//     C3 = 3,
+//     C4 = 4,
+//     C5 = 5,
+//     C6 = 6,
+//     C7 = 7,
+//     C8 = 8,
+//     C9 = 9,
+//     C10 = 10,
+//     C11 = 11,
+//     // C12 = 12,
+//     // C13 = 13,
+//     // C14 = 14,
+//     // C15 = 15,
+//     // C16 = 16,
+//     // C17 = 17,
+//     // C18 = 18,
+//     // C19 = 19,
+//     // C20 = 20,
+//     // C21 = 21,
+//     // C22 = 22,
+//     // C23 = 23,
+//     // C24 = 24,
+//     // C25 = 25,
+//     // C26 = 26,
+//     // C27 = 27,
+//     // C28 = 28,
+//     // C29 = 29,
+//     // C30 = 30,
+//     ...
+// }
+// 
+// 
+// mydata = {
+//     foo : [u8; 2],
+//     bar : [u8; 2],
+// }
+// 
+// tst = {
+//     @tag : tst_tag,
+//     mydata :  choose(@tag) {
+//         C0 => mydata,
+//         C1 => mydata,
+//         C2 => mydata,
+//         C3 => mydata,
+//         C4 => mydata,
+//         C5 => mydata,
+//         // C6 => mydata,
+//         // C7 => mydata,
+//         // C8 => mydata,
+//         // C9 => mydata,
+//         // C10 => mydata,
+//         // C11 => mydata,
+//         // C12 => mydata,
+//         // C13 => mydata,
+//         // C14 => mydata,
+//         // C15 => mydata,
+//         // C16 => mydata,
+//         // C17 => mydata,
+//         // C18 => mydata,
+//         // C19 => mydata,
+//         // C20 => mydata,
+//         // C21 => mydata,
+//         // C22 => mydata,
+//         // C23 => mydata,
+//         // C24 => mydata,
+//         // C25 => mydata,
+//         // C26 => mydata,
+//         // C27 => mydata,
+//         // C28 => mydata,
+//         // C29 => mydata,
+//         // C30 => mydata,
+//     },
+// }
 
 
-mydata = {
-    foo : [u8; 2],
-    bar : [u8; 2],
+// tst_elab = {
+//     @tag : u8,
+//     mydata : choose(@tag) {
+//         1..8 => param1(@tag),
+//         9..16 => param2(@tag),
+//         17..24 => param3(@tag),
+//         25..32 => param4(@tag),
+//         33..40 => param5(@tag),
+//         41..48 => param6(@tag),
+//         49..56 => param7(@tag),
+//         57..64 => param8(@tag),
+//     },
+// }
+// 
+// param1(@tag: u8) = choose(@tag) {
+//     1 => mydata,
+//     2 => mydata,
+//     3 => mydata,
+//     4 => mydata,
+//     5 => mydata,
+//     6 => mydata,
+//     7 => mydata,
+//     8 => mydata,
+// }
+// 
+// param2(@tag: u8) = choose(@tag) {
+//     9 => mydata,
+//     10 => mydata,
+//     11 => mydata,
+//     12 => mydata,
+//     13 => mydata,
+//     14 => mydata,
+//     15 => mydata,
+//     16 => mydata,
+// }
+// 
+// param3(@tag: u8) = choose(@tag) {
+//     17 => mydata,
+//     18 => mydata,
+//     19 => mydata,
+//     20 => mydata,
+//     21 => mydata,
+//     22 => mydata,
+//     23 => mydata,
+//     24 => mydata,
+// }
+// param4(@tag: u8) = choose(@tag) {
+//     25 => mydata,
+//     26 => mydata,
+//     27 => mydata,
+//     28 => mydata,
+//     29 => mydata,
+//     30 => mydata,
+//     31 => mydata,
+//     32 => mydata,
+// }
+// param5(@tag: u8) = choose(@tag) {
+//     33 => mydata,
+//     34 => mydata,
+//     35 => mydata,
+//     36 => mydata,
+//     37 => mydata,
+//     38 => mydata,
+//     39 => mydata,
+//     40 => mydata,
+// }
+// param6(@tag: u8) = choose(@tag) {
+//     41 => mydata,
+//     42 => mydata,
+//     43 => mydata,
+//     44 => mydata,
+//     45 => mydata,
+//     46 => mydata,
+//     47 => mydata,
+//     48 => mydata,
+// }
+// param7(@tag: u8) = choose(@tag) {
+//     49 => mydata,
+//     50 => mydata,
+//     51 => mydata,
+//     52 => mydata,
+//     53 => mydata,
+//     54 => mydata,
+//     55 => mydata,
+//     56 => mydata,
+// }
+// param8(@tag: u8) = choose(@tag) {
+//     57 => mydata,
+//     58 => mydata,
+//     59 => mydata,
+//     60 => mydata,
+//     61 => mydata,
+//     62 => mydata,
+//     63 => mydata,
+//     64 => mydata,
+// }
+
+// pair_stress = {
+//   f1: u8,
+//   f2: u8,
+//   f3: u8,
+//   f4: u8,
+//   f5: u8,
+//   f6: u8,
+//   f7: u8,
+//   f8: u8,
+//   f9: u8,
+//   f10: u8,
+//   f11: u8,
+//   f12: u8,
+//   // f13: u8,
+//   // f14: u8,
+//   // f15: u8,
+// }
+
+// pair_stress = {
+//   group1: group1,
+//   group2: group2,
+//   group3: group3,
+//   group4: group4,
+//   group5: group5,
+// }
+// 
+// group1 = {
+//   f1: u8,
+//   f2: u8,
+// }
+// 
+// group2 = {
+//   f3: u8,
+//   f4: u8,
+// }
+// 
+// group3 = {
+//   f5: u8,
+//   f6: u8,
+// }
+// 
+// group4 = {
+//   f7: u8,
+//   f8: u8,
+// }
+// 
+// group5 = {
+//   f9: u8,
+//   f10: u8,
+// }
+
+dependent_stress = {
+    @tag1: u8,
+    data1: [u8; @tag1],
+    @tag2: u8,
+    data2: [u8; @tag2],
+//     @tag3: u8,
+//     data3: [u8; @tag3],
+//     @tag4: u8,
+//     data4: [u8; @tag4],
+//     @tag5: u8,
+//     data5: [u8; @tag5],
+//     @tag6: u8,
+//     data6: [u8; @tag6],
+//     @tag7: u8,
+//     data7: [u8; @tag7],
+//     @tag8: u8,
+//     data8: [u8; @tag8],
+//     @tag9: u8,
+//     data9: [u8; @tag9],
+//     @tag10: u8,
+//     data10: [u8; @tag10],
 }
 
-tst = {
-    @tag : tst_tag,
-    mydata :  choose(@tag) {
-        C0 => mydata,
-        C1 => mydata,
-        C2 => mydata,
-        C3 => mydata,
-        C4 => mydata,
-        C5 => mydata,
-        C6 => mydata,
-        C7 => mydata,
-        C8 => mydata,
-        C9 => mydata,
-        C10 => mydata,
-        C11 => mydata,
-        C12 => mydata,
-        C13 => mydata,
-        C14 => mydata,
-        C15 => mydata,
-        C16 => mydata,
-        C17 => mydata,
-        C18 => mydata,
-        C19 => mydata,
-        C20 => mydata,
-        C21 => mydata,
-        C22 => mydata,
-        C23 => mydata,
-        C24 => mydata,
-        C25 => mydata,
-        C26 => mydata,
-        C27 => mydata,
-        C28 => mydata,
-        C29 => mydata,
-        C30 => mydata,
-    },
-}
+// dependent_stress = {
+//     dep1: dependent_stress_1,
+//     dep2: dependent_stress_2,
+//     dep3: dependent_stress_3,
+// }
+// 
+// dependent_stress_1 = {
+//     @tag1: u8,
+//     data1: [u8; @tag1],
+//     @tag2: u8,
+//     data2: [u8; @tag2],
+//     @tag3: u8,
+//     data3: [u8; @tag3],
+//     @tag4: u8,
+//     data4: [u8; @tag4],
+// }
+// 
+// dependent_stress_2 = {
+//     @tag5: u8,
+//     data5: [u8; @tag5],
+//     @tag6: u8,
+//     data6: [u8; @tag6],
+//     @tag7: u8,
+//     data7: [u8; @tag7],
+//     @tag8: u8,
+//     data8: [u8; @tag8],
+// }
+// 
+// dependent_stress_3 = {
+//     @tag9: u8,
+//     data9: [u8; @tag9],
+//     @tag10: u8,
+//     data10: [u8; @tag10],
+// }
