@@ -154,6 +154,34 @@ fn rustls_parse_handshake(c: &mut Criterion) {
     });
 }
 
+fn bench_serialize_handshake(c: &mut Criterion) {
+    let vesttls_msgs = vesttls_handshake_msgs();
+    let rustls_msgs = rustls_handshake_msgs();
+    let mut group = c.benchmark_group("serialize_handshakes");
+    group.sample_size(1000);
+
+    group.bench_function("vesttls_handshake_serialize_iter_time", |b| {
+        b.iter(|| {
+            for msg in &vesttls_msgs {
+                let mut buf = vec![0; 1024];
+                black_box(handshake().serialize(msg, &mut buf, 0).unwrap_or_else(|e| {
+                    panic!("Failed to serialize Handshake: {}", e);
+                }));
+            }
+        })
+    });
+    group.bench_function("rustls_handshake_serialize_iter_time", |b| {
+        b.iter(|| {
+            for msg in &rustls_msgs {
+                // let mut buf = Vec::with_capacity(1024);
+                let mut buf = Vec::new();
+                black_box(msg.encode(&mut buf));
+            }
+        })
+    });
+    group.finish();
+}
+
 fn vesttls_parse_handshake_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("vesttls_handshake_parse_throughput");
     for &(name, payload) in handshake_msg_payloads().iter() {
@@ -213,20 +241,27 @@ fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse_tranco_handshakes_bulk");
     group.sample_size(1000);
 
-    group.bench_function("vest", |b| b.iter(||
-        for msg in &valid_server_hellos {
-            black_box(handshake().parse(msg).unwrap());
-        }
-    ));
-    group.bench_function("rustls", |b| b.iter(||
-        for msg in &valid_server_hellos {
-            black_box(rustls::internal::msgs::message::MessagePayload::new(
-                rustls::ContentType::Handshake,
-                rustls::ProtocolVersion::TLSv1_3,
-                msg,
-            ).unwrap());
-        }
-    ));
+    group.bench_function("vest", |b| {
+        b.iter(|| {
+            for msg in &valid_server_hellos {
+                black_box(handshake().parse(msg).unwrap());
+            }
+        })
+    });
+    group.bench_function("rustls", |b| {
+        b.iter(|| {
+            for msg in &valid_server_hellos {
+                black_box(
+                    rustls::internal::msgs::message::MessagePayload::new(
+                        rustls::ContentType::Handshake,
+                        rustls::ProtocolVersion::TLSv1_3,
+                        msg,
+                    )
+                    .unwrap(),
+                );
+            }
+        })
+    });
     group.finish();
 }
 
@@ -244,14 +279,21 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
                 max_len = max_len.max(msg.len());
 
                 vest_parsed.push(handshake);
-                rustls_parsed.push(match rustls::internal::msgs::message::MessagePayload::new(
-                    rustls::ContentType::Handshake,
-                    rustls::ProtocolVersion::TLSv1_3,
-                    msg,
-                ).unwrap() {
-                    rustls::internal::msgs::message::MessagePayload::Handshake { parsed, .. } => parsed,
-                    _ => unreachable!(),
-                });
+                rustls_parsed.push(
+                    match rustls::internal::msgs::message::MessagePayload::new(
+                        rustls::ContentType::Handshake,
+                        rustls::ProtocolVersion::TLSv1_3,
+                        msg,
+                    )
+                    .unwrap()
+                    {
+                        rustls::internal::msgs::message::MessagePayload::Handshake {
+                            parsed,
+                            ..
+                        } => parsed,
+                        _ => unreachable!(),
+                    },
+                );
             }
         }
     }
@@ -264,27 +306,34 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_tranco_handshakes_bulk");
     group.sample_size(1000);
 
-    group.bench_function("vest", |b| b.iter(||
-        for msg in vest_parsed.clone() {
-            let mut buf = vec![0; max_len];
-            black_box(handshake().serialize(msg, &mut buf, 0).unwrap());
-        }
-    ));
-    group.bench_function("rustls", |b| b.iter(||
-        for msg in &rustls_parsed {
-            let mut buf = Vec::with_capacity(max_len);
-            black_box(msg.encode(&mut buf));
-        }
-    ));
+    group.bench_function("vest", |b| {
+        b.iter(|| {
+            for msg in &vest_parsed {
+                let mut buf = vec![0; max_len];
+                black_box(handshake().serialize(msg, &mut buf, 0).unwrap());
+            }
+        })
+    });
+    group.bench_function("rustls", |b| {
+        b.iter(|| {
+            for msg in &rustls_parsed {
+                let mut buf = Vec::with_capacity(max_len);
+                black_box(msg.encode(&mut buf));
+            }
+        })
+    });
     group.finish();
 }
 
 criterion_group!(
     benches,
+    // vesttls_parse_handshake,
+    // rustls_parse_handshake,
+    bench_serialize_handshake,
     // vesttls_parse_handshake_throughput,
-    // rustls_parse_handshake_throughput
-    bench_parse_tranco_handshakes_bulk,
-    bench_serialize_tranco_handshakes_bulk,
+    // rustls_parse_handshake_throughput,
+    // bench_parse_tranco_handshakes_bulk,
+    // bench_serialize_tranco_handshakes_bulk,
 );
 // criterion_group!(
 //     benches,

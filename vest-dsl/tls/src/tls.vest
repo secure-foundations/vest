@@ -373,34 +373,39 @@ client_hello_extension = {
   @extension_type: extension_type,
   @ext_len: u16,
   extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+    // popular extensions
     ServerName => server_name_list,
-    MaxFragmentLength => max_fragment_length,
-    StatusRequest => certificate_status_request,
-    SupportedGroups => named_group_list,
-    ECPointFormats => ec_point_format_list, // not used in TLS 1.3
     SignatureAlgorithms => signature_scheme_list,
-    // UseSRTP => use_srtp_data, // Only allowed in DTLS?
-    Heartbeat => heartbeat_mode,
+    SupportedGroups => named_group_list,
+    StatusRequest => certificate_status_request,
     ApplicationLayerProtocolNegotiation => protocol_name_list,
-    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
-    ClientCertificateType => client_cert_type_client_extension,
-    ServerCertificateType => server_cert_type_client_extension,
-    Padding => padding_extension,
-    EncryptThenMac => empty, // not used in TLS 1.3
-    ExtendedMasterSecret => empty, // not used in TLS 1.3
-    SessionTicket => [u8; @ext_len], // not used in TLS 1.3
-    PreSharedKey => pre_shared_key_client_extension,
+    SupportedVersions => supported_versions_client,
     KeyShare => key_share_client_hello,
     PskKeyExchangeModes => psk_key_exchange_modes,
-    EarlyData => empty,
-    SupportedVersions => supported_versions_client,
-    Cookie => cookie,
-    CertificateAuthorities => certificate_authorities_extension,
-    OidFilters => oid_filter_extension,
-    PostHandshakeAuth => empty,
-    SignatureAlgorithmsCert => signature_scheme_list,
-    _ => [u8; @ext_len],
+    PreSharedKey => pre_shared_key_client_extension,
+    _ => client_hello_extension_rest(@ext_len, @extension_type),
   },
+}
+
+client_hello_extension_rest(@ext_len: u16, @extension_type: extension_type) = choose(@extension_type) {
+  MaxFragmentLength => max_fragment_length,
+  Heartbeat => heartbeat_mode,
+  SignedCertificateTimeStamp => signed_certificate_timestamp_list,
+  ClientCertificateType => client_cert_type_client_extension,
+  ServerCertificateType => server_cert_type_client_extension,
+  Padding => padding_extension,
+  Cookie => cookie,
+  CertificateAuthorities => certificate_authorities_extension,
+  OidFilters => oid_filter_extension,
+  SignatureAlgorithmsCert => signature_scheme_list,
+  // EarlyData => empty,
+  // PostHandshakeAuth => empty,
+  // UseSRTP => use_srtp_data, // Only allowed in DTLS?
+  // ECPointFormats => ec_point_format_list, // not used in TLS 1.3
+  // EncryptThenMac => empty, // not used in TLS 1.3
+  // ExtendedMasterSecret => empty, // not used in TLS 1.3
+  // SessionTicket => [u8; @ext_len], // not used in TLS 1.3
+  _ => [u8; @ext_len],
 }
 
 sever_hello_extension = {
