@@ -702,6 +702,38 @@ fn check_choice_combinator(
                         }
                         check_combinator(combinator, param_defns, local_ctx, global_ctx);
                     });
+                } else if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) =
+                    combinator
+                {
+                    // check if it's non-exhaustive enum (which is equivalent to an int choice)
+                    let enum_ = global_ctx.enums.get(func.as_str()).unwrap_or_else(|| {
+                        panic!("Enum `{}` is not defined", func);
+                    });
+                    let is_non_exhaustive = match enum_ {
+                        EnumCombinator::Exhaustive { .. } => false,
+                        EnumCombinator::NonExhaustive { .. } => true,
+                    };
+                    if !is_non_exhaustive {
+                        panic!(
+                            "Enum `{}` is exhaustive, cannot be used as an int choice",
+                            func
+                        );
+                    }
+                    let enums = match enum_ {
+                        EnumCombinator::Exhaustive { enums } => enums,
+                        EnumCombinator::NonExhaustive { enums } => enums,
+                    };
+                    let int_combinator = infer_enum_type(enums);
+                    let mut int_variants = HashSet::new();
+                    ints.iter().for_each(|(pattern, combinator)| {
+                        if let Some(pattern) = pattern {
+                            check_constraint_elem(&int_combinator, pattern);
+                            if !int_variants.insert(pattern) {
+                                panic!("Duplicate int variant `{}`", pattern);
+                            }
+                        }
+                        check_combinator(combinator, param_defns, local_ctx, global_ctx);
+                    });
                 } else {
                     panic!("Type mismatch: expected unsigned int, got {}", combinator);
                 }
