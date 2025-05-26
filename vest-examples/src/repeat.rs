@@ -217,12 +217,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OpaqueU16Combinator {
 
     type SType = OpaqueU16Ref<'a>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
+    fn length(&self, v: Self::SType) -> usize {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0, v)
     }
 
     closed spec fn ex_requires(&self) -> bool {
@@ -384,12 +380,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
 
     type SType = ResponderIdRef<'a>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
+    fn length(&self, v: Self::SType) -> usize {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0, v)
     }
 
     closed spec fn ex_requires(&self) -> bool {
@@ -499,12 +491,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListListCombinator {
 
     type SType = ResponderIdListListRef<'a>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
+    fn length(&self, v: Self::SType) -> usize {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0, v)
     }
 
     closed spec fn ex_requires(&self) -> bool {
@@ -732,12 +720,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator {
 
     type SType = ResponderIdListRef<'a>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::spec_length(&self.0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0)
+    fn length(&self, v: Self::SType) -> usize {
+        <_ as Combinator<&'a [u8], Vec<u8>>>::length(&self.0, v)
     }
 
     closed spec fn ex_requires(&self) -> bool {
