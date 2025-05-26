@@ -113,10 +113,8 @@ impl<'a> Iso<'a> for OpaqueU16Mapper {
     type RefSrc = OpaqueU16InnerRef<'a>;
 }
 
-impl SpecPred for Predicate11955646336730306823 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl SpecPred<u16> for Predicate11955646336730306823 {
+    open spec fn spec_apply(&self, i: &u16) -> bool {
         let i = (*i);
         if (i >= 1 && i <= 65535) {
             true
@@ -193,10 +191,8 @@ impl View for Predicate11955646336730306823 {
     }
 }
 
-impl Pred for Predicate11955646336730306823 {
-    type Input = u16;
-
-    fn apply(&self, i: &Self::Input) -> bool {
+impl Pred<u16> for Predicate11955646336730306823 {
+    fn apply(&self, i: &u16) -> bool {
         let i = (*i);
         if (i >= 1 && i <= 65535) {
             true
@@ -292,18 +288,22 @@ impl View for OpaqueU16Cont {
     }
 }
 
-impl Continuation<&u16> for OpaqueU16Cont {
+impl<'a> Continuation<POrSType<&'a u16, &u16>> for OpaqueU16Cont {
     type Output = bytes::Variable;
 
-    open spec fn requires(&self, deps: &u16) -> bool {
+    open spec fn requires(&self, deps: POrSType<&'a u16, &u16>) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: &u16, o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: POrSType<&'a u16, &u16>, o: Self::Output) -> bool {
         o@ == spec_opaque_u16_cont(deps@)
     }
 
-    fn apply(&self, deps: &u16) -> Self::Output {
+    fn apply(&self, deps: POrSType<&'a u16, &u16>) -> Self::Output {
+        let deps = match deps {
+            POrSType::P(deps) => deps,
+            POrSType::S(deps) => deps,
+        };
         let l = *deps;
         bytes::Variable(l.ex_into())
     }
@@ -628,10 +628,8 @@ impl<'a> Iso<'a> for ResponderIdListMapper {
     type RefSrc = ResponderIdListInnerRef<'a>;
 }
 
-impl SpecPred for Predicate6556550293019859977 {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl SpecPred<u16> for Predicate6556550293019859977 {
+    open spec fn spec_apply(&self, i: &u16) -> bool {
         let i = (*i);
         if (i >= 0 && i <= 65535) {
             true
@@ -708,10 +706,8 @@ impl View for Predicate6556550293019859977 {
     }
 }
 
-impl Pred for Predicate6556550293019859977 {
-    type Input = u16;
-
-    fn apply(&self, i: &Self::Input) -> bool {
+impl Pred<u16> for Predicate6556550293019859977 {
+    fn apply(&self, i: &u16) -> bool {
         let i = (*i);
         if (i >= 0 && i <= 65535) {
             true
@@ -811,18 +807,22 @@ impl View for ResponderIdListCont {
     }
 }
 
-impl Continuation<&u16> for ResponderIdListCont {
+impl<'a> Continuation<POrSType<&'a u16, &u16>> for ResponderIdListCont {
     type Output = ResponderIdListListCombinator;
 
-    open spec fn requires(&self, deps: &u16) -> bool {
+    open spec fn requires(&self, deps: POrSType<&'a u16, &u16>) -> bool {
         true
     }
 
-    open spec fn ensures(&self, deps: &u16, o: Self::Output) -> bool {
+    open spec fn ensures(&self, deps: POrSType<&'a u16, &u16>, o: Self::Output) -> bool {
         o@ == spec_responder_id_list_cont(deps@)
     }
 
-    fn apply(&self, deps: &u16) -> Self::Output {
+    fn apply(&self, deps: POrSType<&'a u16, &u16>) -> Self::Output {
+        let deps = match deps {
+            POrSType::P(deps) => deps,
+            POrSType::S(deps) => deps,
+        };
         let l = *deps;
         responder_id_list_list(l)
     }
