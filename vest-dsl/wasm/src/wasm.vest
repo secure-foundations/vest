@@ -385,82 +385,125 @@ byte_zero = {
 instr = {
   @opcode: instr_bytecode,
   rest: choose(@opcode) {
+    0x20..0x24 => instr_variable(@opcode), // LocalGet, LocalSet, LocalTee, GlobalGet, GlobalSet
+    // 0x41..0x42 => instr_const(@opcode), // I32Const, I64Const
+    0x0B..0x11 => instr_control2(@opcode), // End, Br, BrIf, BrTable, Ret, Call, CallIndirect
+    0x00..0x05 => instr_control1(@opcode), // Unreachable, Nop, Block, Loop, If, Else
+    0x28..0x40 => instr_memory(@opcode), // I32Load, I32Store, etc.
+    0xD0..0xD2 => instr_reference(@opcode), // RefNull, RefIsNull, RefFunc
+    0x1A..0x1C => instr_parametric(@opcode), // Drop, Select, SelectT
+    0x25..0x26 => instr_table(@opcode), // TableGet, TableSet
+    0x41..0x44 => instr_numeric(@opcode), // I32Const, I64Const, F32Const, F64Const, etc.
+    // FC
+    0xFC => instr_with_fc,
+    // FD
+    0xFD => instr_with_fd,
     // HOT INSTRUCTIONS! TODO: fix
-    LocalGet => localidx,
-    I32Const => uleb128, // TODO: change to sleb128
-    LocalTee => localidx,
-    I32Add => empty,
-    End => empty,
-    LocalSet => localidx,
-    I32Store => memarg,
-    I32Load => memarg,
-    BrIf => labelidx,
-    I32And => empty,
-    If => blocktype,
-    Block => blocktype,
-    I32Eqz => empty,
-    I32Sub => empty,
-    Br => labelidx,
-    Call => funcidx,
-    I32Or => empty,
-    Select => empty,
-    I32ShrU => empty,
-    I32Shl => empty,
-
+    // LocalGet => localidx,
+    // I32Const => uleb128, // TODO: change to sleb128
+    // LocalTee => localidx,
+    // I32Add => empty,
+    // End => empty,
+    // LocalSet => localidx,
+    // I32Store => memarg,
+    // I32Load => memarg,
+    // BrIf => labelidx,
+    // I32And => empty,
+    // If => blocktype,
+    // Block => blocktype,
+    // I32Eqz => empty,
+    // I32Sub => empty,
+    // Br => labelidx,
+    // Call => funcidx,
+    // I32Or => empty,
+    // Select => empty,
+    // I32ShrU => empty,
+    // I32Shl => empty,
     // Control Instructions
     // Since we don't support (verified) recursive formats rn, we parse the instruction as a flat vec (so we don't check "well-bracketedness")
+    _ => empty,
+  },
+}
+
+instr_variable(@opcode: instr_bytecode) = choose(@opcode) {
+    LocalGet => localidx,
+    LocalSet => localidx,
+    LocalTee => localidx,
+    GlobalGet => globalidx,
+    GlobalSet => globalidx,
+}
+
+instr_control1(@opcode: instr_bytecode) = choose(@opcode) {
+    If => blocktype,
+    Block => blocktype,
+    Loop => blocktype,
+    Else => empty,
     Unreachable => empty,
     Nop => empty,
-    Loop => blocktype,
-    BrTable => br_table,
+}
+
+instr_control2(@opcode: instr_bytecode) = choose(@opcode) {
+    End => empty,
+    BrIf => labelidx,
+    Br => labelidx,
+    Call => funcidx,
     Ret => empty,
+    BrTable => br_table,
     CallIndirect => call_indirect,
-    // Reference Instructions
+}
+
+instr_memory(@opcode: instr_bytecode) = choose(@opcode) {
+    I32Store => memarg,
+    I32Load => memarg,
+    I64Store => memarg,
+    I64Load => memarg,
+    MemorySize => byte_zero,
+    MemoryGrow => byte_zero,
+    _ => memarg,
+    // F32Load => memarg,
+    // F32Store => memarg,
+    // F64Load => memarg,
+    // F64Store => memarg,
+    // I32Load8S => memarg,
+    // I32Load8U => memarg,
+    // I32Load16S => memarg,
+    // I32Load16U => memarg,
+    // I64Load8S => memarg,
+    // I64Load8U => memarg,
+    // I64Load16S => memarg,
+    // I64Load16U => memarg,
+    // I64Load32S => memarg,
+    // I64Load32U => memarg,
+    // I32Store8 => memarg,
+    // I32Store16 => memarg,
+    // I64Store8 => memarg,
+    // I64Store16 => memarg,
+    // I64Store32 => memarg,
+}
+
+instr_reference(@opcode: instr_bytecode) = choose(@opcode) {
     RefNull => reftype,
     RefIsNull => empty,
     RefFunc => funcidx,
-    // Parametric Instructions
+}
+
+instr_parametric(@opcode: instr_bytecode) = choose(@opcode) {
     Drop => empty,
+    Select => empty,
     SelectT => select_t,
-    // Variable Instructions
-    GlobalGet => globalidx,
-    GlobalSet => globalidx,
-    // Table Instructions
+}
+
+instr_table(@opcode: instr_bytecode) = choose(@opcode) {
     TableGet => tableidx,
     TableSet => tableidx,
-    // Memory Instructions
-    I64Load => memarg,
-    F32Load => memarg,
-    F64Load => memarg,
-    I32Load8S => memarg,
-    I32Load8U => memarg,
-    I32Load16S => memarg,
-    I32Load16U => memarg,
-    I64Load8S => memarg,
-    I64Load8U => memarg,
-    I64Load16S => memarg,
-    I64Load16U => memarg,
-    I64Load32S => memarg,
-    I64Load32U => memarg,
-    I64Store => memarg,
-    F32Store => memarg,
-    F64Store => memarg,
-    I32Store8 => memarg,
-    I32Store16 => memarg,
-    I64Store8 => memarg,
-    I64Store16 => memarg,
-    I64Store32 => memarg,
-    MemorySize => byte_zero,
-    MemoryGrow => byte_zero,
-    // Numeric Instructions
+}
+
+instr_numeric(@opcode: instr_bytecode) = choose(@opcode) {
+    I32Const => uleb128, // TODO: change to sleb128
     I64Const => uleb128, // TODO: change to sleb128
     F32Const => f32,
     F64Const => f64,
-    // FC
-    OpcodeFC => instr_with_fc,
-    // FD
-    OpcodeFD => instr_with_fd,
-    // Numeric Instructions
+    _ => empty,
     // I32Eqz => empty,
     // I32Eq => empty,
     // I32Ne => empty,
@@ -495,103 +538,6 @@ instr = {
     // F64Gt => empty,
     // F64Le => empty,
     // F64Ge => empty,
-    // I32Clz => empty,
-    // I32Ctz => empty,
-    // I32Popcnt => empty,
-    // I32Add => empty,
-    // I32Sub => empty,
-    // I32Mul => empty,
-    // I32DivS => empty,
-    // I32DivU => empty,
-    // I32RemS => empty,
-    // I32RemU => empty,
-    // I32And => empty,
-    // I32Or => empty,
-    // I32Xor => empty,
-    // I32Shl => empty,
-    // I32ShrS => empty,
-    // I32ShrU => empty,
-    // I32Rotl => empty,
-    // I32Rotr => empty,
-    // I64Clz => empty,
-    // I64Ctz => empty,
-    // I64Popcnt => empty,
-    // I64Add => empty,
-    // I64Sub => empty,
-    // I64Mul => empty,
-    // I64DivS => empty,
-    // I64DivU => empty,
-    // I64RemS => empty,
-    // I64RemU => empty,
-    // I64And => empty,
-    // I64Or => empty,
-    // I64Xor => empty,
-    // I64Shl => empty,
-    // I64ShrS => empty,
-    // I64ShrU => empty,
-    // I64Rotl => empty,
-    // I64Rotr => empty,
-    // F32Abs => empty,
-    // F32Neg => empty,
-    // F32Ceil => empty,
-    // F32Floor => empty,
-    // F32Trunc => empty,
-    // F32Nearest => empty,
-    // F32Sqrt => empty,
-    // F32Add => empty,
-    // F32Sub => empty,
-    // F32Mul => empty,
-    // F32Div => empty,
-    // F32Min => empty,
-    // F32Max => empty,
-    // F32Copysign => empty,
-    // F64Abs => empty,
-    // F64Neg => empty,
-    // F64Ceil => empty,
-    // F64Floor => empty,
-    // F64Trunc => empty,
-    // F64Nearest => empty,
-    // F64Sqrt => empty,
-    // F64Add => empty,
-    // F64Sub => empty,
-    // F64Mul => empty,
-    // F64Div => empty,
-    // F64Min => empty,
-    // F64Max => empty,
-    // F64Copysign => empty,
-    // I32WrapI64 => empty,
-    // I32TruncF32S => empty,
-    // I32TruncF32U => empty,
-    // I32TruncF64S => empty,
-    // I32TruncF64U => empty,
-    // I64ExtendI32S => empty,
-    // I64ExtendI32U => empty,
-    // I64TruncF32S => empty,
-    // I64TruncF32U => empty,
-    // I64TruncF64S => empty,
-    // I64TruncF64U => empty,
-    // F32ConvertI32S => empty,
-    // F32ConvertI32U => empty,
-    // F32ConvertI64S => empty,
-    // F32ConvertI64U => empty,
-    // F32DemoteF64 => empty,
-    // F64ConvertI32S => empty,
-    // F64ConvertI32U => empty,
-    // F64ConvertI64S => empty,
-    // F64ConvertI64U => empty,
-    // F64PromoteF32 => empty,
-    // I32ReinterpretF32 => empty,
-    // I64ReinterpretF64 => empty,
-    // F32ReinterpretI32 => empty,
-    // F64ReinterpretI64 => empty,
-    // I32Extend8S => empty,
-    // I32Extend16S => empty,
-    // I64Extend8S => empty,
-    // I64Extend16S => empty,
-    // I64Extend32S => empty,
-    // default
-    _ => empty,
-  },
 }
 
 memarg = {
@@ -897,37 +843,33 @@ active_datax = {
 // TODO: inline this to allow single-pass validation
 datacountsec = section!(uleb128)
 
-// Module
-module = {
+// Module header
+module_header = {
   const magic: [u8; 4] = [0x00, 0x61, 0x73, 0x6D], // "\0asm"
   const version: [u8; 4] = [0x01, 0x00, 0x00, 0x00], // 1
-  custom1: Option<wrap(u8 = 0, customsec)>,
+}
+
+// Module
+module = {
+  header: module_header,
   types: Option<wrap(u8 = 1, typesec)>,
-  custom2: Option<wrap(u8 = 0, customsec)>,
   imports: Option<wrap(u8 = 2, importsec)>,
-  custom3: Option<wrap(u8 = 0, customsec)>,
   typeidxs: Option<wrap(u8 = 3, funcsec)>,
-  custom4: Option<wrap(u8 = 0, customsec)>,
   tables: Option<wrap(u8 = 4, tablesec)>,
-  custom5: Option<wrap(u8 = 0, customsec)>,
   mems: Option<wrap(u8 = 5, memsec)>,
-  custom6: Option<wrap(u8 = 0, customsec)>,
   globals: Option<wrap(u8 = 6, globalsec)>,
-  custom7: Option<wrap(u8 = 0, customsec)>,
   exports: Option<wrap(u8 = 7, exportsec)>,
-  custom8: Option<wrap(u8 = 0, customsec)>,
   start: Option<wrap(u8 = 8, startsec)>,
-  custom9: Option<wrap(u8 = 0, customsec)>,
-  elems: Option<wrap(u8 = 9, elemsec)>,
-  custom10: Option<wrap(u8 = 0, customsec)>,
   // record data count number
   // const datacountid: u8 = 12,
   // @datacount_size: uleb128,
   // @datacount: [u8; @datacount_size] >>= uleb128,
+  rest_secs: elem_code_data,
+}
+
+elem_code_data = {
+  elems: Option<wrap(u8 = 9, elemsec)>,
   datacount: Option<wrap(u8 = 12, datacountsec)>,
-  custom11: Option<wrap(u8 = 0, customsec)>,
   codes: Option<wrap(u8 = 10, codesec)>,
-  custom12: Option<wrap(u8 = 0, customsec)>,
   datas: Option<wrap(u8 = 11, datasec)>,
-  custom13: Option<wrap(u8 = 0, customsec)>,
 }
