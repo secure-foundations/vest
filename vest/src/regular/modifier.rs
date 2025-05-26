@@ -533,21 +533,19 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
 }
 
 /// The spec version of [`Pred`].
-pub trait SpecPred {
-    /// The input type of the predicate.
-    type Input;
-
+pub trait SpecPred<Input> {
+    // /// The input type of the predicate.
+    // type Input;
     /// Applies the predicate to the input.
-    spec fn spec_apply(&self, i: &Self::Input) -> bool;
+    spec fn spec_apply(&self, i: &Input) -> bool;
 }
 
 /// All predicates to be used in [`Refined`] combinator must implement this trait.
-pub trait Pred: View where Self::V: SpecPred<Input = <Self::Input as View>::V> {
-    /// The input type of the predicate.
-    type Input: View + ?Sized;
-
+pub trait Pred<Input: View + ?Sized>: View where Self::V: SpecPred<<Input as View>::V> {
+    // /// The input type of the predicate.
+    // type Input: View + ?Sized;
     /// Applies the predicate to the input.
-    fn apply(&self, i: &Self::Input) -> (res: bool)
+    fn apply(&self, i: &Input) -> (res: bool)
         ensures
             res == self@.spec_apply(&i@),
     ;
@@ -572,7 +570,7 @@ impl<Inner: View, P: View> View for Refined<Inner, P> where  {
 
 impl<Inner, P> SpecCombinator for Refined<Inner, P> where
     Inner: SpecCombinator,
-    P: SpecPred<Input = Inner::Type>,
+    P: SpecPred<Inner::Type>,
  {
     type Type = Inner::Type;
 
@@ -598,7 +596,7 @@ impl<Inner, P> SpecCombinator for Refined<Inner, P> where
 
 impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
     Inner: SecureSpecCombinator,
-    P: SpecPred<Input = Inner::Type>,
+    P: SpecPred<Inner::Type>,
  {
     open spec fn is_prefix_secure() -> bool {
         Inner::is_prefix_secure()
@@ -635,11 +633,11 @@ impl<Inner, P> SecureSpecCombinator for Refined<Inner, P> where
 impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     I: VestInput,
     O: VestOutput<I>,
-    Inner: Combinator<'x, I, O, SType = &'x <P as Pred>::Input>,
+    Inner: Combinator<'x, I, O, SType = &'x <Inner as Combinator<'x, I, O>>::Type>,
     Inner::V: SecureSpecCombinator<Type = <Inner::Type as View>::V>,
-    P: Pred<Input = Inner::Type>,
-    P::V: SpecPred<Input = <Inner::Type as View>::V>,
-    <P as Pred>::Input: 'x,
+    P: Pred<Inner::Type>,
+    P::V: SpecPred<<Inner::Type as View>::V>,
+    Inner::Type: 'x,
  {
     type Type = Inner::Type;
 

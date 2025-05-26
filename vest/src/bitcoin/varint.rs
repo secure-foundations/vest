@@ -172,18 +172,14 @@ impl View for PredU16LeFit {
     }
 }
 
-impl Pred for PredU16LeFit {
-    type Input = u16;
-
-    fn apply(&self, i: &Self::Input) -> bool {
+impl Pred<u16> for PredU16LeFit {
+    fn apply(&self, i: &u16) -> bool {
         *i >= 0xFD
     }
 }
 
-impl SpecPred for PredU16LeFit {
-    type Input = u16;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl SpecPred<u16> for PredU16LeFit {
+    open spec fn spec_apply(&self, i: &u16) -> bool {
         *i >= 0xFD
     }
 }
@@ -199,18 +195,14 @@ impl View for PredU32LeFit {
     }
 }
 
-impl Pred for PredU32LeFit {
-    type Input = u32;
-
-    fn apply(&self, i: &Self::Input) -> bool {
+impl Pred<u32> for PredU32LeFit {
+    fn apply(&self, i: &u32) -> bool {
         *i >= 0x10000
     }
 }
 
-impl SpecPred for PredU32LeFit {
-    type Input = u32;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl SpecPred<u32> for PredU32LeFit {
+    open spec fn spec_apply(&self, i: &u32) -> bool {
         *i >= 0x10000
     }
 }
@@ -226,18 +218,14 @@ impl View for PredU64LeFit {
     }
 }
 
-impl Pred for PredU64LeFit {
-    type Input = u64;
-
-    fn apply(&self, i: &Self::Input) -> bool {
+impl Pred<u64> for PredU64LeFit {
+    fn apply(&self, i: &u64) -> bool {
         *i >= 0x100000000
     }
 }
 
-impl SpecPred for PredU64LeFit {
-    type Input = u64;
-
-    open spec fn spec_apply(&self, i: &Self::Input) -> bool {
+impl SpecPred<u64> for PredU64LeFit {
+    open spec fn spec_apply(&self, i: &u64) -> bool {
         *i >= 0x100000000
     }
 }
