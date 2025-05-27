@@ -16,6 +16,182 @@ use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
 verus!{
 
+pub enum SpecAChooseWithDefault {
+    A(u8),
+    B(u16),
+    C(u32),
+    Unrecognized(Seq<u8>),
+}
+
+pub type SpecAChooseWithDefaultInner = Either<u8, Either<u16, Either<u32, Seq<u8>>>>;
+
+impl SpecFrom<SpecAChooseWithDefault> for SpecAChooseWithDefaultInner {
+    open spec fn spec_from(m: SpecAChooseWithDefault) -> SpecAChooseWithDefaultInner {
+        match m {
+            SpecAChooseWithDefault::A(m) => Either::Left(m),
+            SpecAChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
+            SpecAChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecAChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecAChooseWithDefaultInner> for SpecAChooseWithDefault {
+    open spec fn spec_from(m: SpecAChooseWithDefaultInner) -> SpecAChooseWithDefault {
+        match m {
+            Either::Left(m) => SpecAChooseWithDefault::A(m),
+            Either::Right(Either::Left(m)) => SpecAChooseWithDefault::B(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecAChooseWithDefault::C(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecAChooseWithDefault::Unrecognized(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AChooseWithDefault<'a> {
+    A(u8),
+    B(u16),
+    C(u32),
+    Unrecognized(&'a [u8]),
+}
+
+pub type AChooseWithDefaultInner<'a> = Either<u8, Either<u16, Either<u32, &'a [u8]>>>;
+
+pub type AChooseWithDefaultInnerRef<'a> = Either<&'a u8, Either<&'a u16, Either<&'a u32, &'a &'a [u8]>>>;
+
+
+impl<'a> View for AChooseWithDefault<'a> {
+    type V = SpecAChooseWithDefault;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            AChooseWithDefault::A(m) => SpecAChooseWithDefault::A(m@),
+            AChooseWithDefault::B(m) => SpecAChooseWithDefault::B(m@),
+            AChooseWithDefault::C(m) => SpecAChooseWithDefault::C(m@),
+            AChooseWithDefault::Unrecognized(m) => SpecAChooseWithDefault::Unrecognized(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a AChooseWithDefault<'a>> for AChooseWithDefaultInnerRef<'a> {
+    fn ex_from(m: &'a AChooseWithDefault<'a>) -> AChooseWithDefaultInnerRef<'a> {
+        match m {
+            AChooseWithDefault::A(m) => Either::Left(m),
+            AChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
+            AChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
+            AChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+impl<'a> From<AChooseWithDefaultInner<'a>> for AChooseWithDefault<'a> {
+    fn ex_from(m: AChooseWithDefaultInner<'a>) -> AChooseWithDefault<'a> {
+        match m {
+            Either::Left(m) => AChooseWithDefault::A(m),
+            Either::Right(Either::Left(m)) => AChooseWithDefault::B(m),
+            Either::Right(Either::Right(Either::Left(m))) => AChooseWithDefault::C(m),
+            Either::Right(Either::Right(Either::Right(m))) => AChooseWithDefault::Unrecognized(m),
+        }
+    }
+    
+}
+
+
+pub struct AChooseWithDefaultMapper;
+impl View for AChooseWithDefaultMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for AChooseWithDefaultMapper {
+    type Src = SpecAChooseWithDefaultInner;
+    type Dst = SpecAChooseWithDefault;
+}
+impl SpecIsoProof for AChooseWithDefaultMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for AChooseWithDefaultMapper {
+    type Src = AChooseWithDefaultInner<'a>;
+    type Dst = AChooseWithDefault<'a>;
+    type RefSrc = AChooseWithDefaultInnerRef<'a>;
+}
+
+
+pub struct SpecAChooseWithDefaultCombinator(SpecAChooseWithDefaultCombinatorAlias);
+
+impl SpecCombinator for SpecAChooseWithDefaultCombinator {
+    type Type = SpecAChooseWithDefault;
+    closed spec fn requires(&self) -> bool
+    { self.0.requires() }
+    closed spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecAChooseWithDefaultCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecAChooseWithDefaultCombinatorAlias = Mapped<Choice<Cond<U8>, Choice<Cond<U16Le>, Choice<Cond<U32Le>, Cond<bytes::Tail>>>>, AChooseWithDefaultMapper>;
+
+pub struct AChooseWithDefaultCombinator(AChooseWithDefaultCombinatorAlias);
+
+impl View for AChooseWithDefaultCombinator {
+    type V = SpecAChooseWithDefaultCombinator;
+    closed spec fn view(&self) -> Self::V { SpecAChooseWithDefaultCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AChooseWithDefaultCombinator {
+    type Type = AChooseWithDefault<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type AChooseWithDefaultCombinatorAlias = Mapped<Choice<Cond<U8>, Choice<Cond<U16Le>, Choice<Cond<U32Le>, Cond<bytes::Tail>>>>, AChooseWithDefaultMapper>;
+
+
+pub closed spec fn spec_a_choose_with_default(e: SpecAnOpenEnum) -> SpecAChooseWithDefaultCombinator {
+    SpecAChooseWithDefaultCombinator(Mapped { inner: Choice(Cond { cond: e == 0, inner: U8 }, Choice(Cond { cond: e == 1, inner: U16Le }, Choice(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: bytes::Tail }))), mapper: AChooseWithDefaultMapper })
+}
+
+pub fn a_choose_with_default<'a>(e: AnOpenEnum) -> (o: AChooseWithDefaultCombinator)
+    ensures o@ == spec_a_choose_with_default(e@),
+{
+    AChooseWithDefaultCombinator(Mapped { inner: Choice::new(Cond { cond: e == 0, inner: U8 }, Choice::new(Cond { cond: e == 1, inner: U16Le }, Choice::new(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: bytes::Tail }))), mapper: AChooseWithDefaultMapper })
+}
+
+
 pub spec const SPEC_AClosedEnum_A: u8 = 0;
 pub spec const SPEC_AClosedEnum_B: u8 = 1;
 pub spec const SPEC_AClosedEnum_C: u8 = 2;
@@ -173,10 +349,8 @@ impl View for AClosedEnumCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AClosedEnumCombinator {
     type Type = AClosedEnum;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -406,10 +580,8 @@ impl View for ANonDependentChooseCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ANonDependentChooseCombinator {
     type Type = ANonDependentChoose;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -477,10 +649,8 @@ impl View for AnOpenEnumCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AnOpenEnumCombinator {
     type Type = AnOpenEnum;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -503,184 +673,6 @@ pub fn an_open_enum() -> (o: AnOpenEnumCombinator)
 }
 
                 
-
-pub enum SpecAChooseWithDefault {
-    A(u8),
-    B(u16),
-    C(u32),
-    Unrecognized(Seq<u8>),
-}
-
-pub type SpecAChooseWithDefaultInner = Either<u8, Either<u16, Either<u32, Seq<u8>>>>;
-
-impl SpecFrom<SpecAChooseWithDefault> for SpecAChooseWithDefaultInner {
-    open spec fn spec_from(m: SpecAChooseWithDefault) -> SpecAChooseWithDefaultInner {
-        match m {
-            SpecAChooseWithDefault::A(m) => Either::Left(m),
-            SpecAChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
-            SpecAChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecAChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecAChooseWithDefaultInner> for SpecAChooseWithDefault {
-    open spec fn spec_from(m: SpecAChooseWithDefaultInner) -> SpecAChooseWithDefault {
-        match m {
-            Either::Left(m) => SpecAChooseWithDefault::A(m),
-            Either::Right(Either::Left(m)) => SpecAChooseWithDefault::B(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecAChooseWithDefault::C(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecAChooseWithDefault::Unrecognized(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AChooseWithDefault<'a> {
-    A(u8),
-    B(u16),
-    C(u32),
-    Unrecognized(&'a [u8]),
-}
-
-pub type AChooseWithDefaultInner<'a> = Either<u8, Either<u16, Either<u32, &'a [u8]>>>;
-
-pub type AChooseWithDefaultInnerRef<'a> = Either<&'a u8, Either<&'a u16, Either<&'a u32, &'a &'a [u8]>>>;
-
-
-impl<'a> View for AChooseWithDefault<'a> {
-    type V = SpecAChooseWithDefault;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            AChooseWithDefault::A(m) => SpecAChooseWithDefault::A(m@),
-            AChooseWithDefault::B(m) => SpecAChooseWithDefault::B(m@),
-            AChooseWithDefault::C(m) => SpecAChooseWithDefault::C(m@),
-            AChooseWithDefault::Unrecognized(m) => SpecAChooseWithDefault::Unrecognized(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a AChooseWithDefault<'a>> for AChooseWithDefaultInnerRef<'a> {
-    fn ex_from(m: &'a AChooseWithDefault<'a>) -> AChooseWithDefaultInnerRef<'a> {
-        match m {
-            AChooseWithDefault::A(m) => Either::Left(m),
-            AChooseWithDefault::B(m) => Either::Right(Either::Left(m)),
-            AChooseWithDefault::C(m) => Either::Right(Either::Right(Either::Left(m))),
-            AChooseWithDefault::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-impl<'a> From<AChooseWithDefaultInner<'a>> for AChooseWithDefault<'a> {
-    fn ex_from(m: AChooseWithDefaultInner<'a>) -> AChooseWithDefault<'a> {
-        match m {
-            Either::Left(m) => AChooseWithDefault::A(m),
-            Either::Right(Either::Left(m)) => AChooseWithDefault::B(m),
-            Either::Right(Either::Right(Either::Left(m))) => AChooseWithDefault::C(m),
-            Either::Right(Either::Right(Either::Right(m))) => AChooseWithDefault::Unrecognized(m),
-        }
-    }
-    
-}
-
-
-pub struct AChooseWithDefaultMapper;
-impl View for AChooseWithDefaultMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for AChooseWithDefaultMapper {
-    type Src = SpecAChooseWithDefaultInner;
-    type Dst = SpecAChooseWithDefault;
-}
-impl SpecIsoProof for AChooseWithDefaultMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for AChooseWithDefaultMapper {
-    type Src = AChooseWithDefaultInner<'a>;
-    type Dst = AChooseWithDefault<'a>;
-    type RefSrc = AChooseWithDefaultInnerRef<'a>;
-}
-
-
-pub struct SpecAChooseWithDefaultCombinator(SpecAChooseWithDefaultCombinatorAlias);
-
-impl SpecCombinator for SpecAChooseWithDefaultCombinator {
-    type Type = SpecAChooseWithDefault;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecAChooseWithDefaultCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecAChooseWithDefaultCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecAChooseWithDefaultCombinatorAlias = Mapped<Choice<Cond<U8>, Choice<Cond<U16Le>, Choice<Cond<U32Le>, Cond<bytes::Tail>>>>, AChooseWithDefaultMapper>;
-
-pub struct AChooseWithDefaultCombinator(AChooseWithDefaultCombinatorAlias);
-
-impl View for AChooseWithDefaultCombinator {
-    type V = SpecAChooseWithDefaultCombinator;
-    closed spec fn view(&self) -> Self::V { SpecAChooseWithDefaultCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AChooseWithDefaultCombinator {
-    type Type = AChooseWithDefault<'a>;
-    type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type AChooseWithDefaultCombinatorAlias = Mapped<Choice<Cond<U8>, Choice<Cond<U16Le>, Choice<Cond<U32Le>, Cond<bytes::Tail>>>>, AChooseWithDefaultMapper>;
-
-
-pub closed spec fn spec_a_choose_with_default(e: SpecAnOpenEnum) -> SpecAChooseWithDefaultCombinator {
-    SpecAChooseWithDefaultCombinator(Mapped { inner: Choice(Cond { cond: e == 0, inner: U8 }, Choice(Cond { cond: e == 1, inner: U16Le }, Choice(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: bytes::Tail }))), mapper: AChooseWithDefaultMapper })
-}
-
-pub fn a_choose_with_default<'a>(e: AnOpenEnum) -> (o: AChooseWithDefaultCombinator)
-    ensures o@ == spec_a_choose_with_default(e@),
-{
-    AChooseWithDefaultCombinator(Mapped { inner: Choice::new(Cond { cond: e == 0, inner: U8 }, Choice::new(Cond { cond: e == 1, inner: U16Le }, Choice::new(Cond { cond: e == 2, inner: U32Le }, Cond { cond: !(e == 0 || e == 1 || e == 2), inner: bytes::Tail }))), mapper: AChooseWithDefaultMapper })
-}
-
 
 pub enum SpecARegularChoose {
     A(u8),
@@ -828,10 +820,8 @@ impl View for ARegularChooseCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ARegularChooseCombinator {
     type Type = ARegularChoose;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 

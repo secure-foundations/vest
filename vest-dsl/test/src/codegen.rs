@@ -173,10 +173,8 @@ impl View for ATypeCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ATypeCombinator {
     type Type = AType;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -341,10 +339,8 @@ impl View for Msg1Combinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Msg1Combinator {
     type Type = Msg1<'a>;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -497,10 +493,8 @@ impl View for Msg2Combinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Msg2Combinator {
     type Type = Msg2;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -576,10 +570,8 @@ impl View for Msg3Combinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Msg3Combinator {
     type Type = Msg3<'a>;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -749,10 +741,8 @@ impl View for Msg4VCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Msg4VCombinator {
     type Type = Msg4V<'a>;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
@@ -895,10 +885,8 @@ impl View for Msg4Combinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Msg4Combinator {
     type Type = Msg4<'a>;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
     closed spec fn ex_requires(&self) -> bool 
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
