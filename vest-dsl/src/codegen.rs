@@ -403,10 +403,8 @@ impl View for {name}Combinator {{
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     type Type = {name}{msg_has_lifetime};
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }}
-    fn length(&self) -> Option<usize> 
-    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }}
+    fn length(&self, v: Self::SType) -> usize
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }}
     closed spec fn ex_requires(&self) -> bool 
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }}
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
