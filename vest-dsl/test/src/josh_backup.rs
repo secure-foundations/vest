@@ -1,20 +1,20 @@
 #![allow(warnings)]
 #![allow(unused)]
 use std::marker::PhantomData;
-use vstd::prelude::*;
-use vest::regular::modifier::*;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
+use vest::properties::*;
 use vest::regular::bytes;
-use vest::regular::variant::*;
-use vest::regular::sequence::*;
-use vest::regular::repetition::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::leb128::*;
+use vest::regular::modifier::*;
+use vest::regular::repetition::*;
+use vest::regular::sequence::*;
 use vest::regular::tag::*;
 use vest::regular::uints::*;
+use vest::regular::variant::*;
 use vest::utils::*;
-use vest::properties::*;
-use vest::bitcoin::varint::{BtcVarint, VarInt};
-use vest::regular::leb128::*;
-verus!{
+use vstd::prelude::*;
+verus! {
 
 pub struct SpecPairStress {
     pub f1: u8,
@@ -130,257 +130,49 @@ struct SpecPairStressCombinator8(SpecPairStressCombinatorAlias8);
 struct SpecPairStressCombinator9(SpecPairStressCombinatorAlias9);
 pub struct SpecPairStressCombinator(SpecPairStressCombinatorAlias);
 
-impl SpecCombinator for SpecPairStressCombinator1 {
-    type Type = <SpecPairStressCombinatorAlias1 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator1 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias1 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator2 {
-    type Type = <SpecPairStressCombinatorAlias2 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator2 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias2 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
+macro_rules! impl_wrapper_spec_combinator {
+    ($combinator:ty, $combinator_alias:ty) => {
+        ::builtin_macros::verus! {
+            impl SpecCombinator for $combinator {
+                type Type = <$combinator_alias as SpecCombinator>::Type;
+                closed spec fn requires(&self) -> bool
+                { self.0.requires() }
+                closed spec fn wf(&self, v: Self::Type) -> bool
+                { self.0.wf(v) }
+                closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+                { self.0.spec_parse(s) }
+                closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+                { self.0.spec_serialize(v) }
+            }
+            impl SecureSpecCombinator for $combinator {
+                open spec fn is_prefix_secure() -> bool
+                { <$combinator_alias as SecureSpecCombinator>::is_prefix_secure() }
+                proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+                { self.0.theorem_serialize_parse_roundtrip(v) }
+                proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+                { self.0.theorem_parse_serialize_roundtrip(buf) }
+                proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+                { self.0.lemma_prefix_secure(s1, s2) }
+                proof fn lemma_parse_length(&self, s: Seq<u8>)
+                { self.0.lemma_parse_length(s) }
+                closed spec fn is_productive(&self) -> bool
+                { self.0.is_productive() }
+                proof fn lemma_parse_productive(&self, s: Seq<u8>)
+                { self.0.lemma_parse_productive(s) }
+            }
+        } // verus!
+    };
 }
 
-impl SpecCombinator for SpecPairStressCombinator3 {
-    type Type = <SpecPairStressCombinatorAlias3 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator3 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias3 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator4 {
-    type Type = <SpecPairStressCombinatorAlias4 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator4 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias4 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator5 {
-    type Type = <SpecPairStressCombinatorAlias5 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator5 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias5 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator6 {
-    type Type = <SpecPairStressCombinatorAlias6 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator6 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias6 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator7 {
-    type Type = <SpecPairStressCombinatorAlias7 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator7 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias7 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator8 {
-    type Type = <SpecPairStressCombinatorAlias8 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator8 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias8 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-
-impl SpecCombinator for SpecPairStressCombinator9 {
-    type Type = <SpecPairStressCombinatorAlias9 as SpecCombinator>::Type;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator9 {
-    open spec fn is_prefix_secure() -> bool 
-    { <SpecPairStressCombinatorAlias9 as SecureSpecCombinator>::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
+impl_wrapper_spec_combinator!(SpecPairStressCombinator1, SpecPairStressCombinatorAlias1);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator2, SpecPairStressCombinatorAlias2);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator3, SpecPairStressCombinatorAlias3);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator4, SpecPairStressCombinatorAlias4);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator5, SpecPairStressCombinatorAlias5);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator6, SpecPairStressCombinatorAlias6);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator7, SpecPairStressCombinatorAlias7);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator8, SpecPairStressCombinatorAlias8);
+impl_wrapper_spec_combinator!(SpecPairStressCombinator9, SpecPairStressCombinatorAlias9);
 
 impl SpecCombinator for SpecPairStressCombinator {
     type Type = SpecPairStress;
@@ -388,13 +180,13 @@ impl SpecCombinator for SpecPairStressCombinator {
     { self.0.requires() }
     closed spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecPairStressCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { <SpecPairStressCombinatorAlias as SecureSpecCombinator>::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -402,11 +194,11 @@ impl SecureSpecCombinator for SpecPairStressCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
+    closed spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 // pub type SpecPairStressCombinatorAlias = Mapped<(U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, U8))))))))), PairStressMapper>;
@@ -477,13 +269,11 @@ impl View for PairStressCombinator {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator1 {
     type Type = <PairStressCombinatorAlias1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -491,13 +281,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator1 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator2 {
     type Type = <PairStressCombinatorAlias2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias2 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -505,13 +293,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator2 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator3 {
     type Type = <PairStressCombinatorAlias3 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias3 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -519,13 +305,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator3 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator4 {
     type Type = <PairStressCombinatorAlias4 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias4 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -533,13 +317,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator4 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator5 {
     type Type = <PairStressCombinatorAlias5 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias5 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -547,13 +329,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator5 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator6 {
     type Type = <PairStressCombinatorAlias6 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias6 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -561,13 +341,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator6 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator7 {
     type Type = <PairStressCombinatorAlias7 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias7 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -575,13 +353,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator7 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator8 {
     type Type = <PairStressCombinatorAlias8 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias8 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -589,13 +365,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator8 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator9 {
     type Type = <PairStressCombinatorAlias9 as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <PairStressCombinatorAlias9 as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
@@ -604,17 +378,15 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator9 {
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator {
     type Type = PairStress;
     type SType = &'a Self::Type;
-    closed spec fn spec_length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::spec_length(&self.0) }
-    fn length(&self) -> Option<usize> 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0) }
-    closed spec fn ex_requires(&self) -> bool 
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+}
 // pub type PairStressCombinatorAlias = Mapped<(U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, U8))))))))), PairStressMapper>;
 type PairStressCombinatorAlias1 = (U8, U8);
 type PairStressCombinatorAlias2 = (U8, PairStressCombinator1);
@@ -636,7 +408,7 @@ pub closed spec fn spec_pair_stress() -> SpecPairStressCombinator {
     })
 }
 
-                
+
 pub fn pair_stress() -> (o: PairStressCombinator)
     ensures o@ == spec_pair_stress(),
 {
@@ -647,6 +419,6 @@ pub fn pair_stress() -> (o: PairStressCombinator)
     })
 }
 
-                
+
 
 }
