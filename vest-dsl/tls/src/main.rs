@@ -436,42 +436,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(_, _, server_msgs)| server_msgs.len())
             .sum::<usize>()
     );
-    let mut success_client = 0;
+    let mut rustls_success_client = 0;
+    let mut vestls_success_client = 0;
     let mut success_server = 0;
     for (domain, client_msgs, server_msgs) in tranco_handshakes::HANDSHAKE_DATA {
         println!("domain: {}", domain);
-        for msg in *client_msgs {
+        for msg in client_msgs.iter() {
+        // for msg in client_msgs.iter().take(1) {
+            if let Ok(rustls_parsed) =
+                rustls::internal::msgs::message::MessagePayload::new(
+                    rustls::ContentType::Handshake,
+                    rustls::ProtocolVersion::TLSv1_3,
+                    msg,
+                )
+            {
+                rustls_success_client += 1;
+                // println!("Parsed message from Rustls: {:#?}", parsed);
+                if let Ok((_, vestls_parsed)) = handshake().parse(msg) {
+                    vestls_success_client += 1;
+                    // println!("Parsed message from VestTLS: {:#?}", parsed);
+                } else {
+                    println!("=====================================");
+                    println!("Failed to parse message: {:?}", rustls_parsed);
+                    println!("=====================================");
+                }
+            }
             // println!("{:?}", handshake().parse(msg));
             // if handshake().parse(msg).is_ok() {
             //     success_client += 1;
             // }
-            if rustls::internal::msgs::message::MessagePayload::new(
-                rustls::ContentType::Handshake,
-                rustls::ProtocolVersion::TLSv1_3,
-                msg,
-            )
-            .is_ok()
-            {
-                success_client += 1;
-            }
         }
-        for msg in *server_msgs {
-            // println!("{:?}", handshake().parse(msg));
-            // if handshake().parse(msg).is_ok() {
-            //     success_server += 1;
-            // }
-            if rustls::internal::msgs::message::MessagePayload::new(
-                rustls::ContentType::Handshake,
-                rustls::ProtocolVersion::TLSv1_3,
-                msg,
-            )
-            .is_ok()
-            {
-                success_server += 1;
-            }
-        }
+        // break;
+        // for msg in *server_msgs {
+        //     println!("{:?}", handshake().parse(msg));
+        //     // if handshake().parse(msg).is_ok() {
+        //     //     success_server += 1;
+        //     // }
+        //     if rustls::internal::msgs::message::MessagePayload::new(
+        //         rustls::ContentType::Handshake,
+        //         rustls::ProtocolVersion::TLSv1_3,
+        //         msg,
+        //     )
+        //     .is_ok()
+        //     {
+        //         success_server += 1;
+        //     }
+        // }
     }
-    println!("Successfully parsed {} client messages", success_client);
+    println!("Rustls successfully parsed {} client messages", rustls_success_client);
+    println!("Vestls Successfully parsed {} client messages", vestls_success_client);
     println!("Successfully parsed {} server messages", success_server);
 
     Ok(())

@@ -242,7 +242,11 @@ zero_byte = {
   const zero: u8 = 0,
 }
 
-padding_extension = bounded_vec!(u16, zero_byte)
+// padding_extension = bounded_vec!(u16, zero_byte) // this is wrong as per rfc7685
+padding_extension(@ext_len: u16) = {
+  @l: u16,
+  padding: [u8; @l] >>= Vec<zero_byte>,
+}
 
 // struct {
 //   opaque ticket_data<0..2^16-1>;
@@ -393,7 +397,8 @@ client_hello_extension_rest(@ext_len: u16, @extension_type: extension_type) = ch
   SignedCertificateTimeStamp => signed_certificate_timestamp_list,
   ClientCertificateType => client_cert_type_client_extension,
   ServerCertificateType => server_cert_type_client_extension,
-  Padding => padding_extension,
+  // Padding => padding_extension(@ext_len),
+  Padding => [u8; @ext_len],
   Cookie => cookie,
   CertificateAuthorities => certificate_authorities_extension,
   OidFilters => oid_filter_extension,

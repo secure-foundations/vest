@@ -1,20 +1,142 @@
+// extern crate wasmparser;
+
 pub mod vest_wasm;
 // pub mod wasm_data;
 
-use vest::regular::modifier::*;
+use vest::properties::*;
 use vest::regular::bytes;
-use vest::regular::variant::*;
-use vest::regular::sequence::*;
-use vest::regular::repetition::*;
 use vest::regular::disjoint::DisjointFrom;
+use vest::regular::modifier::*;
+use vest::regular::repetition::*;
+use vest::regular::sequence::*;
 use vest::regular::tag::*;
 use vest::regular::uints::*;
+use vest::regular::variant::*;
 use vest::utils::*;
-use vest::properties::*;
 use vest_wasm::*;
 // use wasm_data::*;
 
 pub const POLYBENCH_C_TESTS: &[(&str, &[u8])] = &[
+    (
+        "2mm",
+        include_bytes!("../benches/data/polybench-c/2mm.wasm"),
+    ),
+    (
+        "3mm",
+        include_bytes!("../benches/data/polybench-c/3mm.wasm"),
+    ),
+    (
+        "adi",
+        include_bytes!("../benches/data/polybench-c/adi.wasm"),
+    ),
+    (
+        "atax",
+        include_bytes!("../benches/data/polybench-c/atax.wasm"),
+    ),
+    (
+        "bicg",
+        include_bytes!("../benches/data/polybench-c/bicg.wasm"),
+    ),
+    (
+        "cholesky",
+        include_bytes!("../benches/data/polybench-c/cholesky.wasm"),
+    ),
+    (
+        "correlation",
+        include_bytes!("../benches/data/polybench-c/correlation.wasm"),
+    ),
+    (
+        "covariance",
+        include_bytes!("../benches/data/polybench-c/covariance.wasm"),
+    ),
+    (
+        "doitgen",
+        include_bytes!("../benches/data/polybench-c/doitgen.wasm"),
+    ),
+    (
+        "durbin",
+        include_bytes!("../benches/data/polybench-c/durbin.wasm"),
+    ),
+    (
+        "dynprog",
+        include_bytes!("../benches/data/polybench-c/dynprog.wasm"),
+    ),
+    (
+        "fdtd-2d",
+        include_bytes!("../benches/data/polybench-c/fdtd-2d.wasm"),
+    ),
+    (
+        "fdtd-apml",
+        include_bytes!("../benches/data/polybench-c/fdtd-apml.wasm"),
+    ),
+    (
+        "floyd-warshall",
+        include_bytes!("../benches/data/polybench-c/floyd-warshall.wasm"),
+    ),
+    (
+        "gemm",
+        include_bytes!("../benches/data/polybench-c/gemm.wasm"),
+    ),
+    (
+        "gemver",
+        include_bytes!("../benches/data/polybench-c/gemver.wasm"),
+    ),
+    (
+        "gesummv",
+        include_bytes!("../benches/data/polybench-c/gesummv.wasm"),
+    ),
+    (
+        "gramschmidt",
+        include_bytes!("../benches/data/polybench-c/gramschmidt.wasm"),
+    ),
+    (
+        "jacobi-1d-imper",
+        include_bytes!("../benches/data/polybench-c/jacobi-1d-imper.wasm"),
+    ),
+    (
+        "jacobi-2d-imper",
+        include_bytes!("../benches/data/polybench-c/jacobi-2d-imper.wasm"),
+    ),
+    ("lu", include_bytes!("../benches/data/polybench-c/lu.wasm")),
+    (
+        "ludcmp",
+        include_bytes!("../benches/data/polybench-c/ludcmp.wasm"),
+    ),
+    (
+        "mvt",
+        include_bytes!("../benches/data/polybench-c/mvt.wasm"),
+    ),
+    (
+        "reg_detect",
+        include_bytes!("../benches/data/polybench-c/reg_detect.wasm"),
+    ),
+    (
+        "seidel-2d",
+        include_bytes!("../benches/data/polybench-c/seidel-2d.wasm"),
+    ),
+    (
+        "symm",
+        include_bytes!("../benches/data/polybench-c/symm.wasm"),
+    ),
+    (
+        "syr2k",
+        include_bytes!("../benches/data/polybench-c/syr2k.wasm"),
+    ),
+    (
+        "syrk",
+        include_bytes!("../benches/data/polybench-c/syrk.wasm"),
+    ),
+    (
+        "trisolv",
+        include_bytes!("../benches/data/polybench-c/trisolv.wasm"),
+    ),
+    (
+        "trmm",
+        include_bytes!("../benches/data/polybench-c/trmm.wasm"),
+    ),
+];
+
+pub const POLYBENCH_C_TESTS_REWRITTEN: &[(&str, &[u8])] = &[
     (
         "2mm",
         include_bytes!("../benches/data/polybench-c/2mm.wasm.rewritten-2"),
@@ -138,15 +260,50 @@ pub const POLYBENCH_C_TESTS: &[(&str, &[u8])] = &[
 ];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    for _ in 0..100 {
-        for (_, bytes) in POLYBENCH_C_TESTS {
-            let (consumed, _) = module().parse(bytes)?;
-            println!("Consumed: {}/{}", consumed, bytes.len());
-            // println!("{:?}", module().parse(bytes).unwrap());
-            // println!("{} {:?}", bytes.len(), module().parse(bytes).unwrap());
-            // println!("{:?}", rwasm::parser::parse(bytes).unwrap());
+    let bench_vest = || {
+        for (_, bytes) in POLYBENCH_C_TESTS_REWRITTEN {
+            if let Ok((consumed, module)) = module().parse(bytes) {
+                // println!("Vest consumed: {}/{}", consumed, bytes.len());
+                // println!("{:?}", module);
+            } else {
+                println!("Vest failed to parse module");
+            }
         }
-    }
+        Ok(())
+    };
+    // let bench_wasmparser = || {
+    //     for (name, bytes) in POLYBENCH_C_TESTS {
+    //         // println!("Parsing {}...", name);
+    //         if let Ok(module) = Module::parse(bytes) {
+    //             // println!("wasmparser parsed module: {:?}", module);
+    //         } else {
+    //             println!("wasmparser failed to parse module: {}", name);
+    //         }
+    //     }
+    //     Ok(())
+    // };
+    // for (_, bytes) in POLYBENCH_C_TESTS_REWRITTEN {
+    //     if let Ok((consumed, module)) = module().parse(bytes) {
+    //         println!("Consumed: {}/{}", consumed, bytes.len());
+    //         // println!("{:?}", module);
+    //     } else {
+    //         println!("Vest failed to parse module");
+    //     }
+    //     // let (consumed, _) = module().parse(bytes)?;
+    //     // println!("Consumed: {}/{}", consumed, bytes.len());
+    //     // println!("{:?}", rwasm::parser::parse(bytes).unwrap());
+    // }
+    //
+    // for (name, bytes) in POLYBENCH_C_TESTS {
+    //     println!("Parsing {}...", name);
+    //     if let Ok(module) = Module::parse(bytes) {
+    //         // println!("Parsed module: {:?}", module);
+    //     } else {
+    //         println!("wasmparser failed to parse module: {}", name);
+    //     }
+    // }
+    bench_fn(bench_vest)?;
+    // bench_fn(bench_wasmparser)?;
 
     Ok(())
 }
@@ -155,7 +312,7 @@ fn bench_fn(
     f: impl Fn() -> Result<(), Box<dyn std::error::Error>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = std::time::Instant::now();
-    for _ in 0..1000000 {
+    for _ in 0..100 {
         f()?;
     }
     println!("Time elapsed: {} ms", start.elapsed().as_millis());
