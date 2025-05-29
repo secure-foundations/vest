@@ -7,8 +7,7 @@ use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion
 
 use vest::properties::Combinator;
 use wasm::vest_wasm::*;
-
-use wasmparser::{OperatorsReader, Payload};
+use wasmparser::Payload;
 
 pub const POLYBENCH_C_TESTS: &[(&str, &[u8])] = &[
     ("2mm", include_bytes!("data/polybench-c/2mm.wasm")),

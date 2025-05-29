@@ -843,15 +843,10 @@ active_datax = {
 // TODO: inline this to allow single-pass validation
 datacountsec = section!(uleb128)
 
-// Module header
-module_header = {
-  const magic: [u8; 4] = [0x00, 0x61, 0x73, 0x6D], // "\0asm"
-  const version: [u8; 4] = [0x01, 0x00, 0x00, 0x00], // 1
-}
-
 // Module
 module = {
-  header: module_header,
+  const magic: [u8; 4] = [0x00, 0x61, 0x73, 0x6D], // "\0asm"
+  const version: [u8; 4] = [0x01, 0x00, 0x00, 0x00], // 1
   types: Option<wrap(u8 = 1, typesec)>,
   imports: Option<wrap(u8 = 2, importsec)>,
   typeidxs: Option<wrap(u8 = 3, funcsec)>,
@@ -860,15 +855,11 @@ module = {
   globals: Option<wrap(u8 = 6, globalsec)>,
   exports: Option<wrap(u8 = 7, exportsec)>,
   start: Option<wrap(u8 = 8, startsec)>,
+  elems: Option<wrap(u8 = 9, elemsec)>,
   // record data count number
   // const datacountid: u8 = 12,
   // @datacount_size: uleb128,
   // @datacount: [u8; @datacount_size] >>= uleb128,
-  rest_secs: elem_code_data,
-}
-
-elem_code_data = {
-  elems: Option<wrap(u8 = 9, elemsec)>,
   datacount: Option<wrap(u8 = 12, datacountsec)>,
   codes: Option<wrap(u8 = 10, codesec)>,
   datas: Option<wrap(u8 = 11, datasec)>,

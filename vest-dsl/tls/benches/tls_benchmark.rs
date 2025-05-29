@@ -219,38 +219,43 @@ fn rustls_parse_handshake_throughput(c: &mut Criterion) {
     group.finish();
 }
 
-const TRANCO_TEST_LIMIT: usize = 100;
+const TRANCO_TEST_LIMIT: usize = 200;
 
 /// Benchmark parsing time of handshakes from Tranco list
 fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
-    let mut valid_server_hellos = vec![];
+    let mut valid_msgs = vec![];
 
     // Only use valid server hellos (some may be encrypted)
     for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
+        for msg in *client_msgs {
+            if handshake().parse(msg).is_ok() {
+                valid_msgs.push(msg);
+            }
+        }
         for msg in *server_msgs {
             if handshake().parse(msg).is_ok() {
-                valid_server_hellos.push(msg);
+                valid_msgs.push(msg);
             }
         }
     }
 
-    eprintln!("{} valid message(s) found", valid_server_hellos.len());
+    eprintln!("{} valid message(s) found", valid_msgs.len());
 
-    valid_server_hellos.truncate(TRANCO_TEST_LIMIT);
+    valid_msgs.truncate(TRANCO_TEST_LIMIT);
 
     let mut group = c.benchmark_group("parse_tranco_handshakes_bulk");
     group.sample_size(1000);
 
     group.bench_function("vest", |b| {
         b.iter(|| {
-            for msg in &valid_server_hellos {
+            for msg in &valid_msgs {
                 black_box(handshake().parse(msg).unwrap());
             }
         })
     });
     group.bench_function("rustls", |b| {
         b.iter(|| {
-            for msg in &valid_server_hellos {
+            for msg in &valid_msgs {
                 black_box(
                     rustls::internal::msgs::message::MessagePayload::new(
                         rustls::ContentType::Handshake,
@@ -274,7 +279,8 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
 
     // Only use valid server hellos (some may be encrypted)
     for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
-        for msg in *server_msgs {
+
+        for msg in client_msgs.iter().chain(server_msgs.iter()) {
             if let Ok((_, handshake)) = handshake().parse(msg) {
                 max_len = max_len.max(msg.len());
 
@@ -309,7 +315,9 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
     group.bench_function("vest", |b| {
         b.iter(|| {
             for msg in &vest_parsed {
-                let mut buf = vec![0; max_len];
+                // let mut buf = vec![0; max_len];
+                let len = handshake().length(msg);
+                let mut buf = vec![0; len];
                 black_box(handshake().serialize(msg, &mut buf, 0).unwrap());
             }
         })
@@ -317,7 +325,8 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
     group.bench_function("rustls", |b| {
         b.iter(|| {
             for msg in &rustls_parsed {
-                let mut buf = Vec::with_capacity(max_len);
+                // let mut buf = Vec::with_capacity(max_len);
+                let mut buf = Vec::new();
                 black_box(msg.encode(&mut buf));
             }
         })
@@ -329,11 +338,11 @@ criterion_group!(
     benches,
     // vesttls_parse_handshake,
     // rustls_parse_handshake,
-    bench_serialize_handshake,
+    // bench_serialize_handshake,
     // vesttls_parse_handshake_throughput,
     // rustls_parse_handshake_throughput,
-    // bench_parse_tranco_handshakes_bulk,
-    // bench_serialize_tranco_handshakes_bulk,
+    bench_parse_tranco_handshakes_bulk,
+    bench_serialize_tranco_handshakes_bulk,
 );
 // criterion_group!(
 //     benches,
