@@ -249,6 +249,81 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         &&& res is Err ==> self.spec_parse_helper(s, n) is None
         &&& self.spec_parse_helper(s, n) is None ==> res is Err
     }
+
+    proof fn lemma_spec_serialize_max_length(&self, vs: Seq<C::Type>, n: usize)
+        requires
+            self.requires(),
+            self.wf_helper(vs, n),
+            self.spec_serialize(vs).len() <= usize::MAX,
+        ensures
+            forall|i: int|
+                #![auto]
+                0 <= i < vs.len() ==> self.0.spec_serialize(vs[i]).len() <= usize::MAX,
+            forall|i: int|
+                #![auto]
+                0 <= i < vs.len() ==> self.spec_serialize(vs.take(i as int)).len() <= usize::MAX,
+        decreases vs.len(),
+    {
+        if vs.len() == 0 {
+            assert(vs == Seq::<C::Type>::empty());
+        } else {
+            let (v_, vs_) = (vs.last(), vs.drop_last());
+            assert(vs_ =~= vs.take(vs_.len() as int));
+            self.lemma_spec_serialize_max_length(vs_, (n - 1) as usize);
+            assert forall|i: int| #![auto] 0 <= i < vs.len() implies {
+                self.0.spec_serialize(vs[i]).len() <= usize::MAX
+            } by {
+                assert forall|i: int| #![auto] 0 <= i < vs.len() - 1 implies {
+                    self.0.spec_serialize(vs.drop_last()[i]).len() <= usize::MAX
+                } by {}
+                assert(forall|i: int|
+                    #![auto]
+                    0 <= i < vs.len() - 1 ==> vs.drop_last()[i] == vs[i]);
+                assert(forall|i: int|
+                    #![auto]
+                    0 <= i < vs.len() - 1 ==> vs.drop_last().take(i as int) == vs.take(i as int));
+                assert(self.spec_serialize(vs_).len() <= usize::MAX);
+                assert(self.spec_serialize(vs) == self.spec_serialize(vs_) + self.0.spec_serialize(
+                    v_,
+                ));
+                let last_len = self.0.spec_serialize(v_).len();
+                if last_len > usize::MAX {
+                    assert(self.spec_serialize(vs).len() > usize::MAX);
+                    assert(false);
+                }
+                assert(last_len <= usize::MAX);
+            }
+            assert forall|i: int| #![auto] 0 <= i < vs.len() implies {
+                self.spec_serialize(vs.take(i as int)).len() <= usize::MAX
+            } by {
+                assert forall|i: int| #![auto] 0 <= i < vs.len() - 1 implies {
+                    self.spec_serialize(vs.drop_last().take(i as int)).len() <= usize::MAX
+                } by {}
+                assert(forall|i: int|
+                    #![auto]
+                    0 <= i < vs.len() - 1 ==> vs.drop_last()[i] == vs[i]);
+                assert(forall|i: int|
+                    #![auto]
+                    0 <= i < vs.len() - 1 ==> vs.drop_last().take(i as int) == vs.take(i as int));
+            }
+        }
+    }
+
+    proof fn lemma_spec_serialize_max_length_2(&self, vs: Seq<C::Type>, n: usize)
+        requires
+            self.requires(),
+            self.wf_helper(vs, n),
+            self.spec_serialize(vs).len() <= usize::MAX,
+        ensures
+            forall|i: int|
+                #![auto]
+                0 <= i <= vs.len() ==> {
+                    &&& self.spec_serialize(vs.take(i as int)).len() <= usize::MAX
+                },
+    {
+        self.lemma_spec_serialize_max_length(vs, n);
+        assert(vs.take(vs.len() as int) == vs);
+    }
 }
 
 impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
@@ -262,9 +337,12 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
 
     type SType = &'x RepeatResult<C::Type>;
 
-    #[verifier::external_body]
     fn length(&self, vs: Self::SType) -> usize {
         let mut len = 0;
+        proof {
+            self@.lemma_spec_serialize_max_length(vs@, self.1);
+            self@.lemma_spec_serialize_max_length_2(vs@, self.1);
+        }
         for i in 0..vs.0.len()
             invariant
                 0 <= i <= vs.0.len(),
@@ -272,8 +350,15 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
                 self.ex_requires(),
                 self@.requires(),
                 self@.spec_serialize(vs@).len() <= usize::MAX,
-                // self@.0.spec_serialize(vs@[i as int]).len() <= usize::MAX,
+                forall|i: int|
+                    0 <= i < vs@.len() ==> self@.0.spec_serialize(#[trigger] vs@[i]).len()
+                        <= usize::MAX,
+                forall|i: int|
+                    0 <= i <= vs@.len() ==> self@.spec_serialize(
+                        #[trigger] vs@.take(i as int),
+                    ).len() <= usize::MAX,
                 len == self@.spec_serialize(vs@.take(i as int)).len(),
+            decreases vs.0.len() - i,
         {
             let v = &vs.0[i];
             assert(v@ == vs@[i as int]);
@@ -466,7 +551,7 @@ impl<C: SecureSpecCombinator> SpecCombinator for Repeat<C> {
     }
 
     open spec fn spec_serialize(&self, vs: Self::Type) -> Seq<u8> {
-        vs.fold_left(Seq::empty(), |acc: Seq<u8>, v| acc + self.0.spec_serialize(v))
+        RepeatN(self.0, vs.len() as usize).spec_serialize(vs)
     }
 }
 
@@ -553,13 +638,8 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for Repeat<C> where
 
     type SType = &'x RepeatResult<C::Type>;
 
-    #[verifier::external_body]
     fn length(&self, vs: Self::SType) -> usize {
-        let mut len = 0;
-        for i in 0..vs.0.len() {
-            len += self.0.length(&vs.0[i]);
-        }
-        len
+        RepeatN(&self.0, vs.0.len()).length(vs)
     }
 
     open spec fn ex_requires(&self) -> bool {
@@ -603,38 +683,11 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for Repeat<C> where
         Ok((input.len(), RepeatResult(vs)))
     }
 
-    fn serialize(&self, vs: Self::SType, data: &mut O, mut pos: usize) -> (res: Result<
+    fn serialize(&self, vs: Self::SType, data: &mut O, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        let ghost old_data = old(data)@;
-        let old_pos = pos;
-        assert(data@ == seq_splice(old(data)@, pos, Seq::<u8>::empty()));
-        let ghost _vs = vs@;
-        for i in 0..vs.0.len()
-            invariant
-                data@.len() == old_data.len(),
-                pos <= data@.len() <= usize::MAX,
-                _vs == vs@,
-                self@.wf(_vs),
-                self.ex_requires(),
-                self@.requires(),
-                (pos - old_pos) == self@.spec_serialize(_vs.take(i as int)).len(),
-                data@ == seq_splice(old_data, old_pos, self@.spec_serialize(_vs.take(i as int))),
-        {
-            let v = &vs.0[i];
-            assert(v@ == _vs[i as int]);
-            assert(_vs.take((i + 1) as int).drop_last() == _vs.take(i as int));  // <-- this is the key
-            let l = self.0.serialize(v, data, pos)?;
-            pos += l;
-            assert(data@ == seq_splice(
-                old_data,
-                old_pos,
-                self@.spec_serialize(_vs.take((i + 1) as int)),
-            ));
-        }
-        assert(_vs == _vs.take(vs.0.len() as int));
-        Ok(pos - old_pos)
+        RepeatN(&self.0, vs.0.len()).serialize(vs, data, pos)
     }
 }
 
