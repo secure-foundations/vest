@@ -1,6 +1,6 @@
+
 #![allow(warnings)]
 #![allow(unused)]
-use std::marker::PhantomData;
 use vstd::prelude::*;
 use vest::regular::modifier::*;
 use vest::regular::bytes;
@@ -14,6 +14,25 @@ use vest::utils::*;
 use vest::properties::*;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
+
+macro_rules! impl_wrapper_combinator {
+    ($combinator:ty, $combinator_alias:ty) => {
+        ::builtin_macros::verus! {
+            impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
+                type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+                type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+                fn length(&self, v: Self::SType) -> usize
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+                closed spec fn ex_requires(&self) -> bool
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+                fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+                fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+        } // verus!
+    };
+}
 verus!{
 
 pub struct SpecMsgD {
@@ -97,7 +116,8 @@ impl<'a> Iso<'a> for MsgDMapper {
     type RefSrc = MsgDInnerRef<'a>;
 }
 pub spec const SPEC_MSGDF1_CONST: Seq<u8> = seq![1; 4];pub const MSGDF2_CONST: u16 = 4660;
-
+type SpecMsgDCombinatorAlias1 = (Refined<U16Be, TagPred<u16>>, SpecF5Combinator);
+type SpecMsgDCombinatorAlias2 = (Refined<bytes::Fixed<4>, TagPred<Seq<u8>>>, SpecMsgDCombinatorAlias1);
 pub struct SpecMsgDCombinator(SpecMsgDCombinatorAlias);
 
 impl SpecCombinator for SpecMsgDCombinator {
@@ -127,7 +147,7 @@ impl SecureSpecCombinator for SpecMsgDCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecMsgDCombinatorAlias = Mapped<(Refined<bytes::Fixed<4>, TagPred<Seq<u8>>>, (Refined<U16Be, TagPred<u16>>, SpecF5Combinator)), MsgDMapper>;
+pub type SpecMsgDCombinatorAlias = Mapped<SpecMsgDCombinatorAlias2, MsgDMapper>;
 pub exec static MSGDF1_CONST: [u8; 4]
     ensures MSGDF1_CONST@ == SPEC_MSGDF1_CONST,
 {
@@ -135,6 +155,21 @@ pub exec static MSGDF1_CONST: [u8; 4]
     assert(arr@ == SPEC_MSGDF1_CONST);
     arr
 }
+type MsgDCombinatorAlias1 = (Refined<U16Be, TagPred<u16>>, F5Combinator);
+type MsgDCombinatorAlias2 = (Refined<bytes::Fixed<4>, TagPred<[u8; 4]>>, MsgDCombinator1);
+struct MsgDCombinator1(MsgDCombinatorAlias1);
+impl View for MsgDCombinator1 {
+    type V = SpecMsgDCombinatorAlias1;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgDCombinator1, MsgDCombinatorAlias1);
+
+struct MsgDCombinator2(MsgDCombinatorAlias2);
+impl View for MsgDCombinator2 {
+    type V = SpecMsgDCombinatorAlias2;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgDCombinator2, MsgDCombinatorAlias2);
 
 pub struct MsgDCombinator(MsgDCombinatorAlias);
 
@@ -154,7 +189,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgDCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type MsgDCombinatorAlias = Mapped<(Refined<bytes::Fixed<4>, TagPred<[u8; 4]>>, (Refined<U16Be, TagPred<u16>>, F5Combinator)), MsgDMapper>;
+pub type MsgDCombinatorAlias = Mapped<MsgDCombinator2, MsgDMapper>;
 
 
 pub closed spec fn spec_msg_d() -> SpecMsgDCombinator {
@@ -171,7 +206,7 @@ pub fn msg_d() -> (o: MsgDCombinator)
 {
     MsgDCombinator(
     Mapped {
-        inner: (Refined { inner: bytes::Fixed::<4>, predicate: TagPred(MSGDF1_CONST) }, (Refined { inner: U16Be, predicate: TagPred(MSGDF2_CONST) }, F5())),
+        inner: MsgDCombinator2((Refined { inner: bytes::Fixed::<4>, predicate: TagPred(MSGDF1_CONST) }, MsgDCombinator1((Refined { inner: U16Be, predicate: TagPred(MSGDF2_CONST) }, F5())))),
         mapper: MsgDMapper,
     })
 }
@@ -558,12 +593,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCF4Combinator {
 pub type MsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<Choice<Cond<Content0Combinator>, Choice<Cond<U16Be>, Choice<Cond<U32Be>, Cond<bytes::Tail>>>>, MsgCF4Mapper>>;
 
 
-pub closed spec fn spec_msg_c_f4(f2: SpecContentType, f3: u24) -> SpecMsgCF4Combinator {
+pub closed spec fn spec_msg_c_f4(f3: u24, f2: SpecContentType) -> SpecMsgCF4Combinator {
     SpecMsgCF4Combinator(AndThen(bytes::Variable(f3.spec_into()), Mapped { inner: Choice(Cond { cond: f2 == 0, inner: spec_content_0(f3) }, Choice(Cond { cond: f2 == 1, inner: U16Be }, Choice(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
 }
 
-pub fn msg_c_f4<'a>(f2: ContentType, f3: u24) -> (o: MsgCF4Combinator)
-    ensures o@ == spec_msg_c_f4(f2@, f3@),
+pub fn msg_c_f4<'a>(f3: u24, f2: ContentType) -> (o: MsgCF4Combinator)
+    ensures o@ == spec_msg_c_f4(f3@, f2@),
 {
     MsgCF4Combinator(AndThen(bytes::Variable(f3.ex_into()), Mapped { inner: Choice::new(Cond { cond: f2 == 0, inner: content_0(f3) }, Choice::new(Cond { cond: f2 == 1, inner: U16Be }, Choice::new(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
 }
@@ -646,7 +681,7 @@ impl<'a> Iso<'a> for MsgAMapper {
     type Dst = MsgA<'a>;
     type RefSrc = MsgAInnerRef<'a>;
 }
-
+type SpecMsgACombinatorAlias1 = (SpecMsgBCombinator, bytes::Tail);
 pub struct SpecMsgACombinator(SpecMsgACombinatorAlias);
 
 impl SpecCombinator for SpecMsgACombinator {
@@ -676,7 +711,14 @@ impl SecureSpecCombinator for SpecMsgACombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecMsgACombinatorAlias = Mapped<(SpecMsgBCombinator, bytes::Tail), MsgAMapper>;
+pub type SpecMsgACombinatorAlias = Mapped<SpecMsgACombinatorAlias1, MsgAMapper>;
+type MsgACombinatorAlias1 = (MsgBCombinator, bytes::Tail);
+struct MsgACombinator1(MsgACombinatorAlias1);
+impl View for MsgACombinator1 {
+    type V = SpecMsgACombinatorAlias1;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgACombinator1, MsgACombinatorAlias1);
 
 pub struct MsgACombinator(MsgACombinatorAlias);
 
@@ -696,7 +738,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgACombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type MsgACombinatorAlias = Mapped<(MsgBCombinator, bytes::Tail), MsgAMapper>;
+pub type MsgACombinatorAlias = Mapped<MsgACombinator1, MsgAMapper>;
 
 
 pub closed spec fn spec_msg_a() -> SpecMsgACombinator {
@@ -713,7 +755,7 @@ pub fn msg_a() -> (o: MsgACombinator)
 {
     MsgACombinator(
     Mapped {
-        inner: (msg_b(), bytes::Tail),
+        inner: MsgACombinator1((msg_b(), bytes::Tail)),
         mapper: MsgAMapper,
     })
 }
@@ -788,31 +830,6 @@ pub fn content_type() -> (o: ContentTypeCombinator)
 }
 
                 
-pub type SpecF5 = Seq<u8>;
-pub type F5<'a> = &'a [u8];
-pub type F5Ref<'a> = &'a &'a [u8];
-
-pub spec const SPEC_F5_CONST: Seq<u8> = seq![1; 5];pub type SpecF5Combinator = Refined<bytes::Fixed<5>, TagPred<Seq<u8>>>;
-pub exec static F5_CONST: [u8; 5]
-    ensures F5_CONST@ == SPEC_F5_CONST,
-{
-    let arr: [u8; 5] = [1; 5];
-    assert(arr@ == SPEC_F5_CONST);
-    arr
-}
-pub type F5Combinator = Refined<bytes::Fixed<5>, TagPred<[u8; 5]>>;
-
-
-pub closed spec fn spec_F5() -> SpecF5Combinator {
-    Refined { inner: bytes::Fixed::<5>, predicate: TagPred(SPEC_F5_CONST) }
-}
-
-pub fn F5() -> (o: F5Combinator)
-    ensures o@ == spec_F5(),
-{
-    Refined { inner: bytes::Fixed::<5>, predicate: TagPred(F5_CONST) }
-}
-
 
 pub struct SpecMsgC {
     pub f2: SpecContentType,
@@ -972,7 +989,7 @@ impl View for MsgCCont1 {
 
 pub open spec fn spec_msg_c_cont0(deps: (SpecContentType, u24)) -> SpecMsgCF4Combinator {
     let (f2, f3) = deps;
-    spec_msg_c_f4(f2, f3)
+    spec_msg_c_f4(f3, f2)
 }
 
 impl View for MsgCCont0 {
@@ -1040,16 +1057,41 @@ impl<'a, 'b, 'x> Continuation<MsgCCont0Input<'a, 'b, 'x>> for MsgCCont0 {
         match deps {
             POrSType::P(deps) => {
                 let (f2, f3) = *deps;
-                msg_c_f4(f2, f3)
+                msg_c_f4(f3, f2)
             }
             POrSType::S(deps) => {
                 let (f2, f3) = deps;
                 let (f2, f3) = (*f2, *f3);
-                msg_c_f4(f2, f3)
+                msg_c_f4(f3, f2)
             }
         }
     }
 }
                 
+pub type SpecF5 = Seq<u8>;
+pub type F5<'a> = &'a [u8];
+pub type F5Ref<'a> = &'a &'a [u8];
+
+pub spec const SPEC_F5_CONST: Seq<u8> = seq![1; 5];pub type SpecF5Combinator = Refined<bytes::Fixed<5>, TagPred<Seq<u8>>>;
+pub exec static F5_CONST: [u8; 5]
+    ensures F5_CONST@ == SPEC_F5_CONST,
+{
+    let arr: [u8; 5] = [1; 5];
+    assert(arr@ == SPEC_F5_CONST);
+    arr
+}
+pub type F5Combinator = Refined<bytes::Fixed<5>, TagPred<[u8; 5]>>;
+
+
+pub closed spec fn spec_F5() -> SpecF5Combinator {
+    Refined { inner: bytes::Fixed::<5>, predicate: TagPred(SPEC_F5_CONST) }
+}
+
+pub fn F5() -> (o: F5Combinator)
+    ensures o@ == spec_F5(),
+{
+    Refined { inner: bytes::Fixed::<5>, predicate: TagPred(F5_CONST) }
+}
+
 
 }

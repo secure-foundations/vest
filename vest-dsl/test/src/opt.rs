@@ -1,6 +1,6 @@
+
 #![allow(warnings)]
 #![allow(unused)]
-use std::marker::PhantomData;
 use vstd::prelude::*;
 use vest::regular::modifier::*;
 use vest::regular::bytes;
@@ -14,6 +14,25 @@ use vest::utils::*;
 use vest::properties::*;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
+
+macro_rules! impl_wrapper_combinator {
+    ($combinator:ty, $combinator_alias:ty) => {
+        ::builtin_macros::verus! {
+            impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
+                type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+                type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+                fn length(&self, v: Self::SType) -> usize
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+                closed spec fn ex_requires(&self) -> bool
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+                fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+                fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+        } // verus!
+    };
+}
 verus!{
 pub type SpecA = Seq<u8>;
 pub type A<'a> = &'a [u8];
@@ -171,7 +190,7 @@ impl<'a> Iso<'a> for BMapper {
 }
 pub spec const SPEC_BY_0_FRONT_CONST: Seq<u8> = seq![1, 2, 3];
 pub const BY_0_BACK_CONST: u8 = 1;
-
+type SpecBCombinatorAlias1 = (bytes::Fixed<10>, Terminated<Preceded<Tag<bytes::Fixed<3>, Seq<u8>>, SpecACombinator>, Tag<U8, u8>>);
 pub struct SpecBCombinator(SpecBCombinatorAlias);
 
 impl SpecCombinator for SpecBCombinator {
@@ -201,7 +220,7 @@ impl SecureSpecCombinator for SpecBCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecBCombinatorAlias = Mapped<(bytes::Fixed<10>, Terminated<Preceded<Tag<bytes::Fixed<3>, Seq<u8>>, SpecACombinator>, Tag<U8, u8>>), BMapper>;
+pub type SpecBCombinatorAlias = Mapped<SpecBCombinatorAlias1, BMapper>;
 pub exec static BY_0_FRONT_CONST: [u8; 3]
     ensures BY_0_FRONT_CONST@ == SPEC_BY_0_FRONT_CONST,
 {
@@ -210,6 +229,13 @@ pub exec static BY_0_FRONT_CONST: [u8; 3]
     arr
 }
 
+type BCombinatorAlias1 = (bytes::Fixed<10>, Terminated<Preceded<Tag<bytes::Fixed<3>, [u8; 3]>, ACombinator>, Tag<U8, u8>>);
+struct BCombinator1(BCombinatorAlias1);
+impl View for BCombinator1 {
+    type V = SpecBCombinatorAlias1;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(BCombinator1, BCombinatorAlias1);
 
 pub struct BCombinator(BCombinatorAlias);
 
@@ -229,7 +255,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type BCombinatorAlias = Mapped<(bytes::Fixed<10>, Terminated<Preceded<Tag<bytes::Fixed<3>, [u8; 3]>, ACombinator>, Tag<U8, u8>>), BMapper>;
+pub type BCombinatorAlias = Mapped<BCombinator1, BMapper>;
 
 
 pub closed spec fn spec_b() -> SpecBCombinator {
@@ -246,7 +272,7 @@ pub fn b() -> (o: BCombinator)
 {
     BCombinator(
     Mapped {
-        inner: (bytes::Fixed::<10>, Terminated(Preceded(Tag::new(bytes::Fixed::<3>, BY_0_FRONT_CONST), a()), Tag::new(U8, BY_0_BACK_CONST))),
+        inner: BCombinator1((bytes::Fixed::<10>, Terminated(Preceded(Tag::new(bytes::Fixed::<3>, BY_0_FRONT_CONST), a()), Tag::new(U8, BY_0_BACK_CONST)))),
         mapper: BMapper,
     })
 }
@@ -331,7 +357,7 @@ impl<'a> Iso<'a> for MsgMapper {
     type RefSrc = MsgInnerRef<'a>;
 }
 pub const MSGA_CONST: u8 = 1;
-pub spec const SPEC_MSGB_CONST: Seq<u8> = seq![1, 2];
+pub spec const SPEC_MSGB_CONST: Seq<u8> = seq![1, 2];type SpecMsgCombinatorAlias1 = (Refined<U8, TagPred<u8>>, Refined<bytes::Fixed<2>, TagPred<Seq<u8>>>);
 pub struct SpecMsgCombinator(SpecMsgCombinatorAlias);
 
 impl SpecCombinator for SpecMsgCombinator {
@@ -361,7 +387,7 @@ impl SecureSpecCombinator for SpecMsgCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecMsgCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, Refined<bytes::Fixed<2>, TagPred<Seq<u8>>>), MsgMapper>;
+pub type SpecMsgCombinatorAlias = Mapped<SpecMsgCombinatorAlias1, MsgMapper>;
 pub exec static MSGB_CONST: [u8; 2]
     ensures MSGB_CONST@ == SPEC_MSGB_CONST,
 {
@@ -369,6 +395,13 @@ pub exec static MSGB_CONST: [u8; 2]
     assert(arr@ == SPEC_MSGB_CONST);
     arr
 }
+type MsgCombinatorAlias1 = (Refined<U8, TagPred<u8>>, Refined<bytes::Fixed<2>, TagPred<[u8; 2]>>);
+struct MsgCombinator1(MsgCombinatorAlias1);
+impl View for MsgCombinator1 {
+    type V = SpecMsgCombinatorAlias1;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgCombinator1, MsgCombinatorAlias1);
 
 pub struct MsgCombinator(MsgCombinatorAlias);
 
@@ -388,7 +421,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type MsgCombinatorAlias = Mapped<(Refined<U8, TagPred<u8>>, Refined<bytes::Fixed<2>, TagPred<[u8; 2]>>), MsgMapper>;
+pub type MsgCombinatorAlias = Mapped<MsgCombinator1, MsgMapper>;
 
 
 pub closed spec fn spec_msg() -> SpecMsgCombinator {
@@ -405,7 +438,7 @@ pub fn msg() -> (o: MsgCombinator)
 {
     MsgCombinator(
     Mapped {
-        inner: (Refined { inner: U8, predicate: TagPred(MSGA_CONST) }, Refined { inner: bytes::Fixed::<2>, predicate: TagPred(MSGB_CONST) }),
+        inner: MsgCombinator1((Refined { inner: U8, predicate: TagPred(MSGA_CONST) }, Refined { inner: bytes::Fixed::<2>, predicate: TagPred(MSGB_CONST) })),
         mapper: MsgMapper,
     })
 }

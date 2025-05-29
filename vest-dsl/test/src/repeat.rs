@@ -1,6 +1,6 @@
+
 #![allow(warnings)]
 #![allow(unused)]
-use std::marker::PhantomData;
 use vstd::prelude::*;
 use vest::regular::modifier::*;
 use vest::regular::bytes;
@@ -14,6 +14,25 @@ use vest::utils::*;
 use vest::properties::*;
 use vest::bitcoin::varint::{BtcVarint, VarInt};
 use vest::regular::leb128::*;
+
+macro_rules! impl_wrapper_combinator {
+    ($combinator:ty, $combinator_alias:ty) => {
+        ::builtin_macros::verus! {
+            impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
+                type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+                type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+                fn length(&self, v: Self::SType) -> usize
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+                closed spec fn ex_requires(&self) -> bool
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+                fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+                fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+        } // verus!
+    };
+}
 verus!{
 
 pub struct SpecOpaqueU16 {
