@@ -65,6 +65,8 @@ enum Bracket {
     Parentheses,
     Angle,
     Square,
+    DoubleParentheses, // only used for struct combinator wrappers
+    ChoiceParentheses, // only used for choice combinator wrappers
 }
 
 impl Bracket {
@@ -73,6 +75,8 @@ impl Bracket {
             Bracket::Parentheses => ("(", ")"),
             Bracket::Angle => ("<", ">"),
             Bracket::Square => ("[", "]"),
+            Bracket::DoubleParentheses => ("((", "))"),
+            Bracket::ChoiceParentheses => ("(Choice::new(", "))"),
         }
     }
 }
@@ -80,10 +84,28 @@ impl Bracket {
 /// format a vector into pairs of tuples, optionally prepended by `prepend`
 /// e.g. `["R1", "R2", "R3", "R4"] ==> "prepend(R1, prepend(R2, prepend(R3, R4)))"`
 fn fmt_in_pairs<T: Display>(tuples: &[T], prepend: &str, bracket: Bracket) -> String {
+    // let (left, right) = bracket.to_str_pair();
+    // match tuples.split_last() {
+    //     None => String::new(),
+    //     Some((last, rest)) => rest.iter().rfold(last.to_string(), |acc, t| {
+    //         format!("{prepend}{left}{t}, {acc}{right}")
+    //     }),
+    // }
+    fmt_in_pairs_statefull(tuples, &|_| prepend.to_string(), bracket, 0)
+}
+
+fn fmt_in_pairs_statefull<T: Display>(
+    tuples: &[T],
+    prepend: &impl Fn(usize) -> String,
+    bracket: Bracket,
+    mut state: usize,
+) -> String {
     let (left, right) = bracket.to_str_pair();
     match tuples.split_last() {
         None => String::new(),
         Some((last, rest)) => rest.iter().rfold(last.to_string(), |acc, t| {
+            let prepend = prepend(state);
+            state += 1;
             format!("{prepend}{left}{t}, {acc}{right}")
         }),
     }
@@ -840,6 +862,32 @@ impl Codegen for CombinatorInvocation {
     }
 }
 
+fn gen_aliases(types: &[String], name: &str, mode: Mode, surrounding: (&str, &str)) -> String {
+    if types.len() <= 1 {
+        return String::new();
+    }
+    let (left, right) = surrounding;
+    (1..types.len())
+        .map(|i| {
+            let alias_name = match mode {
+                Mode::Spec => format!("Spec{name}CombinatorAlias{}", i),
+                _ => format!("{name}CombinatorAlias{}", i),
+            };
+            let current_type = &types[i];
+            let previous_type = if i == 1 {
+                types[i - 1].clone()
+            } else {
+                match mode {
+                    Mode::Spec => format!("Spec{name}CombinatorAlias{}", i - 1),
+                    _ => format!("{name}Combinator{}", i - 1),
+                }
+            };
+            format!("type {alias_name} = {left}{current_type}, {previous_type}{right};",)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn rsplit_dependent_fields_at(
     fields: &[StructField],
     offset: usize,
@@ -1143,42 +1191,121 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         }
         // need to first get the additional code because `ctx.constraint_int_combs` is updated
         // each time `gen_combinator_type` is called
-        let additional_code = self
+        let mut additional_code = self
             .0
             .iter()
             .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).1)
             .collect::<Vec<_>>()
             .join("");
-        let mut into_comb_type_pairs = |fields: &[StructField]| {
-            fmt_in_pairs(
-                &fields
-                    .iter()
-                    // .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
-                    .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
-                    .collect::<Vec<_>>(),
-                "",
-                Bracket::Parentheses,
+        let mut combinator_types = |fields: &[StructField]| {
+            fields
+                .iter()
+                // .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
+                .map(|field| comb_type_and_code_from_field(field, name, mode, ctx).0)
+                .collect::<Vec<_>>()
+        };
+
+        if split_at_dependent_field(&self.0).0.is_empty() {
+            // no dependent fields
+            // we implement the combinator wrappers here to "cache" Rust's trait resolution
+            let combinator_types = combinator_types(&self.0);
+            let combinator_types_rev = combinator_types
+                .clone()
+                .into_iter()
+                .rev()
+                .collect::<Vec<_>>();
+            match mode {
+                Mode::Spec => {
+                    let aliases = gen_aliases(&combinator_types_rev, name, mode, ("(", ")"));
+                    additional_code += &aliases;
+                }
+                _ => {
+                    let aliases = gen_aliases(&combinator_types_rev, name, mode, ("(", ")"));
+                    let wrappers = (1..combinator_types.len())
+                        .map(|i| {
+                            format!(
+                                r#"
+struct {name}Combinator{i}({name}CombinatorAlias{i});
+impl View for {name}Combinator{i} {{
+    type V = Spec{name}CombinatorAlias{i};
+    closed spec fn view(&self) -> Self::V {{ self.0@ }}
+}}
+impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
+"#
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .join("");
+                    additional_code += &aliases;
+                    additional_code += &wrappers;
+                }
+            }
+            // restore the top level flag
+            ctx.top_level = old_top_level;
+            let mapped_inner = if combinator_types.len() == 1 {
+                combinator_types[0].clone()
+            } else {
+                match mode {
+                    Mode::Spec => {
+                        format!("Spec{name}CombinatorAlias{}", combinator_types.len() - 1)
+                    }
+                    _ => format!("{name}Combinator{}", combinator_types.len() - 1),
+                }
+            };
+            (
+                format!("Mapped<{}, {}Mapper>", mapped_inner, name),
+                additional_code,
             )
-        };
-        let mapped_inner = match mode {
-            Mode::Spec => build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecPair<", ">"),
-            _ => custom_build_nested_pairs(
-                &self.0,
-                &mut into_comb_type_pairs,
-                &|_| "Pair<".into(),
-                &|depth| format!(", {name}Cont{depth}>"),
-                0,
-            ),
-        };
-        // restore the top level flag
-        ctx.top_level = old_top_level;
-        (
-            format!("Mapped<{}, {}Mapper>", mapped_inner, name),
-            additional_code,
-        )
+        } else {
+            let mut into_comb_type_pairs = |fields: &[StructField]| {
+                fmt_in_pairs(&combinator_types(fields), "", Bracket::Parentheses)
+            };
+            let mapped_inner = match mode {
+                Mode::Spec => {
+                    build_nested_pairs(&self.0, &mut into_comb_type_pairs, "SpecPair<", ">")
+                }
+                _ => custom_build_nested_pairs(
+                    &self.0,
+                    &mut into_comb_type_pairs,
+                    &|_| "Pair<".into(),
+                    &|depth| format!(", {name}Cont{depth}>"),
+                    0,
+                ),
+            };
+            // restore the top level flag
+            ctx.top_level = old_top_level;
+            (
+                format!("Mapped<{}, {}Mapper>", mapped_inner, name),
+                additional_code,
+            )
+        }
     }
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        fn gen_inner_expr_and_code_from_fields(
+            fields: &[StructField],
+            name: &str,
+            mode: Mode,
+            ctx: &CodegenCtx,
+        ) -> (Vec<String>, Vec<String>) {
+            fields
+                .iter()
+                .map(|field| match field {
+                    StructField::Ordinary { combinator, label }
+                    | StructField::Dependent { combinator, label } => combinator
+                        .gen_combinator_expr(
+                            &lower_snake_to_upper_snake(&(name.to_owned() + label)),
+                            mode,
+                            ctx,
+                        ),
+                    StructField::Const { label, combinator } => {
+                        let name = &lower_snake_to_upper_snake(&(name.to_owned() + label));
+                        combinator.gen_combinator_expr(name, mode, ctx)
+                    }
+                    _ => todo!(),
+                })
+                .unzip()
+        }
         fn gen_combinator_expr_helper(
             fields: &[StructField],
             name: &str,
@@ -1188,23 +1315,8 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         ) -> (String, String) {
             let (fst, snd) = split_at_dependent_field(fields);
             if fst.is_empty() {
-                let (inner, additional_code): (Vec<String>, Vec<String>) = snd
-                    .iter()
-                    .map(|field| match field {
-                        StructField::Ordinary { combinator, label }
-                        | StructField::Dependent { combinator, label } => combinator
-                            .gen_combinator_expr(
-                                &lower_snake_to_upper_snake(&(name.to_owned() + label)),
-                                mode,
-                                ctx,
-                            ),
-                        StructField::Const { label, combinator } => {
-                            let name = &lower_snake_to_upper_snake(&(name.to_owned() + label));
-                            combinator.gen_combinator_expr(name, mode, ctx)
-                        }
-                        _ => todo!(),
-                    })
-                    .unzip();
+                let (inner, additional_code): (Vec<String>, Vec<String>) =
+                    gen_inner_expr_and_code_from_fields(snd, name, mode, ctx);
                 (
                     fmt_in_pairs(&inner, "", Bracket::Parentheses),
                     additional_code.join(""),
@@ -1378,17 +1490,43 @@ impl<'a, 'b, 'x> Continuation<{name}Cont{depth}Input<'a, 'b, 'x>> for {name}Cont
                 (expr, fst_code + &snd_code.join("") + &additional_code)
             }
         }
-        let (inner, additional_code) = gen_combinator_expr_helper(&self.0, name, mode, ctx, 0);
-        (
-            format!(
-                r#"
+        if split_at_dependent_field(&self.0).0.is_empty() {
+            // no dependent fields
+            // we use the combinator wrappers here (used to "cache" Rust's trait resolution)
+            let (inner, additional_code): (Vec<String>, Vec<String>) =
+                gen_inner_expr_and_code_from_fields(&self.0, name, mode, ctx);
+            let inner = match mode {
+                Mode::Spec => fmt_in_pairs(&inner, "", Bracket::Parentheses),
+                _ => fmt_in_pairs_statefull(
+                    &inner,
+                    &|depth| format!("{name}Combinator{depth}"),
+                    Bracket::DoubleParentheses,
+                    1,
+                ),
+            };
+            (
+                format!(
+                    r#"
     Mapped {{
         inner: {inner},
         mapper: {name}Mapper,
     }}"#,
-            ),
-            additional_code,
-        )
+                ),
+                additional_code.join(""),
+            )
+        } else {
+            let (inner, additional_code) = gen_combinator_expr_helper(&self.0, name, mode, ctx, 0);
+            (
+                format!(
+                    r#"
+    Mapped {{
+        inner: {inner},
+        mapper: {name}Mapper,
+    }}"#,
+                ),
+                additional_code,
+            )
+        }
     }
 }
 
@@ -1864,17 +2002,6 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
         mode: Mode,
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
-        let lifetime_ann = ctx
-            .msg_lifetimes
-            .get(name)
-            .unwrap_or_else(|| panic!("format lifetime not found for combinator: {}", name));
-        let lifetime_ann_mapper = match lifetime_ann {
-            LifetimeAnn::Some => match mode {
-                Mode::Spec => "<'static>",
-                _ => "<'a>",
-            },
-            LifetimeAnn::None => "",
-        };
         let name = &snake_to_upper_caml(name);
         let mut is_wrapper = false;
         let (combinator_types, additional_code): (Vec<String>, Vec<String>) = match &self.choices {
@@ -1916,7 +2043,52 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                 .map(|(t, code)| (format!("Cond<{}>", t), code))
                 .unzip(),
         };
-        let inner = fmt_in_pairs(&combinator_types, "Choice", Bracket::Angle);
+        // we implement the combinator wrappers here to "cache" Rust's trait resolution
+        // let inner = fmt_in_pairs(&combinator_types, "Choice", Bracket::Angle);
+
+        let mapped_inner = if combinator_types.len() == 1 {
+            combinator_types[0].clone()
+        } else {
+            match mode {
+                Mode::Spec => {
+                    format!("Spec{name}CombinatorAlias{}", combinator_types.len() - 1)
+                }
+                _ => format!("{name}Combinator{}", combinator_types.len() - 1),
+            }
+        };
+        let mut additional_code = additional_code.join("");
+
+        let combinator_types_rev = combinator_types
+            .clone()
+            .into_iter()
+            .rev()
+            .collect::<Vec<_>>();
+        match mode {
+            Mode::Spec => {
+                let aliases = gen_aliases(&combinator_types_rev, name, mode, ("Choice<", ">"));
+                additional_code += &aliases;
+            }
+            _ => {
+                let aliases = gen_aliases(&combinator_types_rev, name, mode, ("Choice<", ">"));
+                let wrappers = (1..combinator_types.len())
+                    .map(|i| {
+                        format!(
+                            r#"
+struct {name}Combinator{i}({name}CombinatorAlias{i});
+impl View for {name}Combinator{i} {{
+    type V = Spec{name}CombinatorAlias{i};
+    closed spec fn view(&self) -> Self::V {{ self.0@ }}
+}}
+impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
+"#
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("");
+                additional_code += &aliases;
+                additional_code += &wrappers;
+            }
+        }
 
         // generate DisjointFrom impls if
         // 1. it's a non-dependent choice
@@ -1959,8 +2131,8 @@ impl DisjointFrom<{}> for {} {{
             "".to_string()
         };
         (
-            format!("Mapped<{}, {}Mapper>", inner, name),
-            additional_code.join("") + &disjointness_proof,
+            format!("Mapped<{}, {}Mapper>", mapped_inner, name),
+            additional_code + &disjointness_proof,
         )
     }
 
@@ -2243,11 +2415,20 @@ impl DisjointFrom<{}> for {} {{
             Mode::Spec => "Choice",
             _ => "Choice::new",
         };
-        let inner = fmt_in_pairs(
-            &combinator_exprs,
-            ord_choice_constructor,
-            Bracket::Parentheses,
-        );
+        // let inner = fmt_in_pairs(
+        //     &combinator_exprs,
+        //     ord_choice_constructor,
+        //     Bracket::Parentheses,
+        // );
+        let inner = match mode {
+            Mode::Spec => fmt_in_pairs(&combinator_exprs, "Choice", Bracket::Parentheses),
+            _ => fmt_in_pairs_statefull(
+                &combinator_exprs,
+                &|depth| format!("{name}Combinator{depth}"),
+                Bracket::ChoiceParentheses,
+                1,
+            ),
+        };
         let combinator_expr = format!("Mapped {{ inner: {}, mapper: {}Mapper }}", inner, name);
         (combinator_expr, additional_code.join(""))
     }
@@ -2944,6 +3125,43 @@ pub enum CodegenOpts {
     Anns,
 }
 
+const VEST_PRELUDE: &str = r#"
+#![allow(warnings)]
+#![allow(unused)]
+use vstd::prelude::*;
+use vest::regular::modifier::*;
+use vest::regular::bytes;
+use vest::regular::variant::*;
+use vest::regular::sequence::*;
+use vest::regular::repetition::*;
+use vest::regular::disjoint::DisjointFrom;
+use vest::regular::tag::*;
+use vest::regular::uints::*;
+use vest::utils::*;
+use vest::properties::*;
+use vest::bitcoin::varint::{BtcVarint, VarInt};
+use vest::regular::leb128::*;
+
+macro_rules! impl_wrapper_combinator {
+    ($combinator:ty, $combinator_alias:ty) => {
+        ::builtin_macros::verus! {
+            impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
+                type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+                type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+                fn length(&self, v: Self::SType) -> usize
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+                closed spec fn ex_requires(&self) -> bool
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+                fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+                fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+        } // verus!
+    };
+}
+"#;
+
 pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> String {
     let mut codegen_ctx = CodegenCtx::with_ast(ast, ctx, flags);
     let mut code = String::new();
@@ -2961,22 +3179,7 @@ pub fn code_gen(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Stri
         gen_combinator_type_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
         gen_combinator_expr_for_definition(defn, &mut code, *msg_lifetime_ann, &mut codegen_ctx);
     }
-    "#![allow(warnings)]\n#![allow(unused)]\n".to_string()
-        + "use std::marker::PhantomData;\n"
-        + "use vstd::prelude::*;\n"
-        + "use vest::regular::modifier::*;\n"
-        + "use vest::regular::bytes;\n"
-        + "use vest::regular::variant::*;\n"
-        + "use vest::regular::sequence::*;\n"
-        + "use vest::regular::repetition::*;\n"
-        + "use vest::regular::disjoint::DisjointFrom;\n"
-        + "use vest::regular::tag::*;\n"
-        + "use vest::regular::uints::*;\n"
-        + "use vest::utils::*;\n"
-        + "use vest::properties::*;\n"
-        + "use vest::bitcoin::varint::{BtcVarint, VarInt};\n"
-        + "use vest::regular::leb128::*;\n"
-        + &format!("verus!{{\n{}\n}}\n", code)
+    VEST_PRELUDE.to_string() + &format!("verus!{{\n{}\n}}\n", code)
 }
 
 fn filter_endianess(ast: &[Definition]) -> Vec<Definition> {
