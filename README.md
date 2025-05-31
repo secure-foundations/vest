@@ -12,18 +12,21 @@ In the context of binary formats, parsing refers to the process of interpreting 
 
 **Formally verified parsing and serialization**
 
-Binary formats are notoriously difficult to parse and serialize correctly, due to the complexity of the formats and the potential for errors in the implementation. Vest aims to address this problem by _formally verifying_ the correctness and security of the parsing and serialization code using the Rust type system and [Verus](https://github.com/verus-lang/verus), a deductive verification tool for Rust.
+Binary formats are notoriously difficult to parse and serialize correctly, due to the complexity of the formats and the potential for errors in the (highly-optimized) implementation. Vest aims to address this problem by _formally verifying_ the correctness and security of the efficient parsing and serialization code using the Rust type system and [Verus](https://github.com/verus-lang/verus), a deductive verification tool for Rust.
 
-We don't use `unsafe` so the Rust type system provides us with strong guarantees about the memory safety of the code. We use Verus to verify the more nuanced properties of the code, such as the top-level round-trip properties of the parsing and serialization functions.
+We leverage Rust's ownership, borrowing, and lifetime system to _safely_ implement "zero-copy" parsing and "in-place" serialization of binary formats, which means that we can parse and serialize binary data without any unnecessary copying or allocation. We don't use `unsafe` so the Rust type system provides us with strong guarantees about the memory safety of the code. We use Verus to verify the more nuanced properties of the code, such as the top-level round-trip properties of the parsing and serialization functions.
 
 - For every binary sequence `b`, if `parse(b)` succeeds, producing a result `(n, m)`, then `serialize(m)` should reproduce the original input `b`, truncated to `n` bytes.
-- For every structured data `m`, if `serialize(m)` succeeds, producing a binary sequence `b`, then `parse(b)` should successfully consuming the entire input `b` and produce the original structured data `m`.
+- For every structured data `m`, if `serialize(m)` produces a binary sequence `b`, then `parse(b)` should successfully consuming the entire input `b` and produce the original structured data `m`.
 
 These round-trip properties ensure that the parsing and serialization functions are mutual inverses and hence immune to parser malleability attacks ([EverParse](https://www.microsoft.com/en-us/research/publication/everparse/)) and format confusion attacks ([Comparse](https://dl.acm.org/doi/10.1145/3576915.3623201)).
 
 **Parser and serializer combinators**
 
-It's certainly possible to implement and verify parsers and serializers for single protocol formats or file formats manually, but this approach is tedious, and not reusable. Binary formats often share common patterns, such as fixed-size fields, variable-size fields, a sequence of fields, a tagged union of fields, etc. Vest provides a set of parser and serializer combinators that can be used to build complex parsers and serializers from simple ones, where the properties of the combinators are verified once and for all.
+It's certainly possible to implement and verify parsers and serializers for single protocol formats or file formats manually, but this approach is tedious, and not reusable. Binary formats often share common patterns, such as fixed-size fields, variable-size fields, a sequence of fields, a tagged union of fields, repeated fields, etc.
+
+Leveraging the power of Rust's traits and generics,
+Vest provides a set of combinators with unified interface (for both parsing and serializing) that can be used to build complex parsers and serializers from simple ones, where the formal properties of the combinators are verified once and for all.
 
 ## Usage
 
@@ -56,7 +59,7 @@ type2_msg = ...
 type3_msg = ...
 ```
 
-The `.vest` file defines a `tlv_msg` format, which consists of a message type `t`, a length `l`, and a value `v` (the `@` prefix means that those are dependent fields and can be referenced later). The value `v` is a byte sequence of length `l`, and the message type `t` determines how the value is parsed. `msg_type` defines an enumeration of message types, and the `choose` combinator is used to select the appropriate message format based on the formerly parsed message type `t` (must be an `enum`). The `type1_msg`, `type2_msg`, and `type3_msg` formats define the specific message formats for each message type. Roughly, this `.vest` file would correspond to the following Rust data types and functions:
+The `.vest` file defines a `tlv_msg` format, which consists of a message type `t`, a length `l`, and a value `v` (the `@` prefix means that those are dependent fields and can be referenced later). The value `v` is a byte sequence of length `l`, and the message type `t` determines how the value should be interpreted. `msg_type` defines an enumeration of message types, and the `choose` syntax is used to select the appropriate message format based on the message type `t`. The `type1_msg`, `type2_msg`, and `type3_msg` formats define the specific message formats for each sub-message type. Roughly, this `.vest` file would correspond to the following Rust data types and functions:
 
 ```rust
 struct TlvMsg {
@@ -78,15 +81,15 @@ struct Type2Msg { ... }
 struct Type3Msg { ... }
 
 fn tlv_msg() -> TlvMsgCombinator {
-    Mapped { inner: Depend((U8, U16), |(t, l)| tlv_msg_v(t, l)), mapper: TlvMsgMapper }
+    Mapped { inner: Pair((U8, U16), |(t, l)| tlv_msg_v(t, l)), mapper: TlvMsgMapper }
 }
 
 fn tlv_msg_v(t: MsgType, l: u16) -> TlvMsgVCombinator {
     AndThen(
         Bytes(l as usize),
         Mapped {
-            inner: OrdChoice(
-                OrdChoice(
+            inner: Choice(
+                Choice(
                     Cond { lhs: t, rhs: 1, inner: type1_msg() },
                     Cond { lhs: t, rhs: 2, inner: type2_msg() },
                 ),
@@ -100,36 +103,40 @@ fn tlv_msg_v(t: MsgType, l: u16) -> TlvMsgVCombinator {
 fn type1_msg() -> Type1MsgCombinator { ... }
 fn type2_msg() -> Type2MsgCombinator { ... }
 fn type3_msg() -> Type3MsgCombinator { ... }
+//
+// specification and proof code (no manual verification needed)
+//
+```
 
-fn parse_tlv_msg(i: &[u8]) -> (o: Result<(usize, TlvMsg), ()>) {
+Once the generated code is type-checked by Rust and verified by Verus, the user can confidently use them in their applications as "one-liners":
+
+```rust
+fn parse_tlv_msg(i: &[u8]) -> (o: Result<(usize, TlvMsg), Error>) {
     tlv_msg().parse(i)
 }
-fn serialize_tlv_msg(v: TlvMsg, data: &mut [u8], pos: usize) -> (o: Result<usize, ()>) {
+fn serialize_tlv_msg(v: &TlvMsg, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, Error>) {
     tlv_msg().serialize(v, data, pos)
 }
-// spec and proof code (no manual verification needed)
 ```
 
 The following table briefly summarizes the correspondence between the Vest DSL format definitions and the generated Rust data types and combinators:
 
-| Vest DSL                                                               | Rust Data Type                             | Rust Combinator                                                                        |
-| ---------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `msg_name = u8`                                                        | `type MsgName = u8`                        | `U8`                                                                                   |
-| `msg_name = u16`                                                       | `type MsgName = u16`                       | `U16`                                                                                  |
-| `msg_name = u32`                                                       | `type MsgName = u32`                       | `U32`                                                                                  |
-| `msg_name = u64`                                                       | `type MsgName = u64`                       | `U64`                                                                                  |
-| `msg_name = u8 \| {32}`                                                | `type MsgName = u8`                        | `Refined { inner: U8, predicate: U8Is32 }`                                             |
-| `msg_name = enum { A = 1, B = 2, ... }`                                | `type MsgName = u8`                        | `U8`                                                                                   |
-| `msg_name = enum { A = 3100, B = 3101, ... }`                          | `type MsgName = u16`                       | `U16`                                                                                  |
-| `msg_name = [u8; 16]`                                                  | `type MsgName = &[u8]`                     | `BytesN::<16>`                                                                         |
-| `msg_name(@l) = [u8; @l]`                                              | `type MsgName = &[u8]`                     | `Bytes(l as usize)`                                                                    |
-| `msg_name(@l) = [u8; @l] >>= msg_a`                                    | `type MsgName = MsgA`                      | `Bytes(l as usize).and_then(msg_a())`                                                  |
-| `msg_name = { a: msg_a, b: msg_b, ... }`                               | `struct MsgName { a: MsaA, b: MsaB, ... }` | `Mapped { inner: ((msg_a(), msg_b(), ...), ...), mapper: MsgNameMapper }`              |
-| `msg_name = { a: msg_a, b: Tail }`                                     | `struct MsgName { a: MsaA, b: &[u8] }`     | `Mapped { inner: (msg_a(),Tail), mapper: MsgNameMapper }`                              |
-| `msg_name = { @l: u16, b: [u8; @l] }`                                  | `struct MsgName { l: u16, b: &[u8] }`      | `Mapped { inner: Depend(U16, \|l: u16\| Bytes(l as usize)), mapper: MsgNameMapper }`   |
-| `msg_name(@t: msg_type) = choose (@t) { A => msg_a, B => msg_b, ... }` | `enum MsgName { A(MsgA), B(MsgB), ... }`   | `Mapped { inner: OrdChoice(OrdChoice(msg_a(), msg_b()), ...), mapper: MsgNameMapper }` |
+| Vest DSL                                                               | Rust Data Type                             | Rust Combinator                                                                    |
+| ---------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `msg_name = u8` (or `u16`, `u24`, etc.)                                | `type MsgName = u8`                        | `U8`                                                                               |
+| `msg_name = u8 \| {32}`                                                | `type MsgName = u8`                        | `Refined { inner: U8, predicate: U8Is32 }`                                         |
+| `msg_name = enum { A = 1, B = 2, ... }`                                | `type MsgName = u8`                        | `U8`                                                                               |
+| `msg_name = enum { A = 3100, B = 3101, ... }`                          | `type MsgName = u16`                       | `U16`                                                                              |
+| `msg_name = [u8; 16]`                                                  | `type MsgName = &[u8]`                     | `bytes::Fixed::<16>`                                                               |
+| `msg_name(@l) = [u8; @l]`                                              | `type MsgName = &[u8]`                     | `bytes::Variable(l as usize)`                                                      |
+| `msg_name(@l) = [msg_a; @l]`                                           | `type MsgName = Vec<MsgA>`                 | `RepeatN(msg_a(), l as usize)`                                                     |
+| `msg_name(@l) = [u8; @l] >>= Vec<msg_a>`                               | `type MsgName = Vec<MsgA>`                 | `bytes::Variable(l as usize).and_then(Repeat(msg_a()))`                            |
+| `msg_name = { a: msg_a, b: msg_b, ... }`                               | `struct MsgName { a: MsaA, b: MsaB, ... }` | `Mapped { inner: ((msg_a(), msg_b(), ...), ...), mapper: MsgNameMapper }`          |
+| `msg_name = { a: msg_a, b: Tail }`                                     | `struct MsgName { a: MsaA, b: &[u8] }`     | `Mapped { inner: (msg_a(),Tail), mapper: MsgNameMapper }`                          |
+| `msg_name = { @l: u16, b: [u8; @l] }`                                  | `struct MsgName { l: u16, b: &[u8] }`      | `Mapped { inner: Pair(U16, \|l: u16\| Bytes(l as usize)), mapper: MsgNameMapper }` |
+| `msg_name(@t: msg_type) = choose (@t) { A => msg_a, B => msg_b, ... }` | `enum MsgName { A(MsgA), B(MsgB), ... }`   | `Mapped { inner: Choice(Choice(msg_a(), msg_b()), ...), mapper: MsgNameMapper }`   |
 
-The `xxxMapper`s are automatically generated by the Vest DSL compiler and are used to convert between the structural representation of the format (nested products or nested sums) and the nominal Rust data types (`struct`s and `enum`s).
+The `xxxMapper`s are automatically generated by the Vest DSL compiler and are used to convert between the structural representation of the format (nested products or sums) and the nominal Rust data types (`struct`s and `enum`s).
 
 #### Syntax highlighting
 
@@ -146,17 +153,17 @@ In case the user wants more control over the parsing and serialization process, 
 #### Example: Parsing and serializing a pair of bytes
 
 ```rust
-use vest::regular::bytes::Bytes;
+use vest::regular::bytes::*;
 
-let pair_of_bytes = (Bytes(1), Bytes(2));
+let pair_of_bytes = (Fixed::<1>, Fixed::<2>);
 
 let input = &[0x10; 10];
 let (consumed, (a, b)) = pair_of_bytes.parse(input)?;
 
 let mut output = vec![0x00; 40];
-let written = pair_of_bytes.serialize((a, b), &mut output, 0)?;
+let written = pair_of_bytes.serialize((&a, &b), &mut output, 0)?;
 
-proof { pair_of_bytes.theorem_parse_serialize_roundtrip(input@); }
+proof { pair_of_bytes@.theorem_parse_serialize_roundtrip(input@); }
 assert(written == consumed);
 assert(&output[..written]@, &input[..written]@);
 ```
@@ -165,12 +172,12 @@ assert(&output[..written]@, &input[..written]@);
 
 ```rust
 use vest::regular::uints::U8;
-use vest::regular::refined::{Refined, Pred};
+use vest::regular::modifier::{Refined, Pred};
 
 pub struct EvenU8;
 impl Pred for EvenU8 {
-    type Input<'a> = u8;
-    fn apply(&self, i: &Self::Input<'_>) -> bool {
+    type Input = u8;
+    fn apply(&self, i: &Self::Input) -> bool {
         *i % 2 == 0
     }
 }
@@ -179,11 +186,11 @@ let even_u8 = Refined { inner: U8, predicate: EvenU8 };
 
 let mut output = vec![0x00; 40];
 let ten = 10u8;
-let written = even_u8.serialize(ten, &mut output, 0)?;
+let written = even_u8.serialize(&ten, &mut output, 0)?;
 
 let (consumed, parsed) = even_u8.parse(output.as_slice())?;
 
-proof { even_u8.theorem_serialize_parse_roundtrip(ten@); }
+proof { even_u8@.theorem_serialize_parse_roundtrip(ten@); }
 assert(written == consumed);
 assert(parsed@, ten@);
 ```
