@@ -681,14 +681,14 @@ pub fn from_str(source: &str) -> Result<Vec<Definition>, Box<Error<Rule>>> {
     let pairs = VestCombinator::parse(Rule::grammar, source).unwrap_or_else(|e| panic!("{}", e));
     for pair in pairs {
         if let Rule::definition = pair.as_rule() {
-            definitions.push(parse_definition(pair));
+            definitions.push(build_definition(pair));
         }
     }
 
     Ok(definitions)
 }
 
-fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
+fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
@@ -705,11 +705,11 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                         Rule::param_defn_list => {
                             // ignore the param_defn_list for now
                             // let param_defns = parse_param_defns(next_rule);
-                            let combinator = parse_combinator(inner_rules.next().unwrap());
+                            let combinator = build_combinator(inner_rules.next().unwrap());
                             Definition::SecCombinator { name, combinator }
                         }
                         Rule::combinator => {
-                            let combinator = parse_combinator(next_rule);
+                            let combinator = build_combinator(next_rule);
                             Definition::SecCombinator { name, combinator }
                         }
                         _ => unreachable!(),
@@ -722,8 +722,8 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                     let next_rule = inner_rules.next().unwrap();
                     match next_rule.as_rule() {
                         Rule::param_defn_list => {
-                            let param_defns = parse_param_defns(next_rule);
-                            let combinator = parse_combinator(inner_rules.next().unwrap());
+                            let param_defns = build_param_defns(next_rule);
+                            let combinator = build_combinator(inner_rules.next().unwrap());
                             Definition::Combinator {
                                 name,
                                 param_defns,
@@ -731,7 +731,7 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                             }
                         }
                         Rule::combinator => {
-                            let combinator = parse_combinator(next_rule);
+                            let combinator = build_combinator(next_rule);
                             Definition::Combinator {
                                 name,
                                 param_defns: vec![],
@@ -747,7 +747,7 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
             let mut inner_rules = rule.into_inner();
             let _ = inner_rules.next().unwrap(); // skip the "const" keyword
             let name = inner_rules.next().unwrap().as_str().to_string();
-            let const_combinator = parse_const_combinator(inner_rules.next().unwrap());
+            let const_combinator = build_const_combinator(inner_rules.next().unwrap());
             Definition::ConstCombinator {
                 name,
                 const_combinator,
@@ -770,7 +770,7 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                 .into_inner()
                 .map(|r| r.as_str().to_string())
                 .collect();
-            let combinator = parse_combinator(inner_rules.next().unwrap());
+            let combinator = build_combinator(inner_rules.next().unwrap());
             Definition::MacroDefn {
                 name,
                 params,
@@ -781,7 +781,7 @@ fn parse_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
     }
 }
 
-fn parse_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
+fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
     let mut param_defns = vec![];
     for pair in pair.into_inner() {
         match pair.as_rule() {
@@ -796,7 +796,7 @@ fn parse_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
                     }
                     Rule::depend_id => {
                         let name = name.strip_prefix('@').unwrap().to_string();
-                        let combinator = parse_combinator_inner(inner_rules.next().unwrap());
+                        let combinator = build_combinator_inner(inner_rules.next().unwrap());
                         param_defns.push(ParamDefn::Dependent { name, combinator });
                     }
                     _ => unreachable!(),
@@ -808,21 +808,21 @@ fn parse_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
     param_defns
 }
 
-fn parse_combinator(pair: pest::iterators::Pair<Rule>) -> Combinator {
+fn build_combinator(pair: pest::iterators::Pair<Rule>) -> Combinator {
     let mut inner_rules = pair.into_inner();
-    let inner = parse_combinator_inner(inner_rules.next().unwrap());
-    let and_then = inner_rules.next().map(|r| Box::new(parse_combinator(r)));
+    let inner = build_combinator_inner(inner_rules.next().unwrap());
+    let and_then = inner_rules.next().map(|r| Box::new(build_combinator(r)));
     Combinator { inner, and_then }
 }
 
-fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner {
+fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
         Rule::constraint_int_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = parse_int_combinator(inner_rules.next().unwrap());
-            let constraint = inner_rules.next().map(parse_int_constraint);
+            let combinator = build_int_combinator(inner_rules.next().unwrap());
+            let constraint = inner_rules.next().map(build_int_constraint);
             CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                 combinator,
                 constraint,
@@ -830,7 +830,7 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         }
         Rule::struct_combinator => {
             let inner_rules = rule.into_inner();
-            let fields = inner_rules.map(parse_field).collect();
+            let fields = inner_rules.map(build_field).collect();
             CombinatorInner::Struct(StructCombinator(fields))
         }
         Rule::wrap_combinator => {
@@ -839,14 +839,14 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 .next()
                 .unwrap()
                 .into_inner()
-                .map(parse_const_combinator)
+                .map(build_const_combinator)
                 .collect();
-            let combinator = Box::new(parse_combinator(inner_rules.next().unwrap()));
+            let combinator = Box::new(build_combinator(inner_rules.next().unwrap()));
             let post = inner_rules
                 .next()
                 .unwrap()
                 .into_inner()
-                .map(parse_const_combinator)
+                .map(build_const_combinator)
                 .collect();
             CombinatorInner::Wrap(WrapCombinator {
                 prior,
@@ -858,11 +858,11 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let rule = rule.into_inner().next().unwrap();
             match rule.as_rule() {
                 Rule::exhaustive_enum => {
-                    let enums = rule.into_inner().map(parse_enum).collect();
+                    let enums = rule.into_inner().map(build_enum).collect();
                     CombinatorInner::Enum(EnumCombinator::Exhaustive { enums })
                 }
                 Rule::non_exhaustive_enum => {
-                    let enums = rule.into_inner().map(parse_enum).collect();
+                    let enums = rule.into_inner().map(build_enum).collect();
                     CombinatorInner::Enum(EnumCombinator::NonExhaustive { enums })
                 }
                 _ => unreachable!(),
@@ -883,11 +883,11 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                             .unwrap()
                             .to_string(),
                     );
-                    let choices = parse_choices(inner_rules);
+                    let choices = build_choices(inner_rules);
                     CombinatorInner::Choice(ChoiceCombinator { depend_id, choices })
                 }
                 Rule::choice => {
-                    let choices = parse_choices(inner_rules);
+                    let choices = build_choices(inner_rules);
                     CombinatorInner::Choice(ChoiceCombinator {
                         depend_id: None,
                         choices,
@@ -898,18 +898,18 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         }
         Rule::sepby_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = parse_vec_combinator(inner_rules.next().unwrap());
-            let sep = parse_const_combinator(inner_rules.next().unwrap());
+            let combinator = build_vec_combinator(inner_rules.next().unwrap());
+            let sep = build_const_combinator(inner_rules.next().unwrap());
             CombinatorInner::SepBy(SepByCombinator { combinator, sep })
         }
-        Rule::vec_combinator => CombinatorInner::Vec(parse_vec_combinator(rule)),
+        Rule::vec_combinator => CombinatorInner::Vec(build_vec_combinator(rule)),
         Rule::array_combinator => {
             let mut inner_rules = rule.into_inner();
-            let comb = parse_combinator(inner_rules.next().unwrap());
+            let comb = build_combinator(inner_rules.next().unwrap());
             let next_rule = inner_rules.next().unwrap();
             let len = match next_rule.as_rule() {
                 Rule::const_int => {
-                    let len = parse_const_int(next_rule);
+                    let len = build_const_int(next_rule);
                     let len: usize = len
                         .try_into()
                         .unwrap_or_else(|_| panic!("Array length {} does not fit into usize", len));
@@ -934,20 +934,20 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         }
         Rule::option_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = parse_combinator(inner_rules.next().unwrap());
+            let combinator = build_combinator(inner_rules.next().unwrap());
             CombinatorInner::Option(OptionCombinator(Box::new(combinator)))
         }
         Rule::tail_combinator => CombinatorInner::Tail(TailCombinator),
         Rule::apply_combinator => {
             let mut inner_rules = rule.into_inner();
             let stream = inner_rules.next().unwrap().as_str().to_string();
-            let combinator = Box::new(parse_combinator(inner_rules.next().unwrap()));
+            let combinator = Box::new(build_combinator(inner_rules.next().unwrap()));
             CombinatorInner::Apply(ApplyCombinator { stream, combinator })
         }
         Rule::combinator_invocation => {
             let mut inner_rules = rule.into_inner();
             let func = inner_rules.next().unwrap().as_str().to_string();
-            let args = inner_rules.next().map(parse_params).unwrap_or_default();
+            let args = inner_rules.next().map(build_params).unwrap_or_default();
             CombinatorInner::Invocation(CombinatorInvocation { func, args })
         }
         Rule::macro_invocation => {
@@ -957,7 +957,7 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 .next()
                 .unwrap()
                 .into_inner()
-                .map(parse_combinator_inner)
+                .map(build_combinator_inner)
                 .collect();
             CombinatorInner::MacroInvocation { name, args }
         }
@@ -965,7 +965,7 @@ fn parse_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
     }
 }
 
-fn parse_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
+fn build_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let mut parse_width = || inner_rules.next().unwrap().as_str().parse::<u8>().unwrap();
@@ -978,38 +978,38 @@ fn parse_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
     }
 }
 
-fn parse_int_constraint(pair: pest::iterators::Pair<Rule>) -> IntConstraint {
+fn build_int_constraint(pair: pest::iterators::Pair<Rule>) -> IntConstraint {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
-        Rule::constraint_elem => IntConstraint::Single(parse_constraint_elem(rule)),
+        Rule::constraint_elem => IntConstraint::Single(build_constraint_elem(rule)),
         Rule::constraint_elem_set => {
             let inner_rules = rule.into_inner();
-            let elems = inner_rules.map(parse_constraint_elem).collect::<Vec<_>>();
+            let elems = inner_rules.map(build_constraint_elem).collect::<Vec<_>>();
             IntConstraint::Set(elems)
         }
-        Rule::int_constraint => IntConstraint::Neg(Box::new(parse_int_constraint(rule))),
+        Rule::int_constraint => IntConstraint::Neg(Box::new(build_int_constraint(rule))),
         _ => unreachable!(),
     }
 }
 
-fn parse_constraint_elem(pair: pest::iterators::Pair<Rule>) -> ConstraintElem {
+fn build_constraint_elem(pair: pest::iterators::Pair<Rule>) -> ConstraintElem {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
         Rule::const_int_range => {
             let mut inner_rules = rule.into_inner();
-            let start = inner_rules.next().map(parse_const_int);
-            let end = inner_rules.next().map(parse_const_int);
+            let start = inner_rules.next().map(build_const_int);
+            let end = inner_rules.next().map(build_const_int);
             // TODO: check that start <= end (?)
             ConstraintElem::Range { start, end }
         }
-        Rule::const_int => ConstraintElem::Single(parse_const_int(rule)),
+        Rule::const_int => ConstraintElem::Single(build_const_int(rule)),
         _ => unreachable!(),
     }
 }
 
-fn parse_const_int(pair: pest::iterators::Pair<Rule>) -> i128 {
+fn build_const_int(pair: pest::iterators::Pair<Rule>) -> i128 {
     let mut inner_rules = pair.into_inner();
     let pair = inner_rules.next().unwrap();
     match pair.as_rule() {
@@ -1029,22 +1029,22 @@ fn parse_const_int(pair: pest::iterators::Pair<Rule>) -> i128 {
     }
 }
 
-fn parse_field(pair: pest::iterators::Pair<Rule>) -> StructField {
+fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
-        Rule::stream_transform => parse_stream_transform(rule),
+        Rule::stream_transform => build_stream_transform(rule),
         Rule::constant => {
             let next_rule = inner_rules.next().unwrap();
             let label = next_rule.as_str().to_string();
-            let combinator = parse_const_combinator(inner_rules.next().unwrap());
+            let combinator = build_const_combinator(inner_rules.next().unwrap());
             StructField::Const { label, combinator }
         }
-        Rule::preser_combinator => parse_preser(rule),
+        Rule::preser_combinator => build_preser(rule),
         Rule::depend_id | Rule::var_id => {
             let label = rule.as_str().to_string();
             let next_rule = inner_rules.next().unwrap();
-            let combinator = parse_combinator(next_rule);
+            let combinator = build_combinator(next_rule);
             if let Some(label) = label.strip_prefix('@') {
                 StructField::Dependent {
                     label: label.to_owned(),
@@ -1063,7 +1063,7 @@ fn parse_field(pair: pest::iterators::Pair<Rule>) -> StructField {
     }
 }
 
-fn parse_preser(pair: pest::iterators::Pair<Rule>) -> StructField {
+fn build_preser(pair: pest::iterators::Pair<Rule>) -> StructField {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
@@ -1082,14 +1082,14 @@ fn parse_preser(pair: pest::iterators::Pair<Rule>) -> StructField {
     }
 }
 
-fn parse_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
+fn build_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
         Rule::stream_ids => {
             let streams = rule.into_inner().map(|r| r.as_str().to_string()).collect();
             let func = inner_rules.next().unwrap().as_str().to_string();
-            let args = parse_params(inner_rules.next().unwrap());
+            let args = build_params(inner_rules.next().unwrap());
             StructField::Stream(StreamTransform {
                 streams,
                 func,
@@ -1098,7 +1098,7 @@ fn parse_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
         }
         Rule::var_id => {
             let func = rule.as_str().to_string();
-            let args = parse_params(inner_rules.next().unwrap());
+            let args = build_params(inner_rules.next().unwrap());
             StructField::Stream(StreamTransform {
                 streams: vec![],
                 func,
@@ -1109,11 +1109,11 @@ fn parse_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
     }
 }
 
-fn parse_params(pair: pest::iterators::Pair<'_, Rule>) -> Vec<Param> {
-    pair.into_inner().map(parse_param).collect()
+fn build_params(pair: pest::iterators::Pair<'_, Rule>) -> Vec<Param> {
+    pair.into_inner().map(build_param).collect()
 }
 
-fn parse_param(pair: pest::iterators::Pair<Rule>) -> Param {
+fn build_param(pair: pest::iterators::Pair<Rule>) -> Param {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let name = rule.as_str().to_string();
@@ -1124,14 +1124,14 @@ fn parse_param(pair: pest::iterators::Pair<Rule>) -> Param {
     }
 }
 
-fn parse_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
+fn build_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
     let mut inner_rules = pair.into_inner();
     let name = inner_rules.next().unwrap().as_str().to_string();
-    let value = parse_const_int(inner_rules.next().unwrap());
+    let value = build_const_int(inner_rules.next().unwrap());
     Enum { name, value }
 }
 
-fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
+fn build_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
     // peak the first variant
     let choice_variant = inner_rules
         .peek()
@@ -1145,7 +1145,7 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
             let parse_enum_choice = |pair: pest::iterators::Pair<Rule>| {
                 let mut inner_rules = pair.into_inner();
                 let name = inner_rules.next().unwrap().as_str().to_string();
-                let combinator = parse_combinator(inner_rules.next().unwrap());
+                let combinator = build_combinator(inner_rules.next().unwrap());
                 (name, combinator)
             };
             let choices = inner_rules.map(parse_enum_choice).collect();
@@ -1156,13 +1156,13 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
                 let mut inner_rules = pair.into_inner();
                 match inner_rules.peek().unwrap().as_rule() {
                     Rule::constraint_elem => {
-                        let pattern = parse_constraint_elem(inner_rules.next().unwrap());
-                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        let pattern = build_constraint_elem(inner_rules.next().unwrap());
+                        let combinator = build_combinator(inner_rules.next().unwrap());
                         (Some(pattern), combinator)
                     }
                     Rule::variant_id => {
                         let name = inner_rules.next().unwrap().as_str();
-                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        let combinator = build_combinator(inner_rules.next().unwrap());
                         if name == "_" {
                             (None, combinator)
                         } else {
@@ -1180,13 +1180,13 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
                 let mut inner_rules = pair.into_inner();
                 match inner_rules.peek().unwrap().as_rule() {
                     Rule::const_array => {
-                        let array = parse_const_array(inner_rules.next().unwrap());
-                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        let array = build_const_array(inner_rules.next().unwrap());
+                        let combinator = build_combinator(inner_rules.next().unwrap());
                         (array, combinator)
                     }
                     Rule::variant_id => {
                         let name = inner_rules.next().unwrap().as_str();
-                        let combinator = parse_combinator(inner_rules.next().unwrap());
+                        let combinator = build_combinator(inner_rules.next().unwrap());
                         if name == "_" {
                             (ConstArray::Wildcard, combinator)
                         } else {
@@ -1203,10 +1203,10 @@ fn parse_choices(inner_rules: pest::iterators::Pairs<Rule>) -> Choices {
     }
 }
 
-fn parse_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> VecCombinator {
+fn build_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> VecCombinator {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
-    let combinator = parse_combinator(inner_rules.next().unwrap());
+    let combinator = build_combinator(inner_rules.next().unwrap());
     match rule.as_rule() {
         Rule::vec1 => VecCombinator::Vec1(Box::new(combinator)),
         Rule::vec => VecCombinator::Vec(Box::new(combinator)),
@@ -1214,21 +1214,21 @@ fn parse_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> VecCombinator 
     }
 }
 
-fn parse_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombinator {
+fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombinator {
     let mut inner_rules = rule.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
-        Rule::vec => ConstCombinator::Vec(Box::new(parse_const_combinator(
+        Rule::vec => ConstCombinator::Vec(Box::new(build_const_combinator(
             inner_rules.next().unwrap(),
         ))),
         Rule::const_array_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = parse_int_combinator(inner_rules.next().unwrap());
-            let len = parse_const_int(inner_rules.next().unwrap());
+            let combinator = build_int_combinator(inner_rules.next().unwrap());
+            let len = build_const_int(inner_rules.next().unwrap());
             let len: usize = len
                 .try_into()
                 .unwrap_or_else(|_| panic!("length {} does not fit into usize", len));
-            let values = parse_const_array(inner_rules.next().unwrap());
+            let values = build_const_array(inner_rules.next().unwrap());
             // check for special case of `[u8; ...] = [...]` ==> ConstBytes
             match combinator {
                 IntCombinator::Unsigned(8) => {
@@ -1243,29 +1243,29 @@ fn parse_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
         }
         Rule::const_int_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = parse_int_combinator(inner_rules.next().unwrap());
-            let value = parse_const_int(inner_rules.next().unwrap());
+            let combinator = build_int_combinator(inner_rules.next().unwrap());
+            let value = build_const_int(inner_rules.next().unwrap());
             ConstCombinator::ConstInt(ConstIntCombinator { combinator, value })
         }
         Rule::const_struct_combinator => ConstCombinator::ConstStruct(ConstStructCombinator(
-            rule.into_inner().map(parse_const_combinator).collect(),
+            rule.into_inner().map(build_const_combinator).collect(),
         )),
         Rule::const_choice_combinator => ConstCombinator::ConstChoice(ConstChoiceCombinator(
-            rule.into_inner().map(parse_const_choice).collect(),
+            rule.into_inner().map(build_const_choice).collect(),
         )),
         Rule::const_id => ConstCombinator::ConstCombinatorInvocation(rule.as_str().to_string()),
         _ => unreachable!(),
     }
 }
 
-fn parse_const_choice(pair: pest::iterators::Pair<'_, Rule>) -> ConstChoice {
+fn build_const_choice(pair: pest::iterators::Pair<'_, Rule>) -> ConstChoice {
     let mut inner_rules = pair.into_inner();
     let tag = inner_rules.next().unwrap().as_str().to_string();
-    let combinator = parse_const_combinator(inner_rules.next().unwrap());
+    let combinator = build_const_combinator(inner_rules.next().unwrap());
     ConstChoice { tag, combinator }
 }
 
-fn parse_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
+fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     match rule.as_rule() {
@@ -1280,12 +1280,12 @@ fn parse_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
             let next_rule = inner_rules.next().unwrap();
             match next_rule.as_rule() {
                 Rule::int_array_expr => {
-                    ConstArray::Int(next_rule.into_inner().map(parse_const_int).collect())
+                    ConstArray::Int(next_rule.into_inner().map(build_const_int).collect())
                 }
                 Rule::repeat_int_array_expr => {
                     let mut inner_rules = next_rule.into_inner();
-                    let value = parse_const_int(inner_rules.next().unwrap());
-                    let count = parse_const_int(inner_rules.next().unwrap());
+                    let value = build_const_int(inner_rules.next().unwrap());
+                    let count = build_const_int(inner_rules.next().unwrap());
                     let count: usize = count
                         .try_into()
                         .unwrap_or_else(|_| panic!("length {} does not fit into usize", count));
