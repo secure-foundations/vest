@@ -19650,7 +19650,10 @@ pub closed spec fn spec_module() -> SpecModuleCombinator {
 
                 
 pub fn module() -> (o: ModuleCombinator)
-    ensures o@ == spec_module(),
+    ensures 
+        o@ == spec_module(),
+        o.ex_requires(),
+        spec_module().requires(),
 {
     ModuleCombinator(
     Mapped {
@@ -19659,6 +19662,14 @@ pub fn module() -> (o: ModuleCombinator)
     })
 }
 
+pub fn parse_module<'a>(input: &'a [u8]) -> Result<(usize, Module<'a>), ParseError> {
+    let m = module();
+    assert(m.ex_requires());
+    assert(m@.requires());
+    assert(input@.len() == input.len());
+    assert(input@.len() <= usize::MAX);
+    module().parse(input)
+}
                 
 
 }
