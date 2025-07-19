@@ -44,11 +44,11 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
     println!("Number of definitions: {}", ast.len());
 }
 
-pub struct ElabCtx {
-    pub dependencies: Vec<(String, CombinatorInner)>,
+pub struct ElabCtx<'ast> {
+    pub dependencies: Vec<(String, CombinatorInner<'ast>)>,
 }
 
-impl ElabCtx {
+impl<'ast> ElabCtx<'ast> {
     pub fn new() -> Self {
         Self {
             dependencies: Vec::new(),
@@ -60,7 +60,7 @@ impl ElabCtx {
     }
 }
 
-type MacroDefn = (Vec<String>, Combinator);
+type MacroDefn<'ast> = (Vec<String>, Combinator<'ast>);
 
 /// Expand the macro invocations
 fn expand_macros(ast: &mut Vec<Definition>) {
@@ -92,9 +92,9 @@ fn expand_macros_in_defn(defn: &mut Definition, macro_defns: &HashMap<String, Ma
 }
 
 /// Expand the macro invocations in the combinator with the given macro definitions
-fn expand_macros_in_combinator(
-    combinator: &mut Combinator,
-    macro_defns: &HashMap<String, MacroDefn>,
+fn expand_macros_in_combinator<'ast>(
+    combinator: &mut Combinator<'ast>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>>,
 ) {
     if let Some(and_then) = &mut combinator.and_then {
         expand_macros_in_combinator(and_then, macro_defns);
@@ -102,9 +102,9 @@ fn expand_macros_in_combinator(
     expand_macros_in_combinator_inner(&mut combinator.inner, macro_defns);
 }
 
-fn expand_macros_in_combinator_inner(
-    combinator_inner: &mut CombinatorInner,
-    macro_defns: &HashMap<String, MacroDefn>,
+fn expand_macros_in_combinator_inner<'ast>(
+    combinator_inner: &mut CombinatorInner<'ast>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>>,
 ) {
     match combinator_inner {
         // base case
@@ -117,7 +117,7 @@ fn expand_macros_in_combinator_inner(
                 *combinator_inner = body_expanded.inner;
             }
         } // recursive cases
-        CombinatorInner::Struct(StructCombinator(fields)) => {
+        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
@@ -174,14 +174,22 @@ fn expand_macros_in_combinator_inner(
 
 /// Substitute all occurrences of `param` in `body` with `arg`
 /// - `param` implicitly refers to the `CombinatorInvocation`s with the same name
-fn substitute_in_combinator(body: &mut Combinator, param: &str, arg: CombinatorInner) {
+fn substitute_in_combinator<'ast>(
+    body: &mut Combinator<'ast>,
+    param: &str,
+    arg: CombinatorInner<'ast>,
+) {
     if let Some(and_then) = &mut body.and_then {
         substitute_in_combinator(and_then, param, arg.clone());
     }
     substitute_in_combinator_inner(&mut body.inner, param, arg);
 }
 
-fn substitute_in_combinator_inner(body: &mut CombinatorInner, param: &str, arg: CombinatorInner) {
+fn substitute_in_combinator_inner<'ast>(
+    body: &mut CombinatorInner<'ast>,
+    param: &str,
+    arg: CombinatorInner<'ast>,
+) {
     match body {
         // base case
         CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
@@ -190,7 +198,7 @@ fn substitute_in_combinator_inner(body: &mut CombinatorInner, param: &str, arg: 
             }
         }
         // recursive cases
-        CombinatorInner::Struct(StructCombinator(fields)) => {
+        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
@@ -261,7 +269,10 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
                 param_defns,
             } => {
                 param_defns.iter().for_each(|param_defn| {
-                    if let ParamDefn::Dependent { name, combinator } = param_defn {
+                    if let ParamDefn::Dependent {
+                        name, combinator, ..
+                    } = param_defn
+                    {
                         elab_ctx
                             .dependencies
                             .push((name.to_owned(), combinator.clone()));
@@ -278,17 +289,21 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
 
 #[allow(clippy::single_match)]
 /// for now only expand struct fields containing choices
-fn expand_combinator(
+fn expand_combinator<'ast>(
     name: &str,
-    combinator: &mut Combinator,
-    expanded: &mut Vec<Definition>,
-    elab_ctx: &mut ElabCtx,
+    combinator: &mut Combinator<'ast>,
+    expanded: &mut Vec<Definition<'ast>>,
+    elab_ctx: &mut ElabCtx<'ast>,
 ) {
     match &mut combinator.inner {
-        CombinatorInner::Struct(StructCombinator(struct_fields)) => {
-            for field in struct_fields {
+        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
+            for field in fields {
                 match field {
-                    StructField::Ordinary { label, combinator } => {
+                    StructField::Ordinary {
+                        label,
+                        combinator,
+                        span,
+                    } => {
                         if matches!(&combinator.inner, CombinatorInner::Choice(_))
                             || (matches!(
                                 &combinator.inner,
@@ -318,6 +333,7 @@ fn expand_combinator(
                                             .unwrap_or_else(|| {
                                                 panic!("Dependent combinator not found: {}", name)
                                             }),
+                                        span: *span,
                                     },
                                     _ => unreachable!(),
                                 })
@@ -332,14 +348,18 @@ fn expand_combinator(
                                 inner: CombinatorInner::Invocation(CombinatorInvocation {
                                     func: generated_name,
                                     args: params.into_iter().collect(),
+                                    span: *span,
                                 }),
                                 and_then: None,
+                                span: *span,
                             };
                             expanded.push(new_defn);
                             // expand_definitions(expanded);
                         }
                     }
-                    StructField::Dependent { label, combinator } => {
+                    StructField::Dependent {
+                        label, combinator, ..
+                    } => {
                         elab_ctx
                             .dependencies
                             .push((label.to_owned(), combinator.inner.clone()));
@@ -371,7 +391,9 @@ fn expand_combinator(
 fn collect_params(combinator: &Combinator) -> HashSet<Param> {
     let mut params = HashSet::new();
     match &combinator.inner {
-        CombinatorInner::Choice(ChoiceCombinator { depend_id, choices }) => {
+        CombinatorInner::Choice(ChoiceCombinator {
+            depend_id, choices, ..
+        }) => {
             if let Some(depend_id) = depend_id {
                 params.insert(Param::Dependent(depend_id.to_owned()));
             }
@@ -393,13 +415,15 @@ fn collect_params(combinator: &Combinator) -> HashSet<Param> {
                 }
             }
         }
-        CombinatorInner::Array(ArrayCombinator { combinator, len }) => {
+        CombinatorInner::Array(ArrayCombinator {
+            combinator, len, ..
+        }) => {
             if let LengthSpecifier::Dependent(name) = len {
                 params.insert(Param::Dependent(name.to_owned()));
             }
             params.extend(collect_params(combinator));
         }
-        CombinatorInner::Bytes(BytesCombinator { len }) => {
+        CombinatorInner::Bytes(BytesCombinator { len, .. }) => {
             if let LengthSpecifier::Dependent(name) = len {
                 params.insert(Param::Dependent(name.to_owned()));
             }
@@ -431,7 +455,7 @@ fn collect_params(combinator: &Combinator) -> HashSet<Param> {
         CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
             params.extend(collect_params(combinator));
         }
-        CombinatorInner::Struct(StructCombinator(fields)) => {
+        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
@@ -492,7 +516,7 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
             invocations.push(func.to_owned());
         }
         // recursive cases
-        CombinatorInner::Struct(StructCombinator(fields)) => {
+        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
