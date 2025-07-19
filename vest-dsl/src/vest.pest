@@ -44,13 +44,11 @@ const_int                 = ${ hex | decimal | ascii }
 /// sequence of `combinator` with semantic labels
 struct_combinator = { "{" ~ (field ~ ",")* ~ "}" }
 field             = {
-    preser_combinator
-  | stream_transform
+    stream_transform
   | constant ~ var_id ~ ":" ~ const_combinator
   | depend_id ~ ":" ~ combinator
   | var_id ~ ":" ~ combinator
 }
-preser_combinator = { preser ~ var_id ~ ":" ~ decimal }
 stream_transform  = { (let ~ stream_ids ~ "=")? ~ var_id ~ param_list }
 stream_ids        = { stream_id ~ ("," ~ stream_id)* }
 
@@ -142,7 +140,6 @@ depend_id  = @{ "@" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_"
 
 secret     =  { "secret" }
 wrap       = _{ "wrap" }
-preser     = _{ "preser" }
 enum       = _{ "enum" }
 choose     = _{ "choose" }
 apply      = _{ "apply" }
