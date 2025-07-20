@@ -41,7 +41,7 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
         .unwrap_or_else(|e| {
             panic!("Cycle detected in the format definitions: {:?}", e);
         });
-    println!("Number of definitions: {}", ast.len());
+    // println!("Number of definitions: {}", ast.len());
 }
 
 pub struct ElabCtx<'ast> {
@@ -79,7 +79,10 @@ fn expand_macros(ast: &mut Vec<Definition>) {
     }
 }
 
-fn expand_macros_in_defn(defn: &mut Definition, macro_defns: &HashMap<String, MacroDefn>) {
+fn expand_macros_in_defn<'ast>(
+    defn: &mut Definition<'ast>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>>,
+) {
     match defn {
         Definition::Combinator { combinator, .. } => {
             expand_macros_in_combinator(combinator, macro_defns);
@@ -135,6 +138,7 @@ fn expand_macros_in_combinator_inner<'ast>(
             prior,
             combinator,
             post,
+            ..
         }) => {
             for _combinator in prior {}
             expand_macros_in_combinator(combinator, macro_defns);
@@ -216,6 +220,7 @@ fn substitute_in_combinator_inner<'ast>(
             prior,
             combinator,
             post,
+            ..
         }) => {
             for _combinator in prior {
                 // TODO: skip const fields for now
@@ -267,6 +272,7 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
                 name,
                 combinator,
                 param_defns,
+                ..
             } => {
                 param_defns.iter().for_each(|param_defn| {
                     if let ParamDefn::Dependent {
@@ -343,6 +349,7 @@ fn expand_combinator<'ast>(
                                 name: generated_name.clone(),
                                 combinator: combinator.clone(),
                                 param_defns,
+                                span: span.clone(),
                             };
                             *combinator = Combinator {
                                 inner: CombinatorInner::Invocation(CombinatorInvocation {
@@ -431,7 +438,7 @@ fn collect_params(combinator: &Combinator) -> HashSet<Param> {
                 params.extend(collect_params(and_then));
             }
         }
-        CombinatorInner::Tail(TailCombinator) => {
+        CombinatorInner::Tail(..) => {
             if let Some(and_then) = &combinator.and_then {
                 params.extend(collect_params(and_then));
             }
@@ -493,6 +500,7 @@ pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
             Definition::ConstCombinator {
                 name,
                 const_combinator,
+                ..
             } => {
                 let invocations = collect_const_invocations(const_combinator);
                 Some((name.to_owned(), invocations))
@@ -528,11 +536,7 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                 }
             }
         }
-        CombinatorInner::Wrap(WrapCombinator {
-            prior: _,
-            combinator,
-            post: _,
-        }) => {
+        CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
             collect_invocations(combinator, invocations);
         }
         CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {

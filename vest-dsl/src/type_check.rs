@@ -3,19 +3,21 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::zip;
 
+use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind, Source};
+
 #[derive(Debug, Clone)]
-pub struct GlobalCtx<'a> {
-    pub combinators: HashSet<CombinatorSig<'a>>,
-    pub const_combinators: HashSet<&'a str>,
-    pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
+pub struct GlobalCtx<'ast> {
+    pub combinators: HashSet<CombinatorSig<'ast>>,
+    pub const_combinators: HashSet<&'ast str>,
+    pub enums: HashMap<&'ast str, EnumCombinator<'ast>>, // enum name -> enum combinator
 }
 
-pub struct LocalCtx {
+pub struct LocalCtx<'ast> {
     pub struct_fields: HashSet<String>,
-    pub dependent_fields: HashMap<String, Combinator>,
+    pub dependent_fields: HashMap<String, Combinator<'ast>>,
 }
 
-impl LocalCtx {
+impl<'ast> LocalCtx<'ast> {
     pub fn new() -> Self {
         Self {
             struct_fields: HashSet::new(),
@@ -30,9 +32,9 @@ impl LocalCtx {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct CombinatorSig<'a> {
-    pub name: &'a str,
-    pub param_defns: &'a [ParamDefn],
+pub struct CombinatorSig<'ast> {
+    pub name: &'ast str,
+    pub param_defns: &'ast [ParamDefn<'ast>],
     /// Fully resolved combinator for a top-level combinator definition
     /// We need to resolve for two reasons:
     ///
@@ -40,18 +42,18 @@ pub struct CombinatorSig<'a> {
     /// * Combinators that contains `>>=` (and_then) will need to be resolved to whatever the
     ///   `and_then` combinator is. For example, if we have a combinator `a` that is defined as
     ///   `b >>= c`, the return type of `a` will be the return type of `c`.
-    pub resolved_combinator: CombinatorInner,
+    pub resolved_combinator: CombinatorInner<'ast>,
 }
 
-impl<'a> GlobalCtx<'a> {
-    pub fn resolve(&'a self, combinator: &'a Combinator) -> &'a CombinatorInner {
+impl<'ast> GlobalCtx<'ast> {
+    pub fn resolve(&self, combinator: &'ast Combinator) -> &CombinatorInner<'ast> {
         if let Some(and_then) = &combinator.and_then {
             self.resolve(and_then)
         } else {
             self.resolve_alias(&combinator.inner)
         }
     }
-    pub fn resolve_alias(&'a self, combinator: &'a CombinatorInner) -> &'a CombinatorInner {
+    pub fn resolve_alias(&self, combinator: &'ast CombinatorInner) -> &CombinatorInner<'ast> {
         match combinator {
             CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
                 let combinator_sig = self
@@ -66,7 +68,10 @@ impl<'a> GlobalCtx<'a> {
     }
 }
 
-pub fn check(ast: &[Definition]) -> GlobalCtx {
+pub fn check<'ast>(
+    ast: &'ast [Definition<'ast>],
+    source: (&str, &Source),
+) -> Result<GlobalCtx<'ast>, Box<dyn std::error::Error>> {
     let mut global_ctx = GlobalCtx {
         combinators: HashSet::new(),
         const_combinators: HashSet::new(),
@@ -79,17 +84,54 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
                 name,
                 param_defns,
                 combinator,
+                span,
             } => {
                 // Check for combinator invocations and `and_then`s and resolve them
                 let resolved_combinator = global_ctx.resolve(combinator).to_owned();
 
-                if !global_ctx.combinators.insert(CombinatorSig {
-                    name,
-                    param_defns,
-                    resolved_combinator,
-                }) {
-                    panic!("Duplicate combinator definition `{}`", name);
+                match global_ctx.combinators.iter().find(|sig| sig.name == name) {
+                    Some(sig) => {
+                        let mut color_gen = ColorGenerator::default();
+                        Report::build(ReportKind::Error, (source.0, span.start()..span.end()))
+                            .with_message(format!("Duplicate format definition `{}`", name))
+                            .with_label(
+                                Label::new((source.0, span.start()..span.end()))
+                                    .with_message(format!("This format is defined twice"))
+                                    .with_color(color_gen.next()),
+                            )
+                            .with_label(
+                                Label::new((
+                                    source.0,
+                                    sig.resolved_combinator.as_span().start()
+                                        ..sig.resolved_combinator.as_span().end(),
+                                ))
+                                .with_message(format!(
+                                    "The {} format is already defined here",
+                                    name
+                                ))
+                                .with_color(color_gen.next()),
+                            )
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "")));
+                    }
+                    None => {
+                        global_ctx.combinators.insert(CombinatorSig {
+                            name,
+                            param_defns,
+                            resolved_combinator,
+                        });
+                    }
                 }
+
+                // if !global_ctx.combinators.insert(CombinatorSig {
+                //     name,
+                //     param_defns,
+                //     resolved_combinator,
+                // }) {
+                //     panic!("Duplicate combinator definition `{}`", name);
+                // }
 
                 if let Combinator {
                     inner: CombinatorInner::Enum(enum_combinator),
@@ -110,10 +152,14 @@ pub fn check(ast: &[Definition]) -> GlobalCtx {
     ast.iter()
         .for_each(|defn| check_defn(defn, &mut local_ctx, &global_ctx));
 
-    global_ctx
+    Ok(global_ctx)
 }
 
-fn check_defn(defn: &Definition, local_ctx: &mut LocalCtx, global_ctx: &GlobalCtx) {
+fn check_defn<'ast>(
+    defn: &'ast Definition<'ast>,
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+) {
     local_ctx.reset();
     match defn {
         Definition::Combinator {
@@ -140,15 +186,18 @@ fn check_const_combinator(
 ) {
     use ConstCombinator::*;
     match const_combinator {
-        ConstInt(ConstIntCombinator { combinator, value }) => {
-            check_const_int_combinator(combinator, value)
-        }
+        ConstInt(ConstIntCombinator {
+            combinator,
+            value,
+            span,
+        }) => check_const_int_combinator(combinator, value),
         ConstArray(ConstArrayCombinator {
             combinator,
             len,
             values,
+            span,
         }) => check_const_array_combinator(combinator, len, values),
-        ConstBytes(ConstBytesCombinator { len, values }) => {
+        ConstBytes(ConstBytesCombinator { len, values, span }) => {
             check_const_bytes_combinator(len, values)
         }
         ConstStruct(ConstStructCombinator(const_combinators)) => {
@@ -325,11 +374,15 @@ fn check_const_int_combinator(combinator: &IntCombinator, value: &i128) {
     }
 }
 
-fn check_combinator(
-    Combinator { inner, and_then }: &Combinator,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_combinator<'ast>(
+    Combinator {
+        inner,
+        and_then,
+        span,
+    }: &Combinator<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     check_combinator_inner(inner, param_defns, local_ctx, global_ctx);
     if let Some(and_then) = and_then {
@@ -347,30 +400,38 @@ fn check_combinator_inner_result_type(inner: &CombinatorInner) {
     }
 }
 
-fn check_combinator_inner(
-    inner: &CombinatorInner,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_combinator_inner<'ast>(
+    inner: &CombinatorInner<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     use CombinatorInner::*;
     match inner {
         ConstraintInt(ConstraintIntCombinator {
             combinator,
             constraint,
+            span,
         }) => check_constraint_int_combinator(combinator, constraint.as_ref()),
-        Struct(StructCombinator(struct_fields)) => {
-            check_struct_combinator(struct_fields, param_defns, local_ctx, global_ctx)
-        }
+        Struct(StructCombinator {
+            fields: struct_fields,
+            span,
+        }) => check_struct_combinator(struct_fields, param_defns, local_ctx, global_ctx),
         Wrap(WrapCombinator {
             prior,
             combinator,
             post,
+            span,
         }) => check_wrap_combinator(prior, combinator, post, param_defns, local_ctx, global_ctx),
-        Enum(EnumCombinator::Exhaustive { enums } | EnumCombinator::NonExhaustive { enums }) => {
-            check_enum_combinator(enums, local_ctx, global_ctx)
-        }
-        Choice(ChoiceCombinator { depend_id, choices }) => check_choice_combinator(
+        Enum(
+            EnumCombinator::Exhaustive { enums, span }
+            | EnumCombinator::NonExhaustive { enums, span },
+        ) => check_enum_combinator(enums, local_ctx, global_ctx),
+        Choice(ChoiceCombinator {
+            depend_id,
+            choices,
+            span,
+        }) => check_choice_combinator(
             depend_id.as_ref(),
             choices,
             param_defns,
@@ -386,29 +447,31 @@ fn check_combinator_inner(
         Vec(VecCombinator::Vec1(combinator)) => {
             check_combinator(combinator, param_defns, local_ctx, global_ctx)
         }
-        Array(ArrayCombinator { combinator, len }) => {
-            check_array_combinator(combinator, len, param_defns, local_ctx, global_ctx)
-        }
-        Bytes(BytesCombinator { len }) => {
+        Array(ArrayCombinator {
+            combinator,
+            len,
+            span,
+        }) => check_array_combinator(combinator, len, param_defns, local_ctx, global_ctx),
+        Bytes(BytesCombinator { len, span }) => {
             check_bytes_combinator(len, param_defns, local_ctx, global_ctx)
         }
-        Tail(TailCombinator) => {}
+        Tail(TailCombinator { span }) => {}
         Apply(ApplyCombinator { stream, combinator }) => {
             check_apply_combinator(stream, combinator, param_defns, local_ctx, global_ctx)
         }
         Option(OptionCombinator(combinator)) => {
             check_combinator(combinator, param_defns, local_ctx, global_ctx)
         }
-        Invocation(CombinatorInvocation { func, args }) => {
+        Invocation(CombinatorInvocation { func, args, span }) => {
             check_combinator_invocation(func, args, param_defns, local_ctx, global_ctx)
         }
         MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
     }
 }
 
-// pub struct CombinatorSig<'a> {
-//     pub name: &'a str,
-//     pub param_defns: &'a [ParamDefn],
+// pub struct CombinatorSig<'ast> {
+//     pub name: &'ast str,
+//     pub param_defns: &'ast [ParamDefn],
 // }
 // pub enum ParamDefn {
 //     Stream {
@@ -423,12 +486,12 @@ fn check_combinator_inner(
 //     Stream(String),
 //     Dependent(String),
 // }
-fn check_combinator_invocation(
+fn check_combinator_invocation<'ast>(
     name: &str,
     args: &[Param],
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     let combinator_sig = global_ctx
         .combinators
@@ -442,19 +505,23 @@ fn check_combinator_invocation(
     zip(args, combinator_sig.param_defns).for_each(|(arg, param_defn)| match (arg, param_defn) {
         (Param::Stream(_), ParamDefn::Stream { .. }) => {}
         (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
-            let resolve_up_to_enums = |comb: &CombinatorInner| match comb {
-                CombinatorInner::Enum(
-                    EnumCombinator::Exhaustive { enums } | EnumCombinator::NonExhaustive { enums },
-                ) => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                    combinator: infer_enum_type(enums),
-                    constraint: None,
-                }),
-                l => l.clone(),
-            };
+            fn resolve_up_to_enums<'ast>(comb: CombinatorInner<'ast>) -> CombinatorInner<'ast> {
+                match comb {
+                    CombinatorInner::Enum(
+                        EnumCombinator::Exhaustive { enums, span }
+                        | EnumCombinator::NonExhaustive { enums, span },
+                    ) => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                        combinator: infer_enum_type(&enums),
+                        constraint: None,
+                        span: span.clone(),
+                    }),
+                    l => l.clone(),
+                }
+            }
             // 1. try to find `depend_id` in local_ctx
             if let Some(arg_combinator) = local_ctx.dependent_fields.get(depend_id) {
-                let left = resolve_up_to_enums(global_ctx.resolve(arg_combinator));
-                let right = resolve_up_to_enums(global_ctx.resolve_alias(combinator));
+                let left = resolve_up_to_enums(global_ctx.resolve(arg_combinator).clone());
+                let right = resolve_up_to_enums(global_ctx.resolve_alias(combinator).clone());
                 if left != right {
                     panic!("Argument type mismatch: expected {}, got {}", left, right);
                 }
@@ -474,8 +541,10 @@ fn check_combinator_invocation(
                         combinator: combinator_,
                         ..
                     } => {
-                        let left = resolve_up_to_enums(global_ctx.resolve_alias(combinator_));
-                        let right = resolve_up_to_enums(global_ctx.resolve_alias(combinator));
+                        let left =
+                            resolve_up_to_enums(global_ctx.resolve_alias(combinator_).clone());
+                        let right =
+                            resolve_up_to_enums(global_ctx.resolve_alias(combinator).clone());
                         if left != right {
                             panic!(
                                 "Argument type mismatch: expected {}, got {}",
@@ -491,12 +560,12 @@ fn check_combinator_invocation(
     });
 }
 
-fn check_apply_combinator(
+fn check_apply_combinator<'ast>(
     _stream: &str,
-    combinator: &Combinator,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+    combinator: &Combinator<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     check_combinator(combinator, param_defns, local_ctx, global_ctx);
 }
@@ -552,23 +621,23 @@ fn check_bytes_combinator(
     }
 }
 
-fn check_array_combinator(
-    combinator: &Combinator,
+fn check_array_combinator<'ast>(
+    combinator: &Combinator<'ast>,
     len: &LengthSpecifier,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     check_combinator(combinator, param_defns, local_ctx, global_ctx);
     check_bytes_combinator(len, param_defns, local_ctx, global_ctx);
 }
 
-fn check_sep_by_combinator(
-    combinator: &VecCombinator,
-    sep: &ConstCombinator,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_sep_by_combinator<'ast>(
+    combinator: &VecCombinator<'ast>,
+    sep: &ConstCombinator<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     match combinator {
         VecCombinator::Vec(combinator) => {
@@ -581,12 +650,12 @@ fn check_sep_by_combinator(
     check_const_combinator(sep, local_ctx, global_ctx);
 }
 
-fn check_choice_combinator(
+fn check_choice_combinator<'ast>(
     depend_id: Option<&String>,
-    choices: &Choices,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+    choices: &Choices<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
 ) {
     let get_combinator_from_depend_id = |depend_id: &str| {
         local_ctx
@@ -597,9 +666,11 @@ fn check_choice_combinator(
                 param_defns
                     .iter()
                     .find_map(|param_defn| match param_defn {
-                        ParamDefn::Dependent { name, combinator } if name == depend_id => {
-                            Some(combinator)
-                        }
+                        ParamDefn::Dependent {
+                            name,
+                            combinator,
+                            span,
+                        } if name == depend_id => Some(combinator),
                         _ => None,
                     })
                     .unwrap_or_else(|| {
@@ -623,8 +694,8 @@ fn check_choice_combinator(
                         panic!("Enum `{}` is not defined", func);
                     });
                     let (enum_variants, is_non_exhaustive) = match enum_ {
-                        EnumCombinator::Exhaustive { enums } => (enums, false),
-                        EnumCombinator::NonExhaustive { enums } => (enums, true),
+                        EnumCombinator::Exhaustive { enums, span } => (enums, false),
+                        EnumCombinator::NonExhaustive { enums, span } => (enums, true),
                     };
                     // check for well-formed variants
                     let mut variants = HashSet::new();
@@ -720,8 +791,8 @@ fn check_choice_combinator(
                         );
                     }
                     let enums = match enum_ {
-                        EnumCombinator::Exhaustive { enums } => enums,
-                        EnumCombinator::NonExhaustive { enums } => enums,
+                        EnumCombinator::Exhaustive { enums, span } => enums,
+                        EnumCombinator::NonExhaustive { enums, span } => enums,
                     };
                     let int_combinator = infer_enum_type(enums);
                     let mut int_variants = HashSet::new();
@@ -745,8 +816,8 @@ fn check_choice_combinator(
             if let Some(depend_id) = depend_id {
                 let combinator = get_combinator_from_depend_id(depend_id);
                 // check if `combinator` is defined as an array
-                if let CombinatorInner::Array(ArrayCombinator { len, .. })
-                | CombinatorInner::Bytes(BytesCombinator { len }) = combinator
+                if let CombinatorInner::Array(ArrayCombinator { len, span, .. })
+                | CombinatorInner::Bytes(BytesCombinator { len, span }) = combinator
                 {
                     let LengthSpecifier::Const(len) = len.clone() else {
                         panic!("Length specifier must be constant");
@@ -825,13 +896,13 @@ pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
     }
 }
 
-fn check_wrap_combinator(
+fn check_wrap_combinator<'ast>(
     prior: &[ConstCombinator],
-    combinator: &Combinator,
+    combinator: &Combinator<'ast>,
     post: &[ConstCombinator],
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx,
 ) {
     prior.iter().for_each(|const_combinator| {
         check_const_combinator(const_combinator, local_ctx, global_ctx)
@@ -842,15 +913,19 @@ fn check_wrap_combinator(
     });
 }
 
-fn check_struct_combinator(
-    struct_fields: &[StructField],
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_struct_combinator<'ast>(
+    struct_fields: &[StructField<'ast>],
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx,
 ) {
     struct_fields.iter().for_each(|field| match field {
         StructField::Stream(_) => {}
-        StructField::Dependent { label, combinator } => {
+        StructField::Dependent {
+            label,
+            combinator,
+            span,
+        } => {
             if !local_ctx.dependent_fields.contains_key(label) {
                 local_ctx
                     .dependent_fields
@@ -863,14 +938,21 @@ fn check_struct_combinator(
             }
             check_combinator(combinator, param_defns, local_ctx, global_ctx);
         }
-        StructField::Const { combinator, label } => {
+        StructField::Const {
+            combinator,
+            label,
+            span,
+        } => {
             if !local_ctx.struct_fields.insert(label.to_owned()) {
                 panic!("Duplicate field name `{}`", label);
             }
             check_const_combinator(combinator, local_ctx, global_ctx);
         }
-        StructField::Preser { .. } => {}
-        StructField::Ordinary { combinator, label } => {
+        StructField::Ordinary {
+            combinator,
+            label,
+            span,
+        } => {
             if !local_ctx.struct_fields.insert(label.to_owned()) {
                 panic!("Duplicate field name `{}`", label);
             }
@@ -881,12 +963,10 @@ fn check_struct_combinator(
 
 fn check_constraint_int_combinator(combinator: &IntCombinator, constraint: Option<&IntConstraint>) {
     match constraint {
-        Some(IntConstraint::Single(constraint_elem)) => {
-            check_constraint_elem(combinator, constraint_elem)
-        }
-        Some(IntConstraint::Set(constraint_elems)) => constraint_elems
+        Some(IntConstraint::Single { elem, span }) => check_constraint_elem(combinator, elem),
+        Some(IntConstraint::Set(constraints)) => constraints
             .iter()
-            .for_each(|constraint_elem| check_constraint_elem(combinator, constraint_elem)),
+            .for_each(|constraint| check_constraint_int_combinator(combinator, Some(constraint))),
         Some(IntConstraint::Neg(constraint)) => {
             check_constraint_int_combinator(combinator, Some(constraint))
         }
