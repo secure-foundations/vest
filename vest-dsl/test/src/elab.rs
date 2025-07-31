@@ -17,7 +17,7 @@ use vest::regular::leb128::*;
 
 macro_rules! impl_wrapper_combinator {
     ($combinator:ty, $combinator_alias:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
                 type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
                 type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
@@ -427,124 +427,15 @@ pub fn content_0<'a>(num: u24) -> (o: Content0Combinator)
     Content0Combinator(bytes::Variable(num.ex_into()))
 }
 
-
-pub enum SpecMsgCF4 {
-    C0(SpecContent0),
-    C1(u16),
-    C2(u32),
-    Unrecognized(Seq<u8>),
-}
-
-pub type SpecMsgCF4Inner = Either<SpecContent0, Either<u16, Either<u32, Seq<u8>>>>;
-
-impl SpecFrom<SpecMsgCF4> for SpecMsgCF4Inner {
-    open spec fn spec_from(m: SpecMsgCF4) -> SpecMsgCF4Inner {
-        match m {
-            SpecMsgCF4::C0(m) => Either::Left(m),
-            SpecMsgCF4::C1(m) => Either::Right(Either::Left(m)),
-            SpecMsgCF4::C2(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecMsgCF4::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecMsgCF4Inner> for SpecMsgCF4 {
-    open spec fn spec_from(m: SpecMsgCF4Inner) -> SpecMsgCF4 {
-        match m {
-            Either::Left(m) => SpecMsgCF4::C0(m),
-            Either::Right(Either::Left(m)) => SpecMsgCF4::C1(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecMsgCF4::C2(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecMsgCF4::Unrecognized(m),
-        }
-    }
-
-}
+pub type SpecContentType = u8;
+pub type ContentType = u8;
+pub type ContentTypeRef<'a> = &'a u8;
 
 
+pub struct SpecContentTypeCombinator(SpecContentTypeCombinatorAlias);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MsgCF4<'a> {
-    C0(Content0<'a>),
-    C1(u16),
-    C2(u32),
-    Unrecognized(&'a [u8]),
-}
-
-pub type MsgCF4Inner<'a> = Either<Content0<'a>, Either<u16, Either<u32, &'a [u8]>>>;
-
-pub type MsgCF4InnerRef<'a> = Either<&'a Content0<'a>, Either<&'a u16, Either<&'a u32, &'a &'a [u8]>>>;
-
-
-impl<'a> View for MsgCF4<'a> {
-    type V = SpecMsgCF4;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            MsgCF4::C0(m) => SpecMsgCF4::C0(m@),
-            MsgCF4::C1(m) => SpecMsgCF4::C1(m@),
-            MsgCF4::C2(m) => SpecMsgCF4::C2(m@),
-            MsgCF4::Unrecognized(m) => SpecMsgCF4::Unrecognized(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a MsgCF4<'a>> for MsgCF4InnerRef<'a> {
-    fn ex_from(m: &'a MsgCF4<'a>) -> MsgCF4InnerRef<'a> {
-        match m {
-            MsgCF4::C0(m) => Either::Left(m),
-            MsgCF4::C1(m) => Either::Right(Either::Left(m)),
-            MsgCF4::C2(m) => Either::Right(Either::Right(Either::Left(m))),
-            MsgCF4::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-impl<'a> From<MsgCF4Inner<'a>> for MsgCF4<'a> {
-    fn ex_from(m: MsgCF4Inner<'a>) -> MsgCF4<'a> {
-        match m {
-            Either::Left(m) => MsgCF4::C0(m),
-            Either::Right(Either::Left(m)) => MsgCF4::C1(m),
-            Either::Right(Either::Right(Either::Left(m))) => MsgCF4::C2(m),
-            Either::Right(Either::Right(Either::Right(m))) => MsgCF4::Unrecognized(m),
-        }
-    }
-    
-}
-
-
-pub struct MsgCF4Mapper;
-impl View for MsgCF4Mapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MsgCF4Mapper {
-    type Src = SpecMsgCF4Inner;
-    type Dst = SpecMsgCF4;
-}
-impl SpecIsoProof for MsgCF4Mapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for MsgCF4Mapper {
-    type Src = MsgCF4Inner<'a>;
-    type Dst = MsgCF4<'a>;
-    type RefSrc = MsgCF4InnerRef<'a>;
-}
-
-
-pub struct SpecMsgCF4Combinator(SpecMsgCF4CombinatorAlias);
-
-impl SpecCombinator for SpecMsgCF4Combinator {
-    type Type = SpecMsgCF4;
+impl SpecCombinator for SpecContentTypeCombinator {
+    type Type = SpecContentType;
     closed spec fn requires(&self) -> bool
     { self.0.requires() }
     closed spec fn wf(&self, v: Self::Type) -> bool
@@ -554,9 +445,9 @@ impl SpecCombinator for SpecMsgCF4Combinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecMsgCF4Combinator {
+impl SecureSpecCombinator for SpecContentTypeCombinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecMsgCF4CombinatorAlias::is_prefix_secure() }
+    { SpecContentTypeCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -570,16 +461,16 @@ impl SecureSpecCombinator for SpecMsgCF4Combinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecMsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<Choice<Cond<SpecContent0Combinator>, Choice<Cond<U16Be>, Choice<Cond<U32Be>, Cond<bytes::Tail>>>>, MsgCF4Mapper>>;
+pub type SpecContentTypeCombinatorAlias = U8;
 
-pub struct MsgCF4Combinator(MsgCF4CombinatorAlias);
+pub struct ContentTypeCombinator(ContentTypeCombinatorAlias);
 
-impl View for MsgCF4Combinator {
-    type V = SpecMsgCF4Combinator;
-    closed spec fn view(&self) -> Self::V { SpecMsgCF4Combinator(self.0@) }
+impl View for ContentTypeCombinator {
+    type V = SpecContentTypeCombinator;
+    closed spec fn view(&self) -> Self::V { SpecContentTypeCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCF4Combinator {
-    type Type = MsgCF4<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ContentTypeCombinator {
+    type Type = ContentType;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -590,19 +481,21 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCF4Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type MsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<Choice<Cond<Content0Combinator>, Choice<Cond<U16Be>, Choice<Cond<U32Be>, Cond<bytes::Tail>>>>, MsgCF4Mapper>>;
+pub type ContentTypeCombinatorAlias = U8;
 
 
-pub closed spec fn spec_msg_c_f4(f3: u24, f2: SpecContentType) -> SpecMsgCF4Combinator {
-    SpecMsgCF4Combinator(AndThen(bytes::Variable(f3.spec_into()), Mapped { inner: Choice(Cond { cond: f2 == 0, inner: spec_content_0(f3) }, Choice(Cond { cond: f2 == 1, inner: U16Be }, Choice(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
+pub closed spec fn spec_content_type() -> SpecContentTypeCombinator {
+    SpecContentTypeCombinator(U8)
 }
 
-pub fn msg_c_f4<'a>(f3: u24, f2: ContentType) -> (o: MsgCF4Combinator)
-    ensures o@ == spec_msg_c_f4(f3@, f2@),
+                
+pub fn content_type() -> (o: ContentTypeCombinator)
+    ensures o@ == spec_content_type(),
 {
-    MsgCF4Combinator(AndThen(bytes::Variable(f3.ex_into()), Mapped { inner: Choice::new(Cond { cond: f2 == 0, inner: content_0(f3) }, Choice::new(Cond { cond: f2 == 1, inner: U16Be }, Choice::new(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
+    ContentTypeCombinator(U8)
 }
 
+                
 
 pub struct SpecMsgA {
     pub f1: SpecMsgB,
@@ -761,15 +654,126 @@ pub fn msg_a() -> (o: MsgACombinator)
 }
 
                 
-pub type SpecContentType = u8;
-pub type ContentType = u8;
-pub type ContentTypeRef<'a> = &'a u8;
+
+pub enum SpecMsgCF4 {
+    C0(SpecContent0),
+    C1(u16),
+    C2(u32),
+    Unrecognized(Seq<u8>),
+}
+
+pub type SpecMsgCF4Inner = Either<SpecContent0, Either<u16, Either<u32, Seq<u8>>>>;
+
+impl SpecFrom<SpecMsgCF4> for SpecMsgCF4Inner {
+    open spec fn spec_from(m: SpecMsgCF4) -> SpecMsgCF4Inner {
+        match m {
+            SpecMsgCF4::C0(m) => Either::Left(m),
+            SpecMsgCF4::C1(m) => Either::Right(Either::Left(m)),
+            SpecMsgCF4::C2(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecMsgCF4::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecMsgCF4Inner> for SpecMsgCF4 {
+    open spec fn spec_from(m: SpecMsgCF4Inner) -> SpecMsgCF4 {
+        match m {
+            Either::Left(m) => SpecMsgCF4::C0(m),
+            Either::Right(Either::Left(m)) => SpecMsgCF4::C1(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecMsgCF4::C2(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecMsgCF4::Unrecognized(m),
+        }
+    }
+
+}
 
 
-pub struct SpecContentTypeCombinator(SpecContentTypeCombinatorAlias);
 
-impl SpecCombinator for SpecContentTypeCombinator {
-    type Type = SpecContentType;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MsgCF4<'a> {
+    C0(Content0<'a>),
+    C1(u16),
+    C2(u32),
+    Unrecognized(&'a [u8]),
+}
+
+pub type MsgCF4Inner<'a> = Either<Content0<'a>, Either<u16, Either<u32, &'a [u8]>>>;
+
+pub type MsgCF4InnerRef<'a> = Either<&'a Content0<'a>, Either<&'a u16, Either<&'a u32, &'a &'a [u8]>>>;
+
+
+impl<'a> View for MsgCF4<'a> {
+    type V = SpecMsgCF4;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            MsgCF4::C0(m) => SpecMsgCF4::C0(m@),
+            MsgCF4::C1(m) => SpecMsgCF4::C1(m@),
+            MsgCF4::C2(m) => SpecMsgCF4::C2(m@),
+            MsgCF4::Unrecognized(m) => SpecMsgCF4::Unrecognized(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a MsgCF4<'a>> for MsgCF4InnerRef<'a> {
+    fn ex_from(m: &'a MsgCF4<'a>) -> MsgCF4InnerRef<'a> {
+        match m {
+            MsgCF4::C0(m) => Either::Left(m),
+            MsgCF4::C1(m) => Either::Right(Either::Left(m)),
+            MsgCF4::C2(m) => Either::Right(Either::Right(Either::Left(m))),
+            MsgCF4::Unrecognized(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+impl<'a> From<MsgCF4Inner<'a>> for MsgCF4<'a> {
+    fn ex_from(m: MsgCF4Inner<'a>) -> MsgCF4<'a> {
+        match m {
+            Either::Left(m) => MsgCF4::C0(m),
+            Either::Right(Either::Left(m)) => MsgCF4::C1(m),
+            Either::Right(Either::Right(Either::Left(m))) => MsgCF4::C2(m),
+            Either::Right(Either::Right(Either::Right(m))) => MsgCF4::Unrecognized(m),
+        }
+    }
+    
+}
+
+
+pub struct MsgCF4Mapper;
+impl View for MsgCF4Mapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MsgCF4Mapper {
+    type Src = SpecMsgCF4Inner;
+    type Dst = SpecMsgCF4;
+}
+impl SpecIsoProof for MsgCF4Mapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for MsgCF4Mapper {
+    type Src = MsgCF4Inner<'a>;
+    type Dst = MsgCF4<'a>;
+    type RefSrc = MsgCF4InnerRef<'a>;
+}
+
+type SpecMsgCF4CombinatorAlias1 = Choice<Cond<U32Be>, Cond<bytes::Tail>>;
+type SpecMsgCF4CombinatorAlias2 = Choice<Cond<U16Be>, SpecMsgCF4CombinatorAlias1>;
+type SpecMsgCF4CombinatorAlias3 = Choice<Cond<SpecContent0Combinator>, SpecMsgCF4CombinatorAlias2>;
+pub struct SpecMsgCF4Combinator(SpecMsgCF4CombinatorAlias);
+
+impl SpecCombinator for SpecMsgCF4Combinator {
+    type Type = SpecMsgCF4;
     closed spec fn requires(&self) -> bool
     { self.0.requires() }
     closed spec fn wf(&self, v: Self::Type) -> bool
@@ -779,9 +783,9 @@ impl SpecCombinator for SpecContentTypeCombinator {
     closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecContentTypeCombinator {
+impl SecureSpecCombinator for SpecMsgCF4Combinator {
     open spec fn is_prefix_secure() -> bool 
-    { SpecContentTypeCombinatorAlias::is_prefix_secure() }
+    { SpecMsgCF4CombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -795,16 +799,39 @@ impl SecureSpecCombinator for SpecContentTypeCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecContentTypeCombinatorAlias = U8;
-
-pub struct ContentTypeCombinator(ContentTypeCombinatorAlias);
-
-impl View for ContentTypeCombinator {
-    type V = SpecContentTypeCombinator;
-    closed spec fn view(&self) -> Self::V { SpecContentTypeCombinator(self.0@) }
+pub type SpecMsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<SpecMsgCF4CombinatorAlias3, MsgCF4Mapper>>;
+type MsgCF4CombinatorAlias1 = Choice<Cond<U32Be>, Cond<bytes::Tail>>;
+type MsgCF4CombinatorAlias2 = Choice<Cond<U16Be>, MsgCF4Combinator1>;
+type MsgCF4CombinatorAlias3 = Choice<Cond<Content0Combinator>, MsgCF4Combinator2>;
+struct MsgCF4Combinator1(MsgCF4CombinatorAlias1);
+impl View for MsgCF4Combinator1 {
+    type V = SpecMsgCF4CombinatorAlias1;
+    closed spec fn view(&self) -> Self::V { self.0@ }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ContentTypeCombinator {
-    type Type = ContentType;
+impl_wrapper_combinator!(MsgCF4Combinator1, MsgCF4CombinatorAlias1);
+
+struct MsgCF4Combinator2(MsgCF4CombinatorAlias2);
+impl View for MsgCF4Combinator2 {
+    type V = SpecMsgCF4CombinatorAlias2;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgCF4Combinator2, MsgCF4CombinatorAlias2);
+
+struct MsgCF4Combinator3(MsgCF4CombinatorAlias3);
+impl View for MsgCF4Combinator3 {
+    type V = SpecMsgCF4CombinatorAlias3;
+    closed spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MsgCF4Combinator3, MsgCF4CombinatorAlias3);
+
+pub struct MsgCF4Combinator(MsgCF4CombinatorAlias);
+
+impl View for MsgCF4Combinator {
+    type V = SpecMsgCF4Combinator;
+    closed spec fn view(&self) -> Self::V { SpecMsgCF4Combinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCF4Combinator {
+    type Type = MsgCF4<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -815,21 +842,19 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ContentTypeCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 } 
-pub type ContentTypeCombinatorAlias = U8;
+pub type MsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<MsgCF4Combinator3, MsgCF4Mapper>>;
 
 
-pub closed spec fn spec_content_type() -> SpecContentTypeCombinator {
-    SpecContentTypeCombinator(U8)
+pub closed spec fn spec_msg_c_f4(f3: u24, f2: SpecContentType) -> SpecMsgCF4Combinator {
+    SpecMsgCF4Combinator(AndThen(bytes::Variable(f3.spec_into()), Mapped { inner: Choice(Cond { cond: f2 == 0, inner: spec_content_0(f3) }, Choice(Cond { cond: f2 == 1, inner: U16Be }, Choice(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
 }
 
-                
-pub fn content_type() -> (o: ContentTypeCombinator)
-    ensures o@ == spec_content_type(),
+pub fn msg_c_f4<'a>(f3: u24, f2: ContentType) -> (o: MsgCF4Combinator)
+    ensures o@ == spec_msg_c_f4(f3@, f2@),
 {
-    ContentTypeCombinator(U8)
+    MsgCF4Combinator(AndThen(bytes::Variable(f3.ex_into()), Mapped { inner: MsgCF4Combinator3(Choice::new(Cond { cond: f2 == 0, inner: content_0(f3) }, MsgCF4Combinator2(Choice::new(Cond { cond: f2 == 1, inner: U16Be }, MsgCF4Combinator1(Choice::new(Cond { cond: f2 == 2, inner: U32Be }, Cond { cond: !(f2 == 0 || f2 == 1 || f2 == 2), inner: bytes::Tail })))))), mapper: MsgCF4Mapper }))
 }
 
-                
 
 pub struct SpecMsgC {
     pub f2: SpecContentType,
