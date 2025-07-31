@@ -580,23 +580,34 @@ fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> 
     match const_combinator {
         ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => {
             for field in fields {
-                if let ConstCombinator::ConstCombinatorInvocation(invocation) = field {
+                if let ConstCombinator::ConstCombinatorInvocation {
+                    name: invocation, ..
+                } = field
+                {
                     invocations.push(invocation.to_owned());
                 }
             }
         }
         ConstCombinator::ConstChoice(ConstChoiceCombinator(choices)) => {
             for ConstChoice { combinator, .. } in choices {
-                if let ConstCombinator::ConstCombinatorInvocation(invocation) = combinator {
+                if let ConstCombinator::ConstCombinatorInvocation {
+                    name: invocation, ..
+                } = combinator
+                {
                     invocations.push(invocation.to_owned());
                 }
             }
         }
-        ConstCombinator::ConstCombinatorInvocation(invocation) => {
+        ConstCombinator::ConstCombinatorInvocation {
+            name: invocation, ..
+        } => {
             invocations.push(invocation.to_owned());
         }
         ConstCombinator::Vec(combinator) => {
-            if let ConstCombinator::ConstCombinatorInvocation(invocation) = combinator.as_ref() {
+            if let ConstCombinator::ConstCombinatorInvocation {
+                name: invocation, ..
+            } = combinator.as_ref()
+            {
                 invocations.push(invocation.to_owned());
             }
         }
