@@ -108,7 +108,7 @@ impl View for U64Be {
 
 macro_rules! impl_combinator_for_le_uint_type {
     ($combinator:ty, $int_type:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl SpecCombinator for $combinator {
                 type Type = $int_type;
 
@@ -207,7 +207,7 @@ macro_rules! impl_combinator_for_le_uint_type {
 
 macro_rules! impl_combinator_for_be_uint_type {
     ($combinator:ty, $int_type:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl SpecCombinator for $combinator {
                 type Type = $int_type;
 

@@ -143,7 +143,7 @@ impl<'a, const N: usize> Pred<&'a [u8]> for TagPred<[u8; N]> {
 
 macro_rules! impl_combinator_for_uint_tag {
     ($combinator:ty, $int_type:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl<'x, I, O> Combinator<'x, I, O> for Tag<$combinator, $int_type> where
                 I: VestPublicInput,
                 O: VestPublicOutput<I>,

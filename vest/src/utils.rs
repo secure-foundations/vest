@@ -274,12 +274,12 @@ pub exec fn init_vec_u8(n: usize) -> (res: Vec<u8>)
 } // verus!
 macro_rules! declare_identity_view_reflex {
     ($t:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl ViewReflex for $t {
                 proof fn reflex(&self) {}
             }
         }
-};
+    };
 }
 
 declare_identity_view_reflex!(());

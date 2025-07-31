@@ -6,7 +6,7 @@ verus! {
 
 macro_rules! impl_reflexive_clone {
     ($($ty:ty),*) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             $(
                 impl Clone for $ty {
                     fn clone(&self) -> (out: Self)

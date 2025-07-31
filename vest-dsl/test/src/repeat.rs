@@ -17,7 +17,7 @@ use vest::regular::leb128::*;
 
 macro_rules! impl_wrapper_combinator {
     ($combinator:ty, $combinator_alias:ty) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for $combinator {
                 type Type = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
                 type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
