@@ -11,27 +11,33 @@ pub struct VestCombinator;
 
 pub type Span<'i> = pest::Span<'i>;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Identifier<'i> {
+    pub name: String,
+    pub span: Span<'i>,
+}
+
 #[derive(Debug, Clone)]
 pub enum Definition<'i> {
     Combinator {
-        name: String,
+        name: Identifier<'i>,
         param_defns: Vec<ParamDefn<'i>>,
         combinator: Combinator<'i>,
         span: Span<'i>,
     },
     SecCombinator {
-        name: String,
+        name: Identifier<'i>,
         combinator: Combinator<'i>,
         span: Span<'i>,
     },
     ConstCombinator {
-        name: String,
+        name: Identifier<'i>,
         const_combinator: ConstCombinator<'i>,
         span: Span<'i>,
     },
     Endianess(Endianess),
     MacroDefn {
-        name: String,
+        name: Identifier<'i>,
         params: Vec<String>,
         body: Combinator<'i>,
     },
@@ -46,10 +52,10 @@ pub enum Endianess {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ParamDefn<'i> {
     Stream {
-        name: String,
+        name: Identifier<'i>,
     },
     Dependent {
-        name: String,
+        name: Identifier<'i>,
         combinator: CombinatorInner<'i>,
         span: Span<'i>,
     },
@@ -101,20 +107,24 @@ pub enum IntCombinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IntConstraint<'i> {
     Single {
-        elem: ConstraintElem,
+        elem: ConstraintElem<'i>,
         span: Span<'i>,
     },
     Set(Vec<IntConstraint<'i>>),
     Neg(Box<IntConstraint<'i>>),
 }
 
-#[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub enum ConstraintElem {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ConstraintElem<'i> {
     Range {
         start: Option<i128>,
         end: Option<i128>,
+        span: Span<'i>,
     },
-    Single(i128),
+    Single {
+        elem: i128,
+        span: Span<'i>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -127,17 +137,17 @@ pub struct StructCombinator<'i> {
 pub enum StructField<'i> {
     Stream(StreamTransform<'i>),
     Dependent {
-        label: String,
+        label: Identifier<'i>,
         combinator: Combinator<'i>,
         span: Span<'i>,
     },
     Const {
-        label: String,
+        label: Identifier<'i>,
         combinator: ConstCombinator<'i>,
         span: Span<'i>,
     },
     Ordinary {
-        label: String,
+        label: Identifier<'i>,
         combinator: Combinator<'i>,
         span: Span<'i>,
     },
@@ -146,15 +156,15 @@ pub enum StructField<'i> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StreamTransform<'i> {
     pub streams: Vec<String>,
-    pub func: String,
-    pub args: Vec<Param>,
+    pub func: Identifier<'i>,
+    pub args: Vec<Param<'i>>,
     pub span: Span<'i>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Param {
-    Stream(String),
-    Dependent(String),
+pub enum Param<'i> {
+    Stream(Identifier<'i>),
+    Dependent(Identifier<'i>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -179,23 +189,23 @@ pub enum EnumCombinator<'i> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Enum<'i> {
-    pub name: String,
+    pub name: Identifier<'i>,
     pub value: i128,
     pub span: Span<'i>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChoiceCombinator<'i> {
-    pub depend_id: Option<String>,
+    pub depend_id: Option<Identifier<'i>>,
     // pub choices: Vec<Choice>,
     pub choices: Choices<'i>,
     pub span: Span<'i>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Choices<'i> {
-    Enums(Vec<(String, Combinator<'i>)>),
-    Ints(Vec<(Option<ConstraintElem>, Combinator<'i>)>),
-    Arrays(Vec<(ConstArray, Combinator<'i>)>),
+    Enums(Vec<(Identifier<'i>, Combinator<'i>)>),
+    Ints(Vec<(Option<ConstraintElem<'i>>, Combinator<'i>)>),
+    Arrays(Vec<(ConstArray<'i>, Combinator<'i>)>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -239,14 +249,14 @@ pub struct TailCombinator<'i> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ApplyCombinator<'i> {
-    pub stream: String,
+    pub stream: Identifier<'i>,
     pub combinator: Box<Combinator<'i>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CombinatorInvocation<'i> {
-    pub func: String,
-    pub args: Vec<Param>,
+    pub func: Identifier<'i>,
+    pub args: Vec<Param<'i>>,
     pub span: Span<'i>,
 }
 
@@ -258,29 +268,42 @@ pub enum ConstCombinator<'i> {
     ConstInt(ConstIntCombinator<'i>),
     ConstStruct(ConstStructCombinator<'i>),
     ConstChoice(ConstChoiceCombinator<'i>),
-    ConstCombinatorInvocation(String),
+    ConstCombinatorInvocation {
+        name: Identifier<'i>,
+        span: Span<'i>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstArrayCombinator<'i> {
     pub combinator: IntCombinator,
     pub len: usize,
-    pub values: ConstArray,
+    pub values: ConstArray<'i>,
     pub span: Span<'i>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstBytesCombinator<'i> {
     pub len: usize,
-    pub values: ConstArray,
+    pub values: ConstArray<'i>,
     pub span: Span<'i>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ConstArray {
-    Char(Vec<u8>),
-    Int(Vec<i128>),
-    Repeat(i128, usize),
+pub enum ConstArray<'i> {
+    Char {
+        chars: Vec<u8>,
+        span: Span<'i>,
+    },
+    Int {
+        ints: Vec<i128>,
+        span: Span<'i>,
+    },
+    Repeat {
+        repeat: i128,
+        count: usize,
+        span: Span<'i>,
+    },
     Wildcard,
 }
 
@@ -300,6 +323,12 @@ pub struct ConstChoiceCombinator<'i>(pub Vec<ConstChoice<'i>>);
 pub struct ConstChoice<'i> {
     pub tag: String,
     pub combinator: ConstCombinator<'i>,
+}
+
+impl Display for Identifier<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 impl Display for Definition<'_> {
@@ -426,16 +455,16 @@ impl Display for IntConstraint<'_> {
     }
 }
 
-impl Display for ConstraintElem {
+impl Display for ConstraintElem<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstraintElem::Range { start, end } => match (start, end) {
+            ConstraintElem::Range { start, end, .. } => match (start, end) {
                 (Some(start), Some(end)) => write!(f, "{}_to_{}", start, end),
                 (Some(start), None) => write!(f, "{}_to_max", start),
                 (None, Some(end)) => write!(f, "min_to{}", end),
                 (None, None) => write!(f, "min_to_max"),
             },
-            ConstraintElem::Single(elem) => write!(f, "{}", elem),
+            ConstraintElem::Single { elem, .. } => write!(f, "{}", elem),
         }
     }
 }
@@ -483,7 +512,7 @@ impl Display for ConstCombinator<'_> {
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
             ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
             ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
-            ConstCombinator::ConstCombinatorInvocation(i) => write!(f, "{}", i),
+            ConstCombinator::ConstCombinatorInvocation { name, .. } => write!(f, "{}", name),
         }
     }
 }
@@ -500,17 +529,17 @@ impl Display for ConstBytesCombinator<'_> {
     }
 }
 
-impl Display for ConstArray {
+impl Display for ConstArray<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstArray::Char(bytes) => {
+            ConstArray::Char { chars, .. } => {
                 write!(f, "\"")?;
-                for byte in bytes {
+                for byte in chars {
                     write!(f, "\\x{:02x}", byte)?;
                 }
                 write!(f, "\"")
             }
-            ConstArray::Int(ints) => {
+            ConstArray::Int { ints, .. } => {
                 write!(f, "[")?;
                 for (i, int) in ints.iter().enumerate() {
                     if i != 0 {
@@ -520,7 +549,7 @@ impl Display for ConstArray {
                 }
                 write!(f, "]")
             }
-            ConstArray::Repeat(value, count) => write!(f, "[{}; {}]", value, count),
+            ConstArray::Repeat { repeat, count, .. } => write!(f, "[{}; {}]", repeat, count),
             ConstArray::Wildcard => write!(f, "_"),
         }
     }
@@ -564,7 +593,7 @@ impl Display for StreamTransform<'_> {
     }
 }
 
-impl Display for Param {
+impl Display for Param<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Param::Stream(s) => write!(f, "${}", s),
@@ -755,6 +784,12 @@ pub fn from_str(source: &str) -> Result<Vec<Definition>, Box<Error<Rule>>> {
     Ok(definitions)
 }
 
+fn build_id(pair: pest::iterators::Pair<Rule>) -> Identifier {
+    let span = pair.as_span();
+    let name = pair.as_str().to_string();
+    Identifier { name, span }
+}
+
 fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
@@ -767,7 +802,7 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
             let next_rule = inner_rules.next().unwrap();
             match next_rule.as_rule() {
                 Rule::secret => {
-                    let name = inner_rules.next().unwrap().as_str().to_string();
+                    let name = build_id(inner_rules.next().unwrap());
                     let next_rule = inner_rules.next().unwrap();
                     match next_rule.as_rule() {
                         Rule::param_defn_list => {
@@ -794,7 +829,7 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                 _ =>
                 // must be var_id
                 {
-                    let name = next_rule.as_str().to_string();
+                    let name = build_id(next_rule);
                     let next_rule = inner_rules.next().unwrap();
                     match next_rule.as_rule() {
                         Rule::param_defn_list => {
@@ -824,10 +859,15 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
         Rule::const_combinator_defn => {
             let mut inner_rules = rule.into_inner();
             let _ = inner_rules.next().unwrap(); // skip the "const" keyword
-            let name = inner_rules.next().unwrap().as_str().to_string();
+            let next_rule = inner_rules.next().unwrap();
+            let name = next_rule.as_str().to_string();
+            let name_span = next_rule.as_span();
             let const_combinator = build_const_combinator(inner_rules.next().unwrap());
             Definition::ConstCombinator {
-                name,
+                name: Identifier {
+                    name,
+                    span: name_span,
+                },
                 const_combinator,
                 span,
             }
@@ -842,7 +882,7 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
         }
         Rule::macro_defn => {
             let mut inner_rules = rule.into_inner();
-            let name = inner_rules.next().unwrap().as_str().to_string();
+            let name = build_id(inner_rules.next().unwrap());
             let params = inner_rules
                 .next()
                 .unwrap()
@@ -868,14 +908,14 @@ fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
             Rule::param_defn => {
                 let mut inner_rules = pair.into_inner();
                 let next_rule = inner_rules.next().unwrap();
-                let name = next_rule.as_str();
+                let mut name = build_id(next_rule.clone());
                 match next_rule.as_rule() {
                     Rule::stream_id => {
-                        let name = name.strip_prefix('$').unwrap().to_string();
+                        name.name = name.name.strip_prefix('$').unwrap().to_string();
                         param_defns.push(ParamDefn::Stream { name });
                     }
                     Rule::depend_id => {
-                        let name = name.strip_prefix('@').unwrap().to_string();
+                        name.name = name.name.strip_prefix('@').unwrap().to_string();
                         let combinator = build_combinator_inner(inner_rules.next().unwrap());
                         param_defns.push(ParamDefn::Dependent {
                             name,
@@ -979,18 +1019,11 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let mut inner_rules = rule.into_inner();
             match inner_rules.peek().unwrap().as_rule() {
                 Rule::depend_id => {
-                    let depend_id = Some(
-                        inner_rules
-                            .next()
-                            .unwrap()
-                            .as_str()
-                            .strip_prefix('@')
-                            .unwrap()
-                            .to_string(),
-                    );
+                    let mut depend_id = build_id(inner_rules.next().unwrap());
+                    depend_id.name = depend_id.name.strip_prefix('@').unwrap().to_string();
                     let choices = build_choices(inner_rules);
                     CombinatorInner::Choice(ChoiceCombinator {
-                        depend_id,
+                        depend_id: Some(depend_id),
                         choices,
                         span,
                     })
@@ -1035,7 +1068,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                     combinator: IntCombinator::Unsigned(8),
                     constraint,
-                    span,
+                    ..
                 }) if constraint.is_none() => CombinatorInner::Bytes(BytesCombinator { len, span }),
                 _ => {
                     let combinator = Box::new(comb);
@@ -1055,13 +1088,13 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         Rule::tail_combinator => CombinatorInner::Tail(TailCombinator { span }),
         Rule::apply_combinator => {
             let mut inner_rules = rule.into_inner();
-            let stream = inner_rules.next().unwrap().as_str().to_string();
+            let stream = build_id(inner_rules.next().unwrap());
             let combinator = Box::new(build_combinator(inner_rules.next().unwrap()));
             CombinatorInner::Apply(ApplyCombinator { stream, combinator })
         }
         Rule::combinator_invocation => {
             let mut inner_rules = rule.into_inner();
-            let func = inner_rules.next().unwrap().as_str().to_string();
+            let func = build_id(inner_rules.next().unwrap());
             let args = inner_rules.next().map(build_params).unwrap_or_default();
             CombinatorInner::Invocation(CombinatorInvocation { func, args, span })
         }
@@ -1115,15 +1148,19 @@ fn build_int_constraint(pair: pest::iterators::Pair<Rule>) -> IntConstraint {
 fn build_constraint_elem(pair: pest::iterators::Pair<Rule>) -> ConstraintElem {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
+    let span = rule.as_span();
     match rule.as_rule() {
         Rule::const_int_range => {
             let mut inner_rules = rule.into_inner();
             let start = inner_rules.next().map(build_const_int);
             let end = inner_rules.next().map(build_const_int);
             // TODO: check that start <= end (?)
-            ConstraintElem::Range { start, end }
+            ConstraintElem::Range { start, end, span }
         }
-        Rule::const_int => ConstraintElem::Single(build_const_int(rule)),
+        Rule::const_int => ConstraintElem::Single {
+            elem: build_const_int(rule),
+            span,
+        },
         _ => unreachable!(),
     }
 }
@@ -1156,7 +1193,7 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
         Rule::stream_transform => build_stream_transform(rule),
         Rule::constant => {
             let next_rule = inner_rules.next().unwrap();
-            let label = next_rule.as_str().to_string();
+            let label = build_id(next_rule);
             let combinator = build_const_combinator(inner_rules.next().unwrap());
             StructField::Const {
                 label,
@@ -1165,12 +1202,13 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
             }
         }
         Rule::depend_id | Rule::var_id => {
-            let label = rule.as_str().to_string();
+            let mut label = build_id(rule);
             let next_rule = inner_rules.next().unwrap();
             let combinator = build_combinator(next_rule);
-            if let Some(label) = label.strip_prefix('@') {
+            if let Some(label_str) = label.name.strip_prefix('@') {
+                label.name = label_str.to_string();
                 StructField::Dependent {
-                    label: label.to_owned(),
+                    label,
                     combinator,
                     span,
                 }
@@ -1198,7 +1236,7 @@ fn build_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
     match rule.as_rule() {
         Rule::stream_ids => {
             let streams = rule.into_inner().map(|r| r.as_str().to_string()).collect();
-            let func = inner_rules.next().unwrap().as_str().to_string();
+            let func = build_id(inner_rules.next().unwrap());
             let args = build_params(inner_rules.next().unwrap());
             StructField::Stream(StreamTransform {
                 streams,
@@ -1208,7 +1246,7 @@ fn build_stream_transform(pair: pest::iterators::Pair<Rule>) -> StructField {
             })
         }
         Rule::var_id => {
-            let func = rule.as_str().to_string();
+            let func = build_id(rule);
             let args = build_params(inner_rules.next().unwrap());
             StructField::Stream(StreamTransform {
                 streams: vec![],
@@ -1228,10 +1266,16 @@ fn build_params(pair: pest::iterators::Pair<'_, Rule>) -> Vec<Param> {
 fn build_param(pair: pest::iterators::Pair<Rule>) -> Param {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
-    let name = rule.as_str().to_string();
+    let mut name = build_id(rule.clone());
     match rule.as_rule() {
-        Rule::stream_id => Param::Stream(name.strip_prefix('$').unwrap().to_string()),
-        Rule::depend_id => Param::Dependent(name.strip_prefix('@').unwrap().to_string()),
+        Rule::stream_id => {
+            name.name = name.name.strip_prefix('$').unwrap().to_string();
+            Param::Stream(name)
+        }
+        Rule::depend_id => {
+            name.name = name.name.strip_prefix('@').unwrap().to_string();
+            Param::Dependent(name)
+        }
         _ => unreachable!(),
     }
 }
@@ -1239,13 +1283,12 @@ fn build_param(pair: pest::iterators::Pair<Rule>) -> Param {
 fn build_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
     let mut inner_rules = pair.into_inner();
     let next_rule = inner_rules.next().unwrap();
-    let name_span = next_rule.as_span();
-    let name = next_rule.as_str().to_string();
+    let name = build_id(next_rule);
     let next_rule = inner_rules.next().unwrap();
     let value_span = next_rule.as_span();
     let value = build_const_int(next_rule);
     // Create a span that covers the entire enum
-    let span = Span::new(name_span.get_input(), name_span.start(), value_span.end())
+    let span = Span::new(name.span.get_input(), name.span.start(), value_span.end())
         .expect("Failed to create span for enum");
     Enum { name, value, span }
 }
@@ -1378,7 +1421,10 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
         Rule::const_choice_combinator => ConstCombinator::ConstChoice(ConstChoiceCombinator(
             rule.into_inner().map(build_const_choice).collect(),
         )),
-        Rule::const_id => ConstCombinator::ConstCombinatorInvocation(rule.as_str().to_string()),
+        Rule::const_id => ConstCombinator::ConstCombinatorInvocation {
+            name: rule.as_str().to_string(),
+            span: span.clone(),
+        },
         _ => unreachable!(),
     }
 }
@@ -1393,20 +1439,25 @@ fn build_const_choice(pair: pest::iterators::Pair<'_, Rule>) -> ConstChoice {
 fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
+    let span = rule.as_span();
     match rule.as_rule() {
         Rule::const_char_array => {
             // strip leading and trailing quotes
             let str = &rule.as_str();
             let str = &str[1..str.len() - 1];
-            ConstArray::Char(str.as_bytes().to_vec())
+            ConstArray::Char {
+                chars: str.as_bytes().to_vec(),
+                span,
+            }
         }
         Rule::const_int_array => {
             let mut inner_rules = rule.into_inner();
             let next_rule = inner_rules.next().unwrap();
             match next_rule.as_rule() {
-                Rule::int_array_expr => {
-                    ConstArray::Int(next_rule.into_inner().map(build_const_int).collect())
-                }
+                Rule::int_array_expr => ConstArray::Int {
+                    ints: next_rule.into_inner().map(build_const_int).collect(),
+                    span,
+                },
                 Rule::repeat_int_array_expr => {
                     let mut inner_rules = next_rule.into_inner();
                     let value = build_const_int(inner_rules.next().unwrap());
@@ -1414,7 +1465,11 @@ fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {
                     let count: usize = count
                         .try_into()
                         .unwrap_or_else(|_| panic!("length {} does not fit into usize", count));
-                    ConstArray::Repeat(value, count)
+                    ConstArray::Repeat {
+                        repeat: value,
+                        count,
+                        span,
+                    }
                 }
                 _ => unreachable!(),
             }

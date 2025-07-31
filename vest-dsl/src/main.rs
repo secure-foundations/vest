@@ -37,7 +37,7 @@ fn replace_extension(filename: &str, new_ext: &str) -> String {
 }
 
 #[derive(Debug)]
-enum VestError {
+pub enum VestError {
     ParsingError,
     TypeError,
     CodegenError,
@@ -90,7 +90,7 @@ fn main() -> Result<(), VestError> {
 
     // type check the AST
     // println!("🔍 Type checking...");
-    let ctx = type_check::check(&ast, source).map_err(|_| VestError::TypeError)?;
+    let ctx = type_check::check(&ast, source)?;
 
     // code gen to a file
     // if there is no output file specified, use the same name as the name of input vest file
