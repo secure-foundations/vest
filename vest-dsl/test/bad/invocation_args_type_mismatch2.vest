@@ -1,0 +1,8 @@
+foo(@a: u8) = {
+  payload: [u8; @a],
+}
+
+bar(@i: [u8; 10]) = {
+  @b: u8,
+  f: foo(@i),
+}
