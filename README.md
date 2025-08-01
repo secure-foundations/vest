@@ -240,3 +240,18 @@ Options:
 ## Contributing
 
 Vest is still in the early stages of development, and we welcome contributions from the community to either the core library or the DSL. We are also looking for feedback on the design, usability, and performance of the tool. If you are interested in contributing, please feel free to open an issue or a pull request.
+
+## Publications
+
+[Vest: Verified, Secure, High-Performance Parsing and Serialization for Rust](https://tracycy.com/papers/vest-usenix-security25.pdf). **Yi Cai**, Pratap Singh, Zhengyao Lin, Jay Bosamiya, Joshua Gancher, Milijana Surbatovich, Bryan Parno. In Proceedings of the USENIX Security Symposium, August, 2025.
+
+```bibtex
+@inproceedings{vest,
+  author    = {Cai, Yi and Singh, Pratap and Lin, Zhengyao and Bosamiya, Jay and Gancher, Joshua and Surbatovich, Milijana and Parno, Bryan},
+  booktitle = {Proceedings of the USENIX Security Symposium},
+  code      = {https://github.com/secure-foundations/vest},
+  month     = {August},
+  title     = {{Vest}: Verified, Secure, High-Performance Parsing and Serialization for {Rust}},
+  year      = {2025}
+}
+```
