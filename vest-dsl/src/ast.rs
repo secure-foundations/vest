@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use std::fmt::Display;
+use std::hash::Hash;
 
 use pest::error::Error;
 use pest::Parser;
@@ -11,10 +12,22 @@ pub struct VestCombinator;
 
 pub type Span<'i> = pest::Span<'i>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq)]
 pub struct Identifier<'i> {
     pub name: String,
     pub span: Span<'i>,
+}
+
+impl PartialEq for Identifier<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Hash for Identifier<'_> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -89,11 +102,17 @@ pub enum CombinatorInner<'i> {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ConstraintIntCombinator<'i> {
     pub combinator: IntCombinator,
     pub constraint: Option<IntConstraint<'i>>,
     pub span: Span<'i>,
+}
+
+impl PartialEq for ConstraintIntCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.constraint == other.constraint
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -104,17 +123,30 @@ pub enum IntCombinator {
     ULEB128,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub enum IntConstraint<'i> {
     Single {
         elem: ConstraintElem<'i>,
         span: Span<'i>,
     },
-    Set(Vec<IntConstraint<'i>>),
+    Set(Vec<ConstraintElem<'i>>),
     Neg(Box<IntConstraint<'i>>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl PartialEq for IntConstraint<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (IntConstraint::Single { elem: e1, .. }, IntConstraint::Single { elem: e2, .. }) => {
+                e1 == e2
+            }
+            (IntConstraint::Set(set1), IntConstraint::Set(set2)) => set1 == set2,
+            (IntConstraint::Neg(c1), IntConstraint::Neg(c2)) => c1 == c2,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
 pub enum ConstraintElem<'i> {
     Range {
         start: Option<i128>,
@@ -127,6 +159,26 @@ pub enum ConstraintElem<'i> {
     },
 }
 
+impl PartialEq for ConstraintElem<'_> {
+    // Disregard the span for equality checks
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                ConstraintElem::Range {
+                    start: s1, end: e1, ..
+                },
+                ConstraintElem::Range {
+                    start: s2, end: e2, ..
+                },
+            ) => s1 == s2 && e1 == e2,
+            (ConstraintElem::Single { elem: e1, .. }, ConstraintElem::Single { elem: e2, .. }) => {
+                e1 == e2
+            }
+            _ => false,
+        }
+    }
+}
+
 impl<'i> ConstraintElem<'i> {
     pub fn as_span(&self) -> Span<'i> {
         match self {
@@ -136,13 +188,19 @@ impl<'i> ConstraintElem<'i> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct StructCombinator<'i> {
     pub fields: Vec<StructField<'i>>,
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl PartialEq for StructCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.fields == other.fields
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
 pub enum StructField<'i> {
     Stream(StreamTransform<'i>),
     Dependent {
@@ -162,6 +220,51 @@ pub enum StructField<'i> {
     },
 }
 
+impl PartialEq for StructField<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (StructField::Stream(s1), StructField::Stream(s2)) => s1 == s2,
+            (
+                StructField::Dependent {
+                    label: l1,
+                    combinator: c1,
+                    ..
+                },
+                StructField::Dependent {
+                    label: l2,
+                    combinator: c2,
+                    ..
+                },
+            ) => l1 == l2 && c1 == c2,
+            (
+                StructField::Const {
+                    label: l1,
+                    combinator: c1,
+                    ..
+                },
+                StructField::Const {
+                    label: l2,
+                    combinator: c2,
+                    ..
+                },
+            ) => l1 == l2 && c1 == c2,
+            (
+                StructField::Ordinary {
+                    label: l1,
+                    combinator: c1,
+                    ..
+                },
+                StructField::Ordinary {
+                    label: l2,
+                    combinator: c2,
+                    ..
+                },
+            ) => l1 == l2 && c1 == c2,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StreamTransform<'i> {
     pub streams: Vec<String>,
@@ -176,7 +279,7 @@ pub enum Param<'i> {
     Dependent(Identifier<'i>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct WrapCombinator<'i> {
     pub prior: Vec<ConstCombinator<'i>>,
     pub combinator: Box<Combinator<'i>>,
@@ -184,7 +287,13 @@ pub struct WrapCombinator<'i> {
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl PartialEq for WrapCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.prior == other.prior && self.combinator == other.combinator && self.post == other.post
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
 pub enum EnumCombinator<'i> {
     Exhaustive {
         enums: Vec<Enum<'i>>,
@@ -194,6 +303,22 @@ pub enum EnumCombinator<'i> {
         enums: Vec<Enum<'i>>,
         span: Span<'i>,
     },
+}
+
+impl PartialEq for EnumCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                EnumCombinator::Exhaustive { enums: e1, .. },
+                EnumCombinator::Exhaustive { enums: e2, .. },
+            ) => e1 == e2,
+            (
+                EnumCombinator::NonExhaustive { enums: e1, .. },
+                EnumCombinator::NonExhaustive { enums: e2, .. },
+            ) => e1 == e2,
+            _ => false,
+        }
+    }
 }
 
 impl<'i> EnumCombinator<'i> {
@@ -212,13 +337,20 @@ pub struct Enum<'i> {
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ChoiceCombinator<'i> {
     pub depend_id: Option<Identifier<'i>>,
     // pub choices: Vec<Choice>,
     pub choices: Choices<'i>,
     pub span: Span<'i>,
 }
+
+impl PartialEq for ChoiceCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.depend_id == other.depend_id && self.choices == other.choices
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Choices<'i> {
     Enums(Vec<(Identifier<'i>, Combinator<'i>)>),
@@ -238,11 +370,17 @@ pub struct SepByCombinator<'i> {
     pub sep: ConstCombinator<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ArrayCombinator<'i> {
     pub combinator: Box<Combinator<'i>>,
     pub len: LengthSpecifier<'i>,
     pub span: Span<'i>,
+}
+
+impl PartialEq for ArrayCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.len == other.len
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -260,9 +398,15 @@ pub struct BytesCombinator<'i> {
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct TailCombinator<'i> {
     pub span: Span<'i>,
+}
+
+impl PartialEq for TailCombinator<'_> {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -271,11 +415,17 @@ pub struct ApplyCombinator<'i> {
     pub combinator: Box<Combinator<'i>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct CombinatorInvocation<'i> {
     pub func: Identifier<'i>,
     pub args: Vec<Param<'i>>,
     pub span: Span<'i>,
+}
+
+impl PartialEq for CombinatorInvocation<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.func == other.func && self.args == other.args
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -292,7 +442,7 @@ pub enum ConstCombinator<'i> {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ConstArrayCombinator<'i> {
     pub combinator: IntCombinator,
     pub len: usize,
@@ -300,14 +450,26 @@ pub struct ConstArrayCombinator<'i> {
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl PartialEq for ConstArrayCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.len == other.len && self.values == other.values
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ConstBytesCombinator<'i> {
     pub len: usize,
     pub values: ConstArray<'i>,
     pub span: Span<'i>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl PartialEq for ConstBytesCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.len == other.len && self.values == other.values
+    }
+}
+
+#[derive(Debug, Clone, Eq)]
 pub enum ConstArray<'i> {
     Char {
         chars: Vec<u8>,
@@ -325,6 +487,44 @@ pub enum ConstArray<'i> {
     Wildcard,
 }
 
+impl PartialEq for ConstArray<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ConstArray::Char { chars: c1, .. }, ConstArray::Char { chars: c2, .. }) => c1 == c2,
+            (ConstArray::Int { ints: i1, .. }, ConstArray::Int { ints: i2, .. }) => i1 == i2,
+            (
+                ConstArray::Repeat {
+                    repeat: r1,
+                    count: c1,
+                    ..
+                },
+                ConstArray::Repeat {
+                    repeat: r2,
+                    count: c2,
+                    ..
+                },
+            ) => r1 == r2 && c1 == c2,
+            (ConstArray::Wildcard, ConstArray::Wildcard) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Hash for ConstArray<'_> {
+    // Ignore the span for hashing
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            ConstArray::Char { chars, .. } => chars.hash(state),
+            ConstArray::Int { ints, .. } => ints.hash(state),
+            ConstArray::Repeat { repeat, count, .. } => {
+                repeat.hash(state);
+                count.hash(state);
+            }
+            ConstArray::Wildcard => ().hash(state),
+        }
+    }
+}
+
 impl<'i> ConstArray<'i> {
     pub fn as_span(&self) -> Span<'i> {
         match self {
@@ -336,11 +536,17 @@ impl<'i> ConstArray<'i> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ConstIntCombinator<'i> {
     pub combinator: IntCombinator,
     pub value: i128,
     pub span: Span<'i>,
+}
+
+impl PartialEq for ConstIntCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.value == other.value
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -734,7 +940,7 @@ impl Display for LengthSpecifier<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LengthSpecifier::Const(n) => write!(f, "{}", n),
-            LengthSpecifier::Dependent(s) => write!(f, "{}", s),
+            LengthSpecifier::Dependent(s) => write!(f, "@{}", s),
         }
     }
 }
@@ -1168,7 +1374,7 @@ fn build_int_constraint(pair: pest::iterators::Pair<Rule>) -> IntConstraint {
         },
         Rule::constraint_elem_set => {
             let inner_rules = rule.into_inner();
-            let elems = inner_rules.map(build_int_constraint).collect::<Vec<_>>();
+            let elems = inner_rules.map(build_constraint_elem).collect::<Vec<_>>();
             IntConstraint::Set(elems)
         }
         Rule::int_constraint => IntConstraint::Neg(Box::new(build_int_constraint(rule))),
@@ -1225,17 +1431,23 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
         Rule::constant => {
             let next_rule = inner_rules.next().unwrap();
             let label = build_id(next_rule);
-            let combinator = build_const_combinator(inner_rules.next().unwrap());
+            let next_rule = inner_rules.next().unwrap();
+            let combinator_span = next_rule.as_span();
+            let combinator = build_const_combinator(next_rule);
             StructField::Const {
                 label,
                 combinator,
-                span,
+                span: Span::new(span.get_input(), span.start(), combinator_span.end())
+                    .expect("Failed to create span for constant field"),
             }
         }
         Rule::depend_id | Rule::var_id => {
             let mut label = build_id(rule);
             let next_rule = inner_rules.next().unwrap();
+            let combinator_span = next_rule.as_span();
             let combinator = build_combinator(next_rule);
+            let span = Span::new(span.get_input(), span.start(), combinator_span.end())
+                .expect("Failed to create span for struct field");
             if let Some(label_str) = label.name.strip_prefix('@') {
                 label.name = label_str.to_string();
                 StructField::Dependent {
@@ -1250,11 +1462,6 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
                     span,
                 }
             }
-            // if label.starts_with('@') {
-            //     StructField::Dependent { label, combinator }
-            // } else {
-            //     StructField::Ordinary { label, combinator }
-            // }
         }
         _ => unreachable!(),
     }

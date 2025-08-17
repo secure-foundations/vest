@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 mod ast;
 // mod codegen;
@@ -55,11 +55,11 @@ impl std::fmt::Display for VestError {
 
 impl std::error::Error for VestError {}
 
-fn main() -> Result<(), VestError> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     // parse the vest file
-    let vest = std::fs::read_to_string(&args.vest_file).expect("cannot read the vest file");
+    let vest = std::fs::read_to_string(&args.vest_file)?;
     let source = (
         args.vest_file.as_str(),
         &ariadne::Source::from(vest.clone()),
