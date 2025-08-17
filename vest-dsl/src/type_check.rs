@@ -98,7 +98,7 @@ macro_rules! report_unbound_field {
         Report::build(ReportKind::Error, ($source.0, span_as_range($span)))
             .with_message("unbound dependent field")
             .with_label(
-                Label::new(($source.0, span_as_range($span)))
+                Label::new(($source.0, span_as_range(&$depend_id.span)))
                     .with_message(format!("`@{}` is not found in current scope", $depend_id))
                     .with_color(Color::Red),
             )
@@ -666,7 +666,14 @@ fn check_combinator_inner<'ast>(
         Struct(StructCombinator {
             fields: struct_fields,
             span,
-        }) => check_struct_combinator(struct_fields, param_defns, local_ctx, global_ctx, source),
+        }) => check_struct_combinator(
+            struct_fields,
+            span,
+            param_defns,
+            local_ctx,
+            global_ctx,
+            source,
+        ),
         Wrap(WrapCombinator {
             prior,
             combinator,
@@ -771,7 +778,7 @@ fn check_combinator_invocation<'ast>(
         args,
         span,
     } = combinator;
-    match global_ctx.combinators.iter().find(|sig| &sig.name == name) {
+    match global_ctx.combinators.iter().find(|sig| sig.name == *name) {
         None => {
             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                 .with_message("undefined format")
@@ -876,9 +883,7 @@ fn check_combinator_invocation<'ast>(
                             // 2. try to find `depend_id` in param_defns
                             let param_defn =
                                 param_defns.iter().find(|param_defn| match param_defn {
-                                    ParamDefn::Dependent { name, .. } => {
-                                        name.name == depend_id.name
-                                    }
+                                    ParamDefn::Dependent { name, .. } => name == depend_id,
                                     _ => false,
                                 });
                             match param_defn {
@@ -1012,7 +1017,7 @@ fn check_bytes_combinator(
             } else {
                 // 2. try to find `depend_id` in param_defns
                 let param_defn = param_defns.iter().find(|param_defn| match param_defn {
-                    ParamDefn::Dependent { name, .. } => name.name == depend_id.name,
+                    ParamDefn::Dependent { name, .. } => name == depend_id,
                     _ => false,
                 });
                 // .unwrap_or_else(|| {
@@ -1171,7 +1176,7 @@ fn check_choice_combinator<'ast>(
                         name,
                         combinator,
                         span,
-                    } if name.name == depend_id.name => Some(combinator),
+                    } if name == depend_id => Some(combinator),
                     _ => None,
                 })
             })
@@ -1204,16 +1209,20 @@ fn check_choice_combinator<'ast>(
             if let Some(depend_id) = depend_id {
                 // check if depend_id a prior field in the struct or in the param_defns
                 let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = combinator.clone();
+                check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = global_ctx.resolve_alias(&combinator);
                 // check if `combinator` is defined as an enum
                 if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) = &combinator
                 {
                     let name = func.name.to_owned();
+                    let func_span = func.span.clone();
                     match global_ctx.enums.get(name.as_str()) {
                         None => {
                             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                 .with_message("undefined enum")
                                 .with_label(
-                                    Label::new((source.0, span_as_range(&func.span)))
+                                    Label::new((source.0, span_as_range(&func_span)))
                                         .with_message(format!("Enum `{}` is not defined", &name))
                                         .with_color(Color::Red),
                                 )
@@ -1253,7 +1262,7 @@ fn check_choice_combinator<'ast>(
                                     }
                                 } else if !enum_variants
                                     .iter()
-                                    .any(|Enum { name, .. }| name.name == variant.name)
+                                    .any(|Enum { name, .. }| name == variant)
                                 {
                                     Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                         .with_message("invalid choice variant")
@@ -1291,7 +1300,7 @@ fn check_choice_combinator<'ast>(
                                     .with_label(
                                         Label::new((source.0, span_as_range(span)))
                                             .with_message(format!(
-                                                "Multiple variants `{}` found in choice arms",
+                                                "Multiple variants `{}` found in a choice format",
                                                 variant.name
                                             ))
                                             .with_color(Color::Red),
@@ -1396,7 +1405,7 @@ fn check_choice_combinator<'ast>(
                             }))
                             .with_label(
                                 Label::new((source.0, span_as_range(&label.span)))
-                                    .with_message(format!("Duplicate label `{}`", label.name))
+                                    .with_message(format!("Duplicate variant `{}`", label.name))
                                     .with_color(Color::Red),
                             )
                             .with_label(
@@ -1419,6 +1428,9 @@ fn check_choice_combinator<'ast>(
         Choices::Ints(ints) => {
             if let Some(depend_id) = depend_id {
                 let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = combinator.clone();
+                check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = global_ctx.resolve_alias(&combinator);
                 let check_overlap = |patterns: Vec<&ConstraintElem<'_>>| -> Result<(), VestError> {
                     for (i, pattern_i) in patterns.iter().enumerate() {
                         for (j, pattern_j) in patterns.iter().enumerate().skip(i + 1) {
@@ -1587,40 +1599,152 @@ fn check_choice_combinator<'ast>(
         Choices::Arrays(arrays) => {
             if let Some(depend_id) = depend_id {
                 let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = combinator.clone();
+                check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = global_ctx.resolve_alias(&combinator);
                 // check if `combinator` is defined as an array
-                if let CombinatorInner::Array(ArrayCombinator { len, span, .. })
-                | CombinatorInner::Bytes(BytesCombinator { len, span }) = combinator
+                if let CombinatorInner::Array(ArrayCombinator {
+                    len,
+                    span: array_span,
+                    ..
+                })
+                | CombinatorInner::Bytes(BytesCombinator {
+                    len,
+                    span: array_span,
+                }) = combinator
                 {
                     let LengthSpecifier::Const(len) = len.clone() else {
-                        panic!("Length specifier must be constant");
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message("invalid array type")
+                            .with_label(
+                                Label::new((source.0, span_as_range(span)))
+                                    .with_message("Cannot pattern match on a variable-length type")
+                                    .with_color(Color::Red),
+                            )
+                            .with_label(
+                                Label::new((source.0, span_as_range(array_span)))
+                                    .with_message(format!(
+                                        "This is `@{}`'s type, which is not a fixed-length array",
+                                        depend_id
+                                    ))
+                                    .with_color(Color::Yellow),
+                            )
+                            .with_labels(arrays.iter().map(|(array, _)| {
+                                Label::new((source.0, span_as_range(&array.as_span())))
+                                    .with_color(Color::Yellow)
+                            }))
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
                     };
                     let mut array_variants = HashSet::new();
                     for (array, comb) in arrays {
                         if !array_variants.insert(array) {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                .with_message("duplicate choice variant")
+                                .with_labels(arrays.iter().map(|(array, _)| {
+                                    Label::new((source.0, span_as_range(&array.as_span())))
+                                        .with_color(Color::Yellow)
+                                }))
+                                .with_label(
+                                    Label::new((source.0, span_as_range(&array.as_span())))
+                                        .with_message(format!("Duplicate variant `{}`", array))
+                                        .with_color(Color::Red),
+                                )
+                                .with_label(
+                                    Label::new((source.0, span_as_range(span)))
+                                        .with_message(format!(
+                                            "Multiple variants `{}` found in a choice format",
+                                            array
+                                        ))
+                                        .with_color(Color::Red),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
                             return Err(VestError::TypeError);
-                            // panic!("Duplicate array variant");
+                        }
+                        macro_rules! report_len_mismatch {
+                            ($array:expr, $exp_len:expr, $got_len:expr) => {
+                                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                    .with_message("type mismatch")
+                                    .with_label(
+                                        Label::new((source.0, span_as_range(span)))
+                                            .with_message("Invalid choice format")
+                                            .with_color(Color::Red),
+                                    )
+                                    .with_label(
+                                        Label::new((source.0, span_as_range(&array.as_span())))
+                                            .with_message(format!(
+                                                "Expected length {}, got {}",
+                                                $exp_len, $got_len
+                                            ))
+                                            .with_color(Color::Red),
+                                    )
+                                    .with_label(
+                                        Label::new((
+                                            source.0,
+                                            span_as_range(&combinator.as_span()),
+                                        ))
+                                        .with_message(format!("This is `@{}`'s type", depend_id))
+                                        .with_color(Color::Yellow),
+                                    )
+                                    .finish()
+                                    .eprint(source)
+                                    .unwrap();
+                            };
                         }
                         match array {
-                            ConstArray::Int { ints, span } => {
+                            ConstArray::Int { ints, .. } => {
                                 if ints.len() != len {
+                                    report_len_mismatch!(array, len, ints.len());
                                     return Err(VestError::TypeError);
-                                    // panic!(
-                                    //     "Array length mismatch: expected {}, got {}",
-                                    //     len,
-                                    //     elems.len()
-                                    // );
+                                }
+                            }
+                            ConstArray::Char { chars, .. } => {
+                                if chars.len() != len {
+                                    report_len_mismatch!(array, len, chars.len());
+                                    return Err(VestError::TypeError);
+                                }
+                            }
+                            ConstArray::Repeat { count, .. } => {
+                                if *count != len {
+                                    report_len_mismatch!(array, len, *count);
+                                    return Err(VestError::TypeError);
                                 }
                             }
                             ConstArray::Wildcard => (),
-                            _ => unimplemented!(),
                         }
                         check_combinator(comb, param_defns, local_ctx, global_ctx, source)?;
                     }
                 } else {
-                    panic!("Type mismatch: expected array, got {}", combinator);
+                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                        .with_message("type mismatch")
+                        .with_label(
+                            Label::new((source.0, span_as_range(span)))
+                                .with_message(format!(
+                                    "Expected an array type for `@{}`, got {}",
+                                    depend_id, combinator
+                                ))
+                                .with_color(Color::Red),
+                        )
+                        .with_label(
+                            Label::new((source.0, span_as_range(&combinator.as_span())))
+                                .with_message(format!("This is `@{}`'s type", depend_id))
+                                .with_color(Color::Yellow),
+                        )
+                        .with_labels(arrays.iter().map(|(array, _)| {
+                            Label::new((source.0, span_as_range(&array.as_span())))
+                                .with_color(Color::Yellow)
+                        }))
+                        .finish()
+                        .eprint(source)
+                        .unwrap();
+                    return Err(VestError::TypeError);
                 }
             } else {
-                panic!("Arrays are not allowed in a non-dependent choice");
+                unreachable!("Relevant checks should have been performed earlier");
             }
         }
     }
@@ -1699,48 +1823,75 @@ fn check_wrap_combinator<'ast>(
 
 fn check_struct_combinator<'ast>(
     struct_fields: &[StructField<'ast>],
+    span: &Span,
     param_defns: &'ast [ParamDefn<'ast>],
     local_ctx: &mut LocalCtx<'ast>,
     global_ctx: &'ast GlobalCtx,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
+    macro_rules! report_duplicate_field {
+        ($label:expr, $field_span:expr) => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("duplicate field name")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("Invalid struct format")
+                        .with_color(Color::Red),
+                )
+                .with_label(
+                    Label::new((source.0, span_as_range($field_span)))
+                        .with_message(format!("Duplicate field name `{}`", $label))
+                        .with_color(Color::Yellow),
+                )
+                .with_labels(local_ctx.struct_fields.iter().map(|name| {
+                    Label::new((source.0, span_as_range(&name.span))).with_color(Color::Yellow)
+                }))
+                .finish()
+                .eprint(source)
+                .unwrap();
+        };
+    }
     for field in struct_fields {
         match field {
             StructField::Stream(_) => {}
             StructField::Dependent {
                 label,
                 combinator,
-                span,
+                span: field_span,
             } => {
                 if !local_ctx.dependent_fields.contains_key(label) {
                     local_ctx
                         .dependent_fields
                         .insert(label.to_owned(), combinator.to_owned());
                 } else {
-                    panic!("Duplicate dependent field `{}`", label);
+                    report_duplicate_field!(label, field_span);
+                    return Err(VestError::TypeError);
                 }
                 if !local_ctx.struct_fields.insert(label.to_owned()) {
-                    panic!("Duplicate field name `{}`", label);
+                    report_duplicate_field!(label, field_span);
+                    return Err(VestError::TypeError);
                 }
                 check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
             }
             StructField::Const {
                 combinator,
                 label,
-                span,
+                span: field_span,
             } => {
                 if !local_ctx.struct_fields.insert(label.to_owned()) {
-                    panic!("Duplicate field name `{}`", label);
+                    report_duplicate_field!(label, field_span);
+                    return Err(VestError::TypeError);
                 }
                 check_const_combinator(combinator, local_ctx, global_ctx, source)?;
             }
             StructField::Ordinary {
                 combinator,
                 label,
-                span,
+                span: field_span,
             } => {
                 if !local_ctx.struct_fields.insert(label.to_owned()) {
-                    panic!("Duplicate field name `{}`", label);
+                    report_duplicate_field!(label, field_span);
+                    return Err(VestError::TypeError);
                 }
                 check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
             }
@@ -1760,7 +1911,7 @@ fn check_constraint_int_combinator(
         }
         Some(IntConstraint::Set(constraints)) => {
             for constraint in constraints {
-                check_constraint_int_combinator(combinator, Some(constraint), source)?;
+                check_constraint_elem(combinator, constraint, source)?;
             }
         }
         // constraints
@@ -1785,7 +1936,20 @@ fn check_constraint_elem(
                 check_const_int_combinator(combinator, start, span, source)?;
                 check_const_int_combinator(combinator, end, span, source)?;
                 if start > end {
-                    panic!("Invalid range constraint");
+                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                        .with_message("invalid range constraint")
+                        .with_label(
+                            Label::new((source.0, span_as_range(span)))
+                                .with_message(format!(
+                                    "Start value {} is greater than end value {}",
+                                    start, end
+                                ))
+                                .with_color(Color::Red),
+                        )
+                        .finish()
+                        .eprint(source)
+                        .unwrap();
+                    return Err(VestError::TypeError);
                 }
             }
             (Some(start), None) => {
@@ -1794,7 +1958,19 @@ fn check_constraint_elem(
             (None, Some(end)) => {
                 check_const_int_combinator(combinator, end, span, source)?;
             }
-            _ => panic!("Invalid range constraint"),
+            _ => {
+                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                    .with_message("invalid range constraint")
+                    .with_label(
+                        Label::new((source.0, span_as_range(span)))
+                            .with_message("Range must have at least one bound")
+                            .with_color(Color::Red),
+                    )
+                    .finish()
+                    .eprint(source)
+                    .unwrap();
+                return Err(VestError::TypeError);
+            }
         },
         ConstraintElem::Single { elem, span } => {
             check_const_int_combinator(combinator, elem, span, source)?;
