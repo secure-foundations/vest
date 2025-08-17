@@ -1,0 +1,5 @@
+fmt(@tag: u32) = choose(@tag) {
+  A => u8,
+  B => u16,
+  C => u32,
+}

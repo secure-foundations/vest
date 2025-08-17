@@ -30,8 +30,8 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
                     sorted
                         .iter()
                         .position(|name_| match defn {
-                            Definition::Combinator { name, .. } => name == name_,
-                            Definition::ConstCombinator { name, .. } => name == name_,
+                            Definition::Combinator { name, .. } => name.name == *name_,
+                            Definition::ConstCombinator { name, .. } => name.name == *name_,
                             _ => false,
                         })
                         .unwrap()
@@ -68,7 +68,7 @@ fn expand_macros(ast: &mut Vec<Definition>) {
     let mut macro_defns = HashMap::<String, MacroDefn>::new();
     for defn in ast.iter() {
         if let Definition::MacroDefn { name, params, body } = defn {
-            macro_defns.insert(name.to_owned(), (params.clone(), body.clone()));
+            macro_defns.insert(name.name.clone(), (params.clone(), body.clone()));
         }
     }
     // remove the macro definitions
@@ -197,7 +197,7 @@ fn substitute_in_combinator_inner<'ast>(
     match body {
         // base case
         CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-            if func == param {
+            if func.name == param {
                 *body = arg;
             }
         }
@@ -281,10 +281,10 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
                     {
                         elab_ctx
                             .dependencies
-                            .push((name.to_owned(), combinator.clone()));
+                            .push((name.name.to_owned(), combinator.clone()));
                     }
                 });
-                expand_combinator(name, combinator, &mut expanded, &mut elab_ctx);
+                expand_combinator(name.name.as_str(), combinator, &mut expanded, &mut elab_ctx);
             }
             Definition::ConstCombinator { .. } => {}
             _ => {}
@@ -330,7 +330,7 @@ fn expand_combinator<'ast>(
                                             .dependencies
                                             .iter()
                                             .find_map(|(dep_name, dep_combinator)| {
-                                                if dep_name == name {
+                                                if *dep_name == name.name {
                                                     Some(dep_combinator.clone())
                                                 } else {
                                                     None
@@ -344,16 +344,22 @@ fn expand_combinator<'ast>(
                                     _ => unreachable!(),
                                 })
                                 .collect();
-                            let generated_name = name.to_owned() + "_" + label;
+                            let generated_name = name.to_owned() + "_" + label.name.as_str();
                             let new_defn = Definition::Combinator {
-                                name: generated_name.clone(),
+                                name: Identifier {
+                                    name: generated_name.clone(),
+                                    span: *span,
+                                },
                                 combinator: combinator.clone(),
                                 param_defns,
                                 span: span.clone(),
                             };
                             *combinator = Combinator {
                                 inner: CombinatorInner::Invocation(CombinatorInvocation {
-                                    func: generated_name,
+                                    func: Identifier {
+                                        name: generated_name,
+                                        span: *span,
+                                    },
                                     args: params.into_iter().collect(),
                                     span: *span,
                                 }),
@@ -369,7 +375,7 @@ fn expand_combinator<'ast>(
                     } => {
                         elab_ctx
                             .dependencies
-                            .push((label.to_owned(), combinator.inner.clone()));
+                            .push((label.name.to_owned(), combinator.inner.clone()));
                         // TODO: do we care `and_then` here?
                         // NOTE: don't expand dependent fields for now
                     }
@@ -395,7 +401,7 @@ fn expand_combinator<'ast>(
     }
 }
 
-fn collect_params(combinator: &Combinator) -> HashSet<Param> {
+fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
     let mut params = HashSet::new();
     match &combinator.inner {
         CombinatorInner::Choice(ChoiceCombinator {
@@ -495,7 +501,7 @@ pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
             } => {
                 let mut invocations = Vec::new();
                 collect_invocations(combinator, &mut invocations);
-                Some((name.to_owned(), invocations))
+                Some((name.name.to_owned(), invocations))
             }
             Definition::ConstCombinator {
                 name,
@@ -503,7 +509,7 @@ pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
                 ..
             } => {
                 let invocations = collect_const_invocations(const_combinator);
-                Some((name.to_owned(), invocations))
+                Some((name.name.to_owned(), invocations))
             }
             _ => None,
         })
@@ -521,7 +527,7 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
     match combinator_inner {
         // base case: combinator invocation
         CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-            invocations.push(func.to_owned());
+            invocations.push(func.name.to_owned());
         }
         // recursive cases
         CombinatorInner::Struct(StructCombinator { fields, .. }) => {
@@ -584,7 +590,7 @@ fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> 
                     name: invocation, ..
                 } = field
                 {
-                    invocations.push(invocation.to_owned());
+                    invocations.push(invocation.name.to_owned());
                 }
             }
         }
@@ -594,21 +600,21 @@ fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> 
                     name: invocation, ..
                 } = combinator
                 {
-                    invocations.push(invocation.to_owned());
+                    invocations.push(invocation.name.to_owned());
                 }
             }
         }
         ConstCombinator::ConstCombinatorInvocation {
             name: invocation, ..
         } => {
-            invocations.push(invocation.to_owned());
+            invocations.push(invocation.name.to_owned());
         }
         ConstCombinator::Vec(combinator) => {
             if let ConstCombinator::ConstCombinatorInvocation {
                 name: invocation, ..
             } = combinator.as_ref()
             {
-                invocations.push(invocation.to_owned());
+                invocations.push(invocation.name.to_owned());
             }
         }
         _ => {}
