@@ -1213,35 +1213,17 @@ fn check_choice_combinator<'ast>(
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
                 // check if `combinator` is defined as an enum
-                if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) = &combinator
-                {
-                    let name = func.name.to_owned();
-                    let func_span = func.span.clone();
-                    match global_ctx.enums.get(name.as_str()) {
-                        None => {
-                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                .with_message("undefined enum")
-                                .with_label(
-                                    Label::new((source.0, span_as_range(&func_span)))
-                                        .with_message(format!("Enum `{}` is not defined", &name))
-                                        .with_color(Color::Red),
-                                )
-                                .finish()
-                                .eprint(source)
-                                .unwrap();
-                            return Err(VestError::TypeError);
-                        }
-                        Some(enum_) => {
-                            let (enum_variants, is_non_exhaustive) = match enum_ {
-                                EnumCombinator::Exhaustive { enums, span } => (enums, false),
-                                EnumCombinator::NonExhaustive { enums, span } => (enums, true),
-                            };
-                            // check for well-formed variants
-                            let mut variants = HashSet::new();
-                            for (variant, combinator) in enums {
-                                if variant.name == "_" {
-                                    if !is_non_exhaustive {
-                                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                if let CombinatorInner::Enum(enum_) = combinator {
+                    let (enum_variants, is_non_exhaustive) = match enum_ {
+                        EnumCombinator::Exhaustive { enums, span } => (enums, false),
+                        EnumCombinator::NonExhaustive { enums, span } => (enums, true),
+                    };
+                    // check for well-formed variants
+                    let mut variants = HashSet::new();
+                    for (variant, combinator) in enums {
+                        if variant.name == "_" {
+                            if !is_non_exhaustive {
+                                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                             .with_message("invalid choice variant")
                                             .with_label(
                                                 Label::new((source.0, span_as_range(&variant.span)))
@@ -1250,121 +1232,125 @@ fn check_choice_combinator<'ast>(
                                             )
                                             .with_label(
                                                 Label::new((source.0, span_as_range(span)))
-                                                    .with_message(format!("This choice should only contain variants defined in `{}`", &name))
+                                                    .with_message(format!("This choice should only contain variants {}", 
+                                                        enum_variants
+                                                            .iter()
+                                                            .map(|Enum { name, .. }| format!(
+                                                                "`{}`", 
+                                                                &name.name
+                                                            ))
+                                                            .collect::<Vec<_>>()
+                                                            .join(", ")
+                                                        ))
                                                     .with_color(Color::Yellow),
                                             )
                                             .finish()
                                             .eprint(source)
                                             .unwrap();
-                                        return Err(VestError::TypeError);
-                                    } else {
-                                        continue;
-                                    }
-                                } else if !enum_variants
-                                    .iter()
-                                    .any(|Enum { name, .. }| name == variant)
-                                {
-                                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                        .with_message("invalid choice variant")
-                                        .with_label(
-                                            Label::new((source.0, span_as_range(&variant.span)))
-                                                .with_message(format!("Enum variant `{}` is not defined in `{}`", variant.name, &name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .with_label(
-                                            Label::new((source.0, span_as_range(span)))
-                                                .with_message(format!("This choice should only contain variants defined in `{}`", &name))
-                                                .with_color(Color::Yellow),
-                                        )
-                                        .finish()
-                                        .eprint(source)
-                                        .unwrap();
-                                    return Err(VestError::TypeError);
-                                }
-
-                                if !variants.insert(variant.name.as_str()) {
-                                    Report::build(
-                                        ReportKind::Error,
-                                        (source.0, span_as_range(span)),
-                                    )
-                                    .with_message("duplicate choice variant")
-                                    .with_labels(enums.iter().map(|(label, _)| {
-                                        Label::new((source.0, span_as_range(&label.span)))
-                                            .with_color(Color::Yellow)
-                                    }))
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(&variant.span)))
-                                            .with_message(format!("Duplicate variant",))
-                                            .with_color(Color::Red),
-                                    )
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(span)))
-                                            .with_message(format!(
-                                                "Multiple variants `{}` found in a choice format",
-                                                variant.name
-                                            ))
-                                            .with_color(Color::Red),
-                                    )
-                                    .finish()
-                                    .eprint(source)
-                                    .unwrap();
-                                    return Err(VestError::TypeError);
-                                }
-                                check_combinator(
-                                    combinator,
-                                    param_defns,
-                                    local_ctx,
-                                    global_ctx,
-                                    source,
-                                )?;
+                                return Err(VestError::TypeError);
+                            } else {
+                                continue;
                             }
-                            if !is_non_exhaustive {
-                                // check for exhaustiveness
-                                let defined_variants = enum_variants
-                                    .iter()
-                                    .map(|Enum { name, .. }| name.name.as_str())
-                                    .collect::<HashSet<_>>();
-                                if defined_variants != variants {
-                                    let missing_variants: Vec<&str> =
-                                        defined_variants.difference(&variants).copied().collect();
-                                    Report::build(
-                                        ReportKind::Error,
-                                        (source.0, span_as_range(span)),
-                                    )
-                                    .with_message("non-exhaustive choice")
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(span)))
-                                            .with_message(format!(
-                                                "Missing variants: {}",
-                                                missing_variants.join(", ")
-                                            ))
-                                            .with_color(Color::Red),
-                                    )
-                                    .with_labels(missing_variants.iter().filter_map(|variant| {
-                                        enum_variants.iter().find_map(|Enum { name, .. }| {
-                                            if &name.name == variant {
-                                                Some(
-                                                    Label::new((
-                                                        source.0,
-                                                        span_as_range(&name.span),
-                                                    ))
+                        } else if !enum_variants
+                            .iter()
+                            .any(|Enum { name, .. }| name == variant)
+                        {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                .with_message("invalid choice variant")
+                                .with_label(
+                                    Label::new((source.0, span_as_range(&variant.span)))
+                                        .with_message(format!(
+                                            "Enum variant `{}` is undefined",
+                                            &variant.name
+                                        ))
+                                        .with_color(Color::Red),
+                                )
+                                .with_label(
+                                    Label::new((source.0, span_as_range(span)))
+                                        .with_message(format!(
+                                            "This choice should only contain variants {}",
+                                            enum_variants
+                                                .iter()
+                                                .map(|Enum { name, .. }| format!(
+                                                    "`{}`",
+                                                    &name.name
+                                                ))
+                                                .collect::<Vec<_>>()
+                                                .join(", ")
+                                        ))
+                                        .with_color(Color::Yellow),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
+                        }
+                        if !variants.insert(variant.name.as_str()) {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                .with_message("duplicate choice variant")
+                                .with_labels(enums.iter().map(|(label, _)| {
+                                    Label::new((source.0, span_as_range(&label.span)))
+                                        .with_color(Color::Yellow)
+                                }))
+                                .with_label(
+                                    Label::new((source.0, span_as_range(&variant.span)))
+                                        .with_message(format!("Duplicate variant",))
+                                        .with_color(Color::Red),
+                                )
+                                .with_label(
+                                    Label::new((source.0, span_as_range(span)))
+                                        .with_message(format!(
+                                            "Multiple variants `{}` found in a choice format",
+                                            variant.name
+                                        ))
+                                        .with_color(Color::Red),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
+                        }
+                        check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
+                    }
+                    if !is_non_exhaustive {
+                        // check for exhaustiveness
+                        let defined_variants = enum_variants
+                            .iter()
+                            .map(|Enum { name, .. }| name.name.as_str())
+                            .collect::<HashSet<_>>();
+                        if defined_variants != variants {
+                            let missing_variants: Vec<&str> =
+                                defined_variants.difference(&variants).copied().collect();
+                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                .with_message("non-exhaustive choice")
+                                .with_label(
+                                    Label::new((source.0, span_as_range(span)))
+                                        .with_message(format!(
+                                            "Missing variants: {}",
+                                            missing_variants.join(", ")
+                                        ))
+                                        .with_color(Color::Red),
+                                )
+                                .with_labels(missing_variants.iter().filter_map(|variant| {
+                                    enum_variants.iter().find_map(|Enum { name, .. }| {
+                                        if &name.name == variant {
+                                            Some(
+                                                Label::new((source.0, span_as_range(&name.span)))
                                                     .with_message(format!(
                                                         "Variant `{}` is defined here",
                                                         variant
                                                     ))
                                                     .with_color(Color::Yellow),
-                                                )
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                    }))
-                                    .finish()
-                                    .eprint(source)
-                                    .unwrap();
-                                    return Err(VestError::TypeError);
-                                }
-                            }
+                                            )
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                }))
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
                         }
                     }
                 } else {
@@ -1393,7 +1379,6 @@ fn check_choice_combinator<'ast>(
                     return Err(VestError::TypeError);
                 }
             } else {
-                println!("Non-dependent enum choice");
                 let mut labels = HashSet::new();
                 for (label, combinator) in enums {
                     if !labels.insert(label.name.as_str()) {
@@ -1490,12 +1475,10 @@ fn check_choice_combinator<'ast>(
                     }
                     // check non of the patterns overlap
                     check_overlap(patterns)?;
-                } else if let CombinatorInner::Invocation(CombinatorInvocation { func, .. }) =
-                    combinator
-                {
+                } else if let CombinatorInner::Enum(enum_) = combinator {
                     // check if it's non-exhaustive enum (which is equivalent to an int choice)
-                    match global_ctx.enums.get(func.name.as_str()) {
-                        Some(EnumCombinator::NonExhaustive { enums, span }) => {
+                    match enum_ {
+                        EnumCombinator::NonExhaustive { enums, span } => {
                             let int_combinator = infer_enum_type(enums);
                             let mut patterns = Vec::new();
                             for (pattern, combinator) in ints {
@@ -1514,7 +1497,7 @@ fn check_choice_combinator<'ast>(
                             // check non of the patterns overlap
                             check_overlap(patterns)?;
                         }
-                        Some(EnumCombinator::Exhaustive { .. }) => {
+                        EnumCombinator::Exhaustive { .. } => {
                             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                 .with_message("type mismatch")
                                 .with_label(
@@ -1523,10 +1506,9 @@ fn check_choice_combinator<'ast>(
                                         .with_color(Color::Red),
                                 )
                                 .with_label(
-                                    Label::new((source.0, span_as_range(&func.span)))
+                                    Label::new((source.0, span_as_range(&depend_id.span)))
                                     .with_message(format!(
-                                            "Enum `{}` is exhaustive, cannot be used as an int choice",
-                                            func.name
+                                        "`@{}` is defined as an exhaustive enum, cannot be used in an int choice", depend_id
                                         ))
                                     .with_color(Color::Red),
                                 )
@@ -1540,22 +1522,6 @@ fn check_choice_combinator<'ast>(
                                         .unwrap_or_else(|| Label::new((source.0, span_as_range(span))))
                                 }))
                                 .with_help("Use a non-exhaustive enum instead, or use an int format")
-                                .finish()
-                                .eprint(source)
-                                .unwrap();
-                            return Err(VestError::TypeError);
-                        }
-                        None => {
-                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                .with_message("undefined enum")
-                                .with_label(
-                                    Label::new((source.0, span_as_range(&func.span)))
-                                        .with_message(format!(
-                                            "Enum `{}` is not defined",
-                                            func.name
-                                        ))
-                                        .with_color(Color::Red),
-                                )
                                 .finish()
                                 .eprint(source)
                                 .unwrap();
