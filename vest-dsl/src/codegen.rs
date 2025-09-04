@@ -7,11 +7,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{
-    ast::*,
-    elab::build_call_graph,
-    type_check::{infer_enum_type, GlobalCtx},
-};
+use crate::vestir::*;
 
 /// convert snake case to upper camel case
 /// e.g. `foo_bar` -> `FooBar`
@@ -167,9 +163,9 @@ impl Display for LifetimeAnn {
 }
 
 #[derive(Debug, Clone)]
-pub struct CodegenCtx<'a> {
+pub struct CodegenCtx {
     pub msg_lifetimes: HashMap<String, LifetimeAnn>,
-    pub enums: HashMap<&'a str, EnumCombinator>, // enum name -> enum combinator
+    pub enums: HashMap<String, EnumCombinator>, // enum name -> enum combinator
     pub constraint_int_combs: HashSet<u64>,
     pub param_defns: Vec<ParamDefn>,
     pub endianess: Endianess,
@@ -194,17 +190,20 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
         Struct(StructCombinator(fields)) => fields.iter().any(|field| match field {
             StructField::Ordinary { combinator, .. } => msg_need_lifetime(combinator, ctx),
             StructField::Dependent { combinator, .. } => msg_need_lifetime(combinator, ctx),
-            StructField::Const { combinator, .. } => const_msg_need_lifetime(combinator),
-            _ => unimplemented!(),
+            StructField::Const { combinator, .. } => const_msg_need_lifetime(combinator, ctx),
         }),
         Wrap(WrapCombinator {
             prior,
             combinator,
             post,
         }) => {
-            prior.iter().any(const_msg_need_lifetime)
+            prior
+                .iter()
+                .any(|combinator| const_msg_need_lifetime(combinator, ctx))
                 || msg_need_lifetime(combinator, ctx)
-                || post.iter().any(const_msg_need_lifetime)
+                || post
+                    .iter()
+                    .any(|combinator| const_msg_need_lifetime(combinator, ctx))
         }
         Choice(ChoiceCombinator { choices, .. }) => match choices {
             Choices::Enums(enums) => enums
@@ -222,7 +221,7 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
                 inner: Vec(combinator.clone()),
                 and_then: None,
             };
-            msg_need_lifetime(&combinator, ctx) || const_msg_need_lifetime(sep)
+            msg_need_lifetime(&combinator, ctx) || const_msg_need_lifetime(sep, ctx)
         }
         Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
             msg_need_lifetime(combinator, ctx)
@@ -231,30 +230,30 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
         Option(OptionCombinator(combinator)) => msg_need_lifetime(combinator, ctx),
         ConstraintInt(_) | Enum(_) | Apply(_) => false,
         Invocation(_) => unreachable!("invocation should be resolved by now"),
-        MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
     }
 }
 
 /// Helper function to determine if a const format needs lifetime annotations
-fn const_msg_need_lifetime(const_combinator: &ConstCombinator) -> bool {
+fn const_msg_need_lifetime(const_combinator: &ConstCombinator, ctx: &GlobalCtx) -> bool {
+    let const_combinator = ctx.resolve_const(const_combinator);
     match const_combinator {
         ConstCombinator::ConstArray(_) => true, // TODO: can be more fine-grained
         ConstCombinator::ConstBytes(_) => true, // TODO: can be more fine-grained
-        ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => {
-            fields.iter().any(const_msg_need_lifetime)
-        }
+        ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => fields
+            .iter()
+            .any(|field| const_msg_need_lifetime(field, ctx)),
         ConstCombinator::ConstChoice(ConstChoiceCombinator(choices)) => choices
             .iter()
-            .any(|ConstChoice { combinator, .. }| const_msg_need_lifetime(combinator)),
-        ConstCombinator::Vec(combinator) => const_msg_need_lifetime(combinator),
+            .any(|ConstChoice { combinator, .. }| const_msg_need_lifetime(combinator, ctx)),
+        ConstCombinator::Vec(combinator) => const_msg_need_lifetime(combinator, ctx),
         ConstCombinator::ConstInt(_) | ConstCombinator::ConstCombinatorInvocation(_) => false,
     }
 }
 
-impl<'a> CodegenCtx<'a> {
+impl CodegenCtx {
     pub fn new(
         msg_lifetimes: HashMap<String, LifetimeAnn>,
-        enums: HashMap<&'a str, EnumCombinator>,
+        enums: HashMap<String, EnumCombinator>,
         endianness: Endianess,
         flags: CodegenOpts,
     ) -> Self {
@@ -277,7 +276,7 @@ impl<'a> CodegenCtx<'a> {
         }
     }
 
-    pub fn with_ast(ast: &[Definition], ctx: &'a GlobalCtx, flags: CodegenOpts) -> Self {
+    pub fn with_ast(ast: &[Definition], ctx: &GlobalCtx, flags: CodegenOpts) -> Self {
         // first we need to determine which formats' types need lifetime annotations
 
         // init the format lifetimes with None
@@ -296,7 +295,6 @@ impl<'a> CodegenCtx<'a> {
 
         // default endianness is little
         let mut endianness = Endianess::Little;
-        let call_graph = build_call_graph(ast);
         // NOTE: by now ast should already be topologically sorted
         ast.iter().for_each(|defn| match defn {
             Definition::Combinator {
@@ -313,12 +311,7 @@ impl<'a> CodegenCtx<'a> {
                 name,
                 const_combinator,
             } => {
-                let invocations = call_graph.get(name).unwrap();
-                let lifetime = if invocations
-                    .iter()
-                    .any(|name| msg_lifetimes.get(name).unwrap() == &LifetimeAnn::Some)
-                    || const_msg_need_lifetime(const_combinator)
-                {
+                let lifetime = if const_msg_need_lifetime(const_combinator, ctx) {
                     LifetimeAnn::Some
                 } else {
                     LifetimeAnn::None
@@ -328,7 +321,6 @@ impl<'a> CodegenCtx<'a> {
             Definition::Endianess(end) => {
                 endianness = *end;
             }
-            _ => {}
         });
 
         Self::new(msg_lifetimes, ctx.enums.clone(), endianness, flags)
@@ -508,9 +500,6 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_msg_type(name, mode, ctx),
-            CombinatorInner::MacroInvocation { .. } => {
-                unreachable!("macro invocation should be resolved by now")
-            }
         }
     }
 
@@ -535,9 +524,6 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
-            CombinatorInner::MacroInvocation { .. } => {
-                unreachable!("macro invocation should be resolved by now")
-            }
         }
     }
 
@@ -556,9 +542,6 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Wrap(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Apply(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_expr(name, mode, ctx),
-            CombinatorInner::MacroInvocation { .. } => {
-                unreachable!("macro invocation should be resolved by now")
-            }
         }
     }
 }
@@ -966,7 +949,6 @@ fn label_and_msg_type_from_field(
             let field_type = combinator.gen_msg_type("", mode, &ctx.disable_top_level());
             (label.to_string(), field_type)
         }
-        _ => unimplemented!(),
     }
 }
 
@@ -1186,7 +1168,6 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                     let name = &lower_snake_to_upper_snake(&(name.to_owned() + label));
                     combinator.gen_combinator_type(name, mode, ctx)
                 }
-                _ => unimplemented!(),
             }
         }
         // need to first get the additional code because `ctx.constraint_int_combs` is updated
@@ -1302,7 +1283,6 @@ impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
                         let name = &lower_snake_to_upper_snake(&(name.to_owned() + label));
                         combinator.gen_combinator_expr(name, mode, ctx)
                     }
-                    _ => todo!(),
                 })
                 .unzip()
         }
@@ -1357,7 +1337,6 @@ impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
                                 }
 
                                 StructField::Dependent { label, .. } => label.to_string(),
-                                _ => todo!(),
                             })
                             .collect::<Vec<_>>(),
                         "",
@@ -1533,8 +1512,7 @@ impl<'a, 'b, 'x> Continuation<{name}Cont{depth}Input<'a, 'b, 'x>> for {name}Cont
 impl Codegen for EnumCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
         match &self {
-            EnumCombinator::NonExhaustive { enums } => {
-                let inferred = infer_enum_type(enums);
+            EnumCombinator::NonExhaustive { enums, inferred } => {
                 if !ctx.top_level {
                     panic!("`Enum` should be a top-level definition")
                 } else {
@@ -1548,11 +1526,10 @@ impl Codegen for EnumCombinator {
                     }
                 }
             }
-            EnumCombinator::Exhaustive { enums } => {
+            EnumCombinator::Exhaustive { enums, inferred } => {
                 // since the spec and exec types are the same, we only need to
                 // generate one of them
                 if matches!(mode, Mode::Exec(..)) {
-                    let inferred = infer_enum_type(enums);
                     if !ctx.top_level {
                         panic!("`Enum` should be a top-level definition")
                     } else {
@@ -1729,8 +1706,7 @@ impl<'a> PartialIso<'a> for {msg_type_name}Mapper {{
             Endianess::Big => "Be",
         };
         match &self {
-            EnumCombinator::Exhaustive { enums } => {
-                let inferred = infer_enum_type(enums);
+            EnumCombinator::Exhaustive { enums, inferred } => {
                 let int_type = match inferred {
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
@@ -1742,15 +1718,12 @@ impl<'a> PartialIso<'a> for {msg_type_name}Mapper {{
                     "".to_string(),
                 )
             }
-            EnumCombinator::NonExhaustive { enums } => {
-                let inferred = infer_enum_type(enums);
-                match inferred {
-                    IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
-                    IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
-                    IntCombinator::Signed(..) => unimplemented!(),
-                    _ => unreachable!(),
-                }
-            }
+            EnumCombinator::NonExhaustive { enums, inferred } => match inferred {
+                IntCombinator::Unsigned(8) => ("U8".to_string(), "".to_string()),
+                IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianness), "".to_string()),
+                IntCombinator::Signed(..) => unimplemented!(),
+                _ => unreachable!(),
+            },
         }
     }
 
@@ -1764,8 +1737,7 @@ impl<'a> PartialIso<'a> for {msg_type_name}Mapper {{
             _ => "",
         };
         match &self {
-            EnumCombinator::Exhaustive { enums } => {
-                let inferred = infer_enum_type(enums);
+            EnumCombinator::Exhaustive { enums, inferred } => {
                 let int_type = match inferred {
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
@@ -1776,8 +1748,7 @@ impl<'a> PartialIso<'a> for {msg_type_name}Mapper {{
                     format!("TryMap {{ inner: {}, mapper: {}Mapper }}", int_type, name);
                 (combinator_expr, "".to_string())
             }
-            EnumCombinator::NonExhaustive { enums } => {
-                let inferred = infer_enum_type(enums);
+            EnumCombinator::NonExhaustive { enums, inferred } => {
                 let int_combinator = match inferred {
                     IntCombinator::Unsigned(8) => "U8".to_string(),
                     IntCombinator::Unsigned(t) => format!("U{}{}", t, endianness),
@@ -2199,9 +2170,8 @@ impl DisjointFrom<{}> for {} {{
                                         combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
                                     let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
                                     {
-                                        EnumCombinator::NonExhaustive { enums } => {
-                                            let int_type = infer_enum_type(enums);
-                                            let (spec_cast, cast) = match int_type {
+                                        EnumCombinator::NonExhaustive { enums, inferred } => {
+                                            let (spec_cast, cast) = match inferred {
                                                 IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
                                                 _ => ("", ""),
                                             };
@@ -3266,7 +3236,6 @@ fn gen_combinator_type_for_definition(
             }
         }
         Definition::Endianess(_) => {}
-        _ => unimplemented!(),
     }
     code.push('\n');
 }
@@ -3327,7 +3296,6 @@ pub fn {name}() -> (o: {upper_caml_name}Combinator)
                     .iter()
                     .filter_map(|param_defn| match param_defn {
                         ParamDefn::Dependent { name, combinator } => Some((name, combinator)),
-                        _ => None,
                     })
                     .map(|(name, combinator)| {
                         (
@@ -3426,7 +3394,6 @@ pub fn {name}() -> (o: {upper_caml_name}Combinator)
             }
         }
         Definition::Endianess(_) => {}
-        _ => unimplemented!(),
     }
     code.push('\n');
 }

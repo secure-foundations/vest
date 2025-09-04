@@ -1,11 +1,12 @@
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, io::Write, path::PathBuf};
 
 mod ast;
-// mod codegen;
+mod codegen;
 mod elab;
 mod type_check;
 mod utils;
 mod vestir;
+
 use ariadne::{Report, ReportKind};
 use clap::Parser;
 use pest::error::InputLocation;
@@ -64,60 +65,71 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.vest_file.as_str(),
         &ariadne::Source::from(vest.clone()),
     );
-    // println!("📜 Parsing the vest file...");
-    let mut ast = ast::from_str(&vest).map_err(|e| {
-        let span = match e.location {
-            InputLocation::Pos(pos) => pos..pos,
-            InputLocation::Span(span) => span.0..span.1,
-        };
-        Report::build(ReportKind::Error, (source.0, span.clone()))
-            // .with_message(format!("{e}"))
-            .with_message(format!("{}", e.variant.message()))
-            .with_label(
-                ariadne::Label::new((source.0, span))
-                    .with_message("here")
-                    .with_color(ariadne::Color::Red),
-            )
-            .finish()
-            .eprint(source)
-            .unwrap();
-        VestError::ParsingError
-    })?;
+    println!("📜 Parsing the vest file...");
+    match ast::from_str(&vest) {
+        Ok(mut ast) => {
+            // elaborate the AST
+            println!("🔨 Elaborating the AST...");
+            elab::elaborate(&mut ast);
 
-    // elaborate the AST
-    // println!("🔨 Elaborating the AST...");
-    elab::elaborate(&mut ast);
+            // type check the AST
+            println!("🔍 Type checking...");
+            match type_check::check(&ast, source) {
+                Ok(ctx) => {
+                    // code gen to a file
+                    // if there is no output file specified, use the same name as the name of input vest file
+                    let mut verus = std::fs::File::create(
+                        args.output
+                            .unwrap_or(replace_extension(args.vest_file.as_str(), "rs")),
+                    )?;
 
-    // type check the AST
-    // println!("🔍 Type checking...");
-    let ctx = type_check::check(&ast, source)?;
+                    println!("📝 Generating the verus file...");
+                    let codegen_opt = args
+                        .codegen
+                        .map(|s| match s.as_str() {
+                            "all" => codegen::CodegenOpts::All,
+                            "types" => codegen::CodegenOpts::Types,
+                            "impls" => codegen::CodegenOpts::Impls,
+                            "anns" => codegen::CodegenOpts::Anns,
+                            _ => panic!("Invalid codegen option"),
+                        })
+                        .unwrap_or(codegen::CodegenOpts::All);
+                    let ir: Vec<vestir::Definition> = ast
+                        .clone()
+                        .into_iter()
+                        .map(vestir::Definition::from)
+                        .collect();
+                    let code = codegen::code_gen(&ir, &(&ctx).into(), codegen_opt);
+                    verus.write_all(code.as_bytes())?;
+                    println!("👏 Done!");
 
-    // code gen to a file
-    // if there is no output file specified, use the same name as the name of input vest file
-    // let mut verus = std::fs::File::create(
-    //     args.output
-    //         .unwrap_or(replace_extension(args.vest_file.as_str(), "rs")),
-    // )?;
-
-    // println!("📝 Generating the verus file...");
-    // let codegen_opt = args
-    //     .codegen
-    //     .map(|s| match s.as_str() {
-    //         "all" => codegen::CodegenOpts::All,
-    //         "types" => codegen::CodegenOpts::Types,
-    //         "impls" => codegen::CodegenOpts::Impls,
-    //         "anns" => codegen::CodegenOpts::Anns,
-    //         _ => panic!("Invalid codegen option"),
-    //     })
-    //     .unwrap_or(codegen::CodegenOpts::All);
-    // let code = codegen::code_gen(&ast, &ctx, codegen_opt);
-    // verus.write_all(code.as_bytes())?;
-    println!("👏 Done!");
-
-    Ok(())
-    // let tokens = zip_parse_result.tokens();
-    //
-    // for token in tokens {
-    //     println!("{:?}", token);
-    // }
+                    Ok(())
+                }
+                Err(..) => {
+                    eprintln!("❌ Type checking failed.");
+                    Ok(())
+                }
+            }
+            // let ctx = type_check::check(&ast, source)?;
+        }
+        Err(e) => {
+            let span = match e.location {
+                InputLocation::Pos(pos) => pos..pos,
+                InputLocation::Span(span) => span.0..span.1,
+            };
+            Report::build(ReportKind::Error, (source.0, span.clone()))
+                // .with_message(format!("{e}"))
+                .with_message(format!("{}", e.variant.message()))
+                .with_label(
+                    ariadne::Label::new((source.0, span))
+                        .with_message("here")
+                        .with_color(ariadne::Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+            eprintln!("❌ Failed to parse the vest file.");
+            Ok(())
+        }
+    }
 }

@@ -12,7 +12,7 @@ use pest::Span;
 #[derive(Debug, Clone)]
 pub struct GlobalCtx<'ast> {
     pub combinators: HashSet<CombinatorSig<'ast>>,
-    pub const_combinators: HashSet<Identifier<'ast>>,
+    pub const_combinators: HashSet<ConstCombinatorSig<'ast>>,
     pub enums: HashMap<&'ast str, EnumCombinator<'ast>>, // enum name -> enum combinator
 }
 
@@ -49,6 +49,12 @@ pub struct CombinatorSig<'ast> {
     pub resolved_combinator: CombinatorInner<'ast>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct ConstCombinatorSig<'ast> {
+    pub name: Identifier<'ast>,
+    pub resolved_combinator: ConstCombinator<'ast>,
+}
+
 impl<'ast> CombinatorSig<'ast> {
     pub fn as_span(&self) -> Span {
         let (mut start, mut end) = (usize::MAX, 0);
@@ -67,6 +73,7 @@ impl<'ast> CombinatorSig<'ast> {
 }
 
 impl<'ast> GlobalCtx<'ast> {
+    // TODO: return `Result`
     pub fn resolve(&self, combinator: &'ast Combinator) -> &CombinatorInner<'ast> {
         if let Some(and_then) = &combinator.and_then {
             self.resolve(and_then)
@@ -74,6 +81,7 @@ impl<'ast> GlobalCtx<'ast> {
             self.resolve_alias(&combinator.inner)
         }
     }
+    // TODO: return `Result` instead of panic
     pub fn resolve_alias(&self, combinator: &'ast CombinatorInner) -> &CombinatorInner<'ast> {
         match combinator {
             CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
@@ -83,6 +91,22 @@ impl<'ast> GlobalCtx<'ast> {
                     .find(|sig| sig.name == *func)
                     .unwrap_or_else(|| panic!("Format `{}` is not defined", func));
                 &combinator_sig.resolved_combinator
+            }
+            combinator => combinator,
+        }
+    }
+    // TODO: return `Result` instead of panic
+    pub fn resolve_const(&self, combinator: &'ast ConstCombinator) -> &ConstCombinator<'ast> {
+        match combinator {
+            ConstCombinator::ConstCombinatorInvocation { name, .. } => {
+                let const_combinator_sig = self
+                    .const_combinators
+                    .iter()
+                    .find(|sig| sig.name == *name)
+                    .unwrap_or_else(|| {
+                        panic!("Const format `{}` is not defined", name);
+                    });
+                &const_combinator_sig.resolved_combinator
             }
             combinator => combinator,
         }
@@ -173,8 +197,50 @@ pub fn check<'ast>(
                         .insert(name.name.as_str(), enum_combinator.clone());
                 }
             }
-            Definition::ConstCombinator { name, .. } => {
-                global_ctx.const_combinators.insert(name.clone());
+            Definition::ConstCombinator {
+                name,
+                const_combinator,
+                span,
+            } => {
+                // resolve the const combinator
+                let resolved_combinator = global_ctx.resolve_const(const_combinator).to_owned();
+
+                match global_ctx
+                    .const_combinators
+                    .iter()
+                    .find(|sig| &sig.name == name)
+                {
+                    Some(sig) => {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message(format!("duplicate const format definition `{}`", name))
+                            .with_label(
+                                Label::new((source.0, span_as_range(span)))
+                                    .with_message(format!("This const format is defined twice"))
+                                    .with_color(Color::Red),
+                            )
+                            .with_label(
+                                Label::new((
+                                    source.0,
+                                    span_as_range(&sig.resolved_combinator.as_span()),
+                                ))
+                                .with_message(format!(
+                                    "The {} const format is already defined here",
+                                    name
+                                ))
+                                .with_color(Color::Yellow),
+                            )
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                    None => {
+                        global_ctx.const_combinators.insert(ConstCombinatorSig {
+                            name: name.clone(),
+                            resolved_combinator,
+                        });
+                    }
+                }
             }
             Definition::Endianess(_) => {}
             _ => unimplemented!(),
@@ -338,20 +404,25 @@ fn check_const_combinator_invocation(
     global_ctx: &GlobalCtx,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    if !global_ctx.const_combinators.contains(&name) {
-        Report::build(ReportKind::Error, (source.0, span_as_range(&span)))
-            .with_message("undefined const format")
-            .with_label(
-                Label::new((source.0, span_as_range(&span)))
-                    .with_message("This const format is not defined")
-                    .with_color(Color::Red),
-            )
-            .finish()
-            .eprint(source)
-            .unwrap();
-        Err(VestError::TypeError)
-    } else {
-        Ok(())
+    match global_ctx
+        .const_combinators
+        .iter()
+        .find(|sig| sig.name == *name)
+    {
+        Some(..) => Ok(()),
+        None => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(&span)))
+                .with_message("undefined const format")
+                .with_label(
+                    Label::new((source.0, span_as_range(&span)))
+                        .with_message("This const format is not defined")
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+            Err(VestError::TypeError)
+        }
     }
 }
 

@@ -20,7 +20,7 @@ const VEC_OF_ALL_OF_ABOVE: Vec<{
 
 // parser definition
 one_to_ten = u8 | 1..10
-set_of_magic = u8 | {0, 1, 5..10, 'a'..'z', '\x00'.., ..'\x2f', ..}
+set_of_magic = u8 | {0, 1, 5..10, 'a'..'z', '\x00'.., ..'\x2f'}
 packet($current, @depenent: u32) = {
   a: {
     aa: u8,
