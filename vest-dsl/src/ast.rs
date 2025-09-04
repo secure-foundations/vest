@@ -442,6 +442,20 @@ pub enum ConstCombinator<'i> {
     },
 }
 
+impl<'i> ConstCombinator<'i> {
+    pub fn as_span(&self) -> Span<'i> {
+        match self {
+            ConstCombinator::Vec(c) => c.as_span(),
+            ConstCombinator::ConstArray(c) => c.span,
+            ConstCombinator::ConstBytes(c) => c.span,
+            ConstCombinator::ConstInt(c) => c.span,
+            ConstCombinator::ConstStruct(..) => todo!("VestDSL does not support const structs yet"),
+            ConstCombinator::ConstChoice(..) => todo!("VestDSL does not support const choices yet"),
+            ConstCombinator::ConstCombinatorInvocation { span, .. } => *span,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, Hash)]
 pub struct ConstArrayCombinator<'i> {
     pub combinator: IntCombinator,
