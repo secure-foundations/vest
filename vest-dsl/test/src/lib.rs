@@ -2,8 +2,6 @@ pub mod codegen;
 pub mod elab;
 pub mod enums;
 pub mod josh;
-pub mod josh_backup;
-pub mod josh_choice;
 pub mod matches;
 pub mod opt;
 pub mod repeat;
