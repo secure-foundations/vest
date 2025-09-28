@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
-builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
-vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
+verus_builtin = "0.0.0-2025-08-12-1837"
+verus_builtin_macros = "0.0.0-2025-08-12-1837"
+vstd = "=0.0.0-2025-08-12-1837"
 
 [package.metadata.verus]
 verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
