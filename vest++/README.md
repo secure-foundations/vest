@@ -13,6 +13,14 @@ usability and expressivity. The main issues include:
     that it is still secure to sequentially compose `Opt<A>` and `Opt<B>`, as
     long as `A` and `B` are "disjoint" (i.e., they cannot both succeed on the
     same input).
+    - Concretely, the following format is not supported by Vest even though it is secure:
+      ```vest
+      opts = {
+        a: Opt<wrap(u8 = 0x00, fmt0)>,
+        b: Opt<wrap(u8 = 0x01, fmt1)>,
+        c: Opt<wrap(u8 = 0x02, fmt2)>,
+      }
+      ```
   - To *alternatively compose* two combinators (using ordered choice), the
     two combinators must be "disjoint". We proved generically via traits that
     two combinators of *the same type* (e.g., `Pair<A, B>` and `Pair<C, D>` are
@@ -23,12 +31,50 @@ usability and expressivity. The main issues include:
     ordered choice in the original PEG semantics allows choices that are not
     disjoint (whether that's helpful or causing more confusion is another
     question), but the current design precludes that possibility.
+    - Concretely, `alt1` is supported by Vest:
+      ```vest
+      alt1 = choose {
+        A(<wrap(u8 = 0x00, fmt0)>),
+        B(<wrap(u8 = 0x01, fmt1)>),
+        C(<wrap(u8 = 0x02, fmt2)>),
+      }
+      ```
+      But `alt2` and `alt3` are not, even if they are secure:
+      ```vest
+      const TAG_A: u8 = 0x00
+
+      alt2 = choose {
+        A(TAG_A),
+        B(<wrap(u8 = 0x01, fmt1)>),
+        C(<wrap(u8 = 0x02, fmt2)>),
+      }
+
+      alt3 = choose {
+        A(TAG_A),
+        Other(fmt3),
+      }
+
+      fmt3 = {
+        @tag: u8 | 1..u8::MAX,
+        val: choose(@tag) {
+        ...
+        }
+      }
+      ```
 - **Limited Expressivity**:
   - The current combinator design does not allow constructing *recursive*
     combinators. This is partly due to the limitations of Verus --- it precludes
     cyclic trait implementations altogether (to conservatively prove
     termination); and partly due to the current interface not providing any
     metric to bound the recursion depth.
+    - For example, a well-bracketed expression is not supported:
+      ```vest
+      bracket_expr = choose {
+        Bracket(wrap(u8 = '[', bracket_expr, u8 = ']')),
+        Just(expr),
+      }
+      expr = ...
+      ```
   - The current combinator design does not allow constructing parsers and
     serializers for *malleable* formats, i.e., formats that allow multiple valid
     serialized representations for the same value (e.g., comments and whitespaces
@@ -36,6 +82,24 @@ usability and expressivity. The main issues include:
     current design enforces a *strict*, *bi-directional* round-trip property
     between parsing and serialization, which is not achievable for malleable
     formats.
+    > What if our guarantee says: the malleability of the provided format 
+    > (and the generated parser) can *only* stem from the malleable sub-format?
+  - We only support left-to-right (forward) data-dependency; formats like zip/parquet 
+    need right-to-left (backward) data-dependency.
+  - We don't have semantic actions/parsing states.
+    - How to support it while keeping the roundtrip of *parse-serialize*?
+  - We don't support non-linear parsing ("pointer-chasing"), needed by 
+    a lot of file formats
+- **Limited Flexibility**:
+  - Right now, we only produce *full parsers* on *read-only* inputs,
+    but in some use cases, validators that don't collect and 
+    in-place accessors/modifiers can provide more flexibility and control for users.
+    The key challenge woule be supporting parsing on and into mutable data structures,
+    as well as producing "lazy" values like iterators (as opposed to "eager" values like `Vec`).
+  - Right now, we assume the input to be fully available and small enough to fit
+    entirely in main memory, however, there could be more inputs available over the *time*, or they 
+    could be too big in *space* to fit into memory. Supporting streamming parsers would provide
+    more flexibility for incremental processing.
 - **Usability/Readability Issues**:
   - The current combinator design leverages traits when possible to unify the
     spec and exec implementations. However, this leads to a lot of
