@@ -1,15 +1,12 @@
 use std::{error::Error, io::Write, path::PathBuf};
 
 mod ast;
-mod codegen;
 mod elab;
 mod type_check;
 mod utils;
 mod vestir;
 
-use ariadne::{Report, ReportKind};
 use clap::Parser;
-use pest::error::InputLocation;
 
 /// Vest: A generator for formally verified parsers/serializers in Verus
 #[derive(Parser, Debug)]
@@ -59,77 +56,19 @@ impl std::error::Error for VestError {}
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    // parse the vest file
-    let vest = std::fs::read_to_string(&args.vest_file)?;
-    let source = (
-        args.vest_file.as_str(),
-        &ariadne::Source::from(vest.clone()),
-    );
-    println!("📜 Parsing the vest file...");
-    match ast::from_str(&vest) {
-        Ok(mut ast) => {
-            // elaborate the AST
-            println!("🔨 Elaborating the AST...");
-            elab::elaborate(&mut ast);
-
-            // type check the AST
-            println!("🔍 Type checking...");
-            match type_check::check(&ast, source) {
-                Ok(ctx) => {
-                    // code gen to a file
-                    // if there is no output file specified, use the same name as the name of input vest file
-                    let mut verus = std::fs::File::create(
-                        args.output
-                            .unwrap_or(replace_extension(args.vest_file.as_str(), "rs")),
-                    )?;
-
-                    println!("📝 Generating the verus file...");
-                    let codegen_opt = args
-                        .codegen
-                        .map(|s| match s.as_str() {
-                            "all" => codegen::CodegenOpts::All,
-                            "types" => codegen::CodegenOpts::Types,
-                            "impls" => codegen::CodegenOpts::Impls,
-                            "anns" => codegen::CodegenOpts::Anns,
-                            _ => panic!("Invalid codegen option"),
-                        })
-                        .unwrap_or(codegen::CodegenOpts::All);
-                    let ir: Vec<vestir::Definition> = ast
-                        .clone()
-                        .into_iter()
-                        .map(vestir::Definition::from)
-                        .collect();
-                    let code = codegen::code_gen(&ir, &(&ctx).into(), codegen_opt);
-                    verus.write_all(code.as_bytes())?;
-                    println!("👏 Done!");
-
-                    Ok(())
-                }
-                Err(..) => {
-                    eprintln!("❌ Type checking failed.");
-                    Ok(())
-                }
-            }
-            // let ctx = type_check::check(&ast, source)?;
-        }
-        Err(e) => {
-            let span = match e.location {
-                InputLocation::Pos(pos) => pos..pos,
-                InputLocation::Span(span) => span.0..span.1,
-            };
-            Report::build(ReportKind::Error, (source.0, span.clone()))
-                // .with_message(format!("{e}"))
-                .with_message(format!("{}", e.variant.message()))
-                .with_label(
-                    ariadne::Label::new((source.0, span))
-                        .with_message("here")
-                        .with_color(ariadne::Color::Red),
-                )
-                .finish()
-                .eprint(source)
-                .unwrap();
-            eprintln!("❌ Failed to parse the vest file.");
-            Ok(())
-        }
-    }
+    let codegen_opt = args
+        .codegen
+        .map(|s| match s.as_str() {
+            "all" => vest_dsl::codegen::CodegenOpts::All,
+            "types" => vest_dsl::codegen::CodegenOpts::Types,
+            "impls" => vest_dsl::codegen::CodegenOpts::Impls,
+            "anns" => vest_dsl::codegen::CodegenOpts::Anns,
+            _ => panic!("Invalid codegen option"),
+        })
+        .unwrap_or(vest_dsl::codegen::CodegenOpts::All);
+    let output_file = args
+        .output
+        .unwrap_or(replace_extension(args.vest_file.as_str(), "rs"));
+    vest_dsl::compile_to(&args.vest_file, codegen_opt, &output_file)?;
+    Ok(())
 }
