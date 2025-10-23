@@ -249,6 +249,10 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
         self.fst.length(v.0) + snd.length(v.1)
     }
 
+    fn gen_length(&self) -> usize {
+        0
+    }
+
     open spec fn ex_requires(&self) -> bool {
         let spec_snd_dep = self.snd@;
         &&& self.fst.ex_requires()
@@ -280,6 +284,10 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
         let m = snd.serialize(v.1, data, pos + n)?;
         assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
         Ok(n + m)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        // todo
     }
 }
 

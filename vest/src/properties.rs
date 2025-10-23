@@ -2,6 +2,7 @@ pub use crate::buf_traits::*;
 pub use crate::errors::*;
 use vstd::prelude::*;
 use vstd::*;
+use rand::prelude::*;
 
 verus! {
 
@@ -10,6 +11,16 @@ pub type PResult<T, E> = Result<(usize, T), E>;
 
 /// The serialize result of a combinator.
 pub type SResult<T, E> = Result<T, E>;
+
+// The generate result of a combinator.
+pub type GResult<T, E> = Result<(usize, T), E>;
+
+// Stores a state for generation-related fields
+pub struct GenSt {
+    pub rng: rand::rngs::StdRng,
+    fail_count: int,
+    
+}
 
 /// Specification for parser and serializer [`Combinator`]s. All Vest combinators must implement this
 /// trait.
@@ -214,6 +225,9 @@ pub trait Combinator<'x, I, O>: View where
             len == self@.spec_serialize(v@).len(),
     ;
 
+    // The length of the output buffer used for generation
+    fn gen_length(&self) -> (len: usize);
+
     /// Additional pre-conditions for parsing and serialization
     ///
     /// e.g., [`crate::regular::sequence::Pair`] combinator requires that the
@@ -287,6 +301,14 @@ pub trait Combinator<'x, I, O>: View where
                 &&& buf@ == seq_splice(old(buf)@, pos, self@.spec_serialize(v@))
             },
     ;
+
+    // Generation function
+    fn generate(&self, g: &mut GenSt) -> (res: GResult<Self::Type, GenerateError>)
+        requires
+            self@.requires(),
+            self.ex_requires(),
+            //s@.len() <= usize::MAX,
+    ;
 }
 
 impl<C: SpecCombinator> SpecCombinator for &C {
@@ -353,6 +375,11 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for &C where
         (*self).length(v)
     }
 
+    fn gen_length(&self) -> usize {
+        assert(self.ex_requires());
+        (*self).gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         (*self).ex_requires()
     }
@@ -366,6 +393,10 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for &C where
         SerializeError,
     >) {
         (*self).serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        (*self).generate(g)
     }
 }
 
@@ -432,6 +463,10 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for Box<C> where
         (**self).length(v)
     }
 
+    fn gen_length(&self) -> usize {
+        (**self).gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         (**self).ex_requires()
     }
@@ -445,6 +480,10 @@ impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for Box<C> where
         SerializeError,
     >) {
         (**self).serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        (**self).generate(g)
     }
 }
 

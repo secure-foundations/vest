@@ -3,6 +3,7 @@ use std::mem::size_of;
 use vstd::prelude::*;
 use vstd::seq_lib::*;
 use vstd::slice::*;
+use rand::prelude::*;
 
 use super::bytes::Fixed;
 
@@ -169,6 +170,10 @@ macro_rules! impl_combinator_for_le_uint_type {
                     size_of::<$int_type>()
                 }
 
+                fn gen_length(&self) -> usize {
+                    size_of::<$int_type>()
+                }
+
                 fn parse(&self, s: I) -> (res: Result<(usize, $int_type), ParseError>) {
                     if s.len() >= size_of::<$int_type>() {
                         let s_ = s.subrange(0, size_of::<$int_type>());
@@ -199,6 +204,13 @@ macro_rules! impl_combinator_for_le_uint_type {
                     } else {
                         Err(SerializeError::InsufficientBuffer)
                     }
+                }
+
+                //placeholder
+                fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+                    let mut data = vec![0u8; self.gen_length()];
+                    g.rng.fill_bytes(&mut data);
+                    Ok((N, data))
                 }
             }
         } // verus!
@@ -268,6 +280,10 @@ macro_rules! impl_combinator_for_be_uint_type {
                     size_of::<$int_type>()
                 }
 
+                fn gen_length(&self) -> usize {
+                    size_of::<$int_type>()
+                }
+
                 fn parse(&self, s: I) -> (res: Result<(usize, $int_type), ParseError>) {
                     if s.len() >= size_of::<$int_type>() {
                         let s_ = s.subrange(0, size_of::<$int_type>());
@@ -298,6 +314,13 @@ macro_rules! impl_combinator_for_be_uint_type {
                     } else {
                         Err(SerializeError::InsufficientBuffer)
                     }
+                }
+
+                //placeholder
+                fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+                    let mut data = vec![0u8; self.gen_length()];
+                    g.rng.fill_bytes(&mut data);
+                    Ok((N, data))
                 }
             }
         } // verus!
@@ -1089,6 +1112,10 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
         3
     }
 
+    fn gen_length(&self) -> usize {
+        3
+    }
+
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
         let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&Fixed::<3>, s)?;
         Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
@@ -1104,6 +1131,11 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
             data,
             pos,
         )
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::generate(&Fixed::<3>, g)?;
+        Ok((n, u24([bytes[2], bytes[1], bytes[0]])))
     }
 }
 
@@ -1192,6 +1224,10 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
         3
     }
 
+    fn gen_length(&self) -> usize {
+        3
+    }
+
     fn parse(&self, s: &[u8]) -> (res: Result<(usize, u24), ParseError>) {
         let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&Fixed::<3>, s)?;
         Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
@@ -1202,6 +1238,11 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
         SerializeError,
     >) {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        let (n, bytes) = <_ as Combinator<&[u8], Vec<u8>>>::generate(&Fixed::<3>, g)?;
+        Ok((n, u24([bytes[0], bytes[1], bytes[2]])))
     }
 }
 

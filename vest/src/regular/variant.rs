@@ -176,6 +176,11 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
         }
     }
 
+    fn gen_length(&self) -> usize {
+        //need to call rng here
+        self.0.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.0.ex_requires() && self.1.ex_requires()
     }
@@ -205,6 +210,18 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd> where
                 let n = self.1.serialize(v, data, pos)?;
                 Ok(n)
             },
+        }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> Result<(usize, Self::Type), GenerateError> {
+        if let Ok((n, v)) = self.0.generate(g) {
+            Ok((n, Either::Left(v)))
+        } else {
+            if let Ok((n, v)) = self.1.generate(g) {
+                Ok((n, Either::Right(v)))
+            } else {
+                Err(GenerateError::Generic)
+            }
         }
     }
 }
@@ -362,6 +379,11 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
         }
     }
 
+    fn gen_length(&self) -> usize {
+        //need to call rng here
+        self.0.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.0.ex_requires()
     }
@@ -388,6 +410,14 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
                     Err(SerializeError::InsufficientBuffer)
                 }
             },
+        }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        if let Ok((n, v)) = self.0.generate(g) {
+            Ok((n, Optional(Some(v))))
+        } else {
+            Ok((0, Optional(None)))
         }
     }
 }

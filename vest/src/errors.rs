@@ -24,6 +24,13 @@ pub enum SerializeError {
     Other(String),
 }
 
+/// Generator errors
+#[derive(Debug)]
+pub enum GenerateError {
+    Generic,
+    Other(String),
+}
+
 /// Sum of both parse and serialize errors
 #[derive(Debug)]
 pub enum Error {

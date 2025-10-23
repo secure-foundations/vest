@@ -1,6 +1,7 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 use crate::properties::*;
 use vstd::prelude::*;
+use rand::prelude::*;
 
 use super::bytes::Variable;
 
@@ -221,6 +222,10 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for Mapped<Inner, M> where
         self.inner.length(M::rev_apply(v))
     }
 
+    fn gen_length(&self) -> usize {
+        self.inner.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.inner.ex_requires()
     }
@@ -242,6 +247,15 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for Mapped<Inner, M> where
         SerializeError,
     >) {
         self.inner.serialize(M::rev_apply(v), data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        match self.inner.generate(g) {
+            Err(e) => Err(e),
+            Ok((n, v)) => {
+                Ok((n, M::apply(v)))
+            }
+        }
     }
 }
 
@@ -501,6 +515,10 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
         self.inner.length(M::rev_apply(v).unwrap())
     }
 
+    fn gen_length(&self) -> usize {
+        self.inner.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.inner.ex_requires()
     }
@@ -521,6 +539,16 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
     >) {
         // we know `v` is well-formed, so we can unwrap it
         self.inner.serialize(M::rev_apply(v).unwrap(), data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        match self.inner.generate(g) {
+            Err(e) => Err(e),
+            Ok((n, v)) => match M::apply(v) {
+                Ok(v) => Ok((n, v)),
+                Err(_) => Err(GenerateError::Generic),
+            }
+        }
     }
 }
 
@@ -639,6 +667,10 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
         self.inner.length(v)
     }
 
+    fn gen_length(&self) -> usize {
+        self.inner.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.inner.ex_requires()
     }
@@ -657,6 +689,17 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         // we know `v` is well-formed, so we can skip the predicate check
         self.inner.serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        match self.inner.generate(g) {
+            Ok((n, v)) => if self.predicate.apply(&v) {
+                Ok((n, v))
+            } else {
+                Err(GenerateError::Generic)
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -749,6 +792,10 @@ impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator
         self.inner.length(v)
     }
 
+    fn gen_length(&self) -> usize {
+        self.inner.gen_length()
+    }
+
     open spec fn ex_requires(&self) -> bool {
         self.inner.ex_requires()
     }
@@ -765,6 +812,14 @@ impl<'x, I: VestInput, O: VestOutput<I>, Inner: Combinator<'x, I, O>> Combinator
         // we know `self.cond` must be true when `serialize` is called
         // so we can skip the check
         self.inner.serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> Result<(usize, Self::Type), GenerateError> {
+        if self.cond {
+            self.inner.generate(g)
+        } else {
+            Err(GenerateError::Generic)
+        }
     }
 }
 

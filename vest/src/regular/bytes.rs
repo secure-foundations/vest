@@ -1,5 +1,6 @@
 use crate::properties::*;
 use vstd::prelude::*;
+use rand::prelude::*;
 
 use super::modifier::AndThen;
 
@@ -101,6 +102,10 @@ impl<'x, I, O> Combinator<'x, I, O> for Variable where I: VestInput + 'x, O: Ves
         self.0
     }
 
+    fn gen_length(&self) -> usize {
+        self.0
+    }
+
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if self.0 <= s.len() {
             let s_ = s.subrange(0, self.0);
@@ -121,6 +126,13 @@ impl<'x, I, O> Combinator<'x, I, O> for Variable where I: VestInput + 'x, O: Ves
         } else {
             Err(SerializeError::InsufficientBuffer)
         }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        let data_len = self.gen_length();
+        let mut data = vec![0u8; data_len];
+        g.rng.fill_bytes(&mut data);
+        Ok((data_len, data))
     }
 }
 
@@ -198,6 +210,10 @@ impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N> where
         N
     }
 
+    fn gen_length(&self) -> usize {
+        N
+    }
+
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         if N <= s.len() {
             let s_ = s.subrange(0, N);
@@ -218,6 +234,13 @@ impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N> where
         } else {
             Err(SerializeError::InsufficientBuffer)
         }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        let data_len = self.gen_length();
+        let mut data = vec![0u8; data_len];
+        g.rng.fill_bytes(&mut data);
+        Ok((data_len, data))
     }
 }
 
@@ -279,6 +302,10 @@ impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
         v.len()
     }
 
+    fn gen_length(&self) -> usize {
+        v.len()
+    }
+
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         Ok(((s.len()), s))
     }
@@ -294,6 +321,13 @@ impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
         } else {
             Err(SerializeError::InsufficientBuffer)
         }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> (res: Result<(usize, Self::Type), GenerateError>) {
+        let data_len = g.rng.random_range(0..100);
+        let mut data = vec![0u8; data_len];
+        g.rng.fill_bytes(&mut data);
+        Ok((data_len, data))
     }
 }
 
