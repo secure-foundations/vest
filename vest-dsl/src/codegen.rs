@@ -165,7 +165,7 @@ impl Display for LifetimeAnn {
 #[derive(Debug, Clone)]
 pub struct CodegenCtx {
     pub msg_lifetimes: HashMap<String, LifetimeAnn>,
-    pub enums: HashMap<String, EnumCombinator>, // enum name -> enum combinator
+    pub global_ctx: GlobalCtx,
     pub constraint_int_combs: HashSet<u64>,
     pub param_defns: Vec<ParamDefn>,
     pub endianess: Endianess,
@@ -253,13 +253,13 @@ fn const_msg_need_lifetime(const_combinator: &ConstCombinator, ctx: &GlobalCtx) 
 impl CodegenCtx {
     pub fn new(
         msg_lifetimes: HashMap<String, LifetimeAnn>,
-        enums: HashMap<String, EnumCombinator>,
+        global_ctx: GlobalCtx,
         endianness: Endianess,
         flags: CodegenOpts,
     ) -> Self {
         Self {
             msg_lifetimes,
-            enums,
+            global_ctx,
             constraint_int_combs: HashSet::new(),
             param_defns: Vec::new(),
             endianess: endianness,
@@ -323,7 +323,7 @@ impl CodegenCtx {
             }
         });
 
-        Self::new(msg_lifetimes, ctx.enums.clone(), endianness, flags)
+        Self::new(msg_lifetimes, ctx.clone(), endianness, flags)
     }
 }
 
@@ -370,6 +370,29 @@ impl Codegen for Combinator {
                 .msg_lifetimes
                 .get(name)
                 .unwrap_or_else(|| panic!("format lifetime not found for combinator: {}", name));
+
+            // Check if this is a non-exhaustive enum, and if so, use primitive type
+            let (spec_type, exec_type) = if let CombinatorInner::Enum(enum_comb) =
+                ctx.global_ctx.resolve_alias(&self.inner)
+            {
+                if let EnumCombinator::NonExhaustive { inferred, .. } = enum_comb {
+                    // Use primitive type for non-exhaustive enums
+                    let int_type_str = format!("{}", inferred);
+                    (int_type_str.clone(), int_type_str)
+                } else {
+                    // Regular exhaustive enum
+                    let name_camel = snake_to_upper_caml(name);
+                    (format!("Spec{name_camel}"), format!("{name_camel}"))
+                }
+            } else {
+                // Not an enum
+                let name_camel = snake_to_upper_caml(name);
+                (
+                    format!("Spec{name_camel}"),
+                    format!("{name_camel}{msg_has_lifetime}"),
+                )
+            };
+
             let name = &snake_to_upper_caml(name);
             match mode {
                 Mode::Spec => format!(
@@ -377,7 +400,7 @@ impl Codegen for Combinator {
 pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
-    type Type = Spec{name};
+    type Type = {spec_type};
     closed spec fn requires(&self) -> bool
     {{ self.0.requires() }}
     closed spec fn wf(&self, v: Self::Type) -> bool
@@ -415,7 +438,7 @@ impl View for {name}Combinator {{
     closed spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
 }}
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
-    type Type = {name}{msg_has_lifetime};
+    type Type = {exec_type};
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }}
@@ -777,6 +800,27 @@ impl Codegen for TailCombinator {
 
 impl Codegen for CombinatorInvocation {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        // Check if this is invoking a non-exhaustive enum
+        if let Some(CombinatorSig {
+            resolved_combinator,
+            ..
+        }) = ctx
+            .global_ctx
+            .combinators
+            .iter()
+            .find(|sig| sig.name == self.func)
+        {
+            if let CombinatorInner::Enum(enum_comb) = &resolved_combinator {
+                if let EnumCombinator::NonExhaustive { inferred, .. } = enum_comb {
+                    // For non-exhaustive enums, use the primitive type directly
+                    if !ctx.top_level {
+                        return format!("{}", inferred);
+                    } else {
+                        return "".to_string();
+                    }
+                }
+            }
+        }
         let invocked = snake_to_upper_caml(&self.func);
         let invocked = match mode {
             Mode::Spec => format!("Spec{}", invocked),
@@ -1513,15 +1557,49 @@ impl Codegen for EnumCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
         match &self {
             EnumCombinator::NonExhaustive { enums, inferred } => {
+                // u24 constants would be declared as u32
+                let inferred = match format!("{inferred}").as_str() {
+                    "u24" => "u32".to_string(),
+                    other => other.to_string(),
+                };
                 if !ctx.top_level {
                     panic!("`Enum` should be a top-level definition")
                 } else {
-                    // alias to the inferred type
                     match mode {
-                        Mode::Spec => format!("pub type Spec{name} = {inferred};\n"),
+                        Mode::Spec => {
+                            // For spec mode, do nothing
+                            "".to_string()
+                        }
                         Mode::Exec(..) => {
-                            format!("pub type {name} = {inferred};\n")
-                                + &format!("pub type {name}Ref<'a> = &'a {inferred};\n")
+                            // For exec mode, generate the module with both SPEC and exec constants
+                            let module_decl = format!("pub mod {name} {{\n    use super::*;\n");
+
+                            // Generate constants inside the module
+                            let spec_const_decl = enums
+                                .iter()
+                                .map(
+                                    |Enum {
+                                         name: variant_name,
+                                         value,
+                                     }| {
+                                        format!(
+                                            "    pub spec const SPEC_{variant_name}: {inferred} = {value};"
+                                        )
+                                    },
+                                )
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            let exec_static_decl = enums
+                                .iter()
+                                .map(|Enum { name: variant_name, value }| {
+                                    format!("    pub exec const {variant_name}: {inferred} ensures {variant_name} == SPEC_{variant_name} {{ {value} }}")
+                                })
+                                .collect::<Vec<_>>()
+                                .join("\n");
+
+                            let module_close = "}\n";
+
+                            format!("{module_decl}{spec_const_decl}\n{exec_static_decl}\n{module_close}")
                         }
                     }
                 }
@@ -2168,63 +2246,33 @@ impl DisjointFrom<{}> for {} {{
                                 .map(|(variant, combinator)| {
                                     let (inner, code) =
                                         combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level());
-                                    let bool_exp = match ctx.enums.get(enum_name.as_str()).unwrap()
+                                    let bool_exp = match ctx.global_ctx.enums.get(enum_name.as_str()).unwrap()
                                     {
                                         EnumCombinator::NonExhaustive { enums, inferred } => {
                                             let (spec_cast, cast) = match inferred {
                                                 IntCombinator::Unsigned(24) => (".spec_as_u32()", ".as_u32()"),
                                                 _ => ("", ""),
                                             };
+                                            let upper_caml_name = snake_to_upper_caml(enum_name);
                                             if variant == "_" {
                                                 // default case; the negation of all other cases
                                                 let other_variants = variants.iter().filter_map(|(variant, _)| {
                                                     if variant == "_" {
                                                         None
                                                     } else {
-                                                        let value = enums
-                                                            .iter()
-                                                            .find_map(|Enum { name, value }| {
-                                                                if name == variant {
-                                                                    Some(value.to_string())
-                                                                } else {
-                                                                    None
-                                                                }
-                                                            })
-                                                            .unwrap();
+                                                        // Use module::constant syntax
                                                         Some(match mode {
-                                                            Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
-                                                            _ => format!("{}{} == {}", depend_id, cast, value)
+                                                            Mode::Spec => format!("{}{} == {}::SPEC_{}", depend_id, spec_cast, upper_caml_name, variant),
+                                                            _ => format!("{}{} == {}::{}", depend_id, cast, upper_caml_name, variant)
                                                         })
                                                     }
                                                 }).collect::<Vec<_>>();
-                                                // let other_variants = enums
-                                                //     .iter()
-                                                //     .filter_map(|Enum { name, value }| {
-                                                //         if name == "_" {
-                                                //             None
-                                                //         } else {
-                                                //             Some(match mode {
-                                                //                 Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
-                                                //                 _ => format!("{}{} == {}", depend_id, cast, value)
-                                                //             })
-                                                //         }
-                                                //     })
-                                                //     .collect::<Vec<_>>();
                                                 format!("!({})", other_variants.join(" || "))
                                             } else {
-                                                let value = enums
-                                                    .iter()
-                                                    .find_map(|Enum { name, value }| {
-                                                        if name == variant {
-                                                            Some(value.to_string())
-                                                        } else {
-                                                            None
-                                                        }
-                                                    })
-                                                    .unwrap();
+                                                // Use module::constant syntax
                                                 match mode {
-                                                    Mode::Spec => format!("{}{} == {}", depend_id, spec_cast, value),
-                                                    _ => format!("{}{} == {}", depend_id, cast, value)
+                                                    Mode::Spec => format!("{}{} == {}::SPEC_{}", depend_id, spec_cast, upper_caml_name, variant),
+                                                    _ => format!("{}{} == {}::{}", depend_id, cast, upper_caml_name, variant)
                                                 }
                                             }
                                         }
