@@ -15,7 +15,7 @@ pub trait PolyfillEq: View + Sized {
 macro_rules! impl_trivial_polyfill_eq {
     ($($t:ty)*) => {
         $(
-            ::builtin_macros::verus! {
+            ::vstd::prelude::verus! {
                 impl PolyfillEq for $t {
                     #[inline(always)]
                     fn polyfill_eq(&self, other: &Self) -> bool {
@@ -37,7 +37,7 @@ impl_trivial_polyfill_eq! {
 macro_rules! impl_polyfill_eq_for_slice_vec {
     ($($t:ty)*) => {
         $(
-            ::builtin_macros::verus! {
+            ::vstd::prelude::verus! {
                 impl PolyfillEq for &[$t] {
                     fn polyfill_eq(&self, other: &Self) -> bool {
                         if self.len() != other.len() {
@@ -56,7 +56,7 @@ macro_rules! impl_polyfill_eq_for_slice_vec {
                             }
                         }
 
-                        assert(::builtin::ext_equal(self@, other@));
+                        assert(self@ =~= other@);
 
                         true
                     }

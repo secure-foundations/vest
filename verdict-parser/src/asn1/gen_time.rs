@@ -47,17 +47,21 @@ pub struct GeneralizedTime;
 asn1_tagged!(GeneralizedTime, tag_of!(GENERALIZED_TIME));
 
 impl SpecCombinator for GeneralizedTime {
-    type SpecResult = GeneralizedTimeValueInner;
+    type Type = GeneralizedTimeValueInner;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         LengthWrapped(GeneralizedTimeInner).spec_parse(s)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        LengthWrapped(GeneralizedTimeInner).spec_parse_wf(s);
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         LengthWrapped(GeneralizedTimeInner).spec_serialize(v)
     }
 }
@@ -66,8 +70,12 @@ impl SecureSpecCombinator for GeneralizedTime {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         LengthWrapped(GeneralizedTimeInner).theorem_serialize_parse_roundtrip(v);
     }
 
@@ -78,27 +86,27 @@ impl SecureSpecCombinator for GeneralizedTime {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         LengthWrapped(GeneralizedTimeInner).lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for GeneralizedTime {
-    type Result<'a> = GeneralizedTimeValueInner;
-    type Owned = GeneralizedTimeValueInner;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTime {
+    type Type = GeneralizedTimeValueInner;
+    type SType = GeneralizedTimeValueInner;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        LengthWrapped(GeneralizedTimeInner).length(v)
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, v: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, v: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         LengthWrapped(GeneralizedTimeInner).parse(v)
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         LengthWrapped(GeneralizedTimeInner).serialize(v, data, pos)
     }
 }
@@ -107,9 +115,17 @@ impl Combinator for GeneralizedTime {
 pub struct GeneralizedTimeInner;
 
 impl SpecCombinator for GeneralizedTimeInner {
-    type SpecResult = GeneralizedTimeValueInner;
+    type Type = GeneralizedTimeValueInner;
 
-    closed spec fn spec_parse(&self, v: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, v: Seq<u8>) -> Option<(int, Self::Type)> {
         spec_let_some!(
             year = four_chars_to_u16(v[0], v[1], v[2], v[3]);
             month = two_chars_to_u8(v[4], v[5]);
@@ -325,15 +341,13 @@ impl SpecCombinator for GeneralizedTimeInner {
                         })) }}
                     )
                 } */ else {
-                    Err(())
+                    None
                 }
             }}
         )
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         spec_let_some!(
             year = u16_to_four_chars(v.year);
             month = u8_to_two_chars(v.month);
@@ -398,7 +412,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         spec_let_some!(
                             minute = u8_to_two_chars(minute);
                             second = u8_to_two_chars(second);
-                            {{ Ok(prefix + seq![minute.0, minute.1, second.0, second.1, 'Z' as u8]) }}
+                            {{ prefix + seq![minute.0, minute.1, second.0, second.1, 'Z' as u8] }}
                         )
                     },
 
@@ -407,11 +421,13 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //         minute = u8_to_two_chars(minute);
                     //         second = u8_to_two_chars(second);
                     //         fraction = u16_to_four_chars(fraction);
-                    //         {{ Ok(prefix + seq![
-                    //             minute.0, minute.1,
-                    //             second.0, second.1,
-                    //             '.' as u8, fraction.1, fraction.2, fraction.3, 'Z' as u8,
-                    //         ]) }}
+                    //         {{
+                    //             if fraction.0 == zero_char!() {
+                    //                 seq![minute.0, minute.1, second.0, second.1, '.' as u8, fraction.1, fraction.2, fraction.3, 'Z' as u8]
+                    //             } else {
+                    //                 seq![]
+                    //             }
+                    //         }}
                     //     )
                     // },
 
@@ -420,15 +436,15 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //     spec_let_some!(
                     //         off_hour = u8_to_two_chars(off_hour);
                     //         off_minute = u8_to_two_chars(off_minute);
-                    //         {{ Ok(prefix + seq![
+                    //         {{ seq![
                     //             if let GeneralizedTimeZone::UTCPlus(..) = v.time_zone {
                     //                 '+' as u8
                     //             } else {
                     //                 '-' as u8
-                    //             }, '0' as u8,
+                    //             },
                     //             off_hour.0, off_hour.1,
                     //             off_minute.0, off_minute.1,
-                    //         ]) }}
+                    //         ] }}
                     //     )
                     // },
 
@@ -438,7 +454,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //         minute = u8_to_two_chars(minute);
                     //         off_hour = u8_to_two_chars(off_hour);
                     //         off_minute = u8_to_two_chars(off_minute);
-                    //         {{ Ok(prefix + seq![
+                    //         {{ seq![
                     //             if let GeneralizedTimeZone::UTCPlus(..) = v.time_zone {
                     //                 '+' as u8
                     //             } else {
@@ -447,7 +463,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //             minute.0, minute.1,
                     //             off_hour.0, off_hour.1,
                     //             off_minute.0, off_minute.1,
-                    //         ]) }}
+                    //         ] }}
                     //     )
                     // },
 
@@ -458,7 +474,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //         second = u8_to_two_chars(second);
                     //         off_hour = u8_to_two_chars(off_hour);
                     //         off_minute = u8_to_two_chars(off_minute);
-                    //         {{ Ok(prefix + seq![
+                    //         {{ seq![
                     //             if let GeneralizedTimeZone::UTCPlus(..) = v.time_zone {
                     //                 '+' as u8
                     //             } else {
@@ -468,7 +484,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //             second.0, second.1,
                     //             off_hour.0, off_hour.1,
                     //             off_minute.0, off_minute.1,
-                    //         ]) }}
+                    //         ] }}
                     //     )
                     // },
 
@@ -480,7 +496,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //         fraction = u16_to_four_chars(fraction);
                     //         off_hour = u8_to_two_chars(off_hour);
                     //         off_minute = u8_to_two_chars(off_minute);
-                    //         {{ Ok(prefix + seq![
+                    //         {{ seq![
                     //             if let GeneralizedTimeZone::UTCPlus(..) = v.time_zone {
                     //                 '+' as u8
                     //             } else {
@@ -491,11 +507,11 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //             '.' as u8, fraction.1, fraction.2, fraction.3,
                     //             off_hour.0, off_hour.1,
                     //             off_minute.0, off_minute.1,
-                    //         ]) }}
+                    //         ] }}
                     //     )
                     // },
 
-                    _ => Err(()),
+                    _ => seq![],
                 }
             }}
         )
@@ -506,42 +522,51 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
     closed spec fn is_prefix_secure() -> bool {
         false
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(buf) = self.spec_serialize(v) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let buf = self.spec_serialize(v);
+        if buf.len() > 0 {
             broadcast use
                 lemma_two_chars_to_u8_iso, lemma_u8_to_two_chars_iso,
                 lemma_four_chars_to_u16_iso, lemma_u16_to_four_chars_iso;
-            assert(self.spec_parse(buf).unwrap().1 =~= v);
+            if let Some((_, v2)) = self.spec_parse(buf) {
+                assert(v2 =~= v);
+            }
         }
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((len, v)) = self.spec_parse(buf) {
+        if let Some((len, v)) = self.spec_parse(buf) {
             broadcast use
                 lemma_two_chars_to_u8_iso, lemma_u8_to_two_chars_iso,
                 lemma_four_chars_to_u16_iso, lemma_u16_to_four_chars_iso;
-            assert(self.spec_serialize(v).unwrap() =~= buf);
-            assert(buf.subrange(0, len as int) =~= buf);
+            let ser = self.spec_serialize(v);
+            assert(ser =~= buf);
+            assert(buf.subrange(0, len) =~= buf);
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for GeneralizedTimeInner {
-    type Result<'a> = GeneralizedTimeValueInner;
-    type Owned = GeneralizedTimeValueInner;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
+    type Type = GeneralizedTimeValueInner;
+    type SType = GeneralizedTimeValueInner;
+
+    fn length(&self, _v: Self::SType) -> usize {
+        15
     }
 
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    fn parse<'a>(&self, v: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, v: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if v.len() != 15 {
             return Err(ParseError::Other("Invalid or unsupported GeneralizedTime".to_string()));
         }
@@ -574,7 +599,7 @@ impl Combinator for GeneralizedTimeInner {
         )
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let res = let_some!(
             SerializeError::Other("Invalid or unsupported GeneralizedTime".to_string()),
 

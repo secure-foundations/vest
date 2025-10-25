@@ -131,30 +131,34 @@ impl<'a> BitStringValue<'a> {
 }
 
 impl SpecCombinator for BitString {
-    type SpecResult = SpecBitStringValue;
+    type Type = SpecBitStringValue;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match OctetString.spec_parse(s) {
-            Ok((len, bytes)) =>
+            Some((len, bytes)) =>
                 if BitStringValue::spec_wf(bytes) {
-                    Ok((len, bytes))
+                    Some((len, bytes))
                 } else {
-                    Err(())
+                    None
                 }
 
-            Err(..) => Err(()),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        OctetString.spec_parse_wf(s);
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         if BitStringValue::spec_wf(v) {
             OctetString.spec_serialize(v)
         } else {
-            Err(())
+            seq![]
         }
     }
 }
@@ -163,8 +167,12 @@ impl SecureSpecCombinator for BitString {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         OctetString.theorem_serialize_parse_roundtrip(v);
     }
 
@@ -175,22 +183,22 @@ impl SecureSpecCombinator for BitString {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         OctetString.lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for BitString {
-    type Result<'a> = BitStringValue<'a>;
-    type Owned = BitStringValueOwned;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
+    type Type = BitStringValue<'a>;
+    type SType = BitStringValueOwned;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        OctetString.length(v)
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (len, v) = OctetString.parse(s)?;
 
         if let Some(s) = BitStringValue::new_raw(v) {
@@ -201,11 +209,11 @@ impl Combinator for BitString {
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         proof {
             use_type_invariant(&v);
         }
-        OctetString.serialize(v.0, data, pos)
+        OctetString.serialize(v.0.as_slice(), data, pos)
     }
 }
 

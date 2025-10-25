@@ -60,13 +60,13 @@ impl Base64 {
         (b1, b2, b3, b4)
     }
 
-    closed spec fn spec_parse_helper(s: Seq<u8>) -> Result<(usize, Seq<u8>), ()>
+    closed spec fn spec_parse_helper(s: Seq<u8>) -> Option<(int, Seq<u8>)>
         decreases s.len()
     {
         if s.len() == 0 {
-            Ok((0, seq![]))
+            Some((0, seq![]))
         } else if s.len() < 4 {
-            Err(())
+            None
         } else {
             let b1 = Self::spec_char_to_bits(s[0]);
             let b2 = Self::spec_char_to_bits(s[1]);
@@ -74,18 +74,18 @@ impl Base64 {
             let b4 = Self::spec_char_to_bits(s[3]);
 
             match (b1, b2, b3, b4, Self::spec_parse_helper(s.skip(4))) {
-                (Ok(Some(b1)), Ok(Some(b2)), Ok(Some(b3)), Ok(Some(b4)), Ok((len, rest))) => {
+                (Ok(Some(b1)), Ok(Some(b2)), Ok(Some(b3)), Ok(Some(b4)), Some((len, rest))) => {
                     let (v1, v2, v3) = Self::spec_decode_6_bit_bytes(b1, b2, b3, b4);
-                    Ok((s.len() as usize, seq![ v1, v2, v3 ] + rest))
+                    Some((s.len() as int, seq![ v1, v2, v3 ] + rest))
                 }
 
                 // Final 4-byte block with 1 padding `=`
                 (Ok(Some(b1)), Ok(Some(b2)), Ok(Some(b3)), Ok(None), _) => {
                     let (v1, v2, v3) = Self::spec_decode_6_bit_bytes(b1, b2, b3, 0);
                     if s.len() == 4 && v3 == 0 {
-                        Ok((4 as usize, seq![ v1, v2 ]))
+                        Some((4 as int, seq![ v1, v2 ]))
                     } else {
-                        Err(())
+                        None
                     }
                 }
 
@@ -93,22 +93,22 @@ impl Base64 {
                 (Ok(Some(b1)), Ok(Some(b2)), Ok(None), Ok(None), _) => {
                     let (v1, v2, v3) = Self::spec_decode_6_bit_bytes(b1, b2, 0, 0);
                     if s.len() == 4 && v2 == v3 == 0 {
-                        Ok((4 as usize, seq![ v1 ]))
+                        Some((4 as int, seq![ v1 ]))
                     } else {
-                        Err(())
+                        None
                     }
                 }
 
-                _ => Err(()),
+                _ => None,
             }
         }
     }
 
-    closed spec fn spec_serialize_helper(v: Seq<u8>) -> Result<Seq<u8>, ()>
+    closed spec fn spec_serialize_helper(v: Seq<u8>) -> Seq<u8>
         decreases v.len()
     {
         if v.len() == 0 {
-            Ok(seq![])
+            seq![]
         } else {
             let v1 = v[0];
             let v2 = if v.len() > 1 { v[1] } else { 0 };
@@ -122,38 +122,38 @@ impl Base64 {
             let b4 = if v.len() > 2 { Self::spec_bits_to_char(b4) } else { '=' as u8 };
 
             if v.len() <= 3 {
-                Ok(seq![ b1, b2, b3, b4 ])
+                seq![ b1, b2, b3, b4 ]
             } else {
-                match Self::spec_serialize_helper(v.skip(3)) {
-                    Ok(rest) => Ok(seq![ b1, b2, b3, b4 ] + rest),
-                    Err(()) => Err(())
-                }
+                let rest = Self::spec_serialize_helper(v.skip(3));
+                seq![ b1, b2, b3, b4 ] + rest
             }
         }
     }
 }
 
 impl SpecCombinator for Base64 {
-    type SpecResult = Seq<u8>;
+    type Type = Seq<u8>;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         Self::spec_parse_helper(s)
     }
 
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        match Self::spec_serialize_helper(v) {
-            Ok(s) =>
-                if s.len() <= usize::MAX {
-                    Ok(s)
-                } else {
-                    Err(())
-                }
-
-            Err(()) => Err(())
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let s = Self::spec_serialize_helper(v);
+        if s.len() <= usize::MAX {
+            s
+        } else {
+            seq![]
         }
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
 }
 
 /// Some lemmas
@@ -349,19 +349,15 @@ impl Base64 {
     }
 }
 
-impl Combinator for Base64 {
-    type Result<'a> = Vec<u8>;
-    type Owned = Vec<u8>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
+    type Type = Vec<u8>;
+    type SType = Vec<u8>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        (v.len() + 2) / 3 * 4
     }
 
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let mut out = Vec::with_capacity(s.len() / 4 * 3);
         let mut i = 0;
         let len = s.len();
@@ -432,7 +428,7 @@ impl Combinator for Base64 {
         Ok((s.len(), out))
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let mut i = 0;
         let mut written = 0;
         let len = v.len();

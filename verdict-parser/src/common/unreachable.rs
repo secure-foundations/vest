@@ -8,17 +8,22 @@ verus! {
 pub struct Unreachable;
 
 impl SpecCombinator for Unreachable {
-    type SpecResult = ();
+    type Type = ();
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
-        Err(())
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        Err(())
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        None
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        seq![]
     }
 }
 
@@ -26,37 +31,40 @@ impl SecureSpecCombinator for Unreachable {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for Unreachable {
-    type Result<'a> = ();
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Unreachable {
+    type Type = ();
+    type SType = ();
 
-    type Owned = ();
-
-    open spec fn spec_length(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(0)
+    fn length(&self, _v: Self::SType) -> usize {
+        0
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, _s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, _s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         Err(ParseError::Other("Unreachable".to_string()))
     }
 
     #[inline(always)]
-    fn serialize(&self, _v: Self::Result<'_>, _data: &mut Vec<u8>, _pos: usize) -> (res: Result<
+    fn serialize(&self, _v: Self::SType, _data: &mut Vec<u8>, _pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {

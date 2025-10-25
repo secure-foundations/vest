@@ -12,27 +12,33 @@ pub struct Boolean;
 asn1_tagged!(Boolean, tag_of!(BOOLEAN));
 
 impl SpecCombinator for Boolean {
-    type SpecResult = bool;
+    type Type = bool;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() < 2 {
-            Err(())
+            None
         } else if s[0] == 0x01 && s[1] == 0xff {
-            Ok((2, true))
+            Some((2, true))
         } else if s[0] == 0x01 && s[1] == 0x00 {
-            Ok((2, false))
+            Some((2, false))
         } else {
-            Err(())
+            None
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         if v {
-            Ok(seq![ 0x01, 0xff ])
+            seq![ 0x01, 0xff ]
         } else {
-            Ok(seq![ 0x01, 0x00 ])
+            seq![ 0x01, 0x00 ]
         }
     }
 }
@@ -41,32 +47,36 @@ impl SecureSpecCombinator for Boolean {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {}
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {}
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((n, v)) = self.spec_parse(buf) {
-            assert(self.spec_serialize(v).unwrap() =~= buf.subrange(0, 2));
+        if let Some((n, v)) = self.spec_parse(buf) {
+            assert(self.spec_serialize(v) =~= buf.subrange(0, 2));
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for Boolean {
-    type Result<'a> = bool;
-    type Owned = bool;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Boolean {
+    type Type = bool;
+    type SType = bool;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        Some(2)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(2)
+    fn length(&self, _v: Self::SType) -> usize {
+        2
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if s.len() < 2 {
             Err(ParseError::UnexpectedEndOfInput)
         } else if s[0] == 0x01 && s[1] == 0xff {
@@ -79,7 +89,7 @@ impl Combinator for Boolean {
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         if pos > usize::MAX - 2 || pos + 2 > data.len() {
             return Err(SerializeError::InsufficientBuffer);
         }
@@ -92,7 +102,7 @@ impl Combinator for Boolean {
             data.set(pos + 1, 0x00);
         }
 
-        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
 
         Ok(2)
     }

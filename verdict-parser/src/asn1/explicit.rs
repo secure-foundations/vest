@@ -24,17 +24,21 @@ impl<T: View> ViewWithASN1Tagged for ExplicitTag<T> {
 }
 
 impl<T: SpecCombinator> SpecCombinator for ExplicitTag<T> {
-    type SpecResult = T::SpecResult;
+    type Type = T::Type;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         LengthWrapped(self.1).spec_parse(s)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        LengthWrapped(self.1).spec_parse_wf(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         LengthWrapped(self.1).spec_serialize(v)
     }
 }
@@ -43,8 +47,12 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ExplicitTag<T> {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         LengthWrapped(self.1).theorem_serialize_parse_roundtrip(v)
     }
 
@@ -55,38 +63,31 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ExplicitTag<T> {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         LengthWrapped(self.1).lemma_prefix_secure(s1, s2)
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<T: Combinator> Combinator for ExplicitTag<T> where
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-    for<'a> T::Result<'a>: PolyfillClone,
+impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ExplicitTag<T> where
+    T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillClone,
 {
-    type Result<'a> = T::Result<'a>;
-    type Owned = T::Owned;
+    type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+    type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.1.parse_requires()
+    fn length(&self, v: Self::SType) -> usize {
+        LengthWrapped(&self.1).length(v)
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         LengthWrapped(&self.1).parse(s)
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.1.serialize_requires()
-    }
-
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         LengthWrapped(&self.1).serialize(v, data, pos)
     }
 }

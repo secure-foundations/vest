@@ -18,28 +18,32 @@ verus! {
 pub struct Base128UInt;
 
 impl SpecCombinator for Base128UInt {
-    type SpecResult = UInt;
-
+    type Type = UInt;
+    
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+    
     /// A wrapper around the *_helper version but first find the length of the first arc
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, UInt)>
     {
         match Self::find_first_arc(s) {
             Some(len) => {
                 match Self::spec_parse_helper(s.take(len), true) {
-                    Some(v) => Ok((len as usize, v)),
-                    None => Err(())
+                    Some(v) => Some((len, v)),
+                    None => None
                 }
             }
-            None => Err(())
+            None => None
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        Self::lemma_find_first_arc_alt(s);
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        Ok(Self::spec_serialize_helper(v, true))
+    spec fn spec_serialize(&self, v: UInt) -> Seq<u8> {
+        Self::spec_serialize_helper(v, true)
     }
 }
 
@@ -48,7 +52,7 @@ impl SecureSpecCombinator for Base128UInt {
         true
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         Self::lemma_spec_serialize_find_first_arc(v);
         Self::spec_serialize_parse_helper_roundtrip(v, true);
 
@@ -531,19 +535,15 @@ impl Base128UInt {
     }
 }
 
-impl Combinator for Base128UInt {
-    type Result<'a> = UInt;
-    type Owned = UInt;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
+    type Type = UInt;
+    type SType = &'a Self::Type;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        Self::serialize_helper(*v).len()
     }
 
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let len = if let Some(len) = Self::exec_find_first_arc(s) {
             len
         } else {
@@ -625,7 +625,8 @@ impl Combinator for Base128UInt {
         Ok((len, v))
     }
 
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        let v = *v;
         if pos >= data.len() {
             return Err(SerializeError::SizeOverflow);
         }

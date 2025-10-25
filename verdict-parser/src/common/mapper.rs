@@ -44,7 +44,7 @@ macro_rules! mapper {
         forward($forward_var:ident) $forward_body:block $(by $forward_proof:block)?
         backward($backward_var:ident) $backward_body:block $(by $backward_proof:block)?
     ) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             #[derive(Debug, View, PolyfillClone)]
             $to_defn
 
@@ -80,7 +80,7 @@ macro_rules! mapper_from_impls {
         $forward_var:ident, $forward_body:block,
         $backward_var:ident, $backward_body:block
     ) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl<$($param),*> SpecFrom<$from<$($param),*>> for $to<$($param),*> {
                 closed spec fn spec_from($forward_var: $from<$($param),*>) -> Self
                     $forward_body
@@ -117,7 +117,7 @@ macro_rules! mapper_iso_impls {
         <$lt:lifetime> <$($exec_type:ty),*>,
         <$($owned_type:ty),*>
     ) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             #[derive(Debug, View)]
             $vis struct $name;
 

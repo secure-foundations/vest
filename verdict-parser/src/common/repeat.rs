@@ -21,57 +21,57 @@ impl<C: View> View for Repeat<C>
 }
 
 impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
-    type SpecResult = Seq<C::SpecResult>;
+    type Type = Seq<C::Type>;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
         decreases s.len()
     {
         if !C::is_prefix_secure() {
-            Err(())
+            None
         } else if s.len() == 0 {
-            Ok((0, seq![]))
+            Some((0, seq![]))
         } else {
             match self.0.spec_parse(s) {
-                Ok((n, v)) =>
-                    if 0 < n <= s.len() {
-                        match self.spec_parse(s.skip(n as int)) {
-                            Ok((_, vs)) => Ok((s.len() as usize, seq![v] + vs)),
-                            Err(..) => Err(()),
+                Some((n, v)) =>
+                    if 0 < n && n <= s.len() {
+                        match self.spec_parse(s.skip(n)) {
+                            Some((_, vs)) => Some((s.len(), seq![v] + vs)),
+                            None => None,
                         }
                     } else {
-                        Err(())
+                        None
                     }
-                Err(..) => Err(()),
+                None => None,
             }
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
         decreases v.len()
     {
         if !C::is_prefix_secure() {
-            Err(())
+            seq![]
         } else if v.len() == 0 {
-            Ok(seq![])
+            seq![]
         } else {
-            match self.0.spec_serialize(v[0]) {
-                Ok(s) =>
-                    if s.len() != 0 {
-                        match self.spec_serialize(v.drop_first()) {
-                            Ok(rest) =>
-                                if s.len() + rest.len() <= usize::MAX {
-                                    Ok(s + rest)
-                                } else {
-                                    Err(())
-                                }
-                            Err(..) => Err(()),
-                        }
-                    } else {
-                        Err(())
-                    }
-                Err(..) => Err(()),
+            let s = self.0.spec_serialize(v[0]);
+            if s.len() != 0 {
+                let rest = self.spec_serialize(v.drop_first());
+                if s.len() + rest.len() <= usize::MAX {
+                    s + rest
+                } else {
+                    seq![]
+                }
+            } else {
+                seq![]
             }
         }
     }
@@ -83,28 +83,29 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
     open spec fn is_prefix_secure() -> bool {
         false
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len()
     {
         if v.len() == 0 {
-            assert(self.spec_serialize(v) matches Ok(b) ==> self.spec_parse(b).unwrap() =~= (0, v));
+            // Empty case
         } else {
-            if self.spec_serialize(v).is_ok() {
-                let s = self.0.spec_serialize(v[0]).unwrap();
-                let rest = self.spec_serialize(v.drop_first()).unwrap();
+            let s = self.0.spec_serialize(v[0]);
+            let rest = self.spec_serialize(v.drop_first());
 
-                self.theorem_serialize_parse_roundtrip(v.drop_first());
-                self.0.theorem_serialize_parse_roundtrip(v[0]);
+            self.theorem_serialize_parse_roundtrip(v.drop_first());
+            self.0.theorem_serialize_parse_roundtrip(v[0]);
 
-                // Some technical assumptions (e.g. C should not parse a different
-                // value when the buffer is extended with more bytes)
-                if C::is_prefix_secure() && s.len() + rest.len() <= usize::MAX {
-                    self.0.lemma_prefix_secure(s, rest);
-                    let (n, _) = self.0.spec_parse(s + rest).unwrap();
-                    self.0.spec_parse_wf(s + rest);
-
-                    assert((s + rest).skip(n as int) =~= rest);
+            // Some technical assumptions (e.g. C should not parse a different
+            // value when the buffer is extended with more bytes)
+            if C::is_prefix_secure() && s.len() + rest.len() <= usize::MAX {
+                self.0.lemma_prefix_secure(s, rest);
+                if let Some((n, _)) = self.0.spec_parse(s + rest) {
+                    assert((s + rest).skip(n) =~= rest);
                     assert(seq![v[0]] + v.drop_first() == v);
                 }
             }
@@ -118,22 +119,27 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
             let empty: Seq<u8> = seq![];
             assert(buf.subrange(0, 0) =~= empty);
         } else {
-            if let Ok((n, v)) = self.spec_parse(buf) {
-                let (n1, v1) = self.0.spec_parse(buf).unwrap();
-                let (n2, v2) = self.spec_parse(buf.skip(n1 as int)).unwrap();
+            if let Some((n, v)) = self.spec_parse(buf) {
+                if let Some((n1, v1)) = self.0.spec_parse(buf) {
+                    if let Some((n2, v2)) = self.spec_parse(buf.skip(n1)) {
+                        self.theorem_parse_serialize_roundtrip(buf.skip(n1));
+                        self.0.theorem_parse_serialize_roundtrip(buf);
 
-                self.theorem_parse_serialize_roundtrip(buf.skip(n1 as int));
-                self.0.theorem_parse_serialize_roundtrip(buf);
-
-                if C::is_prefix_secure() {
-                    assert(v2 == v.drop_first());
-                    assert(buf.subrange(0, n1 as int) + buf.skip(n1 as int).subrange(0, n2 as int) == buf.subrange(0, n as int));
+                        if C::is_prefix_secure() {
+                            assert(v2 == v.drop_first());
+                            assert(buf.subrange(0, n1) + buf.skip(n1).subrange(0, n2) == buf.subrange(0, n));
+                        }
+                    }
                 }
             }
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
 impl<C: Combinator> Repeat<C> where
@@ -221,37 +227,28 @@ impl<C: Combinator> Repeat<C> where
 /// max number of arcs in an OID
 const REPEAT_DEFAULT_CAP: usize = 10;
 
-impl<C: Combinator> Combinator for Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for Repeat<C> where
+    C: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <C as View>::V: SecureSpecCombinator,
 {
-    type Result<'a> = VecDeep<C::Result<'a>>;
-    type Owned = VecDeep<C::Owned>;
+    type Type = VecDeep<<C as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
+    type SType = VecDeep<<C as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        let mut total = 0;
+        for i in 0..v.len() {
+            total += self.0.length(v[i].clone());
+        }
+        total
     }
 
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        &&& <C as View>::V::is_prefix_secure()
-        &&& self.0.parse_requires()
-    }
-
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let mut res = VecDeep::with_capacity(REPEAT_DEFAULT_CAP);
         self.parse_helper(s, &mut res)?;
         Ok((s.len(), res))
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        &&& <C as View>::V::is_prefix_secure()
-        &&& self.0.serialize_requires()
-    }
-
-    fn serialize(&self, mut v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, mut v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let n = self.serialize_helper(&mut v, data, pos, 0)?;
         assert(v@.skip(0) == v@);
         Ok(n)

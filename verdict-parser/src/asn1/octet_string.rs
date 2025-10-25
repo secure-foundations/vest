@@ -10,20 +10,24 @@ pub struct OctetString;
 asn1_tagged!(OctetString, tag_of!(OCTET_STRING));
 
 impl SpecCombinator for OctetString {
-    type SpecResult = Seq<u8>;
+    type Type = Seq<u8>;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_octet_string_inner().spec_parse(s) {
-            Ok((len, (_, v))) => Ok((len, v)),
-            Err(..) => Err(()),
+            Some((len, (_, v))) => Some((len, v)),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        new_spec_octet_string_inner().spec_parse_wf(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         new_spec_octet_string_inner().spec_serialize((v.len() as LengthValue, v))
     }
 }
@@ -32,8 +36,12 @@ impl SecureSpecCombinator for OctetString {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         new_spec_octet_string_inner().theorem_serialize_parse_roundtrip((v.len() as LengthValue, v));
     }
 
@@ -44,92 +52,73 @@ impl SecureSpecCombinator for OctetString {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         new_spec_octet_string_inner().lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for OctetString {
-    type Result<'a> = &'a [u8];
-    type Owned = Vec<u8>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OctetString {
+    type Type = &'a [u8];
+    type SType = &'a [u8];
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        new_octet_string_inner().length((v.len() as LengthValue, v))
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (len, (_, v)) = new_octet_string_inner().parse(s)?;
         Ok((len, v))
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         new_octet_string_inner().serialize((v.len() as LengthValue, v), data, pos)
     }
 }
 
-/// The function |i| Bytes(i)
+/// The function |i| Variable(i)
 struct BytesCont;
 
-impl Continuation for BytesCont {
-    type Input<'a> = LengthValue;
-    type Output = Bytes;
+impl Continuation<POrSType<&LengthValue, LengthValue>> for BytesCont {
+    type Output = bytes::Variable;
 
-    #[inline(always)]
-    fn apply<'a>(&self, i: Self::Input<'a>) -> (o: Self::Output) {
-        Bytes(i as usize)
-    }
-
-    closed spec fn requires<'a>(&self, i: Self::Input<'a>) -> bool {
+    open spec fn requires(&self, deps: POrSType<&LengthValue, LengthValue>) -> bool {
         true
     }
 
-    closed spec fn ensures<'a>(&self, i: Self::Input<'a>, o: Self::Output) -> bool {
-        &&& o == Bytes(i as usize)
-        &&& o.parse_requires()
-        &&& o.serialize_requires()
+    open spec fn ensures(&self, deps: POrSType<&LengthValue, LengthValue>, o: Self::Output) -> bool {
+        let i = match deps {
+            POrSType::P(i) => *i,
+            POrSType::S(i) => i,
+        };
+        &&& o == bytes::Variable(i as usize)
+    }
+
+    fn apply(&self, deps: POrSType<&LengthValue, LengthValue>) -> (o: Self::Output) {
+        let i = match deps {
+            POrSType::P(i) => *i,
+            POrSType::S(i) => i,
+        };
+        bytes::Variable(i as usize)
     }
 }
 
 #[allow(dead_code)]
-type SpecOctetStringInner = SpecDepend<Length, Bytes>;
-type OctetStringInner = Depend<Length, Bytes, BytesCont>;
+type SpecOctetStringInner = SpecDepend<Length, bytes::Variable>;
+type OctetStringInner = Depend<Length, bytes::Variable, BytesCont>;
 
 closed spec fn new_spec_octet_string_inner() -> SpecOctetStringInner {
-    SpecDepend {
-        fst: Length,
-        snd: |l| {
-            Bytes(l as usize)
-        },
-    }
-}
-
-closed spec fn spec_new_octet_string_inner() -> OctetStringInner
-{
-    Depend {
-        fst: Length,
-        snd: BytesCont,
-        spec_snd: Ghost(|l| {
-            Bytes(l as usize)
-        }),
-    }
+    Pair::spec_new(Length, |l| bytes::Variable(l as usize))
 }
 
 #[inline(always)]
 fn new_octet_string_inner() -> (res: OctetStringInner)
     ensures
         res@ == new_spec_octet_string_inner(),
-        res == spec_new_octet_string_inner(),
 {
-    Depend {
-        fst: Length,
-        snd: BytesCont,
-        spec_snd: Ghost(|l| {
-            Bytes(l as usize)
-        }),
-    }
+    Pair::new(Length, BytesCont)
 }
 
 }

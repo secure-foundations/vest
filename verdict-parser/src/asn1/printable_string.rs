@@ -18,23 +18,24 @@ pub type PrintableStringValue<'a> = &'a str;
 pub type PrintableStringValueOwned = String;
 
 impl SpecCombinator for PrintableString {
-    type SpecResult = SpecPrintableStringValue;
+    type Type = SpecPrintableStringValue;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
         }.spec_parse(s)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        Refined {
-            inner: UTF8String,
-            predicate: PrintableStringPred,
-        }.spec_parse_wf(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
@@ -46,8 +47,12 @@ impl SecureSpecCombinator for PrintableString {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
@@ -67,22 +72,22 @@ impl SecureSpecCombinator for PrintableString {
             predicate: PrintableStringPred,
         }.lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for PrintableString {
-    type Result<'a> = PrintableStringValue<'a>;
-    type Owned = PrintableStringValueOwned;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrintableString {
+    type Type = PrintableStringValue<'a>;
+    type SType = PrintableStringValueOwned;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        v.len()
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
@@ -90,7 +95,7 @@ impl Combinator for PrintableString {
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
@@ -133,18 +138,13 @@ impl PrintableStringPred {
 }
 
 impl SpecPred for PrintableStringPred {
-    type Input = Seq<char>;
-
-    closed spec fn spec_apply(&self, s: &Self::Input) -> bool {
+    closed spec fn spec_apply(&self, s: &Seq<char>) -> bool {
         forall |i| 0 <= i < s.len() ==> #[trigger] Self::wf_char(s[i])
     }
 }
 
 impl Pred for PrintableStringPred {
-    type Input<'a> = &'a str;
-    type InputOwned = String;
-
-    fn apply(&self, s: &Self::Input<'_>) -> (res: bool)
+    fn apply(&self, s: &&str) -> (res: bool)
     {
         let len = s.unicode_len();
         for i in 0..len
