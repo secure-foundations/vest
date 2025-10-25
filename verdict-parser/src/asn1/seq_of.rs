@@ -25,17 +25,21 @@ impl<C: View> ViewWithASN1Tagged for SequenceOf<C> {
 }
 
 impl<C: SecureSpecCombinator + SpecCombinator> SpecCombinator for SequenceOf<C> {
-    type SpecResult = Seq<C::SpecResult>;
+    type Type = Seq<C::Type>;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         ExplicitTag(self.spec_tag(), Repeat(self.0)).spec_parse(s)
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        ExplicitTag(self.spec_tag(), Repeat(self.0)).spec_parse_wf(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         ExplicitTag(self.spec_tag(), Repeat(self.0)).spec_serialize(v)
     }
 }
@@ -44,8 +48,12 @@ impl<C: SecureSpecCombinator + SpecCombinator> SecureSpecCombinator for Sequence
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         ExplicitTag(self.spec_tag(), Repeat(self.0)).theorem_serialize_parse_roundtrip(v);
     }
 
@@ -56,40 +64,31 @@ impl<C: SecureSpecCombinator + SpecCombinator> SecureSpecCombinator for Sequence
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         ExplicitTag(self.spec_tag(), Repeat(self.0)).lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<C: Combinator> Combinator for SequenceOf<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
-    for<'a> C::Result<'a>: PolyfillClone,
+impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for SequenceOf<C> where
+    C: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <C as View>::V: SecureSpecCombinator,
+    <C as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillClone,
 {
-    type Result<'a> = SequenceOfValue<C::Result<'a>>;
-    type Owned = SequenceOfValue<C::Owned>;
+    type Type = SequenceOfValue<<C as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
+    type SType = SequenceOfValue<<C as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        &&& <C as View>::V::is_prefix_secure()
-        &&& self.0.parse_requires()
+    fn length(&self, v: Self::SType) -> usize {
+        ExplicitTag(self.tag(), Repeat(&self.0)).length(v)
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         ExplicitTag(self.tag(), Repeat(&self.0)).parse(s)
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        &&& <C as View>::V::is_prefix_secure()
-        &&& self.0.serialize_requires()
-    }
-
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         ExplicitTag(self.tag(), Repeat(&self.0)).serialize(v, data, pos)
     }
 }

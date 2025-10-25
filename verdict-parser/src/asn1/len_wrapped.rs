@@ -16,25 +16,26 @@ impl<T: View> View for LengthWrapped<T> {
 }
 
 impl<T: SpecCombinator> SpecCombinator for LengthWrapped<T> {
-    type SpecResult = T::SpecResult;
+    type Type = T::Type;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_length_wrapped_inner(self.0).spec_parse(s) {
-            Ok((len, (_, v))) => Ok((len, v)),
-            Err(..) => Err(()),
+            Some((len, (_, v))) => Some((len, v)),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        new_spec_length_wrapped_inner(self.0).spec_parse_wf(s)
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        match self.0.spec_serialize(v) {
-            // Need to compute the inner serialized length first
-            Ok(buf) => new_spec_length_wrapped_inner(self.0).spec_serialize((buf.len() as LengthValue, v)),
-            Err(..) => Err(()),
-        }
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let buf = self.0.spec_serialize(v);
+        new_spec_length_wrapped_inner(self.0).spec_serialize((buf.len() as LengthValue, v))
     }
 }
 
@@ -42,11 +43,14 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for LengthWrapped<T> {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(buf) = self.0.spec_serialize(v) {
-            new_spec_length_wrapped_inner(self.0).theorem_serialize_parse_roundtrip((buf.len() as LengthValue, v))
-        }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let buf = self.0.spec_serialize(v);
+        new_spec_length_wrapped_inner(self.0).theorem_serialize_parse_roundtrip((buf.len() as LengthValue, v))
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
@@ -56,39 +60,33 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for LengthWrapped<T> {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         new_spec_length_wrapped_inner(self.0).lemma_prefix_secure(s1, s2)
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<T: Combinator> Combinator for LengthWrapped<T> where
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-    for<'a> T::Result<'a>: PolyfillClone,
+impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for LengthWrapped<T> where
+    T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillClone,
 {
-    type Result<'a> = T::Result<'a>;
-    type Owned = T::Owned;
+    type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+    type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
+    fn length(&self, v: Self::SType) -> usize {
+        let inner_len = self.0.length(v);
+        Length.length(inner_len as LengthValue) + inner_len
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (len, (_, v)) = new_length_wrapped_inner(&self.0).parse(s)?;
         Ok((len, v))
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         // TODO: can we avoid serializing twice?
         let len = self.0.serialize(v.clone(), data, pos)?;
         let final_len = new_length_wrapped_inner(&self.0).serialize((len as LengthValue, v), data, pos)?;
@@ -105,70 +103,48 @@ impl<T: Combinator> Combinator for LengthWrapped<T> where
 /// The function |i| AndThen<Bytes, T>
 pub struct LengthWrappedCont<'a, T>(pub &'a T);
 
-impl<'b, T: Combinator> Continuation for LengthWrappedCont<'b, T> where
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
+impl<'b, T: Combinator<'b>> Continuation<POrSType<&LengthValue, LengthValue>> for LengthWrappedCont<'b, T> where
+    <T as View>::V: SecureSpecCombinator,
 {
-    type Input<'a> = LengthValue;
-    type Output = AndThen<Bytes, &'b T>;
+    type Output = AndThen<bytes::Variable, &'b T>;
 
-    #[inline(always)]
-    fn apply<'a>(&self, i: Self::Input<'a>) -> (o: Self::Output) {
-        AndThen(Bytes(i as usize), &self.0)
-    }
-
-    closed spec fn requires<'a>(&self, i: Self::Input<'a>) -> bool {
+    open spec fn requires(&self, i: POrSType<&LengthValue, LengthValue>) -> bool {
         true
     }
 
-    closed spec fn ensures<'a>(&self, i: Self::Input<'a>, o: Self::Output) -> bool {
-        &&& self.0.parse_requires() ==> o.parse_requires()
-        &&& self.0.serialize_requires() ==> o.serialize_requires()
-        &&& o@ == AndThen(Bytes(i as usize), self.0@)
+    open spec fn ensures(&self, deps: POrSType<&LengthValue, LengthValue>, o: Self::Output) -> bool {
+        let i = match deps {
+            POrSType::P(i) => *i,
+            POrSType::S(i) => i,
+        };
+        &&& o@ == AndThen(bytes::Variable(i as usize), self.0@)
+    }
+
+    fn apply(&self, deps: POrSType<&LengthValue, LengthValue>) -> (o: Self::Output) {
+        let i = match deps {
+            POrSType::P(i) => *i,
+            POrSType::S(i) => i,
+        };
+        AndThen(bytes::Variable(i as usize), &self.0)
     }
 }
 
 #[allow(dead_code)]
-type SpecLengthWrappedInner<T> = SpecDepend<Length, AndThen<Bytes, T>>;
-type LengthWrappedInner<'a, T> = Depend<Length, AndThen<Bytes, &'a T>, LengthWrappedCont<'a, T>>;
+type SpecLengthWrappedInner<T> = SpecDepend<Length, AndThen<bytes::Variable, T>>;
+type LengthWrappedInner<'a, T> = Depend<Length, AndThen<bytes::Variable, &'a T>, LengthWrappedCont<'a, T>>;
 
 /// SpecDepend version of new_length_wrapped_inner
 closed spec fn new_spec_length_wrapped_inner<T: SpecCombinator>(inner: T) -> SpecLengthWrappedInner<T> {
-    SpecDepend {
-        fst: Length,
-        snd: |l| {
-            AndThen(Bytes(l as usize), inner)
-        },
-    }
-}
-
-/// Spec version of new_length_wrapped_inner
-closed spec fn new_length_wrapped_inner_spec<'a, T: Combinator>(inner: &'a T) -> LengthWrappedInner<'a, T> where
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-{
-    Depend {
-        fst: Length,
-        snd: LengthWrappedCont(inner),
-        spec_snd: Ghost(|l| {
-            AndThen(Bytes(l as usize), inner@)
-        }),
-    }
+    Pair::spec_new(Length, |l| AndThen(bytes::Variable(l as usize), inner))
 }
 
 #[inline(always)]
-fn new_length_wrapped_inner<'a, T: Combinator>(inner: &'a T) -> (res: LengthWrappedInner<'a, T>) where
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-
+fn new_length_wrapped_inner<'a, T: Combinator<'a>>(inner: &'a T) -> (res: LengthWrappedInner<'a, T>) where
+    <T as View>::V: SecureSpecCombinator,
     ensures
-        res == new_length_wrapped_inner_spec(inner),
         res@ == new_spec_length_wrapped_inner(inner@),
 {
-    Depend {
-        fst: Length,
-        snd: LengthWrappedCont(inner),
-        spec_snd: Ghost(|l| {
-            AndThen(Bytes(l as usize), inner@)
-        }),
-    }
+    Pair::new(Length, LengthWrappedCont(inner))
 }
 
 }

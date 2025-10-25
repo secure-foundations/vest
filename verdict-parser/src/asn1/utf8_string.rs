@@ -15,36 +15,39 @@ pub type UTF8StringValue<'a> = &'a str;
 pub type UTF8StringValueOwned = String;
 
 impl SpecCombinator for UTF8String {
-    type SpecResult = SpecUTF8StringValue;
+    type Type = SpecUTF8StringValue;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match Length.spec_parse(s) {
-            Ok((n, l)) => {
+            Some((n, l)) => {
                 if n + l <= usize::MAX && n + l <= s.len() {
-                    match spec_parse_utf8(s.skip(n as int).take(l as int)) {
-                        Some(parsed) => Ok(((n + l) as usize, parsed)),
-                        None => Err(()),
+                    match spec_parse_utf8(s.skip(n).take(l as int)) {
+                        Some(parsed) => Some((n + l, parsed)),
+                        None => None,
                     }
                 } else {
-                    Err(())
+                    None
                 }
             }
-            Err(()) => Err(()),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let s = spec_serialize_utf8(v);
-        match Length.spec_serialize(s.len() as LengthValue) {
-            Ok(buf) =>
-                if buf.len() + s.len() <= usize::MAX {
-                    Ok(buf + s)
-                } else {
-                    Err(())
-                },
-            Err(()) => Err(()),
+        let buf = Length.spec_serialize(s.len() as LengthValue);
+        if buf.len() + s.len() <= usize::MAX {
+            buf + s
+        } else {
+            seq![]
         }
     }
 }
@@ -53,29 +56,32 @@ impl SecureSpecCombinator for UTF8String {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let s = spec_serialize_utf8(v);
 
         Length.theorem_serialize_parse_roundtrip(s.len() as LengthValue);
         spec_utf8_serialize_parse_roundtrip(v);
 
-        if let Ok(buf) = Length.spec_serialize(s.len() as LengthValue)  {
-            if buf.len() + s.len() <= usize::MAX {
-                Length.lemma_prefix_secure(buf, s);
-                assert((buf + s).skip(buf.len() as int).take(s.len() as int) == s);
-            }
+        let buf = Length.spec_serialize(s.len() as LengthValue);
+        if buf.len() + s.len() <= usize::MAX {
+            Length.lemma_prefix_secure(buf, s);
+            assert((buf + s).skip(buf.len() as int).take(s.len() as int) == s);
         }
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((n, l)) = Length.spec_parse(buf) {
+        if let Some((n, l)) = Length.spec_parse(buf) {
             if n + l <= buf.len() {
-                let s = buf.skip(n as int).take(l as int);
+                let s = buf.skip(n).take(l as int);
 
                 Length.theorem_parse_serialize_roundtrip(buf);
                 spec_utf8_parse_serialize_roundtrip(s);
-                assert(buf.subrange(0, (n + l) as int) == buf.subrange(0, n as int) + buf.skip(n as int).take(l as int));
+                assert(buf.subrange(0, n + l) == buf.subrange(0, n) + buf.skip(n).take(l as int));
             }
         }
     }
@@ -83,28 +89,30 @@ impl SecureSpecCombinator for UTF8String {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         Length.lemma_prefix_secure(s1, s2);
 
-        if let Ok((n, l)) = Length.spec_parse(s1) {
+        if let Some((n, l)) = Length.spec_parse(s1) {
             if n + l <= s1.len() {
-                assert(s1.skip(n as int).take(l as int) =~= (s1 + s2).skip(n as int).take(l as int));
+                assert(s1.skip(n).take(l as int) =~= (s1 + s2).skip(n).take(l as int));
             }
         }
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for UTF8String {
-    type Result<'a> = UTF8StringValue<'a>;
-    type Owned = UTF8StringValueOwned;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
+    type Type = UTF8StringValue<'a>;
+    type SType = UTF8StringValue<'a>;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        let s = str_to_utf8(v);
+        let length_len = Length.length(s.len() as LengthValue);
+        length_len + s.len()
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (n, l) = Length.parse(s)?;
 
         if let Some(total_len) = n.checked_add(l as usize) {
@@ -122,7 +130,7 @@ impl Combinator for UTF8String {
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let s = str_to_utf8(v);
         let n = Length.serialize(s.len() as LengthValue, data, pos)?;
 
@@ -151,7 +159,7 @@ impl Combinator for UTF8String {
             data.set(pos + n + i, s[i]);
         }
 
-        assert(data@ =~= seq_splice(old(data)@, pos, Length.spec_serialize(s@.len() as LengthValue).unwrap() + s@));
+        assert(data@ =~= seq_splice(old(data)@, pos, Length.spec_serialize(s@.len() as LengthValue) + s@));
 
         Ok(n + s.len())
     }

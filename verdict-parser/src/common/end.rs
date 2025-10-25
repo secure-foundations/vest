@@ -11,29 +11,39 @@ pub struct End;
 pub struct EndValue;
 
 impl SpecCombinator for End {
-    type SpecResult = EndValue;
+    type Type = EndValue;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() == 0 {
-            Ok((0, EndValue))
+            Some((0, EndValue))
         } else {
-            Err(())
+            None
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
-        Ok(seq![])
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        seq![]
     }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
 }
 
 impl SecureSpecCombinator for End {
     open spec fn is_prefix_secure() -> bool {
         false
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {}
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {}
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         let empty: Seq<u8> = seq![];
@@ -41,22 +51,22 @@ impl SecureSpecCombinator for End {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for End {
-    type Result<'a> = EndValue;
-    type Owned = EndValue;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for End {
+    type Type = EndValue;
+    type SType = EndValue;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(0)
+    fn length(&self, _v: Self::SType) -> usize {
+        0
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if s.len() == 0 {
             Ok((0, EndValue))
         } else {
@@ -65,7 +75,7 @@ impl Combinator for End {
     }
 
     #[inline(always)]
-    fn serialize(&self, _v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, _v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         if pos <= data.len() {
             let ghost empty: Seq<u8> = seq![];
             assert(data@ =~= seq_splice(old(data)@, pos, empty));

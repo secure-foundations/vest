@@ -15,8 +15,8 @@ mod eq;
 mod mapper;
 mod option_deep;
 mod optional;
-mod pair;
-mod repeat;
+mod pair;  // Keep for PairValue type definition
+// mod repeat;  // Use vest's Repeat instead
 mod unreachable;
 mod vec_deep;
 mod vest;
@@ -32,9 +32,10 @@ pub use eq::*;
 pub use mapper::*;
 pub use option_deep::*;
 pub use optional::*;
-pub use pair::*;
-pub use repeat::*;
+pub use pair::PairValue;  // Only export PairValue, not Pair (use vest's Pair)
+// pub use repeat::*;  // Use vest's Repeat instead
 pub use unreachable::*;
 pub use vec_deep::*;
-pub use vest::*;
+pub use vest::*;  // This already exports Pair and Repeat from vest
 pub use wrapped::*;
+

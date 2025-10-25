@@ -9,8 +9,8 @@ verus! {
 /// works better
 pub type Wrapped<C> = Mapped<C, IdentityMapper<C>>;
 
-pub open spec fn spec_new_wrapped<C: Combinator>(c: C) -> Wrapped<C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+pub open spec fn spec_new_wrapped<C: for<'a> Combinator<'a>>(c: C) -> Wrapped<C> where
+    C::V: SecureSpecCombinator,
 {
     Mapped {
         inner: c,
@@ -18,8 +18,8 @@ pub open spec fn spec_new_wrapped<C: Combinator>(c: C) -> Wrapped<C> where
     }
 }
 
-pub fn new_wrapped<C: Combinator>(c: C) -> Wrapped<C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+pub fn new_wrapped<C: for<'a> Combinator<'a>>(c: C) -> Wrapped<C> where
+    C::V: SecureSpecCombinator,
 {
     Mapped {
         inner: c,
@@ -48,21 +48,22 @@ impl<C> IdentityMapper<C> {
 }
 
 impl<C: SpecCombinator> SpecIso for IdentityMapper<C> {
-    type Src = C::SpecResult;
-    type Dst = C::SpecResult;
+    type Src = C::Type;
+    type Dst = C::Type;
+}
 
+impl<C: SpecCombinator> SpecIsoProof for IdentityMapper<C> {
     proof fn spec_iso(s: Self::Src) {}
     proof fn spec_iso_rev(s: Self::Dst) {}
 }
 
-impl<C: Combinator> Iso for IdentityMapper<C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<'a, C> Iso<'a> for IdentityMapper<C> where
+    C: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <C as View>::V: SecureSpecCombinator,
 {
-    type Src<'a> = C::Result<'a>;
-    type Dst<'a> = C::Result<'a>;
-
-    type SrcOwned = C::Owned;
-    type DstOwned = C::Owned;
+    type Src = <C as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+    type Dst = <C as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+    type RefSrc = <C as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 }
 
 /// Wrap a non-parametric combinator in a new unit struct
@@ -99,7 +100,7 @@ macro_rules! wrap_combinator {
         exec<$lt:lifetime> $result:ty,
         owned $owned:ty $(,)?
         = $inner_expr:expr ;) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             #[derive(Debug, View)]
             $vis struct $name;
 
@@ -118,7 +119,7 @@ macro_rules! wrap_combinator {
         exec<$lt:lifetime> $result:ty,
         owned $owned:ty $(,)?
         = $inner_expr:expr ;) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             #[derive(Debug, View)]
             $vis struct $name { $($field_vis $field_name: $field_type),* }
 
@@ -141,7 +142,7 @@ macro_rules! wrap_combinator_impls {
         exec<$lt:lifetime> $result:ty,
         owned $owned:ty $(,)?
         = $inner_expr:expr ;) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl $name {
                 /// Due to a Verus/SMT instability issue,
                 /// specifying the actual definitions of, e.g., spec_parse
@@ -173,17 +174,21 @@ macro_rules! wrap_combinator_impls {
             }
 
             impl SpecCombinator for $name {
-                type SpecResult = $spec_result;
+                type Type = $spec_result;
+
+                open spec fn wf(&self, v: Self::Type) -> bool {
+                    true
+                }
+                
+                open spec fn requires(&self) -> bool {
+                    true
+                }
 
                 // $inner_expr.view().spec_parse(s)
-                uninterp spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>;
-
-                // $inner_expr.view().spec_parse_wf(s)
-                #[verifier::external_body]
-                proof fn spec_parse_wf(&self, s: Seq<u8>) {}
+                uninterp spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>;
 
                 // $inner_expr.view().spec_serialize(v)
-                uninterp spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>;
+                uninterp spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>;
             }
 
             impl SecureSpecCombinator for $name {
@@ -191,9 +196,13 @@ macro_rules! wrap_combinator_impls {
                 open spec fn is_prefix_secure() -> bool {
                     true // sound since it's checked in check_valid_inner_combinator
                 }
+                
+                spec fn is_productive() -> bool {
+                    true
+                }
 
                 #[verifier::external_body]
-                proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+                proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
                     // $inner_expr.view().theorem_serialize_parse_roundtrip(v)
                 }
 
@@ -206,28 +215,28 @@ macro_rules! wrap_combinator_impls {
                 proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
                     // $inner_expr.view().lemma_prefix_secure(s1, s2)
                 }
+                
+                #[verifier::external_body]
+                proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+                
+                #[verifier::external_body]
+                proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
             }
 
-            impl Combinator for $name {
-                type Result<$lt> = $result;
-                type Owned =  $owned;
-
-                uninterp spec fn spec_length(&self) -> Option<usize>;
+            impl<$lt> Combinator<$lt, &$lt [u8], Vec<u8>> for $name {
+                type Type = $result;
+                type SType =  $owned;
 
                 #[verifier::external_body]
-                fn length(&self) -> Option<usize> {
+                fn length(&self, v: Self::SType) -> usize {
                     $(let $field_name: $field_type = self.$field_name;)*
-                    $inner_expr.length()
-                }
-
-                open spec fn parse_requires(&self) -> bool {
-                    true // sound since it's checked in check_valid_inner_combinator
+                    $inner_expr.length(v)
                 }
 
                 #[verifier::external_body]
                 #[inline(always)]
                 #[allow(unexpected_cfgs)]
-                fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+                fn parse(&self, s: &$lt [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
                     $(let $field_name: $field_type = self.$field_name;)*
                     let res = $inner_expr.parse(s);
                     #[cfg(feature = "trace")] {
@@ -237,13 +246,9 @@ macro_rules! wrap_combinator_impls {
                     res
                 }
 
-                open spec fn serialize_requires(&self) -> bool {
-                    true // sound since it's checked in check_valid_inner_combinator
-                }
-
                 #[verifier::external_body]
                 #[inline(always)]
-                fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+                fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
                     $(let $field_name: $field_type = self.$field_name;)*
                     $inner_expr.serialize(v, data, pos)
                 }

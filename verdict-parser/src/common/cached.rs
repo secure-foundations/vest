@@ -9,8 +9,8 @@ verus! {
 #[derive(View)]
 pub struct Cached<T>(pub T);
 
-pub struct CachedValue<'a, C: Combinator> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+pub struct CachedValue<'a, C: Combinator<'a>> where
+    C::V: SecureSpecCombinator,
 {
     inner: C::Result<'a>,
     combinator: Ghost<C>,
@@ -18,8 +18,8 @@ pub struct CachedValue<'a, C: Combinator> where
 }
 
 /// View of CachedValue discards the serialization
-impl<'a, C: Combinator> View for CachedValue<'a, C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<'a, C: Combinator<'a>> View for CachedValue<'a, C> where
+    C::V: SecureSpecCombinator,
     for<'b> C::Result<'b>: View,
 {
     type V = <C::Result<'a> as View>::V;
@@ -29,8 +29,8 @@ impl<'a, C: Combinator> View for CachedValue<'a, C> where
     }
 }
 
-impl<'a, C: Combinator> PolyfillClone for CachedValue<'a, C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<'a, C: Combinator<'a>> PolyfillClone for CachedValue<'a, C> where
+    C::V: SecureSpecCombinator,
     C::Result<'a>: PolyfillClone,
 {
     #[inline(always)]
@@ -46,14 +46,12 @@ impl<'a, C: Combinator> PolyfillClone for CachedValue<'a, C> where
     }
 }
 
-impl<'a, C: Combinator> CachedValue<'a, C> where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<'a, C: Combinator<'a>> CachedValue<'a, C> where
+    C::V: SecureSpecCombinator,
 {
     #[verifier::type_invariant]
     closed spec fn inv(self) -> bool {
-        let res = self.combinator@@.spec_serialize(self.inner@);
-        &&& res.is_ok()
-        &&& self.serialized@ =~= res.unwrap()
+        &&& self.serialized@ =~= self.combinator@@.spec_serialize(self.inner@)
     }
 
     #[inline(always)]
@@ -82,18 +80,22 @@ impl<'a, C: Combinator> CachedValue<'a, C> where
 }
 
 impl<T: SpecCombinator> SpecCombinator for Cached<T> {
-    type SpecResult = T::SpecResult;
+    type Type = T::Type;
 
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    open spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
-    }
-
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        self.0.spec_parse_wf(s)
     }
 }
 
@@ -101,40 +103,41 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
     open spec fn is_prefix_secure() -> bool {
         T::is_prefix_secure()
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        self.0.theorem_serialize_parse_roundtrip(v)
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        self.0.theorem_parse_serialize_roundtrip(buf)
+    }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
     }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        self.0.theorem_serialize_parse_roundtrip(v)
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>) {
-        self.0.theorem_parse_serialize_roundtrip(s)
-    }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<T: Combinator> Combinator for Cached<T> where
-    T::V: SecureSpecCombinator<SpecResult = <T::Owned as View>::V>,
+impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
+    T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator,
 {
-    type Result<'a> = CachedValue<'a, T>;
-    type Owned = T::Owned;
+    type Type = CachedValue<'a, T>;
+    type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        self.0.spec_length()
-    }
-
-    fn length(&self) -> Option<usize> {
-        self.0.length()
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
+    fn length(&self, v: Self::SType) -> usize {
+        self.0.length(v)
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>)
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     {
         let (n, x) = self.0.parse(s)?;
         proof {
@@ -144,27 +147,24 @@ impl<T: Combinator> Combinator for Cached<T> where
         Ok((n, CachedValue { inner: x, combinator: Ghost(self.0), serialized: slice_take(s, n) }))
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<
         usize,
         SerializeError,
     >) {
-        self.0.serialize(v.inner, data, pos)
+        self.0.serialize(v, data, pos)
     }
 }
 
 }
 
-impl<'a, C: Combinator> std::fmt::Debug for CachedValue<'a, C>
+impl<'a, C: Combinator<'a>> std::fmt::Debug for CachedValue<'a, C>
 where
-    C::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+    C::V: SecureSpecCombinator,
     C::Result<'a>: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.inner.fmt(f)
     }
 }
+

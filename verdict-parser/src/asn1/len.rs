@@ -11,53 +11,51 @@ pub struct Length;
 pub type LengthValue = usize;
 
 impl SpecCombinator for Length {
-    type SpecResult = LengthValue;
+    type Type = LengthValue;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()>
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     {
         if s.len() == 0 {
-            Err(())
+            None
         } else if s[0] < 0x80 {
             // One-byte length
-            Ok((1, s[0] as LengthValue))
+            Some((1, s[0] as LengthValue))
         } else {
             // Multi-byte length
             let bytes = (s[0] - 0x80) as LengthValue;
             match VarUInt(bytes as usize).spec_parse(s.drop_first()) {
-                Ok((n, v)) => {
+                Some((n, v)) => {
                     // Need to check for minimal encoding for non-malleability
                     // For 1-byte length, v > 0x7f
                     // For (2+)-byte length, v can not be represented by fewer bytes
                     if bytes > 0 && !fits_n_bytes_unsigned!(v, bytes - 1) && v > 0x7f && v <= LengthValue::MAX {
-                        Ok(((n + 1) as usize, v as LengthValue))
+                        Some((n + 1, v as LengthValue))
                     } else {
-                        Err(())
+                        None
                     }
                 }
-                Err(()) => Err(()),
+                None => None,
             }
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        if s.len() != 0 && s[0] >= 0x80 {
-            let bytes = (s[0] - 0x80) as LengthValue;
-            VarUInt(bytes as usize).spec_parse_wf(s.drop_first());
-        }
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()>
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     {
         if v < 0x80 {
-            Ok(seq![v as u8])
+            seq![v as u8]
         } else {
             // Find the minimum number of bytes required to represent v
             let bytes = min_num_bytes_unsigned(v as VarUIntResult);
-
-            match VarUInt(bytes as usize).spec_serialize(v as VarUIntResult) {
-                Ok(buf) => Ok(seq![(0x80 + bytes) as u8] + buf),
-                Err(()) => Err(()),
-            }
+            let buf = VarUInt(bytes as usize).spec_serialize(v as VarUIntResult);
+            seq![(0x80 + bytes) as u8] + buf
         }
     }
 }
@@ -66,26 +64,28 @@ impl SecureSpecCombinator for Length {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(buf) = self.spec_serialize(v) {
-            if v >= 0x80 {
-                let bytes = min_num_bytes_unsigned(v as VarUIntResult);
-                let var_uint = VarUInt(bytes as usize);
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let buf = self.spec_serialize(v);
+        if v >= 0x80 {
+            let bytes = min_num_bytes_unsigned(v as VarUIntResult);
+            let var_uint = VarUInt(bytes as usize);
 
-                lemma_min_num_bytes_unsigned(v as VarUIntResult);
+            lemma_min_num_bytes_unsigned(v as VarUIntResult);
 
-                var_uint.theorem_serialize_parse_roundtrip(v as VarUIntResult);
-                var_uint.lemma_serialize_ok_len(v as VarUIntResult);
+            var_uint.theorem_serialize_parse_roundtrip(v as VarUIntResult);
 
-                let buf2 = var_uint.spec_serialize(v as VarUIntResult).unwrap();
-                assert(buf.drop_first() == buf2);
-            }
+            let buf2 = var_uint.spec_serialize(v as VarUIntResult);
+            assert(buf.drop_first() == buf2);
         }
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((n, v)) = self.spec_parse(buf) {
+        if let Some((n, v)) = self.spec_parse(buf) {
             if buf[0] < 0x80 {
                 assert(seq![ buf[0] ] == buf.subrange(0, 1));
             } else {
@@ -94,19 +94,16 @@ impl SecureSpecCombinator for Length {
 
                 // Base lemmas from VarUInt
                 var_uint.theorem_parse_serialize_roundtrip(buf.drop_first());
-                var_uint.lemma_parse_ok(buf.drop_first());
-                var_uint.lemma_parse_ok_bound(buf.drop_first());
 
                 // Parse the inner VarUInt
-                let (len, v2) = var_uint.spec_parse(buf.drop_first()).unwrap();
+                if let Some((len, v2)) = var_uint.spec_parse(buf.drop_first()) {
+                    assert(is_min_num_bytes_unsigned(v2, bytes));
+                    lemma_min_num_bytes_unsigned(v2);
 
-                assert(is_min_num_bytes_unsigned(v2, bytes));
-                lemma_min_num_bytes_unsigned(v2);
-
-                // Some sequence facts
-                assert(var_uint.spec_serialize(v as VarUIntResult).is_ok());
-                let buf2 = var_uint.spec_serialize(v as VarUIntResult).unwrap();
-                assert(seq![(0x80 + bytes) as u8] + buf2 == buf.subrange(0, 1 + bytes));
+                    // Some sequence facts
+                    let buf2 = var_uint.spec_serialize(v as VarUIntResult);
+                    assert(seq![(0x80 + bytes) as u8] + buf2 == buf.subrange(0, 1 + bytes));
+                }
             }
         }
     }
@@ -118,22 +115,27 @@ impl SecureSpecCombinator for Length {
             assert((s1 + s2).drop_first() =~= s1.drop_first() + s2);
         }
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for Length {
-    type Result<'a> = LengthValue;
-    type Owned = LengthValue;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Length {
+    type Type = LengthValue;
+    type SType = LengthValue;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        if v < 0x80 {
+            1
+        } else {
+            let bytes = min_num_bytes_unsigned_exec(v as VarUIntResult);
+            (1 + bytes) as usize
+        }
     }
 
     #[inline]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if s.len() == 0 {
             return Err(ParseError::UnexpectedEndOfInput);
         }
@@ -155,7 +157,7 @@ impl Combinator for Length {
     }
 
     #[inline]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         if v < 0x80 {
             if pos < data.len() {
                 data.set(pos, v as u8);
@@ -178,7 +180,7 @@ impl Combinator for Length {
 
         proof {
             lemma_min_num_bytes_unsigned(v as VarUIntResult);
-            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v).unwrap()));
+            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v)));
         }
 
         Ok(len + 1)

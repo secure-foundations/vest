@@ -14,28 +14,32 @@ asn1_tagged!(Integer, tag_of!(INTEGER));
 pub type IntegerValue = VarIntResult;
 
 impl SpecCombinator for Integer {
-    type SpecResult = IntegerValue;
+    type Type = IntegerValue;
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
 
     /// Same as new_spec_integer_inner(), but filters out tuples (n, v)
     /// where v is *not* the minimum number of bytes required to represent v
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_integer_inner().spec_parse(s) {
-            Ok((len, (n, v))) => {
+            Some((len, (n, v))) => {
                 if is_min_num_bytes_signed(v, n as VarUIntResult) {
-                    Ok((len, v))
+                    Some((len, v))
                 } else {
-                    Err(())
+                    None
                 }
             }
-            Err(..) => Err(()),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        new_spec_integer_inner().spec_parse_wf(s);
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         new_spec_integer_inner().spec_serialize((min_num_bytes_signed(v) as LengthValue, v))
     }
 }
@@ -44,8 +48,12 @@ impl SecureSpecCombinator for Integer {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         new_spec_integer_inner().theorem_serialize_parse_roundtrip((min_num_bytes_signed(v) as LengthValue, v));
         lemma_min_num_bytes_signed(v);
     }
@@ -53,7 +61,7 @@ impl SecureSpecCombinator for Integer {
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         new_spec_integer_inner().theorem_parse_serialize_roundtrip(buf);
 
-        if let Ok((_, (n, v))) = new_spec_integer_inner().spec_parse(buf) {
+        if let Some((_, (n, v))) = new_spec_integer_inner().spec_parse(buf) {
             lemma_min_num_bytes_signed(v);
         }
     }
@@ -61,22 +69,22 @@ impl SecureSpecCombinator for Integer {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         new_spec_integer_inner().lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for Integer {
-    type Result<'a> = IntegerValue;
-    type Owned = IntegerValue;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Integer {
+    type Type = IntegerValue;
+    type SType = IntegerValue;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        None
-    }
-
-    fn length(&self) -> Option<usize> {
-        None
+    fn length(&self, v: Self::SType) -> usize {
+        new_integer_inner().length((min_num_bytes_signed_exec(v) as LengthValue, v))
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (len, (n, v)) = new_integer_inner().parse(s)?;
 
         if is_min_num_bytes_signed_exec(v, n as VarUIntResult) {
@@ -87,7 +95,7 @@ impl Combinator for Integer {
     }
 
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         proof {
             lemma_min_num_bytes_signed(v);
         }
@@ -100,19 +108,18 @@ impl Combinator for Integer {
 struct IntegerCont;
 
 impl Continuation for IntegerCont {
-    type Input<'a> = LengthValue;
     type Output = VarInt;
 
     #[inline(always)]
-    fn apply<'a>(&self, i: Self::Input<'a>) -> (o: Self::Output) {
+    fn apply<'a>(&self, i: LengthValue) -> (o: Self::Output) {
         VarInt(i as usize)
     }
 
-    closed spec fn requires<'a>(&self, i: Self::Input<'a>) -> bool {
+    closed spec fn requires<'a>(&self, i: LengthValue) -> bool {
         true
     }
 
-    closed spec fn ensures<'a>(&self, i: Self::Input<'a>, o: Self::Output) -> bool {
+    closed spec fn ensures<'a>(&self, i: LengthValue, o: Self::Output) -> bool {
         o == VarInt(i as usize)
     }
 }
@@ -124,29 +131,14 @@ type SpecIntegerInner = SpecDepend<Length, VarInt>;
 type IntegerInner = Depend<Length, VarInt, IntegerCont>;
 
 closed spec fn new_spec_integer_inner() -> SpecIntegerInner {
-    let ghost spec_snd = |l| {
-        VarInt(l as usize)
-    };
-
-    SpecDepend {
-        fst: Length,
-        snd: spec_snd,
-    }
+    Pair::spec_new(Length, |l| VarInt(l as usize))
 }
 
 #[inline(always)]
 fn new_integer_inner() -> (res: IntegerInner)
-    ensures res.view() == new_spec_integer_inner()
+    ensures res@ == new_spec_integer_inner()
 {
-    let ghost spec_snd = |l| {
-        VarInt(l as usize)
-    };
-
-    Depend {
-        fst: Length,
-        snd: IntegerCont,
-        spec_snd: Ghost(spec_snd),
-    }
+    Pair::new(Length, IntegerCont)
 }
 
 }

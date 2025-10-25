@@ -81,11 +81,19 @@ impl TagValue {
 }
 
 impl SpecCombinator for ASN1Tag {
-    type SpecResult = TagValue;
+    type Type = TagValue;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() == 0 {
-            Err(())
+            None
         } else {
             let class_num = s[0] >> 6 & 0b11;
             let class = if class_num == 0 {
@@ -105,7 +113,7 @@ impl SpecCombinator for ASN1Tag {
                 TagForm::Constructed
             };
 
-            Ok((1, TagValue {
+            Some((1, TagValue {
                 class,
                 form,
                 num: s[0] & 0b11111,
@@ -113,9 +121,7 @@ impl SpecCombinator for ASN1Tag {
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {}
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let class: u8 = match v.class {
             TagClass::Universal => 0,
             TagClass::Application => 1,
@@ -129,9 +135,9 @@ impl SpecCombinator for ASN1Tag {
         };
 
         if v.num > 0b11111 {
-            Err(())
+            seq![]
         } else {
-            Ok(seq![(class << 6) | (form << 5) | (v.num & 0b11111)])
+            seq![(class << 6) | (form << 5) | (v.num & 0b11111)]
         }
     }
 }
@@ -140,8 +146,12 @@ impl SecureSpecCombinator for ASN1Tag {
     open spec fn is_prefix_secure() -> bool {
         true
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let class_num: u8 = match v.class {
             TagClass::Universal => 0,
             TagClass::Application => 1,
@@ -169,41 +179,43 @@ impl SecureSpecCombinator for ASN1Tag {
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        let tag = buf[0];
+        if buf.len() > 0 {
+            let tag = buf[0];
 
-        // Restate serialize(parse(v)) = v, but purely in BV
-        assert(
-            (tag >> 6 & 0b11) << 6 | (tag >> 5 & 1) << 5 | ((tag & 0b11111) & 0b11111) == tag
-        ) by (bit_vector);
+            // Restate serialize(parse(v)) = v, but purely in BV
+            assert(
+                (tag >> 6 & 0b11) << 6 | (tag >> 5 & 1) << 5 | ((tag & 0b11111) & 0b11111) == tag
+            ) by (bit_vector);
 
-        // Some bound facts
-        assert(tag >> 6 & 0b11 < 4) by (bit_vector);
-        assert(tag >> 5 & 1 < 2) by (bit_vector);
-        assert(tag & 0b11111 <= 0b11111) by (bit_vector);
+            // Some bound facts
+            assert(tag >> 6 & 0b11 < 4) by (bit_vector);
+            assert(tag >> 5 & 1 < 2) by (bit_vector);
+            assert(tag & 0b11111 <= 0b11111) by (bit_vector);
 
-        if let Ok((n, v)) = self.spec_parse(buf) {
-            let ser = self.spec_serialize(v).unwrap();
-            assert(ser =~= buf.subrange(0, 1));
+            if let Some((n, v)) = self.spec_parse(buf) {
+                let ser = self.spec_serialize(v);
+                assert(ser =~= buf.subrange(0, 1));
+            }
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl Combinator for ASN1Tag {
-    type Result<'a> = TagValue;
-    type Owned = TagValue;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ASN1Tag {
+    type Type = TagValue;
+    type SType = TagValue;
 
-    closed spec fn spec_length(&self) -> Option<usize> {
-        Some(1)
-    }
-
-    fn length(&self) -> Option<usize> {
-        Some(1)
+    fn length(&self, _v: Self::SType) -> usize {
+        1
     }
 
     #[inline]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if s.len() == 0 {
             return Err(ParseError::UnexpectedEndOfInput);
         } else {
@@ -234,7 +246,7 @@ impl Combinator for ASN1Tag {
     }
 
     #[inline]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let class: u8 = match v.class {
             TagClass::Universal => 0,
             TagClass::Application => 1,
@@ -315,25 +327,29 @@ impl<T: ASN1Tagged + ViewWithASN1Tagged> ViewWithASN1Tagged for ASN1<T> where
 }
 
 impl<T: ASN1Tagged + SpecCombinator> SpecCombinator for ASN1<T> {
-    type SpecResult = <T as SpecCombinator>::SpecResult;
+    type Type = <T as SpecCombinator>::Type;
 
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Result<(usize, Self::SpecResult), ()> {
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        true
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match (ASN1Tag, self.0).spec_parse(s) {
-            Ok((n, (tag, v))) =>
+            Some((n, (tag, v))) =>
                 if tag == self.0.spec_tag() {
-                    Ok((n, v))
+                    Some((n, v))
                 } else {
-                    Err(())
+                    None
                 }
-            Err(()) => Err(()),
+            None => None,
         }
     }
 
-    proof fn spec_parse_wf(&self, s: Seq<u8>) {
-        (ASN1Tag, self.0).spec_parse_wf(s);
-    }
-
-    closed spec fn spec_serialize(&self, v: Self::SpecResult) -> Result<Seq<u8>, ()> {
+    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         (ASN1Tag, self.0).spec_serialize((self.0.spec_tag(), v))
     }
 }
@@ -342,8 +358,12 @@ impl<T: ASN1Tagged + SecureSpecCombinator> SecureSpecCombinator for ASN1<T> {
     open spec fn is_prefix_secure() -> bool {
         T::is_prefix_secure()
     }
+    
+    spec fn is_productive() -> bool {
+        true
+    }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         (ASN1Tag, self.0).theorem_serialize_parse_roundtrip((self.0.spec_tag(), v));
     }
 
@@ -354,37 +374,26 @@ impl<T: ASN1Tagged + SecureSpecCombinator> SecureSpecCombinator for ASN1<T> {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         (ASN1Tag, self.0).lemma_prefix_secure(s1, s2);
     }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<T: ASN1Tagged + Combinator> Combinator for ASN1<T> where
-    // T: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-    <T as View>::V: SecureSpecCombinator<SpecResult = <<T as Combinator>::Owned as View>::V>,
-    <T as View>::V: ASN1Tagged,
-    T: ViewWithASN1Tagged,
+impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
+    T: ASN1Tagged + for<'x> Combinator<'x, &'x [u8], Vec<u8>> + ViewWithASN1Tagged,
+    <T as View>::V: SecureSpecCombinator + ASN1Tagged,
 {
-    type Result<'a> = T::Result<'a>;
-    type Owned = T::Owned;
+    type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
+    type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
-    open spec fn spec_length(&self) -> Option<usize> {
-        match self.0.spec_length() {
-            Some(len) => len.checked_add(1),
-            None => None,
-        }
-    }
-
-    fn length(&self) -> Option<usize> {
-        match self.0.length() {
-            Some(len) => len.checked_add(1),
-            None => None,
-        }
-    }
-
-    open spec fn parse_requires(&self) -> bool {
-        self.0.parse_requires()
+    fn length(&self, v: Self::SType) -> usize {
+        let len = self.0.length(v);
+        1 + len
     }
 
     #[inline(always)]
-    fn parse<'a>(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Result<'a>), ParseError>) {
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         proof {
             self.0.lemma_view_preserves_tag();
         }
@@ -399,12 +408,8 @@ impl<T: ASN1Tagged + Combinator> Combinator for ASN1<T> where
         }
     }
 
-    open spec fn serialize_requires(&self) -> bool {
-        self.0.serialize_requires()
-    }
-
     #[inline(always)]
-    fn serialize(&self, v: Self::Result<'_>, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         proof {
             self.0.lemma_view_preserves_tag();
         }
@@ -526,7 +531,7 @@ impl<T1, T2, S> DisjointFrom<Cached<ASN1<T2>>> for Pair<ASN1<T1>, S> where
 #[macro_export]
 macro_rules! asn1_tagged {
     ($ty:ident, $tag:expr) => {
-        ::builtin_macros::verus! {
+        ::vstd::prelude::verus! {
             impl ASN1Tagged for $ty {
                 open spec fn spec_tag(&self) -> TagValue {
                     $tag
