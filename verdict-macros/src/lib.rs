@@ -58,7 +58,7 @@ pub fn derive_view(input: TokenStream) -> TokenStream {
 
                     // Generate the implementation
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#view_generic_idents),*> View for #name<#(#generic_idents),*> {
                                 type V = #name<#(#generic_view_types),*>;
 
@@ -78,7 +78,7 @@ pub fn derive_view(input: TokenStream) -> TokenStream {
 
                     // Generate the implementation for named struct
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#view_generic_idents),*> View for #name<#(#generic_idents),*> {
                                 type V = #name<#(#generic_view_types),*>;
 
@@ -93,7 +93,7 @@ pub fn derive_view(input: TokenStream) -> TokenStream {
                 }
                 Fields::Unit => {
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#view_generic_idents),*> View for #name<#(#generic_idents),*> {
                                 type V = #name<#(#generic_view_types),*>;
 
@@ -140,7 +140,7 @@ pub fn derive_view(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                ::builtin_macros::verus! {
+                ::vstd::prelude::verus! {
                     impl<#(#view_generic_idents),*> View for #name<#(#generic_idents),*> {
                         type V = #name<#(#generic_view_types),*>;
 
@@ -210,7 +210,7 @@ pub fn derive_polyfill_clone(input: TokenStream) -> TokenStream {
 
                     // Generate the implementation
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#impl_generic_params),*> PolyfillClone for #name<#(#generic_params),*> {
                                 #[inline(always)]
                                 fn clone(&self) -> Self {
@@ -229,7 +229,7 @@ pub fn derive_polyfill_clone(input: TokenStream) -> TokenStream {
 
                     // Generate the implementation for named struct
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#impl_generic_params),*> PolyfillClone for #name<#(#generic_params),*> {
                                 #[inline(always)]
                                 fn clone(&self) -> Self {
@@ -243,7 +243,7 @@ pub fn derive_polyfill_clone(input: TokenStream) -> TokenStream {
                 }
                 Fields::Unit => {
                     quote! {
-                        ::builtin_macros::verus! {
+                        ::vstd::prelude::verus! {
                             impl<#(#impl_generic_params),*> PolyfillClone for #name<#(#generic_params),*> {
                                 #[inline(always)]
                                 fn clone(&self) -> Self {
@@ -291,7 +291,7 @@ pub fn derive_polyfill_clone(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                ::builtin_macros::verus! {
+                ::vstd::prelude::verus! {
                     impl<#(#impl_generic_params),*> PolyfillClone for #name<#(#generic_params),*> {
                         #[inline(always)]
                         fn clone(&self) -> Self {
