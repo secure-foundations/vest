@@ -1,0 +1,27 @@
+[package]
+name = "verdict-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+verus_builtin = "0.0.0-2025-08-12-1837"
+verus_builtin_macros = "0.0.0-2025-08-12-1837"
+vstd = "=0.0.0-2025-08-12-1837"
+vest = { path = "../vest/" }
+verdict-polyfill = { path = "../verdict-polyfill" }
+verdict-macros = { path = "../verdict-macros" }
+paste = "1.0.15"
+
+[dev-dependencies]
+der = { version = "0.7.9", features = [ "alloc", "oid" ] }
+base64 = "0.22.1"
+
+[features]
+default = []
+trace = []
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
