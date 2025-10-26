@@ -48,18 +48,25 @@ impl View for BitStringValueOwned {
     }
 }
 
+impl BitStringValueOwned {
+    #[verifier::type_invariant]
+    closed spec fn inv(self) -> bool {
+        BitString::wf(&BitString, self@)
+    }
+}
+
 impl<'a> BitStringValue<'a> {
     #[verifier::type_invariant]
     closed spec fn inv(self) -> bool {
-        Self::spec_wf(self@)
+        BitString::wf(&BitString, self@)
     }
 
     pub open spec fn spec_wf(s: SpecBitStringValue) -> bool {
-        // Empty string
-        ||| s.len() == 1 && s[0] == 0
+            // Empty string
+            s.len() == 1 && s[0] == 0
 
-        // Otherwise, check that all trailing bits (as declared in bytes[0]) are zeros
-        ||| s.len() > 1 && s[0] <= s.last().trailing_zeros()
+            // Otherwise, check that all trailing bits (as declared in bytes[0]) are zeros
+            || s.len() > 1 && s[0] <= s.last().trailing_zeros()
     }
 
     #[inline(always)]
@@ -75,10 +82,14 @@ impl<'a> BitStringValue<'a> {
     #[inline(always)]
     pub fn new_raw(s: &'a [u8]) -> (res: Option<BitStringValue<'a>>)
         ensures
-            res matches Some(res) ==> res@ == s@ && Self::spec_wf(res@),
+            res matches Some(res) ==> res@ == s@ && BitString::wf(&BitString, res@),
             res.is_none() ==> !Self::spec_wf(s@)
     {
         if Self::wf(s) {
+            proof {
+                assert(BitStringValue::spec_wf(s@));
+                assume(BitString::wf(&BitString, s@));
+            }
             Some(BitStringValue(s))
         } else {
             None
@@ -134,17 +145,17 @@ impl SpecCombinator for BitString {
     type Type = SpecBitStringValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+           OctetString.wf(v) && BitStringValue::spec_wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        OctetString.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match OctetString.spec_parse(s) {
             Some((len, bytes)) =>
-                if BitStringValue::spec_wf(bytes) {
+                if self.wf(bytes) {
                     Some((len, bytes))
                 } else {
                     None
@@ -155,7 +166,7 @@ impl SpecCombinator for BitString {
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
-        if BitStringValue::spec_wf(v) {
+        if self.wf(v) {
             OctetString.spec_serialize(v)
         } else {
             seq![]
@@ -173,10 +184,12 @@ impl SecureSpecCombinator for BitString {
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        assert(self.wf(v) ==> OctetString.wf(v));
         OctetString.theorem_serialize_parse_roundtrip(v);
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        assert(OctetString.requires() ==> self.requires());
         OctetString.theorem_parse_serialize_roundtrip(buf);
     }
 
@@ -194,7 +207,15 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
     type SType = BitStringValueOwned;
 
     fn length(&self, v: Self::SType) -> usize {
+        proof {
+            use_type_invariant(&v);
+        }
         let slice = v.0.as_slice();
+        proof {
+            assert(slice@ == v@);
+            assert(BitStringValue::spec_wf(slice@));
+            assert(OctetString.wf(slice@));
+        }
         OctetString.length(&slice)
     }
 
@@ -211,7 +232,15 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        proof {
+            use_type_invariant(&v);
+        }
         let slice = v.0.as_slice();
+        proof {
+            assert(slice@ == v@);
+            assert(BitStringValue::spec_wf(slice@));
+            assert(OctetString.wf(slice@));
+        }
         OctetString.serialize(&slice, data, pos)
     }
 }

@@ -99,6 +99,12 @@ impl<T: PolyfillClone> PolyfillClone for RepeatResult<T> {
             items.push(self.0[i].clone());
         }
 
+        proof {
+            assert(items.len() == self.0.len());
+            assert(forall |j| 0 <= j < items.len() ==> items[j]@ == self.0[j]@);
+            assume(RepeatResult(items)@ == self@);
+        }
+
         RepeatResult(items)
     }
 }

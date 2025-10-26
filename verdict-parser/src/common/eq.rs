@@ -56,7 +56,7 @@ macro_rules! impl_polyfill_eq_for_slice_vec {
                             }
                         }
 
-                        assert(self@ =~= other@);
+                        assert(verus_builtin::ext_equal(self@, other@));
 
                         true
                     }

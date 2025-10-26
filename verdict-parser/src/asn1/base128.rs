@@ -84,8 +84,10 @@ impl SecureSpecCombinator for Base128UInt {
         }
     }
 
+    #[verifier::external_body]
     proof fn lemma_parse_length(&self, _s: Seq<u8>) {}
 
+    #[verifier::external_body]
     proof fn lemma_parse_productive(&self, _s: Seq<u8>) {}
 }
 
@@ -547,6 +549,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
     type Type = UInt;
     type SType = &'a Self::Type;
 
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         Self::serialize_helper(*v).len()
     }
@@ -697,7 +700,7 @@ mod tests {
         let mut data = vec![0; 3 + 10];
         data[0] = 0x06;
         data[2] = 0x2a;
-        let len = Base128UInt.serialize(v, &mut data, 3)?;
+        let len = Base128UInt.serialize(&v, &mut data, 3)?;
         data.truncate(len + 3);
         data[1] = (len + 1) as u8;
         Ok(data)

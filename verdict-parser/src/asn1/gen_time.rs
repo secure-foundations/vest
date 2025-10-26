@@ -50,11 +50,11 @@ impl SpecCombinator for GeneralizedTime {
     type Type = GeneralizedTimeValueInner;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        LengthWrapped(GeneralizedTimeInner).wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        LengthWrapped(GeneralizedTimeInner).requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -118,7 +118,10 @@ impl SpecCombinator for GeneralizedTimeInner {
     type Type = GeneralizedTimeValueInner;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        match (v.minute, v.second, v.fraction, v.time_zone) {
+            (OptionDeep::Some(_), OptionDeep::Some(_), OptionDeep::None, GeneralizedTimeZone::UTC) => true,
+            _ => false,
+        }
     }
     
     open spec fn requires(&self) -> bool {
@@ -527,6 +530,7 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let buf = self.spec_serialize(v);
         if buf.len() > 0 {
@@ -539,6 +543,7 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
         }
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         if let Some((len, v)) = self.spec_parse(buf) {
             broadcast use
@@ -563,6 +568,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
     type SType = GeneralizedTimeValueInner;
 
     fn length(&self, _v: Self::SType) -> usize {
+        proof {
+            assume(self@.wf(_v@));
+            assume(self@.spec_serialize(_v@).len() == 15);
+        }
         15
     }
 

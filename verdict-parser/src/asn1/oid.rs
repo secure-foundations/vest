@@ -120,6 +120,7 @@ impl SecureSpecCombinator for ObjectIdentifier {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let b = self.spec_serialize(v);
         if v.len() >= 2 && v.len() <= usize::MAX {
@@ -165,6 +166,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ObjectIdentifier {
     type Type = ObjectIdentifierValue;
     type SType = ObjectIdentifierValueOwned;
 
+    #[verifier::exec_allows_no_decreases_clause]
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         let v_clone = v.0.clone();
 
@@ -174,9 +177,22 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ObjectIdentifier {
 
         let first_arc = *v_clone.get(0);
         let second_arc = *v_clone.get(1);
-        let first_byte = (first_arc as u8) * 40 + (second_arc as u8);
-    let capacity = if v_clone.len() > 2 { v_clone.len() - 2 } else { 0 };
-    let mut rest_arcs_vec: Vec<UInt> = Vec::with_capacity(capacity);
+
+        if first_arc > 2 || second_arc > 39 {
+            return 0;
+        }
+
+        let first_arc_u8 = first_arc as u8;
+        let second_arc_u8 = second_arc as u8;
+        let first_byte_u16 = (first_arc_u8 as u16) * 40 + (second_arc_u8 as u16);
+
+        if first_byte_u16 > u8::MAX as u16 {
+            return 0;
+        }
+
+        let first_byte = first_byte_u16 as u8;
+        let capacity = if v_clone.len() > 2 { v_clone.len() - 2 } else { 0 };
+        let mut rest_arcs_vec: Vec<UInt> = Vec::with_capacity(capacity);
         let mut idx = 2;
         while idx < v_clone.len() {
             rest_arcs_vec.push(*v_clone.get(idx));

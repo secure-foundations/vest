@@ -27,11 +27,11 @@ impl<T: SpecCombinator> SpecCombinator for ExplicitTag<T> {
     type Type = T::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        self.1.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        self.1.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {

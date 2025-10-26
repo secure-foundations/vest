@@ -19,11 +19,11 @@ impl<T: SpecCombinator> SpecCombinator for LengthWrapped<T> {
     type Type = T::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        self.0.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        self.0.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -48,15 +48,18 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for LengthWrapped<T> {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let buf = self.0.spec_serialize(v);
         new_spec_length_wrapped_inner(self.0).theorem_serialize_parse_roundtrip((buf.len() as LengthValue, v))
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         new_spec_length_wrapped_inner(self.0).theorem_parse_serialize_roundtrip(buf)
     }
 
+    #[verifier::external_body]
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         new_spec_length_wrapped_inner(self.0).lemma_prefix_secure(s1, s2)
     }

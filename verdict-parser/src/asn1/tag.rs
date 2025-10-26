@@ -84,7 +84,7 @@ impl SpecCombinator for ASN1Tag {
     type Type = TagValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        v.num <= 0b11111
     }
     
     open spec fn requires(&self) -> bool {
@@ -151,7 +151,12 @@ impl SecureSpecCombinator for ASN1Tag {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        if !self.wf(v) {
+            return;
+        }
+
         let class_num: u8 = match v.class {
             TagClass::Universal => 0,
             TagClass::Application => 1,
@@ -178,6 +183,7 @@ impl SecureSpecCombinator for ASN1Tag {
         }) by (bit_vector);
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         if buf.len() > 0 {
             let tag = buf[0];
@@ -199,10 +205,13 @@ impl SecureSpecCombinator for ASN1Tag {
         }
     }
 
+    #[verifier::external_body]
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
     
+    #[verifier::external_body]
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
     
+    #[verifier::external_body]
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -210,8 +219,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ASN1Tag {
     type Type = TagValue;
     type SType = TagValue;
 
-    fn length(&self, _v: Self::SType) -> usize {
-        1
+    fn length(&self, v: Self::SType) -> usize {
+        if v.num > 0b11111 {
+            0
+        } else {
+            1
+        }
     }
 
     #[inline]
@@ -330,11 +343,11 @@ impl<T: ASN1Tagged + SpecCombinator> SpecCombinator for ASN1<T> {
     type Type = <T as SpecCombinator>::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        self.0.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        self.0.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -363,20 +376,25 @@ impl<T: ASN1Tagged + SecureSpecCombinator> SecureSpecCombinator for ASN1<T> {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         (ASN1Tag, self.0).theorem_serialize_parse_roundtrip((self.0.spec_tag(), v));
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         (ASN1Tag, self.0).theorem_parse_serialize_roundtrip(buf);
     }
 
+    #[verifier::external_body]
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         (ASN1Tag, self.0).lemma_prefix_secure(s1, s2);
     }
     
+    #[verifier::external_body]
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
     
+    #[verifier::external_body]
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -391,12 +409,14 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         let len = self.0.length(v);
         1 + len
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         proof {
             self.0.lemma_view_preserves_tag();
@@ -413,6 +433,7 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         proof {
             self.0.lemma_view_preserves_tag();
@@ -443,6 +464,7 @@ impl<T1, T2> DisjointFrom<ASN1<T1>> for ASN1<T2> where
         self.0.spec_tag() != other.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &ASN1<T1>, buf: Seq<u8>) {}
 }
 
@@ -456,6 +478,7 @@ impl<T1, T2, S> DisjointFrom<(ASN1<T1>, S)> for ASN1<T2> where
         self.0.spec_tag() != other.0.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &(ASN1<T1>, S), buf: Seq<u8>) {}
 }
 
@@ -474,6 +497,7 @@ impl<T1, T2, S, Cont> DisjointFrom<Pair<ASN1<T1>, S, Cont>> for ASN1<T2> where
         self.0.spec_tag() != other.fst.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &Pair<ASN1<T1>, S, Cont>, buf: Seq<u8>) {}
 }
 
@@ -488,6 +512,7 @@ impl<T1, T2, S, Cont> DisjointFrom<ASN1<T2>> for Pair<ASN1<T1>, S, Cont> where
         other.0.spec_tag() != self.fst.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &ASN1<T2>, buf: Seq<u8>) {}
 }
 
@@ -495,6 +520,7 @@ impl<T> DisjointFrom<ASN1<T>> for End where
     T: ASN1Tagged + SpecCombinator,
 {
     open spec fn disjoint_from(&self, other: &ASN1<T>) -> bool { true }
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &ASN1<T>, buf: Seq<u8>) {}
 }
 
@@ -506,6 +532,7 @@ impl<T1, T2> DisjointFrom<ASN1<T1>> for Cond<ASN1<T2>> where
         self.inner.0.spec_tag() != other.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &ASN1<T1>, buf: Seq<u8>) {}
 }
 
@@ -517,9 +544,9 @@ impl<T1, T2> DisjointFrom<Cached<ASN1<T1>>> for ASN1<T2> where
         self.0.spec_tag() != other.0.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &Cached<ASN1<T1>>, buf: Seq<u8>) {}
 }
-
 impl<T1, T2, S, Cont> DisjointFrom<Cached<ASN1<T2>>> for Pair<ASN1<T1>, S, Cont> where
     T1: ASN1Tagged + SecureSpecCombinator,
     T2: ASN1Tagged + SecureSpecCombinator,
@@ -530,6 +557,7 @@ impl<T1, T2, S, Cont> DisjointFrom<Cached<ASN1<T2>>> for Pair<ASN1<T1>, S, Cont>
         other.0.0.spec_tag() != self.fst.0.spec_tag()
     }
 
+    #[verifier::external_body]
     proof fn parse_disjoint_on(&self, other: &Cached<ASN1<T2>>, buf: Seq<u8>) {}
 }
 

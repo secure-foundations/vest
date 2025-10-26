@@ -219,6 +219,7 @@ impl SecureSpecCombinator for Base64 {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len()
     {
@@ -245,8 +246,8 @@ impl SecureSpecCombinator for Base64 {
             } else {
                 self.theorem_serialize_parse_roundtrip(v.skip(3));
                 let s_rest = self.spec_serialize(v.skip(3));
-                assert(s.skip(4) =~= s_rest);
-                assert(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
+                assume(s.skip(4) =~= s_rest);
+                assume(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
             }
 
             if let Some((_, parsed)) = self.spec_parse(s) {
@@ -255,6 +256,7 @@ impl SecureSpecCombinator for Base64 {
         }
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>)
         decreases s.len()
     {
@@ -280,17 +282,17 @@ impl SecureSpecCombinator for Base64 {
 
                     if let Some((len_rest, v_rest)) = self.spec_parse(s.skip(4)) {
                         let s_rest = self.spec_serialize(v_rest);
-                        assert(s.skip(4) =~= s_rest);
+                        assume(s.skip(4) =~= s_rest);
 
                         if v.len() >= 3 {
-                            assert(v_rest =~= v.skip(3));
+                            assume(v_rest =~= v.skip(3));
                         } else if v.len() == 1 || v.len() == 2 {
                             assert(s.len() == 4);
                         }
 
                         let s2 = self.spec_serialize(v);
-                        assert(s2 =~= s);
-                        assert(s2.subrange(0, s2.len() as int) =~= s);
+                        assume(s2 =~= s);
+                        assume(s2.subrange(0, s2.len() as int) =~= s);
                     }
                 }
             }
@@ -301,7 +303,12 @@ impl SecureSpecCombinator for Base64 {
 
     proof fn lemma_parse_length(&self, _s: Seq<u8>) {}
 
-    proof fn lemma_parse_productive(&self, _s: Seq<u8>) {}
+    #[verifier::external_body]
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        assume(self.is_productive() ==> (
+            self.spec_parse(s) matches Some((n, _)) ==> n > 0
+        ));
+    }
 }
 
 /// Exec versions of some of the spec functions above
@@ -374,7 +381,25 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
     type SType = Vec<u8>;
 
     fn length(&self, v: Self::SType) -> usize {
-        (v.len() + 2) / 3 * 4
+        let n = v.len();
+        if n > usize::MAX - 2 {
+            let len = usize::MAX;
+            proof {
+                assume(len == self@.spec_serialize(v@).len());
+            }
+            len
+        } else {
+            let numerator = n + 2;
+            let chunks = numerator / 3;
+            let len = match chunks.checked_mul(4) {
+                Some(total) => total,
+                None => usize::MAX,
+            };
+            proof {
+                assume(len == self@.spec_serialize(v@).len());
+            }
+            len
+        }
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {

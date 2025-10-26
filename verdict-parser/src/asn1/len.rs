@@ -111,7 +111,9 @@ impl SecureSpecCombinator for Length {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         if s1.len() > 0 {
             let bytes = (s1[0] - 0x80) as UInt;
-            VarUInt(bytes as usize).lemma_prefix_secure(s1.drop_first(), s2);
+            if bytes as usize <= uint_size!() {
+                VarUInt(bytes as usize).lemma_prefix_secure(s1.drop_first(), s2);
+            }
             assert((s1 + s2).drop_first() =~= s1.drop_first() + s2);
         }
     }
@@ -127,10 +129,42 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Length {
 
     fn length(&self, v: Self::SType) -> usize {
         if v < 0x80 {
-            1
+            let res = 1usize;
+            proof {
+                assert(self@.spec_serialize(v).len() == 1)
+                    by {
+                        assert(self@.spec_serialize(v) == seq![v as u8]);
+                    };
+            }
+            res
         } else {
             let bytes = min_num_bytes_unsigned_exec(v as VarUIntResult);
-            (1 + bytes) as usize
+            let res = (1 + bytes) as usize;
+            proof {
+                lemma_min_num_bytes_unsigned(v as VarUIntResult);
+
+                assert(0 < bytes <= uint_size!()) by {
+                    assert(is_min_num_bytes_unsigned(v as VarUIntResult, bytes));
+                };
+
+                let var_uint = VarUInt(bytes as usize);
+                assert(var_uint.wf()) by {
+                    assert(bytes as usize <= uint_size!());
+                };
+                assert(var_uint.in_bound(v as VarUIntResult)) by {
+                    assert(is_min_num_bytes_unsigned(v as VarUIntResult, bytes));
+                };
+
+                var_uint.lemma_serialize_ok_len(v as VarUIntResult);
+                let buf = var_uint.spec_serialize(v as VarUIntResult);
+                assert(buf.len() == bytes as int);
+
+                assert(self@.spec_serialize(v).len() == (1 + bytes) as int)
+                    by {
+                        assert(self@.spec_serialize(v) == seq![(0x80 + bytes) as u8] + buf);
+                    };
+            }
+            res
         }
     }
 
@@ -146,6 +180,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Length {
         }
 
         let bytes = (s[0] - 0x80) as UInt;
+
+        if bytes as usize > uint_size!() {
+            return Err(ParseError::Other("Invalid length encoding".to_string()));
+        }
 
         let (len, v) = VarUInt(bytes as usize).parse(slice_drop_first(s))?;
 
