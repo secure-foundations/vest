@@ -28,14 +28,14 @@ impl SpecCombinator for IA5String {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         Refined {
             inner: UTF8String,
             predicate: IA5StringPred,
         }.spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         Refined {
             inner: UTF8String,
             predicate: IA5StringPred,
@@ -48,7 +48,7 @@ impl SecureSpecCombinator for IA5String {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -80,10 +80,13 @@ impl SecureSpecCombinator for IA5String {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IA5String {
     type Type = IA5StringValue<'a>;
-    type SType = IA5StringValueOwned;
+    type SType = <UTF8String as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
     fn length(&self, v: Self::SType) -> usize {
-        v.len()
+        Refined {
+            inner: UTF8String,
+            predicate: IA5StringPred,
+        }.length(v)
     }
 
     #[inline(always)]
@@ -120,13 +123,13 @@ impl IA5StringPred {
     }
 }
 
-impl SpecPred for IA5StringPred {
+impl SpecPred<Seq<char>> for IA5StringPred {
     closed spec fn spec_apply(&self, s: &Seq<char>) -> bool {
         forall |i| 0 <= i < s.len() ==> #[trigger] Self::wf_char(s[i])
     }
 }
 
-impl Pred for IA5StringPred {
+impl Pred<&str> for IA5StringPred {
     fn apply(&self, s: &&str) -> (res: bool)
     {
         let len = s.unicode_len();
@@ -153,7 +156,7 @@ mod tests {
     fn serialize_ia5_string(v: &str) -> Result<Vec<u8>, SerializeError> {
         let mut data = vec![0; v.len() + 10];
         data[0] = 0x16; // Prepend the tag byte
-        let len = IA5String.serialize(v, &mut data, 1)?;
+        let len = IA5String.serialize(&v, &mut data, 1)?;
         data.truncate(len + 1);
         Ok(data)
     }

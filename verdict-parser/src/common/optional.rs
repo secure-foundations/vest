@@ -29,7 +29,7 @@ impl<C1, C2> SpecCombinator for Optional<C1, C2> where
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     {
         if self.1.disjoint_from(&self.0) {
             if let Some((n, (v1, v2))) = (self.0, self.1).spec_parse(s) {
@@ -44,7 +44,7 @@ impl<C1, C2> SpecCombinator for Optional<C1, C2> where
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     {
         if self.1.disjoint_from(&self.0) {
             match v {
@@ -65,7 +65,7 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
         C1::is_prefix_secure() && C2::is_prefix_secure()
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -105,8 +105,9 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
 impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
     C1: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
     C2: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <C1 as View>::V: SecureSpecCombinator,
-    <C2 as View>::V: SecureSpecCombinator + DisjointFrom<<C1 as View>::V>,
+    <C1 as View>::V: SecureSpecCombinator<Type = <<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V>,
+    <C2 as View>::V: SecureSpecCombinator<Type = <<C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V>
+        + DisjointFrom<<C1 as View>::V>,
 {
     type Type = OptionalValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
     type SType = OptionalValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;
@@ -130,8 +131,8 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
 
         // TODO: why do we need this?
         assert(res matches Ok((n, v)) ==> {
-            &&& self@.spec_parse(s@) is Ok
-            &&& self@.spec_parse(s@) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
+            &&& self@.spec_parse(s@) is Some
+            &&& self@.spec_parse(s@) matches Some((m, w)) ==> n == m && v@ == w && n <= s@.len()
         });
 
         res
@@ -144,7 +145,7 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
             PairValue(OptionDeep::None, v2) => self.1.serialize(v2, data, pos),
         }?;
 
-        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+    assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
 
         Ok(len)
     }

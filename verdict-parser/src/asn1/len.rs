@@ -21,7 +21,7 @@ impl SpecCombinator for Length {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     {
         if s.len() == 0 {
             None
@@ -47,7 +47,7 @@ impl SpecCombinator for Length {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     {
         if v < 0x80 {
             seq![v as u8]
@@ -65,7 +65,7 @@ impl SecureSpecCombinator for Length {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 

@@ -9,7 +9,9 @@ verus! {
 /// works better
 pub type Wrapped<C> = Mapped<C, IdentityMapper<C>>;
 
-pub open spec fn spec_new_wrapped<C: for<'a> Combinator<'a>>(c: C) -> Wrapped<C> where
+pub open spec fn spec_new_wrapped<C>(c: C) -> Wrapped<C>
+where
+    C: for<'a> Combinator<'a, &'a [u8], Vec<u8>>,
     C::V: SecureSpecCombinator,
 {
     Mapped {
@@ -18,7 +20,9 @@ pub open spec fn spec_new_wrapped<C: for<'a> Combinator<'a>>(c: C) -> Wrapped<C>
     }
 }
 
-pub fn new_wrapped<C: for<'a> Combinator<'a>>(c: C) -> Wrapped<C> where
+pub fn new_wrapped<C>(c: C) -> Wrapped<C>
+where
+    C: for<'a> Combinator<'a, &'a [u8], Vec<u8>>,
     C::V: SecureSpecCombinator,
 {
     Mapped {
@@ -88,7 +92,7 @@ macro_rules! wrap_combinator {
     ($vis:vis struct $name:ident $({ $($field_vis:vis $field_name:ident: $field_type:ty),* $(,)? })?: $inner_type:ty = $inner_expr:expr ;) => {
         wrap_combinator! {
            $vis struct $name $({ $($field_vis $field_name: $field_type),* })?: $inner_type =>
-                spec <<$inner_type as View>::V as SpecCombinator>::SpecResult,
+                spec <<$inner_type as View>::V as SpecCombinator>::Type,
                 exec<'a> <$inner_type as Combinator>::Result<'a>,
                 owned <$inner_type as Combinator>::Owned,
             = $inner_expr;
@@ -197,7 +201,7 @@ macro_rules! wrap_combinator_impls {
                     true // sound since it's checked in check_valid_inner_combinator
                 }
                 
-                spec fn is_productive() -> bool {
+                open spec fn is_productive(&self) -> bool {
                     true
                 }
 

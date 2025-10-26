@@ -57,11 +57,11 @@ impl SpecCombinator for GeneralizedTime {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         LengthWrapped(GeneralizedTimeInner).spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         LengthWrapped(GeneralizedTimeInner).spec_serialize(v)
     }
 }
@@ -71,7 +71,7 @@ impl SecureSpecCombinator for GeneralizedTime {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -125,7 +125,7 @@ impl SpecCombinator for GeneralizedTimeInner {
         true
     }
 
-    spec fn spec_parse(&self, v: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, v: Seq<u8>) -> Option<(int, Self::Type)> {
         spec_let_some!(
             year = four_chars_to_u16(v[0], v[1], v[2], v[3]);
             month = two_chars_to_u8(v[4], v[5]);
@@ -137,7 +137,7 @@ impl SpecCombinator for GeneralizedTimeInner {
             // which is YYYYMMDDHHMMSSZ
             {{
                 /* if v.len() == 10 {
-                    Ok((v.len() as usize, GeneralizedTimeValueInner {
+                    Some((v.len() as int, GeneralizedTimeValueInner {
                         year: year,
                         month: month,
                         day: day,
@@ -151,7 +151,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     spec_let_some!(
                         minute = two_chars_to_u8(v[10], v[11]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -167,7 +167,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         minute = two_chars_to_u8(v[10], v[11]);
                         second = two_chars_to_u8(v[12], v[13]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -184,7 +184,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         second = two_chars_to_u8(v[12], v[13]);
                         fraction = four_chars_to_u16(zero_char!(), v[15], v[16], v[17]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -196,7 +196,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         })) }}
                     )
                 } else if v.len() == 11 && v[10] == 'Z' as u8 {
-                    Ok((v.len() as usize, GeneralizedTimeValueInner {
+                    Some((v.len() as int, GeneralizedTimeValueInner {
                         year: year,
                         month: month,
                         day: day,
@@ -210,7 +210,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                     spec_let_some!(
                         minute = two_chars_to_u8(v[10], v[11]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -226,7 +226,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         minute = two_chars_to_u8(v[10], v[11]);
                         second = two_chars_to_u8(v[12], v[13]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -243,7 +243,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         second = two_chars_to_u8(v[12], v[13]);
                         fraction = four_chars_to_u16(zero_char!(), v[15], v[16], v[17]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -259,7 +259,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         off_hour = two_chars_to_u8(v[11], v[12]);
                         off_minute = two_chars_to_u8(v[13], v[14]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -280,7 +280,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         off_hour = two_chars_to_u8(v[13], v[14]);
                         off_minute = two_chars_to_u8(v[15], v[16]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -302,7 +302,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         off_hour = two_chars_to_u8(v[15], v[16]);
                         off_minute = two_chars_to_u8(v[17], v[18]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -325,7 +325,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         off_hour = two_chars_to_u8(v[19], v[20]);
                         off_minute = two_chars_to_u8(v[21], v[22]);
 
-                        {{ Ok((v.len() as usize, GeneralizedTimeValueInner {
+                        {{ Some((v.len() as int, GeneralizedTimeValueInner {
                             year: year,
                             month: month,
                             day: day,
@@ -347,7 +347,7 @@ impl SpecCombinator for GeneralizedTimeInner {
         )
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         spec_let_some!(
             year = u16_to_four_chars(v.year);
             month = u8_to_two_chars(v.month);
@@ -412,7 +412,7 @@ impl SpecCombinator for GeneralizedTimeInner {
                         spec_let_some!(
                             minute = u8_to_two_chars(minute);
                             second = u8_to_two_chars(second);
-                            {{ prefix + seq![minute.0, minute.1, second.0, second.1, 'Z' as u8] }}
+                            {{ Some(prefix + seq![minute.0, minute.1, second.0, second.1, 'Z' as u8]) }}
                         )
                     },
 
@@ -511,10 +511,10 @@ impl SpecCombinator for GeneralizedTimeInner {
                     //     )
                     // },
 
-                    _ => seq![],
+                    _ => Some(seq![]),
                 }
             }}
-        )
+        ).unwrap_or(seq![])
     }
 }
 
@@ -523,7 +523,7 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
         false
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -631,7 +631,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
         );
 
         if res.is_ok() {
-            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
         }
 
         res
@@ -640,7 +640,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
 
 /// Conversion between u8 (< 100) and two ASCII chars
 #[verifier::opaque]
-closed spec fn spec_four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> Option<u16> {
+pub closed spec fn spec_four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> Option<u16> {
     if b1 >= zero_char!() && b1 <= nine_char!() &&
        b2 >= zero_char!() && b2 <= nine_char!() &&
        b3 >= zero_char!() && b3 <= nine_char!() &&
@@ -652,7 +652,7 @@ closed spec fn spec_four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> Option<
 }
 
 #[verifier::opaque]
-closed spec fn spec_u16_to_four_chars(v: u16) -> Option<(u8, u8, u8, u8)> {
+pub closed spec fn spec_u16_to_four_chars(v: u16) -> Option<(u8, u8, u8, u8)> {
     if v >= 10000 {
         None
     } else {
@@ -713,7 +713,7 @@ broadcast proof fn lemma_u16_to_four_chars_iso(v: u16)
 }
 
 #[verifier::when_used_as_spec(spec_four_chars_to_u16)]
-fn four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> (res: Option<u16>)
+pub fn four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> (res: Option<u16>)
     ensures
         res matches Some(res) ==> {
             &&& spec_four_chars_to_u16(b1, b2, b3, b4) matches Some(res2)
@@ -733,7 +733,7 @@ fn four_chars_to_u16(b1: u8, b2: u8, b3: u8, b4: u8) -> (res: Option<u16>)
 }
 
 #[verifier::when_used_as_spec(spec_u16_to_four_chars)]
-fn u16_to_four_chars(v: u16) -> (res: Option<(u8, u8, u8, u8)>)
+pub fn u16_to_four_chars(v: u16) -> (res: Option<(u8, u8, u8, u8)>)
     ensures
         res matches Some(res) ==> {
             &&& spec_u16_to_four_chars(v) matches Some(res2)

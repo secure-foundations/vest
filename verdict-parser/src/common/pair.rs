@@ -24,14 +24,14 @@ impl<C1, C2> SpecCombinator for Pair<C1, C2> where
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match (self.0, self.1).spec_parse(s) {
             Some((n, v)) => Some((n, PairValue(v.0, v.1))),
             None => None,
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         (self.0, self.1).spec_serialize((v.0, v.1))
     }
 }
@@ -44,7 +44,7 @@ impl<C1, C2> SecureSpecCombinator for Pair<C1, C2> where
         C1::is_prefix_secure() && C2::is_prefix_secure()
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -68,8 +68,8 @@ impl<C1, C2> SecureSpecCombinator for Pair<C1, C2> where
 impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Pair<C1, C2> where
     C1: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
     C2: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <C1 as View>::V: SecureSpecCombinator,
-    <C2 as View>::V: SecureSpecCombinator,
+    <C1 as View>::V: SecureSpecCombinator<Type = <<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V>,
+    <C2 as View>::V: SecureSpecCombinator<Type = <<C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V>,
 {
     type Type = PairValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
     type SType = PairValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;

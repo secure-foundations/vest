@@ -29,7 +29,7 @@ impl SpecCombinator for Base128UInt {
     }
     
     /// A wrapper around the *_helper version but first find the length of the first arc
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, UInt)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, UInt)>
     {
         match Self::find_first_arc(s) {
             Some(len) => {
@@ -42,13 +42,17 @@ impl SpecCombinator for Base128UInt {
         }
     }
 
-    spec fn spec_serialize(&self, v: UInt) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: UInt) -> Seq<u8> {
         Self::spec_serialize_helper(v, true)
     }
 }
 
 impl SecureSpecCombinator for Base128UInt {
     open spec fn is_prefix_secure() -> bool {
+        true
+    }
+
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -79,11 +83,15 @@ impl SecureSpecCombinator for Base128UInt {
             assert(s1.take(len) == (s1 + s2).take(len));
         }
     }
+
+    proof fn lemma_parse_length(&self, _s: Seq<u8>) {}
+
+    proof fn lemma_parse_productive(&self, _s: Seq<u8>) {}
 }
 
 impl Base128UInt {
     /// last_byte is true iff s[-1] is the last byte (which must exist and have the highest bit set to 0)
-    closed spec fn spec_parse_helper(s: Seq<u8>, last_byte: bool) -> Option<UInt>
+    pub closed spec fn spec_parse_helper(s: Seq<u8>, last_byte: bool) -> Option<UInt>
         decreases s.len()
     {
         if s.len() == 0 {
@@ -121,7 +129,7 @@ impl Base128UInt {
 
     /// Serialize v in base-128 encoding
     /// last_byte is true iff the encoding should have the highest bit of the last byte set to 0
-    closed spec fn spec_serialize_helper(v: UInt, last_byte: bool) -> Seq<u8>
+    pub closed spec fn spec_serialize_helper(v: UInt, last_byte: bool) -> Seq<u8>
         decreases v via Self::spec_serialize_decreases
     {
         if v == 0 {
@@ -139,7 +147,7 @@ impl Base128UInt {
         }
     }
 
-    closed spec fn find_first_arc(s: Seq<u8>) -> Option<int>
+    pub open spec fn find_first_arc(s: Seq<u8>) -> Option<int>
         decreases s.len()
     {
         if s.len() == 0 {
@@ -605,7 +613,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
                     assert(prefix.drop_last().take(i + 1) == s@.take(i + 1));
                     Self::lemma_spec_parse_helper_error_prop(prefix.drop_last(), i + 1);
                 }
-                return Err(ParseError::SizeOverflow);
+                return Err(ParseError::Other("Size overflow".to_string()));
             }
 
             v = v << 7 | take_low_7_bits!(s[i]) as UInt;
@@ -616,7 +624,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
 
         if v > n_bit_max_unsigned!(8 * uint_size!() - 7) {
             assert(Self::spec_parse_helper(prefix, true).is_none());
-            return Err(ParseError::SizeOverflow);
+            return Err(ParseError::Other("Size overflow".to_string()));
         }
 
         // Add the last byte
@@ -628,7 +636,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let v = *v;
         if pos >= data.len() {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         // For 0, we just emit a single byte
@@ -653,7 +661,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base128UInt {
         let end = if let Some(end) = pos.checked_add(rest.len()) {
             end
         } else {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         };
         if end > data.len() - 1 {
             return Err(SerializeError::InsufficientBuffer);

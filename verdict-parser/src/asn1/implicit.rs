@@ -34,21 +34,21 @@ impl<T: SpecCombinator> SpecCombinator for ImplicitTag<T> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.1.spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.1.spec_serialize(v)
     }
 }
 
-impl<T: SecureSpecCombinator> SecureSpecCombinator for ImplicitTag<T> {
+impl<C: SecureSpecCombinator + SpecCombinator> SecureSpecCombinator for ImplicitTag<C> {
     open spec fn is_prefix_secure() -> bool {
-        T::is_prefix_secure()
+        true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -70,8 +70,12 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ImplicitTag<T> {
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ImplicitTag<T> where
-    T: ASN1Tagged + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <T as View>::V: SecureSpecCombinator + ASN1Tagged,
+    T: ASN1Tagged
+        + SpecCombinator
+        + SecureSpecCombinator
+        + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type> + ASN1Tagged,
+    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type>,
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;

@@ -24,7 +24,7 @@ impl SpecCombinator for Null {
         true
     }
     
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, NullValue)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, NullValue)> {
         if s.len() >= 1 && s[0] == 0x00 {
             Some((1, NullValue))
         } else {
@@ -32,7 +32,7 @@ impl SpecCombinator for Null {
         }
     }
 
-    spec fn spec_serialize(&self, v: NullValue) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: NullValue) -> Seq<u8> {
         seq![ 0x00 ]
     }
 }
@@ -42,7 +42,7 @@ impl SecureSpecCombinator for Null {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 

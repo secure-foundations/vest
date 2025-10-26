@@ -35,7 +35,7 @@ impl SpecCombinator for VarUInt {
     }
 
     /// Parse the first `self.0` bytes of `s` as an unsigned integer in big-endian
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, VarUIntResult)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, VarUIntResult)>
         decreases self.0
     {
         if !self.wf() || self.0 > s.len() {
@@ -52,7 +52,7 @@ impl SpecCombinator for VarUInt {
     }
 
     /// Serialize `v` as a big-endian integer with `self.0` bytes
-    spec fn spec_serialize(&self, v: VarUIntResult) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: VarUIntResult) -> Seq<u8>
         decreases self.0
     {
         if !self.wf() || !self.in_bound(v) {
@@ -134,7 +134,7 @@ impl SecureSpecCombinator for VarUInt {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -259,7 +259,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if self.0 > s.len() || self.0 > uint_size!() {
-            return Err(ParseError::SizeOverflow);
+            return Err(ParseError::Other("Size overflow".to_string()));
         }
 
         proof {
@@ -324,7 +324,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
         let len = self.0;
 
         if len > uint_size!() {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         // Size overflow or not enough space to store results
@@ -334,7 +334,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
 
         // v is too large (phrased this way to avoid shift underflow)
         if (len > 0 && v > n_byte_max_unsigned!(len)) || (len == 0 && v != 0) {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         let ghost original_data = data@;
@@ -359,7 +359,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
                 data@ =~= seq_splice(
                     original_data,
                     (pos + i) as usize,
-                    Self((len - i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - i)).unwrap(),
+                    Self((len - i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - i)),
                 ),
             decreases i
         {
@@ -387,8 +387,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
                 Self((len - i) as usize).lemma_serialize_ok(v & n_byte_max_unsigned!(len - i));
                 Self((len - i) as usize).lemma_serialize_ok_len(v & n_byte_max_unsigned!(len - i));
 
-                let old_suffix = Self((len - old_i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - old_i)).unwrap();
-                let suffix = Self((len - i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - i)).unwrap();
+                let old_suffix = Self((len - old_i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - old_i));
+                let suffix = Self((len - i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - i));
 
                 assert(suffix.drop_first() =~= old_suffix) by {
                     assert(
@@ -457,7 +457,7 @@ impl SpecCombinator for VarInt {
         self.to_var_uint().wf()
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, VarIntResult)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, VarIntResult)>
     {
         match self.to_var_uint().spec_parse(s) {
             None => None,
@@ -465,7 +465,7 @@ impl SpecCombinator for VarInt {
         }
     }
 
-    spec fn spec_serialize(&self, v: VarIntResult) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: VarIntResult) -> Seq<u8>
     {
         // Test if v can be fit into a self.0-byte signed integer
         if n_byte_min_signed!(self.0) <= v && v <= n_byte_max_signed!(self.0) {
@@ -481,7 +481,7 @@ impl SecureSpecCombinator for VarInt {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -538,7 +538,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
     #[inline(always)]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         if self.0 > uint_size!() {
-            return Err(ParseError::SizeOverflow);
+            return Err(ParseError::Other("Size overflow".to_string()));
         }
 
         if self.0 > 0 {
@@ -566,7 +566,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         if self.0 > uint_size!() {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         if pos > usize::MAX - uint_size!() || data.len() < pos + self.0 {
@@ -590,7 +590,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
 
         // Check if v is within bounds
         if v < n_byte_min_signed!(self.0) || v > n_byte_max_signed!(self.0) {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         VarUInt(self.0).serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0), data, pos)

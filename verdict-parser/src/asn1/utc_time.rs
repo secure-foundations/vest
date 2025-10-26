@@ -48,11 +48,11 @@ impl SpecCombinator for UTCTime {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         LengthWrapped(UTCTimeInner).spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         LengthWrapped(UTCTimeInner).spec_serialize(v)
     }
 }
@@ -62,7 +62,7 @@ impl SecureSpecCombinator for UTCTime {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -121,7 +121,7 @@ macro_rules! spec_let_some {
             if let Some($var) = $opt {
                 spec_let_some!($($rest_var = $rest_opt;)* { $body })
             } else {
-                Err(())
+                None
             }
         }
     };
@@ -155,7 +155,7 @@ impl SpecCombinator for UTCTimeInner {
         true
     }
 
-    spec fn spec_parse(&self, v: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, v: Seq<u8>) -> Option<(int, Self::Type)> {
         spec_let_some!(
             year = two_chars_to_u8(v[0], v[1]);
             month = two_chars_to_u8(v[2], v[3]);
@@ -251,7 +251,7 @@ impl SpecCombinator for UTCTimeInner {
         )
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         spec_let_some!(
             year = if 1950 <= v.year && v.year <= 2049 {
                 u8_to_two_chars((v.year % 100) as u8)
@@ -267,20 +267,20 @@ impl SpecCombinator for UTCTimeInner {
                 match (v.second, v.time_zone) {
                     // YYMMDDhhmmZ
                     (OptionDeep::None, UTCTimeZone::UTC) =>
-                        seq![
+                        Some(seq![
                             year.0, year.1,
                             month.0, month.1,
                             day.0, day.1,
                             hour.0, hour.1,
                             minute.0, minute.1,
                             'Z' as u8,
-                        ],
+                        ]),
 
                     // YYMMDDhhmmssZ
                     (OptionDeep::Some(second), UTCTimeZone::UTC) =>
                         spec_let_some!(
                             second = u8_to_two_chars(second);
-                            {{ seq![
+                            {{ Some(seq![
                                 year.0, year.1,
                                 month.0, month.1,
                                 day.0, day.1,
@@ -288,7 +288,7 @@ impl SpecCombinator for UTCTimeInner {
                                 minute.0, minute.1,
                                 second.0, second.1,
                                 'Z' as u8
-                            ]}}
+                            ])}}
                         ),
 
                     // YYMMDDhhmm+hhmm
@@ -298,7 +298,7 @@ impl SpecCombinator for UTCTimeInner {
                         spec_let_some!(
                             off_hour = u8_to_two_chars(off_hour);
                             off_minute = u8_to_two_chars(off_minute);
-                            {{ seq![
+                            {{ Some(seq![
                                 year.0, year.1,
                                 month.0, month.1,
                                 day.0, day.1,
@@ -307,7 +307,7 @@ impl SpecCombinator for UTCTimeInner {
                                 if let UTCTimeZone::UTCPlus(..) = v.time_zone { '+' as u8 } else { '-' as u8 },
                                 off_hour.0, off_hour.1,
                                 off_minute.0, off_minute.1
-                            ]}}),
+                            ])}}),
 
                     // YYMMDDhhmmss+hhmm
                     // YYMMDDhhmmss-hhmm
@@ -317,7 +317,7 @@ impl SpecCombinator for UTCTimeInner {
                             second = u8_to_two_chars(second);
                             off_hour = u8_to_two_chars(off_hour);
                             off_minute = u8_to_two_chars(off_minute);
-                            {{ seq![
+                            {{ Some(seq![
                                 year.0, year.1,
                                 month.0, month.1,
                                 day.0, day.1,
@@ -327,11 +327,11 @@ impl SpecCombinator for UTCTimeInner {
                                 if let UTCTimeZone::UTCPlus(..) = v.time_zone { '+' as u8 } else { '-' as u8 },
                                 off_hour.0, off_hour.1,
                                 off_minute.0, off_minute.1
-                            ]}}
+                            ])}}
                         ),
                 }
             }}
-        )
+        ).unwrap_or(seq![])
     }
 }
 
@@ -340,7 +340,7 @@ impl SecureSpecCombinator for UTCTimeInner {
         false
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -367,29 +367,6 @@ impl SecureSpecCombinator for UTCTimeInner {
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
     
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
-}
-
-impl SecureSpecCombinator for UTCTimeInner {
-    open spec fn is_prefix_secure() -> bool {
-        false
-    }
-
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult) {
-        if let Ok(buf) = self.spec_serialize(v) {
-            broadcast use lemma_two_chars_to_u8_iso, lemma_u8_to_two_chars_iso;
-            assert(self.spec_parse(buf).unwrap().1 =~= v);
-        }
-    }
-
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        if let Ok((len, v)) = self.spec_parse(buf) {
-            broadcast use lemma_two_chars_to_u8_iso, lemma_u8_to_two_chars_iso;
-            assert(self.spec_serialize(v).unwrap() =~= buf);
-            assert(buf.subrange(0, len as int) =~= buf);
-        }
-    }
-
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
 }
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTCTimeInner {
@@ -613,7 +590,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTCTimeInner {
         );
 
         if res.is_ok() {
-            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
         }
 
         res

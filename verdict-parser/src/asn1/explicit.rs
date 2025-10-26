@@ -34,11 +34,11 @@ impl<T: SpecCombinator> SpecCombinator for ExplicitTag<T> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         LengthWrapped(self.1).spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         LengthWrapped(self.1).spec_serialize(v)
     }
 }
@@ -48,7 +48,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ExplicitTag<T> {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -70,9 +70,12 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ExplicitTag<T> {
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ExplicitTag<T> where
-    T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <T as View>::V: SecureSpecCombinator,
-    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillClone,
+    T: SpecCombinator
+        + SecureSpecCombinator
+        + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
+    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;

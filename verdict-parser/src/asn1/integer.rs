@@ -26,7 +26,7 @@ impl SpecCombinator for Integer {
 
     /// Same as new_spec_integer_inner(), but filters out tuples (n, v)
     /// where v is *not* the minimum number of bytes required to represent v
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_integer_inner().spec_parse(s) {
             Some((len, (n, v))) => {
                 if is_min_num_bytes_signed(v, n as VarUIntResult) {
@@ -39,7 +39,7 @@ impl SpecCombinator for Integer {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         new_spec_integer_inner().spec_serialize((min_num_bytes_signed(v) as LengthValue, v))
     }
 }
@@ -49,7 +49,7 @@ impl SecureSpecCombinator for Integer {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -107,20 +107,36 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Integer {
 /// and returns a VarInt combinator that reads `l` bytes
 struct IntegerCont;
 
-impl Continuation for IntegerCont {
+impl View for IntegerCont {
+    type V = spec_fn(LengthValue) -> VarInt;
+
+    closed spec fn view(&self) -> Self::V {
+        |i: LengthValue| VarInt(i as usize)
+    }
+}
+
+impl Continuation<POrSType<&LengthValue, LengthValue>> for IntegerCont {
     type Output = VarInt;
 
     #[inline(always)]
-    fn apply<'a>(&self, i: LengthValue) -> (o: Self::Output) {
-        VarInt(i as usize)
+    fn apply<'a>(&self, i: POrSType<&LengthValue, LengthValue>) -> (o: Self::Output) {
+        let val = match i {
+            POrSType::P(v) => *v,
+            POrSType::S(v) => v,
+        };
+        VarInt(val as usize)
     }
 
-    closed spec fn requires<'a>(&self, i: LengthValue) -> bool {
+    closed spec fn requires<'a>(&self, i: POrSType<&LengthValue, LengthValue>) -> bool {
         true
     }
 
-    closed spec fn ensures<'a>(&self, i: LengthValue, o: Self::Output) -> bool {
-        o == VarInt(i as usize)
+    closed spec fn ensures<'a>(&self, i: POrSType<&LengthValue, LengthValue>, o: Self::Output) -> bool {
+        let val = match i {
+            POrSType::P(v) => *v,
+            POrSType::S(v) => v,
+        };
+        o == VarInt(val as usize)
     }
 }
 
@@ -130,7 +146,7 @@ impl Continuation for IntegerCont {
 type SpecIntegerInner = SpecDepend<Length, VarInt>;
 type IntegerInner = Depend<Length, VarInt, IntegerCont>;
 
-closed spec fn new_spec_integer_inner() -> SpecIntegerInner {
+pub closed spec fn new_spec_integer_inner() -> SpecIntegerInner {
     Pair::spec_new(Length, |l| VarInt(l as usize))
 }
 

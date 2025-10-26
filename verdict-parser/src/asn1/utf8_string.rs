@@ -25,7 +25,7 @@ impl SpecCombinator for UTF8String {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match Length.spec_parse(s) {
             Some((n, l)) => {
                 if n + l <= usize::MAX && n + l <= s.len() {
@@ -41,7 +41,7 @@ impl SpecCombinator for UTF8String {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let s = spec_serialize_utf8(v);
         let buf = Length.spec_serialize(s.len() as LengthValue);
         if buf.len() + s.len() <= usize::MAX {
@@ -57,7 +57,7 @@ impl SecureSpecCombinator for UTF8String {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -103,15 +103,17 @@ impl SecureSpecCombinator for UTF8String {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
     type Type = UTF8StringValue<'a>;
-    type SType = UTF8StringValue<'a>;
+    type SType = &'a Self::Type;
 
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
-        let s = str_to_utf8(v);
+        let s = str_to_utf8(*v);
         let length_len = Length.length(s.len() as LengthValue);
         length_len + s.len()
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (n, l) = Length.parse(s)?;
 
@@ -125,21 +127,22 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
                 Err(ParseError::UnexpectedEndOfInput)
             }
         } else {
-            Err(ParseError::SizeOverflow)
+            Err(ParseError::Other("Size overflow".to_string()))
         }
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        let s = str_to_utf8(v);
+        let s = str_to_utf8(*v);
         let n = Length.serialize(s.len() as LengthValue, data, pos)?;
 
         if pos.checked_add(n).is_none() {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         if (pos + n).checked_add(s.len()).is_none() {
-            return Err(SerializeError::SizeOverflow);
+            return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
         if pos + n + s.len() >= data.len() {
@@ -175,7 +178,7 @@ mod test {
     fn serialize_utf8_string(v: &str) -> Result<Vec<u8>, SerializeError> {
         let mut data = vec![0; v.len() + 10];
         data[0] = 0x0c; // Prepend the tag byte
-        let len = UTF8String.serialize(v, &mut data, 1)?;
+        let len = UTF8String.serialize(&v, &mut data, 1)?;
         data.truncate(len + 1);
         Ok(data)
     }
