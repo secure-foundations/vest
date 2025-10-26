@@ -27,7 +27,7 @@ impl<C1, C2> SpecCombinator for Default<C1::Type, C1, C2> where
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     {
         if self.2.disjoint_from(&self.1) {
             if let Some((n, (v1, v2))) = (self.1, self.2).spec_parse(s) {
@@ -46,7 +46,7 @@ impl<C1, C2> SpecCombinator for Default<C1::Type, C1, C2> where
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     {
         if self.2.disjoint_from(&self.1) {
             if self.0 == v.0 {
@@ -68,7 +68,7 @@ impl<C1, C2> SecureSpecCombinator for Default<C1::Type, C1, C2> where
         C1::is_prefix_secure() && C2::is_prefix_secure()
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -106,10 +106,14 @@ impl<C1, C2> SecureSpecCombinator for Default<C1::Type, C1, C2> where
 impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Default<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType, C1, C2> where
     C1: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
     C2: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType: PolyfillClone,
+    <C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType: PolyfillClone + PolyfillEq,
     <C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillEq + From<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType>,
-    <C1 as View>::V: SecureSpecCombinator,
-    <C2 as View>::V: SecureSpecCombinator + DisjointFrom<<C1 as View>::V>,
+    <C1 as View>::V: SecureSpecCombinator<
+        Type = <<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V
+    >,
+    <C2 as View>::V: SecureSpecCombinator<
+        Type = <<C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View>::V
+    > + DisjointFrom<<C1 as View>::V>,
 {
     type Type = DefaultValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
     type SType = DefaultValue<<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::SType, <C2 as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;
@@ -138,8 +142,8 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Default<<C1 as Combinator
 
         // TODO: why do we need this?
         assert(res matches Ok((n, v)) ==> {
-            &&& self@.spec_parse(s@) is Ok
-            &&& self@.spec_parse(s@) matches Ok((m, w)) ==> n == m && v@ == w && n <= s@.len()
+            &&& self@.spec_parse(s@) is Some
+            &&& self@.spec_parse(s@) matches Some((m, w)) ==> n == m && v@ == w && n <= s@.len()
         });
 
         res
@@ -153,13 +157,13 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Default<<C1 as Combinator
             (&self.1, &self.2).serialize((v.0, v.1), data, pos)?
         };
 
-        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+    assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
 
         Ok(len)
     }
 }
 
-impl<T1, T2, T3> DisjointFrom<T1> for Default<T2::SpecResult, T2, T3> where
+impl<T1, T2, T3> DisjointFrom<T1> for Default<T2::Type, T2, T3> where
     T1: SecureSpecCombinator,
     T2: SecureSpecCombinator,
     T3: SecureSpecCombinator,

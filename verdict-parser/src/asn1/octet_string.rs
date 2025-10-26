@@ -20,14 +20,14 @@ impl SpecCombinator for OctetString {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_octet_string_inner().spec_parse(s) {
             Some((len, (_, v))) => Some((len, v)),
             None => None,
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         new_spec_octet_string_inner().spec_serialize((v.len() as LengthValue, v))
     }
 }
@@ -37,7 +37,7 @@ impl SecureSpecCombinator for OctetString {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -60,10 +60,11 @@ impl SecureSpecCombinator for OctetString {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OctetString {
     type Type = &'a [u8];
-    type SType = &'a [u8];
+    type SType = &'a Self::Type;
 
     fn length(&self, v: Self::SType) -> usize {
-        new_octet_string_inner().length((v.len() as LengthValue, v))
+        let bytes = *v;
+        new_octet_string_inner().length((bytes.len() as LengthValue, &bytes))
     }
 
     #[inline(always)]
@@ -74,12 +75,21 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OctetString {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        new_octet_string_inner().serialize((v.len() as LengthValue, v), data, pos)
+        let bytes = *v;
+        new_octet_string_inner().serialize((bytes.len() as LengthValue, &bytes), data, pos)
     }
 }
 
 /// The function |i| Variable(i)
 struct BytesCont;
+
+impl View for BytesCont {
+    type V = spec_fn(LengthValue) -> bytes::Variable;
+
+    open spec fn view(&self) -> Self::V {
+        new_spec_octet_string_inner().snd
+    }
+}
 
 impl Continuation<POrSType<&LengthValue, LengthValue>> for BytesCont {
     type Output = bytes::Variable;
@@ -89,11 +99,7 @@ impl Continuation<POrSType<&LengthValue, LengthValue>> for BytesCont {
     }
 
     open spec fn ensures(&self, deps: POrSType<&LengthValue, LengthValue>, o: Self::Output) -> bool {
-        let i = match deps {
-            POrSType::P(i) => *i,
-            POrSType::S(i) => i,
-        };
-        &&& o == bytes::Variable(i as usize)
+        o@ == (self@)(deps@)
     }
 
     fn apply(&self, deps: POrSType<&LengthValue, LengthValue>) -> (o: Self::Output) {
@@ -109,7 +115,7 @@ impl Continuation<POrSType<&LengthValue, LengthValue>> for BytesCont {
 type SpecOctetStringInner = SpecDepend<Length, bytes::Variable>;
 type OctetStringInner = Depend<Length, bytes::Variable, BytesCont>;
 
-closed spec fn new_spec_octet_string_inner() -> SpecOctetStringInner {
+pub closed spec fn new_spec_octet_string_inner() -> SpecOctetStringInner {
     Pair::spec_new(Length, |l| bytes::Variable(l as usize))
 }
 
@@ -131,7 +137,7 @@ mod test {
     fn serialize_octet_string(v: &[u8]) -> Result<Vec<u8>, SerializeError> {
         let mut data = vec![0; v.len() + 10];
         data[0] = 0x04; // Prepend the tag byte
-        let len = OctetString.serialize(v, &mut data, 1)?;
+    let len = OctetString.serialize(&v, &mut data, 1)?;
         data.truncate(len + 1);
         Ok(data)
     }

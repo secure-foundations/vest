@@ -22,7 +22,7 @@ impl SpecCombinator for Boolean {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() < 2 {
             None
         } else if s[0] == 0x01 && s[1] == 0xff {
@@ -34,7 +34,7 @@ impl SpecCombinator for Boolean {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         if v {
             seq![ 0x01, 0xff ]
         } else {
@@ -48,7 +48,7 @@ impl SecureSpecCombinator for Boolean {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 

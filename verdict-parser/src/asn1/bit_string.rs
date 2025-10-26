@@ -141,7 +141,7 @@ impl SpecCombinator for BitString {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match OctetString.spec_parse(s) {
             Some((len, bytes)) =>
                 if BitStringValue::spec_wf(bytes) {
@@ -154,7 +154,7 @@ impl SpecCombinator for BitString {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         if BitStringValue::spec_wf(v) {
             OctetString.spec_serialize(v)
         } else {
@@ -168,7 +168,7 @@ impl SecureSpecCombinator for BitString {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -194,7 +194,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
     type SType = BitStringValueOwned;
 
     fn length(&self, v: Self::SType) -> usize {
-        OctetString.length(v)
+        let slice = v.0.as_slice();
+        OctetString.length(&slice)
     }
 
     #[inline(always)]
@@ -210,10 +211,8 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        proof {
-            use_type_invariant(&v);
-        }
-        OctetString.serialize(v.0.as_slice(), data, pos)
+        let slice = v.0.as_slice();
+        OctetString.serialize(&slice, data, pos)
     }
 }
 
@@ -244,7 +243,8 @@ mod test {
     fn serialize_bit_string(v: BitStringValue) -> Result<Vec<u8>, SerializeError> {
         let mut data = vec![0; v.bytes().len() + 10];
         data[0] = 0x03; // Prepend the tag byte
-        let len = BitString.serialize(v, &mut data, 1)?;
+        let owned = BitStringValueOwned(v.0.to_vec());
+        let len = BitString.serialize(owned, &mut data, 1)?;
         data.truncate(len + 1);
         Ok(data)
     }

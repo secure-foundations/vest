@@ -28,14 +28,14 @@ impl SpecCombinator for PrintableString {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
         }.spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
@@ -48,7 +48,7 @@ impl SecureSpecCombinator for PrintableString {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -80,10 +80,13 @@ impl SecureSpecCombinator for PrintableString {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrintableString {
     type Type = PrintableStringValue<'a>;
-    type SType = PrintableStringValueOwned;
+    type SType = <UTF8String as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
     fn length(&self, v: Self::SType) -> usize {
-        v.len()
+        Refined {
+            inner: UTF8String,
+            predicate: PrintableStringPred,
+        }.length(v)
     }
 
     #[inline(always)]
@@ -137,13 +140,13 @@ impl PrintableStringPred {
     }
 }
 
-impl SpecPred for PrintableStringPred {
+impl SpecPred<Seq<char>> for PrintableStringPred {
     closed spec fn spec_apply(&self, s: &Seq<char>) -> bool {
         forall |i| 0 <= i < s.len() ==> #[trigger] Self::wf_char(s[i])
     }
 }
 
-impl Pred for PrintableStringPred {
+impl Pred<&str> for PrintableStringPred {
     fn apply(&self, s: &&str) -> (res: bool)
     {
         let len = s.unicode_len();

@@ -9,29 +9,30 @@ verus! {
 #[derive(View)]
 pub struct Cached<T>(pub T);
 
-pub struct CachedValue<'a, C: Combinator<'a>> where
+pub struct CachedValue<'a, C: Combinator<'a, &'a [u8], Vec<u8>>> where
     C::V: SecureSpecCombinator,
+    C::Type: View<V = <<C as View>::V as SpecCombinator>::Type>,
 {
-    inner: C::Result<'a>,
+    inner: C::Type,
     combinator: Ghost<C>,
     serialized: &'a [u8],
 }
 
 /// View of CachedValue discards the serialization
-impl<'a, C: Combinator<'a>> View for CachedValue<'a, C> where
+impl<'a, C: Combinator<'a, &'a [u8], Vec<u8>>> View for CachedValue<'a, C> where
     C::V: SecureSpecCombinator,
-    for<'b> C::Result<'b>: View,
+    C::Type: View<V = <<C as View>::V as SpecCombinator>::Type>,
 {
-    type V = <C::Result<'a> as View>::V;
+    type V = <C::Type as View>::V;
 
     closed spec fn view(&self) -> Self::V {
         self.inner@
     }
 }
 
-impl<'a, C: Combinator<'a>> PolyfillClone for CachedValue<'a, C> where
+impl<'a, C: Combinator<'a, &'a [u8], Vec<u8>>> PolyfillClone for CachedValue<'a, C> where
     C::V: SecureSpecCombinator,
-    C::Result<'a>: PolyfillClone,
+    C::Type: PolyfillClone + View<V = <<C as View>::V as SpecCombinator>::Type>,
 {
     #[inline(always)]
     fn clone(&self) -> Self {
@@ -46,8 +47,9 @@ impl<'a, C: Combinator<'a>> PolyfillClone for CachedValue<'a, C> where
     }
 }
 
-impl<'a, C: Combinator<'a>> CachedValue<'a, C> where
+impl<'a, C: Combinator<'a, &'a [u8], Vec<u8>>> CachedValue<'a, C> where
     C::V: SecureSpecCombinator,
+    C::Type: View<V = <<C as View>::V as SpecCombinator>::Type>,
 {
     #[verifier::type_invariant]
     closed spec fn inv(self) -> bool {
@@ -55,7 +57,7 @@ impl<'a, C: Combinator<'a>> CachedValue<'a, C> where
     }
 
     #[inline(always)]
-    pub fn get(&self) -> (res: &C::Result<'a>)
+    pub fn get(&self) -> (res: &C::Type)
         ensures res@ == self@
     {
         &self.inner
@@ -70,7 +72,7 @@ impl<'a, C: Combinator<'a>> CachedValue<'a, C> where
     #[inline(always)]
     pub fn serialize(&self) -> (res: &[u8])
         requires forall |c1: C, c2: C| c1.view() == c2.view()
-        ensures forall |c: C| (#[trigger] c.view()).spec_serialize(self@) matches Ok(r) && r == res@
+        ensures forall |c: C| (#[trigger] c.view()).spec_serialize(self@) == res@
     {
         proof {
             use_type_invariant(self);
@@ -90,11 +92,11 @@ impl<T: SpecCombinator> SpecCombinator for Cached<T> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         self.0.spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.0.spec_serialize(v)
     }
 }
@@ -104,7 +106,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
         T::is_prefix_secure()
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -128,6 +130,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
     T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
     <T as View>::V: SecureSpecCombinator,
+    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <<T as View>::V as SpecCombinator>::Type>,
 {
     type Type = CachedValue<'a, T>;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
@@ -158,13 +161,12 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
 
 }
 
-impl<'a, C: Combinator<'a>> std::fmt::Debug for CachedValue<'a, C>
+impl<'a, C: Combinator<'a, &'a [u8], Vec<u8>>> std::fmt::Debug for CachedValue<'a, C>
 where
     C::V: SecureSpecCombinator,
-    C::Result<'a>: std::fmt::Debug,
+    C::Type: View<V = <<C as View>::V as SpecCombinator>::Type> + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.inner.fmt(f)
     }
 }
-

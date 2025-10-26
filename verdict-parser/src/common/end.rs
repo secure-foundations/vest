@@ -21,7 +21,7 @@ impl SpecCombinator for End {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() == 0 {
             Some((0, EndValue))
         } else {
@@ -29,7 +29,7 @@ impl SpecCombinator for End {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         seq![]
     }
 }
@@ -39,7 +39,7 @@ impl SecureSpecCombinator for End {
         false
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 

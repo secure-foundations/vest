@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::{Index, IndexMut};
 use vstd::prelude::*;
 
 verus! {
@@ -161,6 +162,26 @@ impl<T: View> VecDeep<T> {
             self@ =~= VecDeep(*res)@,
     {
         &self.0
+    }
+}
+
+impl<T> IntoIterator for VecDeep<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a VecDeep<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
 

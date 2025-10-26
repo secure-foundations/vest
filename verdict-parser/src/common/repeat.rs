@@ -31,7 +31,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
         decreases s.len()
     {
         if !C::is_prefix_secure() {
@@ -54,7 +54,7 @@ impl<C: SpecCombinator + SecureSpecCombinator> SpecCombinator for Repeat<C> {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
         decreases v.len()
     {
         if !C::is_prefix_secure() {
@@ -84,7 +84,7 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
         false
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -142,8 +142,9 @@ impl<C: SecureSpecCombinator> SecureSpecCombinator for Repeat<C> {
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
-impl<C: Combinator> Repeat<C> where
-    <C as View>::V: SecureSpecCombinator<SpecResult = <C::Owned as View>::V>,
+impl<C> Repeat<C> where
+    C: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <C as View>::V: SecureSpecCombinator<Type = <C::Owned as View>::V>,
 {
     pub open spec fn deep_view<'a>(v: &'a [C::Result<'a>]) -> Seq<<C::Owned as View>::V> {
         Seq::new(v.len() as nat, |i: int| v@[i]@)
@@ -215,7 +216,7 @@ impl<C: Combinator> Repeat<C> where
             if let Some(next_len) = len.checked_add(n1) {
                 self.serialize_helper(v, data, pos, next_len)
             } else {
-                Err(SerializeError::SizeOverflow)
+                Err(SerializeError::Other("Size overflow".to_string()))
             }
         } else {
             Err(SerializeError::RepeatEmptyElement)

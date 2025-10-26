@@ -116,11 +116,11 @@ impl SpecCombinator for BigInt {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         new_spec_big_int_inner().spec_parse(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         new_spec_big_int_inner().spec_serialize(v)
     }
 }
@@ -130,7 +130,7 @@ impl SecureSpecCombinator for BigInt {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -156,7 +156,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
     type SType = BigIntValue<'a>;
 
     fn length(&self, v: Self::SType) -> usize {
-        new_big_int_inner().length(v.0)
+        new_big_int_inner().length(&v.0)
     }
 
     #[inline(always)]
@@ -167,7 +167,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        new_big_int_inner().serialize(v.0, data, pos)
+        new_big_int_inner().serialize(&v.0, data, pos)
     }
 }
 
@@ -175,13 +175,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
 #[derive(View)]
 pub struct MinimalBigIntPred;
 
-impl SpecPred for MinimalBigIntPred {
+impl SpecPred<Seq<u8>> for MinimalBigIntPred {
     closed spec fn spec_apply(&self, i: &Seq<u8>) -> bool {
         BigIntValue::spec_wf(*i)
     }
 }
 
-impl Pred for MinimalBigIntPred {
+impl Pred<&[u8]> for MinimalBigIntPred {
     fn apply(&self, i: &&[u8]) -> (res: bool)
     {
         BigIntValue::wf(*i)

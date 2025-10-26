@@ -20,7 +20,6 @@ mod pair;  // Keep for PairValue type definition
 mod unreachable;
 mod vec_deep;
 mod vest;
-mod wrapped;
 
 pub use base64::*;
 pub use cached::*;
@@ -37,5 +36,4 @@ pub use pair::PairValue;  // Only export PairValue, not Pair (use vest's Pair)
 pub use unreachable::*;
 pub use vec_deep::*;
 pub use vest::*;  // This already exports Pair and Repeat from vest
-pub use wrapped::*;
 

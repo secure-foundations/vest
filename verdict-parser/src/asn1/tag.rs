@@ -91,7 +91,7 @@ impl SpecCombinator for ASN1Tag {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         if s.len() == 0 {
             None
         } else {
@@ -121,7 +121,7 @@ impl SpecCombinator for ASN1Tag {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let class: u8 = match v.class {
             TagClass::Universal => 0,
             TagClass::Application => 1,
@@ -147,7 +147,7 @@ impl SecureSpecCombinator for ASN1Tag {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -337,7 +337,7 @@ impl<T: ASN1Tagged + SpecCombinator> SpecCombinator for ASN1<T> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match (ASN1Tag, self.0).spec_parse(s) {
             Some((n, (tag, v))) =>
                 if tag == self.0.spec_tag() {
@@ -349,7 +349,7 @@ impl<T: ASN1Tagged + SpecCombinator> SpecCombinator for ASN1<T> {
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         (ASN1Tag, self.0).spec_serialize((self.0.spec_tag(), v))
     }
 }
@@ -359,7 +359,7 @@ impl<T: ASN1Tagged + SecureSpecCombinator> SecureSpecCombinator for ASN1<T> {
         T::is_prefix_secure()
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -381,8 +381,12 @@ impl<T: ASN1Tagged + SecureSpecCombinator> SecureSpecCombinator for ASN1<T> {
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
-    T: ASN1Tagged + for<'x> Combinator<'x, &'x [u8], Vec<u8>> + ViewWithASN1Tagged,
-    <T as View>::V: SecureSpecCombinator + ASN1Tagged,
+    T: ASN1Tagged
+        + SpecCombinator
+        + ViewWithASN1Tagged
+        + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type> + ASN1Tagged,
+    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type>,
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
@@ -422,10 +426,10 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
         let n2 = self.0.serialize(v, data, pos + n1)?;
 
         if n1 <= usize::MAX - n2 {
-            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
             Ok(n1 + n2)
         } else {
-            Err(SerializeError::SizeOverflow)
+            Err(SerializeError::Other("Size overflow".to_string()))
         }
     }
 }
@@ -460,26 +464,28 @@ impl<T1, T2, S> DisjointFrom<(ASN1<T1>, S)> for ASN1<T2> where
 // For this purpose, use Pair instead of the native tuple type
 
 /// Same as above, but uses a custom
-impl<T1, T2, S> DisjointFrom<Pair<ASN1<T1>, S>> for ASN1<T2> where
+impl<T1, T2, S, Cont> DisjointFrom<Pair<ASN1<T1>, S, Cont>> for ASN1<T2> where
     T1: ASN1Tagged + SecureSpecCombinator,
     T2: ASN1Tagged + SecureSpecCombinator,
     S: SecureSpecCombinator,
+    Pair<ASN1<T1>, S, Cont>: SpecCombinator,
 {
-    open spec fn disjoint_from(&self, other: &Pair<ASN1<T1>, S>) -> bool {
-        self.0.spec_tag() != other.0.0.spec_tag()
+    open spec fn disjoint_from(&self, other: &Pair<ASN1<T1>, S, Cont>) -> bool {
+        self.0.spec_tag() != other.fst.0.spec_tag()
     }
 
-    proof fn parse_disjoint_on(&self, other: &Pair<ASN1<T1>, S>, buf: Seq<u8>) {}
+    proof fn parse_disjoint_on(&self, other: &Pair<ASN1<T1>, S, Cont>, buf: Seq<u8>) {}
 }
 
 /// The other direction of the above
-impl<T1, T2, S> DisjointFrom<ASN1<T2>> for Pair<ASN1<T1>, S> where
+impl<T1, T2, S, Cont> DisjointFrom<ASN1<T2>> for Pair<ASN1<T1>, S, Cont> where
     T1: ASN1Tagged + SecureSpecCombinator,
     T2: ASN1Tagged + SecureSpecCombinator,
     S: SecureSpecCombinator,
+    Pair<ASN1<T1>, S, Cont>: SpecCombinator,
 {
     open spec fn disjoint_from(&self, other: &ASN1<T2>) -> bool {
-        other.0.spec_tag() != self.0.0.spec_tag()
+        other.0.spec_tag() != self.fst.0.spec_tag()
     }
 
     proof fn parse_disjoint_on(&self, other: &ASN1<T2>, buf: Seq<u8>) {}
@@ -514,13 +520,14 @@ impl<T1, T2> DisjointFrom<Cached<ASN1<T1>>> for ASN1<T2> where
     proof fn parse_disjoint_on(&self, other: &Cached<ASN1<T1>>, buf: Seq<u8>) {}
 }
 
-impl<T1, T2, S> DisjointFrom<Cached<ASN1<T2>>> for Pair<ASN1<T1>, S> where
+impl<T1, T2, S, Cont> DisjointFrom<Cached<ASN1<T2>>> for Pair<ASN1<T1>, S, Cont> where
     T1: ASN1Tagged + SecureSpecCombinator,
     T2: ASN1Tagged + SecureSpecCombinator,
     S: SecureSpecCombinator,
+    Pair<ASN1<T1>, S, Cont>: SpecCombinator,
 {
     open spec fn disjoint_from(&self, other: &Cached<ASN1<T2>>) -> bool {
-        other.0.0.spec_tag() != self.0.0.spec_tag()
+        other.0.0.spec_tag() != self.fst.0.spec_tag()
     }
 
     proof fn parse_disjoint_on(&self, other: &Cached<ASN1<T2>>, buf: Seq<u8>) {}

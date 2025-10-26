@@ -60,7 +60,7 @@ impl Base64 {
         (b1, b2, b3, b4)
     }
 
-    closed spec fn spec_parse_helper(s: Seq<u8>) -> Option<(int, Seq<u8>)>
+    pub closed spec fn spec_parse_helper(s: Seq<u8>) -> Option<(int, Seq<u8>)>
         decreases s.len()
     {
         if s.len() == 0 {
@@ -104,7 +104,7 @@ impl Base64 {
         }
     }
 
-    closed spec fn spec_serialize_helper(v: Seq<u8>) -> Seq<u8>
+    pub closed spec fn spec_serialize_helper(v: Seq<u8>) -> Seq<u8>
         decreases v.len()
     {
         if v.len() == 0 {
@@ -142,11 +142,11 @@ impl SpecCombinator for Base64 {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         Self::spec_parse_helper(s)
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let s = Self::spec_serialize_helper(v);
         if s.len() <= usize::MAX {
             s
@@ -215,31 +215,42 @@ impl SecureSpecCombinator for Base64 {
         false
     }
 
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::SpecResult)
+    open spec fn is_productive(&self) -> bool {
+        true
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len()
     {
         let empty: Seq<u8> = seq![];
 
         if v.len() == 0 {
-            assert(self.spec_serialize(v).unwrap() == empty);
-            assert(self.spec_parse(empty).unwrap() == (0usize, v));
+            let s = self.spec_serialize(v);
+            assert(s == empty);
+
+            if let Some((len, parsed)) = self.spec_parse(empty) {
+                assert(len == 0);
+                assert(parsed =~= v);
+            }
         } else {
-            if let Ok(s) = self.spec_serialize(v) {
-                broadcast use
-                    Base64::encode_spec_decode_6_bit_bytes,
-                    Base64::spec_encode_6_bit_bytes_range,
-                    Base64::decode_spec_encode_6_bit_bytes;
+            let s = self.spec_serialize(v);
 
-                if v.len() < 3 {
-                    assert(s.skip(4) == empty);
-                } else {
-                    self.theorem_serialize_parse_roundtrip(v.skip(3));
-                    let s_rest = self.spec_serialize(v.skip(3)).unwrap();
-                    assert(s.skip(4) =~= s_rest);
-                    assert(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
-                }
+            broadcast use
+                Base64::encode_spec_decode_6_bit_bytes,
+                Base64::spec_encode_6_bit_bytes_range,
+                Base64::decode_spec_encode_6_bit_bytes;
 
-                assert(self.spec_parse(s).unwrap().1 =~= v);
+            if v.len() < 3 {
+                assert(s.skip(4) == empty);
+            } else {
+                self.theorem_serialize_parse_roundtrip(v.skip(3));
+                let s_rest = self.spec_serialize(v.skip(3));
+                assert(s.skip(4) =~= s_rest);
+                assert(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
+            }
+
+            if let Some((_, parsed)) = self.spec_parse(s) {
+                assert(parsed =~= v);
             }
         }
     }
@@ -250,11 +261,15 @@ impl SecureSpecCombinator for Base64 {
         let empty: Seq<u8> = seq![];
 
         if s.len() == 0 {
-            assert(self.spec_parse(s).unwrap().1 == empty);
-            assert(self.spec_serialize(empty).unwrap() == s);
+            if let Some((_, parsed)) = self.spec_parse(s) {
+                assert(parsed == empty);
+            }
+
+            let serialized = self.spec_serialize(empty);
+            assert(serialized == s);
             assert(empty.subrange(0, 0) == empty);
         } else {
-            if let Ok((len, v)) = self.spec_parse(s) {
+            if let Some((len, v)) = self.spec_parse(s) {
                 broadcast use
                     Base64::encode_spec_decode_6_bit_bytes,
                     Base64::spec_encode_6_bit_bytes_range,
@@ -263,25 +278,30 @@ impl SecureSpecCombinator for Base64 {
                 if s.len() >= 4 {
                     self.theorem_parse_serialize_roundtrip(s.skip(4));
 
-                    let (len_rest, v_rest) = self.spec_parse(s.skip(4)).unwrap();
-                    let s_rest = self.spec_serialize(v_rest).unwrap();
-                    assert(s.skip(4) =~= s_rest);
+                    if let Some((len_rest, v_rest)) = self.spec_parse(s.skip(4)) {
+                        let s_rest = self.spec_serialize(v_rest);
+                        assert(s.skip(4) =~= s_rest);
 
-                    if v.len() >= 3 {
-                        assert(v_rest =~= v.skip(3));
-                    } else if v.len() == 1 || v.len() == 2 {
-                        assert(s.len() == 4);
+                        if v.len() >= 3 {
+                            assert(v_rest =~= v.skip(3));
+                        } else if v.len() == 1 || v.len() == 2 {
+                            assert(s.len() == 4);
+                        }
+
+                        let s2 = self.spec_serialize(v);
+                        assert(s2 =~= s);
+                        assert(s2.subrange(0, s2.len() as int) =~= s);
                     }
-
-                    let s2 = self.spec_serialize(v).unwrap();
-                    assert(s2 =~= s);
-                    assert(s2.subrange(0, s2.len() as int) =~= s);
                 }
             }
         }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
+
+    proof fn lemma_parse_length(&self, _s: Seq<u8>) {}
+
+    proof fn lemma_parse_productive(&self, _s: Seq<u8>) {}
 }
 
 /// Exec versions of some of the spec functions above
@@ -369,13 +389,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
                 0 <= i <= len,
                 len == s@.len(),
 
-                Self::spec_parse_helper(s@.skip(i as int)) matches Ok((_, rest)) ==> {
-                    &&& Self::spec_parse_helper(s@) matches Ok((_, final_out))
+                Self::spec_parse_helper(s@.skip(i as int)) matches Some((_, rest)) ==> {
+                    &&& Self::spec_parse_helper(s@) matches Some((_, final_out))
                     &&& final_out =~= out@ + rest
                 },
 
-                Self::spec_parse_helper(s@.skip(i as int)) is Err ==>
-                    Self::spec_parse_helper(s@) is Err,
+                Self::spec_parse_helper(s@.skip(i as int)) is None ==> 
+                    Self::spec_parse_helper(s@) is None,
             decreases len - i
         {
             assert(len - i == s@.skip(i as int).len());
@@ -447,11 +467,12 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
                 data@.len() == old(data)@.len(),
                 data@ =~= seq_splice(old(data)@, pos, data@.subrange(pos as int, pos + written)),
 
-                Self::spec_serialize_helper(v@.skip(i as int)) matches Ok(rest) ==> {
-                    &&& Self::spec_serialize_helper(v@) matches Ok(final_out)
-                    &&& final_out =~= data@.subrange(pos as int, pos + written) + rest
-                    &&& final_out.len() == written + rest.len()
-                },
+                Self::spec_serialize_helper(v@) =~=
+                    data@.subrange(pos as int, pos + written)
+                    + Self::spec_serialize_helper(v@.skip(i as int)),
+
+                Self::spec_serialize_helper(v@).len()
+                    == written + Self::spec_serialize_helper(v@.skip(i as int)).len(),
 
                 // Self::spec_serialize_helper(v@.skip(i as int)) is Err ==>
                 //     Self::spec_serialize_helper(v@) is Err,
@@ -489,7 +510,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
             written += 4;
         }
 
-        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
+        assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
 
         Ok(written)
     }

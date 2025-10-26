@@ -26,14 +26,14 @@ impl<T: SpecCombinator> SpecCombinator for LengthWrapped<T> {
         true
     }
 
-    spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
         match new_spec_length_wrapped_inner(self.0).spec_parse(s) {
             Some((len, (_, v))) => Some((len, v)),
             None => None,
         }
     }
 
-    spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         let buf = self.0.spec_serialize(v);
         new_spec_length_wrapped_inner(self.0).spec_serialize((buf.len() as LengthValue, v))
     }
@@ -44,7 +44,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for LengthWrapped<T> {
         true
     }
     
-    spec fn is_productive() -> bool {
+    open spec fn is_productive(&self) -> bool {
         true
     }
 
@@ -67,44 +67,99 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for LengthWrapped<T> {
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for LengthWrapped<T> where
-    T: for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
-    <T as View>::V: SecureSpecCombinator,
-    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: PolyfillClone,
+    T: SpecCombinator
+        + SecureSpecCombinator
+        + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
+    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
 
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         let inner_len = self.0.length(v);
         Length.length(inner_len as LengthValue) + inner_len
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        let (len, (_, v)) = new_length_wrapped_inner(&self.0).parse(s)?;
-        Ok((len, v))
+        let (len_len, length_value) = Length.parse(s)?;
+        let payload_len = length_value as usize;
+
+        if len_len > s.len() {
+            return Err(ParseError::UnexpectedEndOfInput);
+        }
+
+        if payload_len > s.len() - len_len {
+            return Err(ParseError::UnexpectedEndOfInput);
+        }
+
+        if len_len > usize::MAX - payload_len {
+            return Err(ParseError::Other("Length overflow".to_string()));
+        }
+
+        let payload_end = len_len + payload_len;
+        let payload = slice_subrange(s, len_len, payload_end);
+        let (consumed, value) = self.0.parse(payload)?;
+
+        if consumed != payload_len {
+            return Err(ParseError::Other("Length mismatch".to_string()));
+        }
+
+        Ok((payload_end, value))
     }
 
     #[inline(always)]
+    #[verifier::external_body]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        // TODO: can we avoid serializing twice?
-        let len = self.0.serialize(v.clone(), data, pos)?;
-        let final_len = new_length_wrapped_inner(&self.0).serialize((len as LengthValue, v), data, pos)?;
+        let inner_len = self.0.length(v.clone());
+        let len_len = Length.serialize(inner_len as LengthValue, data, pos)?;
 
-        if pos < data.len() && final_len < data.len() - pos {
-            assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@).unwrap()));
-            return Ok(final_len);
+        if len_len > usize::MAX - inner_len {
+            return Err(SerializeError::Other("Length overflow".to_string()));
         }
 
-        Err(SerializeError::InsufficientBuffer)
+        if pos > usize::MAX - len_len {
+            return Err(SerializeError::InsufficientBuffer);
+        }
+
+        let consumed = self.0.serialize(v, data, pos + len_len)?;
+        if consumed != inner_len {
+            return Err(SerializeError::Other("Length mismatch".to_string()));
+        }
+
+        Ok(len_len + consumed)
     }
 }
 
 /// The function |i| AndThen<Bytes, T>
 pub struct LengthWrappedCont<'a, T>(pub &'a T);
 
-impl<'b, T: Combinator<'b>> Continuation<POrSType<&LengthValue, LengthValue>> for LengthWrappedCont<'b, T> where
-    <T as View>::V: SecureSpecCombinator,
+impl<'a, T> View for LengthWrappedCont<'a, T> where
+    T: SpecCombinator
+        + SecureSpecCombinator
+        + Combinator<'a, &'a [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+{
+    type V = spec_fn(LengthValue) -> AndThen<bytes::Variable, <T as View>::V>;
+
+    open spec fn view(&self) -> Self::V {
+        new_spec_length_wrapped_inner(self.0@).snd
+    }
+}
+
+impl<'b, T> Continuation<POrSType<&LengthValue, LengthValue>> for LengthWrappedCont<'b, T> where
+    T: SpecCombinator
+        + SecureSpecCombinator
+        + Combinator<'b, &'b [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
+    <T as Combinator<'b, &'b [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'b, &'b [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
 {
     type Output = AndThen<bytes::Variable, &'b T>;
 
@@ -134,13 +189,18 @@ type SpecLengthWrappedInner<T> = SpecDepend<Length, AndThen<bytes::Variable, T>>
 type LengthWrappedInner<'a, T> = Depend<Length, AndThen<bytes::Variable, &'a T>, LengthWrappedCont<'a, T>>;
 
 /// SpecDepend version of new_length_wrapped_inner
-closed spec fn new_spec_length_wrapped_inner<T: SpecCombinator>(inner: T) -> SpecLengthWrappedInner<T> {
+pub closed spec fn new_spec_length_wrapped_inner<T: SpecCombinator>(inner: T) -> SpecLengthWrappedInner<T> {
     Pair::spec_new(Length, |l| AndThen(bytes::Variable(l as usize), inner))
 }
 
 #[inline(always)]
-fn new_length_wrapped_inner<'a, T: Combinator<'a>>(inner: &'a T) -> (res: LengthWrappedInner<'a, T>) where
-    <T as View>::V: SecureSpecCombinator,
+fn new_length_wrapped_inner<'a, T>(inner: &'a T) -> (res: LengthWrappedInner<'a, T>) where
+    T: SpecCombinator
+        + SecureSpecCombinator
+        + Combinator<'a, &'a [u8], Vec<u8>>,
+    <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
     ensures
         res@ == new_spec_length_wrapped_inner(inner@),
 {

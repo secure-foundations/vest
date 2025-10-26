@@ -86,4 +86,21 @@ impl<T1: PolyfillClone, T2: PolyfillClone> PolyfillClone for Either<T1, T2> {
     }
 }
 
+impl<T: PolyfillClone> PolyfillClone for RepeatResult<T> {
+    #[inline(always)]
+    fn clone(&self) -> Self {
+        let mut items: Vec<T> = Vec::with_capacity(self.0.len());
+
+        for i in 0..self.0.len()
+            invariant
+                items.len() == i,
+                forall |j| 0 <= j < i ==> items[j]@ == self.0[j]@,
+        {
+            items.push(self.0[i].clone());
+        }
+
+        RepeatResult(items)
+    }
+}
+
 }
