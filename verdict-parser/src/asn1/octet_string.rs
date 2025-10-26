@@ -13,11 +13,11 @@ impl SpecCombinator for OctetString {
     type Type = Seq<u8>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        new_spec_octet_string_inner().wf((v.len() as LengthValue, v))
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        new_spec_octet_string_inner().requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -34,11 +34,11 @@ impl SpecCombinator for OctetString {
 
 impl SecureSpecCombinator for OctetString {
     open spec fn is_prefix_secure() -> bool {
-        true
+        SpecOctetStringInner::is_prefix_secure()
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        new_spec_octet_string_inner().is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -53,9 +53,13 @@ impl SecureSpecCombinator for OctetString {
         new_spec_octet_string_inner().lemma_prefix_secure(s1, s2);
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        new_spec_octet_string_inner().lemma_parse_length(s);
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        new_spec_octet_string_inner().lemma_parse_productive(s);
+    }
 }
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OctetString {

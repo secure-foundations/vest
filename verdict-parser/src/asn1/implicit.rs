@@ -27,11 +27,11 @@ impl<T: SpecCombinator> SpecCombinator for ImplicitTag<T> {
     type Type = T::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        self.1.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        self.1.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -45,11 +45,11 @@ impl<T: SpecCombinator> SpecCombinator for ImplicitTag<T> {
 
 impl<C: SecureSpecCombinator + SpecCombinator> SecureSpecCombinator for ImplicitTag<C> {
     open spec fn is_prefix_secure() -> bool {
-        true
+        C::is_prefix_secure()
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        self.1.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -64,9 +64,13 @@ impl<C: SecureSpecCombinator + SpecCombinator> SecureSpecCombinator for Implicit
         self.1.lemma_prefix_secure(s1, s2)
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.1.lemma_parse_length(s)
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.1.lemma_parse_productive(s)
+    }
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ImplicitTag<T> where
@@ -79,6 +83,10 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ImplicitTag<T> where
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+
+    open spec fn ex_requires(&self) -> bool {
+        self.1.ex_requires()
+    }
 
     fn length(&self, v: Self::SType) -> usize {
         self.1.length(v)

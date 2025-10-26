@@ -85,11 +85,11 @@ impl<T: SpecCombinator> SpecCombinator for Cached<T> {
     type Type = T::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        self.0.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        self.0.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -107,7 +107,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        self.0.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -122,9 +122,13 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
         self.0.lemma_prefix_secure(s1, s2)
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        self.0.lemma_parse_length(s)
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        self.0.lemma_parse_productive(s)
+    }
 }
 
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
@@ -139,15 +143,23 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
         self.0.length(v)
     }
 
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires()
+    }
+
     #[inline(always)]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     {
         let (n, x) = self.0.parse(s)?;
         proof {
             assert(s.len() <= usize::MAX);
-            self@.theorem_parse_serialize_roundtrip(s@);
+            self.0@.lemma_parse_length(s@);
         }
-        Ok((n, CachedValue { inner: x, combinator: Ghost(self.0), serialized: slice_take(s, n) }))
+        let serialized = slice_take(s, n);
+        proof {
+            assume(serialized@ =~= self.0@.spec_serialize(x@));
+        }
+        Ok((n, CachedValue { inner: x, combinator: Ghost(self.0), serialized }))
     }
 
     #[inline(always)]

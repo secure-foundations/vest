@@ -11,7 +11,7 @@ impl SpecCombinator for Unreachable {
     type Type = ();
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        false
     }
     
     open spec fn requires(&self) -> bool {
@@ -33,7 +33,7 @@ impl SecureSpecCombinator for Unreachable {
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        false
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {

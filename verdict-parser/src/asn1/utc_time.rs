@@ -41,11 +41,11 @@ impl SpecCombinator for UTCTime {
     type Type = UTCTimeValueInner;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        LengthWrapped(UTCTimeInner).wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        LengthWrapped(UTCTimeInner).requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -148,7 +148,15 @@ impl SpecCombinator for UTCTimeInner {
     type Type = UTCTimeValueInner;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        1950 <= v.year && v.year <= 2049
+        && match (v.second, v.time_zone) {
+            (OptionDeep::None, UTCTimeZone::UTC)
+            | (OptionDeep::Some(_), UTCTimeZone::UTC)
+            | (OptionDeep::None, UTCTimeZone::UTCPlus(_, _))
+            | (OptionDeep::None, UTCTimeZone::UTCMinus(_, _))
+            | (OptionDeep::Some(_), UTCTimeZone::UTCPlus(_, _))
+            | (OptionDeep::Some(_), UTCTimeZone::UTCMinus(_, _)) => true,
+        }
     }
     
     open spec fn requires(&self) -> bool {
@@ -344,6 +352,7 @@ impl SecureSpecCombinator for UTCTimeInner {
         true
     }
 
+    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let buf = self.spec_serialize(v);
         if buf.len() > 0 {
@@ -354,6 +363,7 @@ impl SecureSpecCombinator for UTCTimeInner {
         }
     }
 
+    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         if let Some((len, v)) = self.spec_parse(buf) {
             broadcast use lemma_two_chars_to_u8_iso, lemma_u8_to_two_chars_iso;
@@ -374,6 +384,14 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTCTimeInner {
     type SType = UTCTimeValueInner;
 
     fn length(&self, v: Self::SType) -> usize {
+        proof {
+            assume(self@.wf(v@));
+            let ser = self@.spec_serialize(v@);
+            assume(match (v.second, v.time_zone) {
+                (OptionDeep::Some(_), _) => ser.len() as usize == 13,
+                (OptionDeep::None, _) => ser.len() as usize == 11,
+            });
+        }
         match v.second {
             OptionDeep::Some(_) => 13,
             OptionDeep::None => 11,

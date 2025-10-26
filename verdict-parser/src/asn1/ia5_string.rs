@@ -21,11 +21,11 @@ impl SpecCombinator for IA5String {
     type Type = SpecIA5StringValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: IA5StringPred }.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: IA5StringPred }.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -45,11 +45,11 @@ impl SpecCombinator for IA5String {
 
 impl SecureSpecCombinator for IA5String {
     open spec fn is_prefix_secure() -> bool {
-        true
+        Refined::<UTF8String, IA5StringPred>::is_prefix_secure()
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: IA5StringPred }.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -73,9 +73,19 @@ impl SecureSpecCombinator for IA5String {
         }.lemma_prefix_secure(s1, s2);
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        Refined {
+            inner: UTF8String,
+            predicate: IA5StringPred,
+        }.lemma_parse_length(s);
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        Refined {
+            inner: UTF8String,
+            predicate: IA5StringPred,
+        }.lemma_parse_productive(s);
+    }
 }
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IA5String {

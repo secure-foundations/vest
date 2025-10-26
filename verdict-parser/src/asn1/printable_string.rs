@@ -21,11 +21,11 @@ impl SpecCombinator for PrintableString {
     type Type = SpecPrintableStringValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: PrintableStringPred }.wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: PrintableStringPred }.requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -45,11 +45,11 @@ impl SpecCombinator for PrintableString {
 
 impl SecureSpecCombinator for PrintableString {
     open spec fn is_prefix_secure() -> bool {
-        true
+        Refined::<UTF8String, PrintableStringPred>::is_prefix_secure()
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        Refined { inner: UTF8String, predicate: PrintableStringPred }.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -73,9 +73,19 @@ impl SecureSpecCombinator for PrintableString {
         }.lemma_prefix_secure(s1, s2);
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        Refined {
+            inner: UTF8String,
+            predicate: PrintableStringPred,
+        }.lemma_parse_length(s);
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        Refined {
+            inner: UTF8String,
+            predicate: PrintableStringPred,
+        }.lemma_parse_productive(s);
+    }
 }
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrintableString {

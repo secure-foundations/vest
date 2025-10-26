@@ -109,11 +109,11 @@ impl SpecCombinator for BigInt {
     type Type = Seq<u8>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        new_spec_big_int_inner().wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        new_spec_big_int_inner().requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -127,11 +127,11 @@ impl SpecCombinator for BigInt {
 
 impl SecureSpecCombinator for BigInt {
     open spec fn is_prefix_secure() -> bool {
-        true
+        BigIntInner::is_prefix_secure()
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        new_spec_big_int_inner().is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
@@ -146,9 +146,13 @@ impl SecureSpecCombinator for BigInt {
         new_spec_big_int_inner().lemma_prefix_secure(s1, s2);
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        new_spec_big_int_inner().lemma_parse_length(s);
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        new_spec_big_int_inner().lemma_parse_productive(s);
+    }
 }
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
@@ -156,6 +160,9 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
     type SType = BigIntValue<'a>;
 
     fn length(&self, v: Self::SType) -> usize {
+        proof {
+            use_type_invariant(&v);
+        }
         new_big_int_inner().length(&v.0)
     }
 
@@ -167,6 +174,9 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        proof {
+            use_type_invariant(&v);
+        }
         new_big_int_inner().serialize(&v.0, data, pos)
     }
 }

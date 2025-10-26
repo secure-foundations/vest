@@ -22,11 +22,17 @@ impl<C1, C2> SpecCombinator for Optional<C1, C2> where
     type Type = PairValue<OptionDeep<C1::Type>, C2::Type>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        match v {
+            PairValue(OptionDeep::Some(v1), v2) => self.0.wf(v1) && self.1.wf(v2),
+            PairValue(OptionDeep::None, v2) => self.1.wf(v2),
+        }
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        C1::is_prefix_secure()
+            && self.0.requires()
+            && self.1.requires()
+            && self.1.disjoint_from(&self.0)
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
@@ -66,40 +72,78 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
     }
     
     open spec fn is_productive(&self) -> bool {
-        true
+        self.0.is_productive() && self.1.is_productive()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
-        match v {
-            PairValue(OptionDeep::Some(v1), v2) => {
-                (self.0, self.1).theorem_serialize_parse_roundtrip((v1, v2));
-            },
-            PairValue(OptionDeep::None, v2) => {
-                let buf = self.1.spec_serialize(v2);
-                if self.1.disjoint_from(&self.0) {
+        if self.requires() {
+            assert(self.0.requires());
+            assert(self.1.requires());
+            assert(self.1.disjoint_from(&self.0));
+            assert(C1::is_prefix_secure());
+            match v {
+                PairValue(OptionDeep::Some(v1), v2) => {
+                    (self.0, self.1).theorem_serialize_parse_roundtrip((v1, v2));
+                },
+                PairValue(OptionDeep::None, v2) => {
+                    let buf = self.1.spec_serialize(v2);
                     self.1.parse_disjoint_on(&self.0, buf);
-                }
-                self.1.theorem_serialize_parse_roundtrip(v2);
-            },
+                    self.1.theorem_serialize_parse_roundtrip(v2);
+                },
+            }
         }
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
-        (self.0, self.1).theorem_parse_serialize_roundtrip(buf);
-        self.1.theorem_parse_serialize_roundtrip(buf);
+        if self.requires() {
+            assert(self.0.requires());
+            assert(self.1.requires());
+            assert(self.1.disjoint_from(&self.0));
+            assert(C1::is_prefix_secure());
+            (self.0, self.1).theorem_parse_serialize_roundtrip(buf);
+            self.1.theorem_parse_serialize_roundtrip(buf);
+        }
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
-        if self.1.disjoint_from(&self.0) {
+        if self.requires() {
+            assert(self.0.requires());
+            assert(self.1.requires());
+            assert(self.1.disjoint_from(&self.0));
+            assert(C1::is_prefix_secure());
             self.1.parse_disjoint_on(&self.0, s1.add(s2));
             (self.0, self.1).lemma_prefix_secure(s1, s2);
             self.1.lemma_prefix_secure(s1, s2);
         }
     }
     
-    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if self.requires() {
+            assert(self.0.requires());
+            assert(self.1.requires());
+            assert(self.1.disjoint_from(&self.0));
+            assert(C1::is_prefix_secure());
+            if let Some((_, PairValue(OptionDeep::Some(_), _))) = self.spec_parse(s) {
+                (self.0, self.1).lemma_parse_length(s);
+            } else if let Some((_, PairValue(OptionDeep::None, _))) = self.spec_parse(s) {
+                self.1.lemma_parse_length(s);
+            }
+        }
+    }
     
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if self.requires() {
+            assert(self.0.requires());
+            assert(self.1.requires());
+            assert(self.1.disjoint_from(&self.0));
+            assert(C1::is_prefix_secure());
+            if let Some((_, PairValue(OptionDeep::Some(_), _))) = self.spec_parse(s) {
+                (self.0, self.1).lemma_parse_productive(s);
+            } else if let Some((_, PairValue(OptionDeep::None, _))) = self.spec_parse(s) {
+                self.1.lemma_parse_productive(s);
+            }
+        }
+    }
 }
 
 impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
@@ -119,23 +163,78 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
         }
     }
 
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires() && self.1.ex_requires()
+    }
+
     #[inline(always)]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-        let res = if let Ok((n, (v1, v2))) = (&self.0, &self.1).parse(s) {
-            Ok((n, PairValue(OptionDeep::Some(v1), v2)))
-        } else if let Ok((n, v2)) = self.1.parse(s) {
-            Ok((n, PairValue(OptionDeep::None, v2)))
-        } else {
-            Err(ParseError::OrdChoiceNoMatch)
-        };
+        let pair_res = (&self.0, &self.1).parse(s);
 
-        // TODO: why do we need this?
-        assert(res matches Ok((n, v)) ==> {
-            &&& self@.spec_parse(s@) is Some
-            &&& self@.spec_parse(s@) matches Some((m, w)) ==> n == m && v@ == w && n <= s@.len()
-        });
+        match pair_res {
+            Ok((n, (v1, v2))) => {
+                proof {
+                    assert(self@.requires());
+                    assert(self.1@.disjoint_from(&self.0@));
 
-        res
+                    let pair_view = (&self.0, &self.1)@;
+                    assert(pair_view.spec_parse(s@) == Some((n as int, (v1@, v2@))));
+
+                    let opt_spec = self@.spec_parse(s@);
+                    assert(opt_spec == Some((n as int, PairValue(OptionDeep::Some(v1@), v2@)))) by {
+                        assert(self.1@.disjoint_from(&self.0@));
+                        assert(pair_view.spec_parse(s@) == Some((n as int, (v1@, v2@))));
+                    };
+
+                    pair_view.lemma_parse_length(s@);
+                }
+
+                Ok((n, PairValue(OptionDeep::Some(v1), v2)))
+            }
+            Err(_) => {
+                match self.1.parse(s) {
+                    Ok((n, v2)) => {
+                        proof {
+                            assert(self@.requires());
+                            assert(self.1@.disjoint_from(&self.0@));
+
+                            let pair_view = (&self.0, &self.1)@;
+                            assert(pair_view.spec_parse(s@).is_none());
+
+                            let c2_spec = self.1@.spec_parse(s@);
+                            assert(c2_spec == Some((n as int, v2@)));
+
+                            let opt_spec = self@.spec_parse(s@);
+                            assert(opt_spec == Some((n as int, PairValue(OptionDeep::<
+                                <<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View
+                            >::V>::None, v2@)))) by {
+                                assert(self.1@.disjoint_from(&self.0@));
+                                assert(pair_view.spec_parse(s@).is_none());
+                                assert(c2_spec == Some((n as int, v2@)));
+                            };
+
+                            self.1@.lemma_parse_length(s@);
+                        }
+
+                        Ok((n, PairValue(OptionDeep::None, v2)))
+                    }
+                    Err(e) => {
+                        proof {
+                            assert(self@.requires());
+                            assert(self.1@.disjoint_from(&self.0@));
+
+                            let pair_view = (&self.0, &self.1)@;
+                            assert(pair_view.spec_parse(s@).is_none());
+                            let c2_spec = self.1@.spec_parse(s@);
+                            assert(c2_spec.is_none());
+                            assert(self@.spec_parse(s@).is_none());
+                        }
+
+                        Err(e)
+                    }
+                }
+            }
+        }
     }
 
     #[inline(always)]
@@ -144,6 +243,10 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
             PairValue(OptionDeep::Some(v1), v2) => (&self.0, &self.1).serialize((v1, v2), data, pos),
             PairValue(OptionDeep::None, v2) => self.1.serialize(v2, data, pos),
         }?;
+
+        proof {
+            assert(self@.requires());
+        }
 
     assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
 

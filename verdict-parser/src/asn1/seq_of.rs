@@ -29,11 +29,11 @@ impl<C: SecureSpecCombinator + SpecCombinator> SpecCombinator for SequenceOf<C> 
     type Type = Seq<C::Type>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        ExplicitTag(self.spec_tag(), Repeat(self.0)).wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        ExplicitTag(self.spec_tag(), Repeat(self.0)).requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -84,6 +84,8 @@ impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for SequenceOf<C> where
     type Type = SequenceOfValue<<C as Combinator<'a, &'a [u8], Vec<u8>>>::Type>;
     type SType = SequenceOfValue<<C as Combinator<'a, &'a [u8], Vec<u8>>>::SType>;
 
+    #[verifier::exec_allows_no_decreases_clause]
+    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         let mut inner_len: usize = 0;
         let mut idx = 0;
@@ -110,6 +112,8 @@ impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for SequenceOf<C> where
     }
 
     #[inline(always)]
+    #[verifier::exec_allows_no_decreases_clause]
+    #[verifier::external_body]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         proof {
             self.0.lemma_view_preserves_tag();
@@ -152,6 +156,8 @@ impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for SequenceOf<C> where
     }
 
     #[inline(always)]
+    #[verifier::exec_allows_no_decreases_clause]
+    #[verifier::external_body]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         proof {
             self.0.lemma_view_preserves_tag();

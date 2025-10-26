@@ -18,7 +18,9 @@ impl SpecCombinator for UTF8String {
     type Type = SpecUTF8StringValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        let s = spec_serialize_utf8(v);
+        s.len() <= LengthValue::MAX &&
+        Length.spec_serialize(s.len() as LengthValue).len() + s.len() <= usize::MAX
     }
     
     open spec fn requires(&self) -> bool {
@@ -64,13 +66,15 @@ impl SecureSpecCombinator for UTF8String {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let s = spec_serialize_utf8(v);
 
-        Length.theorem_serialize_parse_roundtrip(s.len() as LengthValue);
-        spec_utf8_serialize_parse_roundtrip(v);
+        if s.len() <= LengthValue::MAX {
+            Length.theorem_serialize_parse_roundtrip(s.len() as LengthValue);
+            spec_utf8_serialize_parse_roundtrip(v);
 
-        let buf = Length.spec_serialize(s.len() as LengthValue);
-        if buf.len() + s.len() <= usize::MAX {
-            Length.lemma_prefix_secure(buf, s);
-            assert((buf + s).skip(buf.len() as int).take(s.len() as int) == s);
+            let buf = Length.spec_serialize(s.len() as LengthValue);
+            if buf.len() + s.len() <= usize::MAX {
+                Length.lemma_prefix_secure(buf, s);
+                assert((buf + s).skip(buf.len() as int).take(s.len() as int) == s);
+            }
         }
     }
 
