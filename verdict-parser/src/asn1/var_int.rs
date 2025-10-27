@@ -56,20 +56,94 @@ impl SpecCombinator for VarUInt {
         decreases self.0
     {
         if !self.wf() || !self.in_bound(v) {
-            seq![]
+            Seq::<u8>::empty()
         } else if self.0 == 0 {
-            seq![]
+            Seq::<u8>::empty()
         } else {
             // Encode the least significant (self.0 - 1) bytes of v
             // then prepend the self.0-th byte
             let rest = Self((self.0 - 1) as usize).spec_serialize(v & n_byte_max_unsigned!(self.0 - 1));
-            seq![ get_nth_byte!(v, self.0 - 1) ] + rest
+            Seq::<u8>::empty().push(get_nth_byte!(v, self.0 - 1)) + rest
         }
     }
 }
 
 /// Some lemmas about VarUInt::spec_parse and VarUInt::spec_serialize
 impl VarUInt {
+    pub proof fn lemma_mask_fits(len: usize, v: VarUIntResult)
+        requires len <= uint_size!()
+        ensures fits_n_bytes_unsigned!(v & n_byte_max_unsigned!(len), len)
+    {
+        assert(fits_n_bytes_unsigned!(v & n_byte_max_unsigned!(len), len)) by (bit_vector);
+    }
+
+    pub proof fn lemma_tail_context(len: usize)
+        requires len <= uint_size!(), len > 0
+        ensures
+            VarUInt((len - 1) as usize).wf(),
+            (len - 1) < uint_size!()
+    {
+        assert(len <= uint_size!());
+        assert(len > 0);
+        assert(
+            len <= uint_size!() &&
+            len > 0
+            ==> len - 1 <= uint_size!()
+        ) by (bit_vector);
+        assert(len - 1 <= uint_size!());
+        assert(VarUInt((len - 1) as usize).wf());
+        assert(
+            len <= uint_size!() &&
+            len > 0
+            ==> len - 1 < uint_size!()
+        ) by (bit_vector);
+        assert(len - 1 < uint_size!());
+    }
+
+    pub proof fn lemma_prepend_restore(len: usize, v: VarUIntResult)
+        requires len < uint_size!() && len + 1 <= uint_size!() && fits_n_bytes_unsigned!(v, len + 1)
+        ensures prepend_byte!(v & n_byte_max_unsigned!(len), get_nth_byte!(v, len), len) == v
+    {
+        assert(len < uint_size!());
+        assert(len + 1 <= uint_size!());
+        assert(fits_n_bytes_unsigned!(v, len + 1));
+        assert(
+            len < uint_size!() &&
+            len + 1 <= uint_size!() &&
+            fits_n_bytes_unsigned!(v, len + 1)
+            ==> prepend_byte!(v & n_byte_max_unsigned!(len), get_nth_byte!(v, len), len) == v
+        ) by (bit_vector);
+        assert(prepend_byte!(v & n_byte_max_unsigned!(len), get_nth_byte!(v, len), len) == v);
+    }
+
+    pub proof fn lemma_prepend_byte_get_nth(len: usize, rest: VarUIntResult, byte: u8)
+        requires len < uint_size!() && fits_n_bytes_unsigned!(rest, len)
+        ensures get_nth_byte!(prepend_byte!(rest, byte, len), len) == byte
+    {
+        assert(len < uint_size!());
+        assert(fits_n_bytes_unsigned!(rest, len));
+        assert(
+            len < uint_size!() &&
+            fits_n_bytes_unsigned!(rest, len)
+            ==> get_nth_byte!(prepend_byte!(rest, byte, len), len) == byte
+        ) by (bit_vector);
+        assert(get_nth_byte!(prepend_byte!(rest, byte, len), len) == byte);
+    }
+
+    pub proof fn lemma_prepend_mask(len: usize, rest: VarUIntResult, byte: u8)
+        requires len < uint_size!() && fits_n_bytes_unsigned!(rest, len)
+        ensures prepend_byte!(rest, byte, len) & n_byte_max_unsigned!(len) == rest
+    {
+        assert(len < uint_size!());
+        assert(fits_n_bytes_unsigned!(rest, len));
+        assert(
+            len < uint_size!() &&
+            fits_n_bytes_unsigned!(rest, len)
+            ==> prepend_byte!(rest, byte, len) & n_byte_max_unsigned!(len) == rest
+        ) by (bit_vector);
+        assert(prepend_byte!(rest, byte, len) & n_byte_max_unsigned!(len) == rest);
+    }
+
     pub proof fn lemma_parse_ok(&self, s: Seq<u8>)
         ensures self.spec_parse(s).is_some() <==> self.wf() && self.0 <= s.len()
         decreases self.0
@@ -145,22 +219,52 @@ impl VarUInt {
         }
     }
 
-    #[verifier::external_body]
     pub proof fn lemma_serialize_ok(&self, v: VarUIntResult)
-        ensures self.wf() && self.in_bound(v)
+        ensures
+            (!self.wf() || !self.in_bound(v)) ==> self.spec_serialize(v) == Seq::<u8>::empty(),
+            self.wf() && self.in_bound(v) ==> self.spec_serialize(v).len() == self.0
         decreases self.0
     {
-        assume(self.wf() && self.in_bound(v));
+        if !self.wf() || !self.in_bound(v) {
+            assert(self.spec_serialize(v) == Seq::<u8>::empty());
+        } else if self.0 == 0 {
+            assert(self.spec_serialize(v) == Seq::<u8>::empty());
+            assert(self.spec_serialize(v).len() == 0);
+        } else {
+            assert(self.0 > 0);
+            let rest_len = (self.0 - 1) as usize;
+            let rest = Self(rest_len);
+            let rest_value = v & n_byte_max_unsigned!(rest_len);
+
+            Self::lemma_tail_context(self.0);
+
+            assert(self.in_bound(v));
+            Self::lemma_mask_fits(rest_len, v);
+            assert(fits_n_bytes_unsigned!(rest_value, rest_len));
+            assert(rest.in_bound(rest_value));
+
+            rest.lemma_serialize_ok(rest_value);
+            assert(rest.spec_serialize(rest_value).len() == rest.0) by {
+                assert(rest.wf());
+                assert(rest.in_bound(rest_value));
+            };
+
+            let rest_buf = rest.spec_serialize(rest_value);
+            assert(rest_buf.len() == rest_len as int);
+
+            let buf = self.spec_serialize(v);
+            let single = Seq::<u8>::empty().push(get_nth_byte!(v, rest_len));
+            assert(buf == single + rest_buf);
+
+            assert(single.len() == 1);
+            assert((single + rest_buf).len() == single.len() + rest_buf.len());
+            assert(buf.len() == single.len() + rest_buf.len());
+            assert(buf.len() == rest_len as int + 1);
+
+            assert(buf.len() == self.0);
+        }
     }
 
-    #[verifier::external_body]
-    pub proof fn lemma_serialize_ok_len(&self, v: VarUIntResult)
-        requires self.wf() && self.in_bound(v)
-        ensures self.spec_serialize(v).len() == self.0
-        decreases self.0
-    {
-        assume(self.spec_serialize(v).len() == self.0);
-    }
 }
 
 impl SecureSpecCombinator for VarUInt {
@@ -172,49 +276,260 @@ impl SecureSpecCombinator for VarUInt {
         self.0 > 0
     }
 
-    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: VarUIntResult)
         decreases self.0
     {
-        assume(self.in_bound(v) ==> (
-            self.spec_parse(self.spec_serialize(v)) matches Some((len, value)) &&
-            len == self.spec_serialize(v).len() as int && value == v
-        ));
+        if self.wf() && self.in_bound(v) {
+            if self.0 == 0 {
+                assert(self.in_bound(v));
+                assert(v <= n_byte_max_unsigned!(0));
+                assert(n_byte_max_unsigned!(0) == 0);
+                assert(v == 0);
+                let buf = self.spec_serialize(v);
+                assert(buf == Seq::<u8>::empty());
+                assert(self.spec_parse(buf) == Some((0int, 0u64)));
+            } else {
+                assert(self.0 > 0);
+
+                let rest_len = (self.0 - 1) as usize;
+                let rest = Self(rest_len);
+                let rest_val = v & n_byte_max_unsigned!(rest_len);
+                assert(rest_len + 1 == self.0);
+
+                assert(self.wf());
+                assert(self.in_bound(v));
+                Self::lemma_tail_context(self.0);
+                assert(rest.wf());
+                Self::lemma_mask_fits(rest_len, v);
+                assert(fits_n_bytes_unsigned!(rest_val, rest_len));
+                assert(rest.in_bound(rest_val));
+
+                rest.theorem_serialize_parse_roundtrip(rest_val);
+                rest.lemma_serialize_ok(rest_val);
+                assert(rest.spec_serialize(rest_val).len() == rest.0) by {
+                    assert(rest.wf());
+                    assert(rest.in_bound(rest_val));
+                };
+
+                let rest_buf = rest.spec_serialize(rest_val);
+                let buf = self.spec_serialize(v);
+                let single = Seq::<u8>::empty().push(get_nth_byte!(v, rest_len));
+
+                assert(rest_buf.len() == rest.0 as int);
+                assert(rest.0 as int == rest_len as int);
+
+                assert(buf == single + rest_buf);
+                assert(single.len() == 1);
+                assert(buf.len() == self.0) by {
+                    assert((single + rest_buf).len() == single.len() + rest_buf.len());
+                };
+
+                assert(buf.drop_first() == rest_buf) by {
+                    assert(single.drop_first() == Seq::<u8>::empty());
+                };
+
+                assert(buf[0] == get_nth_byte!(v, self.0 - 1)) by {
+                    assert(single[0] == get_nth_byte!(v, self.0 - 1));
+                };
+
+                let rest_parse = rest.spec_parse(rest_buf);
+                assert(rest_parse == Some((rest.0 as int, rest_val)));
+                assert(rest_parse.is_some());
+                rest.lemma_parse_returns_length(rest_buf);
+                let (len_rest, val_rest) = rest_parse.unwrap();
+                assert(len_rest == (self.0 - 1) as int);
+                assert(val_rest == rest_val);
+
+                let parsed = self.spec_parse(buf);
+                assert(rest_val == v & n_byte_max_unsigned!(rest_len));
+                assert(rest_len + 1 == self.0);
+                assert(rest_len < uint_size!());
+                assert(fits_n_bytes_unsigned!(v, rest_len + 1)) by {
+                    assert(self.in_bound(v));
+                    assert(rest_len + 1 == self.0);
+                };
+                Self::lemma_prepend_restore(rest_len, v);
+                assert(prepend_byte!(rest_val, get_nth_byte!(v, rest_len), rest_len) == v);
+                assert(parsed == Some((self.0 as int, v)));
+                assert(parsed.is_some());
+                let parsed_pair = parsed.unwrap();
+                assert(parsed_pair == (self.0 as int, v));
+                let (len, val) = parsed_pair;
+                assert(len == self.0 as int);
+                assert(val == v);
+            }
+        }
     }
 
-    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
         decreases self.0
     {
-        assume(
-            self.spec_parse(buf) matches Some((len, v)) ==> (
-                self.spec_serialize(v).len() == len &&
-                self.spec_parse(self.spec_serialize(v)) == Some((len, v))
-            )
-        );
+        if self.wf() {
+            if let Some((n, v)) = self.spec_parse(buf) {
+                self.lemma_parse_returns_length(buf);
+                self.lemma_parse_ok_bound(buf);
+
+                assert(n == self.0 as int);
+                assert(self.in_bound(v));
+
+                if self.0 == 0 {
+                    assert(self.spec_parse(buf) == Some((0int, 0u64)));
+                    assert(v == 0);
+                    assert(self.spec_serialize(v) == Seq::<u8>::empty());
+                    assert(buf.take(n) == Seq::<u8>::empty());
+                } else {
+                    assert(self.0 <= buf.len());
+                    assert(self.0 > 0);
+
+                    let rest_len = (self.0 - 1) as usize;
+                    let rest = Self(rest_len);
+                    let rest_buf = buf.drop_first();
+                    let byte = buf[0];
+
+                    Self::lemma_tail_context(self.0);
+                    assert(rest.wf());
+
+                    let rest_parse = rest.spec_parse(rest_buf);
+                    match rest_parse {
+                        Some((len_rest, rest_val)) => {
+                            rest.lemma_parse_returns_length(rest_buf);
+                            rest.lemma_parse_ok_bound(rest_buf);
+
+                            assert(len_rest == rest_len as int);
+                            assert(rest.in_bound(rest_val));
+
+                            rest.theorem_parse_serialize_roundtrip(rest_buf);
+                            rest.lemma_serialize_ok(rest_val);
+                            assert(rest.spec_serialize(rest_val).len() == rest.0) by {
+                                assert(rest.wf());
+                                assert(rest.in_bound(rest_val));
+                            };
+
+                            let rest_serialized = rest.spec_serialize(rest_val);
+                            assert(rest_serialized == rest_buf.take(len_rest));
+
+                            assert(v == prepend_byte!(rest_val, byte, rest_len));
+                            assert(rest_len < uint_size!());
+                            assert(fits_n_bytes_unsigned!(rest_val, rest_len)) by {
+                                assert(rest.in_bound(rest_val));
+                            };
+                            Self::lemma_prepend_byte_get_nth(rest_len, rest_val, byte);
+                            assert(get_nth_byte!(v, rest_len) == byte);
+
+                            Self::lemma_prepend_mask(rest_len, rest_val, byte);
+                            assert(v & n_byte_max_unsigned!(rest_len) == rest_val) by {
+                                assert(prepend_byte!(rest_val, byte, rest_len) & n_byte_max_unsigned!(rest_len) == rest_val);
+                                assert(v == prepend_byte!(rest_val, byte, rest_len));
+                            };
+                            assert(rest.spec_serialize(rest_val)
+                                == rest.spec_serialize(v & n_byte_max_unsigned!(rest_len))) by {
+                                assert(rest_val == v & n_byte_max_unsigned!(rest_len));
+                            };
+                            assert(rest.spec_serialize(v & n_byte_max_unsigned!(rest_len)) == rest_serialized) by {
+                                assert(rest.spec_serialize(rest_val)
+                                    == rest.spec_serialize(v & n_byte_max_unsigned!(rest_len)));
+                            };
+
+                            let single = Seq::<u8>::empty().push(byte);
+                            assert(self.spec_serialize(v)
+                                == Seq::<u8>::empty().push(get_nth_byte!(v, rest_len))
+                                    + rest.spec_serialize(v & n_byte_max_unsigned!(rest_len))) by {
+                                assert(self.wf());
+                                assert(self.in_bound(v));
+                                assert(self.0 > 0);
+                                assert(rest_len == (self.0 - 1) as usize);
+                            };
+                            assert(self.spec_serialize(v) == single + rest_serialized);
+
+                            assert(buf.take(1) == single) by {
+                                assert(single.len() == 1);
+                                assert(single[0] == byte);
+                                assert(buf.take(1).len() == 1);
+                                assert(buf.take(1)[0] == byte);
+                            };
+
+                            assert(buf.skip(1) == rest_buf);
+                            assert(rest_serialized == buf.skip(1).take(len_rest));
+
+                            assert(buf.take(self.0 as int)
+                                == buf.take(1) + buf.skip(1).take(len_rest));
+
+                            assert(self.spec_serialize(v) == buf.take(self.0 as int));
+                        }
+                        None => {
+                            assert(false);
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    #[verifier::external_body]
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
         decreases self.0
     {
-        assume(Self::is_prefix_secure());
+        if self.wf() && self.spec_parse(s1).is_some() {
+            self.lemma_parse_returns_length(s1);
+
+            if self.0 == 0 {
+                assert(self.spec_parse(s1) == Some((0int, 0u64)));
+                assert(self.spec_parse(s1 + s2) == Some((0int, 0u64)));
+            } else {
+                let rest = Self((self.0 - 1) as usize);
+                let byte = s1[0];
+                let rest_s1 = s1.drop_first();
+
+                Self::lemma_tail_context(self.0);
+                assert(rest.wf());
+
+                rest.lemma_prefix_secure(rest_s1, s2);
+
+                let rest_parse = rest.spec_parse(rest_s1);
+                match rest_parse {
+                    Some((len_rest, rest_val)) => {
+                        rest.lemma_parse_returns_length(rest_s1);
+                        assert(rest.spec_parse(rest_s1 + s2) == Some((len_rest, rest_val)));
+
+                        let combined = prepend_byte!(rest_val, byte, self.0 - 1);
+                        assert(self.spec_parse(s1) == Some((self.0 as int, combined)));
+
+                        assert((s1 + s2)[0] == byte);
+                        assert((s1 + s2).drop_first() == rest_s1 + s2);
+
+                        assert(self.spec_parse(s1 + s2) == Some((self.0 as int, combined)));
+                    }
+                    None => {
+                        assert(false);
+                    }
+                }
+            }
+        }
     }
-    
-    #[verifier::external_body]
+
     proof fn lemma_parse_length(&self, s: Seq<u8>)
         decreases self.0
     {
-        assume(self.spec_parse(s) matches Some((n, _)) ==> 0 <= n <= s.len());
+        if self.wf() && self.spec_parse(s).is_some() {
+            self.lemma_parse_returns_length(s);
+            self.lemma_parse_ok(s);
+
+            let res = self.spec_parse(s).unwrap();
+            assert(res.0 == self.0 as int);
+            assert(0 <= res.0);
+            assert(self.0 as int <= s.len());
+        }
     }
-    
-    #[verifier::external_body]
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
         decreases self.0
     {
-        assume(self.is_productive() ==> (
-            self.spec_parse(s) matches Some((n, _)) ==> n > 0
-        ));
+        if self.wf() && self.0 > 0 {
+            if let Some((n, _)) = self.spec_parse(s) {
+                self.lemma_parse_returns_length(s);
+                assert(n == self.0 as int);
+                assert(n > 0);
+            }
+        }
     }
 }
 
@@ -356,9 +671,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
                 assert(v & n_byte_max_unsigned!(len - i) <= n_byte_max_unsigned!(len - i)) by (bit_vector);
 
                 Self((len - old_i) as usize).lemma_serialize_ok(v & n_byte_max_unsigned!(len - old_i));
-                Self((len - old_i) as usize).lemma_serialize_ok_len(v & n_byte_max_unsigned!(len - old_i));
                 Self((len - i) as usize).lemma_serialize_ok(v & n_byte_max_unsigned!(len - i));
-                Self((len - i) as usize).lemma_serialize_ok_len(v & n_byte_max_unsigned!(len - i));
 
                 let old_suffix = Self((len - old_i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - old_i));
                 let suffix = Self((len - i) as usize).spec_serialize(v & n_byte_max_unsigned!(len - i));
@@ -386,7 +699,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
 
         proof {
             self.lemma_serialize_ok(v);
-            self.lemma_serialize_ok_len(v);
             assert(v <= n_byte_max_unsigned!(len) ==> v & n_byte_max_unsigned!(len) == v) by (bit_vector);
         }
         // assert(data@.subrange(pos as int, pos + len) == self.spec_serialize(v).unwrap());
@@ -417,6 +729,64 @@ impl VarInt {
     pub open spec fn to_var_uint(&self) -> VarUInt {
         VarUInt(self.0)
     }
+
+    pub proof fn lemma_sign_extend_masked_roundtrip(&self, v: VarIntResult)
+        requires self.to_var_uint().wf(), self.wf(v)
+        ensures sign_extend!((v as VarUIntResult) & n_byte_max_unsigned!(self.0), self.0) == v
+    {
+        let len = self.0;
+        assert(len <= uint_size!()) by {
+            assert(self.to_var_uint().wf());
+        };
+        assert(n_byte_min_signed!(len) <= v) by {
+            assert(self.wf(v));
+        };
+        assert(v <= n_byte_max_signed!(len)) by {
+            assert(self.wf(v));
+        };
+        assert(
+            len <= uint_size!() &&
+            n_byte_min_signed!(len) <= v &&
+            v <= n_byte_max_signed!(len)
+            ==> sign_extend!((v as VarUIntResult) & n_byte_max_unsigned!(len), len) == v
+        ) by (bit_vector);
+        assert(sign_extend!((v as VarUIntResult) & n_byte_max_unsigned!(len), len) == v);
+    }
+
+    pub proof fn lemma_sign_extend_parse(&self, raw: VarUIntResult)
+        requires self.to_var_uint().wf(), fits_n_bytes_unsigned!(raw, self.0)
+        ensures
+            self.wf(sign_extend!(raw, self.0)),
+            ((sign_extend!(raw, self.0)) as VarUIntResult) & n_byte_max_unsigned!(self.0) == raw
+    {
+        let len = self.0;
+        assert(len <= uint_size!()) by {
+            assert(self.to_var_uint().wf());
+        };
+        assert(fits_n_bytes_unsigned!(raw, len));
+        assert(
+            len <= uint_size!() &&
+            fits_n_bytes_unsigned!(raw, len)
+            ==> n_byte_min_signed!(len) <= sign_extend!(raw, len)
+        ) by (bit_vector);
+        assert(
+            len <= uint_size!() &&
+            fits_n_bytes_unsigned!(raw, len)
+            ==> sign_extend!(raw, len) <= n_byte_max_signed!(len)
+        ) by (bit_vector);
+        assert(n_byte_min_signed!(len) <= sign_extend!(raw, len));
+        assert(sign_extend!(raw, len) <= n_byte_max_signed!(len));
+        assert(self.wf(sign_extend!(raw, len))) by {
+            assert(n_byte_min_signed!(len) <= sign_extend!(raw, len));
+            assert(sign_extend!(raw, len) <= n_byte_max_signed!(len));
+        };
+        assert(
+            len <= uint_size!() &&
+            fits_n_bytes_unsigned!(raw, len)
+            ==> ((sign_extend!(raw, len)) as VarUIntResult) & n_byte_max_unsigned!(len) == raw
+        ) by (bit_vector);
+        assert(((sign_extend!(raw, len)) as VarUIntResult) & n_byte_max_unsigned!(len) == raw);
+    }
 }
 
 impl SpecCombinator for VarInt {
@@ -444,7 +814,7 @@ impl SpecCombinator for VarInt {
         if n_byte_min_signed!(self.0) <= v && v <= n_byte_max_signed!(self.0) {
             self.to_var_uint().spec_serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0))
         } else {
-            seq![]
+            Seq::<u8>::empty()
         }
     }
 }
@@ -458,40 +828,146 @@ impl SecureSpecCombinator for VarInt {
         self.0 > 0
     }
 
-    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: VarIntResult)
     {
-        assume(
-            self.wf(v) ==> self.spec_parse(self.spec_serialize(v)) == Some((self.spec_serialize(v).len() as int, v))
-        );
+        let uint = self.to_var_uint();
+
+        if uint.wf() {
+            if self.wf(v) {
+                let masked = (v as VarUIntResult) & n_byte_max_unsigned!(self.0);
+
+                VarUInt::lemma_mask_fits(self.0, v as VarUIntResult);
+                assert(fits_n_bytes_unsigned!(masked, self.0)) by {
+                    assert(masked == (v as VarUIntResult) & n_byte_max_unsigned!(self.0));
+                };
+                assert(uint.in_bound(masked));
+
+                uint.theorem_serialize_parse_roundtrip(masked);
+                uint.lemma_serialize_ok(masked);
+                assert(uint.spec_serialize(masked).len() == uint.0) by {
+                    assert(uint.wf());
+                    assert(uint.in_bound(masked));
+                };
+
+                let buf = self.spec_serialize(v);
+                assert(buf == uint.spec_serialize(masked));
+
+                let parse_res = uint.spec_parse(buf);
+                assert(parse_res == Some((self.0 as int, masked)));
+
+                assert(self.spec_parse(buf)
+                    == Some((self.0 as int, sign_extend!(masked, self.0))));
+                self.lemma_sign_extend_masked_roundtrip(v);
+                assert(sign_extend!(masked, self.0) == v);
+            }
+        }
     }
 
-    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
     {
-        assume(
-            self.spec_parse(buf) matches Some((len, v)) ==> self.spec_serialize(v) == buf.subrange(0, len)
-        );
+        let uint = self.to_var_uint();
+
+        if uint.wf() {
+            if let Some((n, v)) = self.spec_parse(buf) {
+                let uint_parse = uint.spec_parse(buf);
+                assert(uint_parse.is_some());
+                let (n_uint, raw) = uint_parse.unwrap();
+
+                assert(n == n_uint);
+                assert(v == sign_extend!(raw, self.0));
+
+                uint.theorem_parse_serialize_roundtrip(buf);
+                uint.lemma_parse_ok_bound(buf);
+                assert(uint.in_bound(raw));
+                assert(fits_n_bytes_unsigned!(raw, self.0)) by {
+                    assert(uint.in_bound(raw));
+                };
+
+                assert(uint.spec_serialize(raw) == buf.take(n_uint));
+
+                self.lemma_sign_extend_parse(raw);
+                assert(((sign_extend!(raw, self.0)) as VarUIntResult)
+                    & n_byte_max_unsigned!(self.0) == raw);
+
+                assert(self.wf(v)) by {
+                    assert(v == sign_extend!(raw, self.0));
+                };
+
+                assert((v as VarUIntResult) & n_byte_max_unsigned!(self.0) == raw) by {
+                    assert(v == sign_extend!(raw, self.0));
+                    assert(((sign_extend!(raw, self.0)) as VarUIntResult)
+                        & n_byte_max_unsigned!(self.0) == raw);
+                };
+
+                assert(self.spec_serialize(v)
+                    == uint.spec_serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0))) by {
+                    assert(self.wf(v));
+                    assert(self.to_var_uint().wf());
+                };
+
+                assert(self.spec_serialize(v) == uint.spec_serialize(raw)) by {
+                    assert((v as VarUIntResult) & n_byte_max_unsigned!(self.0) == raw);
+                };
+                assert(self.spec_serialize(v) == buf.take(n));
+            }
+        }
     }
 
-    #[verifier::external_body]
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     {
-        assume(true);
+        let uint = self.to_var_uint();
+
+        if uint.wf() && self.spec_parse(s1).is_some() {
+            uint.lemma_prefix_secure(s1, s2);
+
+            let parse1 = uint.spec_parse(s1);
+            assert(parse1.is_some());
+            let (n, raw) = parse1.unwrap();
+
+            let parse2 = uint.spec_parse(s1 + s2);
+            assert(parse2 == Some((n, raw)));
+
+            assert(self.spec_parse(s1) == Some((n, sign_extend!(raw, self.0))));
+            assert(self.spec_parse(s1 + s2) == Some((n, sign_extend!(raw, self.0))));
+        }
     }
     
-    #[verifier::external_body]
     proof fn lemma_parse_length(&self, s: Seq<u8>)
     {
-        assume(self.spec_parse(s) matches Some((n, _)) ==> 0 <= n <= s.len());
+        let uint = self.to_var_uint();
+
+        if uint.wf() {
+            if let Some((n, _)) = self.spec_parse(s) {
+                let uint_parse = uint.spec_parse(s);
+                assert(uint_parse.is_some());
+                let (n_uint, _) = uint_parse.unwrap();
+                assert(n == n_uint);
+
+                uint.lemma_parse_length(s);
+                assert(0 <= n_uint <= s.len());
+                assert(0 <= n <= s.len());
+            }
+        }
     }
     
-    #[verifier::external_body]
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     {
-        assume(self.is_productive() ==> (
-            self.spec_parse(s) matches Some((n, _)) ==> n > 0
-        ));
+        let uint = self.to_var_uint();
+
+        if uint.wf() {
+            if let Some((n, _)) = self.spec_parse(s) {
+                let uint_parse = uint.spec_parse(s);
+                assert(uint_parse.is_some());
+                let (n_uint, _) = uint_parse.unwrap();
+                assert(n == n_uint);
+
+                if self.0 > 0 {
+                    uint.lemma_parse_productive(s);
+                    assert(n_uint > 0);
+                    assert(n > 0);
+                }
+            }
+        }
     }
 }
 
@@ -552,13 +1028,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
 
         if self.0 == 0 {
             if v == 0 {
-                proof {
-                    assume(n_byte_max_unsigned!(0) == 0);
-                    assume(fits_n_bytes_unsigned!((v as VarUIntResult) & n_byte_max_unsigned!(0), 0));
-                    VarUInt(0).lemma_serialize_ok((v as VarUIntResult) & n_byte_max_unsigned!(0));
-                    VarUInt(0).lemma_serialize_ok_len((v as VarUIntResult) & n_byte_max_unsigned!(0));
-                    assume(seq_splice(data@, pos, seq![]) =~= data@);
-                }
                 return Ok(0);
             } else {
                 return Err(SerializeError::Other("Invalid zero encoding".to_string()));
@@ -570,14 +1039,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
             return Err(SerializeError::Other("Size overflow".to_string()));
         }
 
-        proof {
-            let inner = VarUInt(self.0);
-            assume(self.0 <= uint_size!());
-            assume(inner.requires());
-            assume(
-                fits_n_bytes_unsigned!((v as VarUIntResult) & n_byte_max_unsigned!(self.0), self.0)
-            );
-        }
+        assert(self.0 <= uint_size!());
+        assert(VarUInt(self.0).in_bound((v as VarUIntResult) & n_byte_max_unsigned!(self.0))) by {
+            VarUInt::lemma_mask_fits(self.0, v as VarUIntResult);
+        };
 
         VarUInt(self.0).serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0), data, pos)
     }

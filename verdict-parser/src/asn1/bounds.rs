@@ -68,7 +68,7 @@ pub(super) use n_bit_max_unsigned;
 #[allow(unused_macros)]
 macro_rules! get_nth_byte {
     ($v:expr, $n:expr) => {
-        (($v as UInt) >> (8 * ($n as usize))) as u8
+        ((($v as UInt) >> (8 * ($n as usize))) as u8)
     };
 }
 pub(super) use get_nth_byte;

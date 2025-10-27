@@ -216,10 +216,9 @@ impl SecureSpecCombinator for Base64 {
     }
 
     open spec fn is_productive(&self) -> bool {
-        true
+        false
     }
 
-    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
         decreases v.len()
     {
@@ -256,7 +255,6 @@ impl SecureSpecCombinator for Base64 {
         }
     }
 
-    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, s: Seq<u8>)
         decreases s.len()
     {
@@ -303,11 +301,7 @@ impl SecureSpecCombinator for Base64 {
 
     proof fn lemma_parse_length(&self, _s: Seq<u8>) {}
 
-    #[verifier::external_body]
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
-        assume(self.is_productive() ==> (
-            self.spec_parse(s) matches Some((n, _)) ==> n > 0
-        ));
     }
 }
 
