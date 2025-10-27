@@ -109,7 +109,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
     type Type = UTF8StringValue<'a>;
     type SType = &'a Self::Type;
 
-    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
         let s = str_to_utf8(*v);
         let length_len = Length.length(s.len() as LengthValue);
@@ -117,7 +116,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
     }
 
     #[inline(always)]
-    #[verifier::external_body]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (n, l) = Length.parse(s)?;
 
@@ -136,7 +134,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
     }
 
     #[inline(always)]
-    #[verifier::external_body]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let s = str_to_utf8(*v);
         let n = Length.serialize(s.len() as LengthValue, data, pos)?;

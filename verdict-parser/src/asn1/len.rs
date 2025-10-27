@@ -155,7 +155,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Length {
                     assert(is_min_num_bytes_unsigned(v as VarUIntResult, bytes));
                 };
 
-                var_uint.lemma_serialize_ok_len(v as VarUIntResult);
+                var_uint.lemma_serialize_ok(v as VarUIntResult);
                 let buf = var_uint.spec_serialize(v as VarUIntResult);
                 assert(buf.len() == bytes as int);
 

@@ -11,7 +11,9 @@ pub struct ObjectIdentifier;
 asn1_tagged!(ObjectIdentifier, tag_of!(OBJECT_IDENTIFIER));
 
 pub type SpecObjectIdentifierValue = Seq<UInt>;
-#[derive(PolyfillClone, Eq, PartialEq)]
+
+pub type VecDeep<T> = RepeatResult<T>;
+#[derive(Eq, PartialEq)]
 pub struct ObjectIdentifierValue(pub VecDeep<UInt>);
 pub type ObjectIdentifierValueOwned = ObjectIdentifierValue;
 
@@ -20,14 +22,6 @@ impl View for ObjectIdentifierValue {
 
     open spec fn view(&self) -> Self::V {
         self.0@
-    }
-}
-
-impl PolyfillEq for ObjectIdentifierValue {
-    #[inline(always)]
-    fn polyfill_eq(&self, other: &ObjectIdentifierValue) -> bool
-    {
-        self.0.polyfill_eq(&other.0)
     }
 }
 
@@ -69,11 +63,16 @@ impl SpecCombinator for ObjectIdentifier {
     type Type = SpecObjectIdentifierValue;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        v.len() >= 2 && v.len() <= usize::MAX &&
+            (Self::serialize_first_two_arcs(v[0], v[1]) matches Some(first_byte) && ({
+                    let rest_arcs = v.skip(2);
+                    let buf = (U8, Repeat(Base128UInt)).spec_serialize((first_byte, rest_arcs));
+                    new_spec_object_identifier_inner().wf((buf.len() as LengthValue, (first_byte, rest_arcs)))
+                }))
     }
     
     open spec fn requires(&self) -> bool {
-        true
+        new_spec_object_identifier_inner().requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -120,7 +119,6 @@ impl SecureSpecCombinator for ObjectIdentifier {
         true
     }
 
-    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let b = self.spec_serialize(v);
         if v.len() >= 2 && v.len() <= usize::MAX {
@@ -130,11 +128,6 @@ impl SecureSpecCombinator for ObjectIdentifier {
 
                 new_spec_object_identifier_inner().theorem_serialize_parse_roundtrip((buf.len() as LengthValue, (first_byte, rest_arcs)));
                 Self::lemma_serialize_parse_first_two_arcs(v[0], v[1]);
-
-                if let Some((len, v2)) = self.spec_parse(b) {
-                    assert(len == b.len() as int);
-                    assert(v2 =~= v);
-                }
             }
         }
     }
@@ -164,48 +157,42 @@ impl SecureSpecCombinator for ObjectIdentifier {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ObjectIdentifier {
     type Type = ObjectIdentifierValue;
-    type SType = ObjectIdentifierValueOwned;
+    type SType = &'a Self::Type;
 
-    #[verifier::exec_allows_no_decreases_clause]
-    #[verifier::external_body]
     fn length(&self, v: Self::SType) -> usize {
-        let v_clone = v.0.clone();
+        let ghost v_spec = v@;
 
-        if v_clone.len() < 2 {
-            return 0; // Error case
+        let first = v.0 .0[0];
+        let second = v.0 .0[1];
+
+        let first_byte = (first as u8) * 40 + (second as u8);
+
+        let mut rest_arcs_clone = Clone::clone(&v.0 .0);
+        let rest_arcs = RepeatResult(rest_arcs_clone.split_off(2));
+        let inner_args = (&first_byte, &rest_arcs);
+        let ghost rest_spec = rest_arcs@;
+
+        proof {
+            assert(rest_spec == v_spec.skip(2));
+            assert(Self::serialize_first_two_arcs(first, second) == Some(first_byte));
+            let payload = (U8, Repeat(Base128UInt))@.spec_serialize((first_byte, rest_spec));
+            assert(payload.len() <= usize::MAX);
+            assert(new_spec_object_identifier_inner().wf((payload.len() as LengthValue, (first_byte, rest_spec))));
         }
 
-        let first_arc = *v_clone.get(0);
-        let second_arc = *v_clone.get(1);
+        let len_inner = (U8, Repeat(Base128UInt)).length(inner_args);
+        let length_value: LengthValue = len_inner;
+        let inner = new_object_identifier_inner();
+        let len_total = inner.length((length_value, inner_args));
 
-        if first_arc > 2 || second_arc > 39 {
-            return 0;
-        }
+        assert(len_total == self@.spec_serialize(v_spec).len());
 
-        let first_arc_u8 = first_arc as u8;
-        let second_arc_u8 = second_arc as u8;
-        let first_byte_u16 = (first_arc_u8 as u16) * 40 + (second_arc_u8 as u16);
-
-        if first_byte_u16 > u8::MAX as u16 {
-            return 0;
-        }
-
-        let first_byte = first_byte_u16 as u8;
-        let capacity = if v_clone.len() > 2 { v_clone.len() - 2 } else { 0 };
-        let mut rest_arcs_vec: Vec<UInt> = Vec::with_capacity(capacity);
-        let mut idx = 2;
-        while idx < v_clone.len() {
-            rest_arcs_vec.push(*v_clone.get(idx));
-            idx += 1;
-        }
-        let rest_arcs = RepeatResult(rest_arcs_vec);
-
-        (U8, Repeat(Base128UInt)).length((&first_byte, &rest_arcs))
+        len_total
     }
 
     #[inline]
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
-    let (len, (_, (first, rest_arcs))) = new_object_identifier_inner().parse(s)?;
+    let (len, (_, (first, mut rest_arcs))) = new_object_identifier_inner().parse(s)?;
 
         let arc1 = first / 40;
         let arc2 = first % 40;
@@ -218,45 +205,42 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ObjectIdentifier {
             return Err(ParseError::Other("OID arcs exceed maximum length".to_string()));
         }
 
-        let mut res = VecDeep::with_capacity(2 + rest_arcs.0.len());
+        let mut res = Vec::with_capacity(2 + rest_arcs.0.len());
         res.push(arc1 as UInt);
         res.push(arc2 as UInt);
-        let mut rest_vec = VecDeep::from_vec(rest_arcs.0);
-        res.append(&mut rest_vec);
+        res.append(&mut rest_arcs.0);
 
-        proof {
-            if let Some((_, spec_v)) = self@.spec_parse(s@) {
-                assert(res@ == spec_v);
-            }
-        }
+        let res = Ok((len, ObjectIdentifierValue(RepeatResult(res))));
 
-        Ok((len, ObjectIdentifierValue(res)))
+        assert(
+            self@.spec_parse(s@) matches Some((n, v)) ==> res matches Ok((m, u)) && m == n && v
+                == u@
+        );
+        res
+
     }
 
     #[inline]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        let mut v = v.0;
         let ghost old_v = v@;
 
-        if v.len() < 2 {
+        if v.0.0.len() < 2 {
             return Err(SerializeError::Other("OID should have at least two arcs".to_string()));
         }
 
-        if *v.get(0) > 2 || *v.get(1) > 39 {
+        if v.0.0[0] > 2 || v.0.0[1] > 39 {
             return Err(SerializeError::Other("Invalid first two arcs".to_string()));
         }
 
-        let first_byte = *v.get(0) as u8 * 40 + *v.get(1) as u8;
+        let first_byte = v.0.0[0] as u8 * 40 + v.0.0[1] as u8;
+        let mut rest_arcs_clone = Clone::clone(&v.0.0);
+        let rest_arcs = RepeatResult(rest_arcs_clone.split_off(2));
 
-        let rest_arcs_inner = v.split_off(2);
-        let rest_arcs_vec = rest_arcs_inner.to_vec_owned();
-        let rest_arcs_repeat = RepeatResult(rest_arcs_vec);
+        let len = (U8, Repeat(Base128UInt)).serialize((&first_byte, &rest_arcs), data, pos)?;
 
-    let len = (U8, Repeat(Base128UInt)).serialize((&first_byte, &rest_arcs_repeat), data, pos)?;
-
-    let ghost rest_arcs_spec = rest_arcs_repeat@;
-    let length_value: LengthValue = len;
-    let len2 = new_object_identifier_inner().serialize((length_value, (&first_byte, &rest_arcs_repeat)), data, pos)?;
+        let ghost rest_arcs_spec = rest_arcs@;
+        let length_value: LengthValue = len;
+        let len2 = new_object_identifier_inner().serialize((length_value, (&first_byte, &rest_arcs)), data, pos)?;
 
         if pos.checked_add(len2).is_some() && pos + len2 <= data.len() {
             proof {
@@ -347,7 +331,7 @@ mod tests {
         let mut data = vec![0; 1 + 4 + v.len() * 8];
         data[0] = 0x06;
         let len = ObjectIdentifier.serialize(
-            ObjectIdentifierValue(VecDeep::from_vec(v)),
+            &ObjectIdentifierValue(RepeatResult(v)),
             &mut data,
             1,
         )?;

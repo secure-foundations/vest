@@ -3,7 +3,7 @@ use vstd::prelude::*;
 
 verus! {
 
-#[derive(Debug, View, PolyfillClone)]
+#[derive(Debug, View, PolyfillClone, Clone, Copy)]
 pub enum GeneralizedTimeZone {
     UTC,
     Local,
@@ -94,7 +94,7 @@ impl SecureSpecCombinator for GeneralizedTime {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTime {
     type Type = GeneralizedTimeValueInner;
-    type SType = GeneralizedTimeValueInner;
+    type SType = &'a GeneralizedTimeValueInner;
 
     fn length(&self, v: Self::SType) -> usize {
         LengthWrapped(GeneralizedTimeInner).length(v)
@@ -118,10 +118,17 @@ impl SpecCombinator for GeneralizedTimeInner {
     type Type = GeneralizedTimeValueInner;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        match (v.minute, v.second, v.fraction, v.time_zone) {
-            (OptionDeep::Some(_), OptionDeep::Some(_), OptionDeep::None, GeneralizedTimeZone::UTC) => true,
-            _ => false,
-        }
+        // Only the YYYYMMDDHHMMSSZ format is supported
+        v.minute matches OptionDeep::Some(minute) &&
+        v.second matches OptionDeep::Some(second) &&
+        v.fraction matches OptionDeep::None &&
+        v.time_zone matches GeneralizedTimeZone::UTC &&
+        u16_to_four_chars(v.year).is_some() &&
+        u8_to_two_chars(v.month).is_some() &&
+        u8_to_two_chars(v.day).is_some() &&
+        u8_to_two_chars(v.hour).is_some() &&
+        u8_to_two_chars(minute).is_some() &&
+        u8_to_two_chars(second).is_some()
     }
     
     open spec fn requires(&self) -> bool {
@@ -530,7 +537,6 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
         true
     }
 
-    #[verifier::external_body]
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let buf = self.spec_serialize(v);
         if buf.len() > 0 {
@@ -543,7 +549,6 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
         }
     }
 
-    #[verifier::external_body]
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
         if let Some((len, v)) = self.spec_parse(buf) {
             broadcast use
@@ -565,7 +570,7 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
 
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
     type Type = GeneralizedTimeValueInner;
-    type SType = GeneralizedTimeValueInner;
+    type SType = &'a GeneralizedTimeValueInner;
 
     fn length(&self, _v: Self::SType) -> usize {
         proof {

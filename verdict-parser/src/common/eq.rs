@@ -79,31 +79,6 @@ impl_polyfill_eq_for_slice_vec! {
     usize
 }
 
-impl<T: PolyfillEq> PolyfillEq for VecDeep<T> {
-    fn polyfill_eq(&self, other: &Self) -> (res: bool)
-    {
-        if self.len() != other.len() {
-            return false;
-        }
-
-        let len = self.len();
-        for i in 0..len
-            invariant
-                len == self@.len(),
-                self@.len() == other@.len(),
-                forall |j| 0 <= j < i ==> self@[j] == other@[j],
-        {
-            if !self.get(i).polyfill_eq(&other.get(i)) {
-                return false;
-            }
-        }
-
-        assert(self@ =~= other@);
-
-        true
-    }
-}
-
 impl<U: PolyfillEq, V: PolyfillEq> PolyfillEq for Either<U, V> {
     #[inline(always)]
     fn polyfill_eq(&self, other: &Self) -> (res: bool) {

@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 /// An Option type with "deep" View
-#[derive(Debug, View, PolyfillClone, Eq, PartialEq)]
+#[derive(Debug, View, PolyfillClone, Eq, PartialEq, Clone, Copy)]
 pub enum OptionDeep<T> {
     Some(T),
     None,

@@ -27,11 +27,11 @@ impl<T: SpecCombinator> SpecCombinator for ExplicitTag<T> {
     type Type = T::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        self.1.wf(v)
+        LengthWrapped(self.1).wf(v)
     }
     
     open spec fn requires(&self) -> bool {
-        self.1.requires()
+        LengthWrapped(self.1).requires()
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -72,13 +72,17 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for ExplicitTag<T> {
 impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ExplicitTag<T> where
     T: SpecCombinator
         + SecureSpecCombinator
-        + for<'x> Combinator<'x, &'x [u8], Vec<u8>>,
+        + Combinator<'a, &'a [u8], Vec<u8>, SType = &'a <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type>,
     <T as View>::V: SecureSpecCombinator<Type = <T as SpecCombinator>::Type>,
-    for<'x> <T as Combinator<'x, &'x [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
-    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type> + PolyfillClone,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type: View<V = <T as SpecCombinator>::Type> + 'a,
+    <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType: View<V = <T as SpecCombinator>::Type>,
 {
     type Type = <T as Combinator<'a, &'a [u8], Vec<u8>>>::Type;
     type SType = <T as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
+
+    open spec fn ex_requires(&self) -> bool {
+        LengthWrapped(&self.1).ex_requires()
+    }
 
     fn length(&self, v: Self::SType) -> usize {
         LengthWrapped(&self.1).length(v)
