@@ -138,7 +138,7 @@ pub exec static EMPTY: &'static &'static [u8]
 }
 
 /// Inner Spec combinator for parsing and serializing Bitcoin variable-length integers
-pub closed spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
+pub open spec fn spec_btc_varint_inner() -> SpecBtcVarintInner {
     TryMap {
         inner: Pair::spec_new(
             U8,
