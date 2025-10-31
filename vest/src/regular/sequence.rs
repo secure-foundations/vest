@@ -177,6 +177,8 @@ impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
     /// Creates a new `Pair` combinator.
     pub fn new(fst: Fst, snd: Cont) -> (o: Self)
         ensures
+            o.fst == fst,
+            o.snd == snd,
             o@ == Pair::spec_new(fst@, snd@),
     {
         Pair { fst, _snd: std::marker::PhantomData, snd }
