@@ -34,6 +34,124 @@ macro_rules! impl_wrapper_combinator {
     };
 }
 verus!{
+pub type SpecRepeatFix = Seq<u16>;
+pub type RepeatFix = RepeatResult<u16>;
+pub type RepeatFixRef<'a> = &'a RepeatResult<u16>;
+
+
+pub struct SpecRepeatFixCombinator(SpecRepeatFixCombinatorAlias);
+
+impl SpecCombinator for SpecRepeatFixCombinator {
+    type Type = SpecRepeatFix;
+    closed spec fn requires(&self) -> bool
+    { self.0.requires() }
+    closed spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    { self.0.spec_parse(s) }
+    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecRepeatFixCombinator {
+    open spec fn is_prefix_secure() -> bool 
+    { SpecRepeatFixCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_length(s) }
+    closed spec fn is_productive(&self) -> bool 
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecRepeatFixCombinatorAlias = RepeatN<U16Le>;
+
+pub struct RepeatFixCombinator(RepeatFixCombinatorAlias);
+
+impl View for RepeatFixCombinator {
+    type V = SpecRepeatFixCombinator;
+    closed spec fn view(&self) -> Self::V { SpecRepeatFixCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for RepeatFixCombinator {
+    type Type = RepeatFix;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    closed spec fn ex_requires(&self) -> bool 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+} 
+pub type RepeatFixCombinatorAlias = RepeatN<U16Le>;
+
+
+pub closed spec fn spec_repeat_fix() -> SpecRepeatFixCombinator {
+    SpecRepeatFixCombinator(RepeatN(U16Le, 32))
+}
+
+                
+pub fn repeat_fix<'a>() -> (o: RepeatFixCombinator)
+    ensures o@ == spec_repeat_fix(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = RepeatFixCombinator(RepeatN(U16Le, 32));
+    assert({
+        &&& combinator@ == spec_repeat_fix()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    });
+    combinator
+}
+
+pub fn parse_repeat_fix<'a>(input: &'a [u8]) -> (res: PResult<<RepeatFixCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_repeat_fix().spec_parse(input@) == Some((n as int, v@)),
+        spec_repeat_fix().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_repeat_fix().spec_parse(input@) is None,
+        spec_repeat_fix().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = repeat_fix();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_repeat_fix<'a>(v: <RepeatFixCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_repeat_fix().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_repeat_fix().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_repeat_fix().spec_serialize(v@))
+        },
+{
+    let combinator = repeat_fix();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn repeat_fix_len<'a>(v: <RepeatFixCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_repeat_fix().wf(v@),
+        spec_repeat_fix().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_repeat_fix().spec_serialize(v@).len(),
+{
+    let combinator = repeat_fix();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
 
 pub struct SpecOpaqueU16 {
     pub l: u16,
@@ -209,14 +327,63 @@ impl View for OpaqueU16Cont0 {
 }
 
                 
-pub fn opaque_u16() -> (o: OpaqueU16Combinator)
+pub fn opaque_u16<'a>() -> (o: OpaqueU16Combinator)
     ensures o@ == spec_opaque_u16(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    OpaqueU16Combinator(
+    let combinator = OpaqueU16Combinator(
     Mapped {
         inner: Pair::new(Refined { inner: U16Le, predicate: Predicate17626095872143391426 }, OpaqueU16Cont0),
         mapper: OpaqueU16Mapper,
-    })
+    });
+    assert({
+        &&& combinator@ == spec_opaque_u16()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    });
+    combinator
+}
+
+pub fn parse_opaque_u16<'a>(input: &'a [u8]) -> (res: PResult<<OpaqueU16Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_opaque_u16().spec_parse(input@) == Some((n as int, v@)),
+        spec_opaque_u16().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_opaque_u16().spec_parse(input@) is None,
+        spec_opaque_u16().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = opaque_u16();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_opaque_u16<'a>(v: <OpaqueU16Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_opaque_u16().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_opaque_u16().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_u16().spec_serialize(v@))
+        },
+{
+    let combinator = opaque_u16();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn opaque_u16_len<'a>(v: <OpaqueU16Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_opaque_u16().wf(v@),
+        spec_opaque_u16().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_opaque_u16().spec_serialize(v@).len(),
+{
+    let combinator = opaque_u16();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 pub struct OpaqueU16Cont0;
@@ -309,10 +476,59 @@ pub closed spec fn spec_responder_id() -> SpecResponderIdCombinator {
 }
 
                 
-pub fn responder_id() -> (o: ResponderIdCombinator)
+pub fn responder_id<'a>() -> (o: ResponderIdCombinator)
     ensures o@ == spec_responder_id(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    ResponderIdCombinator(opaque_u16())
+    let combinator = ResponderIdCombinator(opaque_u16());
+    assert({
+        &&& combinator@ == spec_responder_id()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    });
+    combinator
+}
+
+pub fn parse_responder_id<'a>(input: &'a [u8]) -> (res: PResult<<ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_responder_id().spec_parse(input@) == Some((n as int, v@)),
+        spec_responder_id().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_responder_id().spec_parse(input@) is None,
+        spec_responder_id().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = responder_id();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_responder_id<'a>(v: <ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_responder_id().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_responder_id().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_responder_id().spec_serialize(v@))
+        },
+{
+    let combinator = responder_id();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn responder_id_len<'a>(v: <ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_responder_id().wf(v@),
+        spec_responder_id().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_responder_id().spec_serialize(v@).len(),
+{
+    let combinator = responder_id();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
                 
@@ -491,14 +707,63 @@ impl View for ResponderIdListCont0 {
 }
 
                 
-pub fn responder_id_list() -> (o: ResponderIdListCombinator)
+pub fn responder_id_list<'a>() -> (o: ResponderIdListCombinator)
     ensures o@ == spec_responder_id_list(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    ResponderIdListCombinator(
+    let combinator = ResponderIdListCombinator(
     Mapped {
         inner: Pair::new(Refined { inner: U16Le, predicate: Predicate2984462868727922620 }, ResponderIdListCont0),
         mapper: ResponderIdListMapper,
-    })
+    });
+    assert({
+        &&& combinator@ == spec_responder_id_list()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    });
+    combinator
+}
+
+pub fn parse_responder_id_list<'a>(input: &'a [u8]) -> (res: PResult<<ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_responder_id_list().spec_parse(input@) == Some((n as int, v@)),
+        spec_responder_id_list().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_responder_id_list().spec_parse(input@) is None,
+        spec_responder_id_list().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = responder_id_list();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_responder_id_list<'a>(v: <ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_responder_id_list().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_responder_id_list().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_responder_id_list().spec_serialize(v@))
+        },
+{
+    let combinator = responder_id_list();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn responder_id_list_len<'a>(v: <ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_responder_id_list().wf(v@),
+        spec_responder_id_list().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_responder_id_list().spec_serialize(v@).len(),
+{
+    let combinator = responder_id_list();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 pub struct ResponderIdListCont0;
@@ -684,14 +949,63 @@ impl View for RepeatDynCont0 {
 }
 
                 
-pub fn repeat_dyn() -> (o: RepeatDynCombinator)
+pub fn repeat_dyn<'a>() -> (o: RepeatDynCombinator)
     ensures o@ == spec_repeat_dyn(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    RepeatDynCombinator(
+    let combinator = RepeatDynCombinator(
     Mapped {
         inner: Pair::new(BtcVarint, RepeatDynCont0),
         mapper: RepeatDynMapper,
-    })
+    });
+    assert({
+        &&& combinator@ == spec_repeat_dyn()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    });
+    combinator
+}
+
+pub fn parse_repeat_dyn<'a>(input: &'a [u8]) -> (res: PResult<<RepeatDynCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_repeat_dyn().spec_parse(input@) == Some((n as int, v@)),
+        spec_repeat_dyn().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_repeat_dyn().spec_parse(input@) is None,
+        spec_repeat_dyn().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = repeat_dyn();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_repeat_dyn<'a>(v: <RepeatDynCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_repeat_dyn().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_repeat_dyn().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_repeat_dyn().spec_serialize(v@))
+        },
+{
+    let combinator = repeat_dyn();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn repeat_dyn_len<'a>(v: <RepeatDynCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_repeat_dyn().wf(v@),
+        spec_repeat_dyn().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_repeat_dyn().spec_serialize(v@).len(),
+{
+    let combinator = repeat_dyn();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 pub struct RepeatDynCont0;
@@ -721,75 +1035,6 @@ impl<'a, 'b, 'x> Continuation<RepeatDynCont0Input<'a, 'b, 'x>> for RepeatDynCont
         }
     }
 }
-                
-pub type SpecRepeatFix = Seq<u16>;
-pub type RepeatFix = RepeatResult<u16>;
-pub type RepeatFixRef<'a> = &'a RepeatResult<u16>;
-
-
-pub struct SpecRepeatFixCombinator(SpecRepeatFixCombinatorAlias);
-
-impl SpecCombinator for SpecRepeatFixCombinator {
-    type Type = SpecRepeatFix;
-    closed spec fn requires(&self) -> bool
-    { self.0.requires() }
-    closed spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecRepeatFixCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecRepeatFixCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    closed spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecRepeatFixCombinatorAlias = RepeatN<U16Le>;
-
-pub struct RepeatFixCombinator(RepeatFixCombinatorAlias);
-
-impl View for RepeatFixCombinator {
-    type V = SpecRepeatFixCombinator;
-    closed spec fn view(&self) -> Self::V { SpecRepeatFixCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for RepeatFixCombinator {
-    type Type = RepeatFix;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    closed spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type RepeatFixCombinatorAlias = RepeatN<U16Le>;
-
-
-pub closed spec fn spec_repeat_fix() -> SpecRepeatFixCombinator {
-    SpecRepeatFixCombinator(RepeatN(U16Le, 32))
-}
-
-                
-pub fn repeat_fix() -> (o: RepeatFixCombinator)
-    ensures o@ == spec_repeat_fix(),
-{
-    RepeatFixCombinator(RepeatN(U16Le, 32))
-}
-
                 
 
 }
