@@ -3326,10 +3326,59 @@ pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
                     );
                     code.push_str(&format!(
                         r#"
-pub fn {name}() -> (o: {upper_caml_name}Combinator)
+pub fn {name}<'a>() -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
-    {upper_caml_name}Combinator({expr})
+    let combinator = {upper_caml_name}Combinator({expr});
+    assert({{
+        &&& combinator@ == spec_{name}()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    }});
+    combinator
+}}
+
+pub fn parse_{name}<'a>(input: &'a [u8]) -> (res: PResult<<{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_{name}().spec_parse(input@) == Some((n as int, v@)),
+        spec_{name}().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_{name}().spec_parse(input@) is None,
+        spec_{name}().spec_parse(input@) is None ==> res is Err,
+{{
+    let combinator = {name}();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}}
+
+pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_{name}().wf(v@),
+    ensures
+        o matches Ok(n) ==> {{
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_{name}().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
+        }},
+{{
+    let combinator = {name}();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}}
+
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_{name}().wf(v@),
+        spec_{name}().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_{name}().spec_serialize(v@).len(),
+{{
+    let combinator = {name}();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }}
 {additional_code}
                 "#
@@ -3398,8 +3447,57 @@ pub closed spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator
                         r#"
 pub fn {name}<'a>({exec_params}) -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}({args_view}),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
-    {upper_caml_name}Combinator({expr})
+    let combinator = {upper_caml_name}Combinator({expr});
+    assert({{
+        &&& combinator@ == spec_{name}({args_view})
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    }});
+    combinator
+}}
+
+pub fn parse_{name}<'a>(input: &'a [u8], {exec_params}) -> (res: PResult<<{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_{name}({args_view}).spec_parse(input@) == Some((n as int, v@)),
+        spec_{name}({args_view}).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_{name}({args_view}).spec_parse(input@) is None,
+        spec_{name}({args_view}).spec_parse(input@) is None ==> res is Err,
+{{
+    let combinator = {name}( {args} );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}}
+
+pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, {exec_params}) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_{name}({args_view}).wf(v@),
+    ensures
+        o matches Ok(n) ==> {{
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_{name}({args_view}).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_{name}({args_view}).spec_serialize(v@))
+        }},
+{{
+    let combinator = {name}( {args} );
+    combinator.serialize(v, data, pos)
+}}
+
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, {exec_params}) -> (len: usize)
+    requires
+        spec_{name}({args_view}).wf(v@),
+        spec_{name}({args_view}).spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_{name}({args_view}).spec_serialize(v@).len(),
+{{
+    let combinator = {name}( {args} );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }}
 {additional_code}"#
                     ));
@@ -3432,10 +3530,59 @@ pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
                 );
                 code.push_str(&format!(
                     r#"
-pub fn {name}() -> (o: {upper_caml_name}Combinator)
+pub fn {name}<'a>() -> (o: {upper_caml_name}Combinator)
     ensures o@ == spec_{name}(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
-    {expr}
+    let combinator = {expr};
+    assert({{
+        &&& combinator@ == spec_{name}()
+        &&& combinator@.requires()
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    }});
+    combinator
+}}
+
+pub fn parse_{name}<'a>(input: &'a [u8]) -> (res: PResult<<{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_{name}().spec_parse(input@) == Some((n as int, v@)),
+        spec_{name}().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_{name}().spec_parse(input@) is None,
+        spec_{name}().spec_parse(input@) is None ==> res is Err,
+{{
+    let combinator = {name}();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}}
+
+pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_{name}().wf(v@),
+    ensures
+        o matches Ok(n) ==> {{
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_{name}().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
+        }},
+{{
+    let combinator = {name}();
+    combinator.serialize(v, data, pos)
+}}
+
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+    requires
+        spec_{name}().wf(v@),
+        spec_{name}().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        len == spec_{name}().spec_serialize(v@).len(),
+{{
+    let combinator = {name}();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }}
 {additional_code}"#
                 ));
