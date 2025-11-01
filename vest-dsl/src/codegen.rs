@@ -3370,12 +3370,12 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }}
 
-pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_{name}().wf(v@),
         spec_{name}().spec_serialize(v@).len() <= usize::MAX,
     ensures
-        len == spec_{name}().spec_serialize(v@).len(),
+        serialize_len == spec_{name}().spec_serialize(v@).len(),
 {{
     let combinator = {name}();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
@@ -3489,12 +3489,12 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
     combinator.serialize(v, data, pos)
 }}
 
-pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, {exec_params}) -> (len: usize)
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, {exec_params}) -> (serialize_len: usize)
     requires
         spec_{name}({args_view}).wf(v@),
         spec_{name}({args_view}).spec_serialize(v@).len() <= usize::MAX,
     ensures
-        len == spec_{name}({args_view}).spec_serialize(v@).len(),
+        serialize_len == spec_{name}({args_view}).spec_serialize(v@).len(),
 {{
     let combinator = {name}( {args} );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
@@ -3574,12 +3574,12 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
     combinator.serialize(v, data, pos)
 }}
 
-pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (len: usize)
+pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_{name}().wf(v@),
         spec_{name}().spec_serialize(v@).len() <= usize::MAX,
     ensures
-        len == spec_{name}().spec_serialize(v@).len(),
+        serialize_len == spec_{name}().spec_serialize(v@).len(),
 {{
     let combinator = {name}();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
