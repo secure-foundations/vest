@@ -42,7 +42,7 @@ fn bench_parse_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
     group.bench_function("vest", |b| {
         b.iter(|| {
             for block_bytes in test_blocks.iter() {
-                block().parse(black_box(block_bytes)).unwrap();
+                parse_block(black_box(block_bytes)).unwrap();
             }
         })
     });
@@ -67,7 +67,7 @@ fn bench_parse_bitcoin_1k_blocks(c: &mut Criterion) {
 
     for (i, test_block) in test_blocks.iter().enumerate() {
         group.bench_function(format!("vest_{}", i), |b| {
-            b.iter(|| block().parse(black_box(test_block)).unwrap())
+            b.iter(|| parse_block(black_box(test_block)).unwrap())
         });
         group.bench_function(format!("rust_bitcoin_{}", i), |b| {
             b.iter(|| bitcoin::Block::consensus_decode(&mut &test_block[..]).unwrap())
@@ -92,13 +92,13 @@ fn bench_serialize_bitcoin_1k_blocks_bulk(c: &mut Criterion) {
             || {
                 test_blocks
                     .iter()
-                    .map(|b| block().parse(b).unwrap().1)
+                    .map(|b| parse_block(b).unwrap().1)
                     .collect::<Vec<_>>()
             },
             |vest_parsed| {
                 for b in vest_parsed {
                     let mut buf = vec![0; max_block_size];
-                    block().serialize(b, &mut buf, 0).unwrap();
+                    serialize_block(b, &mut buf, 0).unwrap();
                 }
             },
             BatchSize::SmallInput,
@@ -143,10 +143,10 @@ fn bench_serialize_bitcoin_1k_blocks(c: &mut Criterion) {
     for (i, test_block) in test_blocks.iter().enumerate() {
         group.bench_function(format!("vest_{}", i), |b| {
             b.iter_batched_ref(
-                || block().parse(test_block).unwrap().1,
+                || parse_block(test_block).unwrap().1,
                 |vest_block| {
                     let mut buf = vec![0; max_block_size];
-                    block().serialize(vest_block, &mut buf, 0).unwrap();
+                    serialize_block(vest_block, &mut buf, 0).unwrap();
                 },
                 BatchSize::SmallInput,
             )
