@@ -1,9 +1,9 @@
 [package]
-name = "vest-dsl"
+name = "vest"
 version = "0.0.0-2025-11-03-2103"
 edition = "2021"
 license = "MIT"
-description = "VestDSL: A DSL for specifying and generating fast, formally verified parsers and serializers"
+description = "Vest: A DSL for specifying and generating fast, formally verified parsers and serializers"
 repository = "https://github.com/secure-foundations/vest"
 readme = "../README.md"
 keywords = ["vest", "verus", "verification", "parsing", "combinators"]
