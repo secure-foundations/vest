@@ -3,16 +3,16 @@
 pub mod vest_wasm;
 // pub mod wasm_data;
 
-use vest::properties::*;
-use vest::regular::bytes;
-use vest::regular::disjoint::DisjointFrom;
-use vest::regular::modifier::*;
-use vest::regular::repetition::*;
-use vest::regular::sequence::*;
-use vest::regular::tag::*;
-use vest::regular::uints::*;
-use vest::regular::variant::*;
-use vest::utils::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes;
+use vest_lib::regular::disjoint::DisjointFrom;
+use vest_lib::regular::modifier::*;
+use vest_lib::regular::repetition::*;
+use vest_lib::regular::sequence::*;
+use vest_lib::regular::tag::*;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::*;
+use vest_lib::utils::*;
 use vest_wasm::*;
 // use wasm_data::*;
 
