@@ -7,13 +7,13 @@ edition = "2021"
 builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
 builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
-vest = { path = "../vest" }
+vest_lib = { path = "../vest" }
 
 [package.metadata.verus]
 verify = true
 
 [package.metadata.verus.ide]
-extra_args = "--expand-errors --import vest=../vest/vest.verusdata --extern vest=../vest/libvest.rlib --rlimit=20"
+extra_args = "--expand-errors --import vest=../vest/vest.verusdata --extern vest=../vest/libvest_lib.rlib --rlimit=20"
 
 # [[bench]]
 # name = "example-bench"

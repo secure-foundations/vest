@@ -1,7 +1,7 @@
-use vest::errors::ParseError;
-use vest::properties::Combinator;
-use vest::regular::bytes;
-use vest::regular::tag::*;
+use vest_lib::errors::ParseError;
+use vest_lib::properties::Combinator;
+use vest_lib::regular::bytes;
+use vest_lib::regular::tag::*;
 use vstd::prelude::*;
 
 verus! {

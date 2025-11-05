@@ -1,16 +1,16 @@
 use crate::my_vec;
-use vest::properties::*;
-use vest::regular::bytes;
-use vest::regular::modifier::Cond;
-use vest::regular::tag::*;
-use vest::regular::uints::*;
-use vest::regular::variant::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes;
+use vest_lib::regular::modifier::Cond;
+use vest_lib::regular::tag::*;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::*;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
 
 verus! {
 
-broadcast use vest::regular::uints::size_of_facts;
+broadcast use vest_lib::regular::uints::size_of_facts;
 
 exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
     let c1 = Cond { cond: a == 0 && b == 1, inner: U8 };

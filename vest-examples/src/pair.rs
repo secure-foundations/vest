@@ -1,8 +1,8 @@
 use crate::my_vec;
-use vest::properties::*;
-use vest::regular::bytes;
-use vest::regular::tag::*;
-use vest::regular::uints::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes;
+use vest_lib::regular::tag::*;
+use vest_lib::regular::uints::*;
 use vstd::prelude::*;
 use vstd::slice::slice_subrange;
 
