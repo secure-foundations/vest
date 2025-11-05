@@ -401,13 +401,13 @@ pub struct Spec{name}Combinator(pub Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
     type Type = {spec_type};
-    closed spec fn requires(&self) -> bool
+    open spec fn requires(&self) -> bool
     {{ self.0.requires() }}
     open spec fn wf(&self, v: Self::Type) -> bool
     {{ self.0.wf(v) }}
-    closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
     {{ self.0.spec_parse(s) }}
-    closed spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
     {{ self.0.spec_serialize(v) }}
 }}
 impl SecureSpecCombinator for Spec{name}Combinator {{
@@ -421,7 +421,7 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
     {{ self.0.lemma_prefix_secure(s1, s2) }}
     proof fn lemma_parse_length(&self, s: Seq<u8>) 
     {{ self.0.lemma_parse_length(s) }}
-    closed spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool 
     {{ self.0.is_productive() }}
     proof fn lemma_parse_productive(&self, s: Seq<u8>) 
     {{ self.0.lemma_parse_productive(s) }}
@@ -442,7 +442,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }}
-    closed spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool 
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }}
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
     {{ <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }}
@@ -2160,7 +2160,7 @@ impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
                             disjointness_proof.push(format!(
                                 r#"
 impl DisjointFrom<{}> for {} {{
-    closed spec fn disjoint_from(&self, other: &{}) -> bool
+    open spec fn disjoint_from(&self, other: &{}) -> bool
     {{ self.0.disjoint_from(&other.0) }}
     proof fn parse_disjoint_on(&self, other: &{}, buf: Seq<u8>) 
     {{ self.0.parse_disjoint_on(&other.0, buf); }}
@@ -3058,7 +3058,7 @@ impl Codegen for ConstBytesCombinator {
         //             r#"
         // pub struct BytesPredicate{hash}<'a>(PhantomData<&'a ()>);
         // impl<'a> BytesPredicate{hash}<'a> {{
-        //     pub closed spec fn spec_new() -> Self {{
+        //     pub open spec fn spec_new() -> Self {{
         //         BytesPredicate{hash}(PhantomData)
         //     }}
         //     pub fn new() -> Self {{
@@ -3168,7 +3168,7 @@ macro_rules! impl_wrapper_combinator {
                 type SType = <$combinator_alias as Combinator<'a, &'a [u8], Vec<u8>>>::SType;
                 fn length(&self, v: Self::SType) -> usize
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-                closed spec fn ex_requires(&self) -> bool
+                open spec fn ex_requires(&self) -> bool
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
