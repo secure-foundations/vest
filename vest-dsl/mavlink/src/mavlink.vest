@@ -1,0 +1,177 @@
+// Author: Robbie VanVossen (https://github.com/Furao)
+
+
+
+mavlink_msg = {
+	@magic: protocol_magic,          ///< protocol magic marker
+	msg: choose(@magic) {
+		MavLink1 => mavlink_v1_msg,
+		MavLink2 => mavlink_v2_msg,
+	},
+}
+
+mavlink_v2_msg = {
+	@len: u8,                           ///< Length of payload
+	@incompat_flags: incompat_flags,     ///< flags that must be understood
+	compat_flags: u8,                   ///< flags that can be ignored if not understood. Unsure if any are defined.
+	seq: u8,                            ///< Sequence of packet
+	sysid: u8 | 1..,                    ///< ID of message sender system/aircraft
+	compid: u8 | 1..,                   ///< ID of the message sender component
+	@msgid: message_ids,                ///< ID of the message
+	// The [u8; @len] >>= is needed to make sure that the parser catches if the provided size is larger than the expected payload type.
+	payload: [u8; @len] >>= choose (@msgid) {
+		CommandInt => command_int,
+		CommandLong => command_long,
+		CommandAck => command_ack,
+		TerrainRequest => terrain_request,
+		_ => [u8; @len],
+	},                                  ///< A maximum of 255 payload bytes
+	checksum: u16,                      ///< CRC-16/MCRF4XX
+	signature: choose(@incompat_flags) {
+		// TODO: Technically flags are bits, so should figure out how to check specific bits
+		0x01 => [u8; 13],                ///< Signature which allows ensuring that the link is tamper-
+		_ => [u8; 0],
+	},
+}
+
+
+mavlink_v1_msg = {
+	@len: u8,             ///< Length of payload
+	seq: u8,              ///< Sequence of packet
+	sysid: u8 | 1..,      ///< ID of message sender system/aircraft
+	compid: u8 | 1..,     ///< ID of the message sender component
+	msgid: u8,            ///< ID of the message
+	payload: [u8; @len],  ///< A maximum of 255 payload bytes
+	checksum: u16,        ///< CRC-16/MCRF4XX
+}
+
+
+// u8
+protocol_magic = enum {
+	MavLink1 = 0xFE,
+	MavLink2 = 0xFD,
+}
+
+// u8
+incompat_flags = enum {
+	Signed = 0x01,
+	...
+}
+
+// u24 for mavlink v2
+message_ids = enum {
+	CommandInt = 75,
+	CommandLong = 76,
+	CommandAck = 77,
+	CommandCancel = 80, // This says WIP. Should we have this Need this?
+	TerrainRequest = 134,
+	Reserved = 0x800000, // Need to put this so the enum is generated as a u24.
+	...
+}
+
+
+command_long = {
+	target_system: u8,     // System which should execute the command
+	target_component: u8,  // Component which should execute the command, 0 for all components
+	command: mav_cmd,      // Command ID (of command to send).
+	confirmation: u8,      // 0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)
+	// param1: f32,           // invalid:NaN	Parameter 1 (for the specific command).
+	// param2: f32,           // invalid:NaN	Parameter 2 (for the specific command).
+	// param3: f32,           // invalid:NaN	Parameter 3 (for the specific command).
+	// param4: f32,           // invalid:NaN	Parameter 4 (for the specific command).
+	// param5: f32,           // invalid:NaN	Parameter 5 (for the specific command).
+	// param6: f32,           // invalid:NaN	Parameter 6 (for the specific command).
+	// param7: f32,           // invalid:NaN	Parameter 7 (for the specific command).
+	param1: u32,           // invalid:NaN	Parameter 1 (for the specific command).
+	param2: u32,           // invalid:NaN	Parameter 2 (for the specific command).
+	param3: u32,           // invalid:NaN	Parameter 3 (for the specific command).
+	param4: u32,           // invalid:NaN	Parameter 4 (for the specific command).
+	param5: u32,           // invalid:NaN	Parameter 5 (for the specific command).
+	param6: u32,           // invalid:NaN	Parameter 6 (for the specific command).
+	param7: u32,           // invalid:NaN	Parameter 7 (for the specific command).
+}
+
+
+command_int = {
+	target_system: u8,       // System which should execute the command
+	target_component: u8,    // Component which should execute the command, 0 for all components
+	frame: mav_frame,        // The coordinate system of the COMMAND.
+	command: mav_cmd,        // Command ID (of command to send).
+	current: u8,             // Not used.
+	autocontinue: u8 | 0,    // Not used (set 0).
+	// param1: f32,             // invalid:NaN	Parameter 1 (for the specific command).
+	// param2: f32,             // invalid:NaN	Parameter 2 (for the specific command).
+	// param3: f32,             // invalid:NaN	Parameter 3 (for the specific command).
+	// param4: f32,             // invalid:NaN	Parameter 4 (for the specific command).
+	param1: u32,             // invalid:NaN	Parameter 1 (for the specific command).
+	param2: u32,             // invalid:NaN	Parameter 2 (for the specific command).
+	param3: u32,             // invalid:NaN	Parameter 3 (for the specific command).
+	param4: u32,             // invalid:NaN	Parameter 4 (for the specific command).
+	param5: u32,             // invalid:NaN	Parameter 5 (for the specific command).
+	param6: u32,             // invalid:NaN	Parameter 6 (for the specific command).
+	param7: u32,             // invalid:NaN	Parameter 7 (for the specific command).
+	// param7: f32,             // invalid:NaN	Parameter 7 (for the specific command).
+}
+
+
+command_ack = {
+	command: mav_cmd,              // Command ID (of command to send).
+	result: mav_result,            // Result of command.
+	progress: u8 | {0..101, 255},  // The progress percentage when result is MAV_RESULT_IN_PROGRESS. Values: [0-100], or UINT8_MAX if the progress is unknown.
+	result_param2: u32,            // Additional result information. Can be set with a command-specific enum containing command-specific error reasons for why the command might be denied. If used, the associated enum must be documented in the corresponding MAV_CMD (this enum should have a 0 value to indicate "unused" or "unknown").
+	target_system: u8,             // System ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement.
+	target_component: u8,          // Component ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement
+}
+
+// u16
+mav_cmd = enum {
+	FlashBootloader = 42650,
+	// NAV_ALTITUDE_WAIT = 83,
+	...
+}
+
+mav_frame = enum {
+	GLOBAL = 0,                   // Global (WGS84) coordinate frame + altitude relative to mean sea level (MSL).
+	LOCAL_NED = 1,                // NED local tangent frame (x: North, y: East, z: Down) with origin fixed relative to earth.
+	MISSION = 2,                  // NOT a coordinate frame, indicates a mission command.
+	GLOBAL_RELATIVE_ALT = 3,      // Global (WGS84) coordinate frame + altitude relative to the home position.
+	LOCAL_ENU = 4,                // ENU local tangent frame (x: East, y: North, z: Up) with origin fixed relative to earth.
+	GLOBAL_INT = 5,               // Global (WGS84) coordinate frame (scaled) + altitude relative to mean sea level (MSL).
+	GLOBAL_RELATIVE_ALT_INT = 6,  // Global (WGS84) coordinate frame (scaled) + altitude relative to the home position.
+	LOCAL_OFFSET_NED = 7,         // NED local tangent frame (x: North, y: East, z: Down) with origin that travels with the vehicle.
+	BODY_NED = 8,                 // Same as LOCAL_NED when used to represent position values. Same as BODY_FRD when used with velocity/acceleration values.
+	BODY_OFFSET_NED = 9,          // This is the same as BODY_FRD.
+	GLOBAL_TERRAIN_ALT = 10,      // Global (WGS84) coordinate frame with AGL altitude (altitude at ground level).
+	GLOBAL_TERRAIN_ALT_INT = 11,  // Global (WGS84) coordinate frame (scaled) with AGL altitude (altitude at ground level).
+	BODY_FRD = 12,                // FRD local frame aligned to the vehicle's attitude (x: Forward, y: Right, z: Down) with an origin that travels with vehicle.
+	RESERVED_13 = 13,             // BODY_FLU - Body fixed frame of reference, Z-up (x: Forward, y: Left, z: Up).
+	RESERVED_14 = 14,             // MOCAP_NED - Odometry local coordinate frame of data given by a motion capture system, Z-down (x: North, y: East, z: Down).
+	RESERVED_15 = 15,             // MOCAP_ENU - Odometry local coordinate frame of data given by a motion capture system, Z-up (x: East, y: North, z: Up).
+	RESERVED_16 = 16,             // VISION_NED - Odometry local coordinate frame of data given by a vision estimation system, Z-down (x: North, y: East, z: Down).
+	RESERVED_17 = 17,             // VISION_ENU - Odometry local coordinate frame of data given by a vision estimation system, Z-up (x: East, y: North, z: Up).
+	RESERVED_18 = 18,             // ESTIM_NED - Odometry local coordinate frame of data given by an estimator running onboard the vehicle, Z-down (x: North, y: East, z: Down).
+	RESERVED_19 = 19,             // ESTIM_ENU - Odometry local coordinate frame of data given by an estimator running onboard the vehicle, Z-up (x: East, y: North, z: Up).
+	LOCAL_FRD = 20,               // FRD local tangent frame (x: Forward, y: Right, z: Down) with origin fixed relative to earth. The forward axis is aligned to the front of the vehicle in the horizontal plane.
+	LOCAL_FLU = 21,               // FLU local tangent frame (x: Forward, y: Left, z: Up) with origin fixed relative to earth. The forward axis is aligned to the front of the vehicle in the horizontal plane.
+}
+
+mav_result = enum {
+	ACCEPTED = 0,                       // Command is valid (is supported and has valid parameters), and was executed.
+	TEMPORARILY_REJECTED = 1,           // Command is valid, but cannot be executed at this time. This is used to indicate a problem that should be fixed just by waiting (e.g. a state machine is busy, can't arm because have not got GPS lock, etc.). Retrying later should work.
+	DENIED = 2,                         // Command is invalid (is supported but has invalid parameters). Retrying same command and parameters will not work.
+	UNSUPPORTED = 3,                    // Command is not supported (unknown).
+	FAILED = 4,                         // Command is valid, but execution has failed. This is used to indicate any non-temporary or unexpected problem, i.e. any problem that must be fixed before the command can succeed/be retried. For example, attempting to write a file when out of memory, attempting to arm when sensors are not calibrated, etc.
+	IN_PROGRESS = 5,                    // Command is valid and is being executed. This will be followed by further progress updates, i.e. the component may send further COMMAND_ACK messages with result IN_PROGRESS (at a rate decided by the implementation), and must terminate by sending a COMMAND_ACK message with final result of the operation. The COMMAND_ACK.progress field can be used to indicate the progress of the operation.
+	CANCELLED = 6,                      // Command has been cancelled (as a result of receiving a COMMAND_CANCEL message).
+	COMMAND_LONG_ONLY = 7,              // Command is only accepted when sent as a COMMAND_LONG.
+	COMMAND_INT_ONLY = 8,               // Command is only accepted when sent as a COMMAND_INT.
+	COMMAND_UNSUPPORTED_MAV_FRAME = 9,  // Command is invalid because a frame is required and the specified frame is not supported.
+	NOT_IN_CONTROL = 10,                // Command has been rejected because source system is not in control of the target system/component.
+}
+
+terrain_request = {
+	lat: u32,  // Latitude of SW corner of first grid
+	lon: u32,  // Longitude of SW corner of first grid
+	grid_spacing: u16,  // Grid spacing
+	mask: u64,  // Bitmask of requested 4x4 grids (row major 8x7 array of grids, 56 bits)
+}
