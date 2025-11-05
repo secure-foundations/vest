@@ -397,13 +397,13 @@ impl Codegen for Combinator {
             match mode {
                 Mode::Spec => format!(
                     r#"
-pub struct Spec{name}Combinator(Spec{name}CombinatorAlias);
+pub struct Spec{name}Combinator(pub Spec{name}CombinatorAlias);
 
 impl SpecCombinator for Spec{name}Combinator {{
     type Type = {spec_type};
     closed spec fn requires(&self) -> bool
     {{ self.0.requires() }}
-    closed spec fn wf(&self, v: Self::Type) -> bool
+    open spec fn wf(&self, v: Self::Type) -> bool
     {{ self.0.wf(v) }}
     closed spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
     {{ self.0.spec_parse(s) }}
@@ -431,11 +431,11 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
                 Mode::Exec(_) => {
                     format!(
                         r#"
-pub struct {name}Combinator({name}CombinatorAlias);
+pub struct {name}Combinator(pub {name}CombinatorAlias);
 
 impl View for {name}Combinator {{
     type V = Spec{name}Combinator;
-    closed spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
+    open spec fn view(&self) -> Self::V {{ Spec{name}Combinator(self.0@) }}
 }}
 impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     type Type = {exec_type};
@@ -1250,10 +1250,10 @@ impl{lifetime_ann} {from_trait}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                         .map(|i| {
                             format!(
                                 r#"
-struct {name}Combinator{i}({name}CombinatorAlias{i});
+pub struct {name}Combinator{i}(pub {name}CombinatorAlias{i});
 impl View for {name}Combinator{i} {{
     type V = Spec{name}CombinatorAlias{i};
-    closed spec fn view(&self) -> Self::V {{ self.0@ }}
+    open spec fn view(&self) -> Self::V {{ self.0@ }}
 }}
 impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
 "#
@@ -2123,10 +2123,10 @@ impl{lifetime_ann} {trait_name}<{msg_type_name}Inner{lifetime_ann}> for {msg_typ
                     .map(|i| {
                         format!(
                             r#"
-struct {name}Combinator{i}({name}CombinatorAlias{i});
+pub struct {name}Combinator{i}(pub {name}CombinatorAlias{i});
 impl View for {name}Combinator{i} {{
     type V = Spec{name}CombinatorAlias{i};
-    closed spec fn view(&self) -> Self::V {{ self.0@ }}
+    open spec fn view(&self) -> Self::V {{ self.0@ }}
 }}
 impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
 "#
@@ -3310,7 +3310,7 @@ fn gen_combinator_expr_for_definition(
                         &combinator.gen_combinator_expr(&upper_caml_name, Mode::Spec, ctx);
                     code.push_str(&format!(
                         r#"
-pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
+pub open spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
     Spec{upper_caml_name}Combinator({expr})
 }}
 {additional_code}
@@ -3419,7 +3419,7 @@ pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8]
                         &combinator.gen_combinator_expr(&upper_caml_name, Mode::Spec, ctx);
                     code.push_str(&format!(
                         r#"
-pub closed spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator {{
+pub open spec fn spec_{name}({spec_params}) -> Spec{upper_caml_name}Combinator {{
     Spec{upper_caml_name}Combinator({expr})
 }}
 {additional_code}"#
@@ -3515,7 +3515,7 @@ pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8]
                     &const_combinator.gen_combinator_expr(&upper_caml_name, Mode::Spec, ctx);
                 code.push_str(&format!(
                     r#"
-pub closed spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
+pub open spec fn spec_{name}() -> Spec{upper_caml_name}Combinator {{
     {expr}
 }}
 {additional_code}"#
