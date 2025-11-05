@@ -1,4 +1,4 @@
-use vest_lib::properties::{Combinator, SpecCombinator};
+use vest_lib::properties::{Combinator, SecureSpecCombinator, SpecCombinator};
 use vstd::prelude::*;
 
 mod vest_mavlink;
@@ -44,7 +44,14 @@ fn test_ser(obuf: &mut Vec<u8>)
         grid_spacing: 100,
         mask: 0b101010,
     };
-    let _ = serialize_terrain_request(&tr, obuf, 0);
+    let comb = terrain_request();
+    proof {
+        comb@.theorem_serialize_parse_roundtrip(tr@);
+    }
+    assert(spec_terrain_request().spec_serialize(tr@).len() == 18);
+    if let Ok(len) = serialize_terrain_request(&tr, obuf, 0) {
+        assert(len == 18);
+    }
 }
 
 
