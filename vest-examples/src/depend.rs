@@ -1,13 +1,13 @@
 use modifier::Cond;
 use sequence::{GhostFn, POrSType};
-use vest::bitcoin::varint::{BtcVarint, VarInt};
-use vest::errors::{ParseError, SerializeError};
-use vest::properties::{Combinator, SpecCombinator};
-use vest::regular::bytes::*;
-use vest::regular::sequence::{Continuation, Pair, SpecPair};
-use vest::regular::uints::*;
-use vest::regular::*;
-use vest::utils::*;
+use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
+use vest_lib::errors::{ParseError, SerializeError};
+use vest_lib::properties::{Combinator, SpecCombinator};
+use vest_lib::regular::bytes::*;
+use vest_lib::regular::sequence::{Continuation, Pair, SpecPair};
+use vest_lib::regular::uints::*;
+use vest_lib::regular::*;
+use vest_lib::utils::*;
 use vstd::prelude::*;
 
 use crate::my_vec;

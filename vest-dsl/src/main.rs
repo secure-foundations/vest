@@ -59,16 +59,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let codegen_opt = args
         .codegen
         .map(|s| match s.as_str() {
-            "all" => vest_dsl::codegen::CodegenOpts::All,
-            "types" => vest_dsl::codegen::CodegenOpts::Types,
-            "impls" => vest_dsl::codegen::CodegenOpts::Impls,
-            "anns" => vest_dsl::codegen::CodegenOpts::Anns,
+            "all" => vest::codegen::CodegenOpts::All,
+            "types" => vest::codegen::CodegenOpts::Types,
+            "impls" => vest::codegen::CodegenOpts::Impls,
+            "anns" => vest::codegen::CodegenOpts::Anns,
             _ => panic!("Invalid codegen option"),
         })
-        .unwrap_or(vest_dsl::codegen::CodegenOpts::All);
+        .unwrap_or(vest::codegen::CodegenOpts::All);
     let output_file = args
         .output
         .unwrap_or(replace_extension(args.vest_file.as_str(), "rs"));
-    vest_dsl::compile_to(&args.vest_file, codegen_opt, &output_file)?;
+    vest::compile_to(&args.vest_file, codegen_opt, &output_file)?;
     Ok(())
 }

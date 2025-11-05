@@ -1,10 +1,10 @@
 use crate::my_vec;
-use vest::properties::*;
-use vest::regular::bytes;
-use vest::regular::repetition::RepeatN;
-use vest::regular::tag::*;
-use vest::regular::uints::*;
-use vest::regular::variant::{Choice, Opt};
+use vest_lib::properties::*;
+use vest_lib::regular::bytes;
+use vest_lib::regular::repetition::RepeatN;
+use vest_lib::regular::tag::*;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::{Choice, Opt};
 use vstd::prelude::*;
 
 verus! {

@@ -1,13 +1,13 @@
-use vest::properties::*;
-use vest::regular::bytes;
-use vest::regular::tag::*;
-use vest::regular::uints::*;
-use vest::regular::variant::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes;
+use vest_lib::regular::tag::*;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::*;
 use vstd::prelude::*;
 
 verus! {
 
-broadcast use vest::regular::uints::size_of_facts;
+broadcast use vest_lib::regular::uints::size_of_facts;
 
 pub enum MyEnum {
     A(Seq<u8>),
