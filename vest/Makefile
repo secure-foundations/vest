@@ -1,7 +1,7 @@
 all:
-	verus --crate-type=lib src/lib.rs --multiple-errors 5 --compile --export vest.verusdata --rlimit 50
+	verus --crate-type=lib src/lib.rs --multiple-errors 5 --compile --export vest_lib.verusdata --rlimit 50
 
 clean:
 	rm vest.verusdata
-	rm libvest.rlib
+	rm libvest_lib.rlib
 	cargo clean
