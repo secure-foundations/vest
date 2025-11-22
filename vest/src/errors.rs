@@ -2,6 +2,8 @@
 use vstd::prelude::*;
 use vstd::*;
 
+use alloc::string::String;
+
 verus! {
 
 /// Parser errors
@@ -14,6 +16,7 @@ pub enum ParseError {
     CondFailed,
     TryMapFailed,
     RefinedPredicateFailed,
+    NotEof,
     Other(String),
 }
 
@@ -53,21 +56,21 @@ impl vstd::std_specs::convert::FromSpecImpl<SerializeError> for Error {
     }
 }
 
-impl std::convert::From<ParseError> for Error {
+impl core::convert::From<ParseError> for Error {
     fn from(e: ParseError) -> Self {
         Error::Parse(e)
     }
 }
 
-impl std::convert::From<SerializeError> for Error {
+impl core::convert::From<SerializeError> for Error {
     fn from(e: SerializeError) -> Self {
         Error::Serialize(e)
     }
 }
 
 } // verus!
-impl std::fmt::Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ParseError::AndThenUnusedBytes => {
                 write!(f, "`AndThen` combinator did not consume all bytes")
@@ -81,13 +84,14 @@ impl std::fmt::Display for ParseError {
             ParseError::RefinedPredicateFailed => {
                 write!(f, "`Refined` combinator predicate failed")
             }
+            ParseError::NotEof => write!(f, "Expected end of input"),
             ParseError::Other(s) => write!(f, "{}", s),
         }
     }
 }
 
-impl std::fmt::Display for SerializeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for SerializeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             SerializeError::InsufficientBuffer => write!(f, "Insufficient buffer"),
             SerializeError::Other(s) => write!(f, "{}", s),
@@ -95,6 +99,6 @@ impl std::fmt::Display for SerializeError {
     }
 }
 
-impl std::error::Error for ParseError {}
+impl core::error::Error for ParseError {}
 
-impl std::error::Error for SerializeError {}
+impl core::error::Error for SerializeError {}

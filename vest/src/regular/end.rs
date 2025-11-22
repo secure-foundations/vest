@@ -68,7 +68,7 @@ impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for End {
         if s.len() == 0 {
             Ok((0, ()))
         } else {
-            Err(ParseError::Other("Expected end of input".to_string()))
+            Err(ParseError::NotEof)
         }
     }
 

@@ -157,12 +157,12 @@ pub trait Continuation<Input> {
 pub struct Pair<Fst, Snd, Cont> {
     /// combinators that contain dependencies
     pub fst: Fst,
-    // _snd: std::marker::PhantomData<Snd>,
+    // _snd: core::marker::PhantomData<Snd>,
     /// phantom data representing the second combinator
     /// (it really should be private, but this is a workaround for Verus's
     /// conservative treatment of opaque types, which doesn't allow field access
     /// of opaque types in open spec functions)
-    pub _snd: std::marker::PhantomData<Snd>,
+    pub _snd: core::marker::PhantomData<Snd>,
     /// closure that captures dependencies and maps them to the dependent combinators
     pub snd: Cont,
 }
@@ -181,7 +181,7 @@ impl<Fst, Snd, Cont> Pair<Fst, Snd, Cont> where
             o.snd == snd,
             o@ == Pair::spec_new(fst@, snd@),
     {
-        Pair { fst, _snd: std::marker::PhantomData, snd }
+        Pair { fst, _snd: core::marker::PhantomData, snd }
     }
 }
 
@@ -191,7 +191,7 @@ impl<Fst, Snd> Pair<Fst, Snd, GhostFn<Fst::Type, Snd>> where
  {
     /// Creates a new `Pair` combinator.
     pub open spec fn spec_new(fst: Fst, snd: GhostFn<Fst::Type, Snd>) -> Self {
-        Pair { fst, _snd: std::marker::PhantomData, snd }
+        Pair { fst, _snd: core::marker::PhantomData, snd }
     }
 }
 

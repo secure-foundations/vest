@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use crate::properties::*;
 use vstd::prelude::*;
 

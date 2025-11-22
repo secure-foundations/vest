@@ -1,5 +1,7 @@
 pub use crate::utils::*;
-// use std::rc::Rc;
+// use core::rc::Rc;
+use alloc::vec::Vec;
+
 use vstd::prelude::*;
 use vstd::slice::*;
 use vstd::*;

@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use super::{
     bytes,
     leb128::{UInt, UnsignedLEB128},

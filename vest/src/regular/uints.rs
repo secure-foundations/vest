@@ -1,5 +1,7 @@
+use alloc::vec::Vec;
+
 use crate::properties::*;
-use std::mem::size_of;
+use core::mem::size_of;
 use vstd::prelude::*;
 use vstd::seq_lib::*;
 use vstd::slice::*;
@@ -320,7 +322,7 @@ impl_combinator_for_be_uint_type!(U64Be, u64);
 
 // helpers
 /// A trait for converting an integer type to and from a sequence of bytes.
-pub trait FromToBytes where Self: ViewReflex + std::marker::Sized + Copy {
+pub trait FromToBytes where Self: ViewReflex + core::marker::Sized + Copy {
     /// Spec version of [`Self::ex_from_le_bytes`]
     spec fn spec_from_le_bytes(s: Seq<u8>) -> Self;
 
