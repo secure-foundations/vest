@@ -4,6 +4,8 @@ pub mod bytes;
 pub mod clone;
 /// Disjointness for Choice combinator
 pub mod disjoint;
+/// End combinator
+pub mod end;
 /// Fail combinator
 pub mod fail;
 /// LEB128-encoded integers

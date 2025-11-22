@@ -4,6 +4,7 @@ use super::sequence::{Preceded, SpecPair};
 use super::tag::Tag;
 use super::variant::Choice;
 use crate::properties::*;
+use crate::regular::end::End;
 use vstd::prelude::*;
 
 verus! {
@@ -197,6 +198,20 @@ impl<T> DisjointFrom<T> for Fail where T: SpecCombinator {
     }
 
     proof fn parse_disjoint_on(&self, c: &T, buf: Seq<u8>) {
+    }
+}
+
+impl<T> DisjointFrom<T> for End where T: SecureSpecCombinator {
+    open spec fn disjoint_from(&self, c: &T) -> bool {
+        c.requires() && c.is_productive()
+    }
+
+    proof fn parse_disjoint_on(&self, c: &T, buf: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(buf) {
+            assert(n == 0);
+            c.lemma_parse_productive(buf);
+            c.lemma_parse_length(buf);
+        }
     }
 }
 

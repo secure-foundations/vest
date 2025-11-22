@@ -356,6 +356,7 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
     type SType = &'x Self::Type;
 
     fn length(&self, v: Self::SType) -> usize {
+        assert(self@.wf(v@)); // TODO: why is this needed?
         match &v.0 {
             Some(v) => self.0.length(v),
             None => 0,
@@ -389,6 +390,213 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
                 }
             },
         }
+    }
+}
+
+pub struct OptThen<Fst, Snd>(pub (Opt<Fst>, Snd));
+
+impl<Fst: View, Snd: View> View for OptThen<Fst, Snd> {
+    type V = OptThen<Fst::V, Snd::V>;
+
+    open spec fn view(&self) -> Self::V {
+        OptThen((self.0.0@, self.0.1@))
+    }
+}
+
+impl<Fst, Snd> OptThen<Fst, Snd> where
+ {
+    pub open spec fn spec_new(fst: Fst, snd: Snd) -> Self {
+        OptThen((Opt(fst), snd))
+    }
+
+    pub fn new(fst: Fst, snd: Snd) -> (o: Self)
+        ensures
+            o == OptThen((Opt(fst), snd)),
+    {
+        OptThen((Opt(fst), snd))
+    }
+}
+
+impl<C, Fst, Snd> DisjointFrom<C> for OptThen<Fst, Snd> where
+    C: SpecCombinator,
+    Fst: SecureSpecCombinator + DisjointFrom<C>,
+    Snd: SpecCombinator + DisjointFrom<Fst> + DisjointFrom<C>,
+ {
+    open spec fn disjoint_from(&self, other: &C) -> bool {
+        &&& self.0.0.0.disjoint_from(other) 
+        &&& self.0.1.disjoint_from(other)
+    }
+
+    proof fn parse_disjoint_on(&self, other: &C, buf: Seq<u8>) {
+        match self.spec_parse(buf) {
+            Some((_, (Some(_), _))) => {
+                self.0.0.0.parse_disjoint_on(other, buf);
+                self.0.1.parse_disjoint_on(other, buf);
+            },
+            Some((_, (None, _))) => {
+                assert(buf.skip(0) == buf);
+                self.0.1.parse_disjoint_on(other, buf);
+            },
+            _ => {}
+        }
+    }
+}
+
+
+impl<Fst, Snd> SpecCombinator for OptThen<Fst, Snd> where
+    Fst: SecureSpecCombinator,
+    Snd: SpecCombinator + DisjointFrom<Fst>,
+ {
+    type Type = (<Opt<Fst> as SpecCombinator>::Type, Snd::Type);
+
+    open spec fn requires(&self) -> bool {
+        // instead of just requiring `Fst` to be
+        // prefix-secure, we require `Snd`
+        // to be disjoint from `Fst`
+        // Note that `Opt<T>` is always not prefix-secure
+        Fst::is_prefix_secure()
+        && self.0.0.requires() && self.0.1.requires() 
+        && self.0.1.disjoint_from(&self.0.0.0)
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.0.wf(v)
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        self.0.spec_parse(s)
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        self.0.spec_serialize(v)
+    }
+}
+
+impl<Fst, Snd> SecureSpecCombinator for OptThen<Fst, Snd> where
+    Fst: SecureSpecCombinator,
+    Snd: SecureSpecCombinator + DisjointFrom<Fst>,
+ {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let buf = self.spec_serialize(v);
+        let buf0 = self.0.0.spec_serialize(v.0);
+        let buf1 = self.0.1.spec_serialize(v.1);
+        self.0.0.theorem_serialize_parse_roundtrip(v.0);
+        self.0.1.theorem_serialize_parse_roundtrip(v.1);
+        assert((buf0 + buf1).skip(buf0.len() as int) == buf1);
+        self.0.0.0.lemma_prefix_secure(buf0, buf1);
+        self.0.1.parse_disjoint_on(&self.0.0.0, buf1); // <-- this is the key
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        if let Some((nm, (v0, v1))) = self.spec_parse(buf) {
+            let (n, v0_) = self.0.0.spec_parse(buf).unwrap();
+            self.0.0.lemma_parse_length(buf);
+            let buf0 = buf.take(n);
+            let buf1 = buf.skip(n);
+            assert(buf == buf0 + buf1);
+            self.0.0.theorem_parse_serialize_roundtrip(buf);
+            let (m, v1_) = self.0.1.spec_parse(buf1).unwrap();
+            self.0.1.theorem_parse_serialize_roundtrip(buf1);
+            self.0.1.lemma_parse_length(buf1);
+            let buf2 = self.spec_serialize((v0, v1));
+            assert(buf2 == buf.take(nm));
+        }
+    }
+
+    open spec fn is_prefix_secure() -> bool {
+        Fst::is_prefix_secure() && Snd::is_prefix_secure()
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
+            self.0.0.0.lemma_prefix_secure(s1, s2);
+            self.0.0.lemma_parse_length(s1);
+            if let Some((n1, v1)) = self.0.0.spec_parse(s1) {
+                match v1 {
+                    Some(v1) => {
+                        assert(s1.skip(n1) + s2 == (s1 + s2).skip(n1));
+                        self.0.1.lemma_prefix_secure(s1.skip(n1), s2);
+                    },
+                    None => {
+                        assert(s1.skip(n1) == s1);
+                        assert(self.0.0.0.spec_parse(s1) is None);
+                        self.0.1.lemma_prefix_secure(s1, s2);
+                        if let Some((n2, v2)) = self.0.1.spec_parse(s1) {
+                            self.0.1.parse_disjoint_on(&self.0.0.0, s1 + s2);
+                            assert(self.0.0.0.spec_parse(s1 + s2) is None);
+                        }
+                    },
+                }
+            }
+        }
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Some((n, _)) = self.0.0.spec_parse(s) {
+            if let Some(_) = self.0.1.spec_parse(s.skip(n)) {
+                self.0.0.lemma_parse_length(s);
+                self.0.1.lemma_parse_length(s.skip(n));
+            }
+        }
+    }
+
+    open spec fn is_productive(&self) -> bool {
+        self.0.1.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {
+        if let Some((n, _)) = self.0.0.spec_parse(s) {
+            if let Some(_) = self.0.1.spec_parse(s.skip(n)) {
+                self.0.0.0.lemma_parse_length(s);
+                self.0.1.lemma_parse_productive(s.skip(n));
+                self.0.1.lemma_parse_length(s.skip(n));
+            }
+        }
+    }
+}
+
+impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for OptThen<Fst, Snd> where
+    I: VestInput,
+    O: VestOutput<I>,
+    Fst: Combinator<'x, I, O, SType = &'x <Fst as Combinator<'x, I, O>>::Type>,
+    Snd: Combinator<'x, I, O>,
+    Fst::V: SecureSpecCombinator<Type = <Fst::Type as View>::V>,
+    Snd::V: SecureSpecCombinator<Type = <Snd::Type as View>::V>,
+    Snd::V: DisjointFrom<Fst::V>,
+    Fst::Type: 'x,
+ {
+    type Type = (<Opt<Fst> as Combinator<'x, I, O>>::Type, Snd::Type);
+
+    type SType = (<Opt<Fst> as Combinator<'x, I, O>>::SType, Snd::SType);
+
+    fn length(&self, v: Self::SType) -> usize {
+        self.0.0.length(&v.0) + self.0.1.length(v.1)
+    }
+
+    open spec fn ex_requires(&self) -> bool {
+        self.0.ex_requires()
+    }
+
+    fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
+        let (n, v1) = self.0.0.parse(s.clone())?;
+        proof {
+            self@.0.0.lemma_parse_length(s@);
+        }
+        let s_ = s.subrange(n, s.len());
+        let (m, v2) = self.0.1.parse(s_)?;
+        proof {
+            self.0.1@.lemma_parse_length(s@.skip(n as int));
+        }
+        Ok((n + m, (v1, v2)))
+    }
+
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
+        usize,
+        SerializeError,
+    >) {
+        let n = self.0.0.serialize(&v.0, data, pos)?;
+        let m = self.0.1.serialize(v.1, data, pos + n)?;
+        Ok(n + m)
     }
 }
 
