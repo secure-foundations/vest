@@ -4,16 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
-builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
+# vstd = "0.0.0-2025-11-16-0050"
+# verus_builtin = "0.0.0-2025-08-12-1837"
+# verus_builtin_macros = "0.0.0-2025-11-16-0050"
 vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
+verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
+verus_builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vest_lib = { path = "../vest" }
 
 [package.metadata.verus]
 verify = true
 
 [package.metadata.verus.ide]
-extra_args = "--expand-errors --import vest=../vest/vest.verusdata --extern vest=../vest/libvest_lib.rlib --rlimit=20"
+extra_args = "--expand-errors"
 
 # [[bench]]
 # name = "example-bench"
