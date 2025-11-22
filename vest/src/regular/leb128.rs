@@ -1,3 +1,5 @@
+use alloc::string::ToString;
+
 use crate::properties::*;
 use vstd::assert_seqs_equal;
 use vstd::prelude::*;

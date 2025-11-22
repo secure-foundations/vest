@@ -1,5 +1,7 @@
 pub use crate::buf_traits::*;
 pub use crate::errors::*;
+use alloc::boxed::Box;
+
 use vstd::prelude::*;
 use vstd::*;
 

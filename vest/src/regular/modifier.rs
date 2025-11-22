@@ -491,7 +491,7 @@ impl<'x, I, O, Inner, M> Combinator<'x, I, O> for TryMap<Inner, M> where
     M::V: SpecPartialIsoProof<Src = <Inner::Type as View>::V, Dst = <M::Dst as View>::V>,
     <Inner::Type as View>::V: SpecTryFrom<<M::Dst as View>::V>,
     <M::Dst as View>::V: SpecTryFrom<<Inner::Type as View>::V>,
-    <Inner::SType as TryFrom<&'x M::Dst>>::Error: std::fmt::Debug,
+    <Inner::SType as TryFrom<&'x M::Dst>>::Error: core::fmt::Debug,
  {
     type Type = M::Dst;
 

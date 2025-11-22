@@ -1,5 +1,7 @@
 extern crate alloc;
-// use std::convert::Infallible;
+// use core::convert::Infallible;
+
+use alloc::vec::Vec;
 
 use vstd::prelude::*;
 use vstd::slice::slice_index_get;
@@ -243,7 +245,7 @@ pub fn compare_slice<'a, 'b>(x: &'a [u8], y: &'a [u8]) -> (res: bool)
 }
 
 /// Helper trait for types that have a reflexive view.
-pub trait ViewReflex where Self: std::marker::Sized + View<V = Self> {
+pub trait ViewReflex where Self: core::marker::Sized + View<V = Self> {
     /// Reflexivity proof for the view.
     proof fn reflex(&self)
         ensures

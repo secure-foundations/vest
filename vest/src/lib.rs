@@ -1,6 +1,7 @@
 #![crate_name = "vest_lib"]
 #![crate_type = "lib"]
 #![warn(missing_docs)]
+#![no_std]
 //! Vest is a *formally verified* library for parsing and serializing binary data, using combinators.
 //!
 //! # Background
@@ -89,6 +90,11 @@
 //! ```
 
 // mod examples;
+
+#[cfg(feature = "std")]
+extern crate std;
+
+extern crate alloc;
 
 /// Combinators for Bitcoin formats.
 pub mod bitcoin;

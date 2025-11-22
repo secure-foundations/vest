@@ -12,6 +12,10 @@ categories = ["development-tools", "parsing"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 # vstd = "0.0.0-2025-11-16-0050"
 # verus_builtin = "0.0.0-2025-08-12-1837"
