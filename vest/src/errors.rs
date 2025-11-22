@@ -33,6 +33,26 @@ pub enum Error {
     Serialize(SerializeError),
 }
 
+impl vstd::std_specs::convert::FromSpecImpl<ParseError> for Error {
+    open spec fn obeys_from_spec() -> bool {
+        true
+    }
+
+    open spec fn from_spec(e: ParseError) -> Self {
+        Error::Parse(e)
+    }
+}
+
+impl vstd::std_specs::convert::FromSpecImpl<SerializeError> for Error {
+    open spec fn obeys_from_spec() -> bool {
+        true
+    }
+
+    open spec fn from_spec(e: SerializeError) -> Self {
+        Error::Serialize(e)
+    }
+}
+
 impl std::convert::From<ParseError> for Error {
     fn from(e: ParseError) -> Self {
         Error::Parse(e)
