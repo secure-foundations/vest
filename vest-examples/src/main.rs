@@ -1,8 +1,8 @@
 #![allow(warnings)]
-// pub mod repeat;
-use vest::{properties::Combinator, regular::repeat::RepeatResult};
+pub mod repeat;
 
 use crate::repeat::*;
+use vest_lib::{properties::Combinator, regular::repetition::RepeatResult};
 
 // Format for:
 // ```vest
