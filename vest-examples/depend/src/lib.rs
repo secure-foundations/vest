@@ -1,16 +1,15 @@
-use modifier::Cond;
-use sequence::{GhostFn, POrSType};
+#![allow(unused_imports)]
+#![allow(warnings)]
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::errors::{ParseError, SerializeError};
 use vest_lib::properties::{Combinator, SpecCombinator};
 use vest_lib::regular::bytes::*;
-use vest_lib::regular::sequence::{Continuation, Pair, SpecPair};
+use vest_lib::regular::modifier::Cond;
+use vest_lib::regular::sequence::{Continuation, GhostFn, Pair, POrSType, SpecPair};
 use vest_lib::regular::uints::*;
 use vest_lib::regular::*;
 use vest_lib::utils::*;
 use vstd::prelude::*;
-
-use crate::my_vec;
 
 verus! {
 
@@ -109,14 +108,22 @@ fn test(buf: &[u8]) -> Result<(), SerializeError>
         buf.len() <= usize::MAX,
 {
     let msg2_combinator = mk_msg2();
-    let mut outbuf: Vec<u8> = my_vec!(0, 0, 0, 0, 0, 0, 0, 0);
+    let mut outbuf: Vec<u8> = {
+        let mut temp_vec = Vec::new();
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec.push(0);
+        temp_vec
+    };
     let two_bytes = [0u8, 1];
     let two_bytes_ref = two_bytes.as_slice();
     let len = msg2_combinator.serialize((&two_bytes_ref, &0u8), &mut outbuf, 0)?;
     let res = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg2_combinator, buf);
-    // if let Ok((len, val)) = msg2_combinator.parse(buf) {
-
-    // }
     Ok(())
 }
 

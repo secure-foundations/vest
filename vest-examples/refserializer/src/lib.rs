@@ -1,5 +1,4 @@
 #![allow(unused_imports)]
-use super::my_vec;
 use vest_lib::properties::*;
 use vest_lib::regular::bytes;
 use vest_lib::regular::modifier::*;
@@ -145,7 +144,7 @@ fn test_parse_serialize(buf: &[u8])
         buf@.len() <= usize::MAX,
 {
     if let Ok((consumed, val)) = a().parse(buf) {
-        let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+        let mut outbuf = vec![0, 0, 0, 0, 0, 0, 0, 0];
         if let Ok(len) = a().serialize(&val, &mut outbuf, 0) {
             proof {
                 spec_a().theorem_parse_serialize_roundtrip(buf@);
@@ -154,10 +153,6 @@ fn test_parse_serialize(buf: &[u8])
             assert(buf@.take(len as int) == outbuf@.take(len as int));
         }
     }
-    // let (consumed, val) = a().parse(buf).unwrap();
-    // let mut outbuf = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
-    // let len = a().serialize(&val, &mut outbuf, 0).unwrap();
-
 }
 
 } // verus!

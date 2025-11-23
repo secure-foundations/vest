@@ -812,9 +812,4 @@ impl<'a> Continuation<POrSType<&'a u16, &u16>> for ResponderIdListCont {
     }
 }
 
-// fn test_comb(ibuf: &[u8], obuf: &mut Vec<u8>) {
-//     if let Ok((n, v)) = responder_id_list().parse(ibuf) {
-//         let len = responder_id_list().serialize(&v, obuf, 0);
-//     }
-// }
 } // verus!

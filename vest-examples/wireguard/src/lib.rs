@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(warnings)]
 use vest_lib::errors::ParseError;
 use vest_lib::properties::Combinator;
 use vest_lib::regular::bytes;
@@ -38,30 +40,6 @@ impl View for ExampleBuilder {
     }
 }
 
-// impl Builder for ExampleBuilder {
-//     open spec fn value(&self) -> Seq<u8> {
-//         seq![0, 0, 0, 0]
-//     }
-//
-//     proof fn value_wf(&self) {
-//     }
-//
-//     fn length(&self) -> usize {
-//         4
-//     }
-//
-//     fn into_mut_vec(&self, data: &mut Vec<u8>, pos: usize) {
-//         assert(pos + 4 <= old(data)@.len());
-//         assert(pos < old(data)@.len());
-//         data.set(pos, 0);
-//         data.set(pos + 1, 0);
-//         data.set(pos + 2, 0);
-//         data.set(pos + 3, 0);
-//         assert(data@ =~= old(data)@.subrange(0, pos as int).add(self.value()).add(
-//             old(data)@.subrange(pos + 4, old(data)@.len() as int),
-//         ));
-//     }
-// }
 spec fn wg_msg1() -> (
     Tag<bytes::Fixed<4>, Seq<u8>>,
     (
