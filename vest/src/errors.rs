@@ -36,6 +36,8 @@ pub enum Error {
     Serialize(SerializeError),
 }
 
+
+#[cfg(verus_keep_ghost)]
 impl vstd::std_specs::convert::FromSpecImpl<ParseError> for Error {
     open spec fn obeys_from_spec() -> bool {
         true
@@ -46,6 +48,7 @@ impl vstd::std_specs::convert::FromSpecImpl<ParseError> for Error {
     }
 }
 
+#[cfg(verus_keep_ghost)]
 impl vstd::std_specs::convert::FromSpecImpl<SerializeError> for Error {
     open spec fn obeys_from_spec() -> bool {
         true
