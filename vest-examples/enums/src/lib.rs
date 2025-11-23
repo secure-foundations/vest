@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(warnings)]
 use vest_lib::properties::*;
 use vest_lib::regular::bytes;
 use vest_lib::regular::tag::*;

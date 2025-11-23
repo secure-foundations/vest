@@ -1,4 +1,5 @@
-use crate::my_vec;
+#![allow(unused_imports)]
+#![allow(warnings)]
 use vest_lib::properties::*;
 use vest_lib::regular::bytes;
 use vest_lib::regular::modifier::*;
@@ -120,8 +121,8 @@ impl<'a> Iso<'a> for Msg1Mapper {
 fn parse_serialize() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, (bytes::Variable(3), bytes::Tail)));
     let msg = Mapped { inner: msg_inner, mapper: Msg1Mapper };
-    let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(&val, &mut s, 0)?;
     proof {
@@ -141,15 +142,13 @@ fn serialize_parse() -> Result<(), Error> {
     let bytes1: [u8; 3] = [0u8, 0u8, 1u8];
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
     let val = Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() };
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut s1 = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(&val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
     let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
-        // assert(val@ == val_@); // rlimit exceeded
-        // assert(val_@ == SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ });
     }
     Ok(())
 }
@@ -237,8 +236,8 @@ impl<'a> Iso<'a> for Msg2Mapper {
 fn parse_serialize2() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, U32Le));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
-    let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&msg, &val, &mut s, 0)?;
     proof {
@@ -256,15 +255,13 @@ fn serialize_parse2() -> Result<(), Error> {
     let msg_inner = (U8, (U16Le, U32Le));
     let msg = Mapped { inner: msg_inner, mapper: Msg2Mapper };
     let val = Msg2 { a: 1, b: 123, c: 1 };
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut s1 = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&msg, &val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
     let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
-        // assert(val@ == val_@); // rlimit exceeded
-        // assert(val_@ == Msg2 { a: 1, b: 123, c: 1 });
     }
     Ok(())
 }
@@ -354,8 +351,8 @@ impl<'a> Iso<'a> for Msg3Mapper {
 fn parse_serialize3() -> Result<(), Error> {
     let msg_inner = bytes::Fixed::<6>;
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
-    let mut data = my_vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(&val, &mut s, 0)?;
     proof {
@@ -375,15 +372,13 @@ fn serialize_parse3() -> Result<(), Error> {
     let msg = Mapped { inner: msg_inner, mapper: Msg3Mapper };
     let bytes: [u8; 6] = [1, 2, 3, 4, 5, 6];
     let val = Msg3 { a: bytes.as_slice() };
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut s1 = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(&val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
     let (n, val_) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, s_)?;
     proof {
         msg.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
-        // assert(val@ == val_@); // rlimit exceeded
-        // assert(val_@ == SpecMsg3 { a: bytes@ });
     }
     Ok(())
 }
@@ -407,7 +402,6 @@ pub type Msg4Inner<'a> = ord_choice_result!(Msg1<'a>, Msg2, Msg3<'a>);
 
 pub type Msg4InnerRef<'a> = ord_choice_result!(&'a Msg1<'a>, &'a Msg2, &'a Msg3<'a>);
 
-// pub type Msg4InnerRef<'a> = Either<&'a Msg1<'a>, Either<&'a Msg2, &'a Msg3<'a>>>;
 impl View for Msg4<'_> {
     type V = SpecMsg4;
 
@@ -507,8 +501,8 @@ fn parse_serialize4() -> Result<(), Error> {
     let msg3 = Preceded(tag3, Mapped { inner: bytes::Fixed::<6>, mapper: Msg3Mapper });
     let msg_inner = ord_choice!(msg1, msg2, msg3);
     let msg = Mapped { inner: msg_inner, mapper: Msg4Mapper };
-    let mut data = my_vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(&val, &mut s, 0)?;
     proof {
@@ -516,8 +510,8 @@ fn parse_serialize4() -> Result<(), Error> {
         assert(data@.subrange(0, n as int) == s@.subrange(0, len as int));
         assert(s@.subrange(0, len as int) == seq![1u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]);
     }
-    let mut data = my_vec![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![3u8, 123u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&msg, data.as_slice())?;
     let len = msg.serialize(&val, &mut s, 0)?;
     proof {
@@ -547,7 +541,7 @@ fn serialize_parse4() -> Result<(), Error> {
     let bytes2: [u8; 3] = [0u8, 0u8, 2u8];
     let bytes3: [u8; 6] = [0u8, 0u8, 1u8, 2u8, 3u8, 4u8];
     let val = Msg4::M1(Msg1 { a: 1, b: 123, c: bytes1.as_slice(), d: bytes2.as_slice() });
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut s1 = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     assert(msg@.wf(val@));
     let len = msg.serialize(&val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
@@ -557,10 +551,9 @@ fn serialize_parse4() -> Result<(), Error> {
         msg@.theorem_serialize_parse_roundtrip(val@);
         assert(n == len);
         assert(val@ == val_@);
-        // assert(val_@ == SpecMsg4::M1(SpecMsg1 { a: 1, b: 123, c: bytes1@, d: bytes2@ }));
     }
     let val = Msg4::M3(Msg3 { a: bytes3.as_slice() });
-    let mut s1 = my_vec![0, 0, 0, 0, 0, 0, 0, 0];
+    let mut s1 = vec![0, 0, 0, 0, 0, 0, 0, 0];
     let len = msg.serialize(&val, &mut s1, 0)?;
     let s_ = slice_subrange(s1.as_slice(), 0, len);
     assert(s_@ == msg@.spec_serialize(val@));

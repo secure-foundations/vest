@@ -1,4 +1,5 @@
-use crate::my_vec;
+#![allow(unused_imports)]
+#![allow(warnings)]
 use vest_lib::properties::*;
 use vest_lib::regular::bytes;
 use vest_lib::regular::modifier::Cond;
@@ -19,8 +20,8 @@ exec fn disjoint_examples(a: u32, b: u8) -> Result<(), Error> {
 
     let choice = ord_choice!(c1, c2, c3);
 
-    let mut data = my_vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    let mut s = my_vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut data = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let mut s = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let (n, val) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&choice, data.as_slice())?;
     let val_ref = match &val {
         inj_ord_choice_pat!(x, *, *) => inj_ord_choice_result!(x, *, *),
