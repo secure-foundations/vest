@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "bitcoin_dsl",
   "choice",
   "depend",
   "enums",
@@ -8,7 +9,9 @@ members = [
   "pair",
   "refserializer",
   "repeat",
-  "triple",
+  "tls_dsl",
+  "triple_dsl",
+  "mavlink_dsl",
   "wireguard",
 ]
 resolver = "2"

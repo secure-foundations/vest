@@ -1,0 +1,127 @@
+!LITTLE_ENDIAN
+
+block = {
+  version: u32,
+  prev_block: [u8; 32],
+  merkle_root: [u8; 32],
+  timestamp: u32,
+  bits: u32,
+  nonce: u32,
+  @tx_count: btc_varint,
+  txs: [tx; @tx_count],
+}
+
+tx = {
+  version: u32,
+  @txin_count: btc_varint,
+  rest: choose(@txin_count) {
+    0 => tx_segwit,
+    _ => tx_nonsegwit(@txin_count),
+  },
+}
+
+tx_segwit = {
+  const flag: u8 = 1,
+  @txin_count: btc_varint,
+  txins: [txin; @txin_count],
+  @txout_count: btc_varint,
+  txouts: [txout; @txout_count],
+  witness: [witness; @txin_count],
+  lock_time: lock_time,
+}
+
+witness = {
+  @count: btc_varint,
+  data: [witness_component; @count],
+}
+
+witness_component = {
+  @l: btc_varint,
+  data: [u8; @l],
+}
+
+tx_nonsegwit(@txin_count: btc_varint) = {
+  txins: [txin; @txin_count],
+  @txout_count: btc_varint,
+  txouts: [txout; @txout_count],
+  lock_time: lock_time,
+}
+
+lock_time = choose {
+  BlockNo(u32 | { 0..499999999 }),
+  Timestamp(u32 | { 500000000.. }),
+}
+
+// tx without segwit
+// tx = {
+//   version: u32,
+//   @txin_count: btc_varint,
+//   txins: [txin; @txin_count],
+//   @txout_count: btc_varint,
+//   txouts: [txout; @txout_count],
+//   lock_time: u32,
+// }
+
+txout = {
+  value: u64,
+  script_pubkey: script,
+}
+
+script = {
+  @l: btc_varint,
+  data: [u8; @l],
+}
+
+txin = {
+  previous_output: outpoint,
+  script_sig: script_sig,
+  sequence: u32,
+}
+
+outpoint = {
+  hash: [u8; 32],
+  index: u32,
+}
+
+script_sig = {
+  @l: btc_varint,
+  data: [u8; @l],
+}
+
+// empty = [u8; 0]
+
+// script_sig = {
+//   @tag: u8,
+//   rest: choose(@tag) {
+//     0..0xFC => [u8; @tag],
+//     0xFD => opaque_0_ff,
+//     0xFE => opaque_0_ffff,
+//     0xFF => opaque_0_ffffffff,
+//   }
+// }
+// 
+// opaque_0_ff = {
+//   @l: u16 | { 0..10000 },
+//   data: [u8; @l],
+// }
+// 
+// opaque_0_ffff = {
+//   @l: u32,
+//   data: [u8; @l],
+// }
+// 
+// opaque_0_ffffffff = {
+//   @l: u64,
+//   data: [u8; @l],
+// }
+
+// bt_varint = {
+//   @tag: u8,
+//   rest: choose(@tag) {
+//     0..0xFC => empty,
+//     0xFD => u16 | { 0xFD..0xFFFF },
+//     0xFE => u32 | { 0x10000..0xFFFFFFFF },
+//     0xFF => u64 | { 0x100000000..0xFFFFFFFFFFFFFFFF },
+//   }
+// } |> bt_varint_mapper
+

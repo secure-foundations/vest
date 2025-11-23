@@ -1,5 +1,5 @@
 [package]
-name = "triple-example"
+name = "triple_dsl"
 version.workspace = true
 edition.workspace = true
 
@@ -19,5 +19,5 @@ verify = true
 extra_args = "--expand-errors"
 
 [[bin]]
-name = "triple-example"
+name = "triple_dsl"
 path = "src/main.rs"

@@ -1,0 +1,42 @@
+[package]
+name = "tls_dsl"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vstd.workspace = true
+verus_builtin.workspace = true
+verus_builtin_macros.workspace = true
+vest_lib.workspace = true
+rustls = "0.23"
+
+[build-dependencies]
+vstd.workspace = true
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rustls = "0.23"
+
+[[bench]]
+name = "tls_benchmark"
+harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
