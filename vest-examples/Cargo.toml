@@ -8,6 +8,7 @@ members = [
   "pair",
   "refserializer",
   "repeat",
+  "triple",
   "wireguard",
 ]
 resolver = "2"
