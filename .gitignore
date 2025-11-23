@@ -21,3 +21,9 @@ Cargo.lock
 
 # Verus LOC metadata
 *.d
+
+# IDEs and editors
+.vscode/
+
+# patches
+*.diff
