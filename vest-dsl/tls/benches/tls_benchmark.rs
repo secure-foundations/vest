@@ -11,8 +11,8 @@ use tls::tls_combinators::ClientHelloExtensionExtensionData::*;
 // use tls::tls_combinators::KeyShareEntryKeyExchange::*;
 use tls::tls_combinators::ServerNameName::HostName;
 use tls::tls_combinators::*;
-use vest::properties::*;
-use vest::regular::repetition::RepeatResult;
+use vest_lib::properties::*;
+use vest_lib::regular::repetition::RepeatResult;
 
 use rustls::internal::msgs::codec::*;
 
