@@ -11,7 +11,7 @@ use std::time::Duration;
 use criterion::Throughput;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
-use vest::properties::Combinator;
+use vest_lib::properties::Combinator;
 use vestbitcoin::vest_bitcoin::*;
 
 use bitcoin::consensus::{Decodable, Encodable};
