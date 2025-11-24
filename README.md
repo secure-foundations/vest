@@ -32,6 +32,8 @@ Vest provides a set of combinators with unified interface (for both parsing and 
 
 Vest DSL (implemented separately in the `vest-dsl` crate) provides a domain-specific language (DSL) for expressing binary formats in a concise and readable way. The DSL is designed to be close to the syntax of Rust data type declarations, with added expressivity like type refinements, internal dependencies within formats, and external dependencies among different formats, enabling the user to define a variety of binary formats found in RFCs or other external specifications. The DSL is type checked and translated into a set of combinators defined and verified in the `vest` crate. It's recommended to use the Vest DSL to define binary formats to avoid the boilerplate of manually constructing combinators, but it's also possible to use the combinators directly.
 
+See [vest-examples](vest-examples/README.md) for an overview of how to construct various binary formats using the Vest DSL or directly using combinators.
+
 ### `.vest` files
 
 A `.vest` file contains a set of format definitions, each of which defines a binary format using the Vest DSL and will be translated into a corresponding Rust data type and a pair of parsing and serialization functions. As a classic example, consider the following `.vest` file defining a [TLV](https://en.wikipedia.org/wiki/Type-length-value) data format:
@@ -62,13 +64,29 @@ type3_msg = ...
 The `.vest` file defines a `tlv_msg` format, which consists of a message type `t`, a length `l`, and a value `v` (the `@` prefix means that those are dependent fields and can be referenced later). The value `v` is a byte sequence of length `l`, and the message type `t` determines how the value should be interpreted. `msg_type` defines an enumeration of message types, and the `choose` syntax is used to select the appropriate message format based on the message type `t`. The `type1_msg`, `type2_msg`, and `type3_msg` formats define the specific message formats for each sub-message type. Roughly, this `.vest` file would correspond to the following Rust data types and functions:
 
 ```rust
+fn parse_tlv_msg(i: &[u8]) -> Result<(usize, TlvMsg), Error> {
+    tlv_msg().parse(i)
+}
+
+fn serialize_tlv_msg(v: &TlvMsg, data: &mut Vec<u8>, pos: usize) -> Result<usize, Error> {
+    tlv_msg().serialize(v, data, pos)
+}
+
+fn tlv_msg_len(v: &TlvMsg) -> usize {
+    tlv_msg().length(v)
+}
+
 struct TlvMsg {
     t: MsgType,
     l: u16,
     v: TlvMsgV,
 }
 
-type MsgType = u8;
+enum MsgType {
+  MsgType1 = 0x01,
+  MsgType2 = 0x02,
+  MsgType3 = 0x03,
+}
 
 enum TlvMsgV {
     MsgType1(Type1Msg),
@@ -108,16 +126,10 @@ fn type3_msg() -> Type3MsgCombinator { ... }
 //
 ```
 
-Once the generated code is type-checked by Rust and verified by Verus, the user can confidently use them in their applications as "one-liners":
+Specifically, the `tlv_msg` function constructs a combinator for parsing and serializing the `tlv_msg` format, which is a mapped combinator that maps between the structural representation of the format (a pair of `t` and `l`, followed by the value `v`) and the nominal Rust data type (`struct TlvMsg`). The `tlv_msg_v` function constructs a combinator for parsing and serializing the value `v`, which is an `AndThen` combinator that first takes a byte sequence of length `l`, and then uses nested `Choice` combinators to select the appropriate sub-message format based on the message type `t`. The `type1_msg`, `type2_msg`, and `type3_msg` functions construct combinators for parsing and serializing the specific message formats.
 
-```rust
-fn parse_tlv_msg(i: &[u8]) -> (o: Result<(usize, TlvMsg), Error>) {
-    tlv_msg().parse(i)
-}
-fn serialize_tlv_msg(v: &TlvMsg, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, Error>) {
-    tlv_msg().serialize(v, data, pos)
-}
-```
+- To parse a `tlv_msg` from a byte slice `i`, simply do `let (consumed, msg) = parse_tlv_msg(i)?;`.
+- To serialize a `tlv_msg` `msg`, first calculate the required length using `let len = tlv_msg_len(&msg);`, then create a mutable byte buffer of that length, and finally call `let written = serialize_tlv_msg(&msg, &mut buffer, 0)?;`.
 
 The following table briefly summarizes the correspondence between the Vest DSL format definitions and the generated Rust data types and combinators:
 
@@ -146,95 +158,36 @@ To enable syntax highlighting for `.vest` files in vim/neovim, paste the [vest.v
 au BufNewFile,BufRead *.vest setfiletype vest
 ```
 
-### Directly using combinators
-
-In case the user wants more control over the parsing and serialization process, they can use the combinators directly.
-
-#### Example: Parsing and serializing a pair of bytes
-
-```rust
-use vest::regular::bytes::*;
-
-let pair_of_bytes = (Fixed::<1>, Fixed::<2>);
-
-let input = &[0x10; 10];
-let (consumed, (a, b)) = pair_of_bytes.parse(input)?;
-
-let mut output = vec![0x00; 40];
-let written = pair_of_bytes.serialize((&a, &b), &mut output, 0)?;
-
-proof { pair_of_bytes@.theorem_parse_serialize_roundtrip(input@); }
-assert(written == consumed);
-assert(&output[..written]@, &input[..written]@);
-```
-
-#### Example: Constructing a new combinator
-
-```rust
-use vest::regular::uints::U8;
-use vest::regular::modifier::{Refined, Pred};
-
-pub struct EvenU8;
-impl Pred for EvenU8 {
-    type Input = u8;
-    fn apply(&self, i: &Self::Input) -> bool {
-        *i % 2 == 0
-    }
-}
-
-let even_u8 = Refined { inner: U8, predicate: EvenU8 };
-
-let mut output = vec![0x00; 40];
-let ten = 10u8;
-let written = even_u8.serialize(&ten, &mut output, 0)?;
-
-let (consumed, parsed) = even_u8.parse(output.as_slice())?;
-
-proof { even_u8@.theorem_serialize_parse_roundtrip(ten@); }
-assert(written == consumed);
-assert(parsed@, ten@);
-```
-
 ## Development
 
 Make sure you have [Rust](https://www.rust-lang.org/tools/install) and [Verus](https://github.com/verus-lang/verus/blob/main/INSTALL.md) properly installed. Then, clone the repository and run:
 
-- To verify and compile the entire `vest` crate:
+- To verify the `vest_lib` crate only:
 
 ```sh
 cd vest
-make
+cargo verus verify
+```
+
+- To verify _and_ compile the entire `vest_lib` crate:
+
+```sh
+cd vest
+cargo verus build
 ```
 
 - To verify the examples:
 
 ```sh
 cd vest-examples
-make
+cargo verus verify
 ```
 
-- To use the Vest DSL:
-
-```sh
-cd vest-dsl
-cargo run path/to/your/file.vest
-```
-
-- Or you can build the `vest-dsl` crate and use the binary directly:
+- To build the Vest DSL:
 
 ```sh
 cd vest-dsl
 cargo build --release
-./target/release/vest-dsl --help
-Usage: vest-dsl [OPTIONS] <VEST_FILE>
-
-Arguments:
-  <VEST_FILE>  Name or directory of the vest file
-
-Options:
-  -o, --output <OUTPUT>  Name of the output verus file
-  -h, --help             Print help
-  -V, --version          Print version
 ```
 
 ## Contributing
