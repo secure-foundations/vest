@@ -279,6 +279,18 @@ i.e., if `Choice<A, B>` serializes a `Right(vb)` value, then `A` must fail to
 parse the serialized output of `B` (otherwise, `A` could have consumed part of
 `B`'s serialized output during parsing, violating the round-trip property).
 
+For `Tail`, we have
+
+```rust
+open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    obuf.len() == 0
+}
+```
+
+i.e., `Tail` can only be serialized when the destination buffer is empty
+(otherwise, `Tail` parser could have consumed all of `obuf`, violating the
+round-trip property).
+
 Importantly, `serializable` conditions are *transitively* enforced during
 composition of combinators. For example, in `Pair<A, B>`, we have
 
@@ -357,6 +369,23 @@ assert(c2.spec_parse(c2.spec_serialize(v1, obuf)) == Some((1int, v1)));
 let v2 = Either::Right(seq![2u8]);
 assert(c2.wf(v2));
 assert(!(c2.serializable(v2, obuf))); // <-- (v2, obuf) is *not* serializable because v2 would serialize to [2], which can be parsed by the second choice arm, returning `Either::Left(Either::Right([2]))` instead of `Either::Right([2])`
+
+// we can compose Tail safely!
+let c = (Fixed::<2>, Tail);
+let obuf = Seq::empty();
+let v = (seq![1u8, 2u8], seq![3u8, 4u8, 5u8]);
+assert(c.wf(v));
+assert(c.requires(v, obuf));
+let ibuf = c.spec_serialize(v, obuf);
+c.theorem_serialize_parse_roundtrip(v, obuf);
+assert(c.spec_parse(ibuf) == Some((5int, v)));
+
+let obuf_bad = seq![0u8; 1];
+assert(!c.requires(v, obuf_bad));
+
+let c_bad = (Tail, Fixed::<3>);
+assert(c_bad.wf(v));
+assert(!c_bad.requires(v, obuf));
 ```
 
 By introducing serializablility conditions and only imposing them during

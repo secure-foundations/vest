@@ -84,6 +84,37 @@ impl<const N: usize> SpecCombinator for Fixed<N> {
     }
 }
 
+pub struct Tail;
+
+impl SpecCombinator for Tail {
+    type Type = Seq<u8>;
+
+    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        obuf.len() == 0
+    }
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+        Some((ibuf.len() as int, ibuf))
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+        v + obuf
+    }
+
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+        assert(self.spec_serialize(v, obuf) == v + obuf);
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    }
+}
+
 impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator {
     type Type = (A::Type, B::Type);
 
@@ -426,6 +457,24 @@ proof fn test_choice_compose() {
     let ibuf = c.spec_serialize(v, obuf);
     c.theorem_serialize_parse_roundtrip(v, obuf);
     assert(c.spec_parse(ibuf) == Some((1int, v)));
+}
+
+proof fn test_tail_compose() {
+    let c = (Fixed::<2>, Tail);
+    let obuf = Seq::empty();
+    let v = (seq![1u8, 2u8], seq![3u8, 4u8, 5u8]);
+    assert(c.wf(v));
+    assert(c.requires(v, obuf));
+    let ibuf = c.spec_serialize(v, obuf);
+    c.theorem_serialize_parse_roundtrip(v, obuf);
+    assert(c.spec_parse(ibuf) == Some((5int, v)));
+
+    let obuf_bad = seq![0u8; 1];
+    assert(!c.requires(v, obuf_bad));
+
+    let c_bad = (Tail, Fixed::<3>);
+    assert(c_bad.wf(v));
+    assert(!c_bad.requires(v, obuf));
 }
 
 } // verus!
