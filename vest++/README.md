@@ -220,6 +220,12 @@ buffer to `A` (`A.spec_serialize(v.0, B.spec_serialize(v.1, obuf))`), allowing u
 `prefix_secure` on `A` (as we can invoke exactly
 `A.theorem_serialize_parse_roundtrip(v.0, B.spec_serialize(v.1, obuf))` for induction).
 
+> NOTE: Serialization needs to happen in reverse order for
+> `theorem_serialize_parse_roundtrip` to hold. For example, for fixed-length bytes combinator
+> `Fixed::<N>`, if we serialize in left-to-right order (`Fixed::<N>.spec_serialize(b, obuf) = obuf + b`),
+> then the corresponding parser would need to parse from the end of the input buffer, which is not possible
+> in the current design.
+
 We introduce a new lemma to relate the return value of `spec_serialize` to the destination
 buffer `obuf`, which is used in the proof of `theorem_serialize_parse_roundtrip`.
 
