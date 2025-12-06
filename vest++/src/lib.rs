@@ -1,3 +1,7 @@
-pub mod v0;
-pub mod v1;
+pub mod core;
+pub mod combinators;
+pub mod tests;
+
+// Keep v0 for backward compatibility if needed
+// pub mod v0;
 

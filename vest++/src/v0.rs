@@ -9,7 +9,7 @@ pub trait SpecCombinator {
         true
     }
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         true
     }
 
@@ -24,14 +24,14 @@ pub trait SpecCombinator {
 
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>)
         requires
-            self.requires(v, obuf),
+            self.serializable(v, obuf),
         ensures
             self.wf(v) ==> exists|new_buf: Seq<u8>| self.spec_serialize(v, obuf) == new_buf + obuf,
     ;
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>)
         requires
-            self.requires(v, obuf),
+            self.serializable(v, obuf),
         ensures
             self.wf(v) ==> self.spec_parse(self.spec_serialize(v, obuf)) == Some(
                 ((self.spec_serialize(v, obuf).len() - obuf.len()), v),
@@ -89,7 +89,7 @@ pub struct Tail;
 impl SpecCombinator for Tail {
     type Type = Seq<u8>;
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         obuf.len() == 0
     }
 
@@ -122,8 +122,8 @@ impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator 
         self.0.wf(v.0) && self.1.wf(v.1)
     }
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
-        self.1.requires(v.1, obuf) && self.0.requires(v.0, self.1.spec_serialize(v.1, obuf))
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.1.serializable(v.1, obuf) && self.0.serializable(v.0, self.1.spec_serialize(v.1, obuf))
     }
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -206,11 +206,11 @@ impl<A> SpecCombinator for Opt<A> where A: SpecCombinator {
         }
     }
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         // &&& self.0.spec_parse(obuf) is None  // <-- here
         match v {
             None => self.0.spec_parse(obuf) is None,
-            Some(vv) => self.0.requires(vv, obuf),
+            Some(vv) => self.0.serializable(vv, obuf),
         }
     }
 
@@ -290,8 +290,8 @@ impl<A: SpecCombinator> SpecCombinator for Refined<A> {
         self.inner.wf(v) && (self.pred)(v)
     }
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
-        self.inner.requires(v, obuf)
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.inner.serializable(v, obuf)
     }
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
@@ -345,11 +345,11 @@ impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for Choice<A, B> {
         }
     }
 
-    open spec fn requires(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
-            Either::Left(va) => self.0.requires(va, obuf),
+            Either::Left(va) => self.0.serializable(va, obuf),
             Either::Right(vb) => {
-                &&& self.1.requires(vb, obuf) 
+                &&& self.1.serializable(vb, obuf) 
                 &&& self.0.spec_parse(self.1.spec_serialize(vb, obuf)) is None // <-- here
             }
         }
@@ -425,7 +425,7 @@ proof fn test_opt_compose() {
     // let v2 = (Some(seq![0u8]), (None, Some(seq![2u8])));
     // let v3 = (None, (Some(seq![1u8]), Some(seq![2u8])));
     assert(c.wf(v));
-    assert(c.requires(v, obuf));
+    assert(c.serializable(v, obuf));
     // assert(c.wf(v1));
     // assert(c.wf(v2));
     // assert(c.wf(v3));
@@ -453,7 +453,7 @@ proof fn test_choice_compose() {
     let v = Either::Left(Either::Right(seq![2u8]));
     // let v = Either::Right(seq![2u8]);
     assert(c.wf(v));
-    assert(c.requires(v, obuf));
+    assert(c.serializable(v, obuf));
     let ibuf = c.spec_serialize(v, obuf);
     c.theorem_serialize_parse_roundtrip(v, obuf);
     assert(c.spec_parse(ibuf) == Some((1int, v)));
@@ -464,17 +464,17 @@ proof fn test_tail_compose() {
     let obuf = Seq::empty();
     let v = (seq![1u8, 2u8], seq![3u8, 4u8, 5u8]);
     assert(c.wf(v));
-    assert(c.requires(v, obuf));
+    assert(c.serializable(v, obuf));
     let ibuf = c.spec_serialize(v, obuf);
     c.theorem_serialize_parse_roundtrip(v, obuf);
     assert(c.spec_parse(ibuf) == Some((5int, v)));
 
     let obuf_bad = seq![0u8; 1];
-    assert(!c.requires(v, obuf_bad));
+    assert(!c.serializable(v, obuf_bad));
 
     let c_bad = (Tail, Fixed::<3>);
     assert(c_bad.wf(v));
-    assert(!c_bad.requires(v, obuf));
+    assert(!c_bad.serializable(v, obuf));
 }
 
 } // verus!
