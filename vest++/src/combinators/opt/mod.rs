@@ -1,5 +1,5 @@
-pub mod spec;
 pub mod proof;
+pub mod spec;
 
 use vstd::prelude::*;
 

@@ -1,5 +1,5 @@
-pub mod spec;
 pub mod proof;
+pub mod spec;
 
 pub use spec::Either;
 

@@ -1,33 +1,16 @@
-use vstd::prelude::*;
-use crate::core::{spec::SpecCombinator, proof::SpecCombinatorProof};
+use crate::core::{
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip, Serializable},
+    spec::SpecCombinator,
+};
+use vstd::{assert_seqs_equal, prelude::*};
 
 verus! {
 
-impl<A, B> SpecCombinatorProof for (A, B) where A: SpecCombinator + SpecCombinatorProof, B: SpecCombinator + SpecCombinatorProof {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_length(ibuf.skip(n1));
-        }
-    }
-
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
-            let serialized1 = self.1.spec_serialize(v.1, obuf);
-            let serialized0 = self.0.spec_serialize(v.0, serialized1);
-            self.1.lemma_serialize_buf(v.1, obuf);
-            self.0.lemma_serialize_buf(v.0, serialized1);
-            let witness1 = choose|wit1: Seq<u8>| self.1.spec_serialize(v.1, obuf) == wit1 + obuf;
-            let witness0 = choose|wit0: Seq<u8>|
-                self.0.spec_serialize(v.0, serialized1) == wit0 + serialized1;
-            assert(serialized0 == witness0 + witness1 + obuf);
-        }
-    }
-
+impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for (A, B) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
-            let serialized1 = self.1.spec_serialize(v.1, obuf);
-            let serialized0 = self.0.spec_serialize(v.0, serialized1);
+            let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+            let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
             self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
             self.0.theorem_serialize_parse_roundtrip(v.0, serialized1);
             self.1.lemma_serialize_buf(v.1, obuf);
@@ -43,16 +26,69 @@ impl<A, B> SpecCombinatorProof for (A, B) where A: SpecCombinator + SpecCombinat
             }
         }
     }
+}
 
+impl<A: PSRoundTrip, B: PSRoundTrip> PSRoundTrip for (A, B) {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
             self.1.lemma_parse_length(ibuf.skip(n1));
             if let Some((n2, v2)) = self.1.spec_parse(ibuf.skip(n1)) {
-                let serialized2 = self.1.spec_serialize(v2, obuf);
-                let serialized1 = self.0.spec_serialize(v1, serialized2);
+                let serialized2 = self.1.spec_serialize_dps(v2, obuf);
+                let serialized1 = self.0.spec_serialize_dps(v1, serialized2);
                 self.0.theorem_parse_serialize_roundtrip(ibuf, serialized2);
                 self.1.theorem_parse_serialize_roundtrip(ibuf.skip(n1), obuf);
+            }
+        }
+    }
+}
+
+impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    if let Some((n1a, _)) = self.0.spec_parse(buf1) {
+                        if let Some((n2a, _)) = self.0.spec_parse(buf2) {
+                            if let Some((n1b, _)) = self.1.spec_parse(buf1.skip(n1a)) {
+                                if let Some((n2b, _)) = self.1.spec_parse(buf2.skip(n2a)) {
+                                    self.0.lemma_parse_length(buf1);
+                                    self.0.lemma_parse_length(buf2);
+                                    self.1.lemma_parse_length(buf1.skip(n1a));
+                                    self.1.lemma_parse_length(buf2.skip(n2a));
+                                    self.0.lemma_parse_non_malleable(buf1, buf2);
+                                    self.1.lemma_parse_non_malleable(
+                                        buf1.skip(n1a),
+                                        buf2.skip(n2a),
+                                    );
+                                    assert(n1 == n1a + n1b && n2 == n2a + n2b);
+                                    assert(buf1.take(n1) == buf2.take(n2)) by {
+                                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(
+                                            n1a,
+                                        ).take(n1b));
+                                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(
+                                            n2a,
+                                        ).take(n2b));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<A: Serializable, B: Serializable> Serializable for (A, B) {
+    proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
+                if let Some((n2, v2)) = self.1.spec_parse(ibuf.skip(n1)) {
+                    self.1.lemma_parse_serializable(ibuf.skip(n1));
+                    self.0.lemma_parse_serializable(ibuf);
+                    assume(exists|obuf: Seq<u8>| self.serializable(v, obuf));
+                }
             }
         }
     }

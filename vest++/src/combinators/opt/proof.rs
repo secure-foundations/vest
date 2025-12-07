@@ -1,30 +1,16 @@
+use crate::core::{
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip, Serializable},
+    spec::SpecCombinator,
+};
 use vstd::prelude::*;
-use crate::core::{spec::SpecCombinator, proof::SpecCombinatorProof};
 
 verus! {
 
-impl<A> SpecCombinatorProof for crate::combinators::opt::Opt<A> where A: SpecCombinator + SpecCombinatorProof {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-    }
-
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        match v {
-            None => {
-                assert(self.spec_serialize(v, obuf) == Seq::empty() + obuf);
-            },
-            Some(vv) => {
-                if self.wf(v) {
-                    self.0.lemma_serialize_buf(vv, obuf);
-                }
-            },
-        }
-    }
-
+impl<A: SPRoundTrip> SPRoundTrip for super::Opt<A> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {
-                assert(self.spec_serialize(v, obuf) == obuf);
+                assert(self.spec_serialize_dps(v, obuf) == obuf);
                 if let Some((n, v)) = self.spec_parse(obuf) {
                     assert(n == 0);
                     assert(v == Option::<A::Type>::None);
@@ -37,20 +23,46 @@ impl<A> SpecCombinatorProof for crate::combinators::opt::Opt<A> where A: SpecCom
             },
         }
     }
+}
 
+impl<A: Serializable> Serializable for super::Opt<A> {
+    proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            match v {
+                None => {
+                    let wit = choose|obuf: Seq<u8>| self.0.spec_parse(obuf) is None;
+                    assert(self.serializable(v, wit));
+                },
+                Some(vv) => {
+                    self.0.lemma_parse_serializable(ibuf);
+                    let wit = choose|obuf: Seq<u8>| self.0.serializable(vv, obuf);
+                    assert(self.serializable(v, wit));
+                },
+            }
+        }
+    }
+}
+
+impl<A: PSRoundTrip> PSRoundTrip for super::Opt<A> {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         if let Some((n, v)) = self.spec_parse(ibuf) {
             match v {
                 None => {
                     assert(n == 0);
-                    assert(self.spec_serialize(v, obuf) == obuf);
+                    assert(self.spec_serialize_dps(v, obuf) == obuf);
                 },
                 Some(vv) => {
                     self.0.theorem_parse_serialize_roundtrip(ibuf, obuf);
                 },
             }
         }
+    }
+}
+
+impl<A: NonMalleable> NonMalleable for super::Opt<A> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        self.0.lemma_parse_non_malleable(buf1, buf2);
     }
 }
 

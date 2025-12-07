@@ -349,9 +349,12 @@ impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for Choice<A, B> {
         match v {
             Either::Left(va) => self.0.serializable(va, obuf),
             Either::Right(vb) => {
-                &&& self.1.serializable(vb, obuf) 
-                &&& self.0.spec_parse(self.1.spec_serialize(vb, obuf)) is None // <-- here
-            }
+                &&& self.1.serializable(vb, obuf)
+                &&& self.0.spec_parse(
+                    self.1.spec_serialize(vb, obuf),
+                ) is None  // <-- here
+
+            },
         }
     }
 

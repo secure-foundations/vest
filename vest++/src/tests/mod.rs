@@ -1,8 +1,11 @@
+#[allow(unused_imports)]
+use crate::combinators::{Choice, Either, Fixed, Opt, Refined, Tail};
+#[allow(unused_imports)]
+use crate::core::{
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip, Serializable},
+    spec::SpecCombinator,
+};
 use vstd::prelude::*;
-#[allow(unused_imports)]
-use crate::combinators::{Fixed, Tail, Opt, Refined, Choice, Either};
-#[allow(unused_imports)]
-use crate::core::{spec::SpecCombinator, proof::SpecCombinatorProof};
 
 verus! {
 
@@ -26,7 +29,7 @@ proof fn test_opt_compose() {
     // assert(c.wf(v1));
     // assert(c.wf(v2));
     // assert(c.wf(v3));
-    let ibuf = c.spec_serialize(v, obuf);
+    let ibuf = c.spec_serialize_dps(v, obuf);
     // let ibuf = c.spec_serialize(v1, obuf);
     // let ibuf = c.spec_serialize(v2, obuf);
     // let ibuf = c.spec_serialize(v3, obuf);
@@ -51,7 +54,7 @@ proof fn test_choice_compose() {
     // let v = Either::Right(seq![2u8]);
     assert(c.wf(v));
     assert(c.serializable(v, obuf));
-    let ibuf = c.spec_serialize(v, obuf);
+    let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v, obuf);
     assert(c.spec_parse(ibuf) == Some((1int, v)));
 }
@@ -62,7 +65,7 @@ proof fn test_tail_compose() {
     let v = (seq![1u8, 2u8], seq![3u8, 4u8, 5u8]);
     assert(c.wf(v));
     assert(c.serializable(v, obuf));
-    let ibuf = c.spec_serialize(v, obuf);
+    let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v, obuf);
     assert(c.spec_parse(ibuf) == Some((5int, v)));
 

@@ -1,8 +1,8 @@
-pub mod spec;
 pub mod proof;
+pub mod spec;
 
-use vstd::prelude::*;
 use crate::core::spec::SpecCombinator;
+use vstd::prelude::*;
 
 verus! {
 

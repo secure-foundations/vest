@@ -1,20 +1,23 @@
+use crate::core::{
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    spec::SpecCombinator,
+};
 use vstd::prelude::*;
-use crate::core::{spec::SpecCombinator, proof::SpecCombinatorProof};
 
 verus! {
 
-impl SpecCombinatorProof for crate::combinators::tail::Tail {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-    }
-
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        assert(self.spec_serialize(v, obuf) == v + obuf);
-    }
-
+impl SPRoundTrip for super::Tail {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
     }
+}
 
+impl PSRoundTrip for super::Tail {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    }
+}
+
+impl NonMalleable for super::Tail {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
     }
 }
 

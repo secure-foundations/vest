@@ -1,9 +1,9 @@
-use vstd::prelude::*;
 use crate::core::spec::SpecCombinator;
+use vstd::prelude::*;
 
 verus! {
 
-impl<A: SpecCombinator> SpecCombinator for crate::combinators::refined::Refined<A> {
+impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {
     type Type = A::Type;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
@@ -27,8 +27,20 @@ impl<A: SpecCombinator> SpecCombinator for crate::combinators::refined::Refined<
         }
     }
 
-    open spec fn spec_serialize(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
-        self.inner.spec_serialize(v, obuf)
+    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(v, obuf)
+    }
+
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_buf(v, obuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_wf(ibuf);
     }
 }
 
