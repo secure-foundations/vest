@@ -1,7 +1,7 @@
 use crate::combinators::Either;
 use crate::core::{
     proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::SpecCombinator,
+    spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator},
 };
 use vstd::prelude::*;
 

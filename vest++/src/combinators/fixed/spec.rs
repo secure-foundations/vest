@@ -1,15 +1,17 @@
-use crate::core::spec::SpecCombinator;
+use crate::core::spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator};
 use vstd::prelude::*;
 
 verus! {
 
-impl<const N: usize> SpecCombinator for super::Fixed<N> {
+impl<const N: usize> SpecType for super::Fixed<N> {
     type Type = Seq<u8>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
         v.len() == N as int
     }
+}
 
+impl<const N: usize> SpecParser for super::Fixed<N> {
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
         if ibuf.len() < N as int {
             None
@@ -18,11 +20,16 @@ impl<const N: usize> SpecCombinator for super::Fixed<N> {
         }
     }
 
-    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
-        v + obuf
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl<const N: usize> SpecSerializer for super::Fixed<N> {
+    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+        v + obuf
     }
 
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
@@ -31,11 +38,10 @@ impl<const N: usize> SpecCombinator for super::Fixed<N> {
         }
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
     }
 }
+
+impl<const N: usize> SpecCombinator for super::Fixed<N> {}
 
 } // verus!

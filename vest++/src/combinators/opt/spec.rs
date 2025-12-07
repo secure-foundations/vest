@@ -1,9 +1,9 @@
-use crate::core::spec::SpecCombinator;
+use crate::core::spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator};
 use vstd::prelude::*;
 
 verus! {
 
-impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
+impl<A> SpecType for super::Opt<A> where A: SpecType {
     type Type = Option<A::Type>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
@@ -12,20 +12,32 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
             Some(vv) => self.0.wf(vv),
         }
     }
+}
 
+impl<A> SpecParser for super::Opt<A> where A: SpecParser {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+        match self.0.spec_parse(ibuf) {
+            Some((n, v)) => Some((n, Some(v))),
+            None => Some((0, None)),
+        }
+    }
+
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_wf(ibuf);
+    }
+}
+
+impl<A> SpecSerializer for super::Opt<A> where A: SpecCombinator {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in
             // `obuf` when the value is `None`
             None => self.0.spec_parse(obuf) is None,
             Some(vv) => self.0.serializable(vv, obuf),
-        }
-    }
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
-        match self.0.spec_parse(ibuf) {
-            Some((n, v)) => Some((n, Some(v))),
-            None => Some((0, None)),
         }
     }
 
@@ -43,10 +55,6 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
         }
     }
 
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-    }
-
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {
@@ -60,10 +68,6 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
         }
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_wf(ibuf);
-    }
-
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {},
@@ -75,5 +79,7 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
         }
     }
 }
+
+impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {}
 
 } // verus!

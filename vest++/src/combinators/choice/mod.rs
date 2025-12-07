@@ -1,9 +1,9 @@
 pub mod proof;
 pub mod spec;
 
-pub use spec::Either;
-
 use vstd::prelude::*;
+
+pub use spec::Either;
 
 verus! {
 

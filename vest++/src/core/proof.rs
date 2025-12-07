@@ -1,3 +1,5 @@
+use crate::core::spec::SpecParser;
+
 use super::spec::SpecCombinator;
 use vstd::prelude::*;
 
@@ -27,7 +29,7 @@ pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
 }
 
 /// Non-malleability property: equal parsed values imply equal input prefixes
-pub trait NonMalleable: SpecCombinator {
+pub trait NonMalleable: SpecParser {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==> self.spec_parse(buf2) matches Some(
