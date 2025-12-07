@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip, Serializable},
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::SpecCombinator,
 };
 use vstd::{assert_seqs_equal, prelude::*};
@@ -74,20 +74,6 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-impl<A: Serializable, B: Serializable> Serializable for (A, B) {
-    proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(ibuf) {
-            if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-                if let Some((n2, v2)) = self.1.spec_parse(ibuf.skip(n1)) {
-                    self.1.lemma_parse_serializable(ibuf.skip(n1));
-                    self.0.lemma_parse_serializable(ibuf);
-                    assume(exists|obuf: Seq<u8>| self.serializable(v, obuf));
                 }
             }
         }

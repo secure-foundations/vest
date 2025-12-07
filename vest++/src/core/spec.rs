@@ -50,6 +50,25 @@ pub trait SpecCombinator {
                 self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 
+    // /// Lemma: an alternative formulation of [`lemma_serialize_buf`]
+    // proof fn lemma_serialize_buf_alt(&self, v: Self::Type, obuf: Seq<u8>)
+    //     requires
+    //         self.serializable(v, obuf),
+    //     ensures
+    //         self.wf(v) ==> {
+    //             let serialized = self.spec_serialize_dps(v, obuf);
+    //             serialized.len() >= obuf.len()
+    //                 && serialized.skip(serialized.len() - obuf.len()) == obuf
+    //         }
+    // ;
+    /// Lemma: serializer equivalence between DPS and non-DPS specs
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>)
+        requires
+            self.serializable(v, obuf),
+        ensures
+            self.wf(v) ==> self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
+    ;
+
     /// Lemma: parser returns well-formed values
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)
         ensures

@@ -33,6 +33,9 @@ impl<const N: usize> SpecCombinator for super::Fixed<N> {
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
     }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+    }
 }
 
 } // verus!

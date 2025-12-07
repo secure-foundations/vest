@@ -27,6 +27,9 @@ impl SpecCombinator for super::Tail {
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
     }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+    }
 }
 
 } // verus!

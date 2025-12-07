@@ -31,6 +31,10 @@ impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {
         self.inner.spec_serialize_dps(v, obuf)
     }
 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        self.inner.spec_serialize(v)
+    }
+
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
@@ -41,6 +45,10 @@ impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_wf(ibuf);
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_equiv(v, obuf);
     }
 }
 

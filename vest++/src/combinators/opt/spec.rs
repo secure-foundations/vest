@@ -36,6 +36,13 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
         }
     }
 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        match v {
+            None => Seq::empty(),
+            Some(vv) => self.0.spec_serialize(vv),
+        }
+    }
+
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
     }
@@ -55,6 +62,17 @@ impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_wf(ibuf);
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        match v {
+            None => {},
+            Some(vv) => {
+                if self.wf(v) {
+                    self.0.lemma_serialize_equiv(vv, obuf);
+                }
+            },
+        }
     }
 }
 

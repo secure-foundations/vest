@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip, Serializable},
+    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::SpecCombinator,
 };
 use vstd::prelude::*;
@@ -21,24 +21,6 @@ impl<A: SPRoundTrip> SPRoundTrip for super::Opt<A> {
                     self.0.theorem_serialize_parse_roundtrip(vv, obuf);
                 }
             },
-        }
-    }
-}
-
-impl<A: Serializable> Serializable for super::Opt<A> {
-    proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(ibuf) {
-            match v {
-                None => {
-                    let wit = choose|obuf: Seq<u8>| self.0.spec_parse(obuf) is None;
-                    assert(self.serializable(v, wit));
-                },
-                Some(vv) => {
-                    self.0.lemma_parse_serializable(ibuf);
-                    let wit = choose|obuf: Seq<u8>| self.0.serializable(vv, obuf);
-                    assert(self.serializable(v, wit));
-                },
-            }
         }
     }
 }

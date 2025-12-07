@@ -47,6 +47,13 @@ impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for super::Choice<A, B
         }
     }
 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        match v {
+            Either::Left(va) => self.0.spec_serialize(va),
+            Either::Right(vb) => self.1.spec_serialize(vb),
+        }
+    }
+
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         self.1.lemma_parse_length(ibuf);
@@ -68,6 +75,19 @@ impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for super::Choice<A, B
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_wf(ibuf);
         self.1.lemma_parse_wf(ibuf);
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        if self.wf(v) {
+            match v {
+                Either::Left(va) => {
+                    self.0.lemma_serialize_equiv(va, obuf);
+                },
+                Either::Right(vb) => {
+                    self.1.lemma_serialize_equiv(vb, obuf);
+                },
+            }
+        }
     }
 }
 
