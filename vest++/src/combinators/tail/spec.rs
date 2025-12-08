@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator};
+use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -36,6 +36,8 @@ impl SpecSerializer for super::Tail {
     }
 }
 
-impl SpecCombinator for super::Tail {}
+impl SpecCombinator for super::Tail {
+
+}
 
 } // verus!

@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator};
+use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -90,6 +90,8 @@ impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer 
     }
 }
 
-impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator {}
+impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator {
+
+}
 
 } // verus!

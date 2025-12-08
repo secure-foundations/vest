@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator};
+use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -42,6 +42,8 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> SpecCombinator for super::Fixed<N> {}
+impl<const N: usize> SpecCombinator for super::Fixed<N> {
+
+}
 
 } // verus!
