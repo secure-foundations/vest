@@ -2,7 +2,7 @@ use vstd::prelude::*;
 
 verus! {
 
-/// The specification type (mathematical representation) of 
+/// The specification type (mathematical representation) of
 /// a parsed/serialized value.
 pub trait SpecType {
     type Type;
@@ -11,6 +11,15 @@ pub trait SpecType {
     open spec fn wf(&self, v: Self::Type) -> bool {
         true
     }
+}
+
+/// A refinement of `SpecType` for types that have a unique well-formed value.
+pub trait UniqueWfValue: SpecType {
+    /// Lemma: if two values are both well-formed, they must be equal
+    proof fn lemma_unique_wf_value(&self, v1: Self::Type, v2: Self::Type)
+        ensures
+            self.wf(v1) && self.wf(v2) ==> v1 == v2,
+    ;
 }
 
 /// Parser specification.
@@ -75,11 +84,13 @@ pub trait SpecSerializer: SpecType {
 
 /// Combined parser and serializer specification trait.
 pub trait SpecCombinator: SpecParser + SpecSerializer {
+
 }
 
 type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
-type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
-type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
 
+type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
+
+type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
 
 } // verus!
