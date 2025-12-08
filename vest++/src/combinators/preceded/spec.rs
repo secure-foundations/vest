@@ -1,0 +1,77 @@
+use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use vstd::prelude::*;
+
+verus! {
+
+impl<A, B> SpecType for super::Preceded<A, B> where A: SpecType, B: SpecType {
+    type Type = B::Type;
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.1.wf(v)
+    }
+}
+
+impl<A, B> SpecParser for super::Preceded<A, B> where A: SpecParser, B: SpecParser {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+        match (self.0, self.1).spec_parse(ibuf) {
+            Some((n, (_va, vb))) => Some((n, vb)),
+            None => None,
+        }
+    }
+
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_wf(ibuf);
+    }
+}
+
+impl<A, B> SpecSerializer for super::Preceded<A, B> where A: SpecSerializer, B: SpecSerializer {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        // To serialize Preceded, we need a witness value for A
+        // We require that there exists some A value that can be serialized before B
+        exists|va: A::Type|
+            #![auto]
+            { self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf) }
+    }
+
+    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+        // Use an arbitrary witness value for A that satisfies the serializable constraint
+        let va = choose|va: A::Type|
+            #![auto]
+            self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+        (self.0, self.1).spec_serialize_dps((va, v), obuf)
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let va = choose|va: A::Type| self.0.wf(va);
+        (self.0, self.1).spec_serialize((va, v))
+    }
+
+    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+        if self.serializable(v, obuf) {
+            let va = choose|va: A::Type|
+                #![auto]
+                self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+            (self.0, self.1).lemma_serialize_buf((va, v), obuf);
+        }
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        assume(forall|v1, v2| self.0.wf(v1) && self.0.wf(v2) ==> v1 == v2);
+        if self.wf(v) && self.serializable(v, obuf) {
+            let va = choose|va: A::Type|
+                #![auto]
+                self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+            (self.0, self.1).lemma_serialize_equiv((va, v), obuf);
+        }
+    }
+}
+
+impl<A, B> SpecCombinator for super::Preceded<A, B> where A: SpecCombinator, B: SpecCombinator {
+
+}
+
+} // verus!

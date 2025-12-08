@@ -3,7 +3,7 @@ use crate::combinators::{Choice, Either, Fixed, Opt, Refined, Tail};
 #[allow(unused_imports)]
 use crate::core::{
     proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecType, SpecParser, SpecSerializer, SpecCombinator},
+    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
 };
 use vstd::prelude::*;
 
