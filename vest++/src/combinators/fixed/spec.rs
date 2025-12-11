@@ -37,9 +37,6 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
             assert(self.spec_serialize_dps(v, obuf) == v + obuf);
         }
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-    }
 }
 
 impl<const N: usize> SpecCombinator for super::Fixed<N> {

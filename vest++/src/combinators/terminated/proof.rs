@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue},
 };
 use vstd::prelude::*;
@@ -57,6 +57,26 @@ impl<A, B> NonMalleable for super::Terminated<A, B> where
                     }
                 }
             }
+        }
+    }
+}
+
+// Deterministic only holds for Terminated when B has a unique well-formed value
+impl<A, B> Deterministic for super::Terminated<A, B> where
+    A: Deterministic,
+    B: Deterministic + UniqueWfValue,
+ {
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        if self.wf(v) && self.serializable(v, obuf) {
+            let vb_dps = choose|vb: B::Type|
+                #![auto]
+                self.1.wf(vb) && (self.0, self.1).serializable((v, vb), obuf);
+            let vb_ser = choose|vb: B::Type| self.1.wf(vb);
+
+            // Since B has unique well-formed values, both witnesses are equal
+            self.1.lemma_unique_wf_value(vb_dps, vb_ser);
+
+            (self.0, self.1).lemma_serialize_equiv((v, vb_dps), obuf);
         }
     }
 }

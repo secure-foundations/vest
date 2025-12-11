@@ -67,17 +67,6 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecCombinator {
             },
         }
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        match v {
-            None => {},
-            Some(vv) => {
-                if self.wf(v) {
-                    self.0.lemma_serialize_equiv(vv, obuf);
-                }
-            },
-        }
-    }
 }
 
 impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {

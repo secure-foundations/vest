@@ -50,10 +50,6 @@ impl<A: SpecSerializer> SpecSerializer for super::Refined<A> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(v, obuf);
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v, obuf);
-    }
 }
 
 impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {

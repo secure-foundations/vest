@@ -72,14 +72,6 @@ pub trait SpecSerializer: SpecType {
             self.wf(v) ==> exists|new_buf: Seq<u8>|
                 self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
-
-    /// Lemma: serializer equivalence between DPS and non-DPS specs
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>)
-        requires
-            self.serializable(v, obuf),
-        ensures
-            self.wf(v) ==> self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
-    ;
 }
 
 /// Combined parser and serializer specification trait.

@@ -1,6 +1,6 @@
 use crate::combinators::Either;
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
 };
 use vstd::prelude::*;
@@ -33,6 +33,24 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
         self.1.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A, B> Deterministic for super::Choice<A, B> where
+    A: Deterministic + SpecCombinator,
+    B: Deterministic,
+ {
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        if self.wf(v) {
+            match v {
+                Either::Left(va) => {
+                    self.0.lemma_serialize_equiv(va, obuf);
+                },
+                Either::Right(vb) => {
+                    self.1.lemma_serialize_equiv(vb, obuf);
+                },
+            }
+        }
     }
 }
 

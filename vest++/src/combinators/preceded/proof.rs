@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue},
 };
 use vstd::prelude::*;
@@ -57,6 +57,26 @@ impl<A, B> NonMalleable for super::Preceded<A, B> where
                     }
                 }
             }
+        }
+    }
+}
+
+// Deterministic only holds for Preceded when A has a unique well-formed value
+impl<A, B> Deterministic for super::Preceded<A, B> where
+    A: Deterministic + UniqueWfValue,
+    B: Deterministic,
+ {
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        if self.wf(v) && self.serializable(v, obuf) {
+            let va_dps = choose|va: A::Type|
+                #![auto]
+                self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+            let va_ser = choose|va: A::Type| self.0.wf(va);
+
+            // Since A has unique well-formed values, both witnesses are equal
+            self.0.lemma_unique_wf_value(va_dps, va_ser);
+
+            (self.0, self.1).lemma_serialize_equiv((va_dps, v), obuf);
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
 };
 use vstd::prelude::*;
@@ -45,6 +45,19 @@ impl<A: PSRoundTrip> PSRoundTrip for super::Opt<A> {
 impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A> Deterministic for super::Opt<A> where A: Deterministic + SpecCombinator {
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+        match v {
+            None => {},
+            Some(vv) => {
+                if self.wf(v) {
+                    self.0.lemma_serialize_equiv(vv, obuf);
+                }
+            },
+        }
     }
 }
 

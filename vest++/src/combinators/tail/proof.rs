@@ -1,5 +1,5 @@
 use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
+    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::SpecCombinator,
 };
 use vstd::prelude::*;
@@ -18,6 +18,11 @@ impl PSRoundTrip for super::Tail {
 
 impl NonMalleable for super::Tail {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+    }
+}
+
+impl Deterministic for super::Tail {
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
     }
 }
 

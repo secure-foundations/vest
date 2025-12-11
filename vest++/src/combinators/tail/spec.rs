@@ -31,9 +31,6 @@ impl SpecSerializer for super::Tail {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == v + obuf);
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-    }
 }
 
 impl SpecCombinator for super::Tail {

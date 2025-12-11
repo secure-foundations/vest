@@ -80,19 +80,6 @@ impl<A: SpecCombinator, B: SpecSerializer> SpecSerializer for super::Choice<A, B
             }
         }
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
-            match v {
-                Either::Left(va) => {
-                    self.0.lemma_serialize_equiv(va, obuf);
-                },
-                Either::Right(vb) => {
-                    self.1.lemma_serialize_equiv(vb, obuf);
-                },
-            }
-        }
-    }
 }
 
 impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for super::Choice<A, B> {

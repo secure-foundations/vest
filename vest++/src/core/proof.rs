@@ -1,6 +1,6 @@
 use crate::core::spec::SpecParser;
 
-use super::spec::SpecCombinator;
+use super::spec::{SpecCombinator, SpecSerializer};
 use vstd::prelude::*;
 
 verus! {
@@ -35,6 +35,24 @@ pub trait NonMalleable: SpecParser {
             self.spec_parse(buf1) matches Some((n1, v1)) ==> self.spec_parse(buf2) matches Some(
                 (n2, v2),
             ) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+    ;
+}
+
+/// Deterministic serializer property: DPS and non-DPS serialization are equivalent
+///
+/// ## Note
+/// Verus `spec` functions are *always* deterministic, even if they involve the hilbert choice operator
+/// `choose` (which makes arbitrary but fixed choices for the same predicate).
+/// Hence, we model non-deterministic serializers by relating two different serializer
+/// specs (DPS and non-DPS), since a deterministic serializer would produce
+/// identical outputs regardless of the serialization strategy.
+pub trait Deterministic: SpecSerializer {
+    /// Lemma: serializer equivalence between DPS and non-DPS specs
+    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>)
+        requires
+            self.serializable(v, obuf),
+        ensures
+            self.wf(v) ==> self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
 }
 

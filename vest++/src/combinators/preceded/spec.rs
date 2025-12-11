@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue};
 use vstd::prelude::*;
 
 verus! {
@@ -56,16 +56,6 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where A: SpecSerializer, B: 
                 #![auto]
                 self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
             (self.0, self.1).lemma_serialize_buf((va, v), obuf);
-        }
-    }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        assume(forall|v1, v2| self.0.wf(v1) && self.0.wf(v2) ==> v1 == v2);
-        if self.wf(v) && self.serializable(v, obuf) {
-            let va = choose|va: A::Type|
-                #![auto]
-                self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
-            (self.0, self.1).lemma_serialize_equiv((va, v), obuf);
         }
     }
 }

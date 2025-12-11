@@ -66,28 +66,6 @@ impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer 
             assert(serialized0 == witness0 + witness1 + obuf);
         }
     }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
-            let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
-
-            self.1.lemma_serialize_equiv(v.1, obuf);
-            self.0.lemma_serialize_equiv(v.0, obuf1);
-
-            // From self.1.lemma_serialize_equiv:
-            // self.1.spec_serialize_dps(v.1, obuf) == self.1.spec_serialize(v.1) + obuf
-            // So: obuf1 == self.1.spec_serialize(v.1) + obuf
-
-            // From self.0.lemma_serialize_equiv:
-            // self.0.spec_serialize_dps(v.0, obuf1) == self.0.spec_serialize(v.0) + obuf1
-
-            // Therefore:
-            // spec_serialize_dps(v, obuf) = self.0.spec_serialize_dps(v.0, obuf1)
-            //                              = self.0.spec_serialize(v.0) + obuf1
-            //                              = self.0.spec_serialize(v.0) + self.1.spec_serialize(v.1) + obuf
-            //                              = spec_serialize(v) + obuf
-        }
-    }
 }
 
 impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator {
