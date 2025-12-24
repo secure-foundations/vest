@@ -3332,11 +3332,11 @@ pub fn {name}<'a>() -> (o: {upper_caml_name}Combinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
     let combinator = {upper_caml_name}Combinator({expr});
-    assert({{
-        &&& combinator@ == spec_{name}()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    }});
+    // assert({{
+    //     &&& combinator@ == spec_{name}()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // }});
     combinator
 }}
 
@@ -3451,11 +3451,11 @@ pub fn {name}<'a>({exec_params}) -> (o: {upper_caml_name}Combinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
     let combinator = {upper_caml_name}Combinator({expr});
-    assert({{
-        &&& combinator@ == spec_{name}({args_view})
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    }});
+    // assert({{
+    //     &&& combinator@ == spec_{name}({args_view})
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // }});
     combinator
 }}
 
@@ -3536,11 +3536,11 @@ pub fn {name}<'a>() -> (o: {upper_caml_name}Combinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {{
     let combinator = {expr};
-    assert({{
-        &&& combinator@ == spec_{name}()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    }});
+    // assert({{
+    //     &&& combinator@ == spec_{name}()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // }});
     combinator
 }}
 
