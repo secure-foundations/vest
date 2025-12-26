@@ -79,7 +79,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd verus
-          bash macos_allow_gatekeeper.sh
+          bash macos_allow_gatekeeper.sh || true
 
       - name: Install Verus Rust toolchain
         run: |
