@@ -146,12 +146,11 @@ jobs:
         run: |
           cargo verus verify --workspace --exclude tls_dsl -- --expand-errors
 
-      # Step 4: vest-examples/tls_dsl - cargo bench
+      # Step 4: Download benchmark data and run benchmarks
       - name: Download benchmark data
-        working-directory: ./vest-examples/bitcoin_dsl/benches/data
         run: |
-          mkdir -p .
-          curl -L -o sampled_blocks.txt https://github.com/y1ca1/vest/releases/download/v0.1.2/sampled_blocks.txt
+          mkdir -p vest-examples/bitcoin_dsl/benches/data
+          curl -L -o vest-examples/bitcoin_dsl/benches/data/sampled_blocks.txt https://github.com/y1ca1/vest/releases/download/v0.1.2/sampled_blocks.txt
 
       - name: vest-examples/tls_dsl - cargo bench
         working-directory: ./vest-examples/tls_dsl
