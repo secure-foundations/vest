@@ -127,6 +127,10 @@ jobs:
         run: |
           cargo build --release
 
+      - name: Add vest compiler to PATH
+        run: |
+          echo "${{ github.workspace }}/vest-dsl/target/release" >> $GITHUB_PATH
+
       # Step 3: vest-examples - cargo verus verify --expand-errors
       - name: vest-examples - cargo verus verify
         working-directory: ./vest-examples
