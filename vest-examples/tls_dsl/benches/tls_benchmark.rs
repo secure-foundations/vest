@@ -1,16 +1,17 @@
 #![allow(unused)]
 
 extern crate rustls;
-extern crate tls;
+extern crate tls_dsl;
 
 use criterion::Throughput;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use tls::tls13_testvector::*;
-use tls::tls_combinators;
-use tls::tls_combinators::ClientHelloExtensionExtensionData::*;
+use rustls::internal::msgs::base::Payload;
+use tls_dsl::tls13_testvector::*;
+use tls_dsl::tls_combinators;
+use tls_dsl::tls_combinators::ClientHelloExtensionExtensionData::*;
 // use tls::tls_combinators::KeyShareEntryKeyExchange::*;
-use tls::tls_combinators::ServerNameName::HostName;
-use tls::tls_combinators::*;
+use tls_dsl::tls_combinators::ServerNameName::HostName;
+use tls_dsl::tls_combinators::*;
 use vest_lib::properties::*;
 use vest_lib::regular::repetition::RepeatResult;
 
@@ -82,13 +83,12 @@ fn vesttls_handshake_msgs<'a>() -> [Handshake<'a>; 7] {
     handshake_msg_payloads().map(|(_, payload)| parse_handshake(payload).unwrap().1)
 }
 
-fn rustls_handshake_msgs<'a>() -> [rustls::internal::msgs::handshake::HandshakeMessagePayload<'a>; 7]
-{
+fn rustls_handshake_msgs<'a>() -> [rustls::internal::msgs::handshake::HandshakeMessagePayload; 7] {
     handshake_msg_payloads().map(|(_, payload)| {
         match rustls::internal::msgs::message::MessagePayload::new(
             rustls::ContentType::Handshake,
             rustls::ProtocolVersion::TLSv1_3,
-            payload,
+            Payload::new(payload),
         )
         .unwrap()
         {
@@ -143,7 +143,7 @@ fn rustls_parse_handshake(c: &mut Criterion) {
                     rustls::internal::msgs::message::MessagePayload::new(
                         rustls::ContentType::Handshake,
                         rustls::ProtocolVersion::TLSv1_3,
-                        payload,
+                        Payload::new(payload),
                     )
                     .unwrap_or_else(|e| {
                         panic!("Failed to parse Handshake: {:?}", e);
@@ -207,7 +207,7 @@ fn rustls_parse_handshake_throughput(c: &mut Criterion) {
                     rustls::internal::msgs::message::MessagePayload::new(
                         rustls::ContentType::Handshake,
                         rustls::ProtocolVersion::TLSv1_3,
-                        payload,
+                        Payload::new(payload),
                     )
                     .unwrap_or_else(|e| {
                         panic!("Failed to parse Handshake: {:?}", e);
@@ -226,7 +226,7 @@ fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
     let mut valid_msgs = vec![];
 
     // Only use valid server hellos (some may be encrypted)
-    for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
+    for (domain, client_msgs, server_msgs) in tls_dsl::tranco_handshakes::HANDSHAKE_DATA {
         for msg in *client_msgs {
             if parse_handshake(msg).is_ok() {
                 valid_msgs.push(msg);
@@ -260,7 +260,7 @@ fn bench_parse_tranco_handshakes_bulk(c: &mut Criterion) {
                     rustls::internal::msgs::message::MessagePayload::new(
                         rustls::ContentType::Handshake,
                         rustls::ProtocolVersion::TLSv1_3,
-                        msg,
+                        Payload::new(**msg),
                     )
                     .unwrap(),
                 );
@@ -278,7 +278,7 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
     let mut max_len = 0;
 
     // Only use valid server hellos (some may be encrypted)
-    for (domain, client_msgs, server_msgs) in tls::tranco_handshakes::HANDSHAKE_DATA {
+    for (domain, client_msgs, server_msgs) in tls_dsl::tranco_handshakes::HANDSHAKE_DATA {
         for msg in client_msgs.iter().chain(server_msgs.iter()) {
             if let Ok((_, handshake)) = parse_handshake(msg) {
                 max_len = max_len.max(msg.len());
@@ -288,7 +288,7 @@ fn bench_serialize_tranco_handshakes_bulk(c: &mut Criterion) {
                     match rustls::internal::msgs::message::MessagePayload::new(
                         rustls::ContentType::Handshake,
                         rustls::ProtocolVersion::TLSv1_3,
-                        msg,
+                        Payload::new(*msg),
                     )
                     .unwrap()
                     {

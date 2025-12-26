@@ -8,7 +8,7 @@ vstd.workspace = true
 verus_builtin.workspace = true
 verus_builtin_macros.workspace = true
 vest_lib.workspace = true
-rustls = "0.23"
+rustls = "0.22"
 
 [build-dependencies]
 vstd.workspace = true
@@ -21,7 +21,7 @@ extra_args = "--expand-errors"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-rustls = "0.23"
+rustls = "0.22"
 
 [[bench]]
 name = "tls_benchmark"
