@@ -64,13 +64,15 @@ jobs:
           curl -L -o verus.zip "$ASSET_URL"
           unzip verus.zip
 
-          # Find the extracted directory (will have version in name) and rename to "verus"
-          EXTRACTED_DIR=$(find . -maxdepth 1 -name "verus-*-${PLATFORM}" -type d)
+          # Find the extracted directory and rename to "verus"
+          # The extracted dir will be like "verus-arm64-macos" or "verus-x86-linux"
+          EXTRACTED_DIR=$(find . -maxdepth 1 -name "verus-*" -type d | grep -v ".git" | head -1)
           if [ -z "$EXTRACTED_DIR" ]; then
             echo "Error: Could not find extracted directory"
             ls -la
             exit 1
           fi
+          echo "Found extracted directory: $EXTRACTED_DIR"
           mv "$EXTRACTED_DIR" verus
 
       - name: Setup Verus (macOS)
