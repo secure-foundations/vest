@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-and-verify:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+        include:
+          - os: ubuntu-22.04
+            verus-release: verus-x86-linux
+          - os: macos-latest
+            verus-release: verus-arm64-macos
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache Verus
+        id: cache-verus
+        uses: actions/cache@v4
+        with:
+          path: verus
+          key: ${{ runner.os }}-verus-latest
+
+      - name: Download Verus
+        if: steps.cache-verus.outputs.cache-hit != 'true'
+        run: |
+          # Download the latest Verus release
+          curl -L -o verus.zip https://github.com/verus-lang/verus/releases/latest/download/${{ matrix.verus-release }}.zip
+          unzip verus.zip
+          mv ${{ matrix.verus-release }} verus
+
+      - name: Setup Verus (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd verus
+          bash macos_allow_gatekeeper.sh
+
+      - name: Install Verus Rust toolchain
+        run: |
+          # Run verus to get the required toolchain version and install it
+          cd verus
+          ./verus --version || true
+          # Extract the required toolchain from verus output and install if needed
+          TOOLCHAIN=$(./verus 2>&1 | grep -oE '1\.[0-9]+\.[0-9]+-[a-z0-9_-]+' | head -1 || echo "")
+          if [ -n "$TOOLCHAIN" ]; then
+            rustup install "$TOOLCHAIN" || true
+          fi
+
+      - name: Add Verus to PATH
+        run: |
+          echo "${{ github.workspace }}/verus" >> $GITHUB_PATH
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vest/target
+            vest-dsl/target
+            vest-examples/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Step 1: vest - cargo verus build --expand-errors
+      - name: vest - cargo verus build (with verification)
+        working-directory: ./vest
+        run: |
+          cargo verus build -- --expand-errors
+
+      # Step 1: vest - cargo build --release
+      - name: vest - cargo build --release
+        working-directory: ./vest
+        run: |
+          cargo build --release
+
+      # Step 2: vest-dsl - cargo build --release
+      - name: vest-dsl - cargo build --release
+        working-directory: ./vest-dsl
+        run: |
+          cargo build --release
+
+      # Step 3: vest-examples - cargo verus verify --expand-errors
+      - name: vest-examples - cargo verus verify
+        working-directory: ./vest-examples
+        run: |
+          cargo verus verify -- --expand-errors
+
+      # Step 4: vest-examples/tls_dsl - cargo bench
+      - name: vest-examples/tls_dsl - cargo bench
+        working-directory: ./vest-examples/tls_dsl
+        run: |
+          cargo bench --no-run
+          cargo bench -- --noplot
+
+      # Step 5: vest-examples/bitcoin_dsl - cargo bench
+      - name: vest-examples/bitcoin_dsl - cargo bench
+        working-directory: ./vest-examples/bitcoin_dsl
+        run: |
+          cargo bench --no-run
+          cargo bench -- --noplot
