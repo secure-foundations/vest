@@ -41,10 +41,12 @@ jobs:
       - name: Download Verus
         if: steps.cache-verus.outputs.cache-hit != 'true'
         run: |
-          # Get the latest release download URL and download it
-          LATEST_RELEASE=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-          echo "Downloading Verus release: $LATEST_RELEASE"
-          curl -L -o verus.zip "https://github.com/verus-lang/verus/releases/download/$LATEST_RELEASE/${{ matrix.verus-release }}.zip"
+          # Get the download URL for the specific asset from the latest release
+          ASSET_URL=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest \
+            | grep "browser_download_url.*${{ matrix.verus-release }}.zip" \
+            | cut -d '"' -f 4)
+          echo "Downloading from: $ASSET_URL"
+          curl -L -o verus.zip "$ASSET_URL"
           unzip verus.zip
           mv ${{ matrix.verus-release }} verus
 
