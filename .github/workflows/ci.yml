@@ -42,9 +42,22 @@ jobs:
         if: steps.cache-verus.outputs.cache-hit != 'true'
         run: |
           # Get the download URL for the specific asset from the latest release
-          ASSET_URL=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest \
-            | grep "browser_download_url.*${{ matrix.verus-release }}.zip" \
-            | cut -d '"' -f 4)
+          echo "Fetching release info..."
+          RELEASE_JSON=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest)
+
+          # Debug: show what assets are available
+          echo "Available assets:"
+          echo "$RELEASE_JSON" | grep "browser_download_url" || echo "No assets found"
+
+          ASSET_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*${{ matrix.verus-release }}.zip" | cut -d '"' -f 4)
+
+          if [ -z "$ASSET_URL" ]; then
+            echo "Error: Could not find asset URL for ${{ matrix.verus-release }}.zip"
+            echo "Trying to find any matching asset..."
+            echo "$RELEASE_JSON" | grep "browser_download_url"
+            exit 1
+          fi
+
           echo "Downloading from: $ASSET_URL"
           curl -L -o verus.zip "$ASSET_URL"
           unzip verus.zip
