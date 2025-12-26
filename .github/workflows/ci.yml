@@ -29,7 +29,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.91.0
 
       - name: Cache Verus
         id: cache-verus
@@ -41,8 +41,10 @@ jobs:
       - name: Download Verus
         if: steps.cache-verus.outputs.cache-hit != 'true'
         run: |
-          # Download the latest Verus release
-          curl -L -o verus.zip https://github.com/verus-lang/verus/releases/latest/download/${{ matrix.verus-release }}.zip
+          # Get the latest release download URL and download it
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+          echo "Downloading Verus release: $LATEST_RELEASE"
+          curl -L -o verus.zip "https://github.com/verus-lang/verus/releases/download/$LATEST_RELEASE/${{ matrix.verus-release }}.zip"
           unzip verus.zip
           mv ${{ matrix.verus-release }} verus
 
