@@ -45,15 +45,17 @@ jobs:
           echo "Fetching release info..."
           RELEASE_JSON=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest)
 
-          # Debug: show what assets are available
-          echo "Available assets:"
-          echo "$RELEASE_JSON" | grep "browser_download_url" || echo "No assets found"
+          # Extract platform identifier from verus-release (e.g., "x86-linux" from "verus-x86-linux")
+          PLATFORM="${{ matrix.verus-release }}"
+          PLATFORM="${PLATFORM#verus-}"  # Remove "verus-" prefix
+          echo "Looking for platform: $PLATFORM"
 
-          ASSET_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*${{ matrix.verus-release }}.zip" | cut -d '"' -f 4)
+          # Find asset URL that contains the platform identifier
+          ASSET_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*${PLATFORM}.zip" | cut -d '"' -f 4)
 
           if [ -z "$ASSET_URL" ]; then
-            echo "Error: Could not find asset URL for ${{ matrix.verus-release }}.zip"
-            echo "Trying to find any matching asset..."
+            echo "Error: Could not find asset URL for platform ${PLATFORM}"
+            echo "Available assets:"
             echo "$RELEASE_JSON" | grep "browser_download_url"
             exit 1
           fi
@@ -61,7 +63,15 @@ jobs:
           echo "Downloading from: $ASSET_URL"
           curl -L -o verus.zip "$ASSET_URL"
           unzip verus.zip
-          mv ${{ matrix.verus-release }} verus
+
+          # Find the extracted directory (will have version in name) and rename to "verus"
+          EXTRACTED_DIR=$(find . -maxdepth 1 -name "verus-*-${PLATFORM}" -type d)
+          if [ -z "$EXTRACTED_DIR" ]; then
+            echo "Error: Could not find extracted directory"
+            ls -la
+            exit 1
+          fi
+          mv "$EXTRACTED_DIR" verus
 
       - name: Setup Verus (macOS)
         if: runner.os == 'macOS'
