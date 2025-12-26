@@ -43,7 +43,16 @@ jobs:
         run: |
           # Get the download URL for the specific asset from the latest release
           echo "Fetching release info..."
-          RELEASE_JSON=$(curl -s https://api.github.com/repos/verus-lang/verus/releases/latest)
+          RELEASE_JSON=$(curl -sL https://api.github.com/repos/verus-lang/verus/releases/latest)
+
+          # Check if response is valid JSON
+          if ! echo "$RELEASE_JSON" | grep -q "browser_download_url"; then
+            echo "Error: Invalid API response or rate limited"
+            echo "Response preview:"
+            echo "$RELEASE_JSON" | head -20
+            sleep 60
+            RELEASE_JSON=$(curl -sL https://api.github.com/repos/verus-lang/verus/releases/latest)
+          fi
 
           # Extract platform identifier from verus-release (e.g., "x86-linux" from "verus-x86-linux")
           PLATFORM="${{ matrix.verus-release }}"
@@ -51,7 +60,7 @@ jobs:
           echo "Looking for platform: $PLATFORM"
 
           # Find asset URL that contains the platform identifier
-          ASSET_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*${PLATFORM}.zip" | cut -d '"' -f 4)
+          ASSET_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*${PLATFORM}.zip" | cut -d '"' -f 4 | head -1)
 
           if [ -z "$ASSET_URL" ]; then
             echo "Error: Could not find asset URL for platform ${PLATFORM}"
