@@ -135,7 +135,7 @@ jobs:
       - name: vest-examples - cargo verus verify
         working-directory: ./vest-examples
         run: |
-          cargo verus verify --exclude tls_dsl -- --expand-errors
+          cargo verus verify --workspace --exclude tls_dsl -- --expand-errors
 
       # Step 4: vest-examples/tls_dsl - cargo bench
       - name: vest-examples/tls_dsl - cargo bench
