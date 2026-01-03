@@ -3,7 +3,6 @@ name: Release to crates.io
 on:
   push:
     tags:
-      - "v*" # Triggers on version tags like v0.1.0
       - "vest-v*" # Triggers on vest crate tags like vest-v0.1.0
       - "vest_lib-v*" # Triggers on vest_lib crate tags like vest_lib-v0.1.0
   workflow_dispatch:
@@ -15,7 +14,6 @@ on:
         options:
           - vest
           - vest_lib
-          - both
       dry_run:
         description: "Perform a dry run"
         required: false
@@ -31,8 +29,8 @@ jobs:
       id-token: write # Required for OIDC token exchange
       contents: read
     if: |
-      github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/vest-v')) ||
-      github.event_name == 'workflow_dispatch' && (inputs.crate == 'vest' || inputs.crate == 'both')
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vest-v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.crate == 'vest')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,8 +72,8 @@ jobs:
       id-token: write # Required for OIDC token exchange
       contents: read
     if: |
-      github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/vest_lib-v')) ||
-      github.event_name == 'workflow_dispatch' && (inputs.crate == 'vest_lib' || inputs.crate == 'both')
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vest_lib-v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.crate == 'vest_lib')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
