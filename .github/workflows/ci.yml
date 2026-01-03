@@ -31,15 +31,7 @@ jobs:
         with:
           toolchain: 1.91.0
 
-      - name: Cache Verus
-        id: cache-verus
-        uses: actions/cache@v4
-        with:
-          path: verus
-          key: ${{ runner.os }}-verus-latest
-
       - name: Download Verus
-        if: steps.cache-verus.outputs.cache-hit != 'true'
         run: |
           # Get the download URL for the specific asset from the latest release
           echo "Fetching release info..."
