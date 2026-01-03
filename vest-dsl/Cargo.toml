@@ -1,6 +1,6 @@
 [package]
 name = "vest"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "Vest: A DSL for specifying and generating fast, formally verified parsers and serializers"
@@ -12,7 +12,7 @@ categories = ["development-tools", "parsing"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pest="2.7"
+pest = "2.7"
 pest_derive = { version = "2.7", features = ["grammar-extras"] }
 itertools = "0.11.0"
 clap = { version = "4.4.7", features = ["derive"] }

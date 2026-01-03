@@ -1,6 +1,6 @@
 [package]
 name = "vest_lib"
-version = "0.0.0-2025-12-17-1353"
+version = "0.0.1"
 edition = "2021"
 license = "MIT"
 description = "VestLib: A library of formally verified parser and serializer combinators"
