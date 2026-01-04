@@ -1,34 +1,46 @@
 use crate::properties::*;
 
-/// Sequentially apply two combinators and return both results.
-pub struct Pair<Fst, Snd> {
+
+/// Dependent pair combinator where the second combinator depends on the result
+/// of the first (sequentially).
+pub struct Pair<Fst, Snd, DepSnd> {
     pub fst: Fst,
-    pub snd: Snd,
+    _snd: core::marker::PhantomData<Snd>,
+    pub dep_snd: DepSnd,
 }
 
-impl<Fst, Snd> Pair<Fst, Snd> {
-    pub fn new(fst: Fst, snd: Snd) -> Self {
-        Self { fst, snd }
+impl<Fst, Snd, DepSnd> Pair<Fst, Snd, DepSnd> {
+    /// Create a new dependent pair combinator.
+    pub fn new(fst: Fst, dep_snd: DepSnd) -> Self {
+        Self {
+            fst,
+            _snd: core::marker::PhantomData,
+            dep_snd,
+        }
     }
 }
 
-impl<I, O, Fst, Snd> Combinator<I, O> for Pair<Fst, Snd>
+impl<I, O, Fst, Snd, DepSnd> Combinator<I, O> for Pair<Fst, Snd, DepSnd>
 where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
+    DepSnd: for<'s> Fn(Fst::SType<'s>) -> Snd,
+    for<'s> Fst::SType<'s>: From<&'s Fst::Type> + Copy,
 {
     type Type = (Fst::Type, Snd::Type);
     type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        self.fst.length(v.0) + self.snd.length(v.1)
+        self.fst.length(v.0)
+            + (self.dep_snd)(v.0).length(v.1)
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         let (n, v1) = self.fst.parse(s.clone())?;
-        let (m, v2) = self.snd.parse(s.subrange(n, s.len()))?;
+        let dep_snd = (self.dep_snd)((&v1).into());
+        let (m, v2) = dep_snd.parse(s.subrange(n, s.len()))?;
         Ok((n + m, (v1, v2)))
     }
 
@@ -39,12 +51,13 @@ where
         pos: usize,
     ) -> Result<usize, SerializeError> {
         let n = self.fst.serialize(v.0, data, pos)?;
-        let m = self.snd.serialize(v.1, data, pos + n)?;
+        let dep_snd = (self.dep_snd)(v.0);
+        let m = dep_snd.serialize(v.1, data, pos + n)?;
         Ok(n + m)
     }
 }
 
-/// Tuple sequencing convenience.
+/// Tuple for sequencing.
 impl<I, O, Fst, Snd> Combinator<I, O> for (Fst, Snd)
 where
     I: VestInput,
@@ -56,11 +69,13 @@ where
     type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        Pair::new(&self.0, &self.1).length(v)
+        self.0.length(v.0) + self.1.length(v.1)
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-        Pair::new(&self.0, &self.1).parse(s)
+        let (n, v1) = self.0.parse(s.clone())?;
+        let (m, v2) = self.1.parse(s.subrange(n, s.len()))?;
+        Ok((n + m, (v1, v2)))
     }
 
     fn serialize<'s>(
@@ -69,7 +84,9 @@ where
         data: &mut O,
         pos: usize,
     ) -> Result<usize, SerializeError> {
-        Pair::new(&self.0, &self.1).serialize(v, data, pos)
+        let n = self.0.serialize(v.0, data, pos)?;
+        let m = self.1.serialize(v.1, data, pos + n)?;
+        Ok(n + m)
     }
 }
 
@@ -89,13 +106,12 @@ where
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         let prefix: Fst::SType<'s> = ().into();
-        Pair::new(&self.0, &self.1).length((prefix, v))
+        (&self.0, &self.1).length((prefix, v))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-        let (n, _) = self.0.parse(s.clone())?;
-        let (m, v) = self.1.parse(s.subrange(n, s.len()))?;
-        Ok((n + m, v))
+        let (nm, (_, v)) = (&self.0, &self.1).parse(s)?;
+        Ok((nm, v))
     }
 
     fn serialize<'s>(
@@ -104,9 +120,7 @@ where
         data: &mut O,
         pos: usize,
     ) -> Result<usize, SerializeError> {
-        let n = self.0.serialize(().into(), data, pos)?;
-        let m = self.1.serialize(v, data, pos + n)?;
-        Ok(n + m)
+        (&self.0, &self.1).serialize((().into(), v), data, pos)
     }
 }
 
@@ -125,13 +139,13 @@ where
     type SType<'s> = Fst::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        Pair::new(&self.0, &self.1).length((v, ().into()))
+        let suffix: Snd::SType<'s> = ().into();
+        (&self.0, &self.1).length((v, suffix))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-        let (n, v) = self.0.parse(s.clone())?;
-        let (m, _) = self.1.parse(s.subrange(n, s.len()))?;
-        Ok((n + m, v))
+        let (nm, (v, _)) = (&self.0, &self.1).parse(s)?;
+        Ok((nm, v))
     }
 
     fn serialize<'s>(
@@ -140,8 +154,6 @@ where
         data: &mut O,
         pos: usize,
     ) -> Result<usize, SerializeError> {
-        let n = self.0.serialize(v, data, pos)?;
-        let m = self.1.serialize(().into(), data, pos + n)?;
-        Ok(n + m)
+        (&self.0, &self.1).serialize((v, ().into()), data, pos)
     }
 }
