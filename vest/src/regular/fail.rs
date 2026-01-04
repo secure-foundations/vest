@@ -5,11 +5,11 @@ use crate::properties::*;
 /// Combinator that always fails with a custom error message.
 pub struct Fail(pub String);
 
-impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for Fail {
+impl<'x, I: VestInput, O: VestOutput<I>> Combinator<I, O> for Fail {
     type Type = ();
-    type SType = ();
+    type SType<'s> = ();
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         0
     }
 
@@ -17,7 +17,12 @@ impl<'x, I: VestInput, O: VestOutput<I>> Combinator<'x, I, O> for Fail {
         Err(ParseError::Other(self.0.clone()))
     }
 
-    fn serialize(&self, _v: Self::SType, _data: &mut O, _pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        _v: Self::SType<'s>,
+        _data: &mut O,
+        _pos: usize,
+    ) -> Result<usize, SerializeError> {
         Err(SerializeError::Other(self.0.clone()))
     }
 }

@@ -15,17 +15,17 @@ impl<Fst, Snd> Choice<Fst, Snd> {
     }
 }
 
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Choice<Fst, Snd>
+impl<I, O, Fst, Snd> Combinator<I, O> for Choice<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
 {
     type Type = Either<Fst::Type, Snd::Type>;
-    type SType = Either<Fst::SType, Snd::SType>;
+    type SType<'s> = Either<Fst::SType<'s>, Snd::SType<'s>>;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         match v {
             Either::Left(v) => self.0.length(v),
             Either::Right(v) => self.1.length(v),
@@ -41,7 +41,12 @@ where
         }
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         match v {
             Either::Left(v) => self.0.serialize(v, data, pos),
             Either::Right(v) => self.1.serialize(v, data, pos),
@@ -58,16 +63,16 @@ impl<T> Opt<T> {
     }
 }
 
-impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T>
+impl<I, O, T> Combinator<I, O> for Opt<T>
 where
     I: VestInput,
     O: VestOutput<I>,
-    T: Combinator<'x, I, O>,
+    T: Combinator<I, O>,
 {
     type Type = Option<T::Type>;
-    type SType = Option<T::SType>;
+    type SType<'s> = Option<T::SType<'s>>;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         match v {
             Some(v) => self.0.length(v),
             None => 0,
@@ -82,7 +87,12 @@ where
         }
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         match v {
             Some(v) => self.0.serialize(v, data, pos),
             None => {
@@ -105,17 +115,17 @@ impl<Fst, Snd> OptThen<Fst, Snd> {
     }
 }
 
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for OptThen<Fst, Snd>
+impl<I, O, Fst, Snd> Combinator<I, O> for OptThen<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
 {
     type Type = (Option<Fst::Type>, Snd::Type);
-    type SType = (Option<Fst::SType>, Snd::SType);
+    type SType<'s> = (Option<Fst::SType<'s>>, Snd::SType<'s>);
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         let fst_len = v.0.map(|val| self.0 .0.length(val)).unwrap_or(0);
         fst_len + self.1.length(v.1)
     }
@@ -130,7 +140,12 @@ where
         }
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         let mut written = 0;
         if let Some(v0) = v.0 {
             written = self.0 .0.serialize(v0, data, pos)?;

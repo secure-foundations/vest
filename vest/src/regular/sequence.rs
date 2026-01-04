@@ -12,17 +12,17 @@ impl<Fst, Snd> Pair<Fst, Snd> {
     }
 }
 
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Pair<Fst, Snd>
+impl<I, O, Fst, Snd> Combinator<I, O> for Pair<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
 {
     type Type = (Fst::Type, Snd::Type);
-    type SType = (Fst::SType, Snd::SType);
+    type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         self.fst.length(v.0) + self.snd.length(v.1)
     }
 
@@ -32,7 +32,12 @@ where
         Ok((n + m, (v1, v2)))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         let n = self.fst.serialize(v.0, data, pos)?;
         let m = self.snd.serialize(v.1, data, pos + n)?;
         Ok(n + m)
@@ -40,17 +45,17 @@ where
 }
 
 /// Tuple sequencing convenience.
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for (Fst, Snd)
+impl<I, O, Fst, Snd> Combinator<I, O> for (Fst, Snd)
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O>,
 {
     type Type = (Fst::Type, Snd::Type);
-    type SType = (Fst::SType, Snd::SType);
+    type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         Pair::new(&self.0, &self.1).length(v)
     }
 
@@ -58,7 +63,12 @@ where
         Pair::new(&self.0, &self.1).parse(s)
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         Pair::new(&self.0, &self.1).serialize(v, data, pos)
     }
 }
@@ -66,18 +76,20 @@ where
 /// Apply `Fst` then `Snd`, returning only `Snd`'s result.
 pub struct Preceded<Fst, Snd>(pub Fst, pub Snd);
 
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Preceded<Fst, Snd>
+impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O, Type = (), SType = ()>,
-    Snd: Combinator<'x, I, O>,
+    Fst: Combinator<I, O, Type = ()>,
+    Snd: Combinator<I, O>,
+    for<'s> Fst::SType<'s>: From<()>,
 {
     type Type = Snd::Type;
-    type SType = Snd::SType;
+    type SType<'s> = Snd::SType<'s>;
 
-    fn length(&self, v: Self::SType) -> usize {
-        Pair::new(&self.0, &self.1).length(((), v))
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+        let prefix: Fst::SType<'s> = ().into();
+        Pair::new(&self.0, &self.1).length((prefix, v))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -86,8 +98,13 @@ where
         Ok((n + m, v))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        let n = self.0.serialize((), data, pos)?;
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
+        let n = self.0.serialize(().into(), data, pos)?;
         let m = self.1.serialize(v, data, pos + n)?;
         Ok(n + m)
     }
@@ -96,18 +113,19 @@ where
 /// Apply `Fst` then `Snd`, returning only `Fst`'s result.
 pub struct Terminated<Fst, Snd>(pub Fst, pub Snd);
 
-impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Terminated<Fst, Snd>
+impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<'x, I, O>,
-    Snd: Combinator<'x, I, O, Type = (), SType = ()>,
+    Fst: Combinator<I, O>,
+    Snd: Combinator<I, O, Type = ()>,
+    for<'s> Snd::SType<'s>: From<()>,
 {
     type Type = Fst::Type;
-    type SType = Fst::SType;
+    type SType<'s> = Fst::SType<'s>;
 
-    fn length(&self, v: Self::SType) -> usize {
-        Pair::new(&self.0, &self.1).length((v, ()))
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+        Pair::new(&self.0, &self.1).length((v, ().into()))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -116,9 +134,14 @@ where
         Ok((n + m, v))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         let n = self.0.serialize(v, data, pos)?;
-        let m = self.1.serialize((), data, pos + n)?;
+        let m = self.1.serialize(().into(), data, pos + n)?;
         Ok(n + m)
     }
 }

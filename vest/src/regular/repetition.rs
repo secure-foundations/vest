@@ -2,10 +2,6 @@ use alloc::vec::Vec;
 
 use crate::properties::*;
 
-/// A repeated collection of values.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RepeatResult<T>(pub Vec<T>);
-
 /// Repeat the inner combinator a fixed number of times.
 pub struct RepeatN<C>(pub C, pub usize);
 
@@ -16,21 +12,21 @@ impl<C> RepeatN<C> {
     }
 }
 
-impl<'x, I, O, C> Combinator<'x, I, O> for RepeatN<C>
+impl<I, O, C> Combinator<I, O> for RepeatN<C>
 where
     I: VestInput,
     O: VestOutput<I>,
-    C: Combinator<'x, I, O>,
-    C::SType: Clone,
+    C: Combinator<I, O>,
+    for<'s> C::SType<'s>: 's + Copy,
 {
-    type Type = RepeatResult<C::Type>;
-    type SType = RepeatResult<C::SType>;
+    type Type = Vec<C::Type>;
+    type SType<'s> = &'s [C::SType<'s>];
 
-    fn length(&self, v: Self::SType) -> usize {
-        if v.0.len() != self.1 {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+        if v.len() != self.1 {
             return 0;
         }
-        v.0.iter().fold(0, |acc, item| acc + self.0.length(item.clone()))
+        v.iter().fold(0, |acc, item| acc + self.0.length(*item))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -44,22 +40,22 @@ where
             consumed = consumed.saturating_add(n);
             values.push(v);
         }
-        Ok((consumed, RepeatResult(values)))
+        Ok((consumed, values))
     }
 
-    fn serialize(
+    fn serialize<'s>(
         &self,
-        v: Self::SType,
+        v: Self::SType<'s>,
         data: &mut O,
         mut pos: usize,
     ) -> Result<usize, SerializeError> {
         let start = pos;
-        if v.0.len() != self.1 {
+        if v.len() != self.1 {
             return Err(SerializeError::Other("RepeatN length mismatch".into()));
         }
 
-        for item in &v.0 {
-            let n = self.0.serialize(item.clone(), data, pos)?;
+        for item in v {
+            let n = self.0.serialize(*item, data, pos)?;
             pos += n;
         }
         Ok(pos - start)
@@ -76,18 +72,18 @@ impl<C> Repeat<C> {
     }
 }
 
-impl<'x, I, O, C> Combinator<'x, I, O> for Repeat<C>
+impl<I, O, C> Combinator<I, O> for Repeat<C>
 where
     I: VestInput,
     O: VestOutput<I>,
-    C: Combinator<'x, I, O>,
-    C::SType: Clone,
+    C: Combinator<I, O>,
+    for<'s> C::SType<'s>: 's + Copy,
 {
-    type Type = RepeatResult<C::Type>;
-    type SType = RepeatResult<C::SType>;
+    type Type = Vec<C::Type>;
+    type SType<'s> = &'s [C::SType<'s>];
 
-    fn length(&self, v: Self::SType) -> usize {
-        v.0.iter().fold(0, |acc, item| acc + self.0.length(item.clone()))
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+        v.iter().fold(0, |acc, item| acc + self.0.length(*item))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -101,18 +97,18 @@ where
             consumed = consumed.saturating_add(n);
             values.push(v);
         }
-        Ok((consumed, RepeatResult(values)))
+        Ok((consumed, values))
     }
 
-    fn serialize(
+    fn serialize<'s>(
         &self,
-        v: Self::SType,
+        v: Self::SType<'s>,
         data: &mut O,
         mut pos: usize,
     ) -> Result<usize, SerializeError> {
         let start = pos;
-        for item in &v.0 {
-            let n = self.0.serialize(item.clone(), data, pos)?;
+        for item in v {
+            let n = self.0.serialize(*item, data, pos)?;
             pos += n;
         }
         Ok(pos - start)

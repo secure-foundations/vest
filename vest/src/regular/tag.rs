@@ -20,18 +20,19 @@ impl<Inner, T> Tag<Inner, T> {
 }
 
 /// Generic implementation for combinators that parse/serialize owned values (e.g., integers).
-impl<'x, I, O, Inner, T> Combinator<'x, I, O> for Tag<Inner, T>
+impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T>
 where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
-    Inner: Combinator<'x, I, O, Type = T, SType = T>,
+    Inner: Combinator<I, O, Type = T>,
     T: Clone + PartialEq,
+    for<'s> Inner::SType<'s>: From<T>,
 {
     type Type = ();
-    type SType = ();
+    type SType<'s> = ();
 
-    fn length(&self, _v: Self::SType) -> usize {
-        self.inner.length(self.tag.clone())
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+        self.inner.length(self.tag.clone().into())
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -43,17 +44,22 @@ where
         }
     }
 
-    fn serialize(&self, _v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
-        self.inner.serialize(self.tag.clone(), data, pos)
+    fn serialize<'s>(
+        &self,
+        _v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
+        self.inner.serialize(self.tag.clone().into(), data, pos)
     }
 }
 
 /// Specialized implementation for fixed byte tags using `Fixed<N>`.
-impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<bytes::Fixed<N>, [u8; N]> {
+impl<'x, const N: usize> Combinator<&'x [u8], Vec<u8>> for Tag<bytes::Fixed<N>, [u8; N]> {
     type Type = ();
-    type SType = ();
+    type SType<'s> = ();
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         N
     }
 
@@ -70,7 +76,12 @@ impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<bytes::Fixed<
         }
     }
 
-    fn serialize(&self, _v: Self::SType, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        _v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         if N <= data.len().saturating_sub(pos) {
             data[pos..pos + N].copy_from_slice(&self.tag);
             Ok(N)

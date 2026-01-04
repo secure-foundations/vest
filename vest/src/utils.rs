@@ -17,7 +17,10 @@ impl<'a, 'b> Compare<&'b [u8]> for &'a [u8] {
 /// Helper function to set a range of bytes in a vector.
 pub fn set_range(data: &mut Vec<u8>, i: usize, input: &[u8]) {
     assert!(i <= data.len(), "set_range start out of bounds");
-    assert!(i + input.len() <= data.len(), "set_range would write past end of buffer");
+    assert!(
+        i + input.len() <= data.len(),
+        "set_range would write past end of buffer"
+    );
     data[i..i + input.len()].copy_from_slice(input);
 }
 

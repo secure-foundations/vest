@@ -9,25 +9,25 @@ pub struct Variable(pub usize);
 impl Variable {
     /// Chains this combinator with another combinator, enforcing that the chained parser consumes
     /// exactly the number of bytes selected by `Variable`.
-    pub fn and_then<'x, I, O, Next>(self, next: Next) -> AndThen<Variable, Next>
+    pub fn and_then<I, O, Next>(self, next: Next) -> AndThen<Variable, Next>
     where
         I: VestPublicInput,
         O: VestPublicOutput<I>,
-        Next: Combinator<'x, I, O>,
+        Next: Combinator<I, O>,
     {
         AndThen(self, next)
     }
 }
 
-impl<'x, I, O> Combinator<'x, I, O> for Variable
+impl<I, O> Combinator<I, O> for Variable
 where
-    I: VestInput + 'x,
+    I: VestInput,
     O: VestOutput<I>,
 {
     type Type = I;
-    type SType = I;
+    type SType<'s> = I;
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         self.0
     }
 
@@ -39,7 +39,12 @@ where
         }
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         if v.len() <= data.len() && pos <= data.len().saturating_sub(v.len()) {
             data.set_range(pos, &v);
             Ok(self.0)
@@ -53,15 +58,15 @@ where
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub struct Fixed<const N: usize>;
 
-impl<'x, const N: usize, I, O> Combinator<'x, I, O> for Fixed<N>
+impl<const N: usize, I, O> Combinator<I, O> for Fixed<N>
 where
-    I: VestInput + 'x,
+    I: VestInput,
     O: VestOutput<I>,
 {
     type Type = I;
-    type SType = I;
+    type SType<'s> = I;
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         N
     }
 
@@ -73,7 +78,12 @@ where
         }
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         if v.len() <= data.len().saturating_sub(pos) {
             data.set_range(pos, &v);
             Ok(N)
@@ -87,11 +97,11 @@ where
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub struct Tail;
 
-impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
+impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<I, O> for Tail {
     type Type = I;
-    type SType = I;
+    type SType<'s> = I;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         v.len()
     }
 
@@ -99,7 +109,12 @@ impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<'x, I, O> for Tail {
         Ok((s.len(), s))
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         if v.len() <= data.len().saturating_sub(pos) {
             data.set_range(pos, &v);
             Ok(v.len())

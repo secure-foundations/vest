@@ -9,7 +9,9 @@ pub struct UnsignedLEB128;
 const MAX_BYTES: usize = 10;
 
 fn has_space(buf_len: usize, pos: usize, need: usize) -> bool {
-    pos.checked_add(need).map(|end| end <= buf_len).unwrap_or(false)
+    pos.checked_add(need)
+        .map(|end| end <= buf_len)
+        .unwrap_or(false)
 }
 
 fn encoded_len(mut v: UInt) -> usize {
@@ -21,15 +23,15 @@ fn encoded_len(mut v: UInt) -> usize {
     len
 }
 
-impl<'x, I, O> Combinator<'x, I, O> for UnsignedLEB128
+impl<'x, I, O> Combinator<I, O> for UnsignedLEB128
 where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
     type Type = UInt;
-    type SType = UInt;
+    type SType<'s> = UInt;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         encoded_len(v)
     }
 
@@ -64,7 +66,12 @@ where
         Err(ParseError::UnexpectedEndOfInput)
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         let needed = encoded_len(v);
         if !has_space(data.len(), pos, needed) {
             return Err(SerializeError::InsufficientBuffer);

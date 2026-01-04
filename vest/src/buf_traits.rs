@@ -62,7 +62,10 @@ where
     fn set_range(&mut self, i: usize, input: &I) {
         let bytes = input.as_byte_slice();
         assert!(i <= self.len(), "set_range start out of bounds");
-        assert!(i + bytes.len() <= self.len(), "set_range would write past end of buffer");
+        assert!(
+            i + bytes.len() <= self.len(),
+            "set_range would write past end of buffer"
+        );
         self[i..i + bytes.len()].copy_from_slice(bytes);
     }
 }
@@ -78,7 +81,10 @@ where
 
     fn set_byte_range(&mut self, i: usize, input: &[u8]) {
         assert!(i <= self.len(), "set_byte_range start out of bounds");
-        assert!(i + input.len() <= self.len(), "set_byte_range would write past end of buffer");
+        assert!(
+            i + input.len() <= self.len(),
+            "set_byte_range would write past end of buffer"
+        );
         self[i..i + input.len()].copy_from_slice(input);
     }
 }

@@ -10,7 +10,7 @@ pub type SResult<T, E> = Result<T, E>;
 
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
-pub trait Combinator<'x, I, O>
+pub trait Combinator<I, O>
 where
     I: VestInput,
     O: VestOutput<I>,
@@ -21,11 +21,11 @@ where
     /// The input type of serialization, often a reference to [`Self::Type`].
     /// For "structural" formats though (e.g., [`crate::regular::sequence::Pair`] and [`crate::regular::variant::Choice`]),
     /// this is the tuple/sum of the corresponding [`Combinator::SType`] types.
-    type SType;
+    type SType<'s>;
 
     /// The length of the output buffer.
     /// This can be used to optimize serialization by pre-allocating the buffer.
-    fn length(&self, v: Self::SType) -> usize;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize;
 
     /// The parsing function.
     /// To enable "zero-copy" parsing, implementations of `parse` should not
@@ -63,19 +63,24 @@ where
     /// `serialize` being a partial function can fail (e.g.,
     /// insufficient buffer space), while `spec_serialize` is a
     /// total function (with infinite buffer size) and will never fail.
-    fn serialize(&self, v: Self::SType, buf: &mut O, pos: usize) -> SResult<usize, SerializeError>;
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        buf: &mut O,
+        pos: usize,
+    ) -> SResult<usize, SerializeError>;
 }
 
-impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for &C
+impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C
 where
     I: VestInput,
     O: VestOutput<I>,
 {
     type Type = C::Type;
 
-    type SType = C::SType;
+    type SType<'s> = C::SType<'s>;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         (*self).length(v)
     }
 
@@ -83,21 +88,26 @@ where
         (*self).parse(s)
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         (*self).serialize(v, data, pos)
     }
 }
 
-impl<'x, I, O, C: Combinator<'x, I, O>> Combinator<'x, I, O> for Box<C>
+impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C>
 where
     I: VestInput,
     O: VestOutput<I>,
 {
     type Type = C::Type;
 
-    type SType = C::SType;
+    type SType<'s> = C::SType<'s>;
 
-    fn length(&self, v: Self::SType) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         (**self).length(v)
     }
 
@@ -105,7 +115,12 @@ where
         (**self).parse(s)
     }
 
-    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
         (**self).serialize(v, data, pos)
     }
 }
