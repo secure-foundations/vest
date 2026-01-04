@@ -2,7 +2,7 @@
 #![crate_type = "lib"]
 #![warn(missing_docs)]
 #![no_std]
-//! Vest is a *formally verified* library for parsing and serializing binary data, using combinators.
+//! Vest is a library for parsing and serializing binary data, using combinators.
 //!
 //! # Background
 //!
@@ -18,22 +18,9 @@
 //!
 //! Binary formats are notoriously difficult to parse and serialize correctly, due to the
 //! complexity of the formats and the potential for errors in the implementation. Vest aims to
-//! address this problem by *formally verifying* the correctness and security of the parsing and
-//! serialization code using the Rust type system and [Verus](https://github.com/verus-lang/verus),
-//! a deductive verification tool for Rust.
-//!
-//! We don't use `unsafe` so the Rust type system provides us with strong guarantees about the
-//! memory safety of the code. We use Verus to verify the more nuanced properties of the code,
-//! such as the top-level round-trip properties of the parsing and serialization functions.
-//! - For every binary sequence `b`, if `parse(b)` succeeds, producing a result `(n, m)`, then
-//! `serialize(m)` should reproduce the original input `b`, truncated to `n` bytes.
-//! - For every structured data `m`, if `serialize(m)` succeeds, producing a binary sequence `b`,
-//! then `parse(b)` should successfully consuming the entire input `b` and produce the original
-//! structured data `m`.
-//!
-//! These round-trip properties ensure that the parsing and serialization functions are mutual
-//! inverses and hence immune to parser malleability attacks ([EverParse](https://www.microsoft.com/en-us/research/publication/everparse/))
-//! and format confusion attacks ([Comparse](https://dl.acm.org/doi/10.1145/3576915.3623201)).
+//! address this problem by using simple, composable parser and serializer combinators with a
+//! focus on straightforward, side-effect-free Rust code. The codebase has been cleaned of Verus
+//! specifications and proofs so that only the executable logic remains.
 //!
 //! **Parser and serializer combinators**
 //!
@@ -57,23 +44,19 @@
 //! let mut output = vec![0x00; 40];
 //! let written = pair_of_bytes.serialize((a, b), &mut output, 0)?;
 //!
-//! proof { pair_of_bytes.theorem_parse_serialize_roundtrip(input@); }
-//! assert(written == consumed);
-//! assert(&output[..written]@, &input[..written]@);
+//! assert_eq!(written, consumed);
+//! assert_eq!(&output[..written], &input[..written]);
 //! ```
 //!
 //! # Example: Constructing a new combinator
 //!
 //! ```rust
 //! use vest::regular::uints::U8;
-//! use vest::regular::refined::{Refined, Pred};
+//! use vest::regular::modifier::{Refined, Pred};
 //!
 //! pub struct EvenU8;
-//! impl Pred for EvenU8 {
-//!     type Input<'a> = u8;
-//!     fn apply(&self, i: &Self::Input<'_>) -> bool {
-//!         *i % 2 == 0
-//!     }
+//! impl Pred<u8> for EvenU8 {
+//!     fn apply(&self, i: &u8) -> bool { *i % 2 == 0 }
 //! }
 //!
 //! let even_u8 = Refined { inner: U8, predicate: EvenU8 };
@@ -84,9 +67,8 @@
 //!
 //! let (consumed, parsed) = even_u8.parse(output.as_slice())?;
 //!
-//! proof { even_u8.theorem_serialize_parse_roundtrip(ten@); }
-//! assert(written == consumed);
-//! assert(parsed@, ten@);
+//! assert_eq!(written, consumed);
+//! assert_eq!(parsed, ten);
 //! ```
 
 // mod examples;
@@ -96,8 +78,6 @@ extern crate std;
 
 extern crate alloc;
 
-/// Combinators for Bitcoin formats.
-pub mod bitcoin;
 /// Definitions for buffer traits that can be used as input and output for parsers and serializers,
 /// along with some implementations for commonly used buffers.
 pub mod buf_traits;

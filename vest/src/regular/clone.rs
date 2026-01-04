@@ -1,44 +1,44 @@
 use super::bytes::{Fixed, Tail, Variable};
 use super::uints::{U16Le, U32Le, U64Le, U8};
-use vstd::prelude::*;
 
-verus! {
-
-macro_rules! impl_reflexive_clone {
-    ($($ty:ty),*) => {
-        ::vstd::prelude::verus! {
-            $(
-                impl Clone for $ty {
-                    fn clone(&self) -> (out: Self)
-                        ensures
-                            out == *self,
-                    {
-                        Self
-                    }
-                }
-            )*
-        }
-    };
+impl Clone for U8 {
+    fn clone(&self) -> Self {
+        U8
+    }
 }
 
-impl_reflexive_clone!(U8, U16Le, U32Le, U64Le, Tail);
+impl Clone for U16Le {
+    fn clone(&self) -> Self {
+        U16Le
+    }
+}
+
+impl Clone for U32Le {
+    fn clone(&self) -> Self {
+        U32Le
+    }
+}
+
+impl Clone for U64Le {
+    fn clone(&self) -> Self {
+        U64Le
+    }
+}
+
+impl Clone for Tail {
+    fn clone(&self) -> Self {
+        Tail
+    }
+}
 
 impl Clone for Variable {
-    fn clone(&self) -> (out: Self)
-        ensures
-            out == *self,
-    {
+    fn clone(&self) -> Self {
         Variable(self.0)
     }
 }
 
 impl<const N: usize> Clone for Fixed<N> {
-    fn clone(&self) -> (out: Self)
-        ensures
-            out == *self,
-    {
+    fn clone(&self) -> Self {
         Fixed
     }
 }
-
-} // verus!

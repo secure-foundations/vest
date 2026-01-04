@@ -1,10 +1,5 @@
 // pub use crate::utils::*;
-use vstd::prelude::*;
-use vstd::*;
-
 use alloc::string::String;
-
-verus! {
 
 /// Parser errors
 #[derive(Debug)]
@@ -36,29 +31,6 @@ pub enum Error {
     Serialize(SerializeError),
 }
 
-
-#[cfg(verus_keep_ghost)]
-impl vstd::std_specs::convert::FromSpecImpl<ParseError> for Error {
-    open spec fn obeys_from_spec() -> bool {
-        true
-    }
-
-    open spec fn from_spec(e: ParseError) -> Self {
-        Error::Parse(e)
-    }
-}
-
-#[cfg(verus_keep_ghost)]
-impl vstd::std_specs::convert::FromSpecImpl<SerializeError> for Error {
-    open spec fn obeys_from_spec() -> bool {
-        true
-    }
-
-    open spec fn from_spec(e: SerializeError) -> Self {
-        Error::Serialize(e)
-    }
-}
-
 impl core::convert::From<ParseError> for Error {
     fn from(e: ParseError) -> Self {
         Error::Parse(e)
@@ -71,7 +43,6 @@ impl core::convert::From<SerializeError> for Error {
     }
 }
 
-} // verus!
 impl core::fmt::Display for ParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {

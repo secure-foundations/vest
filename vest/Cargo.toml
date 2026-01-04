@@ -3,10 +3,10 @@ name = "vest_lib"
 version = "0.0.1"
 edition = "2021"
 license = "MIT"
-description = "VestLib: A library of formally verified parser and serializer combinators"
+description = "VestLib: Parser and serializer combinators"
 repository = "https://github.com/secure-foundations/vest"
 readme = "../README.md"
-keywords = ["vest", "verus", "verification", "parsing", "combinators"]
+keywords = ["vest", "parsing", "combinators"]
 categories = ["development-tools", "parsing"]
 
 
@@ -17,16 +17,4 @@ default = ["std"]
 std = []
 
 [dependencies]
-vstd = "0.0.0-2025-12-28-0056"
-#verus_builtin = "0.0.0-2025-08-12-1837"
-#verus_builtin_macros = "0.0.0-2025-12-07-0054"
 
-#vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
-#verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
-#verus_builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
-
-[package.metadata.verus]
-verify = true
-
-[package.metadata.verus.ide]
-extra_args = "--expand-errors"
