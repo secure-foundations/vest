@@ -21,7 +21,7 @@
 
 use vest_lib::properties::*;
 use vest_lib::regular::bytes::Variable;
-use vest_lib::regular::modifier::{AndThen, Mapped};
+use vest_lib::regular::modifier::{AndThen, Mapped, Mapper};
 use vest_lib::regular::repetition::Repeat;
 use vest_lib::regular::sequence::{Pair, Preceded};
 use vest_lib::regular::tag::Tag;
@@ -45,7 +45,6 @@ pub struct Packet {
     pub len: u16,
     pub records: Vec<Record>,
 }
-
 
 // Record: (u32, u32) <-> Record
 impl From<(u32, u32)> for Record {
@@ -90,38 +89,71 @@ impl<'a, 's: 'a> From<&'s Packet> for (Header, (u16, &'a [Record])) {
     }
 }
 
+struct HeaderMapper;
 
-fn record_combinator() -> Mapped<(U32Le, U32Le), Record, Record> {
-    Mapped::new((U32Le, U32Le))
+impl Mapper for HeaderMapper {
+    type Src = (u8, u8);
+    type Dst = Header;
+    type SrcBorrow<'s> = (u8, u8);
+    type DstBorrow<'s> = Header;
 }
 
-fn header_combinator() -> Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, Header, Header> {
+struct RecordMapper;
+
+impl Mapper for RecordMapper {
+    type Src = (u32, u32);
+    type Dst = Record;
+    type SrcBorrow<'s> = (u32, u32);
+    type DstBorrow<'s> = Record;
+}
+
+struct PacketMapper;
+
+impl Mapper for PacketMapper {
+    type Src = (Header, (u16, Vec<Record>));
+    type Dst = Packet;
+    type SrcBorrow<'s> = (Header, (u16, &'s [Record]));
+    type DstBorrow<'s> = &'s Packet;
+}
+
+fn record_combinator() -> Mapped<(U32Le, U32Le), RecordMapper> {
+    Mapped::new((U32Le, U32Le), RecordMapper)
+}
+
+fn header_combinator() -> Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper> {
     let magic = Tag::new(U16Be, 0xCAFEu16);
-    Mapped::new(Preceded(magic, (U8, U8)))
+    Mapped::new(Preceded(magic, (U8, U8)), HeaderMapper)
 }
 
-fn payload_combinator(
-    len: u16,
-) -> AndThen<Variable, Repeat<Mapped<(U32Le, U32Le), Record, Record>>> {
+fn payload_combinator(len: u16) -> AndThen<Variable, Repeat<Mapped<(U32Le, U32Le), RecordMapper>>> {
     AndThen(Variable(len as usize), Repeat::new(record_combinator()))
 }
 
-type RecordComb = Mapped<(U32Le, U32Le), Record, Record>;
-
+type RecordComb = Mapped<(U32Le, U32Le), RecordMapper>;
 type PayloadComb = AndThen<Variable, Repeat<RecordComb>>;
 
-type HeaderComb = Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, Header, Header>;
+type HeaderComb = Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper>;
 
-// type PacketCombinator = (HeaderComb, Pair<U16Le, PayloadComb, fn(u16) -> PayloadComb>);
+type PacketCombinator =
+    Mapped<(HeaderComb, Pair<U16Le, PayloadComb, fn(u16) -> PayloadComb>), PacketMapper>;
 
-fn packet_combinator() -> (HeaderComb, Pair<U16Le, PayloadComb, impl Fn(u16) -> PayloadComb>) {
-    (
-        header_combinator(),
-        // Pair::new(U16Le, payload_combinator),
-        Pair::new(U16Le, |len| 
-          AndThen(Variable(len as usize), Repeat::new(record_combinator()))),
+fn packet_combinator() -> PacketCombinator {
+    Mapped::new(
+        (header_combinator(), Pair::new(U16Le, payload_combinator)),
+        PacketMapper,
     )
 }
+
+// // type PacketCombinator = (HeaderComb, Pair<U16Le, PayloadComb, fn(u16) -> PayloadComb>);
+
+// fn packet_combinator() -> (HeaderComb, Pair<U16Le, PayloadComb, impl Fn(u16) -> PayloadComb>) {
+//     (
+//         header_combinator(),
+//         // Pair::new(U16Le, payload_combinator),
+//         Pair::new(U16Le, |len|
+//           AndThen(Variable(len as usize), Repeat::new(record_combinator()))),
+//     )
+// }
 
 fn serialize_fn<'a, C>(
     combinator: &C,
@@ -247,12 +279,15 @@ fn example_full_packet() {
 
     // Payload length: 2 records * 8 bytes = 16 bytes
     let payload_len: u16 = 16;
-    
-    // Serialize using tuple format (what the combinator expects)
-    let value = (header, (payload_len, records_slice));
+
+    let value = Packet {
+        header,
+        len: payload_len,
+        records: records_slice.to_vec(),
+    };
 
     let mut buf = vec![0u8; 64];
-    let written = serialize_fn(&pkt_comb, value, &mut buf, 0).expect("serialize");
+    let written = serialize_fn(&pkt_comb, &value, &mut buf, 0).expect("serialize");
 
     println!("  Serialized Packet ({} bytes):", written);
     println!("  Full bytes: {:02X?}", &buf[..written]);
@@ -268,9 +303,14 @@ fn example_full_packet() {
     println!("    Payload:    {:02X?}", &buf[6..written]);
 
     // Parse it back - returns tuple, convert to Packet using From
-    let (consumed, (parsed_header, (parsed_len, parsed_records))) =
-        parse_fn(&pkt_comb, &buf[..written]).expect("parse");
-    
+    let (consumed, parsed) = parse_fn(&pkt_comb, &buf[..written]).expect("parse");
+
+    let Packet {
+        header: parsed_header,
+        len: parsed_len,
+        records: parsed_records,
+    } = parsed;
+
     // Convert to Packet struct using From impl
     let parsed_packet: Packet = (parsed_header, (parsed_len, parsed_records)).into();
 
@@ -307,7 +347,6 @@ fn example_full_packet() {
 
     println!("\n  Full packet roundtrip passed!");
 }
-
 
 fn main() {
     example_record();

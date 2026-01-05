@@ -1,70 +1,85 @@
-use crate::properties::*;
+use crate::{properties::*, regular::sequence::FromRef};
 
 use super::bytes::Variable;
 
-
-/// Combinator that maps the parsed value using a reversible mapper.
-pub struct Mapped<Inner, Dst, RefDst> {
-    /// The inner combinator to parse or serialize.
-    pub inner: Inner,
-    _dst: core::marker::PhantomData<Dst>,
-    _ref_dst: core::marker::PhantomData<RefDst>,
-}
-
-impl<Inner, Dst, RefDst> Mapped<Inner, Dst, RefDst> {
-    /// Create a new `Mapped` combinator.
-    pub fn new(inner: Inner) -> Self {
-        Self {
-            inner,
-            _dst: core::marker::PhantomData,
-            _ref_dst: core::marker::PhantomData,
-        }
-    }
-}
-
-impl<I, O, Inner, Dst, RefDst> Combinator<I, O> for Mapped<Inner, Dst, RefDst>
-where
-    I: VestInput,
-    O: VestOutput<I>,
-    Inner: Combinator<I, O>,
-    Dst: From<Inner::Type>,
-    for<'s> Inner::SType<'s>: From<RefDst>,
-{
-    type Type = Dst;
-    type SType<'s> = RefDst;
-
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        let src: Inner::SType<'s> = v.into();
-        self.inner.length(src)
-    }
-
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-        let (n, v) = self.inner.parse(s)?;
-        Ok((n, v.into()))
-    }
-
-    fn serialize<'s>(
-        &self,
-        v: Self::SType<'s>,
-        data: &mut O,
-        pos: usize,
-    ) -> Result<usize, SerializeError> {
-        let src: Inner::SType<'s> = v.into();
-        self.inner.serialize(src, data, pos)
-    }
-}
-
-
-// /// Simple mapping trait used by `Mapped`.
-// pub trait Mapper<Src> {
-//     /// Output type produced by this mapper.
-//     type Dst;
-
-//     /// Convert from parsed value to mapped value.
-//     fn forward(&self, src: Src) -> Self::Dst;
-//     /// Convert from mapped value back to parsed value.
-//     fn backward(&self, dst: Self::Dst) -> Src;
+// /// Combinator that maps the parsed value using a reversible mapper.
+// pub struct Mapped<Inner, Dst, RefDst> {
+//     /// The inner combinator to parse or serialize.
+//     pub inner: Inner,
+//     _dst: core::marker::PhantomData<Dst>,
+//     _ref_dst: core::marker::PhantomData<RefDst>,
 // }
+
+// impl<Inner, Dst, RefDst> Mapped<Inner, Dst, RefDst> {
+//     /// Create a new `Mapped` combinator.
+//     pub fn new(inner: Inner) -> Self {
+//         Self {
+//             inner,
+//             _dst: core::marker::PhantomData,
+//             _ref_dst: core::marker::PhantomData,
+//         }
+//     }
+// }
+
+// impl<I, O, Inner, Dst, RefDst> Combinator<I, O> for Mapped<Inner, Dst, RefDst>
+// where
+//     I: VestInput,
+//     O: VestOutput<I>,
+//     Inner: Combinator<I, O>,
+//     Dst: From<Inner::Type>,
+//     for<'s> Inner::SType<'s>: From<RefDst>,
+// {
+//     type Type = Dst;
+//     type SType<'s> = RefDst;
+
+//     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+//         let src: Inner::SType<'s> = v.into();
+//         self.inner.length(src)
+//     }
+
+//     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+//         let (n, v) = self.inner.parse(s)?;
+//         Ok((n, v.into()))
+//     }
+
+//     fn serialize<'s>(
+//         &self,
+//         v: Self::SType<'s>,
+//         data: &mut O,
+//         pos: usize,
+//     ) -> Result<usize, SerializeError> {
+//         let src: Inner::SType<'s> = v.into();
+//         self.inner.serialize(src, data, pos)
+//     }
+// }
+
+/// Simple mapping trait used by `Mapped`.
+pub trait Mapper {
+    /// Input type consumed by this mapper.
+    type Src;
+    /// Output type produced by this mapper.
+    type Dst;
+
+    /// Borrowed version of the input type.
+    type SrcBorrow<'s>;
+    /// Borrowed version of the output type.
+    type DstBorrow<'s>;
+
+    /// Convert from parsed value to mapped value.
+    fn forward(&self, src: Self::Src) -> Self::Dst
+    where
+        Self::Dst: From<Self::Src>,
+    {
+        src.into()
+    }
+    /// Convert from mapped value back to parsed value.
+    fn backward<'s>(&self, dst: Self::DstBorrow<'s>) -> Self::SrcBorrow<'s>
+    where
+        Self::SrcBorrow<'s>: From<Self::DstBorrow<'s>>,
+    {
+        dst.into()
+    }
+}
 
 // /// Fallible mapping trait used by `TryMap`.
 // pub trait TryMapper<Src> {
@@ -83,47 +98,53 @@ where
 //     fn apply(&self, input: &Input) -> bool;
 // }
 
-// /// Combinator that maps the parsed value using a reversible mapper.
-// pub struct Mapped<Inner, M> {
-//     /// The inner combinator to parse or serialize.
-//     pub inner: Inner,
-//     /// Mapping logic applied to the parsed value.
-//     pub mapper: M,
-// }
+/// Combinator that maps the parsed value using a reversible mapper.
+pub struct Mapped<Inner, M> {
+    /// The inner combinator to parse or serialize.
+    pub inner: Inner,
+    /// Mapping logic applied to the parsed value.
+    pub mapper: M,
+}
 
-// impl<I, O, Inner, M, Src> Combinator<I, O> for Mapped<Inner, M>
-// where
-//     I: VestInput,
-//     O: VestOutput<I>,
-//     Inner: Combinator<I, O, Type = Src>,
-//     M: Mapper<Src>,
-//     Src: Clone,
-//     M::Dst: Clone,
-//     for<'s> Inner::SType<'s>: From<Src>,
-// {
-//     type Type = M::Dst;
-//     type SType<'s> = M::Dst;
+impl<Inner, M> Mapped<Inner, M> {
+    /// Create a new `Mapped` combinator.
+    pub fn new(inner: Inner, mapper: M) -> Self {
+        Self { inner, mapper }
+    }
+}
 
-//     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-//         let src: Inner::SType<'s> = self.mapper.backward(v.clone()).into();
-//         self.inner.length(src)
-//     }
+impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M>
+where
+    I: VestInput,
+    O: VestOutput<I>,
+    Inner: Combinator<I, O>,
+    for<'s> M: Mapper<Src = Inner::Type, SrcBorrow<'s> = Inner::SType<'s>>,
+    M::Dst: From<M::Src>,
+    for<'s> M::SrcBorrow<'s>: From<M::DstBorrow<'s>>,
+{
+    type Type = M::Dst;
+    type SType<'s> = M::DstBorrow<'s>;
 
-//     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-//         let (n, v) = self.inner.parse(s)?;
-//         Ok((n, self.mapper.forward(v)))
-//     }
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+        let src: Inner::SType<'s> = self.mapper.backward(v).into();
+        self.inner.length(src)
+    }
 
-//     fn serialize<'s>(
-//         &self,
-//         v: Self::SType<'s>,
-//         data: &mut O,
-//         pos: usize,
-//     ) -> Result<usize, SerializeError> {
-//         let src: Inner::SType<'s> = self.mapper.backward(v).into();
-//         self.inner.serialize(src, data, pos)
-//     }
-// }
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+        let (n, v) = self.inner.parse(s)?;
+        Ok((n, self.mapper.forward(v)))
+    }
+
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError> {
+        let src: Inner::SType<'s> = self.mapper.backward(v).into();
+        self.inner.serialize(src, data, pos)
+    }
+}
 
 // /// Combinator that maps the parsed value using fallible conversions.
 // pub struct TryMap<Inner, M> {
@@ -183,7 +204,8 @@ where
     I: VestInput,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    P: for<'a> Fn(&'a Inner::Type) -> bool,
+    P: for<'s> Fn(Inner::SType<'s>) -> bool,
+    for<'s> Inner::SType<'s>: FromRef<'s, Inner::Type>,
 {
     type Type = Inner::Type;
     type SType<'s> = Inner::SType<'s>;
@@ -194,7 +216,7 @@ where
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         match self.inner.parse(s) {
-            Ok((n, v)) if (self.predicate)(&v) => Ok((n, v)),
+            Ok((n, v)) if (self.predicate)(Inner::SType::ref_to_stype(&v)) => Ok((n, v)),
             Ok(_) => Err(ParseError::RefinedPredicateFailed),
             Err(e) => Err(e),
         }
@@ -288,49 +310,3 @@ where
         self.1.serialize(v, data, pos)
     }
 }
-
-// /// Helper mapper that uses a pair of closures.
-// pub struct ClosureMapper<Src, Dst, F, G>
-// where
-//     F: Fn(Src) -> Dst,
-//     G: Fn(Dst) -> Src,
-// {
-//     /// Forward mapping closure.
-//     pub forward: F,
-//     /// Backward mapping closure.
-//     pub backward: G,
-//     /// Marker for the source type.
-//     pub _src: core::marker::PhantomData<Src>,
-//     /// Marker for the destination type.
-//     pub _dst: core::marker::PhantomData<Dst>,
-// }
-
-// impl<Src, Dst, F, G> Mapper<Src> for ClosureMapper<Src, Dst, F, G>
-// where
-//     F: Fn(Src) -> Dst,
-//     G: Fn(Dst) -> Src,
-// {
-//     type Dst = Dst;
-
-//     fn forward(&self, src: Src) -> Self::Dst {
-//         (self.forward)(src)
-//     }
-
-//     fn backward(&self, dst: Self::Dst) -> Src {
-//         (self.backward)(dst)
-//     }
-// }
-
-// /// Construct a [`ClosureMapper`].
-// pub fn closure_mapper<Src, Dst, F, G>(forward: F, backward: G) -> ClosureMapper<Src, Dst, F, G>
-// where
-//     F: Fn(Src) -> Dst,
-//     G: Fn(Dst) -> Src,
-// {
-//     ClosureMapper {
-//         forward,
-//         backward,
-//         _src: core::marker::PhantomData,
-//         _dst: core::marker::PhantomData,
-//     }
-// }

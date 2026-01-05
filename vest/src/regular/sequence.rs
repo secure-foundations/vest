@@ -1,6 +1,5 @@
 use crate::properties::*;
 
-
 /// Dependent pair combinator where the second combinator depends on the result
 /// of the first (sequentially).
 pub struct Pair<Fst, Snd, DepSnd> {
@@ -46,8 +45,7 @@ where
     type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        self.fst.length(v.0)
-            + (self.dep_snd)(v.0).length(v.1)
+        self.fst.length(v.0) + (self.dep_snd)(v.0).length(v.1)
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
