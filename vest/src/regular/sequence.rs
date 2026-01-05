@@ -20,6 +20,19 @@ impl<Fst, Snd, DepSnd> Pair<Fst, Snd, DepSnd> {
     }
 }
 
+/// Helper trait to convert from `&Type` to `SType`.
+pub trait FromRef<'s, T> {
+    /// Convert from a reference to the serialization type.
+    fn ref_to_stype(val: &'s T) -> Self;
+}
+
+/// Blanket implementation for Copy types where SType equals Type.
+impl<'s, T: Copy> FromRef<'s, T> for T {
+    fn ref_to_stype(val: &'s T) -> Self {
+        *val
+    }
+}
+
 impl<I, O, Fst, Snd, DepSnd> Combinator<I, O> for Pair<Fst, Snd, DepSnd>
 where
     I: VestInput,
@@ -27,7 +40,7 @@ where
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     DepSnd: for<'s> Fn(Fst::SType<'s>) -> Snd,
-    for<'s> Fst::SType<'s>: From<&'s Fst::Type> + Copy,
+    for<'s> Fst::SType<'s>: FromRef<'s, Fst::Type> + Copy,
 {
     type Type = (Fst::Type, Snd::Type);
     type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
@@ -39,7 +52,7 @@ where
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
         let (n, v1) = self.fst.parse(s.clone())?;
-        let dep_snd = (self.dep_snd)((&v1).into());
+        let dep_snd = (self.dep_snd)(Fst::SType::ref_to_stype(&v1));
         let (m, v2) = dep_snd.parse(s.subrange(n, s.len()))?;
         Ok((n + m, (v1, v2)))
     }
@@ -97,16 +110,14 @@ impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd>
 where
     I: VestInput,
     O: VestOutput<I>,
-    Fst: Combinator<I, O, Type = ()>,
+    Fst: for<'s> Combinator<I, O, Type = (), SType<'s> = ()>,
     Snd: Combinator<I, O>,
-    for<'s> Fst::SType<'s>: From<()>,
 {
     type Type = Snd::Type;
     type SType<'s> = Snd::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        let prefix: Fst::SType<'s> = ().into();
-        (&self.0, &self.1).length((prefix, v))
+        (&self.0, &self.1).length(((), v))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -120,7 +131,7 @@ where
         data: &mut O,
         pos: usize,
     ) -> Result<usize, SerializeError> {
-        (&self.0, &self.1).serialize((().into(), v), data, pos)
+        (&self.0, &self.1).serialize(((), v), data, pos)
     }
 }
 
@@ -132,15 +143,13 @@ where
     I: VestInput,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
-    Snd: Combinator<I, O, Type = ()>,
-    for<'s> Snd::SType<'s>: From<()>,
+    Snd: for<'s> Combinator<I, O, Type = (), SType<'s> = ()>,
 {
     type Type = Fst::Type;
     type SType<'s> = Fst::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        let suffix: Snd::SType<'s> = ().into();
-        (&self.0, &self.1).length((v, suffix))
+        (&self.0, &self.1).length((v, ()))
     }
 
     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
@@ -154,6 +163,6 @@ where
         data: &mut O,
         pos: usize,
     ) -> Result<usize, SerializeError> {
-        (&self.0, &self.1).serialize((v, ().into()), data, pos)
+        (&self.0, &self.1).serialize((v, ()), data, pos)
     }
 }

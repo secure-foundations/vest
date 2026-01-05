@@ -34,41 +34,46 @@
 //! # Example: Parsing and serializing a pair of bytes
 //!
 //! ```rust
-//! use vest::regular::bytes::Bytes;
+//! use vest_lib::regular::bytes::Variable;
+//! use vest_lib::properties::Combinator;
 //!
-//! let pair_of_bytes = (Bytes(1), Bytes(2));
+//! fn example() -> Result<(), vest_lib::errors::Error> {
+//!     let pair_of_bytes = (Variable(1), Variable(2));
 //!
-//! let input = &[0x10; 10];
-//! let (consumed, (a, b)) = pair_of_bytes.parse(input)?;
+//!     let input: &[u8] = &[0x10; 10];
+//!     let (consumed, (a, b)) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&pair_of_bytes, input)?;
 //!
-//! let mut output = vec![0x00; 40];
-//! let written = pair_of_bytes.serialize((a, b), &mut output, 0)?;
+//!     let mut output: Vec<u8> = vec![0x00; 40];
+//!     let written = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&pair_of_bytes, (a, b), &mut output, 0)?;
 //!
-//! assert_eq!(written, consumed);
-//! assert_eq!(&output[..written], &input[..written]);
+//!     assert_eq!(written, consumed);
+//!     assert_eq!(&output[..written], &input[..written]);
+//!     Ok(())
+//! }
+//! example().unwrap();
 //! ```
 //!
 //! # Example: Constructing a new combinator
 //!
 //! ```rust
-//! use vest::regular::uints::U8;
-//! use vest::regular::modifier::{Refined, Pred};
+//! use vest_lib::regular::uints::U8;
+//! use vest_lib::regular::modifier::Refined;
+//! use vest_lib::properties::Combinator;
 //!
-//! pub struct EvenU8;
-//! impl Pred<u8> for EvenU8 {
-//!     fn apply(&self, i: &u8) -> bool { *i % 2 == 0 }
+//! fn example() -> Result<(), vest_lib::errors::Error> {
+//!     let even_u8 = Refined { inner: U8, predicate: |v: &u8| *v % 2 == 0 };
+//!
+//!     let mut output: Vec<u8> = vec![0x00; 40];
+//!     let ten = 10u8;
+//!     let written = <_ as Combinator<&[u8], Vec<u8>>>::serialize(&even_u8, ten, &mut output, 0)?;
+//!
+//!     let (consumed, parsed) = <_ as Combinator<&[u8], Vec<u8>>>::parse(&even_u8, output.as_slice())?;
+//!
+//!     assert_eq!(written, consumed);
+//!     assert_eq!(parsed, ten);
+//!     Ok(())
 //! }
-//!
-//! let even_u8 = Refined { inner: U8, predicate: EvenU8 };
-//!
-//! let mut output = vec![0x00; 40];
-//! let ten = 10u8;
-//! let written = even_u8.serialize(ten, &mut output, 0)?;
-//!
-//! let (consumed, parsed) = even_u8.parse(output.as_slice())?;
-//!
-//! assert_eq!(written, consumed);
-//! assert_eq!(parsed, ten);
+//! example().unwrap();
 //! ```
 
 // mod examples;

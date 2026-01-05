@@ -11,6 +11,17 @@ pub struct Mapped<Inner, Dst, RefDst> {
     _ref_dst: core::marker::PhantomData<RefDst>,
 }
 
+impl<Inner, Dst, RefDst> Mapped<Inner, Dst, RefDst> {
+    /// Create a new `Mapped` combinator.
+    pub fn new(inner: Inner) -> Self {
+        Self {
+            inner,
+            _dst: core::marker::PhantomData,
+            _ref_dst: core::marker::PhantomData,
+        }
+    }
+}
+
 impl<I, O, Inner, Dst, RefDst> Combinator<I, O> for Mapped<Inner, Dst, RefDst>
 where
     I: VestInput,
