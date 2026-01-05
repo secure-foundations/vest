@@ -219,7 +219,7 @@ fn example_header() {
     println!("  Header roundtrip passed!");
 }
 
-fn example_payload_with_andthen() {
+fn example_payload() {
     println!("\n=== Payload with AndThen (Variable >>= Repeat) ===");
 
     // Create some records
@@ -302,19 +302,9 @@ fn example_full_packet() {
     );
     println!("    Payload:    {:02X?}", &buf[6..written]);
 
-    // Parse it back - returns tuple, convert to Packet using From
-    let (consumed, parsed) = parse_fn(&pkt_comb, &buf[..written]).expect("parse");
+    let (consumed, parsed_packet) = parse_fn(&pkt_comb, &buf[..written]).expect("parse");
 
-    let Packet {
-        header: parsed_header,
-        len: parsed_len,
-        records: parsed_records,
-    } = parsed;
-
-    // Convert to Packet struct using From impl
-    let parsed_packet: Packet = (parsed_header, (parsed_len, parsed_records)).into();
-
-    println!("\n  Parsed Packet (converted from tuple):");
+    println!("\n  Parsed Packet:");
     println!(
         "    Header: version={}, flags=0x{:02X}",
         parsed_packet.header.version, parsed_packet.header.flags
@@ -351,6 +341,6 @@ fn example_full_packet() {
 fn main() {
     example_record();
     example_header();
-    example_payload_with_andthen();
+    example_payload();
     example_full_packet();
 }
