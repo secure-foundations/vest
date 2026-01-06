@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::properties::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,6 +32,7 @@ where
         = Either<Fst::SType<'s>, Snd::SType<'s>>
     where
         I: 's;
+    type GType = Either<Fst::GType, Snd::GType>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -67,6 +70,16 @@ where
             Either::Right(v) => self.1.serialize(v, data, pos),
         }
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        if g.rng.random_bool(0.5) {
+            let (n, v) = self.0.generate(g)?;
+            Ok((n, Either::Left(v)))
+        } else {
+            let (n, v) = self.1.generate(g)?;
+            Ok((n, Either::Right(v)))
+        }
+    }
 }
 
 /// Optional combinator that never fails; consumes zero bytes on `None`.
@@ -92,6 +105,7 @@ where
         = Option<T::SType<'s>>
     where
         I: 's;
+    type GType = Option<T::GType>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -134,6 +148,15 @@ where
             }
         }
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        if g.rng.random_bool(0.5) {
+            let (n, v) = self.0.generate(g)?;
+            Ok((n, Some(v)))
+        } else {
+            Ok((0, None))
+        }
+    }
 }
 
 /// Parse an optional prefix followed by a required tail.
@@ -160,6 +183,7 @@ where
         = (Option<Fst::SType<'s>>, Snd::SType<'s>)
     where
         I: 's;
+    type GType = (Option<Fst::GType>, Snd::GType);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -198,5 +222,15 @@ where
         }
         let n1 = self.1.serialize(v.1, data, pos + written)?;
         Ok(written + n1)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (n1, v1) = self.1.generate(g)?;
+        if g.rng.random_bool(0.5) {
+            let (n0, v0) = self.0 .0.generate(g)?;
+            Ok((n0 + n1, (Some(v0), v1)))
+        } else {
+            Ok((n1, (None, v1)))
+        }
     }
 }

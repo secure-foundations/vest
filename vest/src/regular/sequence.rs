@@ -39,7 +39,7 @@ where
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     DepSnd: for<'s> Fn(Fst::SType<'s>) -> Snd,
-    for<'p, 's> Fst::SType<'s>: FromRef<'s, Fst::Type<'p>> + Copy,
+    for<'p, 's> Fst::SType<'s>: FromRef<'s, Fst::Type<'p>> + FromRef<'s, Fst::GType> + Copy,
 {
     type Type<'p>
         = (Fst::Type<'p>, Snd::Type<'p>)
@@ -49,6 +49,7 @@ where
         = (Fst::SType<'s>, Snd::SType<'s>)
     where
         I: 's;
+    type GType = (Fst::GType, Snd::GType);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -82,6 +83,13 @@ where
         let m = dep_snd.serialize(v.1, data, pos + n)?;
         Ok(n + m)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (g1, v1) = self.fst.generate(g)?;
+        let dep_snd = (self.dep_snd)(Fst::SType::ref_to_stype(&v1));
+        let (g2, v2) = dep_snd.generate(g)?;
+        Ok((g1 + g2, (v1, v2)))
+    }
 }
 
 /// Tuple for sequencing.
@@ -100,6 +108,7 @@ where
         = (Fst::SType<'s>, Snd::SType<'s>)
     where
         I: 's;
+    type GType = (Fst::GType, Snd::GType);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -130,6 +139,12 @@ where
         let n = self.0.serialize(v.0, data, pos)?;
         let m = self.1.serialize(v.1, data, pos + n)?;
         Ok(n + m)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (g1, v1) = self.0.generate(g)?;
+        let (g2, v2) = self.1.generate(g)?;
+        Ok((g1 + g2, (v1, v2)))
     }
 }
 
@@ -169,6 +184,7 @@ where
         = Snd::SType<'s>
     where
         I: 's;
+    type GType = Snd::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -200,6 +216,11 @@ where
         let m = self.1.serialize(v, data, pos + n)?;
         Ok(n + m)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (g2, v2) = self.1.generate(g)?;
+        Ok((g2, v2))
+    }
 }
 
 pub struct Terminated<Fst, Snd>(pub Fst, pub Snd);
@@ -219,6 +240,7 @@ where
         = Fst::SType<'s>
     where
         I: 's;
+    type GType = Fst::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -249,5 +271,10 @@ where
         let n = self.0.serialize(v, data, pos)?;
         let m = self.1.serialize_unit(data, pos + n)?;
         Ok(n + m)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (g1, v1) = self.0.generate(g)?;
+        Ok((g1, v1))
     }
 }

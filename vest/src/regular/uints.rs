@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::properties::*;
 use core::mem::size_of;
 
@@ -120,6 +122,7 @@ where
         = u8
     where
         I: 's;
+    type GType = u8;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -146,6 +149,11 @@ where
     {
         serialize_int::<1, I, O>([v], data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u8 = g.rng.random();
+        Ok((1, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U16Le
@@ -161,6 +169,7 @@ where
         = u16
     where
         I: 's;
+    type GType = u16;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -187,6 +196,11 @@ where
     {
         serialize_int::<2, I, O>(v.to_le_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u16 = g.rng.random();
+        Ok((2, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U32Le
@@ -202,6 +216,7 @@ where
         = u32
     where
         I: 's;
+    type GType = u32;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -228,6 +243,11 @@ where
     {
         serialize_int::<4, I, O>(v.to_le_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u32 = g.rng.random();
+        Ok((4, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U64Le
@@ -243,6 +263,7 @@ where
         = u64
     where
         I: 's;
+    type GType = u64;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -269,6 +290,11 @@ where
     {
         serialize_int::<8, I, O>(v.to_le_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u64 = g.rng.random();
+        Ok((8, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U16Be
@@ -284,6 +310,7 @@ where
         = u16
     where
         I: 's;
+    type GType = u16;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -310,6 +337,11 @@ where
     {
         serialize_int::<2, I, O>(v.to_be_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u16 = g.rng.random();
+        Ok((2, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U32Be
@@ -325,6 +357,7 @@ where
         = u32
     where
         I: 's;
+    type GType = u32;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -351,6 +384,11 @@ where
     {
         serialize_int::<4, I, O>(v.to_be_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u32 = g.rng.random();
+        Ok((4, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U64Be
@@ -366,6 +404,7 @@ where
         = u64
     where
         I: 's;
+    type GType = u64;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -392,6 +431,11 @@ where
     {
         serialize_int::<8, I, O>(v.to_be_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let v: u64 = g.rng.random();
+        Ok((8, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U24Le
@@ -407,6 +451,7 @@ where
         = u24
     where
         I: 's;
+    type GType = u24;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -433,6 +478,12 @@ where
     {
         serialize_int::<3, I, O>(v.to_le_bytes(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let bytes: [u8; 3] = [g.rng.random(), g.rng.random(), g.rng.random()];
+        let v = u24::from_le_bytes(bytes);
+        Ok((3, v))
+    }
 }
 
 impl<I, O> Combinator<I, O> for U24Be
@@ -448,6 +499,7 @@ where
         = u24
     where
         I: 's;
+    type GType = u24;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -473,5 +525,11 @@ where
         I: 's,
     {
         serialize_int::<3, I, O>(v.to_le_bytes(), data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let bytes: [u8; 3] = [g.rng.random(), g.rng.random(), g.rng.random()];
+        let v = u24::from_be_bytes(bytes);
+        Ok((3, v))
     }
 }

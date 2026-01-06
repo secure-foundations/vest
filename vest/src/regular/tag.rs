@@ -1,7 +1,7 @@
 use crate::{
     buf_traits::{VestInput, VestOutput},
-    errors::{ParseError, SerializeError},
-    properties::Combinator,
+    errors::{GenerateError, ParseError, SerializeError},
+    properties::{Combinator, GResult, GenSt},
     regular::sequence::{FromRef, UnitCombinator},
 };
 
@@ -52,7 +52,8 @@ where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     T: for<'s> Compare<Inner::SType<'s>> + Copy,
-    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>> + From<T>,
+    for<'p, 's> Inner::SType<'s>:
+        FromRef<'s, Inner::Type<'p>> + FromRef<'s, Inner::GType> + From<T>,
 {
     type Type<'p>
         = ()
@@ -62,6 +63,7 @@ where
         = ()
     where
         I: 's;
+    type GType = ();
 
     fn length<'s>(&self, _: Self::SType<'s>) -> usize
     where
@@ -93,6 +95,15 @@ where
     {
         self.inner.serialize(self.tag.into(), data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        loop {
+            let (n, v) = self.inner.generate(g)?;
+            if self.tag.compare(&Inner::SType::ref_to_stype(&v)) {
+                return Ok((n, ()));
+            }
+        }
+    }
 }
 
 impl<I, O, Inner, T> UnitCombinator<I, O> for Tag<Inner, T>
@@ -101,7 +112,8 @@ where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     T: for<'s> Compare<Inner::SType<'s>> + Copy,
-    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>> + From<T>,
+    for<'p, 's> Inner::SType<'s>:
+        FromRef<'s, Inner::Type<'p>> + FromRef<'s, Inner::GType> + From<T>,
 {
     fn parse_unit<'p>(&self, s: &'p I) -> Result<usize, ParseError>
     where

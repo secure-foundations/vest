@@ -14,6 +14,11 @@ pub trait Mapper {
     /// Borrowed version of the output type.
     type DstBorrow<'s>;
 
+    /// Owned version of the input type.
+    type SrcOwned;
+    /// Owned version of the output type.
+    type DstOwned;
+
     /// Convert from parsed value to mapped value.
     fn forward<'p>(&self, src: Self::Src<'p>) -> Self::Dst<'p>
     where
@@ -27,6 +32,13 @@ pub trait Mapper {
         Self::SrcBorrow<'s>: From<Self::DstBorrow<'s>>,
     {
         dst.into()
+    }
+    /// Convert from generated owned value to mapped owned value.
+    fn forward_owned(&self, src: Self::SrcOwned) -> Self::DstOwned
+    where
+        Self::DstOwned: From<Self::SrcOwned>,
+    {
+        src.into()
     }
 }
 
@@ -50,9 +62,14 @@ where
     I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    for<'p, 's> M: Mapper<Src<'p> = Inner::Type<'p>, SrcBorrow<'s> = Inner::SType<'s>>,
+    for<'p, 's> M: Mapper<
+        Src<'p> = Inner::Type<'p>,
+        SrcBorrow<'s> = Inner::SType<'s>,
+        SrcOwned = Inner::GType,
+    >,
     for<'p> M::Dst<'p>: From<M::Src<'p>>,
     for<'s> M::SrcBorrow<'s>: From<M::DstBorrow<'s>>,
+    M::DstOwned: From<M::SrcOwned>,
 {
     type Type<'p>
         = M::Dst<'p>
@@ -62,6 +79,7 @@ where
         = M::DstBorrow<'s>
     where
         I: 's;
+    type GType = M::DstOwned;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -91,6 +109,11 @@ where
         let src: Inner::SType<'s> = self.mapper.backward(v).into();
         self.inner.serialize(src, data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (n, v) = self.inner.generate(g)?;
+        Ok((n, self.mapper.forward_owned(v)))
+    }
 }
 
 /// Combinator that refines the result of an `inner` combinator with a predicate.
@@ -107,7 +130,7 @@ where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     P: for<'s> Fn(Inner::SType<'s>) -> bool,
-    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>>,
+    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>> + FromRef<'s, Inner::GType>,
 {
     type Type<'p>
         = Inner::Type<'p>
@@ -117,6 +140,7 @@ where
         = Inner::SType<'s>
     where
         I: 's;
+    type GType = Inner::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -147,6 +171,15 @@ where
     {
         self.inner.serialize(v, data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        loop {
+            let (n, v) = self.inner.generate(g)?;
+            if (self.predicate)(Inner::SType::ref_to_stype(&v)) {
+                return Ok((n, v));
+            }
+        }
+    }
 }
 
 /// Combinator that runs its inner combinator only when `cond` is true.
@@ -171,6 +204,7 @@ where
         = Inner::SType<'s>
     where
         I: 's;
+    type GType = Inner::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -205,6 +239,14 @@ where
             Err(SerializeError::Other("condition not satisfied".into()))
         }
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        if self.cond {
+            self.inner.generate(g)
+        } else {
+            Err(GenerateError::CondFailed)
+        }
+    }
 }
 
 /// Combinator that chains a variable-length parser with a parser for its contents.
@@ -224,12 +266,13 @@ where
         = Next::SType<'s>
     where
         I: 's;
+    type GType = Next::GType;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
         I: 's,
     {
-        self.0 .0.max(self.1.length(v))
+        self.0 .0
     }
 
     fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
@@ -255,5 +298,14 @@ where
         I: 's,
     {
         self.1.serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        loop {
+            let (m, value) = self.1.generate(g)?;
+            if m == self.0 .0 {
+                return Ok((m, value));
+            }
+        }
     }
 }

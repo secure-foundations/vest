@@ -8,6 +8,15 @@ pub type PResult<T, E> = Result<(usize, T), E>;
 /// The serialize result of a combinator.
 pub type SResult<T, E> = Result<T, E>;
 
+/// The generate result of a combinator.
+pub type GResult<T, E> = Result<(usize, T), E>;
+
+/// The state for generation-related fields
+pub struct GenSt {
+    /// The random number generator
+    pub rng: rand::rngs::StdRng,
+}
+
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator<I, O>
@@ -27,6 +36,10 @@ where
     type SType<'s>
     where
         I: 's;
+
+    /// The result type of generation.
+    /// It is often an owned version of [`Self::Type`].
+    type GType;
 
     /// The length of the output buffer.
     /// This can be used to optimize serialization by pre-allocating the buffer.
@@ -82,6 +95,11 @@ where
     ) -> SResult<usize, SerializeError>
     where
         I: 's;
+
+    /// The generation function.
+    /// This function generates a value of type `Self::GType` along with the
+    /// number of bytes that would be produced when serializing this value.
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError>;
 }
 
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C
@@ -98,6 +116,8 @@ where
         = C::SType<'s>
     where
         I: 's;
+
+    type GType = C::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -124,6 +144,10 @@ where
     {
         (*self).serialize(v, data, pos)
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        (*self).generate(g)
+    }
 }
 
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C>
@@ -140,6 +164,8 @@ where
         = C::SType<'s>
     where
         I: 's;
+
+    type GType = C::GType;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -165,5 +191,9 @@ where
         I: 's,
     {
         (**self).serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        (**self).generate(g)
     }
 }

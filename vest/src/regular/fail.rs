@@ -14,6 +14,7 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Fail {
         = ()
     where
         I: 's;
+    type GType = ();
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -39,5 +40,9 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Fail {
         I: 's,
     {
         Err(SerializeError::Other(self.0.clone()))
+    }
+
+    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        Err(GenerateError::Other(self.0.clone()))
     }
 }

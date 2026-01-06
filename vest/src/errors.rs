@@ -23,6 +23,14 @@ pub enum SerializeError {
     Other(String),
 }
 
+/// Generator errors
+#[derive(Debug)]
+pub enum GenerateError {
+    TooManyRetries,
+    CondFailed,
+    Other(String),
+}
+
 /// Sum of both parse and serialize errors
 #[derive(Debug)]
 pub enum Error {
@@ -30,6 +38,8 @@ pub enum Error {
     Parse(ParseError),
     /// Serializer error
     Serialize(SerializeError),
+    /// Generator error
+    Generate(GenerateError),
 }
 
 impl core::convert::From<ParseError> for Error {
@@ -41,6 +51,12 @@ impl core::convert::From<ParseError> for Error {
 impl core::convert::From<SerializeError> for Error {
     fn from(e: SerializeError) -> Self {
         Error::Serialize(e)
+    }
+}
+
+impl core::convert::From<GenerateError> for Error {
+    fn from(e: GenerateError) -> Self {
+        Error::Generate(e)
     }
 }
 
@@ -75,6 +91,18 @@ impl core::fmt::Display for SerializeError {
     }
 }
 
+impl core::fmt::Display for GenerateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            GenerateError::TooManyRetries => write!(f, "Too many retries during generation"),
+            GenerateError::CondFailed => write!(f, "`Cond` combinator failed"),
+            GenerateError::Other(s) => write!(f, "{}", s),
+        }
+    }
+}
+
 impl core::error::Error for ParseError {}
 
 impl core::error::Error for SerializeError {}
+
+impl core::error::Error for GenerateError {}

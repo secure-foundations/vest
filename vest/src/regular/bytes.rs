@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::properties::*;
 
 use super::modifier::AndThen;
@@ -32,6 +34,7 @@ where
         = &'s I
     where
         I: 's;
+    type GType = O;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -67,6 +70,10 @@ where
             Err(SerializeError::InsufficientBuffer)
         }
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        Ok((self.0, O::generate(self.0, g)))
+    }
 }
 
 /// Combinator for parsing and serializing a fixed number of bytes (statically known).
@@ -86,6 +93,7 @@ where
         = &'s I
     where
         I: 's;
+    type GType = O;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -121,6 +129,10 @@ where
             Err(SerializeError::InsufficientBuffer)
         }
     }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        Ok((N, O::generate(N, g)))
+    }
 }
 
 /// Combinator that returns the rest of the input bytes from the current position.
@@ -136,6 +148,7 @@ impl<I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Tail {
         = &'s I
     where
         I: 's;
+    type GType = O;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -166,5 +179,10 @@ impl<I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Tail {
         } else {
             Err(SerializeError::InsufficientBuffer)
         }
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let len: u64 = g.rng.random();
+        Ok((len as usize, O::generate(len as usize, g)))
     }
 }

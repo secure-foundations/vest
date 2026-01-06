@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use rand::Rng;
 
 use crate::properties::*;
 
@@ -27,6 +28,7 @@ where
         = &'s [C::SType<'s>]
     where
         I: 's;
+    type GType = Vec<C::GType>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -47,10 +49,7 @@ where
         for _ in 0..self.1 {
             let rest = s.skip(consumed);
             let (n, v) = self.0.parse(&rest)?;
-            if n == 0 {
-                return Err(ParseError::Other("repeat element length was zero".into()));
-            }
-            consumed = consumed.saturating_add(n);
+            consumed += n;
             values.push(v);
         }
         Ok((consumed, values))
@@ -75,6 +74,17 @@ where
             pos += n;
         }
         Ok(pos - start)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let mut values = Vec::with_capacity(self.1);
+        let mut generated: usize = 0;
+        for _ in 0..self.1 {
+            let (m, v) = self.0.generate(g)?;
+            generated += m;
+            values.push(v);
+        }
+        Ok((generated, values))
     }
 }
 
@@ -103,6 +113,7 @@ where
         = &'s [C::SType<'s>]
     where
         I: 's;
+    type GType = Vec<C::GType>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
@@ -123,7 +134,7 @@ where
             if n == 0 {
                 return Err(ParseError::Other("repeat element length was zero".into()));
             }
-            consumed = consumed.saturating_add(n);
+            consumed += n;
             values.push(v);
         }
         Ok((consumed, values))
@@ -144,5 +155,17 @@ where
             pos += n;
         }
         Ok(pos - start)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let mut values = Vec::new();
+        let mut generated: usize = 0;
+        let len: u16 = g.rng.random();
+        for _ in 0..len {
+            let (m, v) = self.0.generate(g)?;
+            generated += m;
+            values.push(v);
+        }
+        Ok((generated, values))
     }
 }

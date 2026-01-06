@@ -1,4 +1,7 @@
 use alloc::vec::Vec;
+use rand::RngCore;
+
+use crate::properties::GenSt;
 
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte
 /// buffers.
@@ -33,6 +36,9 @@ pub trait VestOutput<I: ?Sized> {
 
     /// Copy `input` to `self` starting at index `i`.
     fn set_range(&mut self, i: usize, input: &I);
+
+    /// Generate a value of `Self` using the provided generator.
+    fn generate(i: usize, g: &mut GenSt) -> Self;
 }
 
 /// Trait for outputs that can be directly modified byte-by-byte.
@@ -76,6 +82,13 @@ where
             "set_range would write past end of buffer"
         );
         self[i..i + bytes.len()].copy_from_slice(bytes);
+    }
+
+    fn generate(i: usize, g: &mut GenSt) -> Self {
+        let mut v = Vec::with_capacity(i);
+        v.resize(i, 0);
+        g.rng.fill_bytes(&mut v);
+        v
     }
 }
 

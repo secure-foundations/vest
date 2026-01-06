@@ -12,6 +12,7 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Success {
         = ()
     where
         I: 's;
+    type GType = ();
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize
     where
@@ -37,5 +38,9 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Success {
         I: 's,
     {
         Ok(0)
+    }
+
+    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        Ok((0, ()))
     }
 }
