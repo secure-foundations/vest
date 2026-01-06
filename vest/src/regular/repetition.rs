@@ -19,7 +19,7 @@ where
     C: Combinator<I, O>,
     for<'s> C::SType<'s>: 's + Copy,
 {
-    type Type = Vec<C::Type>;
+    type Type<'p> = Vec<C::Type<'p>>;
     type SType<'s> = &'s [C::SType<'s>];
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
@@ -29,7 +29,7 @@ where
         v.iter().fold(0, |acc, item| acc + self.0.length(*item))
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         let mut values = Vec::with_capacity(self.1);
         let mut consumed = 0usize;
         for _ in 0..self.1 {
@@ -79,14 +79,14 @@ where
     C: Combinator<I, O>,
     for<'s> C::SType<'s>: 's + Copy,
 {
-    type Type = Vec<C::Type>;
+    type Type<'p> = Vec<C::Type<'p>>;
     type SType<'s> = &'s [C::SType<'s>];
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         v.iter().fold(0, |acc, item| acc + self.0.length(*item))
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         let mut values = Vec::new();
         let mut consumed = 0usize;
         while consumed < s.len() {

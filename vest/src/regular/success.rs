@@ -4,14 +4,14 @@ use crate::properties::*;
 pub struct Success;
 
 impl<'x, I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
-    type Type = ();
+    type Type<'p> = ();
     type SType<'s> = ();
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         0
     }
 
-    fn parse(&self, _s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, _s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         Ok((0, ()))
     }
 

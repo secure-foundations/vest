@@ -109,14 +109,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u8;
+    type Type<'p> = u8;
     type SType<'s> = u8;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         1
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u8), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<1, _, _>(s, |b| b[0])
     }
 
@@ -135,14 +135,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u16;
+    type Type<'p> = u16;
     type SType<'s> = u16;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u16>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u16), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<2, _, _>(s, |b| u16::from_le_bytes(b))
     }
 
@@ -161,14 +161,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u32;
+    type Type<'p> = u32;
     type SType<'s> = u32;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u32>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u32), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<4, _, _>(s, |b| u32::from_le_bytes(b))
     }
 
@@ -187,14 +187,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u64;
+    type Type<'p> = u64;
     type SType<'s> = u64;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u64>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u64), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<8, _, _>(s, |b| u64::from_le_bytes(b))
     }
 
@@ -213,14 +213,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u16;
+    type Type<'p> = u16;
     type SType<'s> = u16;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u16>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u16), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<2, _, _>(s, |b| u16::from_be_bytes(b))
     }
 
@@ -239,14 +239,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u32;
+    type Type<'p> = u32;
     type SType<'s> = u32;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u32>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u32), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<4, _, _>(s, |b| u32::from_be_bytes(b))
     }
 
@@ -265,14 +265,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u64;
+    type Type<'p> = u64;
     type SType<'s> = u64;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         size_of::<u64>()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u64), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<8, _, _>(s, |b| u64::from_be_bytes(b))
     }
 
@@ -291,14 +291,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u24;
+    type Type<'p> = u24;
     type SType<'s> = u24;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         3
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u24), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<3, _, _>(s, |b| u24::from_le_bytes(b))
     }
 
@@ -317,14 +317,14 @@ where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
 {
-    type Type = u24;
+    type Type<'p> = u24;
     type SType<'s> = u24;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         3
     }
 
-    fn parse(&self, s: I) -> Result<(usize, u24), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         parse_int::<3, _, _>(s, |b| u24::from_be_bytes(b))
     }
 

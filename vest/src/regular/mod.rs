@@ -8,8 +8,6 @@ pub mod disjoint;
 pub mod end;
 /// Fail combinator
 pub mod fail;
-/// LEB128-encoded integers
-pub mod leb128;
 /// Combinator modifiers
 pub mod modifier;
 /// Repetition combinators

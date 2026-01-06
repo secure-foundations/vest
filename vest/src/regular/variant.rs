@@ -22,7 +22,7 @@ where
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
 {
-    type Type = Either<Fst::Type, Snd::Type>;
+    type Type<'p> = Either<Fst::Type<'p>, Snd::Type<'p>>;
     type SType<'s> = Either<Fst::SType<'s>, Snd::SType<'s>>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
@@ -32,7 +32,7 @@ where
         }
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if let Ok((n, v)) = self.0.parse(s.clone()) {
             Ok((n, Either::Left(v)))
         } else {
@@ -69,7 +69,7 @@ where
     O: VestOutput<I>,
     T: Combinator<I, O>,
 {
-    type Type = Option<T::Type>;
+    type Type<'p> = Option<T::Type<'p>>;
     type SType<'s> = Option<T::SType<'s>>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
@@ -79,7 +79,7 @@ where
         }
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if let Ok((n, v)) = self.0.parse(s) {
             Ok((n, Some(v)))
         } else {
@@ -122,7 +122,7 @@ where
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
 {
-    type Type = (Option<Fst::Type>, Snd::Type);
+    type Type<'p> = (Option<Fst::Type<'p>>, Snd::Type<'p>);
     type SType<'s> = (Option<Fst::SType<'s>>, Snd::SType<'s>);
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
@@ -130,7 +130,7 @@ where
         fst_len + self.1.length(v.1)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if let Ok((n0, v0)) = self.0 .0.parse(s.clone()) {
             let (n1, v1) = self.1.parse(s.subrange(n0, s.len()))?;
             Ok((n0 + n1, (Some(v0), v1)))

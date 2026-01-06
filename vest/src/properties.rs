@@ -16,7 +16,7 @@ where
     O: VestOutput<I>,
 {
     /// The result type of parsing
-    type Type;
+    type Type<'p>;
 
     /// The input type of serialization, often a reference to [`Self::Type`].
     /// For "structural" formats though (e.g., [`crate::regular::sequence::Pair`] and [`crate::regular::variant::Choice`]),
@@ -42,7 +42,7 @@ where
     /// ## Post-conditions
     /// Essentially, the implementation of `parse` is functionally correct with respect to the
     /// specification `spec_parse` on both success and failure cases.
-    fn parse(&self, s: I) -> PResult<Self::Type, ParseError>;
+    fn parse<'p>(&self, s: I) -> PResult<Self::Type<'p>, ParseError>;
 
     /// The serialization function.
     /// The intended use of `serialize` is to serialize a value `v` into the
@@ -76,7 +76,7 @@ where
     I: VestInput,
     O: VestOutput<I>,
 {
-    type Type = C::Type;
+    type Type<'p> = C::Type<'p>;
 
     type SType<'s> = C::SType<'s>;
 
@@ -84,7 +84,7 @@ where
         (*self).length(v)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         (*self).parse(s)
     }
 
@@ -103,7 +103,7 @@ where
     I: VestInput,
     O: VestOutput<I>,
 {
-    type Type = C::Type;
+    type Type<'p> = C::Type<'p>;
 
     type SType<'s> = C::SType<'s>;
 
@@ -111,7 +111,7 @@ where
         (**self).length(v)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         (**self).parse(s)
     }
 

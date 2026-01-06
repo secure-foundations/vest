@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use super::{bytes, leb128, leb128::UInt, uints::*};
+use super::{bytes, uints::*};
 use crate::properties::*;
 
 /// Combinator that matches a fixed value and discards it.
@@ -24,18 +24,18 @@ impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T>
 where
     I: VestPublicInput,
     O: VestPublicOutput<I>,
-    Inner: Combinator<I, O, Type = T>,
+    Inner: for<'p> Combinator<I, O, Type<'p> = T>,
     T: Clone + PartialEq,
     for<'s> Inner::SType<'s>: From<T>,
 {
-    type Type = ();
+    type Type<'p> = ();
     type SType<'s> = ();
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         self.inner.length(self.tag.clone().into())
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         let (n, value) = self.inner.parse(s)?;
         if value == self.tag {
             Ok((n, ()))
@@ -56,14 +56,14 @@ where
 
 /// Specialized implementation for fixed byte tags using `Fixed<N>`.
 impl<'x, const N: usize> Combinator<&'x [u8], Vec<u8>> for Tag<bytes::Fixed<N>, [u8; N]> {
-    type Type = ();
+    type Type<'p> = ();
     type SType<'s> = ();
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         N
     }
 
-    fn parse(&self, s: &'x [u8]) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: &'x [u8]) -> Result<(usize, Self::Type<'p>), ParseError> {
         if s.len() < N {
             return Err(ParseError::UnexpectedEndOfInput);
         }
@@ -125,9 +125,4 @@ pub fn tag_u32_be(tag: u32) -> Tag<U32Be, u32> {
 /// Match a big-endian `u64` tag.
 pub fn tag_u64_be(tag: u64) -> Tag<U64Be, u64> {
     Tag::new(U64Be, tag)
-}
-
-/// Match an unsigned LEB128 tag.
-pub fn tag_leb128(tag: UInt) -> Tag<leb128::UnsignedLEB128, UInt> {
-    Tag::new(leb128::UnsignedLEB128, tag)
 }

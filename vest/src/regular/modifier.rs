@@ -56,9 +56,9 @@ use super::bytes::Variable;
 /// Simple mapping trait used by `Mapped`.
 pub trait Mapper {
     /// Input type consumed by this mapper.
-    type Src;
+    type Src<'p>;
     /// Output type produced by this mapper.
-    type Dst;
+    type Dst<'p>;
 
     /// Borrowed version of the input type.
     type SrcBorrow<'s>;
@@ -66,9 +66,9 @@ pub trait Mapper {
     type DstBorrow<'s>;
 
     /// Convert from parsed value to mapped value.
-    fn forward(&self, src: Self::Src) -> Self::Dst
+    fn forward<'p>(&self, src: Self::Src<'p>) -> Self::Dst<'p>
     where
-        Self::Dst: From<Self::Src>,
+        Self::Dst<'p>: From<Self::Src<'p>>,
     {
         src.into()
     }
@@ -118,11 +118,11 @@ where
     I: VestInput,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
-    for<'s> M: Mapper<Src = Inner::Type, SrcBorrow<'s> = Inner::SType<'s>>,
-    M::Dst: From<M::Src>,
+    for<'p, 's> M: Mapper<Src<'p> = Inner::Type<'p>, SrcBorrow<'s> = Inner::SType<'s>>,
+    for<'p> M::Dst<'p>: From<M::Src<'p>>,
     for<'s> M::SrcBorrow<'s>: From<M::DstBorrow<'s>>,
 {
-    type Type = M::Dst;
+    type Type<'p> = M::Dst<'p>;
     type SType<'s> = M::DstBorrow<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
@@ -130,7 +130,7 @@ where
         self.inner.length(src)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         let (n, v) = self.inner.parse(s)?;
         Ok((n, self.mapper.forward(v)))
     }
@@ -205,16 +205,16 @@ where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     P: for<'s> Fn(Inner::SType<'s>) -> bool,
-    for<'s> Inner::SType<'s>: FromRef<'s, Inner::Type>,
+    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>>,
 {
-    type Type = Inner::Type;
+    type Type<'p> = Inner::Type<'p>;
     type SType<'s> = Inner::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         self.inner.length(v)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         match self.inner.parse(s) {
             Ok((n, v)) if (self.predicate)(Inner::SType::ref_to_stype(&v)) => Ok((n, v)),
             Ok(_) => Err(ParseError::RefinedPredicateFailed),
@@ -246,14 +246,14 @@ where
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
 {
-    type Type = Inner::Type;
+    type Type<'p> = Inner::Type<'p>;
     type SType<'s> = Inner::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         self.inner.length(v)
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if self.cond {
             self.inner.parse(s)
         } else {
@@ -284,14 +284,14 @@ where
     O: VestOutput<I>,
     Next: Combinator<I, O>,
 {
-    type Type = Next::Type;
+    type Type<'p> = Next::Type<'p>;
     type SType<'s> = Next::SType<'s>;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         self.0 .0.max(self.1.length(v))
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         let (n, chunk) = <Variable as Combinator<I, O>>::parse(&self.0, s)?;
         let (m, value) = self.1.parse(chunk)?;
         if m == n {

@@ -24,14 +24,14 @@ where
     I: VestInput,
     O: VestOutput<I>,
 {
-    type Type = I;
+    type Type<'p> = I;
     type SType<'s> = I;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         self.0
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if self.0 <= s.len() {
             Ok((self.0, s.subrange(0, self.0)))
         } else {
@@ -63,14 +63,14 @@ where
     I: VestInput,
     O: VestOutput<I>,
 {
-    type Type = I;
+    type Type<'p> = I;
     type SType<'s> = I;
 
     fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
         N
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         if N <= s.len() {
             Ok((N, s.subrange(0, N)))
         } else {
@@ -97,15 +97,15 @@ where
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub struct Tail;
 
-impl<'x, I: VestInput + 'x, O: VestOutput<I>> Combinator<I, O> for Tail {
-    type Type = I;
+impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
+    type Type<'p> = I;
     type SType<'s> = I;
 
     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
         v.len()
     }
 
-    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
         Ok((s.len(), s))
     }
 
