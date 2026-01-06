@@ -2,57 +2,6 @@ use crate::{properties::*, regular::sequence::FromRef};
 
 use super::bytes::Variable;
 
-// /// Combinator that maps the parsed value using a reversible mapper.
-// pub struct Mapped<Inner, Dst, RefDst> {
-//     /// The inner combinator to parse or serialize.
-//     pub inner: Inner,
-//     _dst: core::marker::PhantomData<Dst>,
-//     _ref_dst: core::marker::PhantomData<RefDst>,
-// }
-
-// impl<Inner, Dst, RefDst> Mapped<Inner, Dst, RefDst> {
-//     /// Create a new `Mapped` combinator.
-//     pub fn new(inner: Inner) -> Self {
-//         Self {
-//             inner,
-//             _dst: core::marker::PhantomData,
-//             _ref_dst: core::marker::PhantomData,
-//         }
-//     }
-// }
-
-// impl<I, O, Inner, Dst, RefDst> Combinator<I, O> for Mapped<Inner, Dst, RefDst>
-// where
-//     I: VestInput,
-//     O: VestOutput<I>,
-//     Inner: Combinator<I, O>,
-//     Dst: From<Inner::Type>,
-//     for<'s> Inner::SType<'s>: From<RefDst>,
-// {
-//     type Type = Dst;
-//     type SType<'s> = RefDst;
-
-//     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-//         let src: Inner::SType<'s> = v.into();
-//         self.inner.length(src)
-//     }
-
-//     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-//         let (n, v) = self.inner.parse(s)?;
-//         Ok((n, v.into()))
-//     }
-
-//     fn serialize<'s>(
-//         &self,
-//         v: Self::SType<'s>,
-//         data: &mut O,
-//         pos: usize,
-//     ) -> Result<usize, SerializeError> {
-//         let src: Inner::SType<'s> = v.into();
-//         self.inner.serialize(src, data, pos)
-//     }
-// }
-
 /// Simple mapping trait used by `Mapped`.
 pub trait Mapper {
     /// Input type consumed by this mapper.
@@ -80,23 +29,6 @@ pub trait Mapper {
         dst.into()
     }
 }
-
-// /// Fallible mapping trait used by `TryMap`.
-// pub trait TryMapper<Src> {
-//     /// Output type produced by this mapper.
-//     type Dst;
-
-//     /// Convert from parsed value to mapped value.
-//     fn forward(&self, src: Src) -> Result<Self::Dst, ParseError>;
-//     /// Convert from mapped value back to parsed value.
-//     fn backward(&self, dst: Self::Dst) -> Result<Src, SerializeError>;
-// }
-
-// /// Predicate used by `Refined`.
-// pub trait Pred<Input> {
-//     /// Returns true when the input satisfies the predicate.
-//     fn apply(&self, input: &Input) -> bool;
-// }
 
 /// Combinator that maps the parsed value using a reversible mapper.
 pub struct Mapped<Inner, M> {
@@ -160,51 +92,6 @@ where
         self.inner.serialize(src, data, pos)
     }
 }
-
-// /// Combinator that maps the parsed value using fallible conversions.
-// pub struct TryMap<Inner, M> {
-//     /// The inner combinator to parse or serialize.
-//     pub inner: Inner,
-//     /// Fallible mapping logic applied to the parsed value.
-//     pub mapper: M,
-// }
-
-// impl<I, O, Inner, M, Src> Combinator<I, O> for TryMap<Inner, M>
-// where
-//     I: VestInput,
-//     O: VestOutput<I>,
-//     Inner: Combinator<I, O, Type = Src>,
-//     M: TryMapper<Src>,
-//     Src: Clone,
-//     M::Dst: Clone,
-//     for<'s> Inner::SType<'s>: From<Src>,
-// {
-//     type Type = M::Dst;
-//     type SType<'s> = M::Dst;
-
-//     fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-//         match self.mapper.backward(v.clone()) {
-//             Ok(src) => self.inner.length(src.into()),
-//             Err(_) => 0,
-//         }
-//     }
-
-//     fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
-//         let (n, v) = self.inner.parse(s)?;
-//         let mapped = self.mapper.forward(v)?;
-//         Ok((n, mapped))
-//     }
-
-//     fn serialize<'s>(
-//         &self,
-//         v: Self::SType<'s>,
-//         data: &mut O,
-//         pos: usize,
-//     ) -> Result<usize, SerializeError> {
-//         let src: Inner::SType<'s> = self.mapper.backward(v)?.into();
-//         self.inner.serialize(src, data, pos)
-//     }
-// }
 
 /// Combinator that refines the result of an `inner` combinator with a predicate.
 pub struct Refined<Inner, P> {
