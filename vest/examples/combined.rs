@@ -92,8 +92,8 @@ impl<'a, 's: 'a> From<&'s Packet> for (Header, (u16, &'a [Record])) {
 struct HeaderMapper;
 
 impl Mapper for HeaderMapper {
-    type Src = (u8, u8);
-    type Dst = Header;
+    type Src<'p> = (u8, u8);
+    type Dst<'p> = Header;
     type SrcBorrow<'s> = (u8, u8);
     type DstBorrow<'s> = Header;
 }
@@ -101,8 +101,8 @@ impl Mapper for HeaderMapper {
 struct RecordMapper;
 
 impl Mapper for RecordMapper {
-    type Src = (u32, u32);
-    type Dst = Record;
+    type Src<'p> = (u32, u32);
+    type Dst<'p> = Record;
     type SrcBorrow<'s> = (u32, u32);
     type DstBorrow<'s> = Record;
 }
@@ -110,8 +110,8 @@ impl Mapper for RecordMapper {
 struct PacketMapper;
 
 impl Mapper for PacketMapper {
-    type Src = (Header, (u16, Vec<Record>));
-    type Dst = Packet;
+    type Src<'p> = (Header, (u16, Vec<Record>));
+    type Dst<'p> = Packet;
     type SrcBorrow<'s> = (Header, (u16, &'s [Record]));
     type DstBorrow<'s> = &'s Packet;
 }
@@ -155,25 +155,6 @@ fn packet_combinator() -> PacketCombinator {
 //     )
 // }
 
-fn serialize_fn<'a, C>(
-    combinator: &C,
-    value: C::SType<'a>,
-    buf: &mut Vec<u8>,
-    pos: usize,
-) -> Result<usize, SerializeError>
-where
-    C: Combinator<&'a [u8], Vec<u8>>,
-{
-    combinator.serialize(value, buf, pos)
-}
-
-fn parse_fn<'a, C>(combinator: &C, input: &'a [u8]) -> Result<(usize, C::Type), ParseError>
-where
-    C: Combinator<&'a [u8], Vec<u8>>,
-{
-    combinator.parse(input)
-}
-
 fn example_record() {
     println!("\n=== Record Combinator ===");
 
@@ -184,11 +165,13 @@ fn example_record() {
     };
 
     let mut buf = vec![0u8; 16];
-    let written = serialize_fn(&record_comb, record, &mut buf, 0).expect("serialize");
+    let written = <_ as Combinator<[u8], _>>::serialize(&record_comb, record, &mut buf, 0)
+        .expect("serialize");
     println!("  Serialized Record: {:?}", &buf[..written]);
     println!("  Bytes: {:02X?}", &buf[..written]);
 
-    let (consumed, parsed) = parse_fn(&record_comb, &buf[..written]).expect("parse");
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&record_comb, &buf[..written]).expect("parse");
     println!("  Parsed Record: {:?}", parsed);
     assert_eq!(consumed, 8);
     assert_eq!(parsed.id, 0x12345678);
@@ -206,12 +189,14 @@ fn example_header() {
     };
 
     let mut buf = vec![0u8; 16];
-    let written = serialize_fn(&header_comb, header, &mut buf, 0).expect("serialize");
+    let written = <_ as Combinator<[u8], _>>::serialize(&header_comb, header, &mut buf, 0)
+        .expect("serialize");
     println!("  Serialized Header: {:?}", &buf[..written]);
     println!("  Bytes: {:02X?}", &buf[..written]);
     assert_eq!(&buf[..2], &[0xCA, 0xFE]); // Magic number
 
-    let (consumed, parsed) = parse_fn(&header_comb, &buf[..written]).expect("parse");
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&header_comb, &buf[..written]).expect("parse");
     println!("  Parsed Header: {:?}", parsed);
     assert_eq!(consumed, 4);
     assert_eq!(parsed.version, 1);
@@ -236,11 +221,13 @@ fn example_payload() {
     let payload_comb = payload_combinator(payload_len);
 
     let mut buf = vec![0u8; 32];
-    let written = serialize_fn(&payload_comb, records_slice, &mut buf, 0).expect("serialize");
+    let written = <_ as Combinator<[u8], _>>::serialize(&payload_comb, records_slice, &mut buf, 0)
+        .expect("serialize");
     println!("  Serialized Payload ({} records, {} bytes):", 3, written);
     println!("  Bytes: {:02X?}", &buf[..written]);
 
-    let (consumed, parsed) = parse_fn(&payload_comb, &buf[..written]).expect("parse");
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&payload_comb, &buf[..written]).expect("parse");
     println!("  Parsed {} records:", parsed.len());
     for (i, r) in parsed.iter().enumerate() {
         println!("    Record {}: id={}, value={}", i, r.id, r.value);
@@ -287,7 +274,8 @@ fn example_full_packet() {
     };
 
     let mut buf = vec![0u8; 64];
-    let written = serialize_fn(&pkt_comb, &value, &mut buf, 0).expect("serialize");
+    let written =
+        <_ as Combinator<[u8], _>>::serialize(&pkt_comb, &value, &mut buf, 0).expect("serialize");
 
     println!("  Serialized Packet ({} bytes):", written);
     println!("  Full bytes: {:02X?}", &buf[..written]);
@@ -302,7 +290,8 @@ fn example_full_packet() {
     );
     println!("    Payload:    {:02X?}", &buf[6..written]);
 
-    let (consumed, parsed_packet) = parse_fn(&pkt_comb, &buf[..written]).expect("parse");
+    let (consumed, parsed_packet) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&pkt_comb, &buf[..written]).expect("parse");
 
     println!("\n  Parsed Packet:");
     println!(

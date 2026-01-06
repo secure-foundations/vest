@@ -51,26 +51,11 @@ pub enum MsgValue<'a> {
     Msg2(Msg2),
 }
 
-/// A borrowed view of MsgValue for serialization
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MsgValueRef<'a, 'b> {
-    Msg1(&'a [u8]),
-    Msg2(&'b Msg2),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message<'a> {
     pub tag: u8,
     pub len: u16,
     pub val: MsgValue<'a>,
-}
-
-/// A borrowed view of Message for serialization
-#[derive(Debug, Clone, Copy)]
-pub struct MessageRef<'a, 'b> {
-    pub tag: u8,
-    pub len: u16,
-    pub val: MsgValueRef<'a, 'b>,
 }
 
 impl From<(u8, Vec<u32>)> for Msg2 {
@@ -105,61 +90,28 @@ impl<'s, 'a: 's> From<&'s Message<'a>> for ((u8, u16), Either<&'a [u8], &'s Msg2
     }
 }
 
-impl<'a, 's> From<MessageRef<'a, 's>> for ((u8, u16), Either<&'a [u8], &'s Msg2>) {
-    fn from(msg: MessageRef<'a, 's>) -> Self {
-        let val = match msg.val {
-            MsgValueRef::Msg1(bytes) => Either::Left(bytes),
-            MsgValueRef::Msg2(m2) => Either::Right(m2),
-        };
-        ((msg.tag, msg.len), val)
-    }
-}
-
-impl<'a> Message<'a> {
-    /// Create a reference view for serialization
-    pub fn as_ref<'s>(&'s self) -> MessageRef<'a, 's> {
-        let val = match &self.val {
-            MsgValue::Msg1(bytes) => MsgValueRef::Msg1(*bytes),
-            MsgValue::Msg2(m2) => MsgValueRef::Msg2(m2),
-        };
-        MessageRef {
-            tag: self.tag,
-            len: self.len,
-            val,
-        }
-    }
-}
-
 struct Msg2Mapper;
 
 impl Mapper for Msg2Mapper {
-    type Src = (u8, Vec<u32>);
-    type Dst = Msg2;
+    type Src<'p> = (u8, Vec<u32>);
+    type Dst<'p> = Msg2;
     type SrcBorrow<'s> = (u8, &'s [u32]);
     type DstBorrow<'s> = &'s Msg2;
 }
 
-struct MsgMapper<'a>(std::marker::PhantomData<&'a ()>);
+struct MsgMapper;
 
-impl<'a> MsgMapper<'a> {
-    fn new() -> Self {
-        Self(std::marker::PhantomData)
-    }
-}
-
-impl<'a> Mapper for MsgMapper<'a> {
-    type Src = ((u8, u16), Either<&'a [u8], Msg2>);
-    type Dst = Message<'a>;
-    type SrcBorrow<'s> = ((u8, u16), Either<&'a [u8], &'s Msg2>);
-    type DstBorrow<'s> = MessageRef<'a, 's>;
-    // type DstBorrow<'s> = &'s Message<'a> where 'a: 's;
+impl Mapper for MsgMapper {
+    type Src<'p> = ((u8, u16), Either<&'p [u8], Msg2>);
+    type Dst<'p> = Message<'p>;
+    type SrcBorrow<'s> = ((u8, u16), Either<&'s [u8], &'s Msg2>);
+    type DstBorrow<'s> = &'s Message<'s>;
 }
 
 type Msg2Comb = Mapped<(U8, RepeatN<U32Le>), Msg2Mapper>;
 type PayloadChoice = Choice<Cond<Fixed<32>>, Cond<Msg2Comb>>;
 type PayloadComb = AndThen<Variable, PayloadChoice>;
-type TlvComb<'a> =
-    Mapped<Pair<(U8, U16Le), PayloadComb, fn((u8, u16)) -> PayloadComb>, MsgMapper<'a>>;
+type TlvComb = Mapped<Pair<(U8, U16Le), PayloadComb, fn((u8, u16)) -> PayloadComb>, MsgMapper>;
 
 fn msg2_combinator() -> Msg2Comb {
     Mapped::new((U8, RepeatN(U32Le, 3)), Msg2Mapper)
@@ -179,13 +131,8 @@ fn payload_combinator((tag, len): (u8, u16)) -> PayloadComb {
     AndThen(Variable(len as usize), choice)
 }
 
-// fn payload_combinator_fn(input: (u8, u16)) -> PayloadComb {
-//     let (tag, len) = input;
-//     payload_combinator(tag, len)
-// }
-
-fn tlv_combinator<'a>() -> TlvComb<'a> {
-    Mapped::new(Pair::new((U8, U16Le), payload_combinator), MsgMapper::new())
+fn tlv_combinator() -> TlvComb {
+    Mapped::new(Pair::new((U8, U16Le), payload_combinator), MsgMapper)
 }
 
 fn example_msg1() {
@@ -200,26 +147,59 @@ fn example_msg1() {
         val: MsgValue::Msg1(msg1_payload),
     };
 
-    let mut buf = vec![0u8; 64];
-    // let written = serialize_fn(&comb, &msg, &mut buf, 0).expect("serialize");
-    let written = comb
-        .serialize(msg.as_ref(), &mut buf, 0)
-        .expect("serialize");
+    let len = <_ as Combinator<_, Vec<u8>>>::length(&comb, &msg);
+    let mut buf = vec![0u8; len];
+    let written = comb.serialize(&msg, &mut buf, 0).expect("serialize");
 
     println!("  Serialized bytes ({}): {:02X?}", written, &buf[..written]);
-    let (consumed, parsed) = <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg1");
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg1");
     println!(
         "  Parsed: tag={}, len={}, val={:02X?}",
         parsed.tag, parsed.len, parsed.val
     );
 
     assert_eq!(consumed, written);
-    assert_eq!(parsed.tag, 1);
-    assert_eq!(parsed.len, 32);
-    assert_eq!(parsed.val, MsgValue::Msg1(msg1_payload));
+    assert_eq!(parsed.tag, msg.tag);
+    assert_eq!(parsed.len, msg.len);
+    assert_eq!(parsed.val, msg.val);
     println!("  msg1 roundtrip passed!");
+}
+
+fn example_msg2() {
+    println!("\n=== TLV msg2 (tag=2, len=13) ===");
+
+    let comb = tlv_combinator();
+    let msg2_payload = Msg2 {
+        a: 0x42,
+        b: vec![0x11223344, 0x55667788, 0x99AABBCC],
+    };
+    let msg = Message {
+        tag: 2,
+        len: 13,
+        val: MsgValue::Msg2(msg2_payload),
+    };
+
+    let len = <_ as Combinator<_, Vec<u8>>>::length(&comb, &msg);
+    let mut buf = vec![0u8; len];
+    let written = comb.serialize(&msg, &mut buf, 0).expect("serialize");
+
+    println!("  Serialized bytes ({}): {:02X?}", written, &buf[..written]);
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg2");
+    println!(
+        "  Parsed: tag={}, len={}, val={:2X?}",
+        parsed.tag, parsed.len, parsed.val
+    );
+
+    assert_eq!(consumed, written);
+    assert_eq!(parsed.tag, msg.tag);
+    assert_eq!(parsed.len, msg.len);
+    assert_eq!(parsed.val, msg.val);
+    println!("  msg2 roundtrip passed!");
 }
 
 fn main() {
     example_msg1();
+    example_msg2();
 }
