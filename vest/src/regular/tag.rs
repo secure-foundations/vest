@@ -1,128 +1,124 @@
-use alloc::vec::Vec;
+use crate::{
+    buf_traits::{VestInput, VestOutput},
+    errors::{ParseError, SerializeError},
+    properties::Combinator,
+    regular::sequence::{FromRef, UnitCombinator},
+};
 
-use super::{bytes, uints::*};
-use crate::properties::*;
-
-/// Combinator that matches a fixed value and discards it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// Tag combinator that associates a tag value with an inner combinator.
 pub struct Tag<Inner, T> {
-    /// Combinator that parses/serializes the tag value.
+    /// The inner combinator.
     pub inner: Inner,
-    /// Value that must appear in the input.
+    /// The tag value.
     pub tag: T,
 }
 
 impl<Inner, T> Tag<Inner, T> {
-    /// Construct a new `Tag` combinator.
+    /// Create a new `Tag` combinator.
     pub fn new(inner: Inner, tag: T) -> Self {
         Self { inner, tag }
     }
 }
 
-/// Generic implementation for combinators that parse/serialize owned values (e.g., integers).
+/// Comparison trait used by `Tag`.
+pub trait Compare<T> {
+    /// Compare self with another value of type T.
+    fn compare(&self, other: &T) -> bool;
+}
+
+impl<T: Copy + PartialEq> Compare<T> for T {
+    fn compare(&self, other: &T) -> bool {
+        *self == *other
+    }
+}
+
+impl<'i, const N: usize> Compare<&'i [u8]> for [u8; N] {
+    fn compare(&self, other: &&'i [u8]) -> bool {
+        if other.len() != N {
+            return false;
+        }
+        for i in 0..N {
+            if self[i] != other[i] {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 impl<I, O, Inner, T> Combinator<I, O> for Tag<Inner, T>
 where
-    I: VestPublicInput,
-    O: VestPublicOutput<I>,
-    Inner: for<'p> Combinator<I, O, Type<'p> = T>,
-    T: Clone + PartialEq,
-    for<'s> Inner::SType<'s>: From<T>,
+    I: VestInput + ?Sized,
+    O: VestOutput<I>,
+    Inner: Combinator<I, O>,
+    T: for<'s> Compare<Inner::SType<'s>> + Copy,
+    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>> + From<T>,
 {
-    type Type<'p> = ();
-    type SType<'s> = ();
+    type Type<'p>
+        = ()
+    where
+        I: 'p;
+    type SType<'s>
+        = ()
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
-        self.inner.length(self.tag.clone().into())
+    fn length<'s>(&self, _: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
+        self.inner.length(self.tag.into())
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
-        let (n, value) = self.inner.parse(s)?;
-        if value == self.tag {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let (n, v) = self.inner.parse(s)?;
+        if self.tag.compare(&Inner::SType::ref_to_stype(&v)) {
             Ok((n, ()))
         } else {
-            Err(ParseError::Other("tag mismatch".into()))
+            Err(ParseError::TagMismatch)
         }
     }
 
     fn serialize<'s>(
         &self,
-        _v: Self::SType<'s>,
+        _: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
-        self.inner.serialize(self.tag.clone().into(), data, pos)
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
+        self.inner.serialize(self.tag.into(), data, pos)
     }
 }
 
-/// Specialized implementation for fixed byte tags using `Fixed<N>`.
-impl<'x, const N: usize> Combinator<&'x [u8], Vec<u8>> for Tag<bytes::Fixed<N>, [u8; N]> {
-    type Type<'p> = ();
-    type SType<'s> = ();
-
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
-        N
+impl<I, O, Inner, T> UnitCombinator<I, O> for Tag<Inner, T>
+where
+    I: VestInput + ?Sized,
+    O: VestOutput<I>,
+    Inner: Combinator<I, O>,
+    T: for<'s> Compare<Inner::SType<'s>> + Copy,
+    for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>> + From<T>,
+{
+    fn parse_unit<'p>(&self, s: &'p I) -> Result<usize, ParseError>
+    where
+        I: 'p,
+    {
+        let (n, _) = self.parse(s)?;
+        Ok(n)
     }
 
-    fn parse<'p>(&self, s: &'x [u8]) -> Result<(usize, Self::Type<'p>), ParseError> {
-        if s.len() < N {
-            return Err(ParseError::UnexpectedEndOfInput);
-        }
-
-        let prefix = &s[..N];
-        if prefix == self.tag {
-            Ok((N, ()))
-        } else {
-            Err(ParseError::Other("tag mismatch".into()))
-        }
+    fn serialize_unit<'s>(&self, data: &mut O, pos: usize) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
+        self.serialize((), data, pos)
     }
 
-    fn serialize<'s>(
-        &self,
-        _v: Self::SType<'s>,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError> {
-        if N <= data.len().saturating_sub(pos) {
-            data[pos..pos + N].copy_from_slice(&self.tag);
-            Ok(N)
-        } else {
-            Err(SerializeError::InsufficientBuffer)
-        }
+    fn length_unit(&self) -> usize {
+        self.inner.length(self.tag.into())
     }
-}
-
-/// Convenience constructors for common integer tags.
-/// These are helpers over `Tag::new` for built-in integer formats.
-pub fn tag_u8(tag: u8) -> Tag<U8, u8> {
-    Tag::new(U8, tag)
-}
-
-/// Match a little-endian `u16` tag.
-pub fn tag_u16_le(tag: u16) -> Tag<U16Le, u16> {
-    Tag::new(U16Le, tag)
-}
-
-/// Match a little-endian `u32` tag.
-pub fn tag_u32_le(tag: u32) -> Tag<U32Le, u32> {
-    Tag::new(U32Le, tag)
-}
-
-/// Match a little-endian `u64` tag.
-pub fn tag_u64_le(tag: u64) -> Tag<U64Le, u64> {
-    Tag::new(U64Le, tag)
-}
-
-/// Match a big-endian `u16` tag.
-pub fn tag_u16_be(tag: u16) -> Tag<U16Be, u16> {
-    Tag::new(U16Be, tag)
-}
-
-/// Match a big-endian `u32` tag.
-pub fn tag_u32_be(tag: u32) -> Tag<U32Be, u32> {
-    Tag::new(U32Be, tag)
-}
-
-/// Match a big-endian `u64` tag.
-pub fn tag_u64_be(tag: u64) -> Tag<U64Be, u64> {
-    Tag::new(U64Be, tag)
 }

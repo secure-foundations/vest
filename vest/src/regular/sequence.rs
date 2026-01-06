@@ -34,24 +34,37 @@ impl<'s, T: Copy> FromRef<'s, T> for T {
 
 impl<I, O, Fst, Snd, DepSnd> Combinator<I, O> for Pair<Fst, Snd, DepSnd>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
     DepSnd: for<'s> Fn(Fst::SType<'s>) -> Snd,
     for<'p, 's> Fst::SType<'s>: FromRef<'s, Fst::Type<'p>> + Copy,
 {
-    type Type<'p> = (Fst::Type<'p>, Snd::Type<'p>);
-    type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
+    type Type<'p>
+        = (Fst::Type<'p>, Snd::Type<'p>)
+    where
+        I: 'p;
+    type SType<'s>
+        = (Fst::SType<'s>, Snd::SType<'s>)
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.fst.length(v.0) + (self.dep_snd)(v.0).length(v.1)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
-        let (n, v1) = self.fst.parse(s.clone())?;
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let (n, v1) = self.fst.parse(s)?;
         let dep_snd = (self.dep_snd)(Fst::SType::ref_to_stype(&v1));
-        let (m, v2) = dep_snd.parse(s.subrange(n, s.len()))?;
+        let rest = s.skip(n);
+        let (m, v2) = dep_snd.parse(&rest)?;
         Ok((n + m, (v1, v2)))
     }
 
@@ -60,7 +73,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         let n = self.fst.serialize(v.0, data, pos)?;
         let dep_snd = (self.dep_snd)(v.0);
         let m = dep_snd.serialize(v.1, data, pos + n)?;
@@ -71,21 +87,34 @@ where
 /// Tuple for sequencing.
 impl<I, O, Fst, Snd> Combinator<I, O> for (Fst, Snd)
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
     Snd: Combinator<I, O>,
 {
-    type Type<'p> = (Fst::Type<'p>, Snd::Type<'p>);
-    type SType<'s> = (Fst::SType<'s>, Snd::SType<'s>);
+    type Type<'p>
+        = (Fst::Type<'p>, Snd::Type<'p>)
+    where
+        I: 'p;
+    type SType<'s>
+        = (Fst::SType<'s>, Snd::SType<'s>)
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.0.length(v.0) + self.1.length(v.1)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
-        let (n, v1) = self.0.parse(s.clone())?;
-        let (m, v2) = self.1.parse(s.subrange(n, s.len()))?;
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let (n, v1) = self.0.parse(s)?;
+        let rest = s.skip(n);
+        let (m, v2) = self.1.parse(&rest)?;
         Ok((n + m, (v1, v2)))
     }
 
@@ -94,11 +123,32 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         let n = self.0.serialize(v.0, data, pos)?;
         let m = self.1.serialize(v.1, data, pos + n)?;
         Ok(n + m)
     }
+}
+
+/// Marker trait for combinators whose parse result type is always `()`.
+///
+/// This is used to enable combinators like `Preceded` and `Terminated` to
+/// work with unit-producing combinators without requiring complex higher-ranked
+/// trait bounds.
+pub trait UnitCombinator<I: VestInput + ?Sized, O: VestOutput<I>>: Combinator<I, O> {
+    /// Parse the input and return the number of bytes consumed.
+    fn parse_unit<'p>(&self, s: &'p I) -> Result<usize, ParseError>
+    where
+        I: 'p;
+    /// Serialize the unit value.
+    fn serialize_unit<'s>(&self, data: &mut O, pos: usize) -> Result<usize, SerializeError>
+    where
+        I: 's;
+    /// Length of the serialized unit value.
+    fn length_unit(&self) -> usize;
 }
 
 /// Apply `Fst` then `Snd`, returning only `Snd`'s result.
@@ -106,21 +156,35 @@ pub struct Preceded<Fst, Snd>(pub Fst, pub Snd);
 
 impl<I, O, Fst, Snd> Combinator<I, O> for Preceded<Fst, Snd>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
-    Fst: for<'p, 's> Combinator<I, O, Type<'p> = (), SType<'s> = ()>,
+    Fst: UnitCombinator<I, O>,
     Snd: Combinator<I, O>,
 {
-    type Type<'p> = Snd::Type<'p>;
-    type SType<'s> = Snd::SType<'s>;
+    type Type<'p>
+        = Snd::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Snd::SType<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        (&self.0, &self.1).length(((), v))
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
+        self.0.length_unit() + self.1.length(v)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
-        let (nm, (_, v)) = (&self.0, &self.1).parse(s)?;
-        Ok((nm, v))
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let n = self.0.parse_unit(s)?;
+        let rest = s.skip(n);
+        let (m, v) = self.1.parse(&rest)?;
+        Ok((n + m, v))
     }
 
     fn serialize<'s>(
@@ -128,31 +192,49 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
-        (&self.0, &self.1).serialize(((), v), data, pos)
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
+        let n = self.0.serialize_unit(data, pos)?;
+        let m = self.1.serialize(v, data, pos + n)?;
+        Ok(n + m)
     }
 }
 
-/// Apply `Fst` then `Snd`, returning only `Fst`'s result.
 pub struct Terminated<Fst, Snd>(pub Fst, pub Snd);
 
 impl<I, O, Fst, Snd> Combinator<I, O> for Terminated<Fst, Snd>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Fst: Combinator<I, O>,
-    Snd: for<'p, 's> Combinator<I, O, Type<'p> = (), SType<'s> = ()>,
+    Snd: UnitCombinator<I, O>,
 {
-    type Type<'p> = Fst::Type<'p>;
-    type SType<'s> = Fst::SType<'s>;
+    type Type<'p>
+        = Fst::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Fst::SType<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
-        (&self.0, &self.1).length((v, ()))
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
+        self.0.length(v) + self.1.length_unit()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
-        let (nm, (v, _)) = (&self.0, &self.1).parse(s)?;
-        Ok((nm, v))
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let (n, v) = self.0.parse(s)?;
+        let rest = s.skip(n);
+        let m = self.1.parse_unit(&rest)?;
+        Ok((n + m, v))
     }
 
     fn serialize<'s>(
@@ -160,7 +242,12 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
-        (&self.0, &self.1).serialize((v, ()), data, pos)
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
+        let n = self.0.serialize(v, data, pos)?;
+        let m = self.1.serialize_unit(data, pos + n)?;
+        Ok(n + m)
     }
 }

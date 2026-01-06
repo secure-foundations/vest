@@ -11,7 +11,7 @@ impl Variable {
     /// exactly the number of bytes selected by `Variable`.
     pub fn and_then<I, O, Next>(self, next: Next) -> AndThen<Variable, Next>
     where
-        I: VestPublicInput,
+        I: VestPublicInput + ?Sized,
         O: VestPublicOutput<I>,
         Next: Combinator<I, O>,
     {
@@ -21,19 +21,31 @@ impl Variable {
 
 impl<I, O> Combinator<I, O> for Variable
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
 {
-    type Type<'p> = I;
-    type SType<'s> = I;
+    type Type<'p>
+        = &'p I
+    where
+        I: 'p;
+    type SType<'s>
+        = &'s I
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.0
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         if self.0 <= s.len() {
-            Ok((self.0, s.subrange(0, self.0)))
+            Ok((self.0, s.take(self.0)))
         } else {
             Err(ParseError::UnexpectedEndOfInput)
         }
@@ -44,7 +56,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         if v.len() <= data.len() && pos <= data.len().saturating_sub(v.len()) {
             data.set_range(pos, &v);
             Ok(self.0)
@@ -60,19 +75,31 @@ pub struct Fixed<const N: usize>;
 
 impl<const N: usize, I, O> Combinator<I, O> for Fixed<N>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
 {
-    type Type<'p> = I;
-    type SType<'s> = I;
+    type Type<'p>
+        = &'p I
+    where
+        I: 'p;
+    type SType<'s>
+        = &'s I
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         N
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         if N <= s.len() {
-            Ok((N, s.subrange(0, N)))
+            Ok((N, s.take(N)))
         } else {
             Err(ParseError::UnexpectedEndOfInput)
         }
@@ -83,7 +110,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         if v.len() <= data.len().saturating_sub(pos) {
             data.set_range(pos, &v);
             Ok(N)
@@ -97,15 +127,27 @@ where
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub struct Tail;
 
-impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
-    type Type<'p> = I;
-    type SType<'s> = I;
+impl<I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Tail {
+    type Type<'p>
+        = &'p I
+    where
+        I: 'p;
+    type SType<'s>
+        = &'s I
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         v.len()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         Ok((s.len(), s))
     }
 
@@ -114,7 +156,10 @@ impl<I: VestInput, O: VestOutput<I>> Combinator<I, O> for Tail {
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         if v.len() <= data.len().saturating_sub(pos) {
             data.set_range(pos, &v);
             Ok(v.len())

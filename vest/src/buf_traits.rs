@@ -1,14 +1,23 @@
 use alloc::vec::Vec;
 
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte
-/// buffers. Implementations should avoid unnecessary copies; `clone` is expected to be cheap and
-/// typically just return another reference to the same underlying buffer.
-pub trait VestInput: Clone {
+/// buffers.
+pub trait VestInput {
     /// The length of the buffer.
     fn len(&self) -> usize;
 
     /// A slice-like view of the range `[i, j)`.
-    fn subrange(&self, i: usize, j: usize) -> Self;
+    fn subrange(&self, i: usize, j: usize) -> &Self;
+
+    /// A slice-like view of the first `n` bytes.
+    fn take(&self, n: usize) -> &Self {
+        self.subrange(0, n)
+    }
+
+    /// A slice-like view of the buffer with the first `n` bytes skipped.
+    fn skip(&self, n: usize) -> &Self {
+        self.subrange(n, self.len())
+    }
 }
 
 /// Trait for public inputs that can expose their underlying bytes.
@@ -18,7 +27,7 @@ pub trait VestPublicInput: VestInput {
 }
 
 /// Trait for types that can be used as output for Vest serializers.
-pub trait VestOutput<I> {
+pub trait VestOutput<I: ?Sized> {
     /// The length of the buffer.
     fn len(&self) -> usize;
 
@@ -27,7 +36,7 @@ pub trait VestOutput<I> {
 }
 
 /// Trait for outputs that can be directly modified byte-by-byte.
-pub trait VestPublicOutput<I>: VestOutput<I> {
+pub trait VestPublicOutput<I: ?Sized>: VestOutput<I> {
     /// Set the byte at index `i` to `value`.
     fn set_byte(&mut self, i: usize, value: u8);
 
@@ -35,17 +44,17 @@ pub trait VestPublicOutput<I>: VestOutput<I> {
     fn set_byte_range(&mut self, i: usize, input: &[u8]);
 }
 
-impl<'a> VestInput for &'a [u8] {
+impl VestInput for [u8] {
     fn len(&self) -> usize {
         (*self).len()
     }
 
-    fn subrange(&self, i: usize, j: usize) -> Self {
+    fn subrange(&self, i: usize, j: usize) -> &Self {
         &self[i..j]
     }
 }
 
-impl<'a> VestPublicInput for &'a [u8] {
+impl VestPublicInput for [u8] {
     fn as_byte_slice(&self) -> &[u8] {
         self
     }
@@ -53,7 +62,7 @@ impl<'a> VestPublicInput for &'a [u8] {
 
 impl<I> VestOutput<I> for Vec<u8>
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
 {
     fn len(&self) -> usize {
         self.len()
@@ -72,7 +81,7 @@ where
 
 impl<I> VestPublicOutput<I> for Vec<u8>
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
 {
     fn set_byte(&mut self, i: usize, value: u8) {
         assert!(i < self.len(), "set_byte out of bounds");

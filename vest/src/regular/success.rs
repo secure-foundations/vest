@@ -3,15 +3,27 @@ use crate::properties::*;
 /// Combinator that always succeeds and consumes nothing.
 pub struct Success;
 
-impl<'x, I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
-    type Type<'p> = ();
-    type SType<'s> = ();
+impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Success {
+    type Type<'p>
+        = ()
+    where
+        I: 'p;
+    type SType<'s>
+        = ()
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         0
     }
 
-    fn parse<'p>(&self, _s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, _s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         Ok((0, ()))
     }
 
@@ -20,7 +32,10 @@ impl<'x, I: VestInput, O: VestOutput<I>> Combinator<I, O> for Success {
         _v: Self::SType<'s>,
         _data: &mut O,
         _pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         Ok(0)
     }
 }

@@ -75,9 +75,12 @@ pub struct U24Le;
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct U24Be;
 
-fn parse_int<const N: usize, T, I>(s: I, f: impl Fn([u8; N]) -> T) -> Result<(usize, T), ParseError>
+fn parse_int<const N: usize, T, I>(
+    s: &I,
+    f: impl Fn([u8; N]) -> T,
+) -> Result<(usize, T), ParseError>
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
 {
     if s.len() < N {
         return Err(ParseError::UnexpectedEndOfInput);
@@ -93,7 +96,7 @@ fn serialize_int<const N: usize, I, O>(
     pos: usize,
 ) -> Result<usize, SerializeError>
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
     if has_space(data.len(), pos, N) {
@@ -106,17 +109,29 @@ where
 
 impl<I, O> Combinator<I, O> for U8
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u8;
-    type SType<'s> = u8;
+    type Type<'p>
+        = u8
+    where
+        I: 'p;
+    type SType<'s>
+        = u8
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         1
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<1, _, _>(s, |b| b[0])
     }
 
@@ -125,24 +140,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<1, I, O>([v], data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U16Le
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u16;
-    type SType<'s> = u16;
+    type Type<'p>
+        = u16
+    where
+        I: 'p;
+    type SType<'s>
+        = u16
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u16>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<2, _, _>(s, |b| u16::from_le_bytes(b))
     }
 
@@ -151,24 +181,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<2, I, O>(v.to_le_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U32Le
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u32;
-    type SType<'s> = u32;
+    type Type<'p>
+        = u32
+    where
+        I: 'p;
+    type SType<'s>
+        = u32
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u32>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<4, _, _>(s, |b| u32::from_le_bytes(b))
     }
 
@@ -177,24 +222,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<4, I, O>(v.to_le_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U64Le
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u64;
-    type SType<'s> = u64;
+    type Type<'p>
+        = u64
+    where
+        I: 'p;
+    type SType<'s>
+        = u64
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u64>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<8, _, _>(s, |b| u64::from_le_bytes(b))
     }
 
@@ -203,24 +263,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<8, I, O>(v.to_le_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U16Be
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u16;
-    type SType<'s> = u16;
+    type Type<'p>
+        = u16
+    where
+        I: 'p;
+    type SType<'s>
+        = u16
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u16>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<2, _, _>(s, |b| u16::from_be_bytes(b))
     }
 
@@ -229,24 +304,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<2, I, O>(v.to_be_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U32Be
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u32;
-    type SType<'s> = u32;
+    type Type<'p>
+        = u32
+    where
+        I: 'p;
+    type SType<'s>
+        = u32
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u32>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<4, _, _>(s, |b| u32::from_be_bytes(b))
     }
 
@@ -255,24 +345,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<4, I, O>(v.to_be_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U64Be
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u64;
-    type SType<'s> = u64;
+    type Type<'p>
+        = u64
+    where
+        I: 'p;
+    type SType<'s>
+        = u64
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         size_of::<u64>()
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<8, _, _>(s, |b| u64::from_be_bytes(b))
     }
 
@@ -281,24 +386,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<8, I, O>(v.to_be_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U24Le
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u24;
-    type SType<'s> = u24;
+    type Type<'p>
+        = u24
+    where
+        I: 'p;
+    type SType<'s>
+        = u24
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         3
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<3, _, _>(s, |b| u24::from_le_bytes(b))
     }
 
@@ -307,24 +427,39 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<3, I, O>(v.to_le_bytes(), data, pos)
     }
 }
 
 impl<I, O> Combinator<I, O> for U24Be
 where
-    I: VestPublicInput,
+    I: VestPublicInput + ?Sized,
     O: VestPublicOutput<I>,
 {
-    type Type<'p> = u24;
-    type SType<'s> = u24;
+    type Type<'p>
+        = u24
+    where
+        I: 'p;
+    type SType<'s>
+        = u24
+    where
+        I: 's;
 
-    fn length<'s>(&self, _v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         3
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         parse_int::<3, _, _>(s, |b| u24::from_be_bytes(b))
     }
 
@@ -333,7 +468,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         serialize_int::<3, I, O>(v.to_le_bytes(), data, pos)
     }
 }

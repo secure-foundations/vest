@@ -115,22 +115,34 @@ impl<Inner, M> Mapped<Inner, M> {
 
 impl<I, O, Inner, M> Combinator<I, O> for Mapped<Inner, M>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     for<'p, 's> M: Mapper<Src<'p> = Inner::Type<'p>, SrcBorrow<'s> = Inner::SType<'s>>,
     for<'p> M::Dst<'p>: From<M::Src<'p>>,
     for<'s> M::SrcBorrow<'s>: From<M::DstBorrow<'s>>,
 {
-    type Type<'p> = M::Dst<'p>;
-    type SType<'s> = M::DstBorrow<'s>;
+    type Type<'p>
+        = M::Dst<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = M::DstBorrow<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         let src: Inner::SType<'s> = self.mapper.backward(v).into();
         self.inner.length(src)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         let (n, v) = self.inner.parse(s)?;
         Ok((n, self.mapper.forward(v)))
     }
@@ -140,7 +152,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         let src: Inner::SType<'s> = self.mapper.backward(v).into();
         self.inner.serialize(src, data, pos)
     }
@@ -201,20 +216,32 @@ pub struct Refined<Inner, P> {
 
 impl<I, O, Inner, P> Combinator<I, O> for Refined<Inner, P>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
     P: for<'s> Fn(Inner::SType<'s>) -> bool,
     for<'p, 's> Inner::SType<'s>: FromRef<'s, Inner::Type<'p>>,
 {
-    type Type<'p> = Inner::Type<'p>;
-    type SType<'s> = Inner::SType<'s>;
+    type Type<'p>
+        = Inner::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Inner::SType<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.inner.length(v)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         match self.inner.parse(s) {
             Ok((n, v)) if (self.predicate)(Inner::SType::ref_to_stype(&v)) => Ok((n, v)),
             Ok(_) => Err(ParseError::RefinedPredicateFailed),
@@ -227,7 +254,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         self.inner.serialize(v, data, pos)
     }
 }
@@ -242,18 +272,30 @@ pub struct Cond<Inner> {
 
 impl<I, O, Inner> Combinator<I, O> for Cond<Inner>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
 {
-    type Type<'p> = Inner::Type<'p>;
-    type SType<'s> = Inner::SType<'s>;
+    type Type<'p>
+        = Inner::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Inner::SType<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.inner.length(v)
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         if self.cond {
             self.inner.parse(s)
         } else {
@@ -266,7 +308,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         if self.cond {
             self.inner.serialize(v, data, pos)
         } else {
@@ -280,20 +325,32 @@ pub struct AndThen<Prev, Next>(pub Prev, pub Next);
 
 impl<I, O, Next> Combinator<I, O> for AndThen<Variable, Next>
 where
-    I: VestInput,
+    I: VestInput + ?Sized,
     O: VestOutput<I>,
     Next: Combinator<I, O>,
 {
-    type Type<'p> = Next::Type<'p>;
-    type SType<'s> = Next::SType<'s>;
+    type Type<'p>
+        = Next::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Next::SType<'s>
+    where
+        I: 's;
 
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize {
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
         self.0 .0.max(self.1.length(v))
     }
 
-    fn parse<'p>(&self, s: I) -> Result<(usize, Self::Type<'p>), ParseError> {
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
         let (n, chunk) = <Variable as Combinator<I, O>>::parse(&self.0, s)?;
-        let (m, value) = self.1.parse(chunk)?;
+        let (m, value) = self.1.parse(&chunk)?;
         if m == n {
             Ok((n, value))
         } else {
@@ -306,7 +363,10 @@ where
         v: Self::SType<'s>,
         data: &mut O,
         pos: usize,
-    ) -> Result<usize, SerializeError> {
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
         self.1.serialize(v, data, pos)
     }
 }

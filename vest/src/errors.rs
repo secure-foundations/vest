@@ -12,6 +12,7 @@ pub enum ParseError {
     TryMapFailed,
     RefinedPredicateFailed,
     NotEof,
+    TagMismatch,
     Other(String),
 }
 
@@ -59,6 +60,7 @@ impl core::fmt::Display for ParseError {
                 write!(f, "`Refined` combinator predicate failed")
             }
             ParseError::NotEof => write!(f, "Expected end of input"),
+            ParseError::TagMismatch => write!(f, "Tag mismatch"),
             ParseError::Other(s) => write!(f, "{}", s),
         }
     }
