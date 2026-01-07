@@ -17,6 +17,15 @@ pub struct GenSt {
     pub rng: rand::rngs::StdRng,
 }
 
+impl GenSt {
+    /// Create a new generation state with the given RNG seed
+    pub fn new(seed: u64) -> Self {
+        Self {
+            rng: rand::SeedableRng::seed_from_u64(seed),
+        }
+    }
+}
+
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator<I, O>

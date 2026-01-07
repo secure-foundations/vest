@@ -52,10 +52,23 @@ pub enum MsgValue<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MsgValueOwned {
+    Msg1(Vec<u8>),
+    Msg2(Msg2),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message<'a> {
     pub tag: u8,
     pub len: u16,
     pub val: MsgValue<'a>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MessageOwned {
+    pub tag: u8,
+    pub len: u16,
+    pub val: MsgValueOwned,
 }
 
 impl From<(u8, Vec<u32>)> for Msg2 {
@@ -90,6 +103,16 @@ impl<'s, 'a: 's> From<&'s Message<'a>> for ((u8, u16), Either<&'a [u8], &'s Msg2
     }
 }
 
+impl From<((u8, u16), Either<Vec<u8>, Msg2>)> for MessageOwned {
+    fn from(((tag, len), val): ((u8, u16), Either<Vec<u8>, Msg2>)) -> Self {
+        let val = match val {
+            Either::Left(bytes) => MsgValueOwned::Msg1(bytes),
+            Either::Right(m2) => MsgValueOwned::Msg2(m2),
+        };
+        MessageOwned { tag, len, val }
+    }
+}
+
 struct Msg2Mapper;
 
 impl Mapper for Msg2Mapper {
@@ -97,6 +120,8 @@ impl Mapper for Msg2Mapper {
     type Dst<'p> = Msg2;
     type SrcBorrow<'s> = (u8, &'s [u32]);
     type DstBorrow<'s> = &'s Msg2;
+    type SrcOwned = (u8, Vec<u32>);
+    type DstOwned = Msg2;
 }
 
 struct MsgMapper;
@@ -106,6 +131,8 @@ impl Mapper for MsgMapper {
     type Dst<'p> = Message<'p>;
     type SrcBorrow<'s> = ((u8, u16), Either<&'s [u8], &'s Msg2>);
     type DstBorrow<'s> = &'s Message<'s>;
+    type SrcOwned = ((u8, u16), Either<Vec<u8>, Msg2>);
+    type DstOwned = MessageOwned;
 }
 
 type Msg2Comb = Mapped<(U8, RepeatN<U32Le>), Msg2Mapper>;
@@ -199,7 +226,21 @@ fn example_msg2() {
     println!("  msg2 roundtrip passed!");
 }
 
+fn example_msg_generation() {
+    println!("\n=== TLV message generation ===");
+
+    let comb = tlv_combinator();
+    let mut gen_st = GenSt::new(1);
+
+    let (len, gen_msg) = comb.generate(&mut gen_st).expect("generate message");
+    println!(
+        "  Generated message (len={}): tag={}, len={}, val={:02X?}",
+        len, gen_msg.tag, gen_msg.len, gen_msg.val
+    );
+}
+
 fn main() {
     example_msg1();
     example_msg2();
+    example_msg_generation();
 }

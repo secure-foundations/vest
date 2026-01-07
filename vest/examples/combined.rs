@@ -96,6 +96,8 @@ impl Mapper for HeaderMapper {
     type Dst<'p> = Header;
     type SrcBorrow<'s> = (u8, u8);
     type DstBorrow<'s> = Header;
+    type SrcOwned = (u8, u8);
+    type DstOwned = Header;
 }
 
 struct RecordMapper;
@@ -105,6 +107,8 @@ impl Mapper for RecordMapper {
     type Dst<'p> = Record;
     type SrcBorrow<'s> = (u32, u32);
     type DstBorrow<'s> = Record;
+    type SrcOwned = (u32, u32);
+    type DstOwned = Record;
 }
 
 struct PacketMapper;
@@ -114,6 +118,8 @@ impl Mapper for PacketMapper {
     type Dst<'p> = Packet;
     type SrcBorrow<'s> = (Header, (u16, &'s [Record]));
     type DstBorrow<'s> = &'s Packet;
+    type SrcOwned = (Header, (u16, Vec<Record>));
+    type DstOwned = Packet;
 }
 
 fn record_combinator() -> Mapped<(U32Le, U32Le), RecordMapper> {
@@ -327,9 +333,33 @@ fn example_full_packet() {
     println!("\n  Full packet roundtrip passed!");
 }
 
+fn example_packet_generation() {
+    println!("\n=== Packet Generation Example ===");
+
+    let pkt_comb = packet_combinator();
+
+    let mut gen_st = GenSt::new(12345); //
+    let (generated_bytes, generated_packet) = <_ as Combinator<[u8], Vec<u8>>>::generate(&pkt_comb, &mut gen_st)
+        .expect("generate");
+
+    println!("  Generated Packet ({} bytes):", generated_bytes);
+    println!(
+        "    Header: version={}, flags=0x{:02X}",
+        generated_packet.header.version, generated_packet.header.flags
+    );
+    println!("    Payload length: {} bytes", generated_packet.len);
+    println!("    Records ({}):", generated_packet.records.len());
+    for (i, r) in generated_packet.records.iter().enumerate() {
+        println!("      [{}] id={}, value={}", i, r.id, r.value);
+    }
+
+    println!("  Packet generation completed!");
+}
+
 fn main() {
     example_record();
     example_header();
     example_payload();
     example_full_packet();
+    example_packet_generation();
 }

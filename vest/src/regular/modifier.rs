@@ -306,6 +306,7 @@ where
             if m == self.0 .0 {
                 return Ok((m, value));
             }
+            std::dbg!("AndThen generation retrying due to size mismatch.", self.0 .0, m);
         }
     }
 }

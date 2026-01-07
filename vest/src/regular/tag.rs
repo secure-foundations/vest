@@ -96,13 +96,9 @@ where
         self.inner.serialize(self.tag.into(), data, pos)
     }
 
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        loop {
-            let (n, v) = self.inner.generate(g)?;
-            if self.tag.compare(&Inner::SType::ref_to_stype(&v)) {
-                return Ok((n, ()));
-            }
-        }
+    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let n = self.length(());
+        Ok((n, ()))
     }
 }
 
