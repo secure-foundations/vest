@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Vest"><title>vest_lib - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate vest_lib</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../vest_lib/index.html">vest_<wbr>lib</a></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#vest" title="Vest">Vest</a><ul><li><a href="#formally-verified-parsing-and-serialization" title="Formally Verified Parsing and Serialization">Formally Verified Parsing and Serialization</a></li><li><a href="#available-combinators" title="Available Combinators">Available Combinators</a></li><li><a href="#examples" title="Examples">Examples</a></li></ul></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>vest_<wbr>lib</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/vest_lib/lib.rs.html#1-29">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="vest"><a class="doc-anchor" href="#vest">§</a>Vest</h2>
+<p>Vest is a <em>formally verified</em> combinator library for parsing and serializing binary data.</p>
+<h3 id="formally-verified-parsing-and-serialization"><a class="doc-anchor" href="#formally-verified-parsing-and-serialization">§</a>Formally Verified Parsing and Serialization</h3>
+<p>Vest leverages the Rust type system and <a href="https://github.com/verus-lang/verus">Verus</a> to formally verify
+the correctness and security of binary parsing and serialization. We exploit
+Rust’s borrowing, lifetime, and the powerful trait system to achieve
+high-performance without sacrificing safety, while Verus allows us to specify
+and prove key <a href="properties/trait.SecureSpecCombinator.html#tymethod.theorem_serialize_parse_roundtrip">round-trip</a> <a href="properties/trait.SecureSpecCombinator.html#tymethod.theorem_parse_serialize_roundtrip">properties</a> about our combinators.</p>
+<p>These properties ensure mutual inversion of parsing and serialization, making them immune to
+<a href="properties/trait.SecureSpecCombinator.html#method.corollary_parse_non_malleable">parser malleability</a> and <a href="properties/trait.SecureSpecCombinator.html#method.corollary_serialize_injective_contraposition">format confusion attacks</a>. See more in our <a href="https://www.andrew.cmu.edu/user/bparno/papers/vest.pdf">USENIX Security ’25 paper</a>.</p>
+<h3 id="available-combinators"><a class="doc-anchor" href="#available-combinators">§</a>Available Combinators</h3>
+<p>Vest provides a small yet expressive set of formally verified combinators for building parsers and serializers.
+Each combinator’s correctness properties are verified once and can be reused across complex compositions.</p>
+<div><table><thead><tr><th>Combinator</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><a href="regular/bytes/struct.Fixed.html"><code>bytes::Fixed</code></a></td><td>Parse and serialize a fixed number of bytes (compile-time known)</td></tr>
+<tr><td><a href="regular/bytes/struct.Variable.html"><code>bytes::Variable</code></a></td><td>Parse and serialize a dynamic number of bytes (runtime known)</td></tr>
+<tr><td><a href="regular/uints/struct.U8.html"><code>U8</code></a>/<a href="regular/uints/struct.U16Le.html"><code>U16Le</code></a>/<a href="regular/uints/struct.U32Le.html"><code>U32Le</code></a>/<a href="regular/uints/struct.U64Le.html"><code>U64Le</code></a></td><td>Parse and serialize unsigned integers in little-endian format</td></tr>
+<tr><td><a href="regular/uints/struct.U16Be.html"><code>U16Be</code></a>/<a href="regular/uints/struct.U32Be.html"><code>U32Be</code></a>/<a href="regular/uints/struct.U64Be.html"><code>U64Be</code></a></td><td>Parse and serialize unsigned integers in big-endian format</td></tr>
+<tr><td><a href="regular/leb128/struct.UnsignedLEB128.html"><code>UnsignedLEB128</code></a></td><td>Parse and serialize unsigned integers using LEB128 variable-length encoding</td></tr>
+<tr><td><a href="bitcoin/varint/struct.BtcVarint.html"><code>BtcVarint</code></a></td><td>Parse and serialize unsigned integers using Bitcoin’s VarInt variable-length encoding</td></tr>
+<tr><td><a href="regular/sequence/struct.Pair.html"><code>Pair</code></a></td><td>Sequentially compose two combinators, where the second might <em>depend on</em> the first’s output</td></tr>
+<tr><td><a href="regular/sequence/struct.Preceded.html"><code>Preceded</code></a></td><td>Sequentially compose two combinators, omitting the first’s output</td></tr>
+<tr><td><a href="regular/sequence/struct.Terminated.html"><code>Terminated</code></a></td><td>Sequentially compose two combinators, omitting the second’s output</td></tr>
+<tr><td><a href="regular/variant/struct.Choice.html"><code>Choice</code></a></td><td>Try two combinators <em>in order</em></td></tr>
+<tr><td><a href="regular/repetition/struct.RepeatN.html"><code>RepeatN</code></a></td><td>Repeat a combinator a fixed number of times</td></tr>
+<tr><td><a href="regular/repetition/struct.Repeat.html"><code>Repeat</code></a></td><td>Repeat a combinator until the end of input buffer</td></tr>
+<tr><td><a href="regular/modifier/struct.Refined.html"><code>Refined</code></a></td><td>Refine parsed/serialized values with predicates</td></tr>
+<tr><td><a href="regular/modifier/struct.Mapped.html"><code>Mapped</code></a></td><td>Transform parsed/serialized values with infallible isomorphisms</td></tr>
+<tr><td><a href="regular/modifier/struct.TryMap.html"><code>TryMap</code></a></td><td>Transform parsed/serialized values with fallible isomorphisms</td></tr>
+<tr><td><a href="regular/modifier/struct.Cond.html"><code>Cond</code></a></td><td>Conditionally apply a combinator based on a predicate</td></tr>
+<tr><td><a href="regular/modifier/struct.AndThen.html"><code>AndThen</code></a></td><td>Re-interpret bytes with (potentially nested) sub-combinators</td></tr>
+<tr><td><a href="regular/modifier/struct.Opt.html"><code>Opt</code></a></td><td>Optionally apply a combinator</td></tr>
+<tr><td><a href="regular/success/struct.Success.html"><code>Success</code></a></td><td>Always succeeds and consumes nothing (unit combinator)</td></tr>
+<tr><td><a href="regular/fail/struct.Fail.html"><code>Fail</code></a></td><td>Always fails with a custom error message</td></tr>
+<tr><td><a href="regular/end/struct.End.html"><code>End</code></a></td><td>Succeeds only at the end of input buffer</td></tr>
+<tr><td><a href="regular/tag/struct.Tag.html"><code>Tag</code></a></td><td>Match a specific value (useful for format markers)</td></tr>
+</tbody></table>
+</div><h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="parsing-and-serializing-a-pair-of-bytes"><a class="doc-anchor" href="#parsing-and-serializing-a-pair-of-bytes">§</a>Parsing and serializing a pair of bytes</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>vest_lib::regular::bytes::Fixed;
+<span class="kw">use </span>vest_lib::properties::Combinator;
+
+<span class="comment">// Define a combinator for parsing two consecutive fixed-size byte sequences
+</span><span class="kw">let </span>pair_of_bytes = (Fixed::&lt;<span class="number">1</span>&gt;, Fixed::&lt;<span class="number">2</span>&gt;);
+
+<span class="kw">let </span>input = <span class="kw-2">&amp;</span>[<span class="number">0x10</span>, <span class="number">0x20</span>, <span class="number">0x30</span>][..];
+<span class="kw">let </span>(consumed, (a, b)) = &lt;<span class="kw">_ as </span>Combinator&lt;<span class="kw-2">&amp;</span>[u8], Vec&lt;u8&gt;&gt;&gt;::parse(<span class="kw-2">&amp;</span>pair_of_bytes, input)<span class="question-mark">?</span>;
+
+<span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0x00</span>; <span class="number">10</span>];
+<span class="kw">let </span>written = &lt;<span class="kw">_ as </span>Combinator&lt;<span class="kw-2">&amp;</span>[u8], Vec&lt;u8&gt;&gt;&gt;::serialize(<span class="kw-2">&amp;</span>pair_of_bytes, (<span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b), <span class="kw-2">&amp;mut </span>output, <span class="number">0</span>)<span class="question-mark">?</span>;
+
+<span class="macro">assert_eq!</span>(written, consumed);
+<span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>output[..written], <span class="kw-2">&amp;</span>input[..consumed]);</code></pre></div><h4 id="refining-parsed-values-with-predicates"><a class="doc-anchor" href="#refining-parsed-values-with-predicates">§</a>Refining parsed values with predicates</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>vest_lib::regular::uints::U8;
+<span class="kw">use </span>vest_lib::regular::modifier::{Refined, Pred, SpecPred};
+<span class="kw">use </span>vest_lib::properties::Combinator;
+<span class="kw">use </span>vstd::prelude::<span class="kw-2">*</span>;
+
+<span class="macro">verus!</span> {
+    <span class="kw">pub struct </span>EvenU8;
+    <span class="kw">impl </span>View <span class="kw">for </span>EvenU8 {
+        <span class="kw">type </span>V = <span class="self">Self</span>;
+        open spec <span class="kw">fn </span>view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::V { <span class="kw-2">*</span><span class="self">self </span>}
+    }
+
+    <span class="kw">impl </span>SpecPred&lt;u8&gt; <span class="kw">for </span>EvenU8 {
+        open spec <span class="kw">fn </span>spec_apply(<span class="kw-2">&amp;</span><span class="self">self</span>, i: <span class="kw-2">&amp;</span>u8) -&gt; bool {
+            <span class="kw-2">*</span>i % <span class="number">2 </span>== <span class="number">0
+        </span>}
+    }
+
+    <span class="kw">impl </span>Pred&lt;u8&gt; <span class="kw">for </span>EvenU8 {
+        <span class="kw">fn </span>apply(<span class="kw-2">&amp;</span><span class="self">self</span>, i: <span class="kw-2">&amp;</span>u8) -&gt; bool {
+            <span class="kw-2">*</span>i % <span class="number">2 </span>== <span class="number">0
+        </span>}
+    }
+}
+
+<span class="comment">// Create a refined combinator that only accepts even numbers
+</span><span class="kw">let </span>even_u8 = Refined { inner: U8, predicate: EvenU8 };
+
+<span class="comment">// Serialize an even number
+</span><span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0x00</span>; <span class="number">10</span>];
+<span class="kw">let </span>written = &lt;<span class="kw">_ as </span>Combinator&lt;<span class="kw-2">&amp;</span>[u8], Vec&lt;u8&gt;&gt;&gt;::serialize(<span class="kw-2">&amp;</span>even_u8, <span class="kw-2">&amp;</span><span class="number">10u8</span>, <span class="kw-2">&amp;mut </span>output, <span class="number">0</span>)<span class="question-mark">?</span>;
+
+<span class="comment">// Parse it back - this succeeds because 10 is even
+</span><span class="kw">let </span>(consumed, parsed) = &lt;<span class="kw">_ as </span>Combinator&lt;<span class="kw-2">&amp;</span>[u8], Vec&lt;u8&gt;&gt;&gt;::parse(<span class="kw-2">&amp;</span>even_u8, <span class="kw-2">&amp;</span>output[..written])<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(parsed, <span class="number">10</span>);</code></pre></div></div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="bitcoin/index.html" title="mod vest_lib::bitcoin">bitcoin</a></dt><dd>Combinators for Bitcoin formats.</dd><dt><a class="mod" href="buf_traits/index.html" title="mod vest_lib::buf_traits">buf_<wbr>traits</a></dt><dd>Definitions for buffer traits that can be used as input and output for parsers and serializers,
+along with some implementations for commonly used buffers.</dd><dt><a class="mod" href="errors/index.html" title="mod vest_lib::errors">errors</a></dt><dd>Error types</dd><dt><a class="mod" href="properties/index.html" title="mod vest_lib::properties">properties</a></dt><dd>Definitions for parser and serializer combinators and their properties.</dd><dt><a class="mod" href="regular/index.html" title="mod vest_lib::regular">regular</a></dt><dd>Regular parser and serializer combinators.</dd><dt><a class="mod" href="utils/index.html" title="mod vest_lib::utils">utils</a></dt><dd>Utility functions and types.</dd></dl><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><dl class="item-table"><dt><a class="macro" href="macro.inj_ord_choice_pat.html" title="macro vest_lib::inj_ord_choice_pat">inj_<wbr>ord_<wbr>choice_<wbr>pat</a></dt><dd>Same as above but for patterns</dd><dt><a class="macro" href="macro.inj_ord_choice_result.html" title="macro vest_lib::inj_ord_choice_result">inj_<wbr>ord_<wbr>choice_<wbr>result</a></dt><dd>Maps x:Ti to ord_choice_result!(T1, …, Tn)</dd><dt><a class="macro" href="macro.ord_choice.html" title="macro vest_lib::ord_choice">ord_<wbr>choice</a></dt><dd>This macro constructs a nested OrdChoice combinator
+in the form of OrdChoice(…, OrdChoice(…, OrdChoice(…, …)))</dd><dt><a class="macro" href="macro.ord_choice_result.html" title="macro vest_lib::ord_choice_result">ord_<wbr>choice_<wbr>result</a></dt><dd>Build a type for the result of <code>ord_choice!</code></dd><dt><a class="macro" href="macro.ord_choice_type.html" title="macro vest_lib::ord_choice_type">ord_<wbr>choice_<wbr>type</a></dt><dd>Build a type for the <code>ord_choice!</code> macro</dd></dl></section></div></main></body></html>

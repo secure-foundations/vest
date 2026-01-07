@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["Combinator","SecureSpecCombinator","SpecCombinator"],"type":["PResult","SResult"]};
