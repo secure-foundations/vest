@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["UnsignedLEB128"],"type":["UInt"]};

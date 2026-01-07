@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["size_of_facts"],"struct":["U16Be","U16Le","U24Be","U24Le","U32Be","U32Le","U64Be","U64Le","U8","u24"],"trait":["FromToBytes"]};

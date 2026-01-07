@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["SPEC_TAG_U16","SPEC_TAG_U32","SPEC_TAG_U64"],"enum":["VarInt"],"fn":["spec_btc_varint_inner"],"static":["EMPTY","EMPTY_SLICE","TAG_U16","TAG_U32","TAG_U64"],"struct":["BtVarintCont","BtcVarint","PredU16LeFit","PredU32LeFit","PredU64LeFit","VarIntMapper"]};
