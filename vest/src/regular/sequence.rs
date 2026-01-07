@@ -19,19 +19,6 @@ impl<Fst, Snd, DepSnd> Pair<Fst, Snd, DepSnd> {
     }
 }
 
-/// Helper trait to convert from `&Type` to `SType`.
-pub trait FromRef<'s, T> {
-    /// Convert from a reference to the serialization type.
-    fn ref_to_stype(val: &'s T) -> Self;
-}
-
-/// Blanket implementation for Copy types where SType equals Type.
-impl<'s, T: Copy> FromRef<'s, T> for T {
-    fn ref_to_stype(val: &'s T) -> Self {
-        *val
-    }
-}
-
 impl<I, O, Fst, Snd, DepSnd> Combinator<I, O> for Pair<Fst, Snd, DepSnd>
 where
     I: VestInput + ?Sized,

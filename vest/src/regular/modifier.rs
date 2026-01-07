@@ -1,4 +1,4 @@
-use crate::{properties::*, regular::sequence::FromRef};
+use crate::properties::*;
 
 use super::bytes::Variable;
 

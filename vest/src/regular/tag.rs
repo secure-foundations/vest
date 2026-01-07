@@ -1,8 +1,8 @@
 use crate::{
     buf_traits::{VestInput, VestOutput},
     errors::{GenerateError, ParseError, SerializeError},
-    properties::{Combinator, GResult, GenSt},
-    regular::sequence::{FromRef, UnitCombinator},
+    properties::{Combinator, GResult, GenSt, FromRef},
+    regular::sequence::UnitCombinator,
 };
 
 /// Tag combinator that associates a tag value with an inner combinator.

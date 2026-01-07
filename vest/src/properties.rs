@@ -26,6 +26,19 @@ impl GenSt {
     }
 }
 
+/// Helper trait to convert from `&Type` to `SType`.
+pub trait FromRef<'s, T> {
+    /// Convert from a reference to the serialization type.
+    fn ref_to_stype(val: &'s T) -> Self;
+}
+
+/// Blanket implementation for Copy types where SType equals Type.
+impl<'s, T: Copy> FromRef<'s, T> for T {
+    fn ref_to_stype(val: &'s T) -> Self {
+        *val
+    }
+}
+
 /// Implementation for parser and serializer combinators. A combinator's view must be a
 /// [`SecureSpecCombinator`].
 pub trait Combinator<I, O>
@@ -109,6 +122,14 @@ where
     /// This function generates a value of type `Self::GType` along with the
     /// number of bytes that would be produced when serializing this value.
     fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError>;
+
+    /// Convert from generated type to [`Self::SType`] for serialization.
+    fn ref_gtype_to_stype<'s>(v: &'s Self::GType) -> Self::SType<'s>
+    where
+        Self::SType<'s>: FromRef<'s, Self::GType>,
+    {
+        Self::SType::ref_to_stype(v)
+    }
 }
 
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C
