@@ -56,4 +56,51 @@ impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {
 
 }
 
+impl<Inner: SpecType> SpecType for super::Tag<Inner> {
+    type Type = Inner::Type;
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.inner.wf(v) && v == self.tag
+    }
+}
+
+impl<Inner: SpecParser> SpecParser for super::Tag<Inner> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+        match self.inner.spec_parse(ibuf) {
+            Some((n, v)) if v == self.tag => Some((n, v)),
+            _ => None,
+        }
+    }
+
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_wf(ibuf);
+    }
+}
+
+impl<Inner: SpecSerializer> SpecSerializer for super::Tag<Inner> {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.inner.serializable(v, obuf)
+    }
+
+    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(v, obuf)
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        self.inner.spec_serialize(v)
+    }
+
+    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_buf(v, obuf);
+    }
+}
+
+impl<Inner: SpecCombinator> SpecCombinator for super::Tag<Inner> {
+
+}
+
 } // verus!

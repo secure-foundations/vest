@@ -11,4 +11,9 @@ pub struct Refined<A: SpecType> {
     pub pred: spec_fn(A::Type) -> bool,
 }
 
+pub struct Tag<Inner: SpecType> {
+    pub inner: Inner,
+    pub tag: Inner::Type,
+}
+
 } // verus!

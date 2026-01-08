@@ -80,9 +80,6 @@ pub trait SpecCombinator: SpecParser + SpecSerializer {
 }
 
 // type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
-
 // type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
-
 // type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
-
 } // verus!
