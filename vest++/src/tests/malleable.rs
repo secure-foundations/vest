@@ -8,8 +8,15 @@ use vstd::prelude::*;
 
 verus! {
 
-// Malleability Examples
-// Helper functions that impose trait bounds to test malleability
+// (Non)-malleability Examples
+// Helper functions that impose certain trait bounds
+proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::Type, obuf: Seq<u8>) 
+  requires 
+    serializer.serializable(v, obuf),
+{
+    serializer.theorem_serialize_parse_roundtrip(v, obuf);
+}
+
 proof fn requires_ps_roundtrip<T: PSRoundTrip>(parser: T, ibuf: Seq<u8>, obuf: Seq<u8>) {
     parser.theorem_parse_serialize_roundtrip(ibuf, obuf);
 }
@@ -29,7 +36,10 @@ proof fn requires_deterministic<T: Deterministic>(combinator: T, v: T::Type, obu
 // traits because they involve `Preceded` or `Terminated` with combinators that lack
 // `UniqueWfValue`.
 proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
+    let val = seq![0u8, 1u8];
     let parser = Preceded(Fixed::<2>, Fixed::<3>);
+    assert(parser.0.wf(val));
+    requires_sp_roundtrip(parser, val, obuf);
     // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have UniqueWfValue
 }
 
@@ -58,6 +68,13 @@ proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let inner = Terminated(Fixed::<2>, Fixed::<1>);
     let outer = Preceded(Fixed::<1>, inner);
     // requires_non_malleable(outer, buf1, buf2); // Should fail: multiple sources of non-uniqueness
+    let val1 = seq![0u8];
+    let val2 = seq![0u8];
+    assert(outer.0.wf(val1));
+    assert(inner.1.wf(val2));
+    let obuf = Seq::empty();
+    let v = seq![0u8, 0u8, 0u8, 0u8];
+    requires_sp_roundtrip(outer, v, obuf);
 }
 
 // Unlike Fixed and Refined, Tag has UniqueWfValue because it restricts
