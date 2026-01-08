@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub mod combinators;
 pub mod core;
 pub mod tests;
