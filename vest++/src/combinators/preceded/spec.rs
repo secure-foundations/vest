@@ -33,7 +33,7 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where A: SpecSerializer, B: 
         // To serialize Preceded, we need a witness value for A
         // We require that there exists some A value that can be serialized before B
         exists|va: A::Type|
-            #![auto]
+            #![trigger self.0.wf(va)]
             { self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf) }
     }
 

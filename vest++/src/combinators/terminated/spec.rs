@@ -33,7 +33,7 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
         // To serialize Terminated, we need a witness value for B
         // We require that there exists some B value that can be serialized after A
         exists|vb: B::Type|
-            #![auto]
+            #![trigger self.1.wf(vb)]
             { self.1.wf(vb) && (self.0, self.1).serializable((v, vb), obuf) }
     }
 
