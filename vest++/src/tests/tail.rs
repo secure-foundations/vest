@@ -25,4 +25,4 @@ proof fn test_tail_compose() {
     assert(!c_bad.serializable(v, obuf));
 }
 
-}
+} // verus!

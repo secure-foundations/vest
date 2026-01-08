@@ -1,6 +1,6 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecType, SpecCombinator, UniqueWfValue},
+    spec::{SpecCombinator, SpecType, UniqueWfValue},
 };
 use vstd::prelude::*;
 

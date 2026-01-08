@@ -39,4 +39,4 @@ proof fn test_opt_compose() {
     // c.theorem_parse_serialize_roundtrip(ibuf, obuf);
 }
 
-}
+} // verus!

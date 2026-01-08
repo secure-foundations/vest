@@ -25,4 +25,4 @@ proof fn test_choice_compose() {
     assert(c.spec_parse(ibuf) == Some((1int, v)));
 }
 
-}
+} // verus!
