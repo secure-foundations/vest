@@ -1,8 +1,15 @@
 # Vest
 
+[![CI](https://github.com/secure-foundations/vest/actions/workflows/ci.yml/badge.svg)](https://github.com/secure-foundations/vest/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-vest__lib-blue)](https://secure-foundations.github.io/vest/vest_lib/)
+[![Crates.io - vest](https://img.shields.io/crates/v/vest?label=vest)](https://crates.io/crates/vest)
+[![Crates.io - vest_lib](https://img.shields.io/crates/v/vest_lib?label=vest_lib)](https://crates.io/crates/vest_lib)
+
 ## Overview
 
 Vest is a research project aiming for high-assurance and performant parsing and serialization of _binary data formats_ in [Verus](https://github.com/verus-lang/verus). It features a library of **formally verified** binary parsers, serializers, and their combinators, as well as a domain-specific language (DSL) for expressing binary formats described in RFCs or other specifications.
+
+See [vest-examples](vest-examples/README.md) for an overview of how to construct various binary formats using the Vest DSL or directly using combinators.
 
 ## Background
 
@@ -31,8 +38,6 @@ Vest provides a set of combinators with unified interface (for both parsing and 
 ## Usage
 
 Vest DSL (implemented separately in the `vest-dsl` crate) provides a domain-specific language (DSL) for expressing binary formats in a concise and readable way. The DSL is designed to be close to the syntax of Rust data type declarations, with added expressivity like type refinements, internal dependencies within formats, and external dependencies among different formats, enabling the user to define a variety of binary formats found in RFCs or other external specifications. The DSL is type checked and translated into a set of combinators defined and verified in the `vest` crate. It's recommended to use the Vest DSL to define binary formats to avoid the boilerplate of manually constructing combinators, but it's also possible to use the combinators directly.
-
-See [vest-examples](vest-examples/README.md) for an overview of how to construct various binary formats using the Vest DSL or directly using combinators.
 
 ### `.vest` files
 
