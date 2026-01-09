@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -24,7 +24,9 @@ impl<A: SpecParser> SpecParser for super::Refined<A> {
             None => None,
         }
     }
+}
 
+impl<A: GoodParser> GoodParser for super::Refined<A> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
@@ -46,13 +48,19 @@ impl<A: SpecSerializer> SpecSerializer for super::Refined<A> {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.inner.spec_serialize(v)
     }
+}
 
+impl<A: GoodSerializer> GoodSerializer for super::Refined<A> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(v, obuf);
     }
 }
 
 impl<A: SpecCombinator> SpecCombinator for super::Refined<A> {
+
+}
+
+impl<A: GoodCombinator> GoodCombinator for super::Refined<A> {
 
 }
 
@@ -71,7 +79,9 @@ impl<Inner: SpecParser> SpecParser for super::Tag<Inner> {
             _ => None,
         }
     }
+}
 
+impl<Inner: GoodParser> GoodParser for super::Tag<Inner> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
@@ -93,13 +103,19 @@ impl<Inner: SpecSerializer> SpecSerializer for super::Tag<Inner> {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.inner.spec_serialize(v)
     }
+}
 
+impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(v, obuf);
     }
 }
 
 impl<Inner: SpecCombinator> SpecCombinator for super::Tag<Inner> {
+
+}
+
+impl<Inner: GoodCombinator> GoodCombinator for super::Tag<Inner> {
 
 }
 

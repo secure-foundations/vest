@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -19,7 +19,9 @@ impl<const N: usize> SpecParser for super::Fixed<N> {
             Some((N as int, ibuf.take(N as int)))
         }
     }
+}
 
+impl<const N: usize> GoodParser for super::Fixed<N> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
@@ -31,7 +33,9 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
         v + obuf
     }
+}
 
+impl<const N: usize> GoodSerializer for super::Fixed<N> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             assert(self.spec_serialize_dps(v, obuf) == v + obuf);
@@ -40,6 +44,10 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecCombinator for super::Fixed<N> {
+
+}
+
+impl<const N: usize> GoodCombinator for super::Fixed<N> {
 
 }
 

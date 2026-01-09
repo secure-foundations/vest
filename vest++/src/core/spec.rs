@@ -30,7 +30,10 @@ pub trait SpecParser: SpecType {
     /// from the input buffer `ibuf`, and `v` is the parsed value.
     /// Returns `None` if parsing fails.
     spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)>;
+}
 
+/// A well-behaved parser that satisfies key properties.
+pub trait GoodParser: SpecParser {
     /// Lemma: parser returns valid buffer positions
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>)
         ensures
@@ -63,7 +66,10 @@ pub trait SpecSerializer: SpecType {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
         self.spec_serialize_dps(v, Seq::empty())
     }
+}
 
+/// A well-behaved serializer that satisfies key properties.
+pub trait GoodSerializer: SpecSerializer {
     /// Lemma: serializer *prepends* to the output buffer
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>)
         requires
@@ -76,6 +82,11 @@ pub trait SpecSerializer: SpecType {
 
 /// Combined parser and serializer specification trait.
 pub trait SpecCombinator: SpecParser + SpecSerializer {
+
+}
+
+/// Combined well-behaved parser and serializer trait.
+pub trait GoodCombinator: GoodParser + GoodSerializer {
 
 }
 

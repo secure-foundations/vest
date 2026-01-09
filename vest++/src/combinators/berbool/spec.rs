@@ -1,4 +1,4 @@
-use crate::{combinators::Fixed, core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType}};
+use crate::{combinators::Fixed, core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType}};
 use vstd::prelude::*;
 
 verus! {
@@ -22,7 +22,9 @@ impl SpecParser for super::BerBool {
             None => None,
         }
     }
+}
 
+impl GoodParser for super::BerBool {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
@@ -41,7 +43,9 @@ impl SpecSerializer for super::BerBool {
         let byte = if v { n } else { 0x00u8 };
         seq![byte] + obuf
     }
+}
 
+impl GoodSerializer for super::BerBool {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         let serialized = self.spec_serialize_dps(v, obuf);
         assert(serialized.len() == 1 + obuf.len());
@@ -49,6 +53,10 @@ impl SpecSerializer for super::BerBool {
 }
 
 impl SpecCombinator for super::BerBool {
+
+}
+
+impl GoodCombinator for super::BerBool {
 
 }
 

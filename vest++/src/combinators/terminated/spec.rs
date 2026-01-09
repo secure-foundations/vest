@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue};
 use vstd::prelude::*;
 
 verus! {
@@ -18,7 +18,9 @@ impl<A, B> SpecParser for super::Terminated<A, B> where A: SpecParser, B: SpecPa
             None => None,
         }
     }
+}
 
+impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         (self.0, self.1).lemma_parse_length(ibuf);
     }
@@ -49,7 +51,9 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
         let vb = choose|vb: B::Type| self.1.wf(vb);
         (self.0, self.1).spec_serialize((v, vb))
     }
+}
 
+impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.serializable(v, obuf) {
             let vb = choose|vb: B::Type|
@@ -61,6 +65,10 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
 }
 
 impl<A, B> SpecCombinator for super::Terminated<A, B> where A: SpecCombinator, B: SpecCombinator {
+
+}
+
+impl<A, B> GoodCombinator for super::Terminated<A, B> where A: GoodCombinator, B: GoodCombinator {
 
 }
 

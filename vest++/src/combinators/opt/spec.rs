@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -21,7 +21,9 @@ impl<A> SpecParser for super::Opt<A> where A: SpecParser {
             None => Some((0, None)),
         }
     }
+}
 
+impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
     }
@@ -31,7 +33,7 @@ impl<A> SpecParser for super::Opt<A> where A: SpecParser {
     }
 }
 
-impl<A> SpecSerializer for super::Opt<A> where A: SpecCombinator {
+impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer + SpecParser {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in
@@ -54,7 +56,9 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecCombinator {
             Some(vv) => self.0.spec_serialize(vv),
         }
     }
+}
 
+impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {
@@ -70,6 +74,10 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecCombinator {
 }
 
 impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
+
+}
+
+impl<A> GoodCombinator for super::Opt<A> where A: GoodCombinator {
 
 }
 

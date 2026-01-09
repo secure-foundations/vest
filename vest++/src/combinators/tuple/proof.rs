@@ -1,6 +1,6 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
+    spec::{GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType},
 };
 use vstd::{assert_seqs_equal, prelude::*};
 

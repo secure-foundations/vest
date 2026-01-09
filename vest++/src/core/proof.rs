@@ -1,12 +1,12 @@
 use crate::core::spec::SpecParser;
 
-use super::spec::{SpecCombinator, SpecSerializer};
+use super::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecSerializer};
 use vstd::prelude::*;
 
 verus! {
 
 /// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
-pub trait SPRoundTrip: SpecCombinator {
+pub trait SPRoundTrip: GoodCombinator {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>)
         requires
             self.serializable(v, obuf),
@@ -29,7 +29,7 @@ pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
 }
 
 /// Non-malleability property: equal parsed values imply equal input prefixes
-pub trait NonMalleable: SpecParser {
+pub trait NonMalleable: GoodParser {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==> self.spec_parse(buf2) matches Some(
@@ -46,7 +46,7 @@ pub trait NonMalleable: SpecParser {
 /// Hence, we model non-deterministic serializers by relating two different serializer
 /// specs (DPS and non-DPS), since a deterministic serializer would produce
 /// identical outputs regardless of the serialization strategy.
-pub trait Deterministic: SpecSerializer {
+pub trait Deterministic: GoodSerializer {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>)
         requires
@@ -88,12 +88,12 @@ proof fn lemma_ps_roundtrip_from_non_malleable<C: SPRoundTrip + NonMalleable + ?
 }
 
 /// Combined trait for all proof properties (for backward compatibility)
-pub trait SpecCombinatorProof: SpecCombinator + SPRoundTrip + PSRoundTrip + NonMalleable {
+pub trait SpecCombinatorProof: GoodCombinator + SPRoundTrip + PSRoundTrip + NonMalleable {
 
 }
 
 // Blanket implementation: any type implementing all three traits automatically implements SpecCombinatorProof
-impl<T: SpecCombinator + SPRoundTrip + PSRoundTrip + NonMalleable> SpecCombinatorProof for T {
+impl<T: GoodCombinator + SPRoundTrip + PSRoundTrip + NonMalleable> SpecCombinatorProof for T {
 
 }
 

@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -31,7 +31,9 @@ impl<A: SpecParser> super::Star<A> {
             _ => (0, Seq::empty()),
         }
     }
+}
 
+impl<A: GoodParser> super::Star<A> {
     proof fn lemma_parse_rec_length(&self, ibuf: Seq<u8>)
         ensures
             0 <= self.parse_rec(ibuf).0 <= ibuf.len(),
@@ -64,7 +66,9 @@ impl<A: SpecParser> SpecParser for super::Star<A> {
         let (n, vs) = self.parse_rec(ibuf);
         Some((n, vs))
     }
+}
 
+impl<A: GoodParser> GoodParser for super::Star<A> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
     }
@@ -90,7 +94,9 @@ impl<A: SpecSerializer> super::Star<A> {
                 self.rfold_serialize_dps(vs.skip(i + 1), obuf),
             )
     }
+}
 
+impl<A: GoodSerializer> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::Type>, obuf: Seq<u8>)
         requires
             self.elems_serializable(vs, obuf),
@@ -128,7 +134,7 @@ impl<A: SpecSerializer> super::Star<A> {
     }
 }
 
-impl<A: SpecCombinator> SpecSerializer for super::Star<A> {
+impl<A: SpecSerializer + SpecParser> SpecSerializer for super::Star<A> {
     open spec fn serializable(&self, vs: Self::Type, obuf: Seq<u8>) -> bool {
         // make sure the inner parser won't accidentally consume `obuf`
         &&& self.inner.spec_parse(obuf) is None
@@ -142,7 +148,9 @@ impl<A: SpecCombinator> SpecSerializer for super::Star<A> {
     open spec fn spec_serialize(&self, vs: Self::Type) -> Seq<u8> {
         vs.fold_left(Seq::empty(), |buf: Seq<u8>, elem| buf + self.inner.spec_serialize(elem))
     }
+}
 
+impl<A: GoodSerializer + SpecParser> GoodSerializer for super::Star<A> {
     proof fn lemma_serialize_buf(&self, vs: Self::Type, obuf: Seq<u8>) {
         if self.wf(vs) {
             self.lemma_rfold_serialize_buf(vs, obuf);
@@ -152,6 +160,9 @@ impl<A: SpecCombinator> SpecSerializer for super::Star<A> {
 
 impl<A: SpecCombinator> SpecCombinator for super::Star<A> {
 
+}
+
+impl<A: GoodCombinator> GoodCombinator for super::Star<A> {
 }
 
 } // verus!

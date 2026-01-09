@@ -1,6 +1,6 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
+    spec::{GoodParser, SpecCombinator, SpecParser, SpecSerializer, SpecType},
 };
 use vstd::prelude::*;
 
@@ -48,7 +48,7 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     }
 }
 
-impl<A> Deterministic for super::Opt<A> where A: Deterministic + SpecCombinator {
+impl<A> Deterministic for super::Opt<A> where A: Deterministic + SpecParser {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {},

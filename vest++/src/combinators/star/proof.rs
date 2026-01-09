@@ -1,5 +1,5 @@
 use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer};
 use vstd::{calc, prelude::*};
 
 verus! {
@@ -141,7 +141,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
     }
 }
 
-impl<A: Deterministic + SpecCombinator> super::Star<A> {
+impl<A: Deterministic + SpecParser> super::Star<A> {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<A::Type>, obuf: Seq<u8>)
         requires
             self.serializable(vs, obuf),
@@ -231,7 +231,7 @@ impl<A: Deterministic + SpecCombinator> super::Star<A> {
     }
 }
 
-impl<A: Deterministic + SpecCombinator> Deterministic for super::Star<A> {
+impl<A: Deterministic + SpecParser> Deterministic for super::Star<A> {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             self.lemma_serialize_equiv_rec(v, obuf);

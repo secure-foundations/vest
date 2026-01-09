@@ -1,4 +1,4 @@
-use crate::core::spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
 use vstd::prelude::*;
 
 verus! {
@@ -29,7 +29,9 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
             },
         }
     }
+}
 
+impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         self.1.lemma_parse_length(ibuf);
@@ -41,7 +43,7 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
     }
 }
 
-impl<A: SpecCombinator, B: SpecSerializer> SpecSerializer for super::Choice<A, B> {
+impl<A: SpecSerializer + SpecParser, B: SpecSerializer> SpecSerializer for super::Choice<A, B> {
     #[verusfmt::skip]
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
@@ -67,7 +69,9 @@ impl<A: SpecCombinator, B: SpecSerializer> SpecSerializer for super::Choice<A, B
             Either::Right(vb) => self.1.spec_serialize(vb),
         }
     }
+}
 
+impl<A, B> GoodSerializer for super::Choice<A, B> where A: GoodSerializer + SpecParser, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             match v {
@@ -83,6 +87,10 @@ impl<A: SpecCombinator, B: SpecSerializer> SpecSerializer for super::Choice<A, B
 }
 
 impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for super::Choice<A, B> {
+
+}
+
+impl<A, B> GoodCombinator for super::Choice<A, B> where A: GoodCombinator, B: GoodCombinator {
 
 }
 

@@ -24,7 +24,7 @@ impl<A: NonMalleable> NonMalleable for super::Refined<A> {
     }
 }
 
-impl<A> Deterministic for super::Refined<A> where A: Deterministic + SpecCombinator {
+impl<A> Deterministic for super::Refined<A> where A: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_equiv(v, obuf);
     }
@@ -48,7 +48,7 @@ impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner> {
     }
 }
 
-impl<Inner> Deterministic for super::Tag<Inner> where Inner: Deterministic + SpecCombinator {
+impl<Inner> Deterministic for super::Tag<Inner> where Inner: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_equiv(v, obuf);
     }

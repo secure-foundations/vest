@@ -1,12 +1,12 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue},
+    spec::{GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue},
 };
 use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for super::Terminated<A, B> {
+impl<A, B> SPRoundTrip for super::Terminated<A, B> where A: SPRoundTrip, B: SPRoundTrip {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
         let vb = choose|vb: B::Type|
             #![auto]
