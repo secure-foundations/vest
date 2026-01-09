@@ -408,7 +408,7 @@ serialization specification for combinators, as well as the *stratified* correct
   serialized into the destination buffer `obuf`.
 - **`SpecCombinator`**: A type that is both a parser and a serializer.
 
-### Correctness and Property Traits
+### Correctness and Security Property Traits
 
 - **`SPRoundTrip: SpecCombinator` (Serialize-Parse)**: 
   `parse(serialize(v, obuf) == (v, ...)`
