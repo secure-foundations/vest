@@ -181,7 +181,7 @@ proof fn test_large_format_with_berbools()
     
     // serialize-parse roundtrip should still hold
     requires_sp_roundtrip(format, v, obuf);
-    // requires_non_malleable(full_format, header_val, footer_val); // Should fail: BerBool is malleable
+    // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
     
     // But multiple different buffers parse to the same value
     // [0xAA] [0x01] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0x01

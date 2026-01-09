@@ -166,7 +166,7 @@ TODO.
 
 TODO.
 
-## New Design
+## New Serializer Spec Design
 
 We make `spec_serialize` destination-passing style (DPS), i.e., it takes an
 additional argument `obuf: Seq<u8>` and *prepends* the serialized output to
@@ -391,3 +391,198 @@ assert(!c_bad.requires(v, obuf));
 By introducing serializablility conditions and only imposing them during
 serialization, Vest becomes significantly more expressive and composable, while
 still safely rejecting ambiguous formats.
+
+## New Trait System
+
+The core of Vest++ is built upon a set of traits defining the parsing and
+serialization specification for combinators, as well as the *stratified* correctness and security properties.
+
+### Core Specification Traits
+
+- **`SpecType`**: Defines the `Type` and a well-formedness predicate `wf(v)`.
+- **`SpecParser`**: Defines `spec_parse` which attempts to consume bytes from an input buffer to produce a value.
+- **`SpecSerializer`**: Defines `spec_serialize_dps` (Destination-Passing Style)
+  which *prepends* the serialized value to an output buffer, as well as the
+  traditional `spec_serialize` which produces a new byte sequence from a value.
+  It also defines `serializable(v, obuf)` which expresses whether `v` can be
+  serialized into the destination buffer `obuf`.
+- **`SpecCombinator`**: A type that is both a parser and a serializer.
+
+### Correctness and Property Traits
+
+- **`SPRoundTrip: SpecCombinator` (Serialize-Parse)**: 
+  `parse(serialize(v, obuf) == (v, ...)`
+  Ensures that if you serialize a well-formed value, you can parse it back.
+
+- **`NonMalleable: SpecParser`**:
+  `parse(b1) == (v, n1) && parse(b2) == (v, n2) ==> b1[0..n1] == b2[0..n2]`
+  Ensures that a single value has a unique binary representation.
+
+- **`PSRoundTrip: SPRoundTrip + NonMalleable` (Parse-Serialize)**:
+  `serialize(parse(b)?.v, ...) == b + ...`
+  Ensures that if you parse bytes into a value, serializing it gives back the
+  same bytes. This requires that the parser is `NonMalleable`.
+
+- **`Deterministic: SpecSerializer`**:
+  Ensures that the DPS serialization matches a direct serialization strategy
+  (i.e., the serializer is deterministic as the strategy does not affect the
+  serialized output). This would be useful for re-using existing proofs on
+  exec-spec equivalence.
+  
+In other words, all Vest++ combinators can (and should) prove `SPRoundTrip`, but
+only `NonMalleable` combinators can prove and hence enjoy the `PSRoundTrip` property.
+
+### Hierarchy Diagram
+
+```mermaid
+classDiagram
+    class SpecType {
+        <<trait>>
+        +type Type
+        +spec fn wf(v: Type) bool
+    }
+    
+    class SpecParser {
+        <<trait>>
+        +spec fn spec_parse(ibuf: Seq~u8~) Option~int * Type~
+        +proof fn lemma_parse_length(ibuf)
+        +proof fn lemma_parse_wf(ibuf)
+    }
+    
+    class SpecSerializer {
+        <<trait>>
+        +spec fn serializable(v: Type, obuf: Seq~u8~) bool
+        +spec fn spec_serialize_dps(v: Type, obuf: Seq~u8~) Seq~u8~
+        +spec fn spec_serialize(v: Type) Seq~u8~
+        +proof fn lemma_serialize_buf(v, obuf)
+    }
+    
+    class SpecCombinator {
+        <<trait>>
+    }
+    
+    class SPRoundTrip {
+        <<trait>>
+        +proof fn theorem_serialize_parse_roundtrip(v, obuf)
+    }
+    
+    class NonMalleable {
+        <<trait>>
+        +proof fn lemma_parse_non_malleable(buf1, buf2)
+    }
+    
+    class PSRoundTrip {
+        <<trait>>
+        +proof fn theorem_parse_serialize_roundtrip(ibuf, obuf)
+    }
+    
+    class Deterministic {
+        <<trait>>
+        +proof fn lemma_serialize_equiv(v, obuf)
+    }
+    
+    SpecType <|-- SpecParser : extends
+    SpecType <|-- SpecSerializer : extends
+    SpecSerializer <|-- SpecCombinator : extends
+    SpecParser <|-- SpecCombinator : extends
+    
+    SpecSerializer <|-- Deterministic : extends
+    SpecParser <|-- NonMalleable : extends
+    SpecCombinator <|-- SPRoundTrip : extends
+    SPRoundTrip <|-- PSRoundTrip : extends
+    NonMalleable <|-- PSRoundTrip : extends
+    
+    note for SpecType "Base trait defining the mathematical type and well-formedness condition for a format"
+    note for SPRoundTrip "Serialize → Parse recovers original value"
+    note for PSRoundTrip "Parse → Serialize preserves input prefix (requires NonMalleable)"
+    note for NonMalleable "Equal parsed values imply equal input prefixes"
+    note for Deterministic "DPS and non-DPS serialization are equivalent"
+```
+
+### Malleable Combinators
+
+Vest++ handles **malleable** formats (where multiple binary sequences map to the
+same value, or equivalently, a parser loses information) explicitly.
+A combinator is **malleable** if it does not satisfy the `NonMalleable` trait.
+
+**Example: `BerBool` (Boolean values according to ASN.1 BER encoding)**
+
+- Defined as a boolean where `false` is `0x00` and `true` is any non-zero byte.
+- Parsing `0xFF` yields `true`. Serialization of `true` might choose `0x01` (arbitrary).
+- Round-trip `0xFF` -> `true` -> `0x01` != `0xFF`. Fails `PSRoundTrip`.
+
+**Example: `Preceded`, `Terminated` (Parsers with Potential Information Loss)**
+
+Combinators like `Preceded<A, B>` (parse A, then B, return B) discard the value of A.
+
+- To serialize the result (which is just B), `Preceded` must **invent** a witness for A.
+- Uniqueness: Is the choice of witness unique?
+  - If A has **`UniqueWfValue`** (e.g., `Tag`), there is only one valid choice.
+    - `Preceded<Tag, B>` is `NonMalleable` and satisfies `PSRoundTrip`.
+  - If A does not (e.g., `Fixed<N>`), the choice is arbitrary. 
+    - `Preceded<Fixed<N>, B>` is malleable and fails `PSRoundTrip`.
+
+In particular, if the user constructs a format containing malleable combinators, the
+trait system will reflect that the overall format is malleable as well. If the
+user attempts to use the combinator in a context that requires `NonMalleable`,
+`rustc` will produce a very informative error message indicating which
+combinator is malleable and why:
+
+```rust
+let format = Terminated(
+        Preceded(
+            Tag { inner: Fixed::<1>, tag: seq![0xAAu8] },
+            ((BerBool, BerBool), Fixed::<2>)
+        ),
+        Tag { inner: Fixed::<1>, tag: seq![0xFFu8] }
+    );
+requires_non_malleable(format, seq![], seq![]); // Should fail: BerBool is malleable
+
+
+proof fn requires_non_malleable<T: NonMalleable>(parser: T, buf1: Seq<u8>, buf2: Seq<u8>) {
+    parser.lemma_parse_non_malleable(buf1, buf2);
+}
+```
+
+```rust
+error[E0277]: the trait bound `combinators::berbool::BerBool: core::proof::NonMalleable` is not satisfied
+   --> src/tests/malleable.rs:184:28
+    |
+184 |     requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
+    |     ---------------------- ^^^^^^ unsatisfied trait bound
+    |     |
+    |     required by a bound introduced by this call
+    |
+help: the trait `core::proof::NonMalleable` is not implemented for `combinators::berbool::BerBool`
+   --> src/combinators/berbool/mod.rs:12:1
+    |
+ 12 | pub struct BerBool;
+    | ^^^^^^^^^^^^^^^^^^
+    = help: the following other types implement trait `core::proof::NonMalleable`:
+              (A, B)
+              combinators::choice::Choice<A, B>
+              combinators::fixed::Fixed<N>
+              combinators::opt::Opt<A>
+              combinators::preceded::Preceded<A, B>
+              combinators::refined::Refined<A>
+              combinators::refined::Tag<Inner>
+              combinators::star::Star<A>
+            and 2 others
+note: required for `(combinators::berbool::BerBool, combinators::berbool::BerBool)` to implement `core::proof::NonMalleable`
+   --> src/combinators/tuple/proof.rs:46:40
+    |
+ 46 | impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
+    |         ------------                   ^^^^^^^^^^^^     ^^^^^^
+    |         |
+    |         unsatisfied trait bound introduced here
+    = note: 3 redundant requirements hidden
+    = note: required for `Terminated<Preceded<Tag<Fixed<1>>, (..., ...)>, ...>` to implement `core::proof::NonMalleable`
+note: required by a bound in `tests::malleable::requires_non_malleable`
+   --> src/tests/malleable.rs:24:36
+    |
+ 24 | proof fn requires_non_malleable<T: NonMalleable>(parser: T, buf1: Seq<u8>, buf2: Seq<u8>) {
+    |                                    ^^^^^^^^^^^^ required by this bound in `requires_non_malleable`
+```
+
+
+See [`src/tests/malleable.rs`](src/tests/malleable.rs) for more examples.
