@@ -6,8 +6,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::{collections::HashMap, fmt::Display};
-
+use crate::utils::VestHasherBuilder;
 use crate::vestir::*;
+
 
 /// convert snake case to upper camel case
 /// e.g. `foo_bar` -> `FooBar`
@@ -164,9 +165,9 @@ impl Display for LifetimeAnn {
 
 #[derive(Debug, Clone)]
 pub struct CodegenCtx {
-    pub msg_lifetimes: HashMap<String, LifetimeAnn>,
+    pub msg_lifetimes: HashMap<String, LifetimeAnn, VestHasherBuilder>,
     pub global_ctx: GlobalCtx,
-    pub constraint_int_combs: HashSet<u64>,
+    pub constraint_int_combs: HashSet<u64, VestHasherBuilder>,
     pub param_defns: Vec<ParamDefn>,
     pub endianess: Endianess,
     pub wrap: bool,
@@ -252,7 +253,7 @@ fn const_msg_need_lifetime(const_combinator: &ConstCombinator, ctx: &GlobalCtx) 
 
 impl CodegenCtx {
     pub fn new(
-        msg_lifetimes: HashMap<String, LifetimeAnn>,
+        msg_lifetimes: HashMap<String, LifetimeAnn, VestHasherBuilder>,
         global_ctx: GlobalCtx,
         endianness: Endianess,
         flags: CodegenOpts,
@@ -260,7 +261,7 @@ impl CodegenCtx {
         Self {
             msg_lifetimes,
             global_ctx,
-            constraint_int_combs: HashSet::new(),
+            constraint_int_combs: HashSet::with_hasher(VestHasherBuilder),
             param_defns: Vec::new(),
             endianess: endianness,
             wrap: false,
@@ -280,7 +281,7 @@ impl CodegenCtx {
         // first we need to determine which formats' types need lifetime annotations
 
         // init the format lifetimes with None
-        let mut msg_lifetimes: HashMap<String, LifetimeAnn> = HashMap::new();
+        let mut msg_lifetimes: HashMap<String, LifetimeAnn, VestHasherBuilder> = HashMap::with_hasher(VestHasherBuilder);
         for defn in ast {
             match defn {
                 Definition::Combinator { name, .. } => {
