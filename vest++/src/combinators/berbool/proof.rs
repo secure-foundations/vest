@@ -8,6 +8,7 @@ verus! {
 
 impl SPRoundTrip for super::BerBool {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
+        broadcast use super::super::fixed::spec::axiom_array_from_seq;
         let serialized = self.spec_serialize_dps(v, obuf);
 
         if v {

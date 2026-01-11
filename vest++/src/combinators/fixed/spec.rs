@@ -3,16 +3,26 @@ use crate::core::spec::{
     SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
+use vstd::array::*;
 
 verus! {
 
 impl<const N: usize> SpecType for super::Fixed<N> {
-    type Type = Seq<u8>;
+    type Type = [u8; N];
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        v.len() == N as int
+        true
     }
 }
+
+pub uninterp spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
+    recommends s.len() == N;
+
+pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
+    requires s.len() == N
+    ensures
+        (#[trigger] array_from_seq::<N>(s))@ == s,
+;
 
 impl<const N: usize> SpecParser for super::Fixed<N> {
     type PT = <Self as SpecType>::Type;
@@ -21,7 +31,7 @@ impl<const N: usize> SpecParser for super::Fixed<N> {
         if ibuf.len() < N as int {
             None
         } else {
-            Some((N as int, ibuf.take(N as int)))
+            Some((N as int, array_from_seq::<N>(ibuf.take(N as int))))
         }
     }
 }
@@ -38,7 +48,7 @@ impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
     type ST = <Self as SpecType>::Type;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        v + obuf
+        v@ + obuf
     }
 }
 
@@ -46,16 +56,81 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     type ST = <Self as SpecType>::Type;
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
-        v
+        v@
     }
 }
 
 impl<const N: usize> GoodSerializer for super::Fixed<N> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
-            assert(self.spec_serialize_dps(v, obuf) == v + obuf);
+            assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
         }
     }
 }
+
+// pub open spec fn fill_array_rec<const N: usize>(base: [u8; N], s: Seq<u8>, i: nat) -> [u8; N]
+//     recommends
+//         s.len() == N,
+//         i <= N,
+//     decreases i,
+// {
+//     if i == 0 {
+//         base
+//     } else {
+//         let idx = (i - 1) as int;
+//         // base[idx] = s[idx];
+//         fill_array_rec(spec_array_update(base, idx, s[idx]), s, idx as nat)
+//     }
+// }
+
+// pub open spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
+//     recommends s.len() == N
+// {
+//     let base = vstd::array::spec_array_fill_for_copy_type::<u8, N>(0);
+//     fill_array_rec(base, s, N as nat)
+// }
+
+// proof fn lemma_fill_array_rec<const N: usize>(base: [u8; N], s: Seq<u8>, i: nat)
+//     requires
+//         s.len() == N,
+//         i <= N,
+//     ensures
+//         ({
+//             let res = fill_array_rec(base, s, i);
+//             forall|k: int| #![auto] 0 <= k < i ==> res[k] == s[k]
+//         }),
+//         ({
+//             let res = fill_array_rec(base, s, i);
+//             forall|k: int| #![auto] i <= k < N ==> res[k] == base[k]
+//         }),
+//     decreases i,
+// {
+//     if i == 0 {
+//     } else {
+//         let idx = (i - 1) as int;
+//         let new_base = spec_array_update(base, idx, s[idx]);
+        
+//         lemma_fill_array_rec(new_base, s, idx as nat);
+//         let res = fill_array_rec(base, s, i);
+
+//         // Help Verus with array length
+//         // assert(res.len() == N);
+//         // assert(0 <= idx < N);
+
+//         assert(res[idx] == new_base[idx]);
+//         assert(new_base[idx] == s[idx]);
+//         assert(res[idx] == s[idx]);
+//     }
+// }
+
+// proof fn lemma_array_from_seq<const N: usize>(s: Seq<u8>)
+//     requires s.len() == N,
+//     ensures 
+//         array_from_seq::<N>(s)@ == s,
+// {
+//     let base = spec_array_fill_for_copy_type::<u8, N>(0);
+//     lemma_fill_array_rec(base, s, N as nat);
+//     assert(array_from_seq::<N>(s)@ =~= s);
+// }
 
 } // verus!
