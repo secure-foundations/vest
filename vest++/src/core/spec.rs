@@ -91,39 +91,37 @@ pub trait GoodSerializer: SpecType + SpecSerializerDps<ST = <Self as SpecType>::
 }
 
 /// Combined parser and serializer specification trait.
-pub trait SpecCombinator: SpecType + SpecParser<PT = <Self as SpecType>::Type> + SpecSerializerDps<
-    ST = <Self as SpecType>::Type,
-> + SpecSerializer<ST = <Self as SpecType>::Type> {
-
+#[verusfmt::skip]
+pub trait SpecCombinator:
+    SpecType +
+    SpecParser<PT = <Self as SpecType>::Type> +
+    SpecSerializerDps<ST = <Self as SpecType>::Type> +
+    SpecSerializer<ST = <Self as SpecType>::Type>
+{
 }
 
+#[verusfmt::skip]
 impl<T> SpecCombinator for T where
-    T: SpecType + SpecParser<PT = <T as SpecType>::Type> + SpecSerializerDps<
-        ST = <T as SpecType>::Type,
-    > + SpecSerializer<ST = <T as SpecType>::Type>,
- {
-
+    T:  SpecType +
+        SpecParser<PT = <T as SpecType>::Type> +
+        SpecSerializerDps<ST = <T as SpecType>::Type> +
+        SpecSerializer<ST = <T as SpecType>::Type>,
+{
 }
 
 /// Combined well-behaved parser and serializer trait.
-pub trait GoodCombinator where
-    Self: SpecType + SpecParser<PT = <Self as SpecType>::Type> + SpecSerializerDps<
-        ST = <Self as SpecType>::Type,
-    > + SpecSerializer<ST = <Self as SpecType>::Type> + GoodParser<
-        PT = <Self as SpecType>::Type,
-    > + GoodSerializer<ST = <Self as SpecType>::Type>,
- {
-
+#[verusfmt::skip]
+pub trait GoodCombinator:
+    GoodParser<PT = <Self as SpecType>::Type> +
+    GoodSerializer<ST = <Self as SpecType>::Type>
+{
 }
 
+#[verusfmt::skip]
 impl<C> GoodCombinator for C where
-    C: SpecType + SpecParser<PT = <C as SpecType>::Type> + SpecSerializerDps<
-        ST = <C as SpecType>::Type,
-    > + SpecSerializer<ST = <C as SpecType>::Type> + GoodParser<
-        PT = <C as SpecType>::Type,
-    > + GoodSerializer<ST = <C as SpecType>::Type>,
- {
-
+    C:  GoodParser<PT = <C as SpecType>::Type> +
+        GoodSerializer<ST = <C as SpecType>::Type>,
+{
 }
 
 type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
@@ -160,34 +158,4 @@ impl<T> SpecSerializer for SerializerSpecFn<T> {
     }
 }
 
-// pub enum NestedBracesT {
-//     Brace(Box<NestedBracesT>),
-//     Eps,
-// }
-// spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
-//     decreases input.len(),
-// {
-//     use crate::combinators::*;
-//     let parse_fn = |rem: Seq<u8>|
-//         {
-//             if rem.len() < input.len() {
-//                 p_nested_braces(rem)
-//             } else {
-//                 None
-//             }
-//         };
-//     match Choice(
-//         Terminated(
-//             Preceded(Tag { inner: Fixed::<1>, tag: seq![0x7Bu8] }, parse_fn),
-//             Tag { inner: Fixed::<1>, tag: seq![0x7Du8] },
-//         ),
-//         Tag { inner: Fixed::<1>, tag: seq![0x00u8] },
-//     ).spec_parse(input) {
-//         Some((n, v)) => match v {
-//             Either::Left(inner) => Some((n, (NestedBracesT::Brace(Box::new(inner))))),
-//             Either::Right(_) => Some((n, NestedBracesT::Eps)),
-//         },
-//         None => None,
-//     }
-// }
 } // verus!
