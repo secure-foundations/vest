@@ -21,13 +21,12 @@ impl SpecParser for super::BerBool {
     type PT = <Self as SpecType>::Type;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
-        match Fixed::<1>.spec_parse(ibuf) {
-            Some((n, byte_seq)) => {
-                let byte = byte_seq[0];
-                let value = byte != 0u8;
-                Some((n, value))
-            },
-            None => None,
+        if ibuf.len() >= 1 {
+            let byte = ibuf[0];
+            let value = byte != 0u8;
+            Some((1, value))
+        } else {
+            None
         }
     }
 }

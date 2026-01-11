@@ -3,7 +3,6 @@ use crate::core::spec::{
     SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
-use vstd::array::*;
 
 verus! {
 
@@ -16,10 +15,13 @@ impl<const N: usize> SpecType for super::Fixed<N> {
 }
 
 pub uninterp spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
-    recommends s.len() == N;
+    recommends
+        s.len() == N,
+;
 
 pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
-    requires s.len() == N
+    requires
+        s.len() == N,
     ensures
         (#[trigger] array_from_seq::<N>(s))@ == s,
 ;
@@ -82,14 +84,12 @@ impl<const N: usize> GoodSerializer for super::Fixed<N> {
 //         fill_array_rec(spec_array_update(base, idx, s[idx]), s, idx as nat)
 //     }
 // }
-
 // pub open spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
 //     recommends s.len() == N
 // {
 //     let base = vstd::array::spec_array_fill_for_copy_type::<u8, N>(0);
 //     fill_array_rec(base, s, N as nat)
 // }
-
 // proof fn lemma_fill_array_rec<const N: usize>(base: [u8; N], s: Seq<u8>, i: nat)
 //     requires
 //         s.len() == N,
@@ -109,28 +109,23 @@ impl<const N: usize> GoodSerializer for super::Fixed<N> {
 //     } else {
 //         let idx = (i - 1) as int;
 //         let new_base = spec_array_update(base, idx, s[idx]);
-        
 //         lemma_fill_array_rec(new_base, s, idx as nat);
 //         let res = fill_array_rec(base, s, i);
-
 //         // Help Verus with array length
 //         // assert(res.len() == N);
 //         // assert(0 <= idx < N);
-
 //         assert(res[idx] == new_base[idx]);
 //         assert(new_base[idx] == s[idx]);
 //         assert(res[idx] == s[idx]);
 //     }
 // }
-
 // proof fn lemma_array_from_seq<const N: usize>(s: Seq<u8>)
 //     requires s.len() == N,
-//     ensures 
+//     ensures
 //         array_from_seq::<N>(s)@ == s,
 // {
 //     let base = spec_array_fill_for_copy_type::<u8, N>(0);
 //     lemma_fill_array_rec(base, s, N as nat);
 //     assert(array_from_seq::<N>(s)@ =~= s);
 // }
-
 } // verus!
