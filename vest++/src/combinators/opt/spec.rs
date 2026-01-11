@@ -1,4 +1,7 @@
-use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{
+    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
+    SpecSerializerDps, SpecType,
+};
 use vstd::prelude::*;
 
 verus! {
@@ -15,7 +18,9 @@ impl<A> SpecType for super::Opt<A> where A: SpecType {
 }
 
 impl<A> SpecParser for super::Opt<A> where A: SpecParser {
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+    type PT = Option<A::PT>;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
         match self.0.spec_parse(ibuf) {
             Some((n, v)) => Some((n, Some(v))),
             None => Some((0, None)),
@@ -33,8 +38,12 @@ impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     }
 }
 
-impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer + SpecParser {
-    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+impl<A> SpecSerializerDps for super::Opt<A> where
+    A: SpecSerializerDps + SpecParser,
+ {
+    type ST = Option<A::ST>;
+
+    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in
             // `obuf` when the value is `None`
@@ -43,14 +52,20 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer + SpecParser {
         }
     }
 
-    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         match v {
             None => obuf,
             Some(vv) => self.0.spec_serialize_dps(vv, obuf),
         }
     }
+}
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+impl<A> SpecSerializer for super::Opt<A> where
+    A: SpecSerializer,
+ {
+    type ST = Option<A::ST>;
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
         match v {
             None => Seq::empty(),
             Some(vv) => self.0.spec_serialize(vv),
@@ -58,7 +73,9 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer + SpecParser {
     }
 }
 
-impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
+impl<A> GoodSerializer for super::Opt<A> where
+    A: GoodSerializer + SpecParser,
+ {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {
@@ -71,14 +88,6 @@ impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
             },
         }
     }
-}
-
-impl<A> SpecCombinator for super::Opt<A> where A: SpecCombinator {
-
-}
-
-impl<A> GoodCombinator for super::Opt<A> where A: GoodCombinator {
-
 }
 
 } // verus!

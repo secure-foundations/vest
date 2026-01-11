@@ -1,4 +1,7 @@
-use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{
+    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
+    SpecSerializerDps, SpecType,
+};
 use vstd::prelude::*;
 
 verus! {
@@ -12,7 +15,9 @@ impl<const N: usize> SpecType for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecParser for super::Fixed<N> {
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+    type PT = <Self as SpecType>::Type;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
         if ibuf.len() < N as int {
             None
         } else {
@@ -29,9 +34,19 @@ impl<const N: usize> GoodParser for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> SpecSerializer for super::Fixed<N> {
-    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
+    type ST = <Self as SpecType>::Type;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         v + obuf
+    }
+}
+
+impl<const N: usize> SpecSerializer for super::Fixed<N> {
+    type ST = <Self as SpecType>::Type;
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+        v
     }
 }
 
@@ -41,14 +56,6 @@ impl<const N: usize> GoodSerializer for super::Fixed<N> {
             assert(self.spec_serialize_dps(v, obuf) == v + obuf);
         }
     }
-}
-
-impl<const N: usize> SpecCombinator for super::Fixed<N> {
-
-}
-
-impl<const N: usize> GoodCombinator for super::Fixed<N> {
-
 }
 
 } // verus!

@@ -1,4 +1,10 @@
-use crate::{combinators::Fixed, core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType}};
+use crate::{
+    combinators::Fixed,
+    core::spec::{
+        GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
+        SpecSerializerDps, SpecType,
+    },
+};
 use vstd::prelude::*;
 
 verus! {
@@ -12,7 +18,9 @@ impl SpecType for super::BerBool {
 }
 
 impl SpecParser for super::BerBool {
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+    type PT = <Self as SpecType>::Type;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
         match Fixed::<1>.spec_parse(ibuf) {
             Some((n, byte_seq)) => {
                 let byte = byte_seq[0];
@@ -36,12 +44,32 @@ pub open spec fn non_zero_byte(b: u8) -> bool {
     b != 0x00u8
 }
 
-impl SpecSerializer for super::BerBool {
-    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+impl SpecSerializerDps for super::BerBool {
+    type ST = <Self as SpecType>::Type;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         // Serialize FALSE as 0x00, TRUE as n for arbitrary choice of non-zero n
         let n = choose|x: u8| non_zero_byte(x);
-        let byte = if v { n } else { 0x00u8 };
+        let byte = if v {
+            n
+        } else {
+            0x00u8
+        };
         seq![byte] + obuf
+    }
+}
+
+impl SpecSerializer for super::BerBool {
+    type ST = <Self as SpecType>::Type;
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+        let n = choose|x: u8| non_zero_byte(x);
+        let byte = if v {
+            n
+        } else {
+            0x00u8
+        };
+        seq![byte]
     }
 }
 
@@ -50,14 +78,6 @@ impl GoodSerializer for super::BerBool {
         let serialized = self.spec_serialize_dps(v, obuf);
         assert(serialized.len() == 1 + obuf.len());
     }
-}
-
-impl SpecCombinator for super::BerBool {
-
-}
-
-impl GoodCombinator for super::BerBool {
-
 }
 
 } // verus!

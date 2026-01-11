@@ -1,13 +1,15 @@
 use crate::core::spec::SpecParser;
 
-use super::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecSerializer};
+use super::spec::{
+    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecSerializer, SpecType,
+};
 use vstd::prelude::*;
 
 verus! {
 
 /// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
 pub trait SPRoundTrip: GoodCombinator {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>)
+    proof fn theorem_serialize_parse_roundtrip(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>)
         requires
             self.serializable(v, obuf),
         ensures
@@ -46,9 +48,11 @@ pub trait NonMalleable: GoodParser {
 /// Hence, we model non-deterministic serializers by relating two different serializer
 /// specs (DPS and non-DPS), since a deterministic serializer would produce
 /// identical outputs regardless of the serialization strategy.
-pub trait Deterministic: GoodSerializer {
+pub trait Deterministic: SpecType + SpecSerializer<ST = <Self as SpecType>::Type> + GoodSerializer<
+    ST = <Self as SpecType>::Type,
+> {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>)
+    proof fn lemma_serialize_equiv(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>)
         requires
             self.serializable(v, obuf),
         ensures

@@ -1,12 +1,18 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType, UniqueWfValue},
+    spec::{
+        GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps,
+        SpecType, UniqueWfValue,
+    },
 };
 use vstd::prelude::*;
 
 verus! {
 
-impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip + GoodSerializer, B: SPRoundTrip + GoodSerializer {
+impl<A, B> SPRoundTrip for super::Preceded<A, B> where
+    A: SPRoundTrip,
+    B: SPRoundTrip,
+ {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
         let va = choose|va: A::Type|
             #![auto]
@@ -17,8 +23,8 @@ impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip + GoodSeri
 
 // PSRoundTrip only holds for Preceded when A has a unique well-formed value
 impl<A, B> PSRoundTrip for super::Preceded<A, B> where
-    A: PSRoundTrip + UniqueWfValue + GoodParser,
-    B: PSRoundTrip + GoodParser,
+    A: PSRoundTrip + UniqueWfValue,
+    B: PSRoundTrip,
  {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
         if let Some((_, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
@@ -38,8 +44,8 @@ impl<A, B> PSRoundTrip for super::Preceded<A, B> where
 
 // NonMalleable only holds for Preceded when A has a unique well-formed value
 impl<A, B> NonMalleable for super::Preceded<A, B> where
-    A: NonMalleable + UniqueWfValue + GoodParser,
-    B: NonMalleable + GoodParser,
+    A: NonMalleable + UniqueWfValue,
+    B: NonMalleable,
  {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {

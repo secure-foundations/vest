@@ -1,4 +1,7 @@
-use crate::core::spec::{GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecType};
+use crate::core::spec::{
+    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
+    SpecSerializerDps, SpecType,
+};
 use vstd::prelude::*;
 
 verus! {
@@ -20,7 +23,9 @@ impl<A: SpecType, B: SpecType> SpecType for super::Choice<A, B> {
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::Type)> {
+    type PT = Either<A::PT, B::PT>;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
         match self.0.spec_parse(ibuf) {
             Some((n, va)) => Some((n, Either::Left(va))),
             None => match self.1.spec_parse(ibuf) {
@@ -43,9 +48,14 @@ impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
     }
 }
 
-impl<A: SpecSerializer + SpecParser, B: SpecSerializer> SpecSerializer for super::Choice<A, B> {
+impl<A, B> SpecSerializerDps for super::Choice<A, B> where
+    A: SpecParser + SpecSerializerDps,
+    B: SpecSerializerDps,
+ {
+    type ST = Either<A::ST, B::ST>;
+
     #[verusfmt::skip]
-    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         match v {
             Either::Left(va) => self.0.serializable(va, obuf),
             Either::Right(vb) => {
@@ -56,14 +66,21 @@ impl<A: SpecSerializer + SpecParser, B: SpecSerializer> SpecSerializer for super
         }
     }
 
-    open spec fn spec_serialize_dps(&self, v: Self::Type, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         match v {
             Either::Left(va) => self.0.spec_serialize_dps(va, obuf),
             Either::Right(vb) => self.1.spec_serialize_dps(vb, obuf),
         }
     }
+}
 
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+impl<A, B> SpecSerializer for super::Choice<A, B> where
+    A: SpecSerializer,
+    B: SpecSerializer,
+ {
+    type ST = Either<A::ST, B::ST>;
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
         match v {
             Either::Left(va) => self.0.spec_serialize(va),
             Either::Right(vb) => self.1.spec_serialize(vb),
@@ -71,7 +88,10 @@ impl<A: SpecSerializer + SpecParser, B: SpecSerializer> SpecSerializer for super
     }
 }
 
-impl<A, B> GoodSerializer for super::Choice<A, B> where A: GoodSerializer + SpecParser, B: GoodSerializer {
+impl<A, B> GoodSerializer for super::Choice<A, B> where
+    A: SpecParser + GoodSerializer,
+    B: GoodSerializer,
+ {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             match v {
@@ -84,14 +104,6 @@ impl<A, B> GoodSerializer for super::Choice<A, B> where A: GoodSerializer + Spec
             }
         }
     }
-}
-
-impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for super::Choice<A, B> {
-
-}
-
-impl<A, B> GoodCombinator for super::Choice<A, B> where A: GoodCombinator, B: GoodCombinator {
-
 }
 
 } // verus!

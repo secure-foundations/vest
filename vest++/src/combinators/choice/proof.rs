@@ -37,7 +37,7 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
 }
 
 impl<A, B> Deterministic for super::Choice<A, B> where
-    A: Deterministic + SpecParser,
+    A: SpecParser + Deterministic,
     B: Deterministic,
  {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {

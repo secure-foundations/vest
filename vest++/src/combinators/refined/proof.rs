@@ -31,8 +31,8 @@ impl<A> Deterministic for super::Refined<A> where A: Deterministic {
 }
 
 impl<Inner: SPRoundTrip> SPRoundTrip for super::Tag<Inner> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
-        self.inner.theorem_serialize_parse_roundtrip(v, obuf);
+    proof fn theorem_serialize_parse_roundtrip(&self, _v: Self::Type, obuf: Seq<u8>) {
+        self.inner.theorem_serialize_parse_roundtrip(self.tag, obuf);
     }
 }
 
@@ -49,8 +49,8 @@ impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner> {
 }
 
 impl<Inner> Deterministic for super::Tag<Inner> where Inner: Deterministic {
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v, obuf);
+    proof fn lemma_serialize_equiv(&self, _v: Self::Type, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_equiv(self.tag, obuf);
     }
 }
 
