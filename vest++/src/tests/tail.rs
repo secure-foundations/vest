@@ -1,7 +1,9 @@
 use crate::combinators::{Fixed, Tail};
 use crate::core::{
     proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType},
+    spec::{
+        GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType,
+    },
 };
 use vstd::prelude::*;
 

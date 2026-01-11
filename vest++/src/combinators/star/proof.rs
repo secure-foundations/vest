@@ -7,9 +7,7 @@ use vstd::{calc, prelude::*};
 
 verus! {
 
-impl<A> super::Star<A> where
-    A: SPRoundTrip,
- {
+impl<A> super::Star<A> where A: SPRoundTrip {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::Type>, obuf: Seq<u8>)
         requires
             self.serializable(vs, obuf),
@@ -146,9 +144,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
     }
 }
 
-impl<A> super::Star<A> where
-    A: Deterministic + SpecParser,
- {
+impl<A> super::Star<A> where A: Deterministic + SpecParser {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<A::Type>, obuf: Seq<u8>)
         requires
             self.serializable(vs, obuf),
@@ -238,9 +234,7 @@ impl<A> super::Star<A> where
     }
 }
 
-impl<A> Deterministic for super::Star<A> where
-    A: Deterministic + SpecParser,
- {
+impl<A> Deterministic for super::Star<A> where A: Deterministic + SpecParser {
     proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             self.lemma_serialize_equiv_rec(v, obuf);

@@ -38,9 +38,7 @@ impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     }
 }
 
-impl<A> SpecSerializerDps for super::Opt<A> where
-    A: SpecSerializerDps,
- {
+impl<A> SpecSerializerDps for super::Opt<A> where A: SpecSerializerDps {
     type ST = Option<A::ST>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -51,9 +49,7 @@ impl<A> SpecSerializerDps for super::Opt<A> where
     }
 }
 
-impl<A> SpecSerializer for super::Opt<A> where
-    A: SpecSerializer,
- {
+impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
     type ST = Option<A::ST>;
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
@@ -64,9 +60,7 @@ impl<A> SpecSerializer for super::Opt<A> where
     }
 }
 
-impl<A> GoodSerializer for super::Opt<A> where
-    A: GoodSerializer + SpecParser,
- {
+impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in

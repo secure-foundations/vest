@@ -14,10 +14,7 @@ impl<A, B> SpecType for super::Terminated<A, B> where A: SpecType, B: SpecType {
     }
 }
 
-impl<A, B> SpecParser for super::Terminated<A, B> where
-    A: SpecParser,
-    B: SpecParser,
- {
+impl<A, B> SpecParser for super::Terminated<A, B> where A: SpecParser, B: SpecParser {
     type PT = A::PT;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {

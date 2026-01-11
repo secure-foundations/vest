@@ -14,7 +14,7 @@ impl<A: SpecType> SpecType for super::Refined<A> {
     }
 }
 
-impl<A> SpecParser for super::Refined<A> where 
+impl<A> SpecParser for super::Refined<A> where
     A: SpecType + SpecParser<PT = <A as SpecType>::Type>,
  {
     type PT = A::PT;

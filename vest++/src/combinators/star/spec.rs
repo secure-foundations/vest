@@ -78,11 +78,7 @@ impl<A: GoodParser> GoodParser for super::Star<A> {
 }
 
 impl<A: SpecSerializerDps> super::Star<A> {
-    pub open spec fn rfold_serialize_dps(
-        &self,
-        vs: Seq<A::ST>,
-        obuf: Seq<u8>,
-    ) -> Seq<u8>
+    pub open spec fn rfold_serialize_dps(&self, vs: Seq<A::ST>, obuf: Seq<u8>) -> Seq<u8>
         decreases vs.len(),
     {
         vs.fold_right_alt(|elem, buf| self.inner.spec_serialize_dps(elem, buf), obuf)
@@ -91,11 +87,7 @@ impl<A: SpecSerializerDps> super::Star<A> {
 
 impl<A: GoodSerializer> super::Star<A> {
     /// all elements are serializable with the appropriate intermediate buffers
-    pub open spec fn elems_serializable(
-        &self,
-        vs: Seq<A::ST>,
-        obuf: Seq<u8>,
-    ) -> bool {
+    pub open spec fn elems_serializable(&self, vs: Seq<A::ST>, obuf: Seq<u8>) -> bool {
         forall|i: int|
             #![auto]
             0 <= i < vs.len() ==> self.inner.serializable(
@@ -141,9 +133,7 @@ impl<A: GoodSerializer> super::Star<A> {
     }
 }
 
-impl<A> SpecSerializerDps for super::Star<A> where
-    A: SpecSerializerDps + SpecParser,
- {
+impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps + SpecParser {
     type ST = Seq<A::ST>;
 
     open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -151,9 +141,7 @@ impl<A> SpecSerializerDps for super::Star<A> where
     }
 }
 
-impl<A> SpecSerializer for super::Star<A> where
-    A: SpecSerializer,
- {
+impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
     type ST = Seq<A::ST>;
 
     open spec fn spec_serialize(&self, vs: Self::ST) -> Seq<u8> {
@@ -161,9 +149,7 @@ impl<A> SpecSerializer for super::Star<A> where
     }
 }
 
-impl<A> GoodSerializer for super::Star<A> where
-    A: GoodSerializer + SpecParser,
- {
+impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer + SpecParser {
     open spec fn serializable(&self, vs: Self::Type, obuf: Seq<u8>) -> bool {
         // make sure the inner parser won't accidentally consume `obuf`
         &&& self.inner.spec_parse(obuf) is None

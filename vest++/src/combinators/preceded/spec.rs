@@ -14,10 +14,7 @@ impl<A, B> SpecType for super::Preceded<A, B> where A: SpecType, B: SpecType {
     }
 }
 
-impl<A, B> SpecParser for super::Preceded<A, B> where
-    A: SpecParser,
-    B: SpecParser,
- {
+impl<A, B> SpecParser for super::Preceded<A, B> where A: SpecParser, B: SpecParser {
     type PT = B::PT;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
@@ -38,10 +35,7 @@ impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodPars
     }
 }
 
-impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
-    A: GoodSerializer,
-    B: GoodSerializer,
- {
+impl<A, B> SpecSerializerDps for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
     type ST = B::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {

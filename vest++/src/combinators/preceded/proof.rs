@@ -9,10 +9,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, B> SPRoundTrip for super::Preceded<A, B> where
-    A: SPRoundTrip,
-    B: SPRoundTrip,
- {
+impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip, B: SPRoundTrip {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
         let va = choose|va: A::Type|
             #![auto]

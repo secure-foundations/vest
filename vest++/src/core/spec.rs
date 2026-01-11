@@ -128,8 +128,10 @@ impl<C> GoodCombinator for C where
 
 type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
 
-// type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
-// type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
+type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
+
+type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
+
 // #[verifier::reject_recursive_types(T)]
 // pub struct ParserFnSpec<T> {
 //     pub parse_fn: ParserSpecFn<T>,
@@ -142,37 +144,44 @@ impl<T> SpecParser for ParserSpecFn<T> {
     }
 }
 
-pub enum NestedBracesT {
-    Brace(Box<NestedBracesT>),
-    Eps,
+impl<T> SpecSerializerDps for SerializerDPSSpecFn<T> {
+    type ST = T;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        (self)(v, obuf)
+    }
 }
 
-// type NestedBracesTInner = Either<Box<NestedBracesT>, ()>;
-// spec fn nested_braces(
-//     // p: PFn<NestedBracesT>,
-//     // s: SFn<NestedBracesT>,
-// ) -> Choice<Terminated<Preceded<Literal<1>, Callback<NestedBracesT>>, Literal<1>>, Empty> {
-//     let p = |input, bound| p_nested_braces(input, bound);
-//     Choice(
-//         Terminated(Preceded(Literal([0x7B]), Callback(p)), Literal([0x7D])),
-//         Empty,
-//     )
+impl<T> SpecSerializer for SerializerSpecFn<T> {
+    type ST = T;
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+        (self)(v)
+    }
+}
+
+// pub enum NestedBracesT {
+//     Brace(Box<NestedBracesT>),
+//     Eps,
 // }
-// Commented out example with recursive FnSpec parser - FnSpec doesn't implement SpecType
 // spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
-//     decreases input.len()
+//     decreases input.len(),
 // {
 //     use crate::combinators::*;
-//     let parse_fn = |rem: Seq<u8>| {
-//         if rem.len() < input.len() {
-//             p_nested_braces(rem)
-//         } else {
-//             None
-//         }
-//     };
+//     let parse_fn = |rem: Seq<u8>|
+//         {
+//             if rem.len() < input.len() {
+//                 p_nested_braces(rem)
+//             } else {
+//                 None
+//             }
+//         };
 //     match Choice(
-//         Terminated(Preceded(Tag { inner: Fixed::<1>, tag: seq![0x7Bu8]}, parse_fn), Tag { inner: Fixed::<1>, tag: seq![0x7Du8]}),
-//         Tag { inner: Fixed::<1>, tag: seq![0x00u8]},
+//         Terminated(
+//             Preceded(Tag { inner: Fixed::<1>, tag: seq![0x7Bu8] }, parse_fn),
+//             Tag { inner: Fixed::<1>, tag: seq![0x7Du8] },
+//         ),
+//         Tag { inner: Fixed::<1>, tag: seq![0x00u8] },
 //     ).spec_parse(input) {
 //         Some((n, v)) => match v {
 //             Either::Left(inner) => Some((n, (NestedBracesT::Brace(Box::new(inner))))),

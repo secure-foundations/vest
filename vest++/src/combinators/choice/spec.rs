@@ -62,10 +62,7 @@ impl<A, B> SpecSerializerDps for super::Choice<A, B> where
     }
 }
 
-impl<A, B> SpecSerializer for super::Choice<A, B> where
-    A: SpecSerializer,
-    B: SpecSerializer,
- {
+impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: SpecSerializer {
     type ST = Either<A::ST, B::ST>;
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {

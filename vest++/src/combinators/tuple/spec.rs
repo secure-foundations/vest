@@ -14,10 +14,7 @@ impl<A, B> SpecType for (A, B) where A: SpecType, B: SpecType {
     }
 }
 
-impl<A, B> SpecParser for (A, B) where
-    A: SpecParser,
-    B: SpecParser,
- {
+impl<A, B> SpecParser for (A, B) where A: SpecParser, B: SpecParser {
     type PT = (A::PT, B::PT);
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
@@ -47,10 +44,7 @@ impl<A, B> GoodParser for (A, B) where A: GoodParser, B: GoodParser {
     }
 }
 
-impl<A, B> SpecSerializerDps for (A, B) where
-    A: SpecSerializerDps,
-    B: SpecSerializerDps,
- {
+impl<A, B> SpecSerializerDps for (A, B) where A: SpecSerializerDps, B: SpecSerializerDps {
     type ST = (A::ST, B::ST);
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -58,10 +52,7 @@ impl<A, B> SpecSerializerDps for (A, B) where
     }
 }
 
-impl<A, B> SpecSerializer for (A, B) where
-    A: SpecSerializer,
-    B: SpecSerializer,
- {
+impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer {
     type ST = (A::ST, B::ST);
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
