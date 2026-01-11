@@ -29,10 +29,6 @@ impl GoodParser for super::Tail {
 impl SpecSerializerDps for super::Tail {
     type ST = <Self as SpecType>::Type;
 
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        obuf.len() == 0
-    }
-
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         v + obuf
     }
@@ -47,6 +43,10 @@ impl SpecSerializer for super::Tail {
 }
 
 impl GoodSerializer for super::Tail {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        obuf.len() == 0
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == v + obuf);
     }

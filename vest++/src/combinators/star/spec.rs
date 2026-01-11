@@ -87,7 +87,9 @@ impl<A: SpecSerializerDps> super::Star<A> {
     {
         vs.fold_right_alt(|elem, buf| self.inner.spec_serialize_dps(elem, buf), obuf)
     }
+}
 
+impl<A: GoodSerializer> super::Star<A> {
     /// all elements are serializable with the appropriate intermediate buffers
     pub open spec fn elems_serializable(
         &self,
@@ -101,9 +103,7 @@ impl<A: SpecSerializerDps> super::Star<A> {
                 self.rfold_serialize_dps(vs.skip(i + 1), obuf),
             )
     }
-}
 
-impl<A: GoodSerializer> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         requires
             self.elems_serializable(vs, obuf),
@@ -146,12 +146,6 @@ impl<A> SpecSerializerDps for super::Star<A> where
  {
     type ST = Seq<A::ST>;
 
-    open spec fn serializable(&self, vs: Self::ST, obuf: Seq<u8>) -> bool {
-        // make sure the inner parser won't accidentally consume `obuf`
-        &&& self.inner.spec_parse(obuf) is None
-        &&& self.elems_serializable(vs, obuf)
-    }
-
     open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         self.rfold_serialize_dps(vs, obuf)
     }
@@ -170,6 +164,12 @@ impl<A> SpecSerializer for super::Star<A> where
 impl<A> GoodSerializer for super::Star<A> where
     A: GoodSerializer + SpecParser,
  {
+    open spec fn serializable(&self, vs: Self::Type, obuf: Seq<u8>) -> bool {
+        // make sure the inner parser won't accidentally consume `obuf`
+        &&& self.inner.spec_parse(obuf) is None
+        &&& self.elems_serializable(vs, obuf)
+    }
+
     proof fn lemma_serialize_buf(&self, vs: Self::Type, obuf: Seq<u8>) {
         if self.wf(vs) {
             self.lemma_rfold_serialize_buf(vs, obuf);

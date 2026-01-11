@@ -55,11 +55,6 @@ pub trait SpecSerializerDps {
     /// The type of values to be serialized.
     type ST;
 
-    /// Serializability constraint for values of [`Self::ST`] and output buffer.
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        true
-    }
-
     /// Destination passing style serializer specification for values of [`Self::ST`].
     ///
     /// Takes a value `v` and an output buffer `obuf`, and returns the new output buffer
@@ -80,6 +75,11 @@ pub trait SpecSerializer {
 
 /// A well-behaved serializer that satisfies key properties.
 pub trait GoodSerializer: SpecType + SpecSerializerDps<ST = <Self as SpecType>::Type> {
+    /// Serializability constraint for values of [`Self::ST`] and output buffer.
+    open spec fn serializable(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>) -> bool {
+        true
+    }
+
     /// Lemma: serializer *prepends* to the output buffer
     proof fn lemma_serialize_buf(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>)
         requires

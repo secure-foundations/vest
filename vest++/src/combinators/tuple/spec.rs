@@ -53,13 +53,6 @@ impl<A, B> SpecSerializerDps for (A, B) where
  {
     type ST = (A::ST, B::ST);
 
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.1.serializable(v.1, obuf) && self.0.serializable(
-            v.0,
-            self.1.spec_serialize_dps(v.1, obuf),
-        )
-    }
-
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         self.0.spec_serialize_dps(v.0, self.1.spec_serialize_dps(v.1, obuf))
     }
@@ -77,6 +70,13 @@ impl<A, B> SpecSerializer for (A, B) where
 }
 
 impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.1.serializable(v.1, obuf) && self.0.serializable(
+            v.0,
+            self.1.spec_serialize_dps(v.1, obuf),
+        )
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);

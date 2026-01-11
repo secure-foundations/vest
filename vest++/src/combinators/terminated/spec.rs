@@ -39,18 +39,10 @@ impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodPa
 }
 
 impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
-    A: SpecSerializerDps,
-    B: SpecType + SpecSerializerDps<ST = <B as SpecType>::Type>,
+    A: GoodSerializer,
+    B: GoodSerializer,
  {
     type ST = A::ST;
-
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        // To serialize Terminated, we need a witness value for B
-        // We require that there exists some B value that can be serialized after A
-        exists|vb: B::Type|
-            #![trigger self.1.wf(vb)]
-            { self.1.wf(vb) && (self.0, self.1).serializable((v, vb), obuf) }
-    }
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         // Use an arbitrary witness value for B that satisfies the serializable constraint
@@ -74,6 +66,14 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where
 }
 
 impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        // To serialize Terminated, we need a witness value for B
+        // We require that there exists some B value that can be serialized after A
+        exists|vb: B::Type|
+            #![trigger self.1.wf(vb)]
+            { self.1.wf(vb) && (self.0, self.1).serializable((v, vb), obuf) }
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.serializable(v, obuf) {
             let vb = choose|vb: B::Type|

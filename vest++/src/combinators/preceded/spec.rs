@@ -39,18 +39,10 @@ impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodPars
 }
 
 impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
-    A: SpecType + SpecSerializerDps<ST = <A as SpecType>::Type>,
-    B: SpecSerializerDps,
+    A: GoodSerializer,
+    B: GoodSerializer,
  {
     type ST = B::ST;
-
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        // To serialize Preceded, we need a witness value for A
-        // We require that there exists some A value that can be serialized before B
-        exists|va: A::ST|
-            #![trigger self.0.wf(va)]
-            { self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf) }
-    }
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         // Use an arbitrary witness value for A that satisfies the serializable constraint
@@ -74,6 +66,14 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where
 }
 
 impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        // To serialize Preceded, we need a witness value for A
+        // We require that there exists some A value that can be serialized before B
+        exists|va: A::ST|
+            #![trigger self.0.wf(va)]
+            { self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf) }
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.serializable(v, obuf) {
             let va = choose|va: A::Type|

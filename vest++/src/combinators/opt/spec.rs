@@ -39,18 +39,9 @@ impl<A> GoodParser for super::Opt<A> where A: GoodParser {
 }
 
 impl<A> SpecSerializerDps for super::Opt<A> where
-    A: SpecSerializerDps + SpecParser,
+    A: SpecSerializerDps,
  {
     type ST = Option<A::ST>;
-
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        match v {
-            // To ensure the parser will not try to consume serialized bytes in
-            // `obuf` when the value is `None`
-            None => self.0.spec_parse(obuf) is None,
-            Some(vv) => self.0.serializable(vv, obuf),
-        }
-    }
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         match v {
@@ -76,6 +67,15 @@ impl<A> SpecSerializer for super::Opt<A> where
 impl<A> GoodSerializer for super::Opt<A> where
     A: GoodSerializer + SpecParser,
  {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        match v {
+            // To ensure the parser will not try to consume serialized bytes in
+            // `obuf` when the value is `None`
+            None => self.0.spec_parse(obuf) is None,
+            Some(vv) => self.0.serializable(vv, obuf),
+        }
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {

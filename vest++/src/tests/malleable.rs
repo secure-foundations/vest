@@ -2,7 +2,7 @@ use crate::combinators::refined::Tag;
 use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated};
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType},
+    spec::{GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType},
 };
 use vstd::prelude::*;
 

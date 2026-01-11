@@ -48,10 +48,6 @@ impl<A> SpecSerializerDps for super::Refined<A> where
  {
     type ST = A::ST;
 
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.inner.serializable(v, obuf)
-    }
-
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(v, obuf)
     }
@@ -68,6 +64,10 @@ impl<A> SpecSerializer for super::Refined<A> where
 }
 
 impl<A: GoodSerializer> GoodSerializer for super::Refined<A> {
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.inner.serializable(v, obuf)
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(v, obuf);
     }
@@ -109,10 +109,6 @@ impl<Inner> SpecSerializerDps for super::Tag<Inner> where
  {
     type ST = ();
 
-    open spec fn serializable(&self, _v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.inner.serializable(self.tag, obuf)
-    }
-
     open spec fn spec_serialize_dps(&self, _v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(self.tag, obuf)
     }
@@ -129,6 +125,10 @@ impl<Inner> SpecSerializer for super::Tag<Inner> where
 }
 
 impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner> {
+    open spec fn serializable(&self, _v: Self::Type, obuf: Seq<u8>) -> bool {
+        self.inner.serializable(self.tag, obuf)
+    }
+
     proof fn lemma_serialize_buf(&self, _v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(self.tag, obuf);
     }

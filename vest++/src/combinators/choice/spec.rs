@@ -49,22 +49,10 @@ impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
 }
 
 impl<A, B> SpecSerializerDps for super::Choice<A, B> where
-    A: SpecParser + SpecSerializerDps,
+    A: SpecSerializerDps,
     B: SpecSerializerDps,
  {
     type ST = Either<A::ST, B::ST>;
-
-    #[verusfmt::skip]
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        match v {
-            Either::Left(va) => self.0.serializable(va, obuf),
-            Either::Right(vb) => {
-                &&& self.1.serializable(vb, obuf)
-                // To ensure the parser can recover the choice made during serialization
-                &&& self.0.spec_parse(self.1.spec_serialize_dps(vb, obuf)) is None
-            },
-        }
-    }
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         match v {
@@ -89,9 +77,21 @@ impl<A, B> SpecSerializer for super::Choice<A, B> where
 }
 
 impl<A, B> GoodSerializer for super::Choice<A, B> where
-    A: SpecParser + GoodSerializer,
+    A: GoodSerializer + SpecParser,
     B: GoodSerializer,
  {
+    #[verusfmt::skip]
+    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+        match v {
+            Either::Left(va) => self.0.serializable(va, obuf),
+            Either::Right(vb) => {
+                &&& self.1.serializable(vb, obuf)
+                // To ensure the parser can recover the choice made during serialization
+                &&& self.0.spec_parse(self.1.spec_serialize_dps(vb, obuf)) is None
+            },
+        }
+    }
+
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             match v {
