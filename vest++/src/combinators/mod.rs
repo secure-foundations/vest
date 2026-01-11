@@ -1,6 +1,7 @@
 pub mod berbool;
 pub mod choice;
 pub mod fixed;
+pub mod mapped;
 pub mod opt;
 pub mod preceded;
 pub mod refined;
@@ -8,13 +9,16 @@ pub mod star;
 pub mod tail;
 pub mod terminated;
 pub mod tuple;
+pub mod uints;
 
 pub use berbool::BerBool;
 pub use choice::{Choice, Either};
 pub use fixed::Fixed;
+pub use mapped::Mapped;
 pub use opt::Opt;
 pub use preceded::Preceded;
 pub use refined::{Refined, Tag};
 pub use star::Star;
 pub use tail::Tail;
 pub use terminated::Terminated;
+pub use uints::{U16Be, U16Le, U8};
