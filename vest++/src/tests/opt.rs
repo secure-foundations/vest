@@ -1,4 +1,4 @@
-use crate::combinators::{Fixed, Opt, Refined};
+use crate::combinators::{Opt, Refined, U8};
 use crate::core::{
     proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{
@@ -12,14 +12,14 @@ verus! {
 proof fn test_opt_compose() {
     let c = (
         (
-            Opt(Refined { inner: Fixed::<1>, pred: |x: Seq<u8>| x[0] == 2u8 }),
-            Opt(Refined { inner: Fixed::<1>, pred: |x: Seq<u8>| x[0] == 1u8 }),
+            Opt(Refined { inner: U8, pred: |x: u8| x == 2u8 }),
+            Opt(Refined { inner: U8, pred: |x: u8| x == 1u8 }),
         ),
-        Opt(Refined { inner: Fixed::<1>, pred: |x: Seq<u8>| x[0] == 2u8 }),
+        Opt(Refined { inner: U8, pred: |x: u8| x == 2u8 }),
     );
     let obuf = seq![0u8; 10];
     // let v = ((Some(seq![2u8]), Some(seq![1u8])), Some(seq![2u8]));
-    let v = ((Some(seq![2u8]), None), Some(seq![2u8]));
+    let v = ((Some(2u8), None), Some(2u8));
     // let v = (Some(seq![0u8]), (Some(seq![1u8]), Some(seq![2u8])));
     // let v1 = (Some(seq![0u8]), (Some(seq![1u8]), None));
     // let v2 = (Some(seq![0u8]), (None, Some(seq![2u8])));

@@ -1,5 +1,6 @@
+use crate::combinators::fixed::spec::axiom_array_from_seq;
 use crate::combinators::refined::Tag;
-use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated};
+use crate::combinators::{BerBool, Preceded, Refined, Terminated, U8};
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{
@@ -38,68 +39,72 @@ proof fn requires_deterministic<T: Deterministic>(combinator: T, v: T::Type, obu
 // traits because they involve `Preceded` or `Terminated` with combinators that lack
 // `UniqueWfValue`.
 proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let val = seq![0u8, 1u8];
-    let parser = Preceded(Fixed::<2>, Fixed::<3>);
-    assert(parser.0.wf(val));
-    requires_sp_roundtrip(parser, val, obuf);
+    let val0 = 0u8;
+    let val1 = 0u8;
+    let parser = Preceded(U8, U8);
+    assert(parser.0.wf(val0));
+    requires_sp_roundtrip(parser, val1, obuf);
     // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have UniqueWfValue
 }
 
 proof fn test_preceded_non_unique_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = Preceded(Fixed::<2>, Fixed::<3>);
+    let parser = Preceded(U8, U8);
     // requires_non_malleable(parser, buf1, buf2); // Should fail: A does not have UniqueWfValue
 }
 
 proof fn test_preceded_non_unique_prefix_deterministic(v: Seq<u8>, obuf: Seq<u8>) {
-    let combinator = Preceded(Fixed::<2>, Fixed::<3>);
+    let combinator = Preceded(U8, U8);
     // requires_deterministic(combinator, v, obuf); // Should fail: A does not have UniqueWfValue
 }
 
 proof fn test_terminated_non_unique_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = Terminated(Fixed::<3>, Fixed::<2>);
+    let parser = Terminated(U8, U8);
     // requires_non_malleable(parser, buf1, buf2); // Should fail: B does not have UniqueWfValue
 }
 
 proof fn test_terminated_refined_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let refined = Refined { inner: Fixed::<2>, pred: |v: Seq<u8>| v.len() > 0 ==> v[0] == 0 };
-    let parser = Terminated(Fixed::<3>, refined);
+    let refined = Refined { inner: U8, pred: |v: u8| v == 0 };
+    let parser = Terminated(U8, refined);
     // requires_non_malleable(parser, buf1, buf2); // Should fail: Refined does not have UniqueWfValue
 }
 
 proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let inner = Terminated(Fixed::<2>, Fixed::<1>);
-    let outer = Preceded(Fixed::<1>, inner);
+    let inner = Terminated(U8, U8);
+    let outer = Preceded(U8, inner);
     // requires_non_malleable(outer, buf1, buf2); // Should fail: multiple sources of non-uniqueness
-    let val1 = seq![0u8];
-    let val2 = seq![0u8];
+    let val1 = 0u8;
+    let val2 = 0u8;
     assert(outer.0.wf(val1));
     assert(inner.1.wf(val2));
     let obuf = Seq::empty();
-    let v = seq![0u8, 0u8, 0u8, 0u8];
+    let v = 0u8;
     requires_sp_roundtrip(outer, v, obuf);
 }
 
 // Unlike Fixed and Refined, Tag has UniqueWfValue because it restricts
 // its well-formed values to exactly one value (the tag).
 proof fn test_preceded_tag_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let tag = Tag { inner: Fixed::<2>, tag: seq![0u8, 1u8] };
-    let combinator = Preceded(tag, Fixed::<3>);
+    let tag = Tag { inner: U8, tag: 0u8 };
+    let combinator = Preceded(tag, U8);
     requires_ps_roundtrip(combinator, ibuf, obuf);  // Should pass: Tag has UniqueWfValue
 }
 
 proof fn test_preceded_tag_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let tag = Tag { inner: Fixed::<2>, tag: seq![0u8, 1u8] };
-    let parser = Preceded(tag, Fixed::<3>);
+    let tag = Tag { inner: U8, tag: 0u8 };
+    let parser = Preceded(tag, U8);
     requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has UniqueWfValue
 }
 
-proof fn test_preceded_tag_prefix_deterministic(v: Seq<u8>, obuf: Seq<u8>)
-    requires
-        v.len() == 3,
+proof fn test_preceded_tag_prefix_deterministic(
+    v: u8,
+    obuf: Seq<u8>,
+)
+// requires
+//    v.len() == 3,
 {
-    let val = seq![0u8, 1u8];
-    let tag = Tag { inner: Fixed::<2>, tag: val };
-    let serializer = Preceded(tag, Fixed::<3>);
+    let val = 0u8;
+    let tag = Tag { inner: U8, tag: val };
+    let serializer = Preceded(tag, U8);
 
     // Use serializer.0 to match the trigger pattern exactly
     assert(serializer.0.wf(()));
@@ -109,29 +114,29 @@ proof fn test_preceded_tag_prefix_deterministic(v: Seq<u8>, obuf: Seq<u8>)
 }
 
 proof fn test_terminated_tag_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let tag = Tag { inner: Fixed::<2>, tag: seq![0xFFu8, 0xFFu8] };
-    let parser = Terminated(Fixed::<3>, tag);
+    let tag = Tag { inner: U8, tag: 0xFFu8 };
+    let parser = Terminated(U8, tag);
     requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has UniqueWfValue
 }
 
 proof fn test_mixed_preceded_terminated_with_tag_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let tag1 = Tag { inner: Fixed::<1>, tag: seq![0x01u8] };
-    let tag2 = Tag { inner: Fixed::<1>, tag: seq![0x02u8] };
-    let inner = Terminated(Fixed::<2>, tag1);
+    let tag1 = Tag { inner: U8, tag: 0x01u8 };
+    let tag2 = Tag { inner: U8, tag: 0x02u8 };
+    let inner = Terminated(U8, tag1);
     let outer = Preceded(tag2, inner);
     requires_non_malleable(outer, buf1, buf2);  // Should pass: both Tags have UniqueWfValue
 }
 
-proof fn test_double_terminated_tag_deterministic(v: Seq<u8>)
-    requires
-        v.len() == 2,
+proof fn test_double_terminated_tag_deterministic(v: u8)
+// requires
+//     v.len() == 2,
 {
-    let val1 = seq![0x00u8];
-    let val2 = seq![0xFFu8];
+    let val1 = 0x00u8;
+    let val2 = 0xFFu8;
     let obuf = Seq::empty();
-    let tag1 = Tag { inner: Fixed::<1>, tag: val1 };
-    let tag2 = Tag { inner: Fixed::<1>, tag: val2 };
-    let inner = Terminated(Fixed::<2>, tag1);
+    let tag1 = Tag { inner: U8, tag: val1 };
+    let tag2 = Tag { inner: U8, tag: val2 };
+    let inner = Terminated(U8, tag1);
     let outer = Terminated(inner, tag2);
 
     assert(inner.1.wf(()));
@@ -158,16 +163,16 @@ proof fn test_berbool_fails_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
 proof fn test_large_format_with_berbools() {
     // Format: [Header 0xAA] [(BerBool, BerBool, Fixed::<2>)] [Footer 0xFF]
     let format = Terminated(
-        Preceded(Tag { inner: Fixed::<1>, tag: seq![0xAAu8] }, ((BerBool, BerBool), Fixed::<2>)),
-        Tag { inner: Fixed::<1>, tag: seq![0xFFu8] },
+        Preceded(Tag { inner: U8, tag: 0xAAu8 }, ((BerBool, BerBool), U8)),
+        Tag { inner: U8, tag: 0xFFu8 },
     );
 
-    let v = ((true, false), seq![0x11u8, 0x22u8]);
+    let v = ((true, false), 0x11u8);
     let obuf = Seq::empty();
 
     // establish well-formedness of header and footer (for serializability)
-    let header_val = seq![0xAAu8];
-    let footer_val = seq![0xFFu8];
+    let header_val = 0xAAu8;
+    let footer_val = 0xFFu8;
     assert(format.0.0.wf(()));
     assert(format.1.wf(()));
 
@@ -180,9 +185,9 @@ proof fn test_large_format_with_berbools() {
     // [0xAA] [0xFF] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0xFF
     // [0xAA] [0x42] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0x42
 
-    let buf1 = seq![0xAAu8, 0x01u8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
-    let buf2 = seq![0xAAu8, 0xFFu8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
-    let buf3 = seq![0xAAu8, 0x42u8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
+    let buf1 = seq![0xAAu8, 0x01u8, 0x00u8, 0x11u8, 0xFFu8];
+    let buf2 = seq![0xAAu8, 0xFFu8, 0x00u8, 0x11u8, 0xFFu8];
+    let buf3 = seq![0xAAu8, 0x42u8, 0x00u8, 0x11u8, 0xFFu8];
 
     if let Some((n1, v1)) = format.spec_parse(buf1) {
         if let Some((n2, v2)) = format.spec_parse(buf2) {
