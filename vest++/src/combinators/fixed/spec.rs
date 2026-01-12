@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -60,6 +60,10 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
         v@
     }
+}
+
+impl<const N: usize> Serializability for super::Fixed<N> {
+
 }
 
 impl<const N: usize> GoodSerializer for super::Fixed<N> {

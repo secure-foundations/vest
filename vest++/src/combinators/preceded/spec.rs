@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType, UniqueWfValue,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType, UniqueWfValue,
 };
 use vstd::prelude::*;
 
@@ -36,7 +36,7 @@ impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodPars
 }
 
 impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
-    A: GoodSerializer,
+    A: Serializability,
     B: SpecSerializerDps,
  {
     type ST = B::ST;
@@ -62,18 +62,21 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where
     }
 }
 
-impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
+impl<A, B> Serializability for super::Preceded<A, B> where A: Serializability, B: Serializability {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         // To serialize Preceded, we need a witness value for A
         // We require that there exists some A value that can be serialized before B
-        self.1.serializable(v, obuf) && exists|va: A::ST|
+        &&& self.1.serializable(v, obuf)
+        &&& exists|va: A::Type|
             #![trigger self.0.wf(va)]
             { self.0.wf(va) && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf)) }
     }
+}
 
+impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.serializable(v, obuf) {
-            let va = choose|va: A::ST|
+            let va = choose|va: A::Type|
                 #![auto]
                 self.0.wf(va) && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
             (self.0, self.1).lemma_serialize_buf((va, v), obuf);

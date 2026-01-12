@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -42,11 +42,13 @@ impl SpecSerializer for super::Tail {
     }
 }
 
-impl GoodSerializer for super::Tail {
+impl Serializability for super::Tail {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         obuf.len() == 0
     }
+}
 
+impl GoodSerializer for super::Tail {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == v + obuf);
     }

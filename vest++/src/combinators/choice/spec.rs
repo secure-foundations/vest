@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -73,9 +73,9 @@ impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: Sp
     }
 }
 
-impl<A, B> GoodSerializer for super::Choice<A, B> where
-    A: GoodSerializer + SpecParser,
-    B: GoodSerializer,
+impl<A, B> Serializability for super::Choice<A, B> where
+    A: Serializability + SpecParser,
+    B: Serializability,
  {
     #[verusfmt::skip]
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
@@ -88,7 +88,12 @@ impl<A, B> GoodSerializer for super::Choice<A, B> where
             },
         }
     }
+}
 
+impl<A, B> GoodSerializer for super::Choice<A, B> where
+    A: GoodSerializer + SpecParser,
+    B: GoodSerializer,
+ {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             match v {

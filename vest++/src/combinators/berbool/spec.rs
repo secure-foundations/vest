@@ -1,8 +1,8 @@
 use crate::{
     combinators::Fixed,
     core::spec::{
-        GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-        SpecSerializerDps, SpecType,
+        GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+        SpecSerializer, SpecSerializerDps, SpecType,
     },
 };
 use vstd::prelude::*;
@@ -70,6 +70,10 @@ impl SpecSerializer for super::BerBool {
         };
         seq![byte]
     }
+}
+
+impl Serializability for super::BerBool {
+
 }
 
 impl GoodSerializer for super::BerBool {

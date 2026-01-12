@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -85,7 +85,7 @@ impl<A: SpecSerializerDps> super::Star<A> {
     }
 }
 
-impl<A: GoodSerializer> super::Star<A> {
+impl<A: Serializability> super::Star<A> {
     /// all elements are serializable with the appropriate intermediate buffers
     pub open spec fn elems_serializable(&self, vs: Seq<A::ST>, obuf: Seq<u8>) -> bool {
         forall|i: int|
@@ -95,7 +95,9 @@ impl<A: GoodSerializer> super::Star<A> {
                 self.rfold_serialize_dps(vs.skip(i + 1), obuf),
             )
     }
+}
 
+impl<A: GoodSerializer> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         requires
             self.elems_serializable(vs, obuf),
@@ -149,13 +151,15 @@ impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
     }
 }
 
-impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer + SpecParser {
+impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser {
     open spec fn serializable(&self, vs: Self::Type, obuf: Seq<u8>) -> bool {
         // make sure the inner parser won't accidentally consume `obuf`
         &&& self.inner.spec_parse(obuf) is None
         &&& self.elems_serializable(vs, obuf)
     }
+}
 
+impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer + SpecParser {
     proof fn lemma_serialize_buf(&self, vs: Self::Type, obuf: Seq<u8>) {
         if self.wf(vs) {
             self.lemma_rfold_serialize_buf(vs, obuf);

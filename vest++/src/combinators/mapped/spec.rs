@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::{prelude::*, seq};
 
@@ -96,14 +96,19 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
-    Inner: GoodSerializer,
-    M: IsoMapper<In = Inner::ST>,
+impl<Inner, M> Serializability for super::Mapped<Inner, M> where
+    Inner: Serializability,
+    M: Mapper<In = Inner::ST>,
  {
     open spec fn serializable(&self, v: M::Out, obuf: Seq<u8>) -> bool {
         self.inner.serializable(self.mapper.spec_map_rev(v), obuf)
     }
+}
 
+impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
+    Inner: GoodSerializer,
+    M: Mapper<In = Inner::ST>,
+ {
     proof fn lemma_serialize_buf(&self, v: M::Out, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(self.mapper.spec_map_rev(v), obuf);
     }

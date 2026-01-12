@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -63,11 +63,13 @@ impl<A> SpecSerializer for super::Refined<A> where
     }
 }
 
-impl<A: GoodSerializer> GoodSerializer for super::Refined<A> {
+impl<A: Serializability> Serializability for super::Refined<A> {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         self.inner.serializable(v, obuf)
     }
+}
 
+impl<A: GoodSerializer> GoodSerializer for super::Refined<A> {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(v, obuf);
     }
@@ -124,11 +126,13 @@ impl<Inner> SpecSerializer for super::Tag<Inner> where
     }
 }
 
-impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner> {
+impl<Inner: Serializability> Serializability for super::Tag<Inner> {
     open spec fn serializable(&self, _v: Self::Type, obuf: Seq<u8>) -> bool {
         self.inner.serializable(self.tag, obuf)
     }
+}
 
+impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner> {
     proof fn lemma_serialize_buf(&self, _v: Self::Type, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(self.tag, obuf);
     }

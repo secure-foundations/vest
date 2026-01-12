@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -60,7 +60,7 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
     }
 }
 
-impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
+impl<A> Serializability for super::Opt<A> where A: Serializability + SpecParser {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in
@@ -69,7 +69,9 @@ impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
             Some(vv) => self.0.serializable(vv, obuf),
         }
     }
+}
 
+impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {

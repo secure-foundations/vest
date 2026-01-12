@@ -1,8 +1,8 @@
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{Fixed, Mapped};
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::prelude::*;
 
@@ -78,14 +78,6 @@ impl IsoMapper for U16BeMapper {
     }
 }
 
-pub open spec fn u16le_combinator() -> Mapped<Fixed<2>, U16LeMapper> {
-    Mapped { inner: Fixed::<2>, mapper: U16LeMapper }
-}
-
-pub open spec fn u16be_combinator() -> Mapped<Fixed<2>, U16BeMapper> {
-    Mapped { inner: Fixed::<2>, mapper: U16BeMapper }
-}
-
 impl SpecType for super::U8 {
     type Type = u8;
 
@@ -130,13 +122,15 @@ impl GoodParser for super::U8 {
     }
 }
 
+impl Serializability for super::U8 {
+    open spec fn serializable(&self, v: u8, obuf: Seq<u8>) -> bool {
+        true
+    }
+}
+
 impl GoodSerializer for super::U8 {
     proof fn lemma_serialize_buf(&self, v: u8, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == seq![v] + obuf);
-    }
-
-    open spec fn serializable(&self, v: u8, obuf: Seq<u8>) -> bool {
-        true
     }
 }
 
@@ -144,7 +138,7 @@ impl SpecType for super::U16Le {
     type Type = u16;
 
     open spec fn wf(&self, v: u16) -> bool {
-        u16le_combinator().wf(v)
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.wf(v)
     }
 }
 
@@ -152,7 +146,7 @@ impl SpecParser for super::U16Le {
     type PT = u16;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
-        u16le_combinator().spec_parse(ibuf)
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_parse(ibuf)
     }
 }
 
@@ -160,7 +154,7 @@ impl SpecSerializerDps for super::U16Le {
     type ST = u16;
 
     open spec fn spec_serialize_dps(&self, v: u16, obuf: Seq<u8>) -> Seq<u8> {
-        u16le_combinator().spec_serialize_dps(v, obuf)
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_serialize_dps(v, obuf)
     }
 }
 
@@ -168,27 +162,29 @@ impl SpecSerializer for super::U16Le {
     type ST = u16;
 
     open spec fn spec_serialize(&self, v: u16) -> Seq<u8> {
-        u16le_combinator().spec_serialize(v)
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_serialize(v)
     }
 }
 
 impl GoodParser for super::U16Le {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        u16le_combinator().lemma_parse_length(ibuf);
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_length(ibuf);
     }
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        u16le_combinator().lemma_parse_wf(ibuf);
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_wf(ibuf);
+    }
+}
+
+impl Serializability for super::U16Le {
+    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.serializable(v, obuf)
     }
 }
 
 impl GoodSerializer for super::U16Le {
     proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
-        u16le_combinator().lemma_serialize_buf(v, obuf);
-    }
-
-    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
-        u16le_combinator().serializable(v, obuf)
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_buf(v, obuf);
     }
 }
 
@@ -196,7 +192,7 @@ impl SpecType for super::U16Be {
     type Type = u16;
 
     open spec fn wf(&self, v: u16) -> bool {
-        u16be_combinator().wf(v)
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.wf(v)
     }
 }
 
@@ -204,7 +200,7 @@ impl SpecParser for super::U16Be {
     type PT = u16;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
-        u16be_combinator().spec_parse(ibuf)
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_parse(ibuf)
     }
 }
 
@@ -212,7 +208,7 @@ impl SpecSerializerDps for super::U16Be {
     type ST = u16;
 
     open spec fn spec_serialize_dps(&self, v: u16, obuf: Seq<u8>) -> Seq<u8> {
-        u16be_combinator().spec_serialize_dps(v, obuf)
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_serialize_dps(v, obuf)
     }
 }
 
@@ -220,27 +216,29 @@ impl SpecSerializer for super::U16Be {
     type ST = u16;
 
     open spec fn spec_serialize(&self, v: u16) -> Seq<u8> {
-        u16be_combinator().spec_serialize(v)
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_serialize(v)
     }
 }
 
 impl GoodParser for super::U16Be {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        u16be_combinator().lemma_parse_length(ibuf);
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_length(ibuf);
     }
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        u16be_combinator().lemma_parse_wf(ibuf);
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_wf(ibuf);
+    }
+}
+
+impl Serializability for super::U16Be {
+    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.serializable(v, obuf)
     }
 }
 
 impl GoodSerializer for super::U16Be {
     proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
-        u16be_combinator().lemma_serialize_buf(v, obuf);
-    }
-
-    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
-        u16be_combinator().serializable(v, obuf)
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_buf(v, obuf);
     }
 }
 

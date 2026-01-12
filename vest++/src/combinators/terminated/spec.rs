@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType, UniqueWfValue,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType, UniqueWfValue,
 };
 use vstd::prelude::*;
 
@@ -37,7 +37,7 @@ impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodPa
 
 impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
     A: SpecSerializerDps,
-    B: GoodSerializer,
+    B: Serializability,
  {
     type ST = A::ST;
 
@@ -60,7 +60,10 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where
     }
 }
 
-impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
+impl<A, B> Serializability for super::Terminated<A, B> where
+    A: Serializability,
+    B: Serializability,
+ {
     open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
         // To serialize Terminated, we need a witness value for B
         // We require that there exists some B value that can be serialized after A
@@ -77,7 +80,9 @@ impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B
             ),
         )
     }
+}
 
+impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.serializable(v, obuf) {
             let vb = choose|vb: B::Type| #![auto] self.1.wf(vb) && self.1.serializable(vb, obuf);

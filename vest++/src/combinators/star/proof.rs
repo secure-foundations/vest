@@ -1,7 +1,7 @@
 use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType,
+    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
+    SpecSerializer, SpecSerializerDps, SpecType,
 };
 use vstd::{calc, prelude::*};
 
