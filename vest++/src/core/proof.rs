@@ -101,41 +101,40 @@ impl<T: GoodCombinator + SPRoundTrip + PSRoundTrip + NonMalleable> SpecCombinato
 
 }
 
-/// Serializability property: parsed values are serializable for some output buffer
-pub trait Serializable: PSRoundTrip {
-    /// Lemma: parser returns serializable values
-    ///
-    /// NOTE: This might not be true for all combinators, e.g., for [`Choice`](crate::combinators::choice::Choice)
-    ///
-    /// ```rust
-    /// impl<A: Serializable, B: Serializable> Serializable for super::Choice<A, B> {
-    ///     proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
-    ///         if let Some((n, v)) = self.spec_parse(ibuf) {
-    ///             match v {
-    ///                 Either::Left(va) => {
-    ///                     self.0.lemma_parse_serializable(ibuf);
-    ///                     let wit = choose|obuf: Seq<u8>| self.0.serializable(va, obuf);
-    ///                     assert(self.serializable(Either::Left(va), wit));
-    ///                 },
-    ///                 Either::Right(vb) => {
-    ///                     self.1.lemma_parse_serializable(ibuf);
-    ///                     let wit = choose|obuf: Seq<u8>| self.1.serializable(vb, obuf);
-    ///                     self.1.theorem_parse_serialize_roundtrip(ibuf, wit);
-    ///                     let obuf = self.1.spec_serialize_dps(vb, wit);
-    ///                     assert(ibuf.take(n) + wit == obuf);
-    ///                     assert(self.0.spec_parse(ibuf) is None);
-    ///                     assume(self.0.spec_parse(obuf) is None);
-    ///                     assert(self.serializable(Either::Right(vb), wit));
-    ///                 },
-    ///             }
-    ///         }
-    ///     }
-    /// }
-    /// ```
-    proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>)
-        ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> exists|obuf| self.serializable(v, obuf),
-    ;
-}
-
+// /// Serializability property: parsed values are serializable for some output buffer
+// pub trait Serializable: PSRoundTrip {
+//     /// Lemma: parser returns serializable values
+//     ///
+//     /// NOTE: This might not be true for all combinators, e.g., for [`Choice`](crate::combinators::choice::Choice)
+//     ///
+//     /// ```rust
+//     /// impl<A: Serializable, B: Serializable> Serializable for super::Choice<A, B> {
+//     ///     proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>) {
+//     ///         if let Some((n, v)) = self.spec_parse(ibuf) {
+//     ///             match v {
+//     ///                 Either::Left(va) => {
+//     ///                     self.0.lemma_parse_serializable(ibuf);
+//     ///                     let wit = choose|obuf: Seq<u8>| self.0.serializable(va, obuf);
+//     ///                     assert(self.serializable(Either::Left(va), wit));
+//     ///                 },
+//     ///                 Either::Right(vb) => {
+//     ///                     self.1.lemma_parse_serializable(ibuf);
+//     ///                     let wit = choose|obuf: Seq<u8>| self.1.serializable(vb, obuf);
+//     ///                     self.1.theorem_parse_serialize_roundtrip(ibuf, wit);
+//     ///                     let obuf = self.1.spec_serialize_dps(vb, wit);
+//     ///                     assert(ibuf.take(n) + wit == obuf);
+//     ///                     assert(self.0.spec_parse(ibuf) is None);
+//     ///                     assume(self.0.spec_parse(obuf) is None);
+//     ///                     assert(self.serializable(Either::Right(vb), wit));
+//     ///                 },
+//     ///             }
+//     ///         }
+//     ///     }
+//     /// }
+//     /// ```
+//     proof fn lemma_parse_serializable(&self, ibuf: Seq<u8>)
+//         ensures
+//             self.spec_parse(ibuf) matches Some((n, v)) ==> exists|obuf| self.serializable(v, obuf),
+//     ;
+// }
 } // verus!

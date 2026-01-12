@@ -73,13 +73,16 @@ pub trait SpecSerializer {
     spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8>;
 }
 
-/// A well-behaved serializer that satisfies key properties.
-pub trait GoodSerializer: SpecType + SpecSerializerDps<ST = <Self as SpecType>::Type> {
+/// Constraints imposed by combinators on the serializability of values.
+pub trait Serializability: SpecType + SpecSerializerDps<ST = <Self as SpecType>::Type> {
     /// Serializability constraint for values of [`Self::ST`] and output buffer.
     open spec fn serializable(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>) -> bool {
         true
     }
+}
 
+/// A well-behaved serializer that satisfies key properties.
+pub trait GoodSerializer: Serializability {
     /// Lemma: serializer *prepends* to the output buffer
     proof fn lemma_serialize_buf(&self, v: <Self as SpecType>::Type, obuf: Seq<u8>)
         requires
@@ -124,16 +127,24 @@ impl<C> GoodCombinator for C where
 {
 }
 
+type WfSpecFn<T> = spec_fn(T) -> bool;
+
 type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
 
 type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
 
 type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
 
-// #[verifier::reject_recursive_types(T)]
-// pub struct ParserFnSpec<T> {
-//     pub parse_fn: ParserSpecFn<T>,
-// }
+type SerializableSpecFn<T> = spec_fn(T, Seq<u8>) -> bool;
+
+impl<T> SpecType for WfSpecFn<T> {
+    type Type = T;
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        (self)(v)
+    }
+}
+
 impl<T> SpecParser for ParserSpecFn<T> {
     type PT = T;
 
