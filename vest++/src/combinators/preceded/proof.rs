@@ -11,9 +11,9 @@ verus! {
 
 impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip, B: SPRoundTrip {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
-        let va = choose|va: A::Type|
+        let va = choose|va: A::ST|
             #![auto]
-            self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+            self.0.wf(va) && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
         (self.0, self.1).theorem_serialize_parse_roundtrip((va, v), obuf);
     }
 }
@@ -26,9 +26,9 @@ impl<A, B> PSRoundTrip for super::Preceded<A, B> where
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
         if let Some((_, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
             if self.serializable(vb, obuf) {
-                let va_witness = choose|va_w: A::Type|
+                let va_witness = choose|va: A::Type|
                     #![auto]
-                    self.0.wf(va_w) && (self.0, self.1).serializable((va_w, vb), obuf);
+                    self.0.wf(va) && self.0.serializable(va, self.1.spec_serialize_dps(vb, obuf));
                 (self.0, self.1).lemma_parse_wf(ibuf);
                 self.0.lemma_unique_wf_value(va_witness, va);
                 assert(va_witness == va);
@@ -73,7 +73,7 @@ impl<A, B> Deterministic for super::Preceded<A, B> where
         if self.wf(v) && self.serializable(v, obuf) {
             let va_dps = choose|va: A::Type|
                 #![auto]
-                self.0.wf(va) && (self.0, self.1).serializable((va, v), obuf);
+                self.0.wf(va) && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
             let va_ser = choose|va: A::Type| self.0.wf(va);
 
             // Since A has unique well-formed values, both witnesses are equal
