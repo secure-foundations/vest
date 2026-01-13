@@ -2,7 +2,8 @@ use crate::combinators::{Opt, Refined, U8};
 use crate::core::{
     proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{
-        GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType,
+        GoodSerializer, Serializability, SpecCombinator, SpecParser, SpecSerializer,
+        SpecSerializerDps, SpecType,
     },
 };
 use vstd::prelude::*;

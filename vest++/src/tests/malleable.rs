@@ -4,7 +4,8 @@ use crate::combinators::{BerBool, Preceded, Refined, Terminated, U8};
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
     spec::{
-        GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType,
+        GoodSerializer, Serializability, SpecCombinator, SpecParser, SpecSerializer,
+        SpecSerializerDps, SpecType,
     },
 };
 use vstd::prelude::*;
