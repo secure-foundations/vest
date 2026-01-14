@@ -41,6 +41,7 @@ pub struct Combinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CombinatorInner {
     ConstraintInt(ConstraintIntCombinator),
+    ConstraintEnum(ConstraintEnumCombinator),
     Struct(StructCombinator),
     Wrap(WrapCombinator),
     Enum(EnumCombinator),
@@ -74,6 +75,19 @@ pub enum IntConstraint {
     Single(ConstraintElem),
     Set(Vec<ConstraintElem>),
     Neg(Box<IntConstraint>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ConstraintEnumCombinator {
+    pub combinator: CombinatorInvocation,
+    pub constraint: EnumConstraint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum EnumConstraint {
+    Single(String),
+    Set(Vec<String>),
+    Neg(Box<EnumConstraint>),
 }
 
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
@@ -201,6 +215,7 @@ pub enum ConstCombinator {
     ConstArray(ConstArrayCombinator),
     ConstBytes(ConstBytesCombinator),
     ConstInt(ConstIntCombinator),
+    ConstEnum(ConstEnumCombinator),
     ConstStruct(ConstStructCombinator),
     ConstChoice(ConstChoiceCombinator),
     ConstCombinatorInvocation(String),
@@ -217,6 +232,12 @@ pub struct ConstArrayCombinator {
 pub struct ConstBytesCombinator {
     pub len: usize,
     pub values: ConstArray,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ConstEnumCombinator {
+    pub combinator: CombinatorInvocation,
+    pub variant: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -294,6 +315,7 @@ impl Display for CombinatorInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CombinatorInner::ConstraintInt(c) => write!(f, "{}", c),
+            CombinatorInner::ConstraintEnum(c) => write!(f, "{}", c),
             CombinatorInner::Struct(s) => write!(f, "{}", s),
             CombinatorInner::Wrap(w) => write!(f, "{}", w),
             CombinatorInner::Enum(e) => write!(f, "{}", e),
@@ -315,6 +337,31 @@ impl Display for ConstraintIntCombinator {
         match &self.constraint {
             Some(c) => write!(f, "{}_in_{}", self.combinator, c),
             None => write!(f, "{}", self.combinator),
+        }
+    }
+}
+
+impl Display for ConstraintEnumCombinator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}|{}", self.combinator, self.constraint)
+    }
+}
+
+impl Display for EnumConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EnumConstraint::Single(elem) => write!(f, "{}", elem),
+            EnumConstraint::Set(set) => {
+                write!(f, "{{")?;
+                for (i, elem) in set.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", elem)?;
+                }
+                write!(f, "}}")
+            }
+            EnumConstraint::Neg(c) => write!(f, "!{}", c),
         }
     }
 }
@@ -390,6 +437,7 @@ impl Display for ConstCombinator {
             ConstCombinator::ConstArray(a) => write!(f, "{}", a),
             ConstCombinator::ConstBytes(b) => write!(f, "{}", b),
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
+            ConstCombinator::ConstEnum(e) => write!(f, "{}", e),
             ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
             ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
             ConstCombinator::ConstCombinatorInvocation(i) => write!(f, "{}", i),
@@ -406,6 +454,12 @@ impl Display for ConstArrayCombinator {
 impl Display for ConstBytesCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.values)
+    }
+}
+
+impl Display for ConstEnumCombinator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}={}", self.combinator, self.variant)
     }
 }
 
@@ -773,6 +827,7 @@ pub mod lowering {
             use ir::CombinatorInner as B;
             match ci {
                 A::ConstraintInt(x) => B::ConstraintInt(x.into()),
+                A::ConstraintEnum(x) => B::ConstraintEnum(x.into()),
                 A::Struct(x) => B::Struct(x.into()),
                 A::Wrap(x) => B::Wrap(x.into()),
                 A::Enum(x) => B::Enum(x.into()),
@@ -802,6 +857,15 @@ pub mod lowering {
         }
     }
 
+    impl<'i> From<ast::ConstraintEnumCombinator<'i>> for ir::ConstraintEnumCombinator {
+        fn from(x: ast::ConstraintEnumCombinator<'i>) -> Self {
+            ir::ConstraintEnumCombinator {
+                combinator: x.combinator.into(),
+                constraint: x.constraint.into(),
+            }
+        }
+    }
+
     impl From<ast::IntCombinator> for ir::IntCombinator {
         fn from(i: ast::IntCombinator) -> Self {
             match i {
@@ -821,6 +885,18 @@ pub mod lowering {
                     ir::IntConstraint::Set(v.into_iter().map(Into::into).collect())
                 }
                 ast::IntConstraint::Neg(b) => ir::IntConstraint::Neg(Box::new((*b).into())),
+            }
+        }
+    }
+
+    impl<'i> From<ast::EnumConstraint<'i>> for ir::EnumConstraint {
+        fn from(c: ast::EnumConstraint<'i>) -> Self {
+            match c {
+                ast::EnumConstraint::Single { elem, .. } => ir::EnumConstraint::Single(id(elem)),
+                ast::EnumConstraint::Set(v) => {
+                    ir::EnumConstraint::Set(v.into_iter().map(id).collect())
+                }
+                ast::EnumConstraint::Neg(b) => ir::EnumConstraint::Neg(Box::new((*b).into())),
             }
         }
     }
@@ -1019,6 +1095,7 @@ pub mod lowering {
                 ast::ConstCombinator::ConstArray(x) => ir::ConstCombinator::ConstArray(x.into()),
                 ast::ConstCombinator::ConstBytes(x) => ir::ConstCombinator::ConstBytes(x.into()),
                 ast::ConstCombinator::ConstInt(x) => ir::ConstCombinator::ConstInt(x.into()),
+                ast::ConstCombinator::ConstEnum(x) => ir::ConstCombinator::ConstEnum(x.into()),
                 ast::ConstCombinator::ConstStruct(x) => ir::ConstCombinator::ConstStruct(x.into()),
                 ast::ConstCombinator::ConstChoice(x) => ir::ConstCombinator::ConstChoice(x.into()),
                 ast::ConstCombinator::ConstCombinatorInvocation { name, .. } => {
@@ -1043,6 +1120,15 @@ pub mod lowering {
             ir::ConstBytesCombinator {
                 len: c.len,
                 values: c.values.into(),
+            }
+        }
+    }
+
+    impl<'i> From<ast::ConstEnumCombinator<'i>> for ir::ConstEnumCombinator {
+        fn from(c: ast::ConstEnumCombinator<'i>) -> Self {
+            ir::ConstEnumCombinator {
+                combinator: c.combinator.into(),
+                variant: id(c.variant),
             }
         }
     }

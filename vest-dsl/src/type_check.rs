@@ -3,10 +3,9 @@ use crate::VestError;
 use core::panic;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::fmt::format;
 use std::iter::zip;
 
-use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind, Source};
+use ariadne::{Color, Label, Report, ReportKind, Source};
 use pest::Span;
 
 #[derive(Debug, Clone)]
@@ -275,10 +274,10 @@ fn check_defn<'ast>(
     }
 }
 
-fn check_const_combinator(
-    const_combinator: &ConstCombinator,
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_const_combinator<'ast>(
+    const_combinator: &ConstCombinator<'ast>,
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     use ConstCombinator::*;
@@ -288,6 +287,11 @@ fn check_const_combinator(
             value,
             span,
         }) => check_const_int_combinator(combinator, value, span, source),
+        ConstEnum(ConstEnumCombinator {
+            combinator,
+            variant,
+            span,
+        }) => check_const_enum_combinator(combinator, variant, span, local_ctx, global_ctx, source),
         ConstArray(combinator) => check_const_array_combinator(combinator, source),
         ConstBytes(combinator) => check_const_bytes_combinator(combinator, source),
         ConstStruct(ConstStructCombinator(const_combinators)) => {
@@ -305,10 +309,10 @@ fn check_const_combinator(
     }
 }
 
-fn check_const_struct_combinator(
-    const_combinators: &[ConstCombinator],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_const_struct_combinator<'ast>(
+    const_combinators: &[ConstCombinator<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     for const_combinator in const_combinators {
@@ -397,11 +401,11 @@ fn check_const_array_combinator(
     }
 }
 
-fn check_const_combinator_invocation(
-    name: &Identifier,
-    span: Span,
-    _local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_const_combinator_invocation<'ast>(
+    name: &Identifier<'ast>,
+    span: Span<'ast>,
+    _local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     match global_ctx
@@ -426,16 +430,71 @@ fn check_const_combinator_invocation(
     }
 }
 
-fn check_const_choice_combinator(
-    const_choices: &[ConstChoice],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_const_choice_combinator<'ast>(
+    const_choices: &[ConstChoice<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     for ConstChoice { combinator, .. } in const_choices {
         check_const_combinator(combinator, local_ctx, global_ctx, source)?;
     }
     Ok(())
+}
+
+fn check_const_enum_combinator<'ast>(
+    combinator: &CombinatorInvocation<'ast>,
+    variant: &Identifier<'ast>,
+    span: &Span,
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    // Reuse combinator invocation checks (no params allowed unless in scope)
+    check_combinator_invocation(combinator, &[], local_ctx, global_ctx, source)?;
+    let binding = CombinatorInner::Invocation(combinator.clone());
+    let resolved = global_ctx.resolve_alias(&binding);
+    match resolved {
+        CombinatorInner::Enum(enum_comb) => {
+            let variants = match enum_comb {
+                EnumCombinator::Exhaustive { enums, .. }
+                | EnumCombinator::NonExhaustive { enums, .. } => enums,
+            };
+            if variants.iter().any(|Enum { name, .. }| name == variant) {
+                Ok(())
+            } else {
+                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                    .with_message("undefined enum variant")
+                    .with_label(
+                        Label::new((source.0, span_as_range(&variant.span)))
+                            .with_message(format!("`{}` is not a variant of this enum", variant))
+                            .with_color(Color::Red),
+                    )
+                    .finish()
+                    .eprint(source)
+                    .unwrap();
+                Err(VestError::TypeError)
+            }
+        }
+        other => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("type mismatch")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("Const enum value applied to a non-enum type")
+                        .with_color(Color::Red),
+                )
+                .with_label(
+                    Label::new((source.0, span_as_range(&other.as_span())))
+                        .with_message("This is the resolved type")
+                        .with_color(Color::Yellow),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+            Err(VestError::TypeError)
+        }
+    }
 }
 
 fn check_const_bytes_combinator(
@@ -734,6 +793,19 @@ fn check_combinator_inner<'ast>(
             constraint,
             span,
         }) => check_constraint_int_combinator(combinator, constraint.as_ref(), source),
+        ConstraintEnum(ConstraintEnumCombinator {
+            combinator,
+            constraint,
+            span,
+        }) => check_constraint_enum_combinator(
+            combinator,
+            constraint,
+            param_defns,
+            local_ctx,
+            global_ctx,
+            span,
+            source,
+        ),
         Struct(StructCombinator {
             fields: struct_fields,
             span,
@@ -1036,12 +1108,12 @@ fn check_apply_combinator<'ast>(
     check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
 }
 
-fn check_bytes_combinator(
-    len: &LengthSpecifier,
-    span: &Span,
-    param_defns: &[ParamDefn],
-    local_ctx: &mut LocalCtx,
-    global_ctx: &GlobalCtx,
+fn check_bytes_combinator<'ast>(
+    len: &LengthSpecifier<'ast>,
+    span: &Span<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     match len {
@@ -1142,8 +1214,8 @@ fn check_bytes_combinator(
 
 fn check_array_combinator<'ast>(
     combinator: &Combinator<'ast>,
-    len: &LengthSpecifier,
-    span: &Span,
+    len: &LengthSpecifier<'ast>,
+    span: &Span<'ast>,
     param_defns: &'ast [ParamDefn<'ast>],
     local_ctx: &mut LocalCtx<'ast>,
     global_ctx: &'ast GlobalCtx<'ast>,
@@ -1275,6 +1347,25 @@ fn check_choice_combinator<'ast>(
             .unwrap();
         return Err(VestError::TypeError);
     }
+    fn resolve_enum_from<'ast>(
+        comb: &'ast CombinatorInner<'ast>,
+        global_ctx: &'ast GlobalCtx<'ast>,
+    ) -> Option<&'ast EnumCombinator<'ast>> {
+        match comb {
+            CombinatorInner::Enum(e) => Some(e),
+            CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
+                global_ctx
+                    .combinators
+                    .iter()
+                    .find(|sig| sig.name == combinator.func)
+                    .and_then(|sig| match &sig.resolved_combinator {
+                        CombinatorInner::Enum(e) => Some(e),
+                        _ => None,
+                    })
+            }
+            _ => None,
+        }
+    }
     match choices {
         Choices::Enums(enums) => {
             if let Some(depend_id) = depend_id {
@@ -1284,7 +1375,7 @@ fn check_choice_combinator<'ast>(
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
                 // check if `combinator` is defined as an enum
-                if let CombinatorInner::Enum(enum_) = combinator {
+                if let Some(enum_) = resolve_enum_from(combinator, global_ctx) {
                     let (enum_variants, is_non_exhaustive) = match enum_ {
                         EnumCombinator::Exhaustive { enums, span } => (enums, false),
                         EnumCombinator::NonExhaustive { enums, span } => (enums, true),
@@ -1303,11 +1394,11 @@ fn check_choice_combinator<'ast>(
                                             )
                                             .with_label(
                                                 Label::new((source.0, span_as_range(span)))
-                                                    .with_message(format!("This choice should only contain variants {}", 
+                                                    .with_message(format!("This choice should only contain variants {}",
                                                         enum_variants
                                                             .iter()
                                                             .map(|Enum { name, .. }| format!(
-                                                                "`{}`", 
+                                                                "`{}`",
                                                                 &name.name
                                                             ))
                                                             .collect::<Vec<_>>()
@@ -1546,7 +1637,7 @@ fn check_choice_combinator<'ast>(
                     }
                     // check non of the patterns overlap
                     check_overlap(patterns)?;
-                } else if let CombinatorInner::Enum(enum_) = combinator {
+                } else if let Some(enum_) = resolve_enum_from(combinator, global_ctx) {
                     // check if it's non-exhaustive enum (which is equivalent to an int choice)
                     match enum_ {
                         EnumCombinator::NonExhaustive { enums, span } => {
@@ -1840,12 +1931,12 @@ pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
 }
 
 fn check_wrap_combinator<'ast>(
-    prior: &[ConstCombinator],
+    prior: &[ConstCombinator<'ast>],
     combinator: &Combinator<'ast>,
-    post: &[ConstCombinator],
+    post: &[ConstCombinator<'ast>],
     param_defns: &'ast [ParamDefn<'ast>],
     local_ctx: &mut LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx,
+    global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     for const_combinator in prior {
@@ -1958,6 +2049,125 @@ fn check_constraint_int_combinator(
             check_constraint_int_combinator(combinator, Some(constraint), source)?;
         }
         None => {}
+    }
+    Ok(())
+}
+
+fn check_constraint_enum_combinator<'ast>(
+    combinator: &CombinatorInvocation<'ast>,
+    constraint: &EnumConstraint<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+    span: &Span,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    // First ensure the invocation is well-formed
+    check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source)?;
+    // Resolve the invocation target
+    let resolved = global_ctx
+        .combinators
+        .iter()
+        .find(|sig| sig.name == combinator.func)
+        .map(|sig| &sig.resolved_combinator);
+    match resolved {
+        Some(CombinatorInner::Enum(enum_comb)) => {
+            check_enum_constraint(enum_comb, constraint, span, source)
+        }
+        Some(other) => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("type mismatch")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("Enum constraint applied to a non-enum type")
+                        .with_color(Color::Red),
+                )
+                .with_label(
+                    Label::new((source.0, span_as_range(&other.as_span())))
+                        .with_message("This is the resolved type")
+                        .with_color(Color::Yellow),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+            Err(VestError::TypeError)
+        }
+        None => {
+            Report::build(
+                ReportKind::Error,
+                (source.0, span_as_range(&combinator.span)),
+            )
+            .with_message("undefined format")
+            .with_label(
+                Label::new((source.0, span_as_range(&combinator.span)))
+                    .with_message(format!("Format `{}` is not defined", combinator.func))
+                    .with_color(Color::Red),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
+            Err(VestError::TypeError)
+        }
+    }
+}
+
+fn check_enum_constraint<'ast>(
+    enum_comb: &EnumCombinator<'ast>,
+    constraint: &'ast EnumConstraint<'ast>,
+    span: &Span,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    let variants = match enum_comb {
+        EnumCombinator::Exhaustive { enums, .. } | EnumCombinator::NonExhaustive { enums, .. } => {
+            enums
+        }
+    };
+    let mut report_missing_variant = |ident: &Identifier<'ast>| {
+        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+            .with_message("undefined enum variant in constraint")
+            .with_label(
+                Label::new((source.0, span_as_range(&ident.span)))
+                    .with_message(format!("`{}` is not a variant of this enum", ident))
+                    .with_color(Color::Red),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
+    };
+    fn collect_variants<'a>(c: &'a EnumConstraint<'a>, out: &mut Vec<&'a Identifier<'a>>) {
+        match c {
+            EnumConstraint::Single { elem, .. } => out.push(elem),
+            EnumConstraint::Set(vs) => out.extend(vs.iter()),
+            EnumConstraint::Neg(inner) => collect_variants(inner, out),
+        }
+    }
+    let mut elems = Vec::new();
+    collect_variants(constraint, &mut elems);
+    // membership check
+    for ident in elems {
+        if !variants.iter().any(|Enum { name, .. }| name == ident) {
+            report_missing_variant(ident);
+            return Err(VestError::TypeError);
+        }
+    }
+    // duplicate check for sets
+    if let EnumConstraint::Set(vs) = constraint {
+        let mut seen = HashSet::new();
+        for ident in vs {
+            if !seen.insert(&ident.name) {
+                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                    .with_message("duplicate enum variant in constraint")
+                    .with_label(
+                        Label::new((source.0, span_as_range(&ident.span)))
+                            .with_message(format!("Duplicate variant `{}`", ident.name))
+                            .with_color(Color::Red),
+                    )
+                    .finish()
+                    .eprint(source)
+                    .unwrap();
+                return Err(VestError::TypeError);
+            }
+        }
     }
     Ok(())
 }

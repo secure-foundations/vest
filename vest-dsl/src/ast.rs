@@ -84,6 +84,7 @@ pub struct Combinator<'i> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CombinatorInner<'i> {
     ConstraintInt(ConstraintIntCombinator<'i>),
+    ConstraintEnum(ConstraintEnumCombinator<'i>),
     Struct(StructCombinator<'i>),
     Wrap(WrapCombinator<'i>),
     Enum(EnumCombinator<'i>),
@@ -112,6 +113,42 @@ pub struct ConstraintIntCombinator<'i> {
 impl PartialEq for ConstraintIntCombinator<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.combinator == other.combinator && self.constraint == other.constraint
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub struct ConstraintEnumCombinator<'i> {
+    pub combinator: CombinatorInvocation<'i>,
+    pub constraint: EnumConstraint<'i>,
+    pub span: Span<'i>,
+}
+
+impl PartialEq for ConstraintEnumCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.constraint == other.constraint
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub enum EnumConstraint<'i> {
+    Single {
+        elem: Identifier<'i>,
+        span: Span<'i>,
+    },
+    Set(Vec<Identifier<'i>>),
+    Neg(Box<EnumConstraint<'i>>),
+}
+
+impl PartialEq for EnumConstraint<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (EnumConstraint::Single { elem: e1, .. }, EnumConstraint::Single { elem: e2, .. }) => {
+                e1 == e2
+            }
+            (EnumConstraint::Set(set1), EnumConstraint::Set(set2)) => set1 == set2,
+            (EnumConstraint::Neg(c1), EnumConstraint::Neg(c2)) => c1 == c2,
+            _ => false,
+        }
     }
 }
 
@@ -434,6 +471,7 @@ pub enum ConstCombinator<'i> {
     ConstArray(ConstArrayCombinator<'i>),
     ConstBytes(ConstBytesCombinator<'i>),
     ConstInt(ConstIntCombinator<'i>),
+    ConstEnum(ConstEnumCombinator<'i>),
     ConstStruct(ConstStructCombinator<'i>),
     ConstChoice(ConstChoiceCombinator<'i>),
     ConstCombinatorInvocation {
@@ -449,6 +487,7 @@ impl<'i> ConstCombinator<'i> {
             ConstCombinator::ConstArray(c) => c.span,
             ConstCombinator::ConstBytes(c) => c.span,
             ConstCombinator::ConstInt(c) => c.span,
+            ConstCombinator::ConstEnum(c) => c.span,
             ConstCombinator::ConstStruct(..) => todo!("VestDSL does not support const structs yet"),
             ConstCombinator::ConstChoice(..) => todo!("VestDSL does not support const choices yet"),
             ConstCombinator::ConstCombinatorInvocation { span, .. } => *span,
@@ -475,6 +514,19 @@ pub struct ConstBytesCombinator<'i> {
     pub len: usize,
     pub values: ConstArray<'i>,
     pub span: Span<'i>,
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub struct ConstEnumCombinator<'i> {
+    pub combinator: CombinatorInvocation<'i>,
+    pub variant: Identifier<'i>,
+    pub span: Span<'i>,
+}
+
+impl PartialEq for ConstEnumCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.combinator == other.combinator && self.variant == other.variant
+    }
 }
 
 impl PartialEq for ConstBytesCombinator<'_> {
@@ -653,6 +705,7 @@ impl Display for CombinatorInner<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CombinatorInner::ConstraintInt(c) => write!(f, "{}", c),
+            CombinatorInner::ConstraintEnum(c) => write!(f, "{}", c),
             CombinatorInner::Struct(s) => write!(f, "{}", s),
             CombinatorInner::Wrap(w) => write!(f, "{}", w),
             CombinatorInner::Enum(e) => write!(f, "{}", e),
@@ -759,6 +812,7 @@ impl Display for ConstCombinator<'_> {
             ConstCombinator::ConstArray(a) => write!(f, "{}", a),
             ConstCombinator::ConstBytes(b) => write!(f, "{}", b),
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
+            ConstCombinator::ConstEnum(e) => write!(f, "{}", e),
             ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
             ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
             ConstCombinator::ConstCombinatorInvocation { name, .. } => write!(f, "{}", name),
@@ -775,6 +829,37 @@ impl Display for ConstArrayCombinator<'_> {
 impl Display for ConstBytesCombinator<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.values)
+    }
+}
+
+impl Display for ConstraintEnumCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}|{}", self.combinator, self.constraint)
+    }
+}
+
+impl Display for EnumConstraint<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EnumConstraint::Single { elem, .. } => write!(f, "{}", elem),
+            EnumConstraint::Set(set) => {
+                write!(f, "{{")?;
+                for (i, elem) in set.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", elem)?;
+                }
+                write!(f, "}}")
+            }
+            EnumConstraint::Neg(c) => write!(f, "!{}", c),
+        }
+    }
+}
+
+impl Display for ConstEnumCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}={}", self.combinator, self.variant)
     }
 }
 
@@ -997,6 +1082,7 @@ impl<'i> CombinatorInner<'i> {
     pub fn as_span(&self) -> Span<'i> {
         match self {
             CombinatorInner::ConstraintInt(c) => c.span,
+            CombinatorInner::ConstraintEnum(c) => c.span,
             CombinatorInner::Struct(s) => s.span,
             CombinatorInner::Wrap(w) => w.span,
             CombinatorInner::Enum(
@@ -1224,6 +1310,16 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 span,
             })
         }
+        Rule::constraint_enum_combinator => {
+            let mut inner_rules = rule.into_inner();
+            let combinator = build_combinator_invocation(inner_rules.next().unwrap());
+            let constraint = build_enum_constraint(inner_rules.next().unwrap());
+            CombinatorInner::ConstraintEnum(ConstraintEnumCombinator {
+                combinator,
+                constraint,
+                span,
+            })
+        }
         Rule::struct_combinator => {
             let inner_rules = rule.into_inner();
             let fields = inner_rules.map(build_field).collect();
@@ -1344,10 +1440,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             CombinatorInner::Apply(ApplyCombinator { stream, combinator })
         }
         Rule::combinator_invocation => {
-            let mut inner_rules = rule.into_inner();
-            let func = build_id(inner_rules.next().unwrap());
-            let args = inner_rules.next().map(build_params).unwrap_or_default();
-            CombinatorInner::Invocation(CombinatorInvocation { func, args, span })
+            CombinatorInner::Invocation(build_combinator_invocation(rule))
         }
         Rule::macro_invocation => {
             let mut inner_rules = rule.into_inner();
@@ -1532,6 +1625,14 @@ fn build_param(pair: pest::iterators::Pair<Rule>) -> Param {
     }
 }
 
+fn build_combinator_invocation(pair: pest::iterators::Pair<Rule>) -> CombinatorInvocation {
+    let span = pair.as_span();
+    let mut inner_rules = pair.into_inner();
+    let func = build_id(inner_rules.next().unwrap());
+    let args = inner_rules.next().map(build_params).unwrap_or_default();
+    CombinatorInvocation { func, args, span }
+}
+
 fn build_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
     let mut inner_rules = pair.into_inner();
     let next_rule = inner_rules.next().unwrap();
@@ -1636,6 +1737,16 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
         Rule::vec => ConstCombinator::Vec(Box::new(build_const_combinator(
             inner_rules.next().unwrap(),
         ))),
+        Rule::const_enum_combinator => {
+            let mut inner_rules = rule.into_inner();
+            let combinator = build_combinator_invocation(inner_rules.next().unwrap());
+            let variant = build_id(inner_rules.next().unwrap());
+            ConstCombinator::ConstEnum(ConstEnumCombinator {
+                combinator,
+                variant,
+                span,
+            })
+        }
         Rule::const_array_combinator => {
             let mut inner_rules = rule.into_inner();
             let combinator = build_int_combinator(inner_rules.next().unwrap());
@@ -1686,6 +1797,42 @@ fn build_const_choice(pair: pest::iterators::Pair<'_, Rule>) -> ConstChoice {
     let tag = inner_rules.next().unwrap().as_str().to_string();
     let combinator = build_const_combinator(inner_rules.next().unwrap());
     ConstChoice { tag, combinator }
+}
+
+fn build_enum_constraint(pair: pest::iterators::Pair<'_, Rule>) -> EnumConstraint {
+    let span = pair.as_span();
+    match pair.as_rule() {
+        Rule::enum_constraint_elem => {
+            let mut inner = pair.into_inner();
+            let ident = build_id(inner.next().unwrap());
+            EnumConstraint::Single { elem: ident, span }
+        }
+        Rule::enum_constraint_set => {
+            let elems = pair
+                .into_inner()
+                .map(|p| build_id(p.into_inner().next().unwrap()))
+                .collect();
+            EnumConstraint::Set(elems)
+        }
+        Rule::enum_constraint => {
+            let mut inner = pair.into_inner();
+            let first = inner.next().unwrap();
+            match first.as_rule() {
+                Rule::enum_constraint_elem | Rule::enum_constraint_set => {
+                    build_enum_constraint(first)
+                }
+                Rule::enum_constraint => {
+                    EnumConstraint::Neg(Box::new(build_enum_constraint(first)))
+                }
+                Rule::variant_id => {
+                    let ident = build_id(first);
+                    EnumConstraint::Single { elem: ident, span }
+                }
+                _ => unreachable!(),
+            }
+        }
+        _ => unreachable!(),
+    }
 }
 
 fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray {

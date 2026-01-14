@@ -258,6 +258,7 @@ fn substitute_in_combinator_inner<'ast>(
         CombinatorInner::Option(OptionCombinator(combinator)) => {
             substitute_in_combinator(combinator, param, arg.clone());
         }
+        CombinatorInner::ConstraintEnum(..) => {}
         _ => {}
     }
 }
@@ -388,6 +389,7 @@ fn expand_combinator<'ast>(
         // CombinatorInner::Bytes(BytesCombinator { len }) =>
         // CombinatorInner::Tail(TailCombinator) =>
         // CombinatorInner::ConstraintInt(..) => {}
+        CombinatorInner::ConstraintEnum(..) => {}
         // CombinatorInner::Wrap(..) => {}
         // CombinatorInner::Enum(..) => {}
         // CombinatorInner::SepBy(SepByCombinator { combinator, sep }) =>
@@ -484,6 +486,7 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
         }
         CombinatorInner::Enum(..)
         | CombinatorInner::ConstraintInt(..)
+        | CombinatorInner::ConstraintEnum(..)
         | CombinatorInner::Apply(..) => {}
 
         CombinatorInner::MacroInvocation { .. } => {
@@ -573,6 +576,14 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
         }
         CombinatorInner::Enum(..) => {}
         CombinatorInner::ConstraintInt(..) => {}
+        CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
+            invocations.push(combinator.func.name.to_owned());
+            for arg in &combinator.args {
+                if let Param::Dependent(name) = arg {
+                    let _ = name; // no invocations inside params
+                }
+            }
+        }
         CombinatorInner::Bytes(..) => {}
         CombinatorInner::Tail(..) => {}
         CombinatorInner::Apply(..) => {}
