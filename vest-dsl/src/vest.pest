@@ -18,6 +18,7 @@ macro_param_list = { var_id ~ ("," ~ var_id)* }
 combinator       = { ("(" ~ combinator_inner ~ ")" | combinator_inner) ~ (">>=" ~ combinator)? }
 combinator_inner = {
     constraint_int_combinator
+  | constraint_enum_combinator
   | macro_invocation
   | struct_combinator
   | wrap_combinator
@@ -40,6 +41,12 @@ constraint_elem_set       =  { "{" ~ constraint_elem ~ ("," ~ constraint_elem)* 
 constraint_elem           =  { const_int_range | const_int }
 const_int_range           =  { const_int? ~ ".." ~ const_int? }
 const_int                 = ${ hex | decimal | ascii }
+
+/// an enum combinator with an optional set of constraints
+constraint_enum_combinator = { combinator_invocation ~ ("|" ~ enum_constraint) }
+enum_constraint            = { enum_constraint_elem | enum_constraint_set | "!" ~ enum_constraint }
+enum_constraint_set        = { "{" ~ enum_constraint_elem ~ ("," ~ enum_constraint_elem)* ~ "}" }
+enum_constraint_elem       =  { variant_id }
 
 /// sequence of `combinator` with semantic labels
 struct_combinator = { "{" ~ (field ~ ",")* ~ "}" }
@@ -100,6 +107,7 @@ const_combinator = {
     vec ~ "<" ~ const_combinator ~ ">"
   | const_array_combinator
   | const_int_combinator
+  | const_enum_combinator
   | const_id
   | const_struct_combinator
   | const_choice_combinator
@@ -113,6 +121,8 @@ int_array_expr         =  { "[" ~ const_int ~ ("," ~ const_int)* ~ "]" }
 repeat_int_array_expr  =  { "[" ~ const_int ~ ";" ~ const_int ~ "]" }
 
 const_int_combinator = { int_combinator ~ "=" ~ const_int }
+
+const_enum_combinator = { combinator_invocation ~ "=" ~ variant_id }
 
 const_struct_combinator =  { "{" ~ const_fields ~ "}" }
 const_fields            = _{ (const_combinator ~ ",")+ }
