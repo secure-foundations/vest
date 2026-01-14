@@ -145,6 +145,17 @@ jobs:
         run: |
           cargo verus verify --workspace --exclude tls_dsl -- --expand-errors
 
+      - name: vest-examples - cargo verus verify tls_dsl
+        id: verus_tls_dsl
+        continue-on-error: true
+        working-directory: ./vest-examples
+        run: |
+          cargo verus verify --package tls_dsl -- --expand-errors
+
+      - name: Warn on tls_dsl failure
+        if: always() && steps.verus_tls_dsl.outcome == 'failure'
+        run: echo "::warning::tls_dsl verification failed (verification stability issue)"
+
       # Step 4: Download benchmark data and run benchmarks
       - name: Download benchmark data
         run: |
