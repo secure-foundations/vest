@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{ast::*, utils::topological_sort};
+use crate::{ast::*, utils::topological_sort, utils::VestHasherBuilder};
 
 /// Elaborate the AST:
 /// - expand the macro invocations
@@ -65,7 +65,7 @@ type MacroDefn<'ast> = (Vec<String>, Combinator<'ast>);
 /// Expand the macro invocations
 fn expand_macros(ast: &mut Vec<Definition>) {
     // collect the macro definitions
-    let mut macro_defns = HashMap::<String, MacroDefn>::new();
+    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder); 
     for defn in ast.iter() {
         if let Definition::MacroDefn { name, params, body } = defn {
             macro_defns.insert(name.name.clone(), (params.clone(), body.clone()));
@@ -81,7 +81,7 @@ fn expand_macros(ast: &mut Vec<Definition>) {
 
 fn expand_macros_in_defn<'ast>(
     defn: &mut Definition<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
 ) {
     match defn {
         Definition::Combinator { combinator, .. } => {
@@ -97,7 +97,7 @@ fn expand_macros_in_defn<'ast>(
 /// Expand the macro invocations in the combinator with the given macro definitions
 fn expand_macros_in_combinator<'ast>(
     combinator: &mut Combinator<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
 ) {
     if let Some(and_then) = &mut combinator.and_then {
         expand_macros_in_combinator(and_then, macro_defns);
@@ -107,7 +107,7 @@ fn expand_macros_in_combinator<'ast>(
 
 fn expand_macros_in_combinator_inner<'ast>(
     combinator_inner: &mut CombinatorInner<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>>,
+    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
 ) {
     match combinator_inner {
         // base case
@@ -496,7 +496,7 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
     params
 }
 
-pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>> {
+pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>, VestHasherBuilder> {
     ast.iter()
         .filter_map(|defn| match defn {
             Definition::Combinator {

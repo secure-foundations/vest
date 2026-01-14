@@ -1,18 +1,31 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::hash::DefaultHasher;
+use std::hash::BuildHasher;
+
+#[derive(Default, Clone)]
+pub struct VestHasherBuilder;
+
+impl std::hash::BuildHasher for VestHasherBuilder {
+    type Hasher = DefaultHasher;
+
+    fn build_hasher(&self) -> Self::Hasher {
+        DefaultHasher::new()
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum TopoSortError<E> {
     CycleDetected(E),
 }
 
-pub fn topological_sort<K, V>(graph: &HashMap<K, V>) -> Result<Vec<K>, TopoSortError<K>>
+pub fn topological_sort<K, V>(graph: &HashMap<K, V, VestHasherBuilder>) -> Result<Vec<K>, TopoSortError<K>>
 where
     K: Eq + Hash + Clone,
     V: AsRef<[K]>,
 {
-    let mut visited = HashSet::new();
-    let mut visiting = HashSet::new();
+    let mut visited = HashSet::with_hasher(VestHasherBuilder);
+    let mut visiting = HashSet::with_hasher(VestHasherBuilder);
     let mut sorted = Vec::new();
 
     for node in graph.keys() {
@@ -32,9 +45,9 @@ where
 
 fn dfs<K, V>(
     node: K,
-    graph: &HashMap<K, V>,
-    visited: &mut HashSet<K>,
-    visiting: &mut HashSet<K>,
+    graph: &HashMap<K, V, VestHasherBuilder>,
+    visited: &mut HashSet<K, VestHasherBuilder>,
+    visiting: &mut HashSet<K, VestHasherBuilder>,
     sorted: &mut Vec<K>,
 ) -> Result<(), TopoSortError<K>>
 where
