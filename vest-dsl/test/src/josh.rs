@@ -34,6 +34,369 @@ macro_rules! impl_wrapper_combinator {
     };
 }
 verus!{
+
+pub struct SpecPairStress {
+    pub f1: u8,
+    pub f2: u16,
+    pub f3: u32,
+    pub f4: u8,
+    pub f5: u8,
+    pub f6: u8,
+    pub f7: u8,
+    pub f8: u8,
+    pub f9: u8,
+    pub f10: u8,
+    pub f11: u8,
+    pub f12: u8,
+    pub f13: u8,
+    pub f14: u8,
+    pub f15: u8,
+}
+
+pub type SpecPairStressInner = (u8, (u16, (u32, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, u8))))))))))))));
+
+
+impl SpecFrom<SpecPairStress> for SpecPairStressInner {
+    open spec fn spec_from(m: SpecPairStress) -> SpecPairStressInner {
+        (m.f1, (m.f2, (m.f3, (m.f4, (m.f5, (m.f6, (m.f7, (m.f8, (m.f9, (m.f10, (m.f11, (m.f12, (m.f13, (m.f14, m.f15))))))))))))))
+    }
+}
+
+impl SpecFrom<SpecPairStressInner> for SpecPairStress {
+    open spec fn spec_from(m: SpecPairStressInner) -> SpecPairStress {
+        let (f1, (f2, (f3, (f4, (f5, (f6, (f7, (f8, (f9, (f10, (f11, (f12, (f13, (f14, f15)))))))))))))) = m;
+        SpecPairStress { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15 }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct PairStress {
+    pub f1: u8,
+    pub f2: u16,
+    pub f3: u32,
+    pub f4: u8,
+    pub f5: u8,
+    pub f6: u8,
+    pub f7: u8,
+    pub f8: u8,
+    pub f9: u8,
+    pub f10: u8,
+    pub f11: u8,
+    pub f12: u8,
+    pub f13: u8,
+    pub f14: u8,
+    pub f15: u8,
+}
+
+impl View for PairStress {
+    type V = SpecPairStress;
+
+    open spec fn view(&self) -> Self::V {
+        SpecPairStress {
+            f1: self.f1@,
+            f2: self.f2@,
+            f3: self.f3@,
+            f4: self.f4@,
+            f5: self.f5@,
+            f6: self.f6@,
+            f7: self.f7@,
+            f8: self.f8@,
+            f9: self.f9@,
+            f10: self.f10@,
+            f11: self.f11@,
+            f12: self.f12@,
+            f13: self.f13@,
+            f14: self.f14@,
+            f15: self.f15@,
+        }
+    }
+}
+pub type PairStressInner = (u8, (u16, (u32, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, u8))))))))))))));
+
+pub type PairStressInnerRef<'a> = (&'a u8, (&'a u16, (&'a u32, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, &'a u8))))))))))))));
+impl<'a> From<&'a PairStress> for PairStressInnerRef<'a> {
+    fn ex_from(m: &'a PairStress) -> PairStressInnerRef<'a> {
+        (&m.f1, (&m.f2, (&m.f3, (&m.f4, (&m.f5, (&m.f6, (&m.f7, (&m.f8, (&m.f9, (&m.f10, (&m.f11, (&m.f12, (&m.f13, (&m.f14, &m.f15))))))))))))))
+    }
+}
+
+impl From<PairStressInner> for PairStress {
+    fn ex_from(m: PairStressInner) -> PairStress {
+        let (f1, (f2, (f3, (f4, (f5, (f6, (f7, (f8, (f9, (f10, (f11, (f12, (f13, (f14, f15)))))))))))))) = m;
+        PairStress { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15 }
+    }
+}
+
+pub struct PairStressMapper;
+impl View for PairStressMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for PairStressMapper {
+    type Src = SpecPairStressInner;
+    type Dst = SpecPairStress;
+}
+impl SpecIsoProof for PairStressMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for PairStressMapper {
+    type Src = PairStressInner;
+    type Dst = PairStress;
+    type RefSrc = PairStressInnerRef<'a>;
+}
+type SpecPairStressCombinatorAlias1 = (U8, U8);
+type SpecPairStressCombinatorAlias2 = (U8, SpecPairStressCombinatorAlias1);
+type SpecPairStressCombinatorAlias3 = (U8, SpecPairStressCombinatorAlias2);
+type SpecPairStressCombinatorAlias4 = (U8, SpecPairStressCombinatorAlias3);
+type SpecPairStressCombinatorAlias5 = (U8, SpecPairStressCombinatorAlias4);
+type SpecPairStressCombinatorAlias6 = (U8, SpecPairStressCombinatorAlias5);
+type SpecPairStressCombinatorAlias7 = (U8, SpecPairStressCombinatorAlias6);
+type SpecPairStressCombinatorAlias8 = (U8, SpecPairStressCombinatorAlias7);
+type SpecPairStressCombinatorAlias9 = (U8, SpecPairStressCombinatorAlias8);
+type SpecPairStressCombinatorAlias10 = (U8, SpecPairStressCombinatorAlias9);
+type SpecPairStressCombinatorAlias11 = (U8, SpecPairStressCombinatorAlias10);
+type SpecPairStressCombinatorAlias12 = (U32Le, SpecPairStressCombinatorAlias11);
+type SpecPairStressCombinatorAlias13 = (U16Le, SpecPairStressCombinatorAlias12);
+type SpecPairStressCombinatorAlias14 = (U8, SpecPairStressCombinatorAlias13);
+pub struct SpecPairStressCombinator(pub SpecPairStressCombinatorAlias);
+
+impl SpecCombinator for SpecPairStressCombinator {
+    type Type = SpecPairStress;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecPairStressCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecPairStressCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecPairStressCombinatorAlias = Mapped<SpecPairStressCombinatorAlias14, PairStressMapper>;
+type PairStressCombinatorAlias1 = (U8, U8);
+type PairStressCombinatorAlias2 = (U8, PairStressCombinator1);
+type PairStressCombinatorAlias3 = (U8, PairStressCombinator2);
+type PairStressCombinatorAlias4 = (U8, PairStressCombinator3);
+type PairStressCombinatorAlias5 = (U8, PairStressCombinator4);
+type PairStressCombinatorAlias6 = (U8, PairStressCombinator5);
+type PairStressCombinatorAlias7 = (U8, PairStressCombinator6);
+type PairStressCombinatorAlias8 = (U8, PairStressCombinator7);
+type PairStressCombinatorAlias9 = (U8, PairStressCombinator8);
+type PairStressCombinatorAlias10 = (U8, PairStressCombinator9);
+type PairStressCombinatorAlias11 = (U8, PairStressCombinator10);
+type PairStressCombinatorAlias12 = (U32Le, PairStressCombinator11);
+type PairStressCombinatorAlias13 = (U16Le, PairStressCombinator12);
+type PairStressCombinatorAlias14 = (U8, PairStressCombinator13);
+pub struct PairStressCombinator1(pub PairStressCombinatorAlias1);
+impl View for PairStressCombinator1 {
+    type V = SpecPairStressCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator1, PairStressCombinatorAlias1);
+
+pub struct PairStressCombinator2(pub PairStressCombinatorAlias2);
+impl View for PairStressCombinator2 {
+    type V = SpecPairStressCombinatorAlias2;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator2, PairStressCombinatorAlias2);
+
+pub struct PairStressCombinator3(pub PairStressCombinatorAlias3);
+impl View for PairStressCombinator3 {
+    type V = SpecPairStressCombinatorAlias3;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator3, PairStressCombinatorAlias3);
+
+pub struct PairStressCombinator4(pub PairStressCombinatorAlias4);
+impl View for PairStressCombinator4 {
+    type V = SpecPairStressCombinatorAlias4;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator4, PairStressCombinatorAlias4);
+
+pub struct PairStressCombinator5(pub PairStressCombinatorAlias5);
+impl View for PairStressCombinator5 {
+    type V = SpecPairStressCombinatorAlias5;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator5, PairStressCombinatorAlias5);
+
+pub struct PairStressCombinator6(pub PairStressCombinatorAlias6);
+impl View for PairStressCombinator6 {
+    type V = SpecPairStressCombinatorAlias6;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator6, PairStressCombinatorAlias6);
+
+pub struct PairStressCombinator7(pub PairStressCombinatorAlias7);
+impl View for PairStressCombinator7 {
+    type V = SpecPairStressCombinatorAlias7;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator7, PairStressCombinatorAlias7);
+
+pub struct PairStressCombinator8(pub PairStressCombinatorAlias8);
+impl View for PairStressCombinator8 {
+    type V = SpecPairStressCombinatorAlias8;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator8, PairStressCombinatorAlias8);
+
+pub struct PairStressCombinator9(pub PairStressCombinatorAlias9);
+impl View for PairStressCombinator9 {
+    type V = SpecPairStressCombinatorAlias9;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator9, PairStressCombinatorAlias9);
+
+pub struct PairStressCombinator10(pub PairStressCombinatorAlias10);
+impl View for PairStressCombinator10 {
+    type V = SpecPairStressCombinatorAlias10;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator10, PairStressCombinatorAlias10);
+
+pub struct PairStressCombinator11(pub PairStressCombinatorAlias11);
+impl View for PairStressCombinator11 {
+    type V = SpecPairStressCombinatorAlias11;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator11, PairStressCombinatorAlias11);
+
+pub struct PairStressCombinator12(pub PairStressCombinatorAlias12);
+impl View for PairStressCombinator12 {
+    type V = SpecPairStressCombinatorAlias12;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator12, PairStressCombinatorAlias12);
+
+pub struct PairStressCombinator13(pub PairStressCombinatorAlias13);
+impl View for PairStressCombinator13 {
+    type V = SpecPairStressCombinatorAlias13;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator13, PairStressCombinatorAlias13);
+
+pub struct PairStressCombinator14(pub PairStressCombinatorAlias14);
+impl View for PairStressCombinator14 {
+    type V = SpecPairStressCombinatorAlias14;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(PairStressCombinator14, PairStressCombinatorAlias14);
+
+pub struct PairStressCombinator(pub PairStressCombinatorAlias);
+
+impl View for PairStressCombinator {
+    type V = SpecPairStressCombinator;
+    open spec fn view(&self) -> Self::V { SpecPairStressCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator {
+    type Type = PairStress;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type PairStressCombinatorAlias = Mapped<PairStressCombinator14, PairStressMapper>;
+
+
+pub open spec fn spec_pair_stress() -> SpecPairStressCombinator {
+    SpecPairStressCombinator(
+    Mapped {
+        inner: (U8, (U16Le, (U32Le, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, U8)))))))))))))),
+        mapper: PairStressMapper,
+    })
+}
+
+                
+pub fn pair_stress<'a>() -> (o: PairStressCombinator)
+    ensures o@ == spec_pair_stress(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = PairStressCombinator(
+    Mapped {
+        inner: PairStressCombinator14((U8, PairStressCombinator13((U16Le, PairStressCombinator12((U32Le, PairStressCombinator11((U8, PairStressCombinator10((U8, PairStressCombinator9((U8, PairStressCombinator8((U8, PairStressCombinator7((U8, PairStressCombinator6((U8, PairStressCombinator5((U8, PairStressCombinator4((U8, PairStressCombinator3((U8, PairStressCombinator2((U8, PairStressCombinator1((U8, U8)))))))))))))))))))))))))))),
+        mapper: PairStressMapper,
+    });
+    // assert({
+    //     &&& combinator@ == spec_pair_stress()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_pair_stress<'a>(input: &'a [u8]) -> (res: PResult<<PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_pair_stress().spec_parse(input@) == Some((n as int, v@)),
+        spec_pair_stress().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_pair_stress().spec_parse(input@) is None,
+        spec_pair_stress().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = pair_stress();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_pair_stress<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_pair_stress().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_pair_stress().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_pair_stress().spec_serialize(v@))
+        },
+{
+    let combinator = pair_stress();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn pair_stress_len<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_pair_stress().wf(v@),
+        spec_pair_stress().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_pair_stress().spec_serialize(v@).len(),
+{
+    let combinator = pair_stress();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
 pub mod TstTag {
     use super::*;
     pub spec const SPEC_C0: u8 = 0;
@@ -109,13 +472,13 @@ impl SpecCombinator for SpecTstTagCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecTstTagCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecTstTagCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -123,11 +486,11 @@ impl SecureSpecCombinator for SpecTstTagCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecTstTagCombinatorAlias = U8;
@@ -143,13 +506,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstTagCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+}
 pub type TstTagCombinatorAlias = U8;
 
 
@@ -164,11 +527,11 @@ pub fn tst_tag<'a>() -> (o: TstTagCombinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = TstTagCombinator(U8);
-    assert({
-        &&& combinator@ == spec_tst_tag()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_tst_tag()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -301,13 +664,13 @@ impl SpecCombinator for SpecMydataCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMydataCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMydataCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -315,11 +678,11 @@ impl SecureSpecCombinator for SpecMydataCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMydataCombinatorAlias = Mapped<SpecMydataCombinatorAlias1, MydataMapper>;
@@ -342,13 +705,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MydataCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+}
 pub type MydataCombinatorAlias = Mapped<MydataCombinator1, MydataMapper>;
 
 
@@ -371,11 +734,11 @@ pub fn mydata<'a>() -> (o: MydataCombinator)
         inner: MydataCombinator1((bytes::Fixed::<2>, bytes::Fixed::<2>)),
         mapper: MydataMapper,
     });
-    assert({
-        &&& combinator@ == spec_mydata()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mydata()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -761,13 +1124,13 @@ impl SpecCombinator for SpecTstMydataCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecTstMydataCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecTstMydataCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -775,11 +1138,11 @@ impl SecureSpecCombinator for SpecTstMydataCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecTstMydataCombinatorAlias = Mapped<SpecTstMydataCombinatorAlias30, TstMydataMapper>;
@@ -1034,13 +1397,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstMydataCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+}
 pub type TstMydataCombinatorAlias = Mapped<TstMydataCombinator30, TstMydataMapper>;
 
 
@@ -1054,11 +1417,11 @@ pub fn tst_mydata<'a>(tag: u8) -> (o: TstMydataCombinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = TstMydataCombinator(Mapped { inner: TstMydataCombinator30(Choice::new(Cond { cond: tag == TstTag::C0, inner: mydata() }, TstMydataCombinator29(Choice::new(Cond { cond: tag == TstTag::C1, inner: mydata() }, TstMydataCombinator28(Choice::new(Cond { cond: tag == TstTag::C2, inner: mydata() }, TstMydataCombinator27(Choice::new(Cond { cond: tag == TstTag::C3, inner: mydata() }, TstMydataCombinator26(Choice::new(Cond { cond: tag == TstTag::C4, inner: mydata() }, TstMydataCombinator25(Choice::new(Cond { cond: tag == TstTag::C5, inner: mydata() }, TstMydataCombinator24(Choice::new(Cond { cond: tag == TstTag::C6, inner: mydata() }, TstMydataCombinator23(Choice::new(Cond { cond: tag == TstTag::C7, inner: mydata() }, TstMydataCombinator22(Choice::new(Cond { cond: tag == TstTag::C8, inner: mydata() }, TstMydataCombinator21(Choice::new(Cond { cond: tag == TstTag::C9, inner: mydata() }, TstMydataCombinator20(Choice::new(Cond { cond: tag == TstTag::C10, inner: mydata() }, TstMydataCombinator19(Choice::new(Cond { cond: tag == TstTag::C11, inner: mydata() }, TstMydataCombinator18(Choice::new(Cond { cond: tag == TstTag::C12, inner: mydata() }, TstMydataCombinator17(Choice::new(Cond { cond: tag == TstTag::C13, inner: mydata() }, TstMydataCombinator16(Choice::new(Cond { cond: tag == TstTag::C14, inner: mydata() }, TstMydataCombinator15(Choice::new(Cond { cond: tag == TstTag::C15, inner: mydata() }, TstMydataCombinator14(Choice::new(Cond { cond: tag == TstTag::C16, inner: mydata() }, TstMydataCombinator13(Choice::new(Cond { cond: tag == TstTag::C17, inner: mydata() }, TstMydataCombinator12(Choice::new(Cond { cond: tag == TstTag::C18, inner: mydata() }, TstMydataCombinator11(Choice::new(Cond { cond: tag == TstTag::C19, inner: mydata() }, TstMydataCombinator10(Choice::new(Cond { cond: tag == TstTag::C20, inner: mydata() }, TstMydataCombinator9(Choice::new(Cond { cond: tag == TstTag::C21, inner: mydata() }, TstMydataCombinator8(Choice::new(Cond { cond: tag == TstTag::C22, inner: mydata() }, TstMydataCombinator7(Choice::new(Cond { cond: tag == TstTag::C23, inner: mydata() }, TstMydataCombinator6(Choice::new(Cond { cond: tag == TstTag::C24, inner: mydata() }, TstMydataCombinator5(Choice::new(Cond { cond: tag == TstTag::C25, inner: mydata() }, TstMydataCombinator4(Choice::new(Cond { cond: tag == TstTag::C26, inner: mydata() }, TstMydataCombinator3(Choice::new(Cond { cond: tag == TstTag::C27, inner: mydata() }, TstMydataCombinator2(Choice::new(Cond { cond: tag == TstTag::C28, inner: mydata() }, TstMydataCombinator1(Choice::new(Cond { cond: tag == TstTag::C29, inner: mydata() }, Cond { cond: tag == TstTag::C30, inner: mydata() })))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: TstMydataMapper });
-    assert({
-        &&& combinator@ == spec_tst_mydata(tag@)
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_tst_mydata(tag@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -1190,13 +1553,13 @@ impl SpecCombinator for SpecTstCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecTstCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecTstCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -1204,11 +1567,11 @@ impl SecureSpecCombinator for SpecTstCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecTstCombinatorAlias = Mapped<SpecPair<SpecTstTagCombinator, SpecTstMydataCombinator>, TstMapper>;
@@ -1224,13 +1587,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+}
 pub type TstCombinatorAlias = Mapped<Pair<TstTagCombinator, TstMydataCombinator, TstCont0>, TstMapper>;
 
 
@@ -1268,11 +1631,11 @@ pub fn tst<'a>() -> (o: TstCombinator)
         inner: Pair::new(tst_tag(), TstCont0),
         mapper: TstMapper,
     });
-    assert({
-        &&& combinator@ == spec_tst()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_tst()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -1344,369 +1707,6 @@ impl<'a, 'b, 'x> Continuation<TstCont0Input<'a, 'b, 'x>> for TstCont0 {
         }
     }
 }
-                
-
-pub struct SpecPairStress {
-    pub f1: u8,
-    pub f2: u16,
-    pub f3: u32,
-    pub f4: u8,
-    pub f5: u8,
-    pub f6: u8,
-    pub f7: u8,
-    pub f8: u8,
-    pub f9: u8,
-    pub f10: u8,
-    pub f11: u8,
-    pub f12: u8,
-    pub f13: u8,
-    pub f14: u8,
-    pub f15: u8,
-}
-
-pub type SpecPairStressInner = (u8, (u16, (u32, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, u8))))))))))))));
-
-
-impl SpecFrom<SpecPairStress> for SpecPairStressInner {
-    open spec fn spec_from(m: SpecPairStress) -> SpecPairStressInner {
-        (m.f1, (m.f2, (m.f3, (m.f4, (m.f5, (m.f6, (m.f7, (m.f8, (m.f9, (m.f10, (m.f11, (m.f12, (m.f13, (m.f14, m.f15))))))))))))))
-    }
-}
-
-impl SpecFrom<SpecPairStressInner> for SpecPairStress {
-    open spec fn spec_from(m: SpecPairStressInner) -> SpecPairStress {
-        let (f1, (f2, (f3, (f4, (f5, (f6, (f7, (f8, (f9, (f10, (f11, (f12, (f13, (f14, f15)))))))))))))) = m;
-        SpecPairStress { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15 }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct PairStress {
-    pub f1: u8,
-    pub f2: u16,
-    pub f3: u32,
-    pub f4: u8,
-    pub f5: u8,
-    pub f6: u8,
-    pub f7: u8,
-    pub f8: u8,
-    pub f9: u8,
-    pub f10: u8,
-    pub f11: u8,
-    pub f12: u8,
-    pub f13: u8,
-    pub f14: u8,
-    pub f15: u8,
-}
-
-impl View for PairStress {
-    type V = SpecPairStress;
-
-    open spec fn view(&self) -> Self::V {
-        SpecPairStress {
-            f1: self.f1@,
-            f2: self.f2@,
-            f3: self.f3@,
-            f4: self.f4@,
-            f5: self.f5@,
-            f6: self.f6@,
-            f7: self.f7@,
-            f8: self.f8@,
-            f9: self.f9@,
-            f10: self.f10@,
-            f11: self.f11@,
-            f12: self.f12@,
-            f13: self.f13@,
-            f14: self.f14@,
-            f15: self.f15@,
-        }
-    }
-}
-pub type PairStressInner = (u8, (u16, (u32, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, (u8, u8))))))))))))));
-
-pub type PairStressInnerRef<'a> = (&'a u8, (&'a u16, (&'a u32, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, &'a u8))))))))))))));
-impl<'a> From<&'a PairStress> for PairStressInnerRef<'a> {
-    fn ex_from(m: &'a PairStress) -> PairStressInnerRef<'a> {
-        (&m.f1, (&m.f2, (&m.f3, (&m.f4, (&m.f5, (&m.f6, (&m.f7, (&m.f8, (&m.f9, (&m.f10, (&m.f11, (&m.f12, (&m.f13, (&m.f14, &m.f15))))))))))))))
-    }
-}
-
-impl From<PairStressInner> for PairStress {
-    fn ex_from(m: PairStressInner) -> PairStress {
-        let (f1, (f2, (f3, (f4, (f5, (f6, (f7, (f8, (f9, (f10, (f11, (f12, (f13, (f14, f15)))))))))))))) = m;
-        PairStress { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15 }
-    }
-}
-
-pub struct PairStressMapper;
-impl View for PairStressMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for PairStressMapper {
-    type Src = SpecPairStressInner;
-    type Dst = SpecPairStress;
-}
-impl SpecIsoProof for PairStressMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for PairStressMapper {
-    type Src = PairStressInner;
-    type Dst = PairStress;
-    type RefSrc = PairStressInnerRef<'a>;
-}
-type SpecPairStressCombinatorAlias1 = (U8, U8);
-type SpecPairStressCombinatorAlias2 = (U8, SpecPairStressCombinatorAlias1);
-type SpecPairStressCombinatorAlias3 = (U8, SpecPairStressCombinatorAlias2);
-type SpecPairStressCombinatorAlias4 = (U8, SpecPairStressCombinatorAlias3);
-type SpecPairStressCombinatorAlias5 = (U8, SpecPairStressCombinatorAlias4);
-type SpecPairStressCombinatorAlias6 = (U8, SpecPairStressCombinatorAlias5);
-type SpecPairStressCombinatorAlias7 = (U8, SpecPairStressCombinatorAlias6);
-type SpecPairStressCombinatorAlias8 = (U8, SpecPairStressCombinatorAlias7);
-type SpecPairStressCombinatorAlias9 = (U8, SpecPairStressCombinatorAlias8);
-type SpecPairStressCombinatorAlias10 = (U8, SpecPairStressCombinatorAlias9);
-type SpecPairStressCombinatorAlias11 = (U8, SpecPairStressCombinatorAlias10);
-type SpecPairStressCombinatorAlias12 = (U32Le, SpecPairStressCombinatorAlias11);
-type SpecPairStressCombinatorAlias13 = (U16Le, SpecPairStressCombinatorAlias12);
-type SpecPairStressCombinatorAlias14 = (U8, SpecPairStressCombinatorAlias13);
-pub struct SpecPairStressCombinator(pub SpecPairStressCombinatorAlias);
-
-impl SpecCombinator for SpecPairStressCombinator {
-    type Type = SpecPairStress;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecPairStressCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecPairStressCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecPairStressCombinatorAlias = Mapped<SpecPairStressCombinatorAlias14, PairStressMapper>;
-type PairStressCombinatorAlias1 = (U8, U8);
-type PairStressCombinatorAlias2 = (U8, PairStressCombinator1);
-type PairStressCombinatorAlias3 = (U8, PairStressCombinator2);
-type PairStressCombinatorAlias4 = (U8, PairStressCombinator3);
-type PairStressCombinatorAlias5 = (U8, PairStressCombinator4);
-type PairStressCombinatorAlias6 = (U8, PairStressCombinator5);
-type PairStressCombinatorAlias7 = (U8, PairStressCombinator6);
-type PairStressCombinatorAlias8 = (U8, PairStressCombinator7);
-type PairStressCombinatorAlias9 = (U8, PairStressCombinator8);
-type PairStressCombinatorAlias10 = (U8, PairStressCombinator9);
-type PairStressCombinatorAlias11 = (U8, PairStressCombinator10);
-type PairStressCombinatorAlias12 = (U32Le, PairStressCombinator11);
-type PairStressCombinatorAlias13 = (U16Le, PairStressCombinator12);
-type PairStressCombinatorAlias14 = (U8, PairStressCombinator13);
-pub struct PairStressCombinator1(pub PairStressCombinatorAlias1);
-impl View for PairStressCombinator1 {
-    type V = SpecPairStressCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator1, PairStressCombinatorAlias1);
-
-pub struct PairStressCombinator2(pub PairStressCombinatorAlias2);
-impl View for PairStressCombinator2 {
-    type V = SpecPairStressCombinatorAlias2;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator2, PairStressCombinatorAlias2);
-
-pub struct PairStressCombinator3(pub PairStressCombinatorAlias3);
-impl View for PairStressCombinator3 {
-    type V = SpecPairStressCombinatorAlias3;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator3, PairStressCombinatorAlias3);
-
-pub struct PairStressCombinator4(pub PairStressCombinatorAlias4);
-impl View for PairStressCombinator4 {
-    type V = SpecPairStressCombinatorAlias4;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator4, PairStressCombinatorAlias4);
-
-pub struct PairStressCombinator5(pub PairStressCombinatorAlias5);
-impl View for PairStressCombinator5 {
-    type V = SpecPairStressCombinatorAlias5;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator5, PairStressCombinatorAlias5);
-
-pub struct PairStressCombinator6(pub PairStressCombinatorAlias6);
-impl View for PairStressCombinator6 {
-    type V = SpecPairStressCombinatorAlias6;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator6, PairStressCombinatorAlias6);
-
-pub struct PairStressCombinator7(pub PairStressCombinatorAlias7);
-impl View for PairStressCombinator7 {
-    type V = SpecPairStressCombinatorAlias7;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator7, PairStressCombinatorAlias7);
-
-pub struct PairStressCombinator8(pub PairStressCombinatorAlias8);
-impl View for PairStressCombinator8 {
-    type V = SpecPairStressCombinatorAlias8;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator8, PairStressCombinatorAlias8);
-
-pub struct PairStressCombinator9(pub PairStressCombinatorAlias9);
-impl View for PairStressCombinator9 {
-    type V = SpecPairStressCombinatorAlias9;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator9, PairStressCombinatorAlias9);
-
-pub struct PairStressCombinator10(pub PairStressCombinatorAlias10);
-impl View for PairStressCombinator10 {
-    type V = SpecPairStressCombinatorAlias10;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator10, PairStressCombinatorAlias10);
-
-pub struct PairStressCombinator11(pub PairStressCombinatorAlias11);
-impl View for PairStressCombinator11 {
-    type V = SpecPairStressCombinatorAlias11;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator11, PairStressCombinatorAlias11);
-
-pub struct PairStressCombinator12(pub PairStressCombinatorAlias12);
-impl View for PairStressCombinator12 {
-    type V = SpecPairStressCombinatorAlias12;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator12, PairStressCombinatorAlias12);
-
-pub struct PairStressCombinator13(pub PairStressCombinatorAlias13);
-impl View for PairStressCombinator13 {
-    type V = SpecPairStressCombinatorAlias13;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator13, PairStressCombinatorAlias13);
-
-pub struct PairStressCombinator14(pub PairStressCombinatorAlias14);
-impl View for PairStressCombinator14 {
-    type V = SpecPairStressCombinatorAlias14;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(PairStressCombinator14, PairStressCombinatorAlias14);
-
-pub struct PairStressCombinator(pub PairStressCombinatorAlias);
-
-impl View for PairStressCombinator {
-    type V = SpecPairStressCombinator;
-    open spec fn view(&self) -> Self::V { SpecPairStressCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator {
-    type Type = PairStress;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type PairStressCombinatorAlias = Mapped<PairStressCombinator14, PairStressMapper>;
-
-
-pub open spec fn spec_pair_stress() -> SpecPairStressCombinator {
-    SpecPairStressCombinator(
-    Mapped {
-        inner: (U8, (U16Le, (U32Le, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, (U8, U8)))))))))))))),
-        mapper: PairStressMapper,
-    })
-}
-
-                
-pub fn pair_stress<'a>() -> (o: PairStressCombinator)
-    ensures o@ == spec_pair_stress(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = PairStressCombinator(
-    Mapped {
-        inner: PairStressCombinator14((U8, PairStressCombinator13((U16Le, PairStressCombinator12((U32Le, PairStressCombinator11((U8, PairStressCombinator10((U8, PairStressCombinator9((U8, PairStressCombinator8((U8, PairStressCombinator7((U8, PairStressCombinator6((U8, PairStressCombinator5((U8, PairStressCombinator4((U8, PairStressCombinator3((U8, PairStressCombinator2((U8, PairStressCombinator1((U8, U8)))))))))))))))))))))))))))),
-        mapper: PairStressMapper,
-    });
-    assert({
-        &&& combinator@ == spec_pair_stress()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_pair_stress<'a>(input: &'a [u8]) -> (res: PResult<<PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_pair_stress().spec_parse(input@) == Some((n as int, v@)),
-        spec_pair_stress().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_pair_stress().spec_parse(input@) is None,
-        spec_pair_stress().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = pair_stress();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_pair_stress<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_pair_stress().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_pair_stress().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_pair_stress().spec_serialize(v@))
-        },
-{
-    let combinator = pair_stress();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn pair_stress_len<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_pair_stress().wf(v@),
-        spec_pair_stress().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_pair_stress().spec_serialize(v@).len(),
-{
-    let combinator = pair_stress();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
                 
 
 }
