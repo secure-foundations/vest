@@ -1,0 +1,12 @@
+my_enum = enum {
+  A = 0x01,
+  B = 0x02,
+  C = 0x03,
+}
+
+enum_constraints = {
+  foo: my_enum | A,
+  bar: my_enum | !B,
+  baz: my_enum | { A, C },
+  const tag: my_enum = A,
+}

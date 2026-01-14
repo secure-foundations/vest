@@ -116,7 +116,7 @@ jobs:
         run: |
           cargo verus build -- --expand-errors
 
-      # Step 1: vest - cargo build --release
+      # Step 1b: vest - cargo build --release
       - name: vest - cargo build --release
         working-directory: ./vest
         run: |
@@ -128,7 +128,14 @@ jobs:
         run: |
           cargo build --release
 
-      - name: Add vest compiler to PATH
+      # Step 2b: vest-dsl - regression tests
+      - name: vest-dsl - regression tests
+        working-directory: ./vest-dsl/test
+        run: |
+          make VEST_DSL=../target/release/vest
+
+      # Step 2c: Add vest-dsl to PATH
+      - name: Add vest-dsl to PATH
         run: |
           echo "${{ github.workspace }}/vest-dsl/target/release" >> $GITHUB_PATH
 
@@ -137,6 +144,17 @@ jobs:
         working-directory: ./vest-examples
         run: |
           cargo verus verify --workspace --exclude tls_dsl -- --expand-errors
+
+      - name: vest-examples - cargo verus verify tls_dsl
+        id: verus_tls_dsl
+        continue-on-error: true
+        working-directory: ./vest-examples
+        run: |
+          cargo verus verify --package tls_dsl -- --expand-errors
+
+      - name: Warn on tls_dsl failure
+        if: always() && steps.verus_tls_dsl.outcome == 'failure'
+        run: echo "::warning::tls_dsl verification failed (verification stability issue)"
 
       # Step 4: Download benchmark data and run benchmarks
       - name: Download benchmark data

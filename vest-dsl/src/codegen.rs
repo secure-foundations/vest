@@ -229,7 +229,7 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
         }
         Array(ArrayCombinator { combinator, .. }) => msg_need_lifetime(combinator, ctx),
         Option(OptionCombinator(combinator)) => msg_need_lifetime(combinator, ctx),
-        ConstraintInt(_) | Enum(_) | Apply(_) => false,
+        ConstraintInt(_) | ConstraintEnum(_) | Enum(_) | Apply(_) => false,
         Invocation(_) => unreachable!("invocation should be resolved by now"),
     }
 }
@@ -247,7 +247,9 @@ fn const_msg_need_lifetime(const_combinator: &ConstCombinator, ctx: &GlobalCtx) 
             .iter()
             .any(|ConstChoice { combinator, .. }| const_msg_need_lifetime(combinator, ctx)),
         ConstCombinator::Vec(combinator) => const_msg_need_lifetime(combinator, ctx),
-        ConstCombinator::ConstInt(_) | ConstCombinator::ConstCombinatorInvocation(_) => false,
+        ConstCombinator::ConstEnum(_)
+        | ConstCombinator::ConstInt(_)
+        | ConstCombinator::ConstCombinatorInvocation(_) => false,
     }
 }
 
@@ -406,13 +408,13 @@ impl SpecCombinator for Spec{name}Combinator {{
     {{ self.0.requires() }}
     open spec fn wf(&self, v: Self::Type) -> bool
     {{ self.0.wf(v) }}
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     {{ self.0.spec_parse(s) }}
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     {{ self.0.spec_serialize(v) }}
 }}
 impl SecureSpecCombinator for Spec{name}Combinator {{
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     {{ Spec{name}CombinatorAlias::is_prefix_secure() }}
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     {{ self.0.theorem_serialize_parse_roundtrip(v) }}
@@ -420,11 +422,11 @@ impl SecureSpecCombinator for Spec{name}Combinator {{
     {{ self.0.theorem_parse_serialize_roundtrip(buf) }}
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     {{ self.0.lemma_prefix_secure(s1, s2) }}
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     {{ self.0.lemma_parse_length(s) }}
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     {{ self.0.is_productive() }}
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     {{ self.0.lemma_parse_productive(s) }}
 }}
 "#
@@ -443,13 +445,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }}
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }}
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     {{ <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }}
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }}
-}} 
+}}
 "#
                     )
                 }
@@ -512,6 +514,7 @@ impl Codegen for CombinatorInner {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
         match self {
             CombinatorInner::ConstraintInt(p) => p.gen_msg_type(name, mode, ctx),
+            CombinatorInner::ConstraintEnum(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Bytes(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Tail(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Invocation(p) => p.gen_msg_type(name, mode, ctx),
@@ -536,6 +539,7 @@ impl Codegen for CombinatorInner {
         let upper_caml_name = &snake_to_upper_caml(name);
         match self {
             CombinatorInner::ConstraintInt(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
+            CombinatorInner::ConstraintEnum(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Bytes(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Tail(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Invocation(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
@@ -554,6 +558,7 @@ impl Codegen for CombinatorInner {
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
         match self {
             CombinatorInner::ConstraintInt(p) => p.gen_combinator_expr(name, mode, ctx),
+            CombinatorInner::ConstraintEnum(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Bytes(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Tail(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Invocation(p) => p.gen_combinator_expr(name, mode, ctx),
@@ -1739,7 +1744,7 @@ impl SpecPartialIso for {msg_type_name}Mapper {{
 }}
 
 impl SpecPartialIsoProof for {msg_type_name}Mapper {{
-    proof fn spec_iso(s: Self::Src) {{ 
+    proof fn spec_iso(s: Self::Src) {{
         assert(
             Self::spec_apply(s) matches Ok(v) ==> {{
             &&& Self::spec_rev_apply(v) is Ok
@@ -1747,7 +1752,7 @@ impl SpecPartialIsoProof for {msg_type_name}Mapper {{
         }});
     }}
 
-    proof fn spec_iso_rev(s: Self::Dst) {{ 
+    proof fn spec_iso_rev(s: Self::Dst) {{
         assert(
             Self::spec_rev_apply(s) matches Ok(v) ==> {{
             &&& Self::spec_apply(v) is Ok
@@ -2163,7 +2168,7 @@ impl_wrapper_combinator!({name}Combinator{i}, {name}CombinatorAlias{i});
 impl DisjointFrom<{}> for {} {{
     open spec fn disjoint_from(&self, other: &{}) -> bool
     {{ self.0.disjoint_from(&other.0) }}
-    proof fn parse_disjoint_on(&self, other: &{}, buf: Seq<u8>) 
+    proof fn parse_disjoint_on(&self, other: &{}, buf: Seq<u8>)
     {{ self.0.parse_disjoint_on(&other.0, buf); }}
 }}"#,
                                 combinator_types[i],
@@ -2843,6 +2848,7 @@ impl Codegen for ConstCombinator {
         match &self {
             ConstCombinator::ConstInt(c) => c.gen_msg_type(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_msg_type(name, mode, ctx),
+            ConstCombinator::ConstEnum(c) => c.gen_msg_type(name, mode, ctx),
             ConstCombinator::ConstArray(..) => todo!(),
             ConstCombinator::Vec(..) => todo!(),
             ConstCombinator::ConstStruct(..) => todo!(),
@@ -2891,6 +2897,7 @@ impl Codegen for ConstCombinator {
         let (combinator_type, additional_code) = match &self {
             ConstCombinator::ConstInt(c) => c.gen_combinator_type(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_combinator_type(name, mode, ctx),
+            ConstCombinator::ConstEnum(c) => c.gen_combinator_type(name, mode, ctx),
             ConstCombinator::ConstArray(..) => todo!(),
             ConstCombinator::Vec(..) => todo!(),
             ConstCombinator::ConstStruct(..) => todo!(),
@@ -2923,6 +2930,7 @@ impl Codegen for ConstCombinator {
         match &self {
             ConstCombinator::ConstInt(c) => c.gen_combinator_expr(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_combinator_expr(name, mode, ctx),
+            ConstCombinator::ConstEnum(c) => c.gen_combinator_expr(name, mode, ctx),
             ConstCombinator::ConstArray(..) => todo!(),
             ConstCombinator::Vec(..) => todo!(),
             ConstCombinator::ConstStruct(..) => todo!(),
@@ -3011,6 +3019,148 @@ impl Codegen for ConstIntCombinator {
             )
         };
         (combinator_expr, "".to_string())
+    }
+}
+
+impl Codegen for ConstraintEnumCombinator {
+    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        // same message type as the underlying combinator
+        self.combinator
+            .gen_msg_type(name, mode, &ctx.disable_top_level())
+    }
+
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
+        let hash = compute_hash(self);
+        let (inner_type, mut additional_code) =
+            self.combinator.gen_combinator_type(name, mode, ctx); // ctx may collect lifetimes
+        let msg_type = self
+            .combinator
+            .gen_msg_type("", mode, &ctx.disable_top_level());
+
+        let enum_name = &self.combinator.func;
+        let enum_comb = ctx.global_ctx.enums.get(enum_name).unwrap_or_else(|| {
+            panic!(
+                "Enum `{}` not found in global context while generating constraint",
+                enum_name
+            )
+        });
+        let (variants, exhaustive, inferred) = match enum_comb {
+            EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
+            EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
+        };
+
+        fn enum_constraint_expr(
+            constraint: &EnumConstraint,
+            enum_type: &str,
+            variants: &[Enum],
+            exhaustive: bool,
+            inferred: &IntCombinator,
+            var: &str,
+        ) -> String {
+            match constraint {
+                EnumConstraint::Single(variant) => {
+                    if exhaustive {
+                        format!("matches!({var}, {enum_type}::{})", variant)
+                    } else {
+                        let val = variants
+                            .iter()
+                            .find(|Enum { name, .. }| name == variant)
+                            .map(|e| e.value)
+                            .unwrap();
+                        format!("{var} == {}", val)
+                    }
+                }
+                EnumConstraint::Set(set) => {
+                    let exprs = set
+                        .iter()
+                        .map(|variant| {
+                            if exhaustive {
+                                format!("{enum_type}::{variant}")
+                            } else {
+                                let val = variants
+                                    .iter()
+                                    .find(|Enum { name, .. }| name == variant)
+                                    .map(|e| e.value)
+                                    .unwrap();
+                                format!("{var} == {}", val)
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    if exhaustive {
+                        format!("matches!({var}, {})", exprs.join(" | "))
+                    } else {
+                        exprs.join(" || ")
+                    }
+                }
+                EnumConstraint::Neg(c) => format!(
+                    "!({})",
+                    enum_constraint_expr(c, enum_type, variants, exhaustive, inferred, var)
+                ),
+            }
+        }
+
+        let enum_type = if exhaustive {
+            snake_to_upper_caml(enum_name)
+        } else {
+            format!("{}", inferred)
+        };
+        let pred_defn = format!("pub struct Predicate{};\n", hash);
+        let impl_view = format!(
+            r#"impl View for Predicate{hash} {{
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {{
+        *self
+    }}
+}}
+"#
+        );
+        let constraint_expr = enum_constraint_expr(
+            &self.constraint,
+            &enum_type,
+            variants,
+            exhaustive,
+            inferred,
+            "e",
+        );
+        let impl_spec_pred = format!(
+            r#"impl SpecPred<{msg_type}> for Predicate{hash} {{
+    open spec fn spec_apply(&self, e: &{msg_type}) -> bool {{
+        {constraint_expr}
+    }}
+}}
+"#
+        );
+        let impl_exec_pred = format!(
+            r#"impl Pred<{msg_type}> for Predicate{hash} {{
+    fn apply(&self, e: &{msg_type}) -> bool {{
+        {constraint_expr}
+    }}
+}}
+"#
+        );
+        if !matches!(mode, Mode::Spec) {
+            additional_code += &(pred_defn + &impl_view + &impl_exec_pred + &impl_spec_pred);
+        }
+        (
+            format!("Refined<{}, Predicate{}>", inner_type, hash),
+            additional_code,
+        )
+    }
+
+    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let (inner_expr, additional_code) = self.combinator.gen_combinator_expr(name, mode, ctx);
+        let combinator_expr = format!(
+            "Refined {{ inner: {}, predicate: Predicate{} }}",
+            inner_expr,
+            compute_hash(self)
+        );
+        (combinator_expr, additional_code)
     }
 }
 
@@ -3131,6 +3281,152 @@ impl Codegen for ConstBytesCombinator {
                     self.len, name
                 ),
             }
+        };
+        (combinator_expr, "".to_string())
+    }
+}
+
+impl Codegen for ConstEnumCombinator {
+    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
+        // mirror the enum's message type
+        let enum_name = &self.combinator.func;
+        let enum_comb = ctx.global_ctx.enums.get(enum_name).unwrap_or_else(|| {
+            panic!(
+                "Enum `{}` not found in global context while generating const enum",
+                enum_name
+            )
+        });
+        match enum_comb {
+            EnumCombinator::Exhaustive { .. } => {
+                let ty = snake_to_upper_caml(enum_name);
+                if !ctx.top_level {
+                    ty
+                } else {
+                    match mode {
+                        Mode::Spec => format!("pub type Spec{name} = {ty};\n"),
+                        Mode::Exec(..) => {
+                            format!("pub type {name} = {ty};\n")
+                                + &format!("pub type {name}Ref<'a> = &'a {ty};\n")
+                        }
+                    }
+                }
+            }
+            EnumCombinator::NonExhaustive { inferred, .. } => {
+                let inferred = match format!("{inferred}").as_str() {
+                    "u24" => "u32".to_string(),
+                    other => other.to_string(),
+                };
+                if !ctx.top_level {
+                    inferred
+                } else {
+                    match mode {
+                        Mode::Spec => format!("pub type Spec{name} = {inferred};\n"),
+                        Mode::Exec(..) => {
+                            format!("pub type {name} = {inferred};\n")
+                                + &format!("pub type {name}Ref<'a> = &'a {inferred};\n")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn gen_combinator_type(
+        &self,
+        name: &str,
+        mode: Mode,
+        ctx: &mut CodegenCtx,
+    ) -> (String, String) {
+        let enum_name = &self.combinator.func;
+        let enum_comb = ctx.global_ctx.enums.get(enum_name).unwrap();
+        let (variants, exhaustive, inferred) = match enum_comb {
+            EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
+            EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
+        };
+        let variant_value = variants
+            .iter()
+            .find(|Enum { name, .. }| name == &self.variant)
+            .unwrap_or_else(|| panic!("Variant `{}` not found", self.variant))
+            .value;
+        let endianess = match ctx.endianess {
+            Endianess::Big => "Be",
+            Endianess::Little => "Le",
+        };
+        let (int_comb_type, tag_type) = match inferred {
+            IntCombinator::Unsigned(8) => ("U8".to_string(), "u8".to_string()),
+            IntCombinator::Unsigned(t) => (format!("U{}{}", t, endianess), format!("u{}", t)),
+            IntCombinator::BtcVarint => ("BtcVarint".to_string(), "u64".to_string()),
+            IntCombinator::ULEB128 => ("UnsignedLEB128".to_string(), "u64".to_string()),
+            IntCombinator::Signed(_) => unimplemented!(),
+        };
+        let const_name = format!("{}_CONST", name);
+        let const_decl = format!(
+            "pub const {}: {} = {};\n",
+            const_name, tag_type, variant_value
+        );
+        let additional_code = match mode {
+            Mode::Spec => const_decl,
+            _ => "".to_string(),
+        };
+
+        let tag_comb_type = if ctx.wrap {
+            format!("Tag<{}, {}>", int_comb_type, tag_type)
+        } else {
+            format!("Refined<{}, TagPred<{}>>", int_comb_type, tag_type)
+        };
+
+        if exhaustive {
+            let mapper = format!("{}Mapper", snake_to_upper_caml(enum_name));
+            (
+                format!("TryMap<{}, {}>", tag_comb_type, mapper),
+                additional_code,
+            )
+        } else {
+            (tag_comb_type, additional_code)
+        }
+    }
+
+    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
+        let enum_name = &self.combinator.func;
+        let enum_comb = ctx.global_ctx.enums.get(enum_name).unwrap();
+        let (variants, exhaustive, inferred) = match enum_comb {
+            EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
+            EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
+        };
+        let variant_value = variants
+            .iter()
+            .find(|Enum { name, .. }| name == &self.variant)
+            .unwrap()
+            .value;
+        let _ = variant_value;
+        let endianess = match ctx.endianess {
+            Endianess::Big => "Be",
+            Endianess::Little => "Le",
+        };
+        let int_type = match inferred {
+            IntCombinator::Unsigned(8) => "U8".to_string(),
+            IntCombinator::Unsigned(t) => format!("U{}{}", t, endianess),
+            IntCombinator::BtcVarint => "BtcVarint".to_string(),
+            IntCombinator::ULEB128 => "UnsignedLEB128".to_string(),
+            IntCombinator::Signed(_) => unimplemented!(),
+        };
+        let const_name = format!("{}_CONST", name);
+        let tag_expr = if ctx.wrap {
+            match mode {
+                Mode::Spec => format!("Tag::spec_new({}, {})", int_type, const_name),
+                _ => format!("Tag::new({}, {})", int_type, const_name),
+            }
+        } else {
+            format!(
+                "Refined {{ inner: {}, predicate: TagPred({}) }}",
+                int_type, const_name
+            )
+        };
+        let combinator_expr = if exhaustive {
+            let mapper = format!("{}Mapper", snake_to_upper_caml(enum_name));
+            format!("TryMap {{ inner: {}, mapper: {} }}", tag_expr, mapper)
+        } else {
+            tag_expr
         };
         (combinator_expr, "".to_string())
     }
