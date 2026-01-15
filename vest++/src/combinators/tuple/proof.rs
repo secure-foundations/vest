@@ -48,31 +48,20 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
-                    if let Some((n1a, _)) = self.0.spec_parse(buf1) {
-                        if let Some((n2a, _)) = self.0.spec_parse(buf2) {
-                            if let Some((n1b, _)) = self.1.spec_parse(buf1.skip(n1a)) {
-                                if let Some((n2b, _)) = self.1.spec_parse(buf2.skip(n2a)) {
-                                    self.0.lemma_parse_length(buf1);
-                                    self.0.lemma_parse_length(buf2);
-                                    self.1.lemma_parse_length(buf1.skip(n1a));
-                                    self.1.lemma_parse_length(buf2.skip(n2a));
-                                    self.0.lemma_parse_non_malleable(buf1, buf2);
-                                    self.1.lemma_parse_non_malleable(
-                                        buf1.skip(n1a),
-                                        buf2.skip(n2a),
-                                    );
-                                    assert(n1 == n1a + n1b && n2 == n2a + n2b);
-                                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(
-                                            n1a,
-                                        ).take(n1b));
-                                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(
-                                            n2a,
-                                        ).take(n2b));
-                                    }
-                                }
-                            }
-                        }
+                    let (n1a, _) = self.0.spec_parse(buf1)->0;
+                    let (n2a, _) = self.0.spec_parse(buf2)->0;
+                    let (n1b, _) = self.1.spec_parse(buf1.skip(n1a))->0;
+                    let (n2b, _) = self.1.spec_parse(buf2.skip(n2a))->0;
+                    self.0.lemma_parse_length(buf1);
+                    self.0.lemma_parse_length(buf2);
+                    self.1.lemma_parse_length(buf1.skip(n1a));
+                    self.1.lemma_parse_length(buf2.skip(n2a));
+                    self.0.lemma_parse_non_malleable(buf1, buf2);
+                    self.1.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+                    assert(n1 == n1a + n1b && n2 == n2a + n2b);
+                    assert(buf1.take(n1) == buf2.take(n2)) by {
+                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
+                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
                     }
                 }
             }
