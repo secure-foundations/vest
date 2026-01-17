@@ -14,9 +14,11 @@ pub trait SPRoundTrip: GoodCombinator {
         requires
             self.serializable(v, obuf),
         ensures
-            v.wf() ==> self.spec_parse(self.spec_serialize_dps(v, obuf)) == Some(
-                ((self.spec_serialize_dps(v, obuf).len() - obuf.len()), v),
-            ),
+            v.wf() ==> {
+                let ibuf = self.spec_serialize_dps(v, obuf);
+                let n = ibuf.len() - obuf.len();
+                self.spec_parse(ibuf) == Some((n, v))
+            }
     ;
 }
 
