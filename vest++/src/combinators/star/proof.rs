@@ -153,7 +153,8 @@ impl<A> super::Star<A> where A: Deterministic + SpecParser {
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
         decreases vs.len(),
     {
-        let f = |buf: Seq<u8>, elem: <A as SpecSerializer>::ST| buf + self.inner.spec_serialize(elem);
+        let f = |buf: Seq<u8>, elem: <A as SpecSerializer>::ST|
+            buf + self.inner.spec_serialize(elem);
 
         if vs.len() == 0 {
         } else {
@@ -204,7 +205,8 @@ impl<A> super::Star<A> where A: Deterministic + SpecParser {
                     rest.lemma_fold_left_alt(self.inner.spec_serialize(v0), f);
                 }
                 rest.fold_left(self.inner.spec_serialize(v0), f); {
-                    assert forall|acc: Seq<u8>, x: Seq<u8>, y: <A as SpecSerializer>::ST| #[trigger]
+                    assert forall|acc: Seq<u8>, x: Seq<u8>, y: <A as SpecSerializer>::ST|
+                     #[trigger]
                         f(acc + x, y) == acc + #[trigger] f(x, y) by {}
                     Self::lemma_fold_left_accumulate(rest, self.inner.spec_serialize(v0), f);
                 }

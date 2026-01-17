@@ -34,11 +34,13 @@ impl<In: SpecType, Out: SpecType> Mapper for IsoFns<In, Out> {
 
 pub trait IsoMapper: Mapper {
     proof fn lemma_map_wf(&self, v: Self::In)
-        ensures v.wf() ==> self.spec_map(v).wf()
+        ensures
+            v.wf() ==> self.spec_map(v).wf(),
     ;
 
     proof fn lemma_map_rev_wf(&self, v: Self::Out)
-        ensures v.wf() ==> self.spec_map_rev(v).wf()
+        ensures
+            v.wf() ==> self.spec_map_rev(v).wf(),
     ;
 
     proof fn lemma_map_iso(&self, i: Self::In)

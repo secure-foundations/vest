@@ -6,9 +6,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A> SpecParser for super::Refined<A, SpecPred<A::PT>> where
-    A: SpecParser,
- {
+impl<A> SpecParser for super::Refined<A, SpecPred<A::PT>> where A: SpecParser {
     type PT = Subset<A::PT, SpecPred<A::PT>>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
@@ -29,9 +27,7 @@ impl<A: GoodParser> GoodParser for super::Refined<A, SpecPred<A::PT>> {
     }
 }
 
-impl<A> SpecSerializerDps for super::Refined<A, SpecPred<A::ST>> where
-    A: SpecSerializerDps,
- {
+impl<A> SpecSerializerDps for super::Refined<A, SpecPred<A::ST>> where A: SpecSerializerDps {
     type ST = Subset<A::ST, SpecPred<A::ST>>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -39,9 +35,7 @@ impl<A> SpecSerializerDps for super::Refined<A, SpecPred<A::ST>> where
     }
 }
 
-impl<A> SpecSerializer for super::Refined<A, SpecPred<A::ST>> where
-    A: SpecSerializer,
- {
+impl<A> SpecSerializer for super::Refined<A, SpecPred<A::ST>> where A: SpecSerializer {
     type ST = Subset<A::ST, SpecPred<A::ST>>;
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
@@ -64,9 +58,7 @@ impl<A: GoodSerializer> GoodSerializer for super::Refined<A, SpecPred<A::ST>> {
     }
 }
 
-impl<Inner> SpecParser for super::Tag<Inner, Inner::PT> where
-    Inner: SpecParser,
- {
+impl<Inner> SpecParser for super::Tag<Inner, Inner::PT> where Inner: SpecParser {
     type PT = ();
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
@@ -87,9 +79,7 @@ impl<Inner: GoodParser> GoodParser for super::Tag<Inner, Inner::PT> {
     }
 }
 
-impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where
-    Inner: SpecSerializerDps,
- {
+impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where Inner: SpecSerializerDps {
     type ST = ();
 
     open spec fn spec_serialize_dps(&self, _v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -97,9 +87,7 @@ impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where
     }
 }
 
-impl<Inner> SpecSerializer for super::Tag<Inner, Inner::ST> where
-    Inner: SpecSerializer,
- {
+impl<Inner> SpecSerializer for super::Tag<Inner, Inner::ST> where Inner: SpecSerializer {
     type ST = ();
 
     open spec fn spec_serialize(&self, _v: Self::ST) -> Seq<u8> {
@@ -107,18 +95,14 @@ impl<Inner> SpecSerializer for super::Tag<Inner, Inner::ST> where
     }
 }
 
-impl<Inner> Serializability for super::Tag<Inner, Inner::ST> where
-    Inner: Serializability,
- {
+impl<Inner> Serializability for super::Tag<Inner, Inner::ST> where Inner: Serializability {
     open spec fn serializable(&self, _v: Self::ST, obuf: Seq<u8>) -> bool {
         &&& self.tag.wf()
         &&& self.inner.serializable(self.tag, obuf)
     }
 }
 
-impl<Inner> GoodSerializer for super::Tag<Inner, Inner::ST> where
-    Inner: GoodSerializer,
- {
+impl<Inner> GoodSerializer for super::Tag<Inner, Inner::ST> where Inner: GoodSerializer {
     proof fn lemma_serialize_buf(&self, _v: Self::ST, obuf: Seq<u8>) {
         self.inner.lemma_serialize_buf(self.tag, obuf);
     }

@@ -12,13 +12,33 @@ pub trait SpecType {
     }
 }
 
-impl SpecType for bool {}
-impl SpecType for u8 {}
-impl SpecType for u16 {}
-impl SpecType for u32 {}
-impl SpecType for u64 {}
-impl SpecType for usize {}
-impl SpecType for () {}
+impl SpecType for bool {
+
+}
+
+impl SpecType for u8 {
+
+}
+
+impl SpecType for u16 {
+
+}
+
+impl SpecType for u32 {
+
+}
+
+impl SpecType for u64 {
+
+}
+
+impl SpecType for usize {
+
+}
+
+impl SpecType for () {
+
+}
 
 impl<A: SpecType, B: SpecType> SpecType for (A, B) {
     open spec fn wf(&self) -> bool {
@@ -151,8 +171,7 @@ pub trait GoodSerializer: Serializability {
         requires
             self.serializable(v, obuf),
         ensures
-            v.wf() ==> exists|new_buf: Seq<u8>|
-                self.spec_serialize_dps(v, obuf) == new_buf + obuf,
+            v.wf() ==> exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 }
 

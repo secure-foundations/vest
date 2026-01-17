@@ -40,10 +40,7 @@ impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
     }
 }
 
-impl<A, B> SpecSerializer for super::Terminated<A, B> where
-    A: SpecSerializer,
-    B: SpecSerializer,
- {
+impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B: SpecSerializer {
     type ST = A::ST;
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
@@ -59,15 +56,11 @@ impl<A, B> Serializability for super::Terminated<A, B> where
     open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         // To serialize Terminated, we need a witness value for B
         // We require that there exists some B value that can be serialized after A
-        &&& exists|vb: B::ST|
-            #![trigger vb.wf()]
-            { vb.wf() && self.1.serializable(vb, obuf) }
+        &&& exists|vb: B::ST| #![trigger vb.wf()] { vb.wf() && self.1.serializable(vb, obuf) }
         &&& self.0.serializable(
             v,
             self.1.spec_serialize_dps(
-                choose|vb: B::ST|
-                    #![trigger vb.wf()]
-                    vb.wf() && self.1.serializable(vb, obuf),
+                choose|vb: B::ST| #![trigger vb.wf()] vb.wf() && self.1.serializable(vb, obuf),
                 obuf,
             ),
         )
