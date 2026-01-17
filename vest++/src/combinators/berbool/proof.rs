@@ -7,7 +7,7 @@ use vstd::prelude::*;
 verus! {
 
 impl SPRoundTrip for super::BerBool {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         let serialized = self.spec_serialize_dps(v, obuf);
 
         if v {

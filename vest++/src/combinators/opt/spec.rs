@@ -1,21 +1,10 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::prelude::*;
 
 verus! {
-
-impl<A> SpecType for super::Opt<A> where A: SpecType {
-    type Type = Option<A::Type>;
-
-    open spec fn wf(&self, v: Self::Type) -> bool {
-        match v {
-            None => true,
-            Some(vv) => self.0.wf(vv),
-        }
-    }
-}
 
 impl<A> SpecParser for super::Opt<A> where A: SpecParser {
     type PT = Option<A::PT>;
@@ -61,7 +50,7 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
 }
 
 impl<A> Serializability for super::Opt<A> where A: Serializability + SpecParser {
-    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         match v {
             // To ensure the parser will not try to consume serialized bytes in
             // `obuf` when the value is `None`
@@ -72,13 +61,13 @@ impl<A> Serializability for super::Opt<A> where A: Serializability + SpecParser 
 }
 
 impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
-                if self.wf(v) {
+                if v.wf() {
                     self.0.lemma_serialize_buf(vv, obuf);
                 }
             },

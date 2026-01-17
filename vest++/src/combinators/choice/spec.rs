@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::prelude::*;
 
@@ -9,17 +9,6 @@ verus! {
 pub enum Either<A, B> {
     Left(A),
     Right(B),
-}
-
-impl<A: SpecType, B: SpecType> SpecType for super::Choice<A, B> {
-    type Type = Either<A::Type, B::Type>;
-
-    open spec fn wf(&self, v: Self::Type) -> bool {
-        match v {
-            Either::Left(va) => self.0.wf(va),
-            Either::Right(vb) => self.1.wf(vb),
-        }
-    }
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
@@ -78,7 +67,7 @@ impl<A, B> Serializability for super::Choice<A, B> where
     B: Serializability,
  {
     #[verusfmt::skip]
-    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         match v {
             Either::Left(va) => self.0.serializable(va, obuf),
             Either::Right(vb) => {
@@ -94,8 +83,8 @@ impl<A, B> GoodSerializer for super::Choice<A, B> where
     A: GoodSerializer + SpecParser,
     B: GoodSerializer,
  {
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
+    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        if v.wf() {
             match v {
                 Either::Left(va) => {
                     self.0.lemma_serialize_buf(va, obuf);

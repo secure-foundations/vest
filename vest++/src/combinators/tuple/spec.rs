@@ -1,18 +1,10 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::prelude::*;
 
 verus! {
-
-impl<A, B> SpecType for (A, B) where A: SpecType, B: SpecType {
-    type Type = (A::Type, B::Type);
-
-    open spec fn wf(&self, v: Self::Type) -> bool {
-        self.0.wf(v.0) && self.1.wf(v.1)
-    }
-}
 
 impl<A, B> SpecParser for (A, B) where A: SpecParser, B: SpecParser {
     type PT = (A::PT, B::PT);
@@ -61,7 +53,7 @@ impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer 
 }
 
 impl<A, B> Serializability for (A, B) where A: Serializability, B: Serializability {
-    open spec fn serializable(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         self.1.serializable(v.1, obuf) && self.0.serializable(
             v.0,
             self.1.spec_serialize_dps(v.1, obuf),
@@ -70,8 +62,8 @@ impl<A, B> Serializability for (A, B) where A: Serializability, B: Serializabili
 }
 
 impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
+    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
             self.1.lemma_serialize_buf(v.1, obuf);

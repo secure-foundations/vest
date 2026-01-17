@@ -1,18 +1,10 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::prelude::*;
 
 verus! {
-
-impl<A: SpecType> SpecType for super::Star<A> {
-    type Type = Seq<A::Type>;
-
-    open spec fn wf(&self, v: Self::Type) -> bool {
-        forall|i: int| 0 <= i < v.len() ==> #[trigger] self.inner.wf(v[i])
-    }
-}
 
 impl<A: SpecParser> super::Star<A> {
     /// Recursive helper function for parsing.
@@ -46,7 +38,7 @@ impl<A: GoodParser> super::Star<A> {
 
     proof fn lemma_parse_rec_wf(&self, ibuf: Seq<u8>)
         ensures
-            self.wf(self.parse_rec(ibuf).1),
+            self.parse_rec(ibuf).1.wf(),
         decreases ibuf.len(),
     {
         self.inner.lemma_parse_wf(ibuf);
@@ -101,7 +93,7 @@ impl<A: GoodSerializer> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         requires
             self.elems_serializable(vs, obuf),
-            self.wf(vs),
+            vs.wf(),
         ensures
             exists|new_buf: Seq<u8>| self.rfold_serialize_dps(vs, obuf) == new_buf + obuf,
         decreases vs.len(),
@@ -152,7 +144,7 @@ impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
 }
 
 impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser {
-    open spec fn serializable(&self, vs: Self::Type, obuf: Seq<u8>) -> bool {
+    open spec fn serializable(&self, vs: Self::ST, obuf: Seq<u8>) -> bool {
         // make sure the inner parser won't accidentally consume `obuf`
         &&& self.inner.spec_parse(obuf) is None
         &&& self.elems_serializable(vs, obuf)
@@ -160,8 +152,8 @@ impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser
 }
 
 impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer + SpecParser {
-    proof fn lemma_serialize_buf(&self, vs: Self::Type, obuf: Seq<u8>) {
-        if self.wf(vs) {
+    proof fn lemma_serialize_buf(&self, vs: Self::ST, obuf: Seq<u8>) {
+        if vs.wf() {
             self.lemma_rfold_serialize_buf(vs, obuf);
         }
     }

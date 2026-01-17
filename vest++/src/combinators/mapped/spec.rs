@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::{prelude::*, seq};
 
@@ -9,16 +9,16 @@ verus! {
 type IsoFns<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
 
 pub trait Mapper {
-    type In;
+    type In: SpecType;
 
-    type Out;
+    type Out: SpecType;
 
     spec fn spec_map(&self, i: Self::In) -> Self::Out;
 
     spec fn spec_map_rev(&self, o: Self::Out) -> Self::In;
 }
 
-impl<In, Out> Mapper for IsoFns<In, Out> {
+impl<In: SpecType, Out: SpecType> Mapper for IsoFns<In, Out> {
     type In = In;
 
     type Out = Out;
@@ -33,6 +33,14 @@ impl<In, Out> Mapper for IsoFns<In, Out> {
 }
 
 pub trait IsoMapper: Mapper {
+    proof fn lemma_map_wf(&self, v: Self::In)
+        ensures v.wf() ==> self.spec_map(v).wf()
+    ;
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out)
+        ensures v.wf() ==> self.spec_map_rev(v).wf()
+    ;
+
     proof fn lemma_map_iso(&self, i: Self::In)
         ensures
             self.spec_map_rev(self.spec_map(i)) == i,
@@ -42,17 +50,6 @@ pub trait IsoMapper: Mapper {
         ensures
             self.spec_map(self.spec_map_rev(o)) == o,
     ;
-}
-
-impl<Inner, M> SpecType for super::Mapped<Inner, M> where
-    Inner: SpecType,
-    M: Mapper<In = Inner::Type>,
- {
-    type Type = M::Out;
-
-    open spec fn wf(&self, v: M::Out) -> bool {
-        self.inner.wf(self.mapper.spec_map_rev(v))
-    }
 }
 
 impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
@@ -71,7 +68,7 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
     Inner: GoodParser,
-    M: IsoMapper<In = Inner::Type>,
+    M: IsoMapper<In = Inner::PT>,
  {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
@@ -80,7 +77,7 @@ impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_wf(ibuf);
         if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
-            self.mapper.lemma_map_iso(inner_v);
+            self.mapper.lemma_map_wf(inner_v);
         }
     }
 }
@@ -107,9 +104,10 @@ impl<Inner, M> Serializability for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     Inner: GoodSerializer,
-    M: Mapper<In = Inner::ST>,
+    M: IsoMapper<In = Inner::ST>,
  {
     proof fn lemma_serialize_buf(&self, v: M::Out, obuf: Seq<u8>) {
+        self.mapper.lemma_map_rev_wf(v);
         self.inner.lemma_serialize_buf(self.mapper.spec_map_rev(v), obuf);
     }
 }
@@ -125,7 +123,10 @@ impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::PT) -> Out> {
+impl<Inner: SpecParser, Out: SpecType> SpecParser for super::Mapped<
+    Inner,
+    spec_fn(Inner::PT) -> Out,
+> {
     type PT = Out;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Out)> {
@@ -136,7 +137,7 @@ impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::
     }
 }
 
-impl<Inner: SpecSerializerDps, Out> SpecSerializerDps for super::Mapped<
+impl<Inner: SpecSerializerDps, Out: SpecType> SpecSerializerDps for super::Mapped<
     Inner,
     spec_fn(Out) -> Inner::ST,
 > {
@@ -147,7 +148,7 @@ impl<Inner: SpecSerializerDps, Out> SpecSerializerDps for super::Mapped<
     }
 }
 
-impl<Inner: SpecSerializer, Out> SpecSerializer for super::Mapped<
+impl<Inner: SpecSerializer, Out: SpecType> SpecSerializer for super::Mapped<
     Inner,
     spec_fn(Out) -> Inner::ST,
 > {

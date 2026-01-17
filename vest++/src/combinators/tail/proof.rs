@@ -1,13 +1,13 @@
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::SpecCombinator,
+    spec::{SpecCombinator, SpecSerializer, SpecSerializerDps, SpecType},
 };
 use vstd::prelude::*;
 
 verus! {
 
 impl SPRoundTrip for super::Tail {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
     }
 }
 
@@ -22,7 +22,7 @@ impl NonMalleable for super::Tail {
 }
 
 impl Deterministic for super::Tail {
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
     }
 }
 

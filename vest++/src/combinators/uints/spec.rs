@@ -1,8 +1,7 @@
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{Fixed, Mapped};
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
 };
 use vstd::prelude::*;
 
@@ -25,6 +24,12 @@ impl Mapper for U16LeMapper {
 }
 
 impl IsoMapper for U16LeMapper {
+    proof fn lemma_map_wf(&self, v: Self::In) {
+    }
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+    }
+
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
@@ -60,6 +65,12 @@ impl Mapper for U16BeMapper {
 }
 
 impl IsoMapper for U16BeMapper {
+    proof fn lemma_map_wf(&self, v: Self::In) {
+    }
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+    }
+
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
@@ -75,14 +86,6 @@ impl IsoMapper for U16BeMapper {
             &&& (o >> 8) & 0xff < 256
         }) by (bit_vector);
         assert(o == (((o >> 8) & 0xff) << 8 | (o & 0xff))) by (bit_vector);
-    }
-}
-
-impl SpecType for super::U8 {
-    type Type = u8;
-
-    open spec fn wf(&self, v: u8) -> bool {
-        true
     }
 }
 
@@ -134,14 +137,6 @@ impl GoodSerializer for super::U8 {
     }
 }
 
-impl SpecType for super::U16Le {
-    type Type = u16;
-
-    open spec fn wf(&self, v: u16) -> bool {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.wf(v)
-    }
-}
-
 impl SpecParser for super::U16Le {
     type PT = u16;
 
@@ -185,14 +180,6 @@ impl Serializability for super::U16Le {
 impl GoodSerializer for super::U16Le {
     proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_buf(v, obuf);
-    }
-}
-
-impl SpecType for super::U16Be {
-    type Type = u16;
-
-    open spec fn wf(&self, v: u16) -> bool {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.wf(v)
     }
 }
 

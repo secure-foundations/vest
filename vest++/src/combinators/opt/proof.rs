@@ -7,17 +7,17 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTrip> SPRoundTrip for super::Opt<A> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == obuf);
                 if let Some((n, v)) = self.spec_parse(obuf) {
                     assert(n == 0);
-                    assert(v == Option::<A::Type>::None);
+                    assert(v == Option::<A::PT>::None);
                 }
             },
             Some(vv) => {
-                if self.wf(v) {
+                if v.wf() {
                     self.0.theorem_serialize_parse_roundtrip(vv, obuf);
                 }
             },
@@ -49,11 +49,11 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
 }
 
 impl<A> Deterministic for super::Opt<A> where A: Deterministic + SpecParser {
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
         match v {
             None => {},
             Some(vv) => {
-                if self.wf(v) {
+                if v.wf() {
                     self.0.lemma_serialize_equiv(vv, obuf);
                 }
             },

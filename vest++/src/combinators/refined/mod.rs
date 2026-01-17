@@ -1,19 +1,19 @@
 pub mod proof;
 pub mod spec;
 
-use crate::core::spec::SpecType;
+use crate::core::spec::{SpecParser, SpecPred};
 use vstd::prelude::*;
 
 verus! {
 
-pub struct Refined<A: SpecType> {
-    pub inner: A,
-    pub pred: spec_fn(A::Type) -> bool,
+pub struct Refined<Inner, Pred> {
+    pub inner: Inner,
+    pub pred: Pred,
 }
 
-pub struct Tag<Inner: SpecType> {
+pub struct Tag<Inner, Tag> {
     pub inner: Inner,
-    pub tag: Inner::Type,
+    pub tag: Tag,
 }
 
 } // verus!

@@ -1,18 +1,10 @@
 use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
+    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
+    SpecType,
 };
 use vstd::prelude::*;
 
 verus! {
-
-impl<const N: usize> SpecType for super::Fixed<N> {
-    type Type = [u8; N];
-
-    open spec fn wf(&self, v: Self::Type) -> bool {
-        true
-    }
-}
 
 pub uninterp spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
     recommends
@@ -27,7 +19,7 @@ pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
 ;
 
 impl<const N: usize> SpecParser for super::Fixed<N> {
-    type PT = <Self as SpecType>::Type;
+    type PT = [u8; N];
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
         if ibuf.len() < N as int {
@@ -43,11 +35,12 @@ impl<const N: usize> GoodParser for super::Fixed<N> {
     }
 
     proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        assert forall|i: int| 0 <= i < N implies #[trigger] ibuf[i].wf() by {}
     }
 }
 
 impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
-    type ST = <Self as SpecType>::Type;
+    type ST = [u8; N];
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         v@ + obuf
@@ -55,7 +48,7 @@ impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecSerializer for super::Fixed<N> {
-    type ST = <Self as SpecType>::Type;
+    type ST = [u8; N];
 
     open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
         v@
@@ -67,8 +60,8 @@ impl<const N: usize> Serializability for super::Fixed<N> {
 }
 
 impl<const N: usize> GoodSerializer for super::Fixed<N> {
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
+    proof fn lemma_serialize_buf(&self, v: [u8; N], obuf: Seq<u8>) {
+        if v.wf() {
             assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
         }
     }

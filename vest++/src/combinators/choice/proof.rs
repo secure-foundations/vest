@@ -1,15 +1,15 @@
 use crate::combinators::Either;
 use crate::core::{
     proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecType},
+    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps, SpecType},
 };
 use vstd::prelude::*;
 
 verus! {
 
 impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for super::Choice<A, B> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+        if v.wf() {
             match v {
                 Either::Left(va) => {
                     self.0.theorem_serialize_parse_roundtrip(va, obuf);
@@ -40,8 +40,8 @@ impl<A, B> Deterministic for super::Choice<A, B> where
     A: SpecParser + Deterministic,
     B: Deterministic,
  {
-    proof fn lemma_serialize_equiv(&self, v: Self::Type, obuf: Seq<u8>) {
-        if self.wf(v) {
+    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+        if v.wf() {
             match v {
                 Either::Left(va) => {
                     self.0.lemma_serialize_equiv(va, obuf);
