@@ -10,39 +10,58 @@ pub trait SpecType {
     open spec fn wf(&self) -> bool {
         true
     }
+
+    spec fn byte_len(&self) -> nat;
 }
 
 impl SpecType for bool {
-
+    open spec fn byte_len(&self) -> nat {
+        1
+    }
 }
 
 impl SpecType for u8 {
-
+    open spec fn byte_len(&self) -> nat {
+        1
+    }
 }
 
 impl SpecType for u16 {
-
+    open spec fn byte_len(&self) -> nat {
+        2
+    }
 }
 
 impl SpecType for u32 {
-
+    open spec fn byte_len(&self) -> nat {
+        4
+    }
 }
 
 impl SpecType for u64 {
-
+    open spec fn byte_len(&self) -> nat {
+        8
+    }
 }
 
 impl SpecType for usize {
-
+    open spec fn byte_len(&self) -> nat {
+        8
+    }
 }
 
 impl SpecType for () {
-
+    open spec fn byte_len(&self) -> nat {
+        0
+    }
 }
 
 impl<A: SpecType, B: SpecType> SpecType for (A, B) {
     open spec fn wf(&self) -> bool {
         self.0.wf() && self.1.wf()
+    }
+    open spec fn byte_len(&self) -> nat {
+        self.0.byte_len() + self.1.byte_len()
     }
 }
 
@@ -51,6 +70,12 @@ impl<T: SpecType> SpecType for Option<T> {
         match self {
             Some(v) => v.wf(),
             None => true,
+        }
+    }
+    open spec fn byte_len(&self) -> nat {
+        match self {
+            Some(v) => v.byte_len(),
+            None => 0,
         }
     }
 }
@@ -62,17 +87,26 @@ impl<A: SpecType, B: SpecType> SpecType for Either<A, B> {
             Either::Right(v) => v.wf(),
         }
     }
+    open spec fn byte_len(&self) -> nat {
+        match self {
+            Either::Left(v) => v.byte_len(),
+            Either::Right(v) => v.byte_len(),
+        }
+    }
 }
 
 impl<T: SpecType> SpecType for Seq<T> {
     open spec fn wf(&self) -> bool {
         forall|i: int| 0 <= i < self.len() ==> #[trigger] self[i].wf()
     }
+    open spec fn byte_len(&self) -> nat {
+        self.fold_left(0, |acc: nat, elem: T| acc + elem.byte_len())
+    }
 }
 
-impl<T: SpecType, const N: usize> SpecType for [T; N] {
-    open spec fn wf(&self) -> bool {
-        forall|i: int| 0 <= i < N ==> #[trigger] self[i].wf()
+impl<const N: usize> SpecType for [u8; N] {
+    open spec fn byte_len(&self) -> nat {
+        N as nat
     }
 }
 
@@ -89,6 +123,9 @@ impl<T: SpecType> SpecType for Subset<T, SpecPred<T>> {
         &&& self.val.wf()
         &&& (self.pred)(self.val)
     }
+    open spec fn byte_len(&self) -> nat {
+        self.val.byte_len()
+    }
 }
 
 impl UniqueWfValue for () {
@@ -103,6 +140,122 @@ pub trait UniqueWfValue: SpecType {
         ensures
             self.wf() && other.wf() ==> self == other,
     ;
+}
+
+pub trait NonEmptyValue: SpecType {
+    open spec fn non_empty(&self) -> bool {
+        true
+    }
+    /// Lemma: a well-formed value has a positive byte length
+    proof fn lemma_non_empty(&self)
+        requires
+            self.non_empty(),
+        ensures
+            self.wf() ==> self.byte_len() > 0,
+    ;
+}
+
+impl NonEmptyValue for bool {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl NonEmptyValue for u8 {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl NonEmptyValue for u16 {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl NonEmptyValue for u32 {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl NonEmptyValue for u64 {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl NonEmptyValue for usize {
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl<A, B> NonEmptyValue for (A, B) where A: SpecType, B: SpecType {
+    open spec fn non_empty(&self) -> bool {
+        self.0.byte_len() > 0 || self.1.byte_len() > 0
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl<A, B> NonEmptyValue for Either<A, B> where A: SpecType, B: SpecType {
+    open spec fn non_empty(&self) -> bool {
+        self.byte_len() > 0
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl<T: NonEmptyValue> NonEmptyValue for Option<T> {
+    open spec fn non_empty(&self) -> bool {
+        self matches Some(v) && v.non_empty()
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+        self->0.lemma_non_empty();
+    }
+}
+
+impl<T: NonEmptyValue> NonEmptyValue for Seq<T> {
+    open spec fn non_empty(&self) -> bool {
+        &&& forall|i| 0 <= i < self.len() ==> #[trigger] self[i].non_empty()
+        &&& self.len() > 0
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+        if self.wf() {
+            let last_index = (self.len() as int) - 1;
+            self[last_index].lemma_non_empty();
+        }
+    }
+}
+
+impl<const N: usize> NonEmptyValue for [u8; N] {
+    open spec fn non_empty(&self) -> bool {
+        N > 0
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+    }
+}
+
+impl<T: NonEmptyValue> NonEmptyValue for Subset<T, SpecPred<T>> {
+    open spec fn non_empty(&self) -> bool {
+        self.val.non_empty()
+    }
+
+    proof fn lemma_non_empty(&self)
+    {
+        self.val.lemma_non_empty();
+    }
 }
 
 /// Parser specification.
