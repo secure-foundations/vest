@@ -116,12 +116,22 @@ pub struct Subset<T, Pred> {
     pub pred: Pred,
 }
 
-pub type SpecPred<T> = spec_fn(T) -> bool;
+pub trait SpecPred<T> {
+    spec fn apply(&self, value: T) -> bool;
+}
 
-impl<T: SpecType> SpecType for Subset<T, SpecPred<T>> {
+pub type PredFnSpec<T> = spec_fn(T) -> bool;
+
+impl<T> SpecPred<T> for PredFnSpec<T> {
+    open spec fn apply(&self, value: T) -> bool {
+        self(value)
+    }
+}
+
+impl<T: SpecType, Pred: SpecPred<T>> SpecType for Subset<T, Pred> {
     open spec fn wf(&self) -> bool {
         &&& self.val.wf()
-        &&& (self.pred)(self.val)
+        &&& self.pred.apply(self.val)
     }
     open spec fn byte_len(&self) -> nat {
         self.val.byte_len()
@@ -247,7 +257,7 @@ impl<const N: usize> NonEmptyValue for [u8; N] {
     }
 }
 
-impl<T: NonEmptyValue> NonEmptyValue for Subset<T, SpecPred<T>> {
+impl<T: NonEmptyValue, Pred: SpecPred<T>> NonEmptyValue for Subset<T, Pred> {
     open spec fn non_empty(&self) -> bool {
         self.val.non_empty()
     }
