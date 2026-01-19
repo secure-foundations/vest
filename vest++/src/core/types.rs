@@ -262,4 +262,4 @@ impl<T: NonEmptyValue, Pred: SpecPred<T>> NonEmptyValue for Subset<T, Pred> {
     }
 }
 
-}
+} // verus!

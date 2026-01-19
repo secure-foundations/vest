@@ -3,7 +3,6 @@ use vstd::prelude::*;
 
 verus! {
 
-
 /// Parser specification.
 pub trait SpecParser {
     /// The type of parsed values.
