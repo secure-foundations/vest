@@ -51,13 +51,11 @@ pub trait NonMalleable: GoodParser {
 /// Hence, we model non-deterministic serializers by relating two different serializer
 /// specs (DPS and non-DPS), since a deterministic serializer would produce
 /// identical outputs regardless of the serialization strategy.
-pub trait Deterministic: SpecSerializer + Unambiguity<ST = <Self as SpecSerializer>::ST> {
+pub trait Deterministic: SpecSerializer + SpecSerializerDps<ST = <Self as SpecSerializer>::ST> {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>)
-        requires
-            self.unambiguous()
         ensures
-            v.wf() ==> self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
+            self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
 }
 

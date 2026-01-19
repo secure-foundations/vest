@@ -34,11 +34,10 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
 }
 
 impl<A, B> Deterministic for super::Choice<A, B> where
-    A: Deterministic + SpecParser,
+    A: Deterministic,
     B: Deterministic,
  {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             match v {
                 Either::Left(va) => {
                     self.0.lemma_serialize_equiv(va, obuf);
@@ -47,7 +46,6 @@ impl<A, B> Deterministic for super::Choice<A, B> where
                     self.1.lemma_serialize_equiv(vb, obuf);
                 },
             }
-        }
     }
 }
 

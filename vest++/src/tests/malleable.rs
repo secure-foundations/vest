@@ -37,8 +37,6 @@ proof fn requires_deterministic<T: Deterministic>(
     v: <T as SpecSerializer>::ST,
     obuf: Seq<u8>,
 )
-    requires
-        combinator.unambiguous(),
 {
     combinator.lemma_serialize_equiv(v, obuf);
 }
@@ -109,15 +107,15 @@ proof fn test_preceded_tag_prefix_deterministic(
     v: u8,
     obuf: Seq<u8>,
 )
-// requires
-//    v.len() == 3,
 {
     let val = 0u8;
-    let tag = Tag { inner: Fixed::<2>, tag: [val, val] };
+    let tag = Tag { inner: U8, tag: val };
     let serializer = Preceded(tag, U8);
 
     assert(().wf());
-    assert(serializer.unambiguous());
+    assert(serializer.unambiguous()) by {
+        unambiguous_pair((tag, U8));
+    }
     requires_deterministic(serializer, v, obuf);  // Should pass: Tag has UniqueWfValue
 }
 

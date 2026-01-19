@@ -53,7 +53,6 @@ impl<A, B> Deterministic for super::Preceded<A, B> where
     B: Deterministic,
  {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             let va_dps = choose|va: <A as SpecSerializer>::ST| va.wf();
             let va_ser = choose|va: <A as SpecSerializer>::ST| va.wf();
 
@@ -61,7 +60,6 @@ impl<A, B> Deterministic for super::Preceded<A, B> where
             va_dps.lemma_unique_wf_value(&va_ser);
 
             (self.0, self.1).lemma_serialize_equiv((va_dps, v), obuf);
-        }
     }
 }
 

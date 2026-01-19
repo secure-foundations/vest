@@ -121,11 +121,8 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
     }
 }
 
-impl<A> super::Star<A> where A: Deterministic + SpecParser {
+impl<A> super::Star<A> where A: Deterministic {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<<A as SpecSerializer>::ST>, obuf: Seq<u8>)
-        requires
-            self.unambiguous(),
-            vs.wf(),
         ensures
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
         decreases vs.len(),
@@ -201,11 +198,9 @@ impl<A> super::Star<A> where A: Deterministic + SpecParser {
     }
 }
 
-impl<A> Deterministic for super::Star<A> where A: Deterministic + SpecParser {
+impl<A> Deterministic for super::Star<A> where A: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             self.lemma_serialize_equiv_rec(v, obuf);
-        }
     }
 }
 
@@ -235,11 +230,9 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     }
 }
 
-impl<A: Deterministic + SpecParser, B: Deterministic> Deterministic for super::Repeat<A, B> {
+impl<A: Deterministic, B: Deterministic> Deterministic for super::Repeat<A, B> {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
-        }
     }
 }
 

@@ -25,9 +25,7 @@ impl<A: NonMalleable, Pred: SpecPred<A::PT>> NonMalleable for super::Refined<A, 
 
 impl<A: Deterministic, Pred: SpecPred<<A as SpecSerializer>::ST>> Deterministic for super::Refined<A, Pred> {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializerDps>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             self.inner.lemma_serialize_equiv(v.val, obuf);
-        }
     }
 }
 

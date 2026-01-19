@@ -9,14 +9,12 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     }
 }
 
-impl<A> Deterministic for super::Opt<A> where A: Deterministic + SpecParser {
+impl<A> Deterministic for super::Opt<A> where A: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
         match v {
             None => {},
             Some(vv) => {
-                if v.wf() {
                     self.0.lemma_serialize_equiv(vv, obuf);
-                }
             },
         }
     }
@@ -55,11 +53,9 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     }
 }
 
-impl<A: Deterministic + SpecParser, B: Deterministic> Deterministic for super::Optional<A, B> {
+impl<A: Deterministic, B: Deterministic> Deterministic for super::Optional<A, B> {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             (super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
-        }
     }
 }
 

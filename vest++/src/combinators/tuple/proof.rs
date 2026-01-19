@@ -56,7 +56,6 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
 
 impl<A, B> Deterministic for (A, B) where A: Deterministic, B: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
 
             self.1.lemma_serialize_equiv(v.1, obuf);
@@ -74,7 +73,6 @@ impl<A, B> Deterministic for (A, B) where A: Deterministic, B: Deterministic {
             //                              = self.0.spec_serialize(v.0) + obuf1
             //                              = self.0.spec_serialize(v.0) + self.1.spec_serialize(v.1) + obuf
             //                              = spec_serialize(v) + obuf
-        }
     }
 }
 

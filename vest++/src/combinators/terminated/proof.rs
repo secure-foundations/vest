@@ -65,7 +65,6 @@ impl<A, B> Deterministic for super::Terminated<A, B> where
     <B as SpecSerializer>::ST: UniqueWfValue,
  {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() {
             let vb_dps = choose|vb: <B as SpecSerializer>::ST|
                 #![auto]
                 vb.wf();
@@ -75,7 +74,6 @@ impl<A, B> Deterministic for super::Terminated<A, B> where
             vb_dps.lemma_unique_wf_value(&vb_ser);
 
             (self.0, self.1).lemma_serialize_equiv((v, vb_dps), obuf);
-        }
     }
 }
 
