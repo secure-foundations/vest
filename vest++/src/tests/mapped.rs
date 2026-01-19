@@ -45,6 +45,12 @@ impl Mapper for MyIsoMapper {
 }
 
 impl IsoMapper for MyIsoMapper {
+    proof fn lemma_map_wf(&self, v: Self::In) {
+    }
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+    }
+
     proof fn lemma_map_iso(&self, i: u8) {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
