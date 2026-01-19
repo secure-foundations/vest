@@ -1,6 +1,5 @@
 use super::spec::*;
-use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
-use crate::core::spec::{GoodSerializer, SpecParser, SpecSerializer, SpecSerializerDps, SpecType};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {

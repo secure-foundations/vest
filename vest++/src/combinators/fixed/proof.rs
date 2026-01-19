@@ -1,5 +1,4 @@
-use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
-use crate::core::spec::SpecSerializer;
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -12,7 +11,7 @@ impl<const N: usize> SPRoundTrip for super::Fixed<N> {
 }
 
 impl<const N: usize> PSRoundTrip for super::Fixed<N> {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         broadcast use super::spec::axiom_array_from_seq;
 
     }

@@ -1,9 +1,6 @@
 use crate::{
     combinators::Fixed,
-    core::spec::{
-        GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-        SpecType,
-    },
+    core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
 
@@ -66,6 +63,9 @@ impl SpecSerializer for super::BerBool {
 
 impl Serializability for super::BerBool {
 
+}
+
+impl Unambiguity for super::BerBool {
 }
 
 impl GoodSerializer for super::BerBool {

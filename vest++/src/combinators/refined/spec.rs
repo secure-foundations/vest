@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, PredFnSpec, Serializability, SpecParser, SpecPred, SpecSerializer,
-    SpecSerializerDps, SpecType, Subset,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -50,11 +47,16 @@ impl<A: Serializability, Pred: SpecPred<A::ST>> Serializability for super::Refin
     }
 }
 
+impl<A: Unambiguity, Pred: SpecPred<A::ST>> Unambiguity for super::Refined<A, Pred> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.inner.unambiguous()
+        &&& forall|v: Self::ST| v.pred == self.pred
+    }
+}
+
 impl<A: GoodSerializer, Pred: SpecPred<A::ST>> GoodSerializer for super::Refined<A, Pred> {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        if v.wf() {
-            self.inner.lemma_serialize_buf(v.val, obuf);
-        }
+        self.inner.lemma_serialize_buf(v.val, obuf);
     }
 }
 
@@ -99,6 +101,13 @@ impl<Inner> Serializability for super::Tag<Inner, Inner::ST> where Inner: Serial
     open spec fn serializable(&self, _v: Self::ST, obuf: Seq<u8>) -> bool {
         &&& self.tag.wf()
         &&& self.inner.serializable(self.tag, obuf)
+    }
+}
+
+impl<Inner: Unambiguity> Unambiguity for super::Tag<Inner, Inner::ST> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.inner.unambiguous()
+        &&& self.tag.wf()
     }
 }
 

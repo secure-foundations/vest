@@ -1,7 +1,6 @@
 pub mod proof;
 pub mod spec;
 
-use crate::core::spec::SpecParser;
 use vstd::prelude::*;
 
 verus! {

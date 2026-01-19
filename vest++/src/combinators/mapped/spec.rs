@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::{prelude::*, seq};
 
 verus! {
@@ -101,6 +98,15 @@ impl<Inner, M> Serializability for super::Mapped<Inner, M> where
  {
     open spec fn serializable(&self, v: M::Out, obuf: Seq<u8>) -> bool {
         self.inner.serializable(self.mapper.spec_map_rev(v), obuf)
+    }
+}
+
+impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
+    Inner: Unambiguity,
+    M: Mapper<In = Inner::ST>,
+{
+    open spec fn unambiguous(&self) -> bool {
+        self.inner.unambiguous()
     }
 }
 

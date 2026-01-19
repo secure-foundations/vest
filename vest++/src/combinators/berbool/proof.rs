@@ -1,7 +1,4 @@
-use crate::core::{
-    proof::SPRoundTrip,
-    spec::{SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps},
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {

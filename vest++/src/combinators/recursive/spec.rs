@@ -1,8 +1,4 @@
-use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, ParserSpecFn, Serializability, SerializableSpecFn,
-    SerializerDPSSpecFn, SerializerSpecFn, SpecCombinator, SpecParser, SpecSerializer,
-    SpecSerializerDps, SpecType, WfSpecFn,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {

@@ -1,10 +1,4 @@
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        PredFnSpec, SpecCombinator, SpecParser, SpecPred, SpecSerializer, SpecSerializerDps,
-        SpecType, Subset,
-    },
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -18,8 +12,8 @@ impl<A: SPRoundTrip, Pred: SpecPred<A::PT>> SPRoundTrip for super::Refined<A, Pr
 }
 
 impl<A: PSRoundTrip, Pred: SpecPred<A::PT>> PSRoundTrip for super::Refined<A, Pred> {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
-        self.inner.theorem_parse_serialize_roundtrip(ibuf, obuf);
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+        self.inner.theorem_parse_serialize_roundtrip(ibuf);
     }
 }
 
@@ -44,8 +38,8 @@ impl<Inner: SPRoundTrip> SPRoundTrip for super::Tag<Inner, Inner::PT> {
 }
 
 impl<Inner: PSRoundTrip> PSRoundTrip for super::Tag<Inner, Inner::PT> {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
-        self.inner.theorem_parse_serialize_roundtrip(ibuf, obuf);
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+        self.inner.theorem_parse_serialize_roundtrip(ibuf);
     }
 }
 

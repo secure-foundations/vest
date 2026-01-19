@@ -1,6 +1,6 @@
 use super::spec::{U16BeMapper, U16LeMapper};
 use crate::combinators::{Fixed, Mapped};
-use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -11,7 +11,7 @@ impl SPRoundTrip for super::U8 {
 }
 
 impl PSRoundTrip for super::U8 {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -35,10 +35,9 @@ impl SPRoundTrip for super::U16Le {
 }
 
 impl PSRoundTrip for super::U16Le {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.theorem_parse_serialize_roundtrip(
             ibuf,
-            obuf,
         );
     }
 }
@@ -65,10 +64,9 @@ impl SPRoundTrip for super::U16Be {
 }
 
 impl PSRoundTrip for super::U16Be {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.theorem_parse_serialize_roundtrip(
             ibuf,
-            obuf,
         );
     }
 }

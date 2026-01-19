@@ -1,8 +1,6 @@
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{Fixed, Mapped};
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -131,6 +129,12 @@ impl Serializability for super::U8 {
     }
 }
 
+impl Unambiguity for super::U8 {
+    open spec fn unambiguous(&self) -> bool {
+        true
+    }
+}
+
 impl GoodSerializer for super::U8 {
     proof fn lemma_serialize_buf(&self, v: u8, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == seq![v] + obuf);
@@ -177,6 +181,12 @@ impl Serializability for super::U16Le {
     }
 }
 
+impl Unambiguity for super::U16Le {
+    open spec fn unambiguous(&self) -> bool {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.unambiguous()
+    }
+}
+
 impl GoodSerializer for super::U16Le {
     proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_buf(v, obuf);
@@ -220,6 +230,12 @@ impl GoodParser for super::U16Be {
 impl Serializability for super::U16Be {
     open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.serializable(v, obuf)
+    }
+}
+
+impl Unambiguity for super::U16Be {
+    open spec fn unambiguous(&self) -> bool {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.unambiguous()
     }
 }
 

@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -56,6 +53,10 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
 }
 
 impl<const N: usize> Serializability for super::Fixed<N> {
+
+}
+
+impl<const N: usize> Unambiguity for super::Fixed<N> {
 
 }
 
