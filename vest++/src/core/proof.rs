@@ -1,18 +1,15 @@
 use crate::core::spec::SpecParser;
 
-use super::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, SpecCombinator, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use super::spec::*;
 use vstd::prelude::*;
 
 verus! {
 
 /// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
-pub trait SPRoundTrip: GoodCombinator {
+pub trait SPRoundTrip: SpecParser + SpecSerializerDps + Unambiguity<ST = Self::PT> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>)
         requires
-            self.serializable(v, obuf),
+            self.unambiguous(),
         ensures
             v.wf() ==> {
                 let ibuf = self.spec_serialize_dps(v, obuf);
@@ -24,12 +21,15 @@ pub trait SPRoundTrip: GoodCombinator {
 
 /// Parse-Serialize roundtrip property: parsing then serializing preserves the input prefix
 pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>)
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
+        requires
+            self.unambiguous(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> (self.serializable(v, obuf)
-                ==> self.spec_serialize_dps(v, obuf) == ibuf.take(n) + obuf),
+            self.spec_parse(ibuf) matches Some((n, v))
+                ==> self.spec_serialize_dps(v, Seq::<u8>::empty()) == ibuf.take(n),
     {
-        lemma_ps_roundtrip_from_non_malleable(self, ibuf, obuf);
+        // lemma_ps_roundtrip_from_non_malleable(self, ibuf, Seq::<u8>::empty());
+        lemma_ps_roundtrip_from_non_malleable(self, ibuf);
     }
 }
 
@@ -51,11 +51,11 @@ pub trait NonMalleable: GoodParser {
 /// Hence, we model non-deterministic serializers by relating two different serializer
 /// specs (DPS and non-DPS), since a deterministic serializer would produce
 /// identical outputs regardless of the serialization strategy.
-pub trait Deterministic: SpecSerializer + GoodSerializer<ST = <Self as SpecSerializer>::ST> {
+pub trait Deterministic: SpecSerializer + Unambiguity<ST = <Self as SpecSerializer>::ST> {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>)
         requires
-            self.serializable(v, obuf),
+            self.unambiguous()
         ensures
             v.wf() ==> self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
@@ -64,31 +64,26 @@ pub trait Deterministic: SpecSerializer + GoodSerializer<ST = <Self as SpecSeria
 proof fn lemma_ps_roundtrip_from_non_malleable<C: SPRoundTrip + NonMalleable + ?Sized>(
     c: &C,
     ibuf: Seq<u8>,
-    obuf: Seq<u8>,
 )
+    requires
+        c.unambiguous(),
     ensures
-        c.spec_parse(ibuf) matches Some((n, v)) ==> (c.serializable(v, obuf)
-            ==> c.spec_serialize_dps(v, obuf) == ibuf.take(n) + obuf),
+        c.spec_parse(ibuf) matches Some((n, v))
+            ==> c.spec_serialize_dps(v, Seq::<u8>::empty()) == ibuf.take(n),
 {
     if let Some((n, v)) = c.spec_parse(ibuf) {
-        if c.serializable(v, obuf) {
-            c.lemma_parse_length(ibuf);
-            c.lemma_parse_wf(ibuf);
-            c.theorem_serialize_parse_roundtrip(v, obuf);
+        c.lemma_parse_length(ibuf);
+        c.lemma_parse_wf(ibuf);
+        c.theorem_serialize_parse_roundtrip(v, Seq::<u8>::empty());
 
-            let serialized = c.spec_serialize_dps(v, obuf);
-            let n2 = serialized.len() - obuf.len();
-            assert(c.spec_parse(serialized) == Some((n2, v)));
+        let serialized = c.spec_serialize_dps(v, Seq::<u8>::empty());
+        let n2 = serialized.len() as int;
+        assert(c.spec_parse(serialized) == Some((n2, v)));
 
-            // By non-malleability: both parses return v, so prefixes are equal
-            c.lemma_parse_non_malleable(ibuf, serialized);
-            assert(ibuf.take(n) == serialized.take(n2));
-
-            // From lemma_serialize_buf: serialized = new_buf + obuf
-            c.lemma_serialize_buf(v, obuf);
-            assert(serialized.take(n2) + obuf == serialized);
-            assert(ibuf.take(n) + obuf == serialized);
-        }
+        // By non-malleability: both parses return v, so prefixes are equal
+        c.lemma_parse_non_malleable(ibuf, serialized);
+        assert(ibuf.take(n) == serialized.take(n2));
+        assert(ibuf.take(n) == serialized);
     }
 }
 

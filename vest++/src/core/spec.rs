@@ -279,10 +279,10 @@ pub trait SpecParser {
     /// from the input buffer `ibuf`, and `v` is the parsed value.
     /// Returns `None` if parsing fails.
     spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)>;
+}
 
-    open spec fn fails_to_parse(&self, ibuf: Seq<u8>) -> bool {
-        self.spec_parse(ibuf) is None
-    }
+pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
+    p.spec_parse(ibuf) is None
 }
 
 /// A well-behaved parser that satisfies key properties.
@@ -331,14 +331,21 @@ pub trait Serializability: SpecSerializerDps {
     }
 }
 
+/// Conditions for unambiguously composing formats.
+/// This is meant to be an smt-friendlier version of [`Serializability`]
+pub trait Unambiguity: SpecSerializerDps {
+    /// Unambiguity constraint for serializer combinators.
+    open spec fn unambiguous(&self) -> bool {
+        true
+    }
+}
+
 /// A well-behaved serializer that satisfies key properties.
-pub trait GoodSerializer: Serializability {
+pub trait GoodSerializer: SpecSerializerDps {
     /// Lemma: serializer *prepends* to the output buffer
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>)
-        requires
-            self.serializable(v, obuf),
         ensures
-            v.wf() ==> exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
+            exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 }
 
