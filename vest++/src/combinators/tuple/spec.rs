@@ -66,15 +66,14 @@ impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
 
 impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-            let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
-            self.1.lemma_serialize_buf(v.1, obuf);
-            self.0.lemma_serialize_buf(v.0, serialized1);
-            let witness1 = choose|wit1: Seq<u8>|
-                self.1.spec_serialize_dps(v.1, obuf) == wit1 + obuf;
-            let witness0 = choose|wit0: Seq<u8>|
-                self.0.spec_serialize_dps(v.0, serialized1) == wit0 + serialized1;
-            assert(serialized0 == witness0 + witness1 + obuf);
+        let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+        let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
+        self.1.lemma_serialize_buf(v.1, obuf);
+        self.0.lemma_serialize_buf(v.0, serialized1);
+        let witness1 = choose|wit1: Seq<u8>| self.1.spec_serialize_dps(v.1, obuf) == wit1 + obuf;
+        let witness0 = choose|wit0: Seq<u8>|
+            self.0.spec_serialize_dps(v.0, serialized1) == wit0 + serialized1;
+        assert(serialized0 == witness0 + witness1 + obuf);
     }
 }
 

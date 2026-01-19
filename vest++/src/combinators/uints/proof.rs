@@ -36,9 +36,7 @@ impl SPRoundTrip for super::U16Le {
 
 impl PSRoundTrip for super::U16Le {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.theorem_parse_serialize_roundtrip(
-            ibuf,
-        );
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.theorem_parse_serialize_roundtrip(ibuf);
     }
 }
 
@@ -65,9 +63,7 @@ impl SPRoundTrip for super::U16Be {
 
 impl PSRoundTrip for super::U16Be {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.theorem_parse_serialize_roundtrip(
-            ibuf,
-        );
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.theorem_parse_serialize_roundtrip(ibuf);
     }
 }
 

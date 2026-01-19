@@ -80,23 +80,21 @@ impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Choice<
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
-        &&& forall|vb: B::ST, obuf: Seq<u8>| vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
+        &&& forall|vb: B::ST, obuf: Seq<u8>|
+            vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
     }
 }
 
-impl<A, B> GoodSerializer for super::Choice<A, B> where
-    A: GoodSerializer,
-    B: GoodSerializer,
- {
+impl<A, B> GoodSerializer for super::Choice<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-            match v {
-                Either::Left(va) => {
-                    self.0.lemma_serialize_buf(va, obuf);
-                },
-                Either::Right(vb) => {
-                    self.1.lemma_serialize_buf(vb, obuf);
-                },
-            }
+        match v {
+            Either::Left(va) => {
+                self.0.lemma_serialize_buf(va, obuf);
+            },
+            Either::Right(vb) => {
+                self.1.lemma_serialize_buf(vb, obuf);
+            },
+        }
     }
 }
 

@@ -200,7 +200,7 @@ impl<A> super::Star<A> where A: Deterministic {
 
 impl<A> Deterministic for super::Star<A> where A: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-            self.lemma_serialize_equiv_rec(v, obuf);
+        self.lemma_serialize_equiv_rec(v, obuf);
     }
 }
 
@@ -219,20 +219,19 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Rep
     }
 }
 
-
 impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for super::Repeat<A, B> {
+
 }
 
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
-    {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl<A: Deterministic, B: Deterministic> Deterministic for super::Repeat<A, B> {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-            (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 

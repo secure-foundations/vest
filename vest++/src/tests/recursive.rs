@@ -15,8 +15,9 @@ impl SpecType for NestedBracesT {
     open spec fn wf(&self) -> bool {
         wf_nested_braces(*self)
     }
+
     open spec fn byte_len(&self) -> nat
-        decreases self
+        decreases self,
     {
         match self {
             NestedBracesT::Brace(inner) => 2 + inner.byte_len(),

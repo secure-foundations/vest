@@ -29,7 +29,6 @@ impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodPa
 //     B: Serializability,
 //  {
 //     type ST = A::ST;
-
 //     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
 //         // Use an arbitrary witness value for B that satisfies the serializable constraint
 //         let vb = choose|vb: B::ST| #![auto] vb.wf() && self.1.serializable(vb, obuf);
@@ -48,7 +47,6 @@ impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
         (self.0, self.1).spec_serialize_dps((v, vb), obuf)
     }
 }
-
 
 impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B: SpecSerializer {
     type ST = A::ST;
@@ -76,7 +74,6 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
 //         )
 //     }
 // }
-
 impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Terminated<A, B> {
     open spec fn unambiguous(&self) -> bool {
         &&& (self.0, self.1).unambiguous()
@@ -86,8 +83,8 @@ impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Terminated<A, B> {
 
 impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-            let vb = choose|vb: B::ST| #![auto] vb.wf();
-            (self.0, self.1).lemma_serialize_buf((v, vb), obuf);
+        let vb = choose|vb: B::ST| #![auto] vb.wf();
+        (self.0, self.1).lemma_serialize_buf((v, vb), obuf);
 
     }
 }

@@ -66,6 +66,7 @@ impl Serializability for super::BerBool {
 }
 
 impl Unambiguity for super::BerBool {
+
 }
 
 impl GoodSerializer for super::BerBool {

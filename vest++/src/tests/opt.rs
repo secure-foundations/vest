@@ -11,7 +11,9 @@ use vstd::prelude::*;
 verus! {
 
 struct Pred1;
+
 struct Pred2;
+
 struct Pred3;
 
 impl SpecPred<u8> for Pred1 {
@@ -32,22 +34,16 @@ impl SpecPred<u8> for Pred3 {
     }
 }
 
-
-
 proof fn test_opt_compose() {
     let pred1 = |x: u8| x == 1u8;
     let pred2 = |x: u8| x == 2u8;
     let c = Optional(
-                Refined { inner: U8, pred: Pred2 },
-            Optional(
-                Refined { inner: U8, pred: Pred1 },
-                Refined { inner: U8, pred: Pred3 },
-    ));
+        Refined { inner: U8, pred: Pred2 },
+        Optional(Refined { inner: U8, pred: Pred1 }, Refined { inner: U8, pred: Pred3 }),
+    );
     let obuf = seq![0u8; 10];
     // let v = ((Some(seq![2u8]), Some(seq![1u8])), Some(seq![2u8]));
-    let v = (
-        Some(Subset { val: 2u8, pred: Pred2 }), (None,
-            Subset { val: 3u8, pred: Pred3 }));
+    let v = (Some(Subset { val: 2u8, pred: Pred2 }), (None, Subset { val: 3u8, pred: Pred3 }));
     // let v = (Some(seq![0u8]), (Some(seq![1u8]), Some(seq![2u8])));
     // let v1 = (Some(seq![0u8]), (Some(seq![1u8]), None));
     // let v2 = (Some(seq![0u8]), (None, Some(seq![2u8])));

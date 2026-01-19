@@ -15,7 +15,7 @@ pub trait SPRoundTrip: SpecParser + SpecSerializerDps + Unambiguity<ST = Self::P
                 let ibuf = self.spec_serialize_dps(v, obuf);
                 let n = ibuf.len() - obuf.len();
                 self.spec_parse(ibuf) == Some((n, v))
-            }
+            },
     ;
 }
 
@@ -25,11 +25,25 @@ pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
         requires
             self.unambiguous(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v))
-                ==> self.spec_serialize_dps(v, Seq::<u8>::empty()) == ibuf.take(n),
+            self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize_dps(v, seq![])
+                == ibuf.take(n),
     {
-        // lemma_ps_roundtrip_from_non_malleable(self, ibuf, Seq::<u8>::empty());
-        lemma_ps_roundtrip_from_non_malleable(self, ibuf);
+        let c = self;
+        let empty = Seq::<u8>::empty();
+        if let Some((n, v)) = c.spec_parse(ibuf) {
+            c.lemma_parse_length(ibuf);
+            c.lemma_parse_wf(ibuf);
+            c.theorem_serialize_parse_roundtrip(v, empty);
+
+            let serialized = c.spec_serialize_dps(v, empty);
+            let n2 = serialized.len() as int;
+            assert(c.spec_parse(serialized) == Some((n2, v)));
+
+            // By non-malleability: both parses return v, so prefixes are equal
+            c.lemma_parse_non_malleable(ibuf, serialized);
+            assert(ibuf.take(n) == serialized.take(n2));
+            assert(ibuf.take(n) == serialized);
+        }
     }
 }
 
@@ -57,32 +71,6 @@ pub trait Deterministic: SpecSerializer + SpecSerializerDps<ST = <Self as SpecSe
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
-}
-
-proof fn lemma_ps_roundtrip_from_non_malleable<C: SPRoundTrip + NonMalleable + ?Sized>(
-    c: &C,
-    ibuf: Seq<u8>,
-)
-    requires
-        c.unambiguous(),
-    ensures
-        c.spec_parse(ibuf) matches Some((n, v))
-            ==> c.spec_serialize_dps(v, Seq::<u8>::empty()) == ibuf.take(n),
-{
-    if let Some((n, v)) = c.spec_parse(ibuf) {
-        c.lemma_parse_length(ibuf);
-        c.lemma_parse_wf(ibuf);
-        c.theorem_serialize_parse_roundtrip(v, Seq::<u8>::empty());
-
-        let serialized = c.spec_serialize_dps(v, Seq::<u8>::empty());
-        let n2 = serialized.len() as int;
-        assert(c.spec_parse(serialized) == Some((n2, v)));
-
-        // By non-malleability: both parses return v, so prefixes are equal
-        c.lemma_parse_non_malleable(ibuf, serialized);
-        assert(ibuf.take(n) == serialized.take(n2));
-        assert(ibuf.take(n) == serialized);
-    }
 }
 
 /// Combined trait for all proof properties (for backward compatibility)

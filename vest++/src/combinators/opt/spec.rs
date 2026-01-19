@@ -70,7 +70,7 @@ impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
-                    self.0.lemma_serialize_buf(vv, obuf);
+                self.0.lemma_serialize_buf(vv, obuf);
             },
         }
     }
@@ -86,12 +86,11 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
 
 impl<A: GoodParser, B: GoodParser> GoodParser for super::Optional<A, B> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-                    (super::Opt(self.0), self.1).lemma_parse_length(ibuf)
+        (super::Opt(self.0), self.1).lemma_parse_length(ibuf)
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)
-            {
-                    (super::Opt(self.0), self.1).lemma_parse_wf(ibuf)
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_wf(ibuf)
     }
 }
 
@@ -121,7 +120,8 @@ impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Optiona
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
-        &&& forall|vb: B::ST, obuf: Seq<u8>| vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
+        &&& forall|vb: B::ST, obuf: Seq<u8>|
+            vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
     }
 }
 

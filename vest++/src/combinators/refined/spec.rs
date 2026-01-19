@@ -24,7 +24,9 @@ impl<A: GoodParser, Pred: SpecPred<A::PT>> GoodParser for super::Refined<A, Pred
     }
 }
 
-impl<A, Pred: SpecPred<A::ST>> SpecSerializerDps for super::Refined<A, Pred> where A: SpecSerializerDps {
+impl<A, Pred: SpecPred<A::ST>> SpecSerializerDps for super::Refined<A, Pred> where
+    A: SpecSerializerDps,
+ {
     type ST = Subset<A::ST, Pred>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {

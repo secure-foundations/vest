@@ -26,6 +26,7 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for (A, B) {
 }
 
 impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for (A, B) {
+
 }
 
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
@@ -56,23 +57,23 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
 
 impl<A, B> Deterministic for (A, B) where A: Deterministic, B: Deterministic {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-            let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
+        let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
 
-            self.1.lemma_serialize_equiv(v.1, obuf);
-            self.0.lemma_serialize_equiv(v.0, obuf1);
+        self.1.lemma_serialize_equiv(v.1, obuf);
+        self.0.lemma_serialize_equiv(v.0, obuf1);
 
-            // From self.1.lemma_serialize_equiv:
-            // self.1.spec_serialize_dps(v.1, obuf) == self.1.spec_serialize(v.1) + obuf
-            // So: obuf1 == self.1.spec_serialize(v.1) + obuf
+        // From self.1.lemma_serialize_equiv:
+        // self.1.spec_serialize_dps(v.1, obuf) == self.1.spec_serialize(v.1) + obuf
+        // So: obuf1 == self.1.spec_serialize(v.1) + obuf
 
-            // From self.0.lemma_serialize_equiv:
-            // self.0.spec_serialize_dps(v.0, obuf1) == self.0.spec_serialize(v.0) + obuf1
+        // From self.0.lemma_serialize_equiv:
+        // self.0.spec_serialize_dps(v.0, obuf1) == self.0.spec_serialize(v.0) + obuf1
 
-            // Therefore:
-            // spec_serialize_dps(v, obuf) = self.0.spec_serialize_dps(v.0, obuf1)
-            //                              = self.0.spec_serialize(v.0) + obuf1
-            //                              = self.0.spec_serialize(v.0) + self.1.spec_serialize(v.1) + obuf
-            //                              = spec_serialize(v) + obuf
+        // Therefore:
+        // spec_serialize_dps(v, obuf) = self.0.spec_serialize_dps(v.0, obuf1)
+        //                              = self.0.spec_serialize(v.0) + obuf1
+        //                              = self.0.spec_serialize(v.0) + self.1.spec_serialize(v.1) + obuf
+        //                              = spec_serialize(v) + obuf
     }
 }
 

@@ -23,7 +23,6 @@ proof fn test_repeat_roundtrip_basic() {
     let v2 = Subset { val: 0x01u8, pred: MyPred };
     let v: (Seq<Subset<u8, MyPred>>, ()) = (seq![v1, v2], ());
 
-
     assert(v.wf());
     assert(rep.unambiguous());
     let ibuf = rep.spec_serialize_dps(v, obuf);
@@ -67,7 +66,10 @@ proof fn test_repeat_with_tuple_inner() {
 
     assert(v.wf());
     assert(rep.unambiguous()) by {
-        assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(inner, #[trigger] term.spec_serialize_dps(vb, obuf)) by {
+        assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
+            inner,
+            #[trigger] term.spec_serialize_dps(vb, obuf),
+        ) by {
             U16Le.theorem_serialize_parse_roundtrip(term.tag, obuf);
         }
     }

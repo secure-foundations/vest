@@ -14,7 +14,7 @@ impl<A> Deterministic for super::Opt<A> where A: Deterministic {
         match v {
             None => {},
             Some(vv) => {
-                    self.0.lemma_serialize_equiv(vv, obuf);
+                self.0.lemma_serialize_equiv(vv, obuf);
             },
         }
     }
@@ -34,28 +34,28 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Opt
                         assert(n0 == serialized0.len() - serialized1.len());
                         assert(serialized0.skip(n0) == serialized1);
                     }
-                }
+                },
                 None => {
                     assert(serialized1.skip(0) == serialized1);
-                }
+                },
             }
         }
     }
 }
 
 impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for super::Optional<A, B> {
+
 }
 
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
-    {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl<A: Deterministic, B: Deterministic> Deterministic for super::Optional<A, B> {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-            (super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
+        (super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 

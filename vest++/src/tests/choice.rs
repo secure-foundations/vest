@@ -5,10 +5,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_choice_compose() {
-    let c = Choice(
-        Tag { inner: U8, tag: 0u8 },
-        Tag { inner: U8, tag: 2u8 },
-    );
+    let c = Choice(Tag { inner: U8, tag: 0u8 }, Tag { inner: U8, tag: 2u8 });
     let obuf = Seq::empty();
     let v = Either::Right(());
     assert(v.wf());
@@ -29,7 +26,10 @@ proof fn test_choice_compose1() {
     tag2.theorem_serialize_parse_roundtrip((), obuf);
     // assert(c.unambiguous());
     assert(c.unambiguous()) by {
-        assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(tag1, #[trigger] tag2.spec_serialize_dps(vb, obuf)) by {
+        assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
+            tag1,
+            #[trigger] tag2.spec_serialize_dps(vb, obuf),
+        ) by {
             U16Le.theorem_serialize_parse_roundtrip(tag2.tag, obuf);
         }
     }

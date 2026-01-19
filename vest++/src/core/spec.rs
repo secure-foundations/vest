@@ -60,6 +60,7 @@ impl<A: SpecType, B: SpecType> SpecType for (A, B) {
     open spec fn wf(&self) -> bool {
         self.0.wf() && self.1.wf()
     }
+
     open spec fn byte_len(&self) -> nat {
         self.0.byte_len() + self.1.byte_len()
     }
@@ -72,6 +73,7 @@ impl<T: SpecType> SpecType for Option<T> {
             None => true,
         }
     }
+
     open spec fn byte_len(&self) -> nat {
         match self {
             Some(v) => v.byte_len(),
@@ -87,6 +89,7 @@ impl<A: SpecType, B: SpecType> SpecType for Either<A, B> {
             Either::Right(v) => v.wf(),
         }
     }
+
     open spec fn byte_len(&self) -> nat {
         match self {
             Either::Left(v) => v.byte_len(),
@@ -99,6 +102,7 @@ impl<T: SpecType> SpecType for Seq<T> {
     open spec fn wf(&self) -> bool {
         forall|i: int| 0 <= i < self.len() ==> #[trigger] self[i].wf()
     }
+
     open spec fn byte_len(&self) -> nat {
         self.fold_left(0, |acc: nat, elem: T| acc + elem.byte_len())
     }
@@ -133,6 +137,7 @@ impl<T: SpecType, Pred: SpecPred<T>> SpecType for Subset<T, Pred> {
         &&& self.val.wf()
         &&& self.pred.apply(self.val)
     }
+
     open spec fn byte_len(&self) -> nat {
         self.val.byte_len()
     }
@@ -156,6 +161,7 @@ pub trait NonEmptyValue: SpecType {
     open spec fn non_empty(&self) -> bool {
         true
     }
+
     /// Lemma: a well-formed value has a positive byte length
     proof fn lemma_non_empty(&self)
         requires
@@ -166,38 +172,32 @@ pub trait NonEmptyValue: SpecType {
 }
 
 impl NonEmptyValue for bool {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
 impl NonEmptyValue for u8 {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
 impl NonEmptyValue for u16 {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
 impl NonEmptyValue for u32 {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
 impl NonEmptyValue for u64 {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
 impl NonEmptyValue for usize {
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
@@ -206,8 +206,7 @@ impl<A, B> NonEmptyValue for (A, B) where A: SpecType, B: SpecType {
         self.0.byte_len() > 0 || self.1.byte_len() > 0
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
@@ -216,8 +215,7 @@ impl<A, B> NonEmptyValue for Either<A, B> where A: SpecType, B: SpecType {
         self.byte_len() > 0
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
@@ -226,8 +224,7 @@ impl<T: NonEmptyValue> NonEmptyValue for Option<T> {
         self matches Some(v) && v.non_empty()
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
         self->0.lemma_non_empty();
     }
 }
@@ -238,8 +235,7 @@ impl<T: NonEmptyValue> NonEmptyValue for Seq<T> {
         &&& self.len() > 0
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
         if self.wf() {
             let last_index = (self.len() as int) - 1;
             self[last_index].lemma_non_empty();
@@ -252,8 +248,7 @@ impl<const N: usize> NonEmptyValue for [u8; N] {
         N > 0
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
     }
 }
 
@@ -262,8 +257,7 @@ impl<T: NonEmptyValue, Pred: SpecPred<T>> NonEmptyValue for Subset<T, Pred> {
         self.val.non_empty()
     }
 
-    proof fn lemma_non_empty(&self)
-    {
+    proof fn lemma_non_empty(&self) {
         self.val.lemma_non_empty();
     }
 }

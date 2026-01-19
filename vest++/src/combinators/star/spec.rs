@@ -158,11 +158,11 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Repeat<A, B> {
 }
 
 impl<A: GoodParser, B: GoodParser> GoodParser for super::Repeat<A, B> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>)  {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_length(ibuf)
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)  {
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_wf(ibuf)
     }
 }
@@ -193,10 +193,9 @@ impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Repeat<
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
-        &&& forall|vb: B::ST, obuf: Seq<u8>| vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
+        &&& forall|vb: B::ST, obuf: Seq<u8>|
+            vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
     }
 }
-
-
 
 } // verus!

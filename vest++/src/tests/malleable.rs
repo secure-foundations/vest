@@ -36,8 +36,7 @@ proof fn requires_deterministic<T: Deterministic>(
     combinator: T,
     v: <T as SpecSerializer>::ST,
     obuf: Seq<u8>,
-)
-{
+) {
     combinator.lemma_serialize_equiv(v, obuf);
 }
 
@@ -103,11 +102,7 @@ proof fn test_preceded_tag_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has UniqueWfValue
 }
 
-proof fn test_preceded_tag_prefix_deterministic(
-    v: u8,
-    obuf: Seq<u8>,
-)
-{
+proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
     let val = 0u8;
     let tag = Tag { inner: U8, tag: val };
     let serializer = Preceded(tag, U8);
@@ -171,8 +166,9 @@ proof fn test_berbool_fails_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
 }
 
 proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: (A, B))
-    requires pair.0.unambiguous(),
-             pair.1.unambiguous(),
+    requires
+        pair.0.unambiguous(),
+        pair.1.unambiguous(),
     ensures
         pair.unambiguous(),
 {

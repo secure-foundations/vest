@@ -40,8 +40,8 @@ impl SpecSerializer for super::Tail {
 //         obuf.len() == 0
 //     }
 // }
-
 impl Unambiguity for super::Tail {
+
 }
 
 // impl GoodSerializer for super::Tail {
@@ -51,5 +51,4 @@ impl Unambiguity for super::Tail {
 //         }
 //     }
 // }
-
 } // verus!
