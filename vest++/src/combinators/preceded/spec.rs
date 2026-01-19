@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType, UniqueWfValue,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -28,16 +25,14 @@ impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodPars
 }
 
 impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
-    A: Serializability,
+    A: SpecSerializerDps,
     B: SpecSerializerDps,
  {
     type ST = B::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        // Use an arbitrary witness value for A that satisfies the serializable constraint
-        let va = choose|va: A::ST|
-            #![auto]
-            va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
+        // Use an arbitrary witness value for A that satisfies the wf constraint
+        let va = choose|va: A::ST| va.wf();
         (self.0, self.1).spec_serialize_dps((va, v), obuf)
     }
 }
@@ -51,25 +46,17 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where A: SpecSerializer, B: 
     }
 }
 
-impl<A, B> Serializability for super::Preceded<A, B> where A: Serializability, B: Serializability {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        // To serialize Preceded, we need a witness value for A
-        // We require that there exists some A value that can be serialized before B
-        &&& self.1.serializable(v, obuf)
-        &&& exists|va: A::ST|
-            #![trigger va.wf()]
-            { va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf)) }
+impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Preceded<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& (self.0, self.1).unambiguous()
+        &&& exists|va: A::ST| va.wf()
     }
 }
 
 impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        if self.serializable(v, obuf) {
-            let va = choose|va: A::ST|
-                #![auto]
-                va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
-            (self.0, self.1).lemma_serialize_buf((va, v), obuf);
-        }
+        let va = choose|va: A::ST| #![auto] va.wf();
+        (self.0, self.1).lemma_serialize_buf((va, v), obuf);
     }
 }
 

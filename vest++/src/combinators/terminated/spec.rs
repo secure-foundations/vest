@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType, UniqueWfValue,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -27,18 +24,31 @@ impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodPa
     }
 }
 
+// impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
+//     A: SpecSerializerDps,
+//     B: Serializability,
+//  {
+//     type ST = A::ST;
+
+//     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+//         // Use an arbitrary witness value for B that satisfies the serializable constraint
+//         let vb = choose|vb: B::ST| #![auto] vb.wf() && self.1.serializable(vb, obuf);
+//         (self.0, self.1).spec_serialize_dps((v, vb), obuf)
+//     }
+// }
 impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
     A: SpecSerializerDps,
-    B: Serializability,
+    B: SpecSerializerDps,
  {
     type ST = A::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         // Use an arbitrary witness value for B that satisfies the serializable constraint
-        let vb = choose|vb: B::ST| #![auto] vb.wf() && self.1.serializable(vb, obuf);
+        let vb = choose|vb: B::ST| #![auto] vb.wf();
         (self.0, self.1).spec_serialize_dps((v, vb), obuf)
     }
 }
+
 
 impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B: SpecSerializer {
     type ST = A::ST;
@@ -49,30 +59,36 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
     }
 }
 
-impl<A, B> Serializability for super::Terminated<A, B> where
-    A: Serializability,
-    B: Serializability,
- {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        // To serialize Terminated, we need a witness value for B
-        // We require that there exists some B value that can be serialized after A
-        &&& exists|vb: B::ST| #![trigger vb.wf()] { vb.wf() && self.1.serializable(vb, obuf) }
-        &&& self.0.serializable(
-            v,
-            self.1.spec_serialize_dps(
-                choose|vb: B::ST| #![trigger vb.wf()] vb.wf() && self.1.serializable(vb, obuf),
-                obuf,
-            ),
-        )
+// impl<A, B> Serializability for super::Terminated<A, B> where
+//     A: Serializability,
+//     B: Serializability,
+//  {
+//     open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
+//         // To serialize Terminated, we need a witness value for B
+//         // We require that there exists some B value that can be serialized after A
+//         &&& exists|vb: B::ST| #![trigger vb.wf()] { vb.wf() && self.1.serializable(vb, obuf) }
+//         &&& self.0.serializable(
+//             v,
+//             self.1.spec_serialize_dps(
+//                 choose|vb: B::ST| #![trigger vb.wf()] vb.wf() && self.1.serializable(vb, obuf),
+//                 obuf,
+//             ),
+//         )
+//     }
+// }
+
+impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Terminated<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& (self.0, self.1).unambiguous()
+        &&& exists|vb: B::ST| vb.wf()
     }
 }
 
 impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        if self.serializable(v, obuf) {
-            let vb = choose|vb: B::ST| #![auto] vb.wf() && self.1.serializable(vb, obuf);
+            let vb = choose|vb: B::ST| #![auto] vb.wf();
             (self.0, self.1).lemma_serialize_buf((v, vb), obuf);
-        }
+
     }
 }
 

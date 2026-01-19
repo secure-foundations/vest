@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -61,9 +58,14 @@ impl<A, B> Serializability for (A, B) where A: Serializability, B: Serializabili
     }
 }
 
+impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
+    open spec fn unambiguous(&self) -> bool {
+        self.1.unambiguous() && self.0.unambiguous()
+    }
+}
+
 impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
             self.1.lemma_serialize_buf(v.1, obuf);
@@ -73,7 +75,6 @@ impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer 
             let witness0 = choose|wit0: Seq<u8>|
                 self.0.spec_serialize_dps(v.0, serialized1) == wit0 + serialized1;
             assert(serialized0 == witness0 + witness1 + obuf);
-        }
     }
 }
 

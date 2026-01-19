@@ -1,44 +1,24 @@
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser, SpecSerializer,
-        SpecSerializerDps, SpecType, UniqueWfValue,
-    },
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
-impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip, B: SPRoundTrip {
+impl<A, B> SPRoundTrip for super::Preceded<A, B> where A: SPRoundTrip + GoodSerializer, B: SPRoundTrip {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
-        let va = choose|va: A::ST|
-            #![auto]
-            va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
-        (self.0, self.1).theorem_serialize_parse_roundtrip((va, v), obuf);
+        if v.wf() {
+            let va = choose|va: A::ST| #![auto] va.wf();
+            (self.0, self.1).theorem_serialize_parse_roundtrip((va, v), obuf);
+        }
     }
 }
 
 // PSRoundTrip only holds for Preceded when A has a unique well-formed value
 impl<A, B> PSRoundTrip for super::Preceded<A, B> where
-    A: PSRoundTrip,
+    A: PSRoundTrip + GoodSerializer,
     <A as SpecParser>::PT: UniqueWfValue,
     B: PSRoundTrip,
  {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
-        if let Some((_, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
-            if self.serializable(vb, obuf) {
-                let va_witness = choose|va: A::PT|
-                    #![auto]
-                    va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(vb, obuf));
-                (self.0, self.1).lemma_parse_wf(ibuf);
-                va_witness.lemma_unique_wf_value(&va);
-                assert(va_witness == va);
-
-                (self.0, self.1).theorem_parse_serialize_roundtrip(ibuf, obuf);
-            }
-        }
-    }
-}
+ }
 
 // NonMalleable only holds for Preceded when A has a unique well-formed value
 impl<A, B> NonMalleable for super::Preceded<A, B> where
@@ -73,10 +53,8 @@ impl<A, B> Deterministic for super::Preceded<A, B> where
     B: Deterministic,
  {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        if v.wf() && self.serializable(v, obuf) {
-            let va_dps = choose|va: <A as SpecSerializer>::ST|
-                #![auto]
-                va.wf() && self.0.serializable(va, self.1.spec_serialize_dps(v, obuf));
+        if v.wf() {
+            let va_dps = choose|va: <A as SpecSerializer>::ST| va.wf();
             let va_ser = choose|va: <A as SpecSerializer>::ST| va.wf();
 
             // Since A has unique well-formed values, both witnesses are equal

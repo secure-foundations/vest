@@ -1,22 +1,16 @@
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        GoodParser, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer, SpecSerializerDps,
-        SpecType,
-    },
-};
-use vstd::{assert_seqs_equal, prelude::*};
+use crate::core::{proof::*, spec::*};
+use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for (A, B) {
+impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for (A, B) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
             self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
             self.0.theorem_serialize_parse_roundtrip(v.0, serialized1);
-            self.1.lemma_serialize_buf(v.1, obuf);
+            // self.1.lemma_serialize_buf(v.1, obuf);
             self.0.lemma_serialize_buf(v.0, serialized1);
             if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
                 assert(n0 == serialized0.len() - serialized1.len());
@@ -31,19 +25,7 @@ impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for (A, B) {
     }
 }
 
-impl<A: PSRoundTrip, B: PSRoundTrip> PSRoundTrip for (A, B) {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_length(ibuf.skip(n1));
-            if let Some((n2, v2)) = self.1.spec_parse(ibuf.skip(n1)) {
-                let serialized2 = self.1.spec_serialize_dps(v2, obuf);
-                let serialized1 = self.0.spec_serialize_dps(v1, serialized2);
-                self.0.theorem_parse_serialize_roundtrip(ibuf, serialized2);
-                self.1.theorem_parse_serialize_roundtrip(ibuf.skip(n1), obuf);
-            }
-        }
-    }
+impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for (A, B) {
 }
 
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
