@@ -1,13 +1,8 @@
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::refined::Tag;
 use crate::combinators::{BerBool, Mapped, Preceded, Refined, Terminated, U8};
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        GoodCombinator, GoodSerializer, SpecCombinator, SpecParser, SpecSerializer,
-        SpecSerializerDps, SpecType,
-    },
-};
+
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {

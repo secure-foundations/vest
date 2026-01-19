@@ -1,11 +1,5 @@
 use crate::combinators::{Opt, Optional, Refined, U8};
-use crate::core::{
-    proof::{NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        GoodSerializer, Serializability, SpecCombinator, SpecParser, SpecPred, SpecSerializer,
-        SpecSerializerDps, SpecType, Subset, Unambiguity,
-    },
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {

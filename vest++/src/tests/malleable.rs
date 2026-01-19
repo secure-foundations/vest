@@ -1,13 +1,7 @@
 use crate::combinators::fixed::spec::axiom_array_from_seq;
 use crate::combinators::refined::Tag;
 use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated, U16Le, U8};
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{
-        GoodSerializer, Serializability, SpecCombinator, SpecParser, SpecSerializer,
-        SpecSerializerDps, SpecType, Unambiguity,
-    },
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
