@@ -586,3 +586,406 @@ note: required by a bound in `tests::malleable::requires_non_malleable`
 
 
 See [`src/tests/malleable.rs`](src/tests/malleable.rs) for more examples.
+
+## Recursive Formats
+
+Throughout this writeup, the following recursive format will be used as a running example:
+
+```pest
+nested_braces ::= 
+  | '{' ~ nested_braces ~ '}' 
+  | ε
+```
+Or in `.vest`:
+```vest
+nested_braces = choose {
+  Brace(wrap(u8 = 0x7B, nested_braces, u8 = 0x7D)),
+  Eps(empty),
+}
+```
+
+### Specifying General Recursive Combinators
+
+In an entirely trait-based combinator library, combinators are nominal Rust types (`struct` types) with generic type parameters. When attempting to naively construct recursive combinator specs like the following:
+
+```rust
+struct NestedBraceCombinator(Mapped<Choice<Terminated<Preceded<Tag<U8>, Box<NestedBraceCombinator>, Tag<U8>>, Empty>>, NestedBracesMapper>);
+
+spec fn nested_braces_combinator() -> NestedBraceCombinator {
+    Mapped {
+        inner: Choice(
+            Terminated(
+                Preceded(Tag { inner: U8, tag: 0x7B }, Box::new(nested_braces_combinator())),
+                Tag { inner: U8, tag: 0x7D},
+            ),
+            Empty,
+        ),
+        mapper: NestedBracesMapper,
+    }
+}
+```
+
+we're immediately faced with two issues:
+
+1. The `nested_braces_combinator` spec function is recursive, but it doesn't have a `decreases` clause;
+2. The datatype `NestedBraceCombinator` itself is not well defined: Verus would report `error: datatype must have at least one non-recursive variant`.
+
+In fact, the semantics of `nested_braces_combinator` is not quite right: we're (eagerly) constructing a recursive data structure even before invoking `.spec_parse` on input buffers.
+
+In call-by-need languages like Haskell, such definitions are perfectly fine because of lazy evaluation---the recursive structure is only constructed as needed (e.g,. when *forced* by `runP` or `parse`). We could technically mimic this behavior in Rust by using "thunks" as combinators:
+
+```rust
+impl<C: Combinator> Combinator for spec_fn() -> C {
+    ...
+}
+```
+
+However, even if such attepmts could work in regular Rust, they would almost always fail in the spec land and lead to the Verus error: `error: found a cyclic self-reference in a definition, which may result in nontermination`. This is because Verus cannot *statically resolve* a cluster of mutually recursive functions that are associated with the recursive combinator trait implementation. Since the trait impls for combinators are generic over the type parameters, such a cluster would only exsit after monomorphization, which would make Verus's cycle checking rather late and less modular. See [this discussion on cyclic self-references](https://github.com/verus-lang/verus/issues/1487) for more information.
+
+So what do we do to specify recursive formats?
+
+Remember that what we everntually want are recursive *parsing* and *serializing* functions! Since all combinators provide a `spec_parse` method, we can easily get *parsing functions*, at least for non-recursive formats with *eta-expansion*:
+
+```rust
+spec fn parse_some_non_rec_fmt(ibuf: Seq<u8>) -> Result<SomeNonRecFmt, ParseError> {
+    some_non_rec_fmt_combinator().spec_parse(ibuf)
+}
+```
+
+How about the other way around? Can we have a function value automatically satisfying the combinator trait bound?
+
+Of course we can!
+
+```rust
+type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
+
+impl<T> SpecParser for ParserSpecFn<T> {
+    type PT = T;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+        (self)(ibuf)
+    }
+}
+
+trait SpecParser {
+    type PT;
+    spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)>;
+}
+```
+
+Now with `ParserSpecFn`s as combinators, we can easily construct recursive combinators for recursive formats:
+
+```rust
+spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
+    decreases input.len(),
+{
+    let rec: ParserSpecFn<NestedBracesT> = |rem|
+        {
+            // To ensure termination
+            if rem.len() < input.len() {
+                p_nested_braces(rem)
+            } else {
+                None
+            }
+        };
+    Mapped {
+        inner: Choice(
+            Terminated(
+                Preceded(Tag { inner: U8, tag: 0x7B }, rec),
+                Tag { inner: U8, tag: 0x7D },
+            ),
+            Empty
+        ),
+        mapper: NestedBracesMapper,
+    }.spec_parse(input)
+}
+```
+
+Here because `rec` is a `ParserSpecFn`, it satisfies the `SpecParser` trait bound in `Preceded`, henceforce in `Terminated`, `Choice`, and finally `Mapped`. And indeed, `p_nested_braces` can be re-used in contexts that expect `SpecParser`s:
+
+```rust
+let p = |i| p_nested_braces(i);
+(p, p).spec_parse(input)
+```
+
+Now if we squint and abstract the pattern for self-referential parsers:
+```rust
+Fix(
+    |rec|
+    SomeCombinatorComposition(..., rec, ...)
+)
+```
+
+We can create a `RecParser` combinator that does exactly that:
+
+```rust
+struct RecParser<T>(spec_fn(ParserSpecFn<T>) -> ParserSpecFn<T>);
+
+impl<T> SpecParser for RecParser<T> {
+    type PT = T;
+
+    spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PT)>
+        decreases input.len(),
+    {
+        let fix = self.0;
+        let callback: ParserSpecFn<T> = |rem|
+            {
+                if rem.len() < input.len() {
+                    self.spec_parse(rem)
+                } else {
+                    None
+                }
+            };
+        fix(callback)(input)
+    }
+}
+```
+
+Similarly, we can specify recursive serializers like:
+
+```rust
+struct RecSerializer<T>(spec_fn(SerializerDPSSpecFn<T> -> SerializerDPSSpecFn<T>));
+
+trait Height {
+    spec fn height(&self) -> nat;
+}
+
+impl<T: Height> SpecSerializerDps for RecSerializer<T> {
+    type ST = T
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> 
+        decreases v.height()
+    {
+        let fix = self.0;
+        let callback = |inner_v, obuf|
+            {
+                // To ensure termination
+                if inner_v.height() < v.height() {
+                       self.spec_serialize_dps(inner_v, obuf)
+                } else {
+                    obuf
+                }
+            };
+        fix(callback)(v, obuf)
+    }
+}
+
+type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
+
+impl<T> SpecSerializerDps for SerializerDPSSpecFn<T> {
+    type ST = T;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        (self)(v, obuf)
+    }
+}
+```
+
+Finally, we can define `RecCombinator` as the composition of `RecParser` and `RecSerializer`:
+
+```rust
+struct RecCombinator<T> {
+    parser: RecParser<T>,
+    serializer: RecSerializer<T>,
+}
+
+impl<T> SpecParser for RecCombinator<T> {
+    type PT = T;
+    open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(usize, Self::PT)> {
+        self.parser.spec_parse(input)
+    }
+}
+
+impl<T> SpecSerializerDps for RecCombinator<T> {
+    type ST = T;
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.serializer.spec_serialize_dps(v, obuf)
+    }
+}
+```
+
+### Proving General Recursive Combinators
+
+Just by looking at how recursive parser specs can be constructed with combinators and closures, we might expect that we can *prove* properties about recursive combinator specifications in a similar way, espectially given that Verus recently added support for [proof closures](https://github.com/verus-lang/verus/pull/1524).
+
+For example, imagine we want to prove that a parser will never report that the consumed length is greater than the input length. 
+
+```rust
+trait GoodParser: SpecParser {
+    proof fn lemma_len_in_bound(&self, input: Seq<u8>)
+        ensures self.spec_parse(input) matches Some((len, _)) ==> 0 <= len <= input.len()
+    ;
+}
+```
+
+This property(trait) can be proved(implemented) straightforwardly for most non-recursive combinators. However, for `RecParser`, we need some proper *inductive reasoning* to prove it. Specifically, we need to associate something like a proof object with the bare spec `spec_fn(ParserSpecFn<T>) -> ParserSpecFn<T>` in `RecParser`:
+
+```rust
+struct GoodRecParser<T> {
+    spec: spec_fn(ParserSpecFn<T>) -> ParserSpecFn<T>,
+    proof: proof_fn<'static>() -> () 
+        ensures 
+            forall|callback: ParserSpecFn<T>|
+                // If the callback `rec` satisfies the length bound property
+                satisfy_len_bound(callback)
+                // Then applying the combinator also satisfies it
+                ==> satisfy_len_bound((self.spec)(callback)) // note the `self.spec`
+    ,
+}
+
+spec fn satisfy_len_bound<T>(pfn: ParserSpecFn<T>) -> bool {
+    forall|i: Seq<u8>|
+        pfn(i) matches Some((len, _)) ==> 0 <= len <= i.len()
+}
+```
+
+However, since Rust/Verus does not support dependent types, the use of `self.spec` in the `proof` field is not possible. The special syntax `proof_fn[ReqEns<Property>]` for proof closures won't help either, as `Property` would need to be dependent on `self.spec`.
+
+What we can do instead is to generalize the lemma `lemma_len_in_bound` to be dependent on a precondition:
+
+```rust
+trait GoodParser: SpecParser {
+    open spec fn wf(&self) -> bool {
+        true
+    }
+    proof fn lemma_len_in_bound(&self, input: Seq<u8>)
+        ensures 
+            self.wf() ==> (self.spec(input) matches Some((len, _)) ==> 0 <= len <= input.len())
+    ;
+}
+```
+
+And then for `RecParser`, we can implement the `GoodParser` trait by specifying the `wf` condition:
+
+```rust
+impl<T> GoodParser for RecParser<T> {
+    open spec fn wf(&self) -> bool {
+        forall|callback: PFn<T>|
+            satisfy_len_bound(callback) ==>
+            satisfy_len_bound((self.0)(callback))
+    }
+    proof fn lemma_len_in_bound(&self, input: Seq<u8>)
+        decreases input.len()
+    {
+        if self.wf() {
+            let fix = self.0;
+            let callback = |remaining|
+                {
+                    if remaining.len() < input.len() {
+                        self.spec_parse(remaining)
+                    } else {
+                        None
+                    }
+                };
+    
+            assert forall|rem| callback(rem) matches Some((len, _)) implies 0 <= len <= rem.len() by {
+                if rem.len() < input.len() {
+                    // IH: self.p(rem) satisfies the bound
+                    self.lemma_len_in_bound(rem);
+                    // callback(rem) = self.p(rem)
+                } else {
+                    // callback(rem) = None
+                }
+            }
+    
+            assert(satisfy_len_bound(callback));
+            // By pre-condition
+            assert(satisfy_len_bound(fix(callback)));
+            // By definition
+            assert(fix(callback)(input) matches Some((len, _)) ==> 0 <= len <= input.len());
+        }
+    }
+}
+```
+
+We can then have a `broadcast proof` to establish the precondition for each construction of `RecParser`:
+
+```rust
+spec fn nested_braces_parser_inner(rec: ParserSpecFn<NestedBracesT>) -> ParserSpecFn<NestedBracesT> {
+    |i|
+    Mapped {
+        inner: Choice(
+            Terminated(
+                Preceded(Tag { inner: U8, tag: 0x7B }, rec),
+                Tag { inner: U8, tag: 0x7D},
+            ),
+            Empty,
+        ),
+        mapper: NestedBracesMapper,
+    }.spec_parse(i)
+}
+
+broadcast proof fn nested_braces_parser_wf(rec: ParserSpecFn<NestedBracesT>)
+    requires
+        satisfy_len_bound(rec),
+    ensures
+        #[trigger] satisfy_len_bound(nested_braces_parser_inner(rec)),
+{
+    assert forall|i: Seq<u8>|
+        satisfy_len_bound(nested_braces_parser_inner(rec)(i), i.len()) by {    
+        nested_braces_parser_inner(rec)(i).lemma_parse_len_bound(i);
+    }
+}
+
+let input = seq![0; 100];
+let nested_braces_parser = RecParser(|rec| nested_braces_parser_inner(rec));
+broadcast use nested_braces_parser_wf;
+nested_braces_parser.lemma_len_in_bound(input);
+```
+
+The same technique can be applied to other properties of recursive parsers/serializers.
+
+### Bounding the Recursion Depth
+
+Adding support for recursive formats is a huge step towards a more expressive framework of verified parsers/serializers. However, it also opens up the possibility of entirely attacker-controlled recursion depth, which can lead to stack overflows and potential denial-of-service attacks. To mitigate this risk, format/protocol designers should be mindful of the maximum recursion depth allowed and leverage machineries provided by Vest++ to properly bound the recursion depth.
+
+There are mainly two approaches to bounding the recursion, just like in the case of bounded repetition:
+
+1. **Length-based bounding**: Format designers can wrap a recursive sub-format within a buffer context, where the length of the buffer is determined by some statically known value (more secure), or by a dynamically computed value based on the input data (more flexible). Expressed in `.vest` would be:
+
+```vest
+good_fmt1 = {
+  content: [u8; 10000] >>= nested_braces
+}
+
+good_fmt2 = {
+  // either limit the range of the length or use a smaller-sized integer type
+  @len: u32 | 0..10000, 
+  content: [u8; @len] >>= nested_braces
+}
+
+nested_braces = choose {
+  Brace(wrap(u8 = 0x7B, nested_braces, u8 = 0x7D)),
+  Eps(empty),
+}
+```
+
+This way, the recursion depth is *indirectly* bounded by the size of the buffer, which in turn is bounded by the maximum length allowed for the buffer. For example, in the case of `good_fmt2`, if the `@len` is set to 32, the maximum recursion depth would be 16 (`nested_braces` would consume 2 bytes per level of recursion).
+
+Vest++ would provide means to automatically *compute* the serialized buffer size, the maximum recursion depth for each format, or even the maximum *stack usage* for each format. This would allow format/protocol designers to easily reason about the resource usage and henceforce the security implications of their formats.
+
+2. **Depth-based bounding**: Format designers can directly specify the maximum recursion depth allowed for a format (again, either static or dynamic). For example:
+
+```vest
+good_fmt3 = {
+  content: nested_braces,
+}
+
+#[RECUR_BOUND = 16]
+nested_braces = choose {
+  Brace(wrap(u8 = 0x7B, nested_braces, u8 = 0x7D)),
+  Eps(empty),
+}
+
+good_fmt4 = {
+  @depth: u8 | 0..32,
+  content: nested_braces(@depth),
+}
+
+#[RECUR_BOUND = @depth]
+nested_braces(@depth: u8) = choose {
+  Brace(wrap(u8 = 0x7B, nested_braces, u8 = 0x7D)),
+  Eps(empty),
+}
+```
+
+This way, the recursion depth is *directly* bounded by the specified depth parameter. The `#[RECUR_BOUND]` attribute ensures that the maximum recursion depth is enforced (at compile time or runtime), yielding a secure and predictable format.
