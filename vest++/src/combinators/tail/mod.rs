@@ -1,4 +1,4 @@
-pub mod proof;
+// pub mod proof;
 pub mod spec;
 
 use vstd::prelude::*;

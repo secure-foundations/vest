@@ -1,7 +1,4 @@
-use crate::core::{
-    proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip},
-    spec::{SpecCombinator, SpecSerializer, SpecSerializerDps, SpecType},
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -12,7 +9,7 @@ impl SPRoundTrip for super::Tail {
 }
 
 impl PSRoundTrip for super::Tail {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
     }
 }
 
