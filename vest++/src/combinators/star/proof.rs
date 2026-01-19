@@ -1,16 +1,13 @@
-use crate::core::proof::{Deterministic, NonMalleable, PSRoundTrip, SPRoundTrip};
-use crate::core::spec::{
-    GoodCombinator, GoodParser, GoodSerializer, Serializability, SpecCombinator, SpecParser,
-    SpecSerializer, SpecSerializerDps, SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::{calc, prelude::*};
 
 verus! {
 
-impl<A> super::Star<A> where A: SPRoundTrip {
+impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializer {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PT>, obuf: Seq<u8>)
         requires
-            self.serializable(vs, obuf),
+            self.inner.unambiguous(),
+            parser_fails_on(self.inner, obuf),
             vs.wf(),
         ensures
             self.spec_parse(self.spec_serialize_dps(vs, obuf)) == Some(
@@ -26,14 +23,6 @@ impl<A> super::Star<A> where A: SPRoundTrip {
             let rest_buf = self.spec_serialize_dps(rest, obuf);
             let serialized = self.spec_serialize_dps(vs, obuf);
             assert(serialized == self.inner.spec_serialize_dps(v, rest_buf));
-
-            // precond for rest
-            assert forall|i: int| 0 <= i < rest.len() implies self.inner.serializable(
-                rest[i],
-                self.spec_serialize_dps(rest.skip(i + 1), obuf),
-            ) by {
-                assert(rest.skip(i + 1) == vs.skip(i + 2));
-            }
 
             // induction
             self.lemma_serialize_parse_roundtrip_rec(rest, obuf);
@@ -71,18 +60,6 @@ impl<A> super::Star<A> where A: SPRoundTrip {
             }
         }
     }
-}
-
-impl<A: SPRoundTrip> SPRoundTrip for super::Star<A> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::PT, obuf: Seq<u8>) {
-        if v.wf() {
-            self.lemma_serialize_parse_roundtrip_rec(v, obuf);
-        }
-    }
-}
-
-impl<A: PSRoundTrip> PSRoundTrip for super::Star<A> {
-
 }
 
 impl<A: NonMalleable> super::Star<A> {
@@ -147,7 +124,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
 impl<A> super::Star<A> where A: Deterministic + SpecParser {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<<A as SpecSerializer>::ST>, obuf: Seq<u8>)
         requires
-            self.serializable(vs, obuf),
+            self.unambiguous(),
             vs.wf(),
         ensures
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
@@ -160,18 +137,6 @@ impl<A> super::Star<A> where A: Deterministic + SpecParser {
         } else {
             let v0 = vs[0];
             let rest = vs.skip(1);
-
-            // precond for rest
-            assert(rest.wf());
-            assert(self.elems_serializable(rest, obuf)) by {
-                assert forall|i: int| 0 <= i < rest.len() implies self.inner.serializable(
-                    rest[i],
-                    self.rfold_serialize_dps(rest.skip(i + 1), obuf),
-                ) by {
-                    assert(rest.skip(i + 1) =~= vs.skip(i + 2));
-                }
-            }
-            assert(self.serializable(rest, obuf));
 
             let rest_foldr = self.rfold_serialize_dps(rest, obuf);
             let rest_foldl = rest.fold_left(Seq::<u8>::empty(), f);
@@ -240,6 +205,40 @@ impl<A> Deterministic for super::Star<A> where A: Deterministic + SpecParser {
     proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
         if v.wf() {
             self.lemma_serialize_equiv_rec(v, obuf);
+        }
+    }
+}
+
+impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Repeat<A, B> {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+        let star = super::Star { inner: self.0 };
+        if v.wf() {
+            let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+            self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
+            let serialized0 = star.spec_serialize_dps(v.0, serialized1);
+            star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
+            let n0 = serialized0.len() - serialized1.len();
+            star.lemma_serialize_buf(v.0, serialized1);
+            assert(serialized0.skip(n0) == serialized1);
+        }
+    }
+}
+
+
+impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for super::Repeat<A, B> {
+}
+
+impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
+    {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A: Deterministic + SpecParser, B: Deterministic> Deterministic for super::Repeat<A, B> {
+    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+        if v.wf() {
+            (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
         }
     }
 }

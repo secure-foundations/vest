@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -89,11 +86,14 @@ impl<A: Serializability> super::Star<A> {
     }
 }
 
+impl<A: Unambiguity> Unambiguity for super::Star<A> {
+    open spec fn unambiguous(&self) -> bool {
+        self.inner.unambiguous()
+    }
+}
+
 impl<A: GoodSerializer> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
-        requires
-            self.elems_serializable(vs, obuf),
-            vs.wf(),
         ensures
             exists|new_buf: Seq<u8>| self.rfold_serialize_dps(vs, obuf) == new_buf + obuf,
         decreases vs.len(),
@@ -103,14 +103,6 @@ impl<A: GoodSerializer> super::Star<A> {
         } else {
             let rest = vs.skip(1);
             let rest_buf = self.rfold_serialize_dps(rest, obuf);
-
-            // precond: rest is serializable
-            assert forall|i: int| 0 <= i < rest.len() implies self.inner.serializable(
-                rest[i],
-                self.rfold_serialize_dps(rest.skip(i + 1), obuf),
-            ) by {
-                assert(rest.skip(i + 1) == vs.skip(i + 2));
-            }
 
             // induction
             self.lemma_rfold_serialize_buf(rest, obuf);
@@ -127,7 +119,7 @@ impl<A: GoodSerializer> super::Star<A> {
     }
 }
 
-impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps + SpecParser {
+impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps {
     type ST = Seq<A::ST>;
 
     open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -151,12 +143,60 @@ impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser
     }
 }
 
-impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer + SpecParser {
+impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer {
     proof fn lemma_serialize_buf(&self, vs: Self::ST, obuf: Seq<u8>) {
-        if vs.wf() {
-            self.lemma_rfold_serialize_buf(vs, obuf);
-        }
+        self.lemma_rfold_serialize_buf(vs, obuf);
     }
 }
+
+impl<A: SpecParser, B: SpecParser> SpecParser for super::Repeat<A, B> {
+    type PT = (Seq<A::PT>, B::PT);
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+        (super::Star { inner: self.0 }, self.1).spec_parse(ibuf)
+    }
+}
+
+impl<A: GoodParser, B: GoodParser> GoodParser for super::Repeat<A, B> {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>)  {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_length(ibuf)
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)  {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_wf(ibuf)
+    }
+}
+
+impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Repeat<A, B> {
+    type ST = (Seq<A::ST>, B::ST);
+
+    open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        (super::Star { inner: self.0 }, self.1).spec_serialize_dps(vs, obuf)
+    }
+}
+
+impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Repeat<A, B> {
+    type ST = (Seq<A::ST>, B::ST);
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+        (super::Star { inner: self.0 }, self.1).spec_serialize(v)
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Repeat<A, B> {
+    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_buf(v, obuf)
+    }
+}
+
+impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Repeat<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& forall|vb: B::ST, obuf: Seq<u8>| vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
+    }
+}
+
+
 
 } // verus!

@@ -1,7 +1,4 @@
-use crate::core::spec::{
-    GoodParser, GoodSerializer, Serializability, SpecParser, SpecSerializer, SpecSerializerDps,
-    SpecType,
-};
+use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -60,18 +57,71 @@ impl<A> Serializability for super::Opt<A> where A: Serializability + SpecParser 
     }
 }
 
-impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer + SpecParser {
+impl<A: Unambiguity> Unambiguity for super::Opt<A> {
+    open spec fn unambiguous(&self) -> bool {
+        self.0.unambiguous()
+    }
+}
+
+impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer {
     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
-                if v.wf() {
                     self.0.lemma_serialize_buf(vv, obuf);
-                }
             },
         }
+    }
+}
+
+impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
+    type PT = (Option<A::PT>, B::PT);
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+        (super::Opt(self.0), self.1).spec_parse(ibuf)
+    }
+}
+
+impl<A: GoodParser, B: GoodParser> GoodParser for super::Optional<A, B> {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+                    (super::Opt(self.0), self.1).lemma_parse_length(ibuf)
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)
+            {
+                    (super::Opt(self.0), self.1).lemma_parse_wf(ibuf)
+    }
+}
+
+impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Optional<A, B> {
+    type ST = (Option<A::ST>, B::ST);
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        (super::Opt(self.0), self.1).spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Optional<A, B> {
+    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_serialize_buf(v, obuf)
+    }
+}
+
+impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Optional<A, B> {
+    type ST = (Option<A::ST>, B::ST);
+
+    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+        (super::Opt(self.0), self.1).spec_serialize(v)
+    }
+}
+
+impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Optional<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& forall|vb: B::ST, obuf: Seq<u8>| vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
     }
 }
 

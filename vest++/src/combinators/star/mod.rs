@@ -9,4 +9,6 @@ pub struct Star<A> {
     pub inner: A,
 }
 
+pub struct Repeat<A, B>(pub A, pub B);
+
 } // verus!
