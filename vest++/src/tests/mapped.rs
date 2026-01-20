@@ -19,10 +19,6 @@ spec fn needs_spec_combinator<C: SpecCombinator>(c: C) -> () {
     ()
 }
 
-spec fn needs_good_combinator<C: GoodCombinator>(c: C) -> () {
-    ()
-}
-
 struct MyIsoMapper;
 
 impl Mapper for MyIsoMapper {
@@ -64,7 +60,7 @@ spec fn test() -> () {
     needs_spec_parser(m1);
     needs_spec_serializer(m2);
     needs_spec_combinator(m3);
-    needs_good_combinator(m4);
+    needs_spec_combinator(m4);
     ()
 }
 

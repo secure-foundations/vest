@@ -11,7 +11,7 @@ proof fn test_choice_compose() {
     assert(v.wf());
     assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
-    c.theorem_serialize_parse_roundtrip(v, obuf);
+    c.theorem_serialize_parse_roundtrip(v);
     assert(c.spec_parse(ibuf) == Some((1int, v)));
 }
 
@@ -22,19 +22,19 @@ proof fn test_choice_compose1() {
     let obuf = Seq::empty();
     let v = Either::Right(());
     assert(v.wf());
-    tag1.theorem_serialize_parse_roundtrip((), obuf);
-    tag2.theorem_serialize_parse_roundtrip((), obuf);
+    tag1.theorem_serialize_parse_roundtrip(());
+    tag2.theorem_serialize_parse_roundtrip(());
     // assert(c.unambiguous());
     assert(c.unambiguous()) by {
         assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
             tag1,
             #[trigger] tag2.spec_serialize_dps(vb, obuf),
         ) by {
-            U16Le.theorem_serialize_parse_roundtrip(tag2.tag, obuf);
+            U16Le.theorem_serialize_parse_roundtrip_internal(tag2.tag, obuf);
         }
     }
     let ibuf = c.spec_serialize_dps(v, obuf);
-    c.theorem_serialize_parse_roundtrip(v, obuf);
+    c.theorem_serialize_parse_roundtrip(v);
     assert(c.spec_parse(ibuf) == Some((2int, v)));
 }
 

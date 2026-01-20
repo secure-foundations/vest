@@ -17,7 +17,7 @@ proof fn test_tail_compose() {
     assert(v1.wf());
     assert(c.serializable(v1, obuf));
     let ibuf = c.spec_serialize_dps(v1, obuf);
-    c.theorem_serialize_parse_roundtrip(v1, obuf);
+    c.theorem_serialize_parse_roundtrip(v1);
     assert(c.spec_parse(ibuf) == Some((4int, v1)));
 
     let obuf_bad = seq![0u8; 1];

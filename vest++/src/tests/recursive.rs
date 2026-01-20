@@ -16,11 +16,11 @@ impl SpecType for NestedBracesT {
         wf_nested_braces(*self)
     }
 
-    open spec fn byte_len(&self) -> nat
+    open spec fn blen(&self) -> nat
         decreases self,
     {
         match self {
-            NestedBracesT::Brace(inner) => 2 + inner.byte_len(),
+            NestedBracesT::Brace(inner) => 2 + inner.blen(),
             NestedBracesT::Eps => 0,
         }
     }
@@ -80,9 +80,9 @@ impl IsoMapper for NestedBracesMapper {
 pub struct NestedBracesCombinator;
 
 impl SpecParser for NestedBracesCombinator {
-    type PT = NestedBracesT;
+    type PVal = NestedBracesT;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         p_nested_braces(ibuf)
     }
 }
@@ -311,7 +311,7 @@ impl ProductiveParser for U16Le {
     }
 }
 
-impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PT> {
+impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PVal> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_productive(ibuf);
     }
@@ -344,7 +344,7 @@ impl<A: ProductiveParser, B: ProductiveParser> ProductiveParser for Choice<A, B>
     }
 }
 
-impl<Inner: ProductiveParser, M: Mapper<In = Inner::PT>> ProductiveParser for Mapped<Inner, M> {
+impl<Inner: ProductiveParser, M: Mapper<In = Inner::PVal>> ProductiveParser for Mapped<Inner, M> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_productive(ibuf);
     }

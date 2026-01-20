@@ -26,8 +26,8 @@ proof fn test_repeat_roundtrip_basic() {
     assert(v.wf());
     assert(rep.unambiguous());
     let ibuf = rep.spec_serialize_dps(v, obuf);
-    let n = (ibuf.len() - obuf.len()) as int;
-    rep.theorem_serialize_parse_roundtrip(v, obuf);
+    let n = rep.byte_len(v) as int;
+    rep.theorem_serialize_parse_roundtrip_internal(v, obuf);
     assert(rep.spec_parse(ibuf) == Some((n, v)));
 }
 
@@ -41,8 +41,8 @@ proof fn test_repeat_roundtrip_empty() {
     assert(v.wf());
     assert(rep.unambiguous());
     let ibuf = rep.spec_serialize_dps(v, obuf);
-    let n = (ibuf.len() - obuf.len()) as int;
-    rep.theorem_serialize_parse_roundtrip(v, obuf);
+    let n = rep.byte_len(v) as int;
+    rep.theorem_serialize_parse_roundtrip_internal(v, obuf);
     assert(rep.spec_parse(ibuf) == Some((n, v)));
 }
 
@@ -70,12 +70,12 @@ proof fn test_repeat_with_tuple_inner() {
             inner,
             #[trigger] term.spec_serialize_dps(vb, obuf),
         ) by {
-            U16Le.theorem_serialize_parse_roundtrip(term.tag, obuf);
+            U16Le.theorem_serialize_parse_roundtrip_internal(term.tag, obuf);
         }
     }
     let ibuf = rep.spec_serialize_dps(v, obuf);
-    let n = (ibuf.len() - obuf.len()) as int;
-    rep.theorem_serialize_parse_roundtrip(v, obuf);
+    let n = rep.byte_len(v) as int;
+    rep.theorem_serialize_parse_roundtrip_internal(v, obuf);
     assert(rep.spec_parse(ibuf) == Some((n, v)));
 }
 

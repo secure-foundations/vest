@@ -51,7 +51,7 @@ proof fn test_opt_compose() {
     // let ibuf = c.spec_serialize(v1, obuf);
     // let ibuf = c.spec_serialize(v2, obuf);
     // let ibuf = c.spec_serialize(v3, obuf);
-    c.theorem_serialize_parse_roundtrip(v, obuf);
+    c.theorem_serialize_parse_roundtrip(v);
     assert(c.spec_parse(ibuf) == Some((2int, v)));
     // assert(c.spec_parse(ibuf) == Some((2int, v1)));
     // assert(c.spec_parse(ibuf) == Some((2int, v2)));
