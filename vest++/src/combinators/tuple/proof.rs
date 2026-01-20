@@ -3,29 +3,24 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for (A, B) {
+impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for (A, B) {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
             self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
             self.0.theorem_serialize_parse_roundtrip(v.0, serialized1);
-            // self.1.lemma_serialize_buf(v.1, obuf);
-            self.0.lemma_serialize_buf(v.0, serialized1);
+            self.0.lemma_serialize_dps_buf(v.0, serialized1);
+            self.0.lemma_serialize_dps_len(v.0, serialized1);
             if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
                 assert(n0 == serialized0.len() - serialized1.len());
                 assert(serialized0.skip(n0) == serialized1);
-                if let Some((n1, v1)) = self.1.spec_parse(serialized0.skip(n0)) {
-                    assert(n1 == serialized1.len() - obuf.len());
-                    assert(v == (v0, v1));
-                    assert(self.spec_parse(serialized0) == Some((n0 + n1, (v0, v1))));
-                }
             }
         }
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for (A, B) {
+impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for (A, B) {
 
 }
 

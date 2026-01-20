@@ -1,3 +1,4 @@
+use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -92,7 +93,7 @@ impl<A: Unambiguity> Unambiguity for super::Star<A> {
     }
 }
 
-impl<A: GoodSerializer> super::Star<A> {
+impl<A: GoodSerializerDps> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         ensures
             exists|new_buf: Seq<u8>| self.rfold_serialize_dps(vs, obuf) == new_buf + obuf,
@@ -110,7 +111,7 @@ impl<A: GoodSerializer> super::Star<A> {
                 self.rfold_serialize_dps(rest, obuf) == wit + obuf;
 
             // base
-            self.inner.lemma_serialize_buf(vs[0], rest_buf);
+            self.inner.lemma_serialize_dps_buf(vs[0], rest_buf);
             let fst_witness = choose|wit: Seq<u8>|
                 self.inner.spec_serialize_dps(vs[0], rest_buf) == wit + rest_buf;
 
@@ -143,9 +144,50 @@ impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser
     }
 }
 
-impl<A> GoodSerializer for super::Star<A> where A: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, vs: Self::ST, obuf: Seq<u8>) {
+impl<A> GoodSerializerDps for super::Star<A> where A: GoodSerializerDps {
+    proof fn lemma_serialize_dps_buf(&self, vs: Self::ST, obuf: Seq<u8>) {
         self.lemma_rfold_serialize_buf(vs, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, vs: Self::ST, obuf: Seq<u8>)
+        decreases vs.len(),
+    {
+        if vs.len() == 0 {
+        } else {
+            let v0 = vs[0];
+            let rest = vs.skip(1);
+            let rest_buf = self.rfold_serialize_dps(rest, obuf);
+            // base
+            self.inner.lemma_serialize_dps_len(v0, rest_buf);
+            // induction
+            self.lemma_serialize_dps_len(rest, obuf);
+            // fold_left lemmas
+            let f = |acc: nat, elem: A::ST| acc + self.inner.byte_len(elem);
+            vs.lemma_fold_left_alt(0, f);
+            rest.lemma_fold_left_alt(self.inner.byte_len(v0), f);
+            lemma_fold_left_accumulate_nat(rest, self.inner.byte_len(v0), f);
+        }
+    }
+}
+
+impl<A: GoodSerializer> GoodSerializer for super::Star<A> {
+    proof fn lemma_serialize_len(&self, v: Self::ST)
+        decreases v.len(),
+    {
+        if v.len() == 0 {
+        } else {
+            let v_last = v.last();
+            self.inner.lemma_serialize_len(v_last);
+            self.lemma_serialize_len(v.drop_last());
+        }
+    }
+}
+
+impl<A: SpecByteLen> SpecByteLen for super::Star<A> {
+    type T = Seq<A::T>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        v.fold_left(0, |acc: nat, elem| acc + self.inner.byte_len(elem))
     }
 }
 
@@ -183,9 +225,21 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Repeat<A, B
     }
 }
 
-impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Repeat<A, B> {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_serialize_buf(v, obuf)
+impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Repeat<A, B> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_buf(v, obuf)
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Repeat<A, B> {
+    type T = (Seq<A::T>, B::T);
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        (super::Star { inner: self.0 }, self.1).byte_len(v)
     }
 }
 

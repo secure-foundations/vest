@@ -60,12 +60,24 @@ impl<const N: usize> Unambiguity for super::Fixed<N> {
 
 }
 
-impl<const N: usize> GoodSerializer for super::Fixed<N> {
-    proof fn lemma_serialize_buf(&self, v: [u8; N], obuf: Seq<u8>) {
+impl<const N: usize> GoodSerializerDps for super::Fixed<N> {
+    proof fn lemma_serialize_dps_buf(&self, v: [u8; N], obuf: Seq<u8>) {
         if v.wf() {
             assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
         }
     }
+
+    proof fn lemma_serialize_dps_len(&self, v: [u8; N], obuf: Seq<u8>) {
+    }
+}
+
+impl<const N: usize> GoodSerializer for super::Fixed<N> {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    }
+}
+
+impl<const N: usize> SpecByteLen for super::Fixed<N> {
+    type T = [u8; N];
 }
 
 // pub open spec fn fill_array_rec<const N: usize>(base: [u8; N], s: Seq<u8>, i: nat) -> [u8; N]

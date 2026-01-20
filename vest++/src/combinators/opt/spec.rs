@@ -63,15 +63,46 @@ impl<A: Unambiguity> Unambiguity for super::Opt<A> {
     }
 }
 
-impl<A> GoodSerializer for super::Opt<A> where A: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A> GoodSerializerDps for super::Opt<A> where A: GoodSerializerDps {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
-                self.0.lemma_serialize_buf(vv, obuf);
+                self.0.lemma_serialize_dps_buf(vv, obuf);
             },
+        }
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.lemma_serialize_dps_len(vv, obuf);
+            },
+        }
+    }
+}
+
+impl<A: GoodSerializer> GoodSerializer for super::Opt<A> {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.lemma_serialize_len(vv);
+            },
+        }
+    }
+}
+
+impl<Inner: SpecByteLen> SpecByteLen for super::Opt<Inner> {
+    type T = Option<Inner::T>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        match v {
+            None => 0,
+            Some(vv) => self.0.byte_len(vv),
         }
     }
 }
@@ -102,9 +133,27 @@ impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Op
     }
 }
 
+impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Optional<A, B> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_serialize_dps_buf(v, obuf)
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_serialize_dps_len(v, obuf);
+    }
+}
+
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Optional<A, B> {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_serialize_buf(v, obuf)
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        (super::Opt(self.0), self.1).lemma_serialize_len(v);
+    }
+}
+
+impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Optional<A, B> {
+    type T = (Option<A::T>, B::T);
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        (super::Opt(self.0), self.1).byte_len(v)
     }
 }
 

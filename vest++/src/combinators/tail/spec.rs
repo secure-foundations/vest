@@ -45,7 +45,7 @@ impl Unambiguity for super::Tail {
 }
 
 // impl GoodSerializer for super::Tail {
-//     proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+//     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
 //         if v.wf() {
 //             assert(self.spec_serialize_dps(v, obuf) == v + obuf);
 //         }

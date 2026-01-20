@@ -22,7 +22,7 @@ pub trait SpecCombinator {
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>)
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>)
         requires
             self.serializable(v, obuf),
         ensures
@@ -71,7 +71,7 @@ impl<const N: usize> SpecCombinator for Fixed<N> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             assert(self.spec_serialize(v, obuf) == v + obuf);
         }
@@ -104,7 +104,7 @@ impl SpecCombinator for Tail {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         assert(self.spec_serialize(v, obuf) == v + obuf);
     }
 
@@ -147,12 +147,12 @@ impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator 
         }
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             let serialized1 = self.1.spec_serialize(v.1, obuf);
             let serialized0 = self.0.spec_serialize(v.0, serialized1);
-            self.1.lemma_serialize_buf(v.1, obuf);
-            self.0.lemma_serialize_buf(v.0, serialized1);
+            self.1.lemma_serialize_dps_buf(v.1, obuf);
+            self.0.lemma_serialize_dps_buf(v.0, serialized1);
             let witness1 = choose|wit1: Seq<u8>| self.1.spec_serialize(v.1, obuf) == wit1 + obuf;
             let witness0 = choose|wit0: Seq<u8>|
                 self.0.spec_serialize(v.0, serialized1) == wit0 + serialized1;
@@ -166,8 +166,8 @@ impl<A, B> SpecCombinator for (A, B) where A: SpecCombinator, B: SpecCombinator 
             let serialized0 = self.0.spec_serialize(v.0, serialized1);
             self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
             self.0.theorem_serialize_parse_roundtrip(v.0, serialized1);
-            self.1.lemma_serialize_buf(v.1, obuf);
-            self.0.lemma_serialize_buf(v.0, serialized1);
+            self.1.lemma_serialize_dps_buf(v.1, obuf);
+            self.0.lemma_serialize_dps_buf(v.0, serialized1);
             if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
                 assert(n0 == serialized0.len() - serialized1.len());
                 assert(serialized0.skip(n0) == serialized1);
@@ -232,14 +232,14 @@ impl<A> SpecCombinator for Opt<A> where A: SpecCombinator {
         self.0.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
                 if self.wf(v) {
-                    self.0.lemma_serialize_buf(vv, obuf);
+                    self.0.lemma_serialize_dps_buf(vv, obuf);
                 }
             },
         }
@@ -315,8 +315,8 @@ impl<A: SpecCombinator> SpecCombinator for Refined<A> {
         self.inner.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_buf(v, obuf);
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_buf(v, obuf);
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type, obuf: Seq<u8>) {
@@ -380,14 +380,14 @@ impl<A: SpecCombinator, B: SpecCombinator> SpecCombinator for Choice<A, B> {
         self.1.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>) {
         if self.wf(v) {
             match v {
                 Either::Left(va) => {
-                    self.0.lemma_serialize_buf(va, obuf);
+                    self.0.lemma_serialize_dps_buf(va, obuf);
                 },
                 Either::Right(vb) => {
-                    self.1.lemma_serialize_buf(vb, obuf);
+                    self.1.lemma_serialize_dps_buf(vb, obuf);
                 },
             }
         }

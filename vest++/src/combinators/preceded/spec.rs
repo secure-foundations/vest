@@ -53,10 +53,34 @@ impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Preceded<A, B> {
     }
 }
 
-impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A, B> GoodSerializerDps for super::Preceded<A, B> where
+    A: GoodSerializerDps,
+    B: GoodSerializerDps,
+ {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         let va = choose|va: A::ST| #![auto] va.wf();
-        (self.0, self.1).lemma_serialize_buf((va, v), obuf);
+        (self.0, self.1).lemma_serialize_dps_buf((va, v), obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        let va = choose|va: A::ST| #![auto] va.wf();
+        (self.0, self.1).lemma_serialize_dps_len((va, v), obuf);
+    }
+}
+
+impl<A, B> GoodSerializer for super::Preceded<A, B> where A: GoodSerializer, B: GoodSerializer {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        let va = choose|va: A::ST| #![auto] va.wf();
+        (self.0, self.1).lemma_serialize_len((va, v));
+    }
+}
+
+impl<A, B> SpecByteLen for super::Preceded<A, B> where A: SpecByteLen, B: SpecByteLen {
+    type T = B::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let va = choose|va: A::T| va.wf();
+        (self.0, self.1).byte_len((va, v))
     }
 }
 

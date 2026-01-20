@@ -11,47 +11,47 @@ pub trait SpecType {
         true
     }
 
-    spec fn byte_len(&self) -> nat;
+    spec fn blen(&self) -> nat;
 }
 
 impl SpecType for bool {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         1
     }
 }
 
 impl SpecType for u8 {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         1
     }
 }
 
 impl SpecType for u16 {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         2
     }
 }
 
 impl SpecType for u32 {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         4
     }
 }
 
 impl SpecType for u64 {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         8
     }
 }
 
 impl SpecType for usize {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         8
     }
 }
 
 impl SpecType for () {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         0
     }
 }
@@ -61,8 +61,8 @@ impl<A: SpecType, B: SpecType> SpecType for (A, B) {
         self.0.wf() && self.1.wf()
     }
 
-    open spec fn byte_len(&self) -> nat {
-        self.0.byte_len() + self.1.byte_len()
+    open spec fn blen(&self) -> nat {
+        self.0.blen() + self.1.blen()
     }
 }
 
@@ -74,9 +74,9 @@ impl<T: SpecType> SpecType for Option<T> {
         }
     }
 
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         match self {
-            Some(v) => v.byte_len(),
+            Some(v) => v.blen(),
             None => 0,
         }
     }
@@ -90,10 +90,10 @@ impl<A: SpecType, B: SpecType> SpecType for Either<A, B> {
         }
     }
 
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         match self {
-            Either::Left(v) => v.byte_len(),
-            Either::Right(v) => v.byte_len(),
+            Either::Left(v) => v.blen(),
+            Either::Right(v) => v.blen(),
         }
     }
 }
@@ -103,13 +103,13 @@ impl<T: SpecType> SpecType for Seq<T> {
         forall|i: int| 0 <= i < self.len() ==> #[trigger] self[i].wf()
     }
 
-    open spec fn byte_len(&self) -> nat {
-        self.fold_left(0, |acc: nat, elem: T| acc + elem.byte_len())
+    open spec fn blen(&self) -> nat {
+        self.fold_left(0, |acc: nat, elem: T| acc + elem.blen())
     }
 }
 
 impl<const N: usize> SpecType for [u8; N] {
-    open spec fn byte_len(&self) -> nat {
+    open spec fn blen(&self) -> nat {
         N as nat
     }
 }
@@ -138,8 +138,8 @@ impl<T: SpecType, Pred: SpecPred<T>> SpecType for Subset<T, Pred> {
         &&& self.pred.apply(self.val)
     }
 
-    open spec fn byte_len(&self) -> nat {
-        self.val.byte_len()
+    open spec fn blen(&self) -> nat {
+        self.val.blen()
     }
 }
 
@@ -167,7 +167,7 @@ pub trait NonEmptyValue: SpecType {
         requires
             self.non_empty(),
         ensures
-            self.wf() ==> self.byte_len() > 0,
+            self.wf() ==> self.blen() > 0,
     ;
 }
 
@@ -203,7 +203,7 @@ impl NonEmptyValue for usize {
 
 impl<A, B> NonEmptyValue for (A, B) where A: SpecType, B: SpecType {
     open spec fn non_empty(&self) -> bool {
-        self.0.byte_len() > 0 || self.1.byte_len() > 0
+        self.0.blen() > 0 || self.1.blen() > 0
     }
 
     proof fn lemma_non_empty(&self) {
@@ -212,7 +212,7 @@ impl<A, B> NonEmptyValue for (A, B) where A: SpecType, B: SpecType {
 
 impl<A, B> NonEmptyValue for Either<A, B> where A: SpecType, B: SpecType {
     open spec fn non_empty(&self) -> bool {
-        self.byte_len() > 0
+        self.blen() > 0
     }
 
     proof fn lemma_non_empty(&self) {

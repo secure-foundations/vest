@@ -20,7 +20,7 @@ impl<A> Deterministic for super::Opt<A> where A: Deterministic {
     }
 }
 
-impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Optional<A, B> {
+impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::Optional<A, B> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
@@ -29,7 +29,8 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Opt
                 Some(v0) => {
                     let serialized0 = self.0.spec_serialize_dps(v0, serialized1);
                     self.0.theorem_serialize_parse_roundtrip(v0, serialized1);
-                    self.0.lemma_serialize_buf(v0, serialized1);
+                    self.0.lemma_serialize_dps_buf(v0, serialized1);
+                    self.0.lemma_serialize_dps_len(v0, serialized1);
                     if let Some((n0, _)) = self.0.spec_parse(serialized0) {
                         assert(n0 == serialized0.len() - serialized1.len());
                         assert(serialized0.skip(n0) == serialized1);
@@ -43,7 +44,7 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Opt
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for super::Optional<A, B> {
+impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for super::Optional<A, B> {
 
 }
 

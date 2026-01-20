@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 impl<A, B> SPRoundTrip for super::Preceded<A, B> where
-    A: SPRoundTrip + GoodSerializer,
+    A: SPRoundTrip + GoodSerializerDps,
     B: SPRoundTrip,
  {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -17,7 +17,7 @@ impl<A, B> SPRoundTrip for super::Preceded<A, B> where
 
 // PSRoundTrip only holds for Preceded when A has a unique well-formed value
 impl<A, B> PSRoundTrip for super::Preceded<A, B> where
-    A: PSRoundTrip + GoodSerializer,
+    A: PSRoundTrip + GoodSerializerDps,
     <A as SpecParser>::PT: UniqueWfValue,
     B: PSRoundTrip,
  {

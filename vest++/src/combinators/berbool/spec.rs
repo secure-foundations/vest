@@ -69,13 +69,25 @@ impl Unambiguity for super::BerBool {
 
 }
 
-impl GoodSerializer for super::BerBool {
-    proof fn lemma_serialize_buf(&self, v: bool, obuf: Seq<u8>) {
+impl GoodSerializerDps for super::BerBool {
+    proof fn lemma_serialize_dps_buf(&self, v: bool, obuf: Seq<u8>) {
         if v.wf() {
             let serialized = self.spec_serialize_dps(v, obuf);
             assert(serialized.len() == 1 + obuf.len());
         }
     }
+
+    proof fn lemma_serialize_dps_len(&self, v: bool, obuf: Seq<u8>) {
+    }
+}
+
+impl GoodSerializer for super::BerBool {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    }
+}
+
+impl SpecByteLen for super::BerBool {
+    type T = bool;
 }
 
 } // verus!

@@ -56,9 +56,27 @@ impl<A: Unambiguity, Pred: SpecPred<A::ST>> Unambiguity for super::Refined<A, Pr
     }
 }
 
+impl<A: GoodSerializerDps, Pred: SpecPred<A::ST>> GoodSerializerDps for super::Refined<A, Pred> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_buf(v.val, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(v.val, obuf);
+    }
+}
+
 impl<A: GoodSerializer, Pred: SpecPred<A::ST>> GoodSerializer for super::Refined<A, Pred> {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_buf(v.val, obuf);
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        self.inner.lemma_serialize_len(v.val);
+    }
+}
+
+impl<A: SpecByteLen, Pred: SpecPred<A::T>> SpecByteLen for super::Refined<A, Pred> {
+    type T = Subset<A::T, Pred>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(v.val)
     }
 }
 
@@ -113,9 +131,27 @@ impl<Inner: Unambiguity> Unambiguity for super::Tag<Inner, Inner::ST> {
     }
 }
 
-impl<Inner> GoodSerializer for super::Tag<Inner, Inner::ST> where Inner: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, _v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_buf(self.tag, obuf);
+impl<Inner> GoodSerializerDps for super::Tag<Inner, Inner::ST> where Inner: GoodSerializerDps {
+    proof fn lemma_serialize_dps_buf(&self, _v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_buf(self.tag, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, _v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(self.tag, obuf);
+    }
+}
+
+impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner, Inner::ST> {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        self.inner.lemma_serialize_len(self.tag);
+    }
+}
+
+impl<Inner: SpecByteLen> SpecByteLen for super::Tag<Inner, Inner::T> {
+    type T = ();
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(self.tag)
     }
 }
 

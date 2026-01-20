@@ -85,15 +85,53 @@ impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Choice<
     }
 }
 
-impl<A, B> GoodSerializer for super::Choice<A, B> where A: GoodSerializer, B: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A, B> GoodSerializerDps for super::Choice<A, B> where
+    A: GoodSerializerDps,
+    B: GoodSerializerDps,
+ {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             Either::Left(va) => {
-                self.0.lemma_serialize_buf(va, obuf);
+                self.0.lemma_serialize_dps_buf(va, obuf);
             },
             Either::Right(vb) => {
-                self.1.lemma_serialize_buf(vb, obuf);
+                self.1.lemma_serialize_dps_buf(vb, obuf);
             },
+        }
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        match v {
+            Either::Left(va) => {
+                self.0.lemma_serialize_dps_len(va, obuf);
+            },
+            Either::Right(vb) => {
+                self.1.lemma_serialize_dps_len(vb, obuf);
+            },
+        }
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Choice<A, B> {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        match v {
+            Either::Left(va) => {
+                self.0.lemma_serialize_len(va);
+            },
+            Either::Right(vb) => {
+                self.1.lemma_serialize_len(vb);
+            },
+        }
+    }
+}
+
+impl<A, B> SpecByteLen for super::Choice<A, B> where A: SpecByteLen, B: SpecByteLen {
+    type T = Either<A::T, B::T>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        match v {
+            Either::Left(va) => self.0.byte_len(va),
+            Either::Right(vb) => self.1.byte_len(vb),
         }
     }
 }

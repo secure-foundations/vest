@@ -81,11 +81,35 @@ impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Terminated<A, B> {
     }
 }
 
-impl<A, B> GoodSerializer for super::Terminated<A, B> where A: GoodSerializer, B: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A, B> GoodSerializerDps for super::Terminated<A, B> where
+    A: GoodSerializerDps,
+    B: GoodSerializerDps,
+ {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         let vb = choose|vb: B::ST| #![auto] vb.wf();
-        (self.0, self.1).lemma_serialize_buf((v, vb), obuf);
+        (self.0, self.1).lemma_serialize_dps_buf((v, vb), obuf);
 
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        let vb = choose|vb: B::ST| #![auto] vb.wf();
+        (self.0, self.1).lemma_serialize_dps_len((v, vb), obuf);
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Terminated<A, B> {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        let vb = choose|vb: B::ST| #![auto] vb.wf();
+        (self.0, self.1).lemma_serialize_len((v, vb));
+    }
+}
+
+impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Terminated<A, B> {
+    type T = A::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let vb = choose|vb: B::T| vb.wf();
+        (self.0, self.1).byte_len((v, vb))
     }
 }
 

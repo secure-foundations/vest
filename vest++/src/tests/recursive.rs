@@ -112,13 +112,6 @@ impl Serializability for NestedBracesCombinator {
     }
 }
 
-impl GoodSerializer for NestedBracesCombinator {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        admit();
-        // lemma_serialize_buf_nested_braces(v, obuf);
-    }
-}
-
 proof fn lemma_parse_length_nested_braces(ibuf: Seq<u8>)
     ensures
         p_nested_braces(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
@@ -152,7 +145,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
     }
 }
 
-// proof fn lemma_serialize_buf_nested_braces(v: NestedBracesT, obuf: Seq<u8>)
+// proof fn lemma_serialize_dps_buf_nested_braces(v: NestedBracesT, obuf: Seq<u8>)
 //     requires
 //         serializable_nested_braces(v, obuf),
 //     ensures
@@ -162,14 +155,14 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
 //     if wf_nested_braces(v) {
 //         match v {
 //             NestedBracesT::Brace(inner) => {
-//                 lemma_serialize_buf_nested_braces(*inner, obuf);
+//                 lemma_serialize_dps_buf_nested_braces(*inner, obuf);
 //             },
 //             NestedBracesT::Eps => {
 //             },
 //         }
 //     }
 // }
-// proof fn lemma_serialize_buf_nested_braces(v: NestedBracesT, obuf: Seq<u8>)
+// proof fn lemma_serialize_dps_buf_nested_braces(v: NestedBracesT, obuf: Seq<u8>)
 //     requires
 //         serializable_nested_braces(v, obuf),
 //     ensures
@@ -199,7 +192,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
 //             ),
 //             mapper: NestedBracesMapper,
 //         };
-//         combinator.lemma_serialize_buf(v, obuf);
+//         combinator.lemma_serialize_dps_buf(v, obuf);
 //     }
 // }
 pub open spec fn wf_nested_braces(v: NestedBracesT) -> bool

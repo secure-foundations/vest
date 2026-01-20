@@ -3,7 +3,7 @@ use vstd::{calc, prelude::*};
 
 verus! {
 
-impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializer {
+impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializerDps {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PT>, obuf: Seq<u8>)
         requires
             self.inner.unambiguous(),
@@ -29,7 +29,8 @@ impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializer {
 
             // base
             self.inner.theorem_serialize_parse_roundtrip(v, rest_buf);
-            self.inner.lemma_serialize_buf(v, rest_buf);
+            self.inner.lemma_serialize_dps_buf(v, rest_buf);
+            self.inner.lemma_serialize_dps_len(v, rest_buf);
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
             assert(self.inner.spec_parse(serialized) == Some((n0, v)));
@@ -48,7 +49,7 @@ impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializer {
                 assert(self.parse_rec(rest_buf) == (0int, Seq::<A::PT>::empty()));
                 // from I.H.:
                 assert(self.parse_rec(rest_buf) == (rest_buf.len() - obuf.len(), rest));
-                self.lemma_serialize_buf(rest, obuf);
+                self.lemma_serialize_dps_buf(rest, obuf);
 
                 // therefore:
                 assert(rest_buf == obuf);
@@ -170,31 +171,45 @@ impl<A> super::Star<A> where A: Deterministic {
                     assert forall|acc: Seq<u8>, x: Seq<u8>, y: <A as SpecSerializer>::ST|
                      #[trigger]
                         f(acc + x, y) == acc + #[trigger] f(x, y) by {}
-                    Self::lemma_fold_left_accumulate(rest, self.inner.spec_serialize(v0), f);
+                    lemma_fold_left_accumulate_seq(rest, self.inner.spec_serialize(v0), f);
                 }
                 self.inner.spec_serialize(v0) + rest_foldl;
             }
         }
     }
+}
 
-    proof fn lemma_fold_left_accumulate<T, U>(
-        vs: Seq<T>,
-        init: Seq<U>,
-        f: spec_fn(Seq<U>, T) -> Seq<U>,
-    )
-        requires
-            forall|acc: Seq<U>, x: Seq<U>, y: T| #[trigger]
-                f(acc + x, y) == acc + #[trigger] f(x, y),
-        ensures
-            vs.fold_left(init, f) == init + vs.fold_left(Seq::<U>::empty(), f),
-        decreases vs.len(),
-    {
-        if vs.len() == 0 {
-        } else {
-            let last = vs.last();
-            let prefix = vs.drop_last();
-            Self::lemma_fold_left_accumulate(prefix, init, f);
-        }
+pub(crate) proof fn lemma_fold_left_accumulate_seq<T, U>(
+    vs: Seq<T>,
+    init: Seq<U>,
+    f: spec_fn(Seq<U>, T) -> Seq<U>,
+)
+    requires
+        forall|acc: Seq<U>, x: Seq<U>, y: T| #[trigger] f(acc + x, y) == acc + #[trigger] f(x, y),
+    ensures
+        vs.fold_left(init, f) == init + vs.fold_left(Seq::<U>::empty(), f),
+    decreases vs.len(),
+{
+    if vs.len() == 0 {
+    } else {
+        let last = vs.last();
+        let prefix = vs.drop_last();
+        lemma_fold_left_accumulate_seq(prefix, init, f);
+    }
+}
+
+pub(crate) proof fn lemma_fold_left_accumulate_nat<T>(vs: Seq<T>, init: nat, f: spec_fn(nat, T) -> nat)
+    requires
+        forall|acc: nat, x: nat, y: T| #[trigger] f(acc + x, y) == acc + #[trigger] f(x, y),
+    ensures
+        vs.fold_left(init, f) == init + vs.fold_left(0, f),
+    decreases vs.len(),
+{
+    if vs.len() == 0 {
+    } else {
+        let last = vs.last();
+        let prefix = vs.drop_last();
+        lemma_fold_left_accumulate_nat(prefix, init, f);
     }
 }
 
@@ -204,7 +219,7 @@ impl<A> Deterministic for super::Star<A> where A: Deterministic {
     }
 }
 
-impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Repeat<A, B> {
+impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::Repeat<A, B> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
         let star = super::Star { inner: self.0 };
         if v.wf() {
@@ -213,13 +228,14 @@ impl<A: SPRoundTrip + GoodSerializer, B: SPRoundTrip> SPRoundTrip for super::Rep
             let serialized0 = star.spec_serialize_dps(v.0, serialized1);
             star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
             let n0 = serialized0.len() - serialized1.len();
-            star.lemma_serialize_buf(v.0, serialized1);
+            star.lemma_serialize_dps_buf(v.0, serialized1);
+            star.lemma_serialize_dps_len(v.0, serialized1);
             assert(serialized0.skip(n0) == serialized1);
         }
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializer, B: PSRoundTrip> PSRoundTrip for super::Repeat<A, B> {
+impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for super::Repeat<A, B> {
 
 }
 

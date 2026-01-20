@@ -64,16 +64,37 @@ impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
     }
 }
 
-impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
-    proof fn lemma_serialize_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A, B> GoodSerializerDps for (A, B) where A: GoodSerializerDps, B: GoodSerializerDps {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
-        self.1.lemma_serialize_buf(v.1, obuf);
-        self.0.lemma_serialize_buf(v.0, serialized1);
+        self.1.lemma_serialize_dps_buf(v.1, obuf);
+        self.0.lemma_serialize_dps_buf(v.0, serialized1);
         let witness1 = choose|wit1: Seq<u8>| self.1.spec_serialize_dps(v.1, obuf) == wit1 + obuf;
         let witness0 = choose|wit0: Seq<u8>|
             self.0.spec_serialize_dps(v.0, serialized1) == wit0 + serialized1;
         assert(serialized0 == witness0 + witness1 + obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.1.lemma_serialize_dps_len(v.1, obuf);
+        let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+        self.0.lemma_serialize_dps_len(v.0, serialized1);
+    }
+}
+
+impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+        self.1.lemma_serialize_len(v.1);
+        self.0.lemma_serialize_len(v.0);
+    }
+}
+
+impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for (A, B) {
+    type T = (A::T, B::T);
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.0.byte_len(v.0) + self.1.byte_len(v.1)
     }
 }
 

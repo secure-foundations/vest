@@ -135,10 +135,23 @@ impl Unambiguity for super::U8 {
     }
 }
 
-impl GoodSerializer for super::U8 {
-    proof fn lemma_serialize_buf(&self, v: u8, obuf: Seq<u8>) {
+impl GoodSerializerDps for super::U8 {
+    proof fn lemma_serialize_dps_buf(&self, v: u8, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == seq![v] + obuf);
     }
+
+    proof fn lemma_serialize_dps_len(&self, v: u8, obuf: Seq<u8>) {
+        assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == v.blen());
+    }
+}
+
+impl GoodSerializer for super::U8 {
+    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    }
+}
+
+impl SpecByteLen for super::U8 {
+    type T = u8;
 }
 
 impl SpecParser for super::U16Le {
@@ -187,10 +200,24 @@ impl Unambiguity for super::U16Le {
     }
 }
 
-impl GoodSerializer for super::U16Le {
-    proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_buf(v, obuf);
+impl GoodSerializerDps for super::U16Le {
+    proof fn lemma_serialize_dps_buf(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_dps_buf(v, obuf);
     }
+
+    proof fn lemma_serialize_dps_len(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U16Le {
+    proof fn lemma_serialize_len(&self, v: u16) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U16Le {
+    type T = u16;
 }
 
 impl SpecParser for super::U16Be {
@@ -239,10 +266,24 @@ impl Unambiguity for super::U16Be {
     }
 }
 
-impl GoodSerializer for super::U16Be {
-    proof fn lemma_serialize_buf(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_buf(v, obuf);
+impl GoodSerializerDps for super::U16Be {
+    proof fn lemma_serialize_dps_buf(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_dps_buf(v, obuf);
     }
+
+    proof fn lemma_serialize_dps_len(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U16Be {
+    proof fn lemma_serialize_len(&self, v: u16) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U16Be {
+    type T = u16;
 }
 
 } // verus!

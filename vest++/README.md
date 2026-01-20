@@ -230,7 +230,7 @@ We introduce a new lemma to relate the return value of `spec_serialize` to the d
 buffer `obuf`, which is used in the proof of `theorem_serialize_parse_roundtrip`.
 
 ```rust
-proof fn lemma_serialize_buf(&self, v: Self::Type, obuf: Seq<u8>)
+proof fn lemma_serialize_dps_buf(&self, v: Self::Type, obuf: Seq<u8>)
     requires
         self.requires(v, obuf),
     ensures
@@ -454,7 +454,7 @@ classDiagram
         +spec fn serializable(v: Type, obuf: Seq~u8~) bool
         +spec fn spec_serialize_dps(v: Type, obuf: Seq~u8~) Seq~u8~
         +spec fn spec_serialize(v: Type) Seq~u8~
-        +proof fn lemma_serialize_buf(v, obuf)
+        +proof fn lemma_serialize_dps_buf(v, obuf)
     }
     
     class SpecCombinator {
