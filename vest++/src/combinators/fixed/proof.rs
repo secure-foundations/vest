@@ -4,9 +4,11 @@ use vstd::prelude::*;
 verus! {
 
 impl<const N: usize> SPRoundTrip for super::Fixed<N> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         broadcast use super::spec::axiom_array_from_seq;
 
+        if v.wf() {
+        }
     }
 }
 
@@ -24,8 +26,8 @@ impl<const N: usize> NonMalleable for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> Deterministic for super::Fixed<N> {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl<const N: usize> SpecSerializers for super::Fixed<N> {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
     }
 }
 

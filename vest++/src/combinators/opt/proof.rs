@@ -9,8 +9,8 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     }
 }
 
-impl<A> Deterministic for super::Opt<A> where A: Deterministic {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl<A> SpecSerializers for super::Opt<A> where A: SpecSerializers {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
             None => {},
             Some(vv) => {
@@ -21,14 +21,14 @@ impl<A> Deterministic for super::Opt<A> where A: Deterministic {
 }
 
 impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::Optional<A, B> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
+            self.1.theorem_serialize_parse_roundtrip_internal(v.1, obuf);
             match v.0 {
                 Some(v0) => {
                     let serialized0 = self.0.spec_serialize_dps(v0, serialized1);
-                    self.0.theorem_serialize_parse_roundtrip(v0, serialized1);
+                    self.0.theorem_serialize_parse_roundtrip_internal(v0, serialized1);
                     self.0.lemma_serialize_dps_buf(v0, serialized1);
                     self.0.lemma_serialize_dps_len(v0, serialized1);
                     if let Some((n0, _)) = self.0.spec_parse(serialized0) {
@@ -54,8 +54,8 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     }
 }
 
-impl<A: Deterministic, B: Deterministic> Deterministic for super::Optional<A, B> {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl<A: SpecSerializers, B: SpecSerializers> SpecSerializers for super::Optional<A, B> {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }

@@ -23,9 +23,15 @@ impl Mapper for U16LeMapper {
 
 impl IsoMapper for U16LeMapper {
     proof fn lemma_map_wf(&self, v: Self::In) {
+        if v.wf() {
+            assert(self.spec_map(v).wf());
+        }
     }
 
     proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+        if v.wf() {
+            assert(self.spec_map_rev(v).wf());
+        }
     }
 
     proof fn lemma_map_iso(&self, i: Self::In) {
@@ -64,9 +70,15 @@ impl Mapper for U16BeMapper {
 
 impl IsoMapper for U16BeMapper {
     proof fn lemma_map_wf(&self, v: Self::In) {
+        if v.wf() {
+            assert(self.spec_map(v).wf());
+        }
     }
 
     proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+        if v.wf() {
+            assert(self.spec_map_rev(v).wf());
+        }
     }
 
     proof fn lemma_map_iso(&self, i: Self::In) {
@@ -88,7 +100,7 @@ impl IsoMapper for U16BeMapper {
 }
 
 impl SpecParser for super::U8 {
-    type PT = u8;
+    type PVal = u8;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u8)> {
         if ibuf.len() >= 1 {
@@ -108,7 +120,7 @@ impl SpecSerializerDps for super::U8 {
 }
 
 impl SpecSerializer for super::U8 {
-    type ST = u8;
+    type SVal = u8;
 
     open spec fn spec_serialize(&self, v: u8) -> Seq<u8> {
         seq![v]
@@ -146,7 +158,8 @@ impl GoodSerializerDps for super::U8 {
 }
 
 impl GoodSerializer for super::U8 {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        assert(self.spec_serialize(v).len() == v.blen());
     }
 }
 
@@ -155,7 +168,7 @@ impl SpecByteLen for super::U8 {
 }
 
 impl SpecParser for super::U16Le {
-    type PT = u16;
+    type PVal = u16;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_parse(ibuf)
@@ -171,7 +184,7 @@ impl SpecSerializerDps for super::U16Le {
 }
 
 impl SpecSerializer for super::U16Le {
-    type ST = u16;
+    type SVal = u16;
 
     open spec fn spec_serialize(&self, v: u16) -> Seq<u8> {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_serialize(v)
@@ -221,7 +234,7 @@ impl SpecByteLen for super::U16Le {
 }
 
 impl SpecParser for super::U16Be {
-    type PT = u16;
+    type PVal = u16;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_parse(ibuf)
@@ -237,7 +250,7 @@ impl SpecSerializerDps for super::U16Be {
 }
 
 impl SpecSerializer for super::U16Be {
-    type ST = u16;
+    type SVal = u16;
 
     open spec fn spec_serialize(&self, v: u16) -> Seq<u8> {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_serialize(v)

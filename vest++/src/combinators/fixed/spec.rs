@@ -16,9 +16,9 @@ pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
 ;
 
 impl<const N: usize> SpecParser for super::Fixed<N> {
-    type PT = [u8; N];
+    type PVal = [u8; N];
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         if ibuf.len() < N as int {
             None
         } else {
@@ -45,9 +45,9 @@ impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecSerializer for super::Fixed<N> {
-    type ST = [u8; N];
+    type SVal = [u8; N];
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         v@
     }
 }
@@ -72,7 +72,7 @@ impl<const N: usize> GoodSerializerDps for super::Fixed<N> {
 }
 
 impl<const N: usize> GoodSerializer for super::Fixed<N> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
     }
 }
 

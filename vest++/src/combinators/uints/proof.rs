@@ -6,7 +6,9 @@ use vstd::prelude::*;
 verus! {
 
 impl SPRoundTrip for super::U8 {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: u8, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u8, obuf: Seq<u8>) {
+        if v.wf() {
+        }
     }
 }
 
@@ -20,17 +22,17 @@ impl NonMalleable for super::U8 {
     }
 }
 
-impl Deterministic for super::U8 {
+impl SpecSerializers for super::U8 {
     proof fn lemma_serialize_equiv(&self, v: u8, obuf: Seq<u8>) {
     }
 }
 
 impl SPRoundTrip for super::U16Le {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.theorem_serialize_parse_roundtrip(
-            v,
-            obuf,
-        );
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u16, obuf: Seq<u8>) {
+        Mapped {
+            inner: Fixed::<2>,
+            mapper: U16LeMapper,
+        }.theorem_serialize_parse_roundtrip_internal(v, obuf);
     }
 }
 
@@ -46,18 +48,18 @@ impl NonMalleable for super::U16Le {
     }
 }
 
-impl Deterministic for super::U16Le {
+impl SpecSerializers for super::U16Le {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl SPRoundTrip for super::U16Be {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.theorem_serialize_parse_roundtrip(
-            v,
-            obuf,
-        );
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u16, obuf: Seq<u8>) {
+        Mapped {
+            inner: Fixed::<2>,
+            mapper: U16BeMapper,
+        }.theorem_serialize_parse_roundtrip_internal(v, obuf);
     }
 }
 
@@ -73,7 +75,7 @@ impl NonMalleable for super::U16Be {
     }
 }
 
-impl Deterministic for super::U16Be {
+impl SpecSerializers for super::U16Be {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_equiv(v, obuf);
     }

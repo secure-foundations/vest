@@ -5,14 +5,14 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTrip, B: SPRoundTrip> SPRoundTrip for super::Choice<A, B> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             match v {
                 Either::Left(va) => {
-                    self.0.theorem_serialize_parse_roundtrip(va, obuf);
+                    self.0.theorem_serialize_parse_roundtrip_internal(va, obuf);
                 },
                 Either::Right(vb) => {
-                    self.1.theorem_serialize_parse_roundtrip(vb, obuf);
+                    self.1.theorem_serialize_parse_roundtrip_internal(vb, obuf);
                 },
             }
         }
@@ -33,8 +33,8 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
     }
 }
 
-impl<A, B> Deterministic for super::Choice<A, B> where A: Deterministic, B: Deterministic {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl<A, B> SpecSerializers for super::Choice<A, B> where A: SpecSerializers, B: SpecSerializers {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
             Either::Left(va) => {
                 self.0.lemma_serialize_equiv(va, obuf);

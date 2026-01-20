@@ -3,10 +3,10 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, Pred: SpecPred<A::PT>> SpecParser for super::Refined<A, Pred> where A: SpecParser {
-    type PT = Subset<A::PT, Pred>;
+impl<A, Pred: SpecPred<A::PVal>> SpecParser for super::Refined<A, Pred> where A: SpecParser {
+    type PVal = Subset<A::PVal, Pred>;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.inner.spec_parse(ibuf) {
             Some((n, v)) if self.pred.apply(v) => Some((n, Subset { val: v, pred: self.pred })),
             _ => None,
@@ -14,7 +14,7 @@ impl<A, Pred: SpecPred<A::PT>> SpecParser for super::Refined<A, Pred> where A: S
     }
 }
 
-impl<A: GoodParser, Pred: SpecPred<A::PT>> GoodParser for super::Refined<A, Pred> {
+impl<A: GoodParser, Pred: SpecPred<A::PVal>> GoodParser for super::Refined<A, Pred> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
@@ -34,10 +34,12 @@ impl<A, Pred: SpecPred<A::ST>> SpecSerializerDps for super::Refined<A, Pred> whe
     }
 }
 
-impl<A, Pred: SpecPred<A::ST>> SpecSerializer for super::Refined<A, Pred> where A: SpecSerializer {
-    type ST = Subset<A::ST, Pred>;
+impl<A, Pred: SpecPred<A::SVal>> SpecSerializer for super::Refined<A, Pred> where
+    A: SpecSerializer,
+ {
+    type SVal = Subset<A::SVal, Pred>;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         self.inner.spec_serialize(v.val)
     }
 }
@@ -66,8 +68,8 @@ impl<A: GoodSerializerDps, Pred: SpecPred<A::ST>> GoodSerializerDps for super::R
     }
 }
 
-impl<A: GoodSerializer, Pred: SpecPred<A::ST>> GoodSerializer for super::Refined<A, Pred> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+impl<A: GoodSerializer, Pred: SpecPred<A::SVal>> GoodSerializer for super::Refined<A, Pred> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.inner.lemma_serialize_len(v.val);
     }
 }
@@ -80,10 +82,10 @@ impl<A: SpecByteLen, Pred: SpecPred<A::T>> SpecByteLen for super::Refined<A, Pre
     }
 }
 
-impl<Inner> SpecParser for super::Tag<Inner, Inner::PT> where Inner: SpecParser {
-    type PT = ();
+impl<Inner> SpecParser for super::Tag<Inner, Inner::PVal> where Inner: SpecParser {
+    type PVal = ();
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.inner.spec_parse(ibuf) {
             Some((n, v)) if v == self.tag => Some((n, ())),
             _ => None,
@@ -91,7 +93,7 @@ impl<Inner> SpecParser for super::Tag<Inner, Inner::PT> where Inner: SpecParser 
     }
 }
 
-impl<Inner: GoodParser> GoodParser for super::Tag<Inner, Inner::PT> {
+impl<Inner: GoodParser> GoodParser for super::Tag<Inner, Inner::PVal> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
@@ -109,10 +111,10 @@ impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where Inner: Spec
     }
 }
 
-impl<Inner> SpecSerializer for super::Tag<Inner, Inner::ST> where Inner: SpecSerializer {
-    type ST = ();
+impl<Inner> SpecSerializer for super::Tag<Inner, Inner::SVal> where Inner: SpecSerializer {
+    type SVal = ();
 
-    open spec fn spec_serialize(&self, _v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, _v: Self::SVal) -> Seq<u8> {
         self.inner.spec_serialize(self.tag)
     }
 }
@@ -141,8 +143,8 @@ impl<Inner> GoodSerializerDps for super::Tag<Inner, Inner::ST> where Inner: Good
     }
 }
 
-impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner, Inner::ST> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner, Inner::SVal> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.inner.lemma_serialize_len(self.tag);
     }
 }

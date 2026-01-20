@@ -53,9 +53,9 @@ pub trait IsoMapper: Mapper {
 
 impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
     Inner: SpecParser,
-    M: Mapper<In = Inner::PT>,
+    M: Mapper<In = Inner::PVal>,
  {
-    type PT = M::Out;
+    type PVal = M::Out;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, M::Out)> {
         match self.inner.spec_parse(ibuf) {
@@ -67,7 +67,7 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
     Inner: GoodParser,
-    M: IsoMapper<In = Inner::PT>,
+    M: IsoMapper<In = Inner::PVal>,
  {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
@@ -126,7 +126,7 @@ impl<Inner, M> GoodSerializerDps for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     Inner: GoodSerializer,
-    M: IsoMapper<In = Inner::ST>,
+    M: IsoMapper<In = Inner::SVal>,
  {
     proof fn lemma_serialize_len(&self, v: M::Out) {
         self.inner.lemma_serialize_len(self.mapper.spec_map_rev(v));
@@ -146,9 +146,9 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
 
 impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     Inner: SpecSerializer,
-    M: Mapper<In = Inner::ST>,
+    M: Mapper<In = Inner::SVal>,
  {
-    type ST = M::Out;
+    type SVal = M::Out;
 
     open spec fn spec_serialize(&self, v: M::Out) -> Seq<u8> {
         self.inner.spec_serialize(self.mapper.spec_map_rev(v))
@@ -157,9 +157,9 @@ impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
 
 impl<Inner: SpecParser, Out: SpecType> SpecParser for super::Mapped<
     Inner,
-    spec_fn(Inner::PT) -> Out,
+    spec_fn(Inner::PVal) -> Out,
 > {
-    type PT = Out;
+    type PVal = Out;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Out)> {
         match self.inner.spec_parse(ibuf) {
@@ -182,11 +182,11 @@ impl<Inner: SpecSerializerDps, Out: SpecType> SpecSerializerDps for super::Mappe
 
 impl<Inner: SpecSerializer, Out: SpecType> SpecSerializer for super::Mapped<
     Inner,
-    spec_fn(Out) -> Inner::ST,
+    spec_fn(Out) -> Inner::SVal,
 > {
-    type ST = Out;
+    type SVal = Out;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         self.inner.spec_serialize((self.mapper)(v))
     }
 }

@@ -4,12 +4,12 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for (A, B) {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
-            self.1.theorem_serialize_parse_roundtrip(v.1, obuf);
-            self.0.theorem_serialize_parse_roundtrip(v.0, serialized1);
+            self.1.theorem_serialize_parse_roundtrip_internal(v.1, obuf);
+            self.0.theorem_serialize_parse_roundtrip_internal(v.0, serialized1);
             self.0.lemma_serialize_dps_buf(v.0, serialized1);
             self.0.lemma_serialize_dps_len(v.0, serialized1);
             if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
@@ -50,8 +50,8 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
     }
 }
 
-impl<A, B> Deterministic for (A, B) where A: Deterministic, B: Deterministic {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl<A, B> SpecSerializers for (A, B) where A: SpecSerializers, B: SpecSerializers {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
 
         self.1.lemma_serialize_equiv(v.1, obuf);

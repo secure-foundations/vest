@@ -4,9 +4,9 @@ use vstd::prelude::*;
 verus! {
 
 impl SpecParser for super::Tail {
-    type PT = Seq<u8>;
+    type PVal = Seq<u8>;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         Some((ibuf.len() as int, ibuf))
     }
 }
@@ -28,9 +28,9 @@ impl SpecSerializerDps for super::Tail {
 }
 
 impl SpecSerializer for super::Tail {
-    type ST = Seq<u8>;
+    type SVal = Seq<u8>;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         v
     }
 }

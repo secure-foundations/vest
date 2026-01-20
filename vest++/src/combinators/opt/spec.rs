@@ -4,9 +4,9 @@ use vstd::prelude::*;
 verus! {
 
 impl<A> SpecParser for super::Opt<A> where A: SpecParser {
-    type PT = Option<A::PT>;
+    type PVal = Option<A::PVal>;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.0.spec_parse(ibuf) {
             Some((n, v)) => Some((n, Some(v))),
             None => Some((0, None)),
@@ -36,9 +36,9 @@ impl<A> SpecSerializerDps for super::Opt<A> where A: SpecSerializerDps {
 }
 
 impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
-    type ST = Option<A::ST>;
+    type SVal = Option<A::SVal>;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         match v {
             None => Seq::empty(),
             Some(vv) => self.0.spec_serialize(vv),
@@ -86,7 +86,7 @@ impl<A> GoodSerializerDps for super::Opt<A> where A: GoodSerializerDps {
 }
 
 impl<A: GoodSerializer> GoodSerializer for super::Opt<A> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
         match v {
             None => {},
             Some(vv) => {
@@ -108,9 +108,9 @@ impl<Inner: SpecByteLen> SpecByteLen for super::Opt<Inner> {
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
-    type PT = (Option<A::PT>, B::PT);
+    type PVal = (Option<A::PVal>, B::PVal);
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         (super::Opt(self.0), self.1).spec_parse(ibuf)
     }
 }
@@ -144,7 +144,7 @@ impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Op
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Optional<A, B> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (super::Opt(self.0), self.1).lemma_serialize_len(v);
     }
 }
@@ -158,9 +158,9 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Optional<A, B> {
 }
 
 impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Optional<A, B> {
-    type ST = (Option<A::ST>, B::ST);
+    type SVal = (Option<A::SVal>, B::SVal);
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         (super::Opt(self.0), self.1).spec_serialize(v)
     }
 }

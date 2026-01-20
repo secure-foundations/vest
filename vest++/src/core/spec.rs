@@ -6,14 +6,14 @@ verus! {
 /// Parser specification.
 pub trait SpecParser {
     /// The type of parsed values.
-    type PT: SpecType;
+    type PVal: SpecType;
 
     /// Parser specification for values of [`Self::PT`].
     ///
     /// Returns `Some((n, v))` if parsing succeeds, where `n` is the number of bytes consumed
     /// from the input buffer `ibuf`, and `v` is the parsed value.
     /// Returns `None` if parsing fails.
-    spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)>;
+    spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)>;
 }
 
 pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
@@ -47,9 +47,19 @@ pub trait SpecSerializerDps {
     spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8>;
 }
 
+/// Denote the serialized byte length of values of [`Self::T`].
 pub trait SpecByteLen {
+    /// The type of values that can be serialized.
     type T: SpecType;
 
+    /// The byte length of values of [`Self::T`].
+    ///
+    /// The default implementation simply uses the `blen` method of [`Self::T`].
+    /// All primitive combinators use this default implementation.
+    ///
+    /// This method is needed primarily because combinators that omit parsed values (like [`crate::combinators::Preceded`],
+    ///  [`crate::combinators::Terminated`], and [`crate::combinators::Tag`])
+    /// may not have a meaningful byte length just from [`Self::T`].
     open spec fn byte_len(&self, v: Self::T) -> nat {
         v.blen()
     }
@@ -58,12 +68,12 @@ pub trait SpecByteLen {
 /// Serializer specification trait.
 pub trait SpecSerializer {
     /// The type of values to be serialized.
-    type ST: SpecType;
+    type SVal: SpecType;
 
     /// Serializer specification for values of [`Self::ST`].
     ///
     /// Takes a value `v` and returns the serialized bytes.
-    spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8>;
+    spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8>;
 }
 
 /// Constraints imposed by combinators on the serializability of values.
@@ -83,23 +93,25 @@ pub trait Unambiguity: SpecSerializerDps {
     }
 }
 
-/// A well-behaved serializer that satisfies key properties.
-pub trait GoodSerializerDps: SpecSerializerDps + SpecByteLen<T = Self::ST> {
+/// A well-behaved DPS serializer that satisfies key properties.
+pub trait GoodSerializerDps: SpecByteLen + SpecSerializerDps<ST = Self::T> {
     /// Lemma: serializer *prepends* to the output buffer
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>)
         ensures
             exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 
+    /// Lemma: serializer produces buffer of the correct length
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf).len() - obuf.len() == self.byte_len(v),
     ;
 }
 
-pub trait GoodSerializer: SpecSerializer + SpecByteLen<T = Self::ST> {
+/// A well-behaved serializer that satisfies key properties.
+pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
     /// Lemma: serializer produces buffer of the correct length
-    proof fn lemma_serialize_len(&self, v: Self::ST)
+    proof fn lemma_serialize_len(&self, v: Self::SVal)
         ensures
             self.spec_serialize(v).len() == self.byte_len(v),
     ;
@@ -108,30 +120,19 @@ pub trait GoodSerializer: SpecSerializer + SpecByteLen<T = Self::ST> {
 /// Combined parser and serializer specification trait.
 #[verusfmt::skip]
 pub trait SpecCombinator:
-    SpecParser +
-    SpecSerializerDps<ST = <Self as SpecParser>::PT> +
-    SpecSerializer<ST = <Self as SpecParser>::PT>
+    SpecByteLen +
+    SpecParser<PVal = Self::T> +
+    SpecSerializer<SVal = Self::T> +
+    SpecSerializerDps<ST = Self::T>
 {
 }
 
 #[verusfmt::skip]
 impl<T> SpecCombinator for T where
-    T:  SpecParser +
-        SpecSerializerDps<ST = <Self as SpecParser>::PT> +
-        SpecSerializer<ST = <Self as SpecParser>::PT>,
-{
-}
-
-/// Combined well-behaved parser and serializer trait.
-#[verusfmt::skip]
-pub trait GoodCombinator:
-    GoodParser + GoodSerializerDps<ST = <Self as SpecParser>::PT>
-{
-}
-
-#[verusfmt::skip]
-impl<C> GoodCombinator for C where
-    C:  GoodParser + GoodSerializerDps<ST = <Self as SpecParser>::PT>,
+    T:  SpecByteLen +
+        SpecParser<PVal = Self::T> +
+        SpecSerializer<SVal = Self::T> +
+        SpecSerializerDps<ST = Self::T>
 {
 }
 
@@ -146,9 +147,9 @@ pub type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
 pub type SerializableSpecFn<T> = spec_fn(T, Seq<u8>) -> bool;
 
 impl<T: SpecType> SpecParser for ParserSpecFn<T> {
-    type PT = T;
+    type PVal = T;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         (self)(ibuf)
     }
 }
@@ -162,9 +163,9 @@ impl<T: SpecType> SpecSerializerDps for SerializerDPSSpecFn<T> {
 }
 
 impl<T: SpecType> SpecSerializer for SerializerSpecFn<T> {
-    type ST = T;
+    type SVal = T;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         (self)(v)
     }
 }

@@ -7,9 +7,9 @@ impl<A, B> SPRoundTrip for super::Terminated<A, B> where
     A: SPRoundTrip + GoodSerializerDps,
     B: SPRoundTrip,
  {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         let vb = choose|vb: B::ST| #![auto] vb.wf();
-        (self.0, self.1).theorem_serialize_parse_roundtrip((v, vb), obuf);
+        (self.0, self.1).theorem_serialize_parse_roundtrip_internal((v, vb), obuf);
     }
 }
 
@@ -17,7 +17,7 @@ impl<A, B> SPRoundTrip for super::Terminated<A, B> where
 impl<A, B> PSRoundTrip for super::Terminated<A, B> where
     A: PSRoundTrip + GoodSerializerDps,
     B: PSRoundTrip,
-    <B as SpecParser>::PT: UniqueWfValue,
+    <B as SpecParser>::PVal: UniqueWfValue,
  {
     // proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>) {
     //     if let Some((_, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
@@ -39,7 +39,7 @@ impl<A, B> PSRoundTrip for super::Terminated<A, B> where
 impl<A, B> NonMalleable for super::Terminated<A, B> where
     A: NonMalleable,
     B: NonMalleable,
-    <B as SpecParser>::PT: UniqueWfValue,
+    <B as SpecParser>::PVal: UniqueWfValue,
  {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
@@ -61,20 +61,13 @@ impl<A, B> NonMalleable for super::Terminated<A, B> where
     }
 }
 
-// Deterministic only holds for Terminated when B has a unique well-formed value
-impl<A, B> Deterministic for super::Terminated<A, B> where
-    A: Deterministic,
-    B: Deterministic,
-    <B as SpecSerializer>::ST: UniqueWfValue,
+impl<A, B> SpecSerializers for super::Terminated<A, B> where
+    A: SpecSerializers,
+    B: SpecSerializers,
  {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
-        let vb_dps = choose|vb: <B as SpecSerializer>::ST| #![auto] vb.wf();
-        let vb_ser = choose|vb: <B as SpecSerializer>::ST| vb.wf();
-
-        // Since B has unique well-formed values, both witnesses are equal
-        vb_dps.lemma_unique_wf_value(&vb_ser);
-
-        (self.0, self.1).lemma_serialize_equiv((v, vb_dps), obuf);
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        let vb = choose|vb: <B as SpecSerializer>::SVal| vb.wf();
+        (self.0, self.1).lemma_serialize_equiv((v, vb), obuf);
     }
 }
 

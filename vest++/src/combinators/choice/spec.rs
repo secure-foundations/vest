@@ -9,9 +9,9 @@ pub enum Either<A, B> {
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
-    type PT = Either<A::PT, B::PT>;
+    type PVal = Either<A::PVal, B::PVal>;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.0.spec_parse(ibuf) {
             Some((n, va)) => Some((n, Either::Left(va))),
             None => match self.1.spec_parse(ibuf) {
@@ -49,9 +49,9 @@ impl<A, B> SpecSerializerDps for super::Choice<A, B> where
 }
 
 impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: SpecSerializer {
-    type ST = Either<A::ST, B::ST>;
+    type SVal = Either<A::SVal, B::SVal>;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         match v {
             Either::Left(va) => self.0.spec_serialize(va),
             Either::Right(vb) => self.1.spec_serialize(vb),
@@ -113,7 +113,7 @@ impl<A, B> GoodSerializerDps for super::Choice<A, B> where
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Choice<A, B> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
         match v {
             Either::Left(va) => {
                 self.0.lemma_serialize_len(va);

@@ -7,9 +7,9 @@ use vstd::prelude::*;
 verus! {
 
 impl SpecParser for super::BerBool {
-    type PT = bool;
+    type PVal = bool;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         if ibuf.len() >= 1 {
             let byte = ibuf[0];
             let value = byte != 0u8;
@@ -48,9 +48,9 @@ impl SpecSerializerDps for super::BerBool {
 }
 
 impl SpecSerializer for super::BerBool {
-    type ST = bool;
+    type SVal = bool;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         let n = choose|x: u8| non_zero_byte(x);
         let byte = if v {
             n
@@ -82,7 +82,7 @@ impl GoodSerializerDps for super::BerBool {
 }
 
 impl GoodSerializer for super::BerBool {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
     }
 }
 

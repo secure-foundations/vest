@@ -6,13 +6,13 @@ verus! {
 
 impl<Inner, M> SPRoundTrip for super::Mapped<Inner, M> where
     Inner: SPRoundTrip,
-    M: IsoMapper<In = Inner::PT>,
+    M: IsoMapper<In = Inner::PVal>,
  {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             self.mapper.lemma_map_rev_wf(v);
             let inner_v = self.mapper.spec_map_rev(v);
-            self.inner.theorem_serialize_parse_roundtrip(inner_v, obuf);
+            self.inner.theorem_serialize_parse_roundtrip_internal(inner_v, obuf);
             self.mapper.lemma_map_iso_rev(v);
         }
     }
@@ -20,14 +20,14 @@ impl<Inner, M> SPRoundTrip for super::Mapped<Inner, M> where
 
 impl<Inner, M> PSRoundTrip for super::Mapped<Inner, M> where
     Inner: PSRoundTrip,
-    M: IsoMapper<In = Inner::PT>,
+    M: IsoMapper<In = Inner::PVal>,
  {
 
 }
 
 impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     Inner: NonMalleable,
-    M: IsoMapper<In = Inner::PT>,
+    M: IsoMapper<In = Inner::PVal>,
  {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
@@ -44,11 +44,11 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> Deterministic for super::Mapped<Inner, M> where
-    Inner: Deterministic,
-    M: IsoMapper<In = <Inner as SpecSerializer>::ST>,
+impl<Inner, M> SpecSerializers for super::Mapped<Inner, M> where
+    Inner: SpecSerializers,
+    M: IsoMapper<In = Inner::SVal>,
  {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         self.mapper.lemma_map_rev_wf(v);
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv(inner_v, obuf);

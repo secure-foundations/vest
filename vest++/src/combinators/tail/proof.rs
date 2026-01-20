@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 impl SPRoundTrip for super::Tail {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
     }
 }
 

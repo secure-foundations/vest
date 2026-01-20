@@ -4,9 +4,9 @@ use vstd::prelude::*;
 verus! {
 
 impl<A, B> SpecParser for super::Terminated<A, B> where A: SpecParser, B: SpecParser {
-    type PT = A::PT;
+    type PVal = A::PVal;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match (self.0, self.1).spec_parse(ibuf) {
             Some((n, (va, _vb))) => Some((n, va)),
             None => None,
@@ -49,10 +49,10 @@ impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
 }
 
 impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B: SpecSerializer {
-    type ST = A::ST;
+    type SVal = A::SVal;
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
-        let vb = choose|vb: B::ST| vb.wf();
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let vb = choose|vb: B::SVal| vb.wf();
         (self.0, self.1).spec_serialize((v, vb))
     }
 }
@@ -98,8 +98,8 @@ impl<A, B> GoodSerializerDps for super::Terminated<A, B> where
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Terminated<A, B> {
-    proof fn lemma_serialize_len(&self, v: Self::ST) {
-        let vb = choose|vb: B::ST| #![auto] vb.wf();
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        let vb = choose|vb: B::SVal| #![auto] vb.wf();
         (self.0, self.1).lemma_serialize_len((v, vb));
     }
 }

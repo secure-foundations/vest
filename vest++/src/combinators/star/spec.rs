@@ -7,7 +7,7 @@ verus! {
 impl<A: SpecParser> super::Star<A> {
     /// Recursive helper function for parsing.
     /// Since `Star` always succeeds, this function is total.
-    pub open spec fn parse_rec(&self, ibuf: Seq<u8>) -> (int, Seq<A::PT>)
+    pub open spec fn parse_rec(&self, ibuf: Seq<u8>) -> (int, Seq<A::PVal>)
         decreases ibuf.len(),
     {
         match self.inner.spec_parse(ibuf) {
@@ -49,9 +49,9 @@ impl<A: GoodParser> super::Star<A> {
 }
 
 impl<A: SpecParser> SpecParser for super::Star<A> {
-    type PT = Seq<A::PT>;
+    type PVal = Seq<A::PVal>;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let (n, vs) = self.parse_rec(ibuf);
         Some((n, vs))
     }
@@ -129,9 +129,9 @@ impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps {
 }
 
 impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
-    type ST = Seq<A::ST>;
+    type SVal = Seq<A::SVal>;
 
-    open spec fn spec_serialize(&self, vs: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, vs: Self::SVal) -> Seq<u8> {
         vs.fold_left(Seq::empty(), |buf: Seq<u8>, elem| buf + self.inner.spec_serialize(elem))
     }
 }
@@ -171,7 +171,7 @@ impl<A> GoodSerializerDps for super::Star<A> where A: GoodSerializerDps {
 }
 
 impl<A: GoodSerializer> GoodSerializer for super::Star<A> {
-    proof fn lemma_serialize_len(&self, v: Self::ST)
+    proof fn lemma_serialize_len(&self, v: Self::SVal)
         decreases v.len(),
     {
         if v.len() == 0 {
@@ -192,9 +192,9 @@ impl<A: SpecByteLen> SpecByteLen for super::Star<A> {
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Repeat<A, B> {
-    type PT = (Seq<A::PT>, B::PT);
+    type PVal = (Seq<A::PVal>, B::PVal);
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PT)> {
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         (super::Star { inner: self.0 }, self.1).spec_parse(ibuf)
     }
 }
@@ -218,9 +218,9 @@ impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Re
 }
 
 impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Repeat<A, B> {
-    type ST = (Seq<A::ST>, B::ST);
+    type SVal = (Seq<A::SVal>, B::SVal);
 
-    open spec fn spec_serialize(&self, v: Self::ST) -> Seq<u8> {
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         (super::Star { inner: self.0 }, self.1).spec_serialize(v)
     }
 }
@@ -232,6 +232,12 @@ impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Re
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Repeat<A, B> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_len(v);
     }
 }
 
