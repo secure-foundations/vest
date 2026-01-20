@@ -6,20 +6,39 @@ use vstd::prelude::*;
 verus! {
 
 /// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
-pub trait SPRoundTrip: SpecParser + SpecSerializerDps + Unambiguity<ST = Self::PT> + SpecByteLen<
-    T = Self::PT,
-> {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>)
+#[verusfmt::skip]
+pub trait SPRoundTrip where
+    Self: SpecByteLen +
+          SpecParser<PVal = Self::T> +
+          SpecSerializers<SVal = Self::T> +
+          GoodSerializer +
+          Unambiguity,
+ {
+    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>)
         requires
             self.unambiguous(),
         ensures
             v.wf() ==> {
                 let ibuf = self.spec_serialize_dps(v, obuf);
-                // let n = ibuf.len() - obuf.len();
                 let n = self.byte_len(v) as int;
                 self.spec_parse(ibuf) == Some((n, v))
             },
     ;
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
+        requires
+            self.unambiguous(),
+        ensures
+            v.wf() ==> {
+                let bytes = self.spec_serialize(v);
+                self.spec_parse(bytes) == Some((bytes.len() as int, v))
+            },
+    {
+        let empty = Seq::<u8>::empty();
+        self.theorem_serialize_parse_roundtrip_internal(v, empty);
+        self.lemma_serialize_equiv(v, empty);
+        self.lemma_serialize_len(v);
+    }
 }
 
 /// Parse-Serialize roundtrip property: parsing then serializing preserves the input prefix
@@ -28,25 +47,18 @@ pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
         requires
             self.unambiguous(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize_dps(v, seq![])
-                == ibuf.take(n),
+            self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
     {
         let c = self;
-        let empty = Seq::<u8>::empty();
         if let Some((n, v)) = c.spec_parse(ibuf) {
-            c.lemma_parse_length(ibuf);
             c.lemma_parse_wf(ibuf);
-            c.theorem_serialize_parse_roundtrip(v, empty);
+            c.theorem_serialize_parse_roundtrip(v);
 
-            let serialized = c.spec_serialize_dps(v, empty);
-            let n2 = c.byte_len(v) as int;
-            // assert(c.spec_parse(serialized) == Some((n2, v)));
+            let serialized = c.spec_serialize(v);
             assert((c.spec_parse(serialized)->0).1 == v);
 
-            // By non-malleability: both parses return v, so prefixes are equal
+            // By non-malleability: both parses return v, so serialized is equal to the input prefix
             c.lemma_parse_non_malleable(ibuf, serialized);
-            assert(ibuf.take(n) == serialized.take(n2));
-            admit();
             assert(ibuf.take(n) == serialized);
         }
     }
