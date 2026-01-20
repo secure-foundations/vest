@@ -74,17 +74,11 @@ pub trait NonMalleable: GoodParser {
     ;
 }
 
-/// Deterministic serializer property: DPS and non-DPS serialization are equivalent
-///
-/// ## Note
-/// Verus `spec` functions are *always* deterministic, even if they involve the hilbert choice operator
-/// `choose` (which makes arbitrary but fixed choices for the same predicate).
-/// Hence, we model non-deterministic serializers by relating two different serializer
-/// specs (DPS and non-DPS), since a deterministic serializer would produce
-/// identical outputs regardless of the serialization strategy.
-pub trait Deterministic: SpecSerializer + SpecSerializerDps<ST = <Self as SpecSerializer>::ST> {
+/// Combinators that implement both DPS and non-DPS serialization specs and
+/// establish their equivalence
+pub trait SpecSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>)
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
