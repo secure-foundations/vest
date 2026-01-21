@@ -5,16 +5,14 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
 #[verusfmt::skip]
-pub trait SPRoundTrip where
+pub trait SPRoundTripDps where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
-          SpecSerializers<SVal = Self::T> +
-          GoodSerializer +
+          SpecSerializerDps<ST = Self::T> +
           Unambiguity,
  {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>)
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>)
         requires
             self.unambiguous(),
         ensures
@@ -24,7 +22,10 @@ pub trait SPRoundTrip where
                 self.spec_parse(ibuf) == Some((n, v))
             },
     ;
+}
 
+/// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
+pub trait SPRoundTrip: SPRoundTripDps + GoodSerializer + EquivSerializers {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
             self.unambiguous(),
@@ -34,11 +35,15 @@ pub trait SPRoundTrip where
                 self.spec_parse(bytes) == Some((bytes.len() as int, v))
             },
     {
-        let empty = Seq::<u8>::empty();
-        self.theorem_serialize_parse_roundtrip_internal(v, empty);
-        self.lemma_serialize_equiv(v, empty);
+        let empty = Seq::empty();
+        self.theorem_serialize_dps_parse_roundtrip(v, empty);
+        self.lemma_serialize_equiv_on_empty(v);
         self.lemma_serialize_len(v);
     }
+}
+
+impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
+
 }
 
 /// Parse-Serialize roundtrip property: parsing then serializing preserves the input prefix
@@ -76,11 +81,19 @@ pub trait NonMalleable: GoodParser {
 
 /// Combinators that implement both DPS and non-DPS serialization specs and
 /// establish their equivalence
-pub trait SpecSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
     /// Lemma: serializer equivalence between DPS and non-DPS specs
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
+    ;
+}
+
+pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+    /// Lemma: serializer equivalence between DPS and non-DPS specs
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal)
+        ensures
+            self.spec_serialize_dps(v, seq![]) == self.spec_serialize(v),
     ;
 }
 

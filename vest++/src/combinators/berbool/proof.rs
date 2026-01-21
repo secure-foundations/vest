@@ -3,8 +3,8 @@ use vstd::prelude::*;
 
 verus! {
 
-impl SPRoundTrip for super::BerBool {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
+impl SPRoundTripDps for super::BerBool {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let serialized = self.spec_serialize_dps(v, obuf);
         let n = self.byte_len(v) as int;
         assert(self.byte_len(v) == v.blen());
@@ -25,8 +25,13 @@ impl SPRoundTrip for super::BerBool {
     }
 }
 
-impl SpecSerializers for super::BerBool {
+impl EquivSerializersGeneral for super::BerBool {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+    }
+}
+
+impl EquivSerializers for super::BerBool {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
     }
 }
 

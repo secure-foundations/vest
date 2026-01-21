@@ -3,13 +3,13 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for (A, B) {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
+impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for (A, B) {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
-            self.1.theorem_serialize_parse_roundtrip_internal(v.1, obuf);
-            self.0.theorem_serialize_parse_roundtrip_internal(v.0, serialized1);
+            self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
+            self.0.theorem_serialize_dps_parse_roundtrip(v.0, serialized1);
             self.0.lemma_serialize_dps_buf(v.0, serialized1);
             self.0.lemma_serialize_dps_len(v.0, serialized1);
             if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
@@ -20,7 +20,10 @@ impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for (A, B) 
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for (A, B) {
+impl<A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral, B: PSRoundTrip> PSRoundTrip for (
+    A,
+    B,
+) {
 
 }
 
@@ -50,7 +53,10 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
     }
 }
 
-impl<A, B> SpecSerializers for (A, B) where A: SpecSerializers, B: SpecSerializers {
+impl<A, B> EquivSerializersGeneral for (A, B) where
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+ {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
 
@@ -69,6 +75,15 @@ impl<A, B> SpecSerializers for (A, B) where A: SpecSerializers, B: SpecSerialize
         //                              = self.0.spec_serialize(v.0) + obuf1
         //                              = self.0.spec_serialize(v.0) + self.1.spec_serialize(v.1) + obuf
         //                              = spec_serialize(v) + obuf
+    }
+}
+
+impl<A, B> EquivSerializers for (A, B) where A: EquivSerializersGeneral, B: EquivSerializers {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        let empty = Seq::empty();
+        let obuf = self.1.spec_serialize_dps(v.1, empty);
+        self.1.lemma_serialize_equiv_on_empty(v.1);
+        self.0.lemma_serialize_equiv(v.0, obuf);
     }
 }
 

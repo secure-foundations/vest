@@ -3,7 +3,7 @@ use vstd::{calc, prelude::*};
 
 verus! {
 
-impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializerDps {
+impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PVal>, obuf: Seq<u8>)
         requires
             self.inner.unambiguous(),
@@ -28,7 +28,7 @@ impl<A> super::Star<A> where A: SPRoundTrip + GoodSerializerDps {
             self.lemma_serialize_parse_roundtrip_rec(rest, obuf);
 
             // base
-            self.inner.theorem_serialize_parse_roundtrip_internal(v, rest_buf);
+            self.inner.theorem_serialize_dps_parse_roundtrip(v, rest_buf);
             self.inner.lemma_serialize_dps_buf(v, rest_buf);
             self.inner.lemma_serialize_dps_len(v, rest_buf);
 
@@ -122,7 +122,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
     }
 }
 
-impl<A> super::Star<A> where A: SpecSerializers {
+impl<A> super::Star<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<A::SVal>, obuf: Seq<u8>)
         ensures
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
@@ -136,7 +136,7 @@ impl<A> super::Star<A> where A: SpecSerializers {
             let rest = vs.skip(1);
 
             let rest_foldr = self.rfold_serialize_dps(rest, obuf);
-            let rest_foldl = rest.fold_left(Seq::<u8>::empty(), f);
+            let rest_foldl = rest.fold_left(Seq::empty(), f);
 
             calc! {
                 (==)
@@ -158,11 +158,11 @@ impl<A> super::Star<A> where A: SpecSerializers {
 
             calc! {
                 (==)
-                vs.fold_left(Seq::<u8>::empty(), f); {
-                    vs.lemma_fold_left_alt(Seq::<u8>::empty(), f);
+                vs.fold_left(Seq::empty(), f); {
+                    vs.lemma_fold_left_alt(Seq::empty(), f);
                 }
-                vs.fold_left_alt(Seq::<u8>::empty(), f); {}
-                rest.fold_left_alt(f(Seq::<u8>::empty(), v0), f); {}
+                vs.fold_left_alt(Seq::empty(), f); {}
+                rest.fold_left_alt(f(Seq::empty(), v0), f); {}
                 rest.fold_left_alt(self.inner.spec_serialize(v0), f); {
                     rest.lemma_fold_left_alt(self.inner.spec_serialize(v0), f);
                 }
@@ -215,18 +215,27 @@ pub(crate) proof fn lemma_fold_left_accumulate_nat<T>(
     }
 }
 
-impl<A> SpecSerializers for super::Star<A> where A: SpecSerializers {
+impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         self.lemma_serialize_equiv_rec(v, obuf);
     }
 }
 
-impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::Repeat<A, B> {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
+impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        self.lemma_serialize_equiv_rec(v, Seq::empty());
+    }
+}
+
+impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for super::Repeat<
+    A,
+    B,
+> {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let star = super::Star { inner: self.0 };
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            self.1.theorem_serialize_parse_roundtrip_internal(v.1, obuf);
+            self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
             let serialized0 = star.spec_serialize_dps(v.0, serialized1);
             star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
             let n0 = serialized0.len() - serialized1.len();
@@ -237,7 +246,10 @@ impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for super::Repeat<A, B> {
+impl<
+    A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+    B: PSRoundTrip,
+> PSRoundTrip for super::Repeat<A, B> {
 
 }
 
@@ -247,9 +259,18 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     }
 }
 
-impl<A: SpecSerializers, B: SpecSerializers> SpecSerializers for super::Repeat<A, B> {
+impl<
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+> EquivSerializersGeneral for super::Repeat<A, B> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Repeat<A, B> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 

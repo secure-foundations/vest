@@ -26,7 +26,7 @@ proof fn requires_non_malleable<T: NonMalleable>(parser: T, buf1: Seq<u8>, buf2:
     parser.lemma_parse_non_malleable(buf1, buf2);
 }
 
-proof fn requires_deterministic<T: SpecSerializers>(
+proof fn requires_deterministic<T: EquivSerializersGeneral>(
     combinator: T,
     v: <T as SpecSerializer>::SVal,
     obuf: Seq<u8>,
@@ -34,7 +34,7 @@ proof fn requires_deterministic<T: SpecSerializers>(
     combinator.lemma_serialize_equiv(v, obuf);
 }
 
-// These compositions fail to implement `PSRoundTrip`, `NonMalleable`, or `SpecSerializers`
+// These compositions fail to implement `PSRoundTrip`, `NonMalleable`, or `EquivSerializers`
 // traits because they involve `Preceded` or `Terminated` with combinators that lack
 // `UniqueWfValue`.
 proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {

@@ -5,8 +5,8 @@ use vstd::prelude::*;
 
 verus! {
 
-impl SPRoundTrip for super::U8 {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u8, obuf: Seq<u8>) {
+impl SPRoundTripDps for super::U8 {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u8, obuf: Seq<u8>) {
         if v.wf() {
         }
     }
@@ -22,17 +22,22 @@ impl NonMalleable for super::U8 {
     }
 }
 
-impl SpecSerializers for super::U8 {
+impl EquivSerializersGeneral for super::U8 {
     proof fn lemma_serialize_equiv(&self, v: u8, obuf: Seq<u8>) {
     }
 }
 
-impl SPRoundTrip for super::U16Le {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u16, obuf: Seq<u8>) {
-        Mapped {
-            inner: Fixed::<2>,
-            mapper: U16LeMapper,
-        }.theorem_serialize_parse_roundtrip_internal(v, obuf);
+impl EquivSerializers for super::U8 {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: u8) {
+    }
+}
+
+impl SPRoundTripDps for super::U16Le {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.theorem_serialize_dps_parse_roundtrip(
+            v,
+            obuf,
+        );
     }
 }
 
@@ -48,18 +53,24 @@ impl NonMalleable for super::U16Le {
     }
 }
 
-impl SpecSerializers for super::U16Le {
+impl EquivSerializersGeneral for super::U16Le {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_equiv(v, obuf);
     }
 }
 
-impl SPRoundTrip for super::U16Be {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: u16, obuf: Seq<u8>) {
-        Mapped {
-            inner: Fixed::<2>,
-            mapper: U16BeMapper,
-        }.theorem_serialize_parse_roundtrip_internal(v, obuf);
+impl EquivSerializers for super::U16Le {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: u16) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+impl SPRoundTripDps for super::U16Be {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.theorem_serialize_dps_parse_roundtrip(
+            v,
+            obuf,
+        );
     }
 }
 
@@ -75,9 +86,15 @@ impl NonMalleable for super::U16Be {
     }
 }
 
-impl SpecSerializers for super::U16Be {
+impl EquivSerializersGeneral for super::U16Be {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl EquivSerializers for super::U16Be {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: u16) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_equiv_on_empty(v);
     }
 }
 

@@ -3,8 +3,8 @@ use vstd::prelude::*;
 
 verus! {
 
-impl SPRoundTrip for super::Tail {
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+impl SPRoundTripDps for super::Tail {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
     }
 }
 
@@ -18,8 +18,8 @@ impl NonMalleable for super::Tail {
     }
 }
 
-impl Deterministic for super::Tail {
-    proof fn lemma_serialize_equiv(&self, v: <Self as SpecSerializer>::ST, obuf: Seq<u8>) {
+impl EquivSerializers for super::Tail {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
     }
 }
 

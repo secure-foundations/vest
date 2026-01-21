@@ -100,7 +100,7 @@ impl<A: GoodSerializerDps> super::Star<A> {
         decreases vs.len(),
     {
         if vs.len() == 0 {
-            assert(self.rfold_serialize_dps(vs, obuf) == Seq::<u8>::empty() + obuf);
+            assert(self.rfold_serialize_dps(vs, obuf) == Seq::empty() + obuf);
         } else {
             let rest = vs.skip(1);
             let rest_buf = self.rfold_serialize_dps(rest, obuf);

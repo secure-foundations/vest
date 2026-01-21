@@ -30,7 +30,7 @@ proof fn test_choice_compose1() {
             tag1,
             #[trigger] tag2.spec_serialize_dps(vb, obuf),
         ) by {
-            U16Le.theorem_serialize_parse_roundtrip_internal(tag2.tag, obuf);
+            U16Le.theorem_serialize_dps_parse_roundtrip(tag2.tag, obuf);
         }
     }
     let ibuf = c.spec_serialize_dps(v, obuf);

@@ -112,10 +112,9 @@ impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodSerializerDps for super::Mapped<Inner, M> where
     Inner: GoodSerializerDps,
-    M: IsoMapper<In = Inner::ST>,
+    M: Mapper<In = Inner::ST>,
  {
     proof fn lemma_serialize_dps_buf(&self, v: M::Out, obuf: Seq<u8>) {
-        self.mapper.lemma_map_rev_wf(v);
         self.inner.lemma_serialize_dps_buf(self.mapper.spec_map_rev(v), obuf);
     }
 
@@ -126,7 +125,7 @@ impl<Inner, M> GoodSerializerDps for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     Inner: GoodSerializer,
-    M: IsoMapper<In = Inner::SVal>,
+    M: Mapper<In = Inner::SVal>,
  {
     proof fn lemma_serialize_len(&self, v: M::Out) {
         self.inner.lemma_serialize_len(self.mapper.spec_map_rev(v));

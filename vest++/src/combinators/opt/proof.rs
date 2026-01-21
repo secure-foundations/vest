@@ -9,7 +9,7 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     }
 }
 
-impl<A> SpecSerializers for super::Opt<A> where A: SpecSerializers {
+impl<A> EquivSerializersGeneral for super::Opt<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
             None => {},
@@ -20,15 +20,29 @@ impl<A> SpecSerializers for super::Opt<A> where A: SpecSerializers {
     }
 }
 
-impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::Optional<A, B> {
-    proof fn theorem_serialize_parse_roundtrip_internal(&self, v: Self::T, obuf: Seq<u8>) {
+impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.lemma_serialize_equiv_on_empty(vv);
+            },
+        }
+    }
+}
+
+impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for super::Optional<
+    A,
+    B,
+> {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            self.1.theorem_serialize_parse_roundtrip_internal(v.1, obuf);
+            self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
             match v.0 {
                 Some(v0) => {
                     let serialized0 = self.0.spec_serialize_dps(v0, serialized1);
-                    self.0.theorem_serialize_parse_roundtrip_internal(v0, serialized1);
+                    self.0.theorem_serialize_dps_parse_roundtrip(v0, serialized1);
                     self.0.lemma_serialize_dps_buf(v0, serialized1);
                     self.0.lemma_serialize_dps_len(v0, serialized1);
                     if let Some((n0, _)) = self.0.spec_parse(serialized0) {
@@ -44,7 +58,10 @@ impl<A: SPRoundTrip + GoodSerializerDps, B: SPRoundTrip> SPRoundTrip for super::
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializerDps, B: PSRoundTrip> PSRoundTrip for super::Optional<A, B> {
+impl<
+    A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+    B: PSRoundTrip,
+> PSRoundTrip for super::Optional<A, B> {
 
 }
 
@@ -54,9 +71,18 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     }
 }
 
-impl<A: SpecSerializers, B: SpecSerializers> SpecSerializers for super::Optional<A, B> {
+impl<
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+> EquivSerializersGeneral for super::Optional<A, B> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Optional<A, B> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        (super::Opt(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 

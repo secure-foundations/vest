@@ -35,20 +35,21 @@ impl SpecSerializer for super::Tail {
     }
 }
 
-// impl Serializability for super::Tail {
-//     open spec fn serializable(&self, _v: Self::ST, obuf: Seq<u8>) -> bool {
-//         obuf.len() == 0
-//     }
-// }
 impl Unambiguity for super::Tail {
 
 }
 
-// impl GoodSerializer for super::Tail {
-//     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-//         if v.wf() {
-//             assert(self.spec_serialize_dps(v, obuf) == v + obuf);
-//         }
-//     }
-// }
+impl SpecByteLen for super::Tail {
+    type T = Seq<u8>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        v.len()
+    }
+}
+
+impl GoodSerializer for super::Tail {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+    }
+}
+
 } // verus!
