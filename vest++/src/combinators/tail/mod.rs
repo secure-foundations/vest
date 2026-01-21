@@ -7,4 +7,6 @@ verus! {
 
 pub struct Tail;
 
+pub struct Eof;
+
 } // verus!

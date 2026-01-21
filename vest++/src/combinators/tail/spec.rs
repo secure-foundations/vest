@@ -52,4 +52,57 @@ impl GoodSerializer for super::Tail {
     }
 }
 
+impl SpecParser for super::Eof {
+    type PVal = ();
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        if ibuf.len() == 0 {
+            Some((0, ()))
+        } else {
+            None
+        }
+    }
+}
+
+impl GoodParser for super::Eof {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl SpecSerializerDps for super::Eof {
+    type ST = ();
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        Seq::empty()
+    }
+}
+
+impl Unambiguity for super::Eof {
+
+}
+
+impl SpecSerializer for super::Eof {
+    type SVal = ();
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        Seq::empty()
+    }
+}
+
+impl SpecByteLen for super::Eof {
+    type T = ();
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        v.blen()
+    }
+}
+
+impl GoodSerializer for super::Eof {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+    }
+}
+
 } // verus!

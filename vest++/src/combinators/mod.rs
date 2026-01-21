@@ -20,6 +20,6 @@ pub use opt::{Opt, Optional};
 pub use preceded::Preceded;
 pub use refined::{Refined, Tag};
 pub use star::{Repeat, Star};
-pub use tail::Tail;
+pub use tail::{Eof, Tail};
 pub use terminated::Terminated;
 pub use uints::{U16Be, U16Le, U8};
