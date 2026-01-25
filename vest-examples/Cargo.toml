@@ -21,9 +21,9 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-vstd = "0.0.0-2025-12-28-0056"
-verus_builtin = "0.0.0-2025-12-28-0056"
-verus_builtin_macros = "0.0.0-2025-12-07-0054"
+vstd = "=0.0.0-2026-01-11-0057"
+# verus_builtin = "=0.0.0-2026-01-11-0057"
+# verus_builtin_macros = "0.0.0-2025-12-07-0054"
 #verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
 #verus_builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
 vest_lib = { path = "../vest" }

@@ -17,7 +17,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-vstd = "0.0.0-2025-12-28-0056"
+vstd = "=0.0.0-2026-01-11-0057"
 #verus_builtin = "0.0.0-2025-08-12-1837"
 #verus_builtin_macros = "0.0.0-2025-12-07-0054"
 
