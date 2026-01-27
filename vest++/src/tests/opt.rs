@@ -71,10 +71,7 @@ proof fn test_chaining_end_with_eof() {
     let tag0 = Tag { inner: U16Le, tag: 0 };
     let tag1 = Tag { inner: U16Le, tag: 1 };
     let tag2 = Tag { inner: U16Le, tag: 2 };
-    let d = Optional(tag0,
-            Optional(tag1,
-            Optional(tag2,
-            Eof)));
+    let d = Optional(tag0, Optional(tag1, Optional(tag2, Eof)));
     // U16Le.theorem_serialize_dps_parse_roundtrip(2, Seq::empty());
     // U16Le.theorem_serialize_dps_parse_roundtrip(0, Seq::empty());
     // U16Le.theorem_serialize_dps_parse_roundtrip(1, Seq::empty());

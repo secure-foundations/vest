@@ -58,13 +58,11 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
     }
 }
 
-impl<
-    A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
-    B: PSRoundTrip,
-> PSRoundTrip for super::Optional<A, B> {
-
-}
-
+// impl<
+//     A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+//     B: PSRoundTrip,
+// > PSRoundTrip for super::Optional<A, B> {
+// }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);

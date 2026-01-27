@@ -13,15 +13,13 @@ impl<A, B> SPRoundTripDps for super::Terminated<A, B> where
     }
 }
 
-// PSRoundTrip only holds for Terminated when B has a unique well-formed value
-impl<A, B> PSRoundTrip for super::Terminated<A, B> where
-    A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
-    B: PSRoundTrip,
-    B::PVal: UniqueWfValue,
- {
-
-}
-
+// // PSRoundTrip only holds for Terminated when B has a unique well-formed value
+// impl<A, B> PSRoundTrip for super::Terminated<A, B> where
+//     A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+//     B: PSRoundTrip,
+//     B::PVal: UniqueWfValue,
+//  {
+// }
 // NonMalleable only holds for Terminated when B has a unique well-formed value
 impl<A, B> NonMalleable for super::Terminated<A, B> where
     A: NonMalleable,

@@ -8,11 +8,10 @@ impl SPRoundTripDps for super::Tail {
     }
 }
 
-impl PSRoundTrip for super::Tail {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-    }
-}
-
+// impl PSRoundTrip for super::Tail {
+//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+//     }
+// }
 impl NonMalleable for super::Tail {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
     }
@@ -28,11 +27,10 @@ impl SPRoundTripDps for super::Eof {
     }
 }
 
-impl PSRoundTrip for super::Eof {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-    }
-}
-
+// impl PSRoundTrip for super::Eof {
+//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+//     }
+// }
 impl NonMalleable for super::Eof {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
     }

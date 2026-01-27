@@ -20,13 +20,11 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
     }
 }
 
-impl<A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral, B: PSRoundTrip> PSRoundTrip for (
-    A,
-    B,
-) {
-
-}
-
+// impl<A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral, B: PSRoundTrip> PSRoundTrip for (
+//     A,
+//     B,
+// ) {
+// }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {

@@ -5,6 +5,12 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Serialize-Parse roundtrip property: serializing (in DPS style) then parsing recovers the original value
+///
+/// ## Note
+///
+/// This trait is primarily used *internally* to achieve better composability of combinators.
+/// See [`SPRoundTrip`] for the top-level, more user-friendly serialize-parse theorem.
 #[verusfmt::skip]
 pub trait SPRoundTripDps where
     Self: SpecByteLen +
@@ -25,7 +31,20 @@ pub trait SPRoundTripDps where
 }
 
 /// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
-pub trait SPRoundTrip: SPRoundTripDps + GoodSerializer + EquivSerializers {
+///
+/// ## Note
+///
+/// Technically, this theorem can be directly proved for individual combinators
+/// if they only implement the necessary spec traits. However, we provide generic
+/// proofs (aka blanket implementations) for combinators that already implement and prove
+/// [`SPRoundTripDps`], [`GoodSerializer`], and [`EquivSerializers`].
+#[verusfmt::skip]
+pub trait SPRoundTrip where
+    Self: SpecByteLen +
+          SpecParser<PVal = Self::T> +
+          SpecSerializer<SVal = Self::T> +
+          Unambiguity<ST = Self::T>,
+{
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
             self.unambiguous(),
@@ -34,7 +53,13 @@ pub trait SPRoundTrip: SPRoundTripDps + GoodSerializer + EquivSerializers {
                 let bytes = self.spec_serialize(v);
                 self.spec_parse(bytes) == Some((bytes.len() as int, v))
             },
-    {
+    ;
+}
+
+// Prove [`SPRoundTrip`] once-and-for-all if the combinator already implements and
+// proves [`GoodSerializer`] and [`EquivSerializers`]
+impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
         let empty = Seq::empty();
         self.theorem_serialize_dps_parse_roundtrip(v, empty);
         self.lemma_serialize_equiv_on_empty(v);
@@ -42,18 +67,45 @@ pub trait SPRoundTrip: SPRoundTripDps + GoodSerializer + EquivSerializers {
     }
 }
 
-impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
-
-}
-
 /// Parse-Serialize roundtrip property: parsing then serializing preserves the input prefix
-pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
+///
+/// ## Note
+///
+/// Technically, this theorem can be directly proved for individual combinators
+/// if they implement the necessary spec traits. However, we provide generic
+/// proofs (aka blanket implementations) for combinators that already implement and prove
+/// [`SPRoundTrip`] and [`NonMalleable`].
+#[verusfmt::skip]
+pub trait PSRoundTrip where
+    Self: SpecByteLen +
+          SpecParser<PVal = Self::T> +
+          SpecSerializer<SVal = Self::T> +
+          Unambiguity<ST = Self::T>,
+{
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires
             self.unambiguous(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
+    ;
+
+    proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
+        requires
+            self.unambiguous(),
+        ensures
+            self.spec_parse(buf1) matches Some((n1, v1)) ==>
+            self.spec_parse(buf2) matches Some((n2, v2)) ==>
+            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
     {
+        self.theorem_parse_serialize_roundtrip(buf1);
+        self.theorem_parse_serialize_roundtrip(buf2);
+    }
+}
+
+// Prove [`PSRoundTrip`] once-and-for-all if the combinator already implements and
+// proves [`SPRoundTrip`] and [`NonMalleable`]
+impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
+    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         let c = self;
         if let Some((n, v)) = c.spec_parse(ibuf) {
             c.lemma_parse_wf(ibuf);
@@ -71,11 +123,12 @@ pub trait PSRoundTrip: SPRoundTrip + NonMalleable {
 
 /// Non-malleability property: equal parsed values imply equal input prefixes
 pub trait NonMalleable: GoodParser {
+    #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         ensures
-            self.spec_parse(buf1) matches Some((n1, v1)) ==> self.spec_parse(buf2) matches Some(
-                (n2, v2),
-            ) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+            self.spec_parse(buf1) matches Some((n1, v1)) ==>
+            self.spec_parse(buf2) matches Some((n2, v2)) ==>
+            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
     ;
 }
 

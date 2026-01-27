@@ -12,13 +12,11 @@ impl<const N: usize> SPRoundTripDps for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> PSRoundTrip for super::Fixed<N> {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-        broadcast use super::spec::axiom_array_from_seq;
-
-    }
-}
-
+// impl<const N: usize> PSRoundTrip for super::Fixed<N> {
+//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+//         broadcast use super::spec::axiom_array_from_seq;
+//     }
+// }
 impl<const N: usize> NonMalleable for super::Fixed<N> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         broadcast use super::spec::axiom_array_from_seq;

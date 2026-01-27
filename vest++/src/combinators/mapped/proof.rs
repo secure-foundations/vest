@@ -18,13 +18,11 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> PSRoundTrip for super::Mapped<Inner, M> where
-    Inner: PSRoundTrip,
-    M: IsoMapper<In = Inner::PVal>,
- {
-
-}
-
+// impl<Inner, M> PSRoundTrip for super::Mapped<Inner, M> where
+//     Inner: PSRoundTrip,
+//     M: IsoMapper<In = Inner::PVal>,
+//  {
+// }
 impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     Inner: NonMalleable,
     M: IsoMapper<In = Inner::PVal>,

@@ -15,15 +15,13 @@ impl<A, B> SPRoundTripDps for super::Preceded<A, B> where
     }
 }
 
-// PSRoundTrip only holds for Preceded when A has a unique well-formed value
-impl<A, B> PSRoundTrip for super::Preceded<A, B> where
-    A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
-    A::PVal: UniqueWfValue,
-    B: PSRoundTrip,
- {
-
-}
-
+// // PSRoundTrip only holds for Preceded when A has a unique well-formed value
+// impl<A, B> PSRoundTrip for super::Preceded<A, B> where
+//     A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+//     A::PVal: UniqueWfValue,
+//     B: PSRoundTrip,
+//  {
+// }
 // NonMalleable only holds for Preceded when A has a unique well-formed value
 impl<A, B> NonMalleable for super::Preceded<A, B> where
     A: NonMalleable,

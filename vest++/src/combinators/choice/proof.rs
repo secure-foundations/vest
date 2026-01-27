@@ -19,13 +19,12 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B
     }
 }
 
-impl<A: PSRoundTrip, B: PSRoundTrip> PSRoundTrip for super::Choice<A, B> {
-    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-        self.0.theorem_parse_serialize_roundtrip(ibuf);
-        self.1.theorem_parse_serialize_roundtrip(ibuf);
-    }
-}
-
+// impl<A: PSRoundTrip, B: PSRoundTrip> PSRoundTrip for super::Choice<A, B> {
+//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
+//         self.0.theorem_parse_serialize_roundtrip(ibuf);
+//         self.1.theorem_parse_serialize_roundtrip(ibuf);
+//     }
+// }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
