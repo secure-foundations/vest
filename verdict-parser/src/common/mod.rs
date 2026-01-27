@@ -30,7 +30,6 @@ pub use end::*;
 pub use eq::*;
 pub use mapper::*;
 pub use option_deep::*;
-pub use optional::*;
 pub use pair::PairValue;  // Only export PairValue, not Pair (use vest's Pair)
 // pub use repeat::*;  // Use vest's Repeat instead
 pub use unreachable::*;

@@ -4,10 +4,21 @@ use vstd::prelude::*;
 verus! {
 
 /// An Option type with "deep" View
-#[derive(Debug, View, PolyfillClone, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, View, PolyfillClone, Eq, PartialEq, Copy)]
 pub enum OptionDeep<T> {
     Some(T),
     None,
+}
+
+impl<T: Clone> Clone for OptionDeep<T>
+{
+    fn clone(&self) -> (res: Self)
+    {
+        match self {
+            OptionDeep::Some(t) => OptionDeep::Some(t.clone()),
+            OptionDeep::None => OptionDeep::None,
+        }
+    }
 }
 
 impl<T> OptionDeep<T> {

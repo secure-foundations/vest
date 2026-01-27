@@ -94,14 +94,14 @@ impl<T: PolyfillClone> PolyfillClone for RepeatResult<T> {
         for i in 0..self.0.len()
             invariant
                 items.len() == i,
-                forall |j| 0 <= j < i ==> items[j]@ == self.0[j]@,
+                forall |j| #![auto] 0 <= j < i ==> items[j]@ == self.0[j]@,
         {
             items.push(self.0[i].clone());
         }
 
         proof {
             assert(items.len() == self.0.len());
-            assert(forall |j| 0 <= j < items.len() ==> items[j]@ == self.0[j]@);
+            assert(forall |j| #![auto] 0 <= j < items.len() ==> items[j]@ == self.0[j]@);
             assume(RepeatResult(items)@ == self@);
         }
 
