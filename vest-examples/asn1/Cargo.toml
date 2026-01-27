@@ -1,12 +1,12 @@
 [package]
-name = "verdict-parser"
-version = "0.1.0"
-edition = "2021"
+name = "asn1"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-vstd = "=0.0.0-2026-01-11-0057"
-vest_lib = { path = "../vest/" }
-verdict-macros = { path = "../verdict-macros" }
+vstd.workspace = true
+vest_lib.workspace = true
+asn1-macros = { path = "../asn1-macros" }
 paste = "1.0.15"
 
 [dev-dependencies]

@@ -1,5 +1,7 @@
 [workspace]
 members = [
+  "asn1",
+  "asn1-macros",
   "bitcoin_dsl",
   "choice",
   "depend",

@@ -1,7 +1,6 @@
 #![allow(unused_imports)]
 
-pub(crate) use verdict_macros::PolyfillClone;
-pub(crate) use verdict_macros::View;
+pub(crate) use asn1_macros::{PolyfillClone, View};
 
 mod base64;
 mod cached;
