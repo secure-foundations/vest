@@ -11,17 +11,17 @@ verus! {
 #[derive(Debug, View)]
 pub struct Default<T, C1, C2>(pub T, pub C1, pub C2);
 
-pub type DefaultValue<T1, T2> = PairValue<T1, T2>;
+pub type DefaultValue<T1, T2> = (T1, T2);
 
 impl<C1, C2> SpecCombinator for Default<C1::Type, C1, C2> where
     C1: SecureSpecCombinator,
     C2: SecureSpecCombinator + DisjointFrom<C1>,
 {
-    type Type = PairValue<C1::Type, C2::Type>;
+    type Type = (C1::Type, C2::Type);
 
     open spec fn wf(&self, v: Self::Type) -> bool {
         match v {
-            PairValue(v1, v2) => 
+            (v1, v2) => 
             {
                 &&& self.0 != v1 ==> (self.1, self.2).wf((v1, v2))
                 &&& self.0 == v1 ==> self.2.wf(v2)
@@ -39,12 +39,12 @@ impl<C1, C2> SpecCombinator for Default<C1::Type, C1, C2> where
     {
         if let Some((n, (v1, v2))) = (self.1, self.2).spec_parse(s) {
             if v1 != self.0 {
-                Some((n, PairValue(v1, v2)))
+                Some((n, (v1, v2)))
             } else {
                 None
             }
         } else if let Some((n, v)) = self.2.spec_parse(s) {
-            Some((n, PairValue(self.0, v)))
+            Some((n, (self.0, v)))
         } else {
             None
         }
@@ -140,12 +140,12 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Default<<C1 as Combinator
         let pair = (&self.1, &self.2);
         let res = if let Ok((n, (v1, v2))) = pair.parse(s) {
             if !v1.polyfill_eq(&self.0.clone().ex_into()) {
-                Ok((n, PairValue(v1, v2)))
+                Ok((n, (v1, v2)))
             } else {
                 Err(ParseError::Other("Default value should be omitted".to_string()))
             }
         } else if let Ok((n, v2)) = self.2.parse(s) {
-            Ok((n, PairValue(self.0.clone().ex_into(), v2)))
+            Ok((n, (self.0.clone().ex_into(), v2)))
         } else {
             Err(ParseError::OrdChoiceNoMatch)
         };

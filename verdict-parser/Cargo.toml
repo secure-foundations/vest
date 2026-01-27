@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 vstd = "=0.0.0-2026-01-11-0057"
 vest_lib = { path = "../vest/" }
-verdict-polyfill = { path = "../verdict-polyfill" }
 verdict-macros = { path = "../verdict-macros" }
 paste = "1.0.15"
 

@@ -13,18 +13,18 @@ verus! {
 #[derive(Debug, View)]
 pub struct Optional<C1, C2>(pub C1, pub C2);
 
-pub type OptionalValue<T1, T2> = PairValue<OptionDeep<T1>, T2>;
+pub type OptionalValue<T1, T2> = (OptionDeep<T1>, T2);
 
 impl<C1, C2> SpecCombinator for Optional<C1, C2> where
     C1: SecureSpecCombinator,
     C2: SecureSpecCombinator + DisjointFrom<C1>,
 {
-    type Type = PairValue<OptionDeep<C1::Type>, C2::Type>;
+    type Type = (OptionDeep<C1::Type>, C2::Type);
 
     open spec fn wf(&self, v: Self::Type) -> bool {
         match v {
-            PairValue(OptionDeep::Some(v1), v2) => self.0.wf(v1) && self.1.wf(v2),
-            PairValue(OptionDeep::None, v2) => self.1.wf(v2),
+            (OptionDeep::Some(v1), v2) => self.0.wf(v1) && self.1.wf(v2),
+            (OptionDeep::None, v2) => self.1.wf(v2),
         }
     }
     
@@ -39,9 +39,9 @@ impl<C1, C2> SpecCombinator for Optional<C1, C2> where
     {
         if self.1.disjoint_from(&self.0) {
             if let Some((n, (v1, v2))) = (self.0, self.1).spec_parse(s) {
-                Some((n, PairValue(OptionDeep::Some(v1), v2)))
+                Some((n, (OptionDeep::Some(v1), v2)))
             } else if let Some((n, v)) = self.1.spec_parse(s) {
-                Some((n, PairValue(OptionDeep::None, v)))
+                Some((n, (OptionDeep::None, v)))
             } else {
                 None
             }
@@ -54,8 +54,8 @@ impl<C1, C2> SpecCombinator for Optional<C1, C2> where
     {
         if self.1.disjoint_from(&self.0) {
             match v {
-                PairValue(OptionDeep::Some(v1), v2) => (self.0, self.1).spec_serialize((v1, v2)),
-                PairValue(OptionDeep::None, v2) => self.1.spec_serialize(v2),
+                (OptionDeep::Some(v1), v2) => (self.0, self.1).spec_serialize((v1, v2)),
+                (OptionDeep::None, v2) => self.1.spec_serialize(v2),
             }
         } else {
             seq![]
@@ -82,10 +82,10 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
             assert(self.1.disjoint_from(&self.0));
             assert(C1::is_prefix_secure());
             match v {
-                PairValue(OptionDeep::Some(v1), v2) => {
+                (OptionDeep::Some(v1), v2) => {
                     (self.0, self.1).theorem_serialize_parse_roundtrip((v1, v2));
                 },
-                PairValue(OptionDeep::None, v2) => {
+                (OptionDeep::None, v2) => {
                     let buf = self.1.spec_serialize(v2);
                     self.1.parse_disjoint_on(&self.0, buf);
                     self.1.theorem_serialize_parse_roundtrip(v2);
@@ -123,9 +123,9 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
             assert(self.1.requires());
             assert(self.1.disjoint_from(&self.0));
             assert(C1::is_prefix_secure());
-            if let Some((_, PairValue(OptionDeep::Some(_), _))) = self.spec_parse(s) {
+            if let Some((_, (OptionDeep::Some(_), _))) = self.spec_parse(s) {
                 (self.0, self.1).lemma_parse_length(s);
-            } else if let Some((_, PairValue(OptionDeep::None, _))) = self.spec_parse(s) {
+            } else if let Some((_, (OptionDeep::None, _))) = self.spec_parse(s) {
                 self.1.lemma_parse_length(s);
             }
         }
@@ -137,9 +137,9 @@ impl<C1, C2> SecureSpecCombinator for Optional<C1, C2> where
             assert(self.1.requires());
             assert(self.1.disjoint_from(&self.0));
             assert(C1::is_prefix_secure());
-            if let Some((_, PairValue(OptionDeep::Some(_), _))) = self.spec_parse(s) {
+            if let Some((_, (OptionDeep::Some(_), _))) = self.spec_parse(s) {
                 (self.0, self.1).lemma_parse_productive(s);
-            } else if let Some((_, PairValue(OptionDeep::None, _))) = self.spec_parse(s) {
+            } else if let Some((_, (OptionDeep::None, _))) = self.spec_parse(s) {
                 self.1.lemma_parse_productive(s);
             }
         }
@@ -158,8 +158,8 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
 
     fn length(&self, v: Self::SType) -> usize {
         match v {
-            PairValue(OptionDeep::Some(v1), v2) => self.0.length(v1) + self.1.length(v2),
-            PairValue(OptionDeep::None, v2) => self.1.length(v2),
+            (OptionDeep::Some(v1), v2) => self.0.length(v1) + self.1.length(v2),
+            (OptionDeep::None, v2) => self.1.length(v2),
         }
     }
 
@@ -181,7 +181,7 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
                     assert(pair_view.spec_parse(s@) == Some((n as int, (v1@, v2@))));
 
                     let opt_spec = self@.spec_parse(s@);
-                    assert(opt_spec == Some((n as int, PairValue(OptionDeep::Some(v1@), v2@)))) by {
+                    assert(opt_spec == Some((n as int, (OptionDeep::Some(v1@), v2@)))) by {
                         assert(self.1@.disjoint_from(&self.0@));
                         assert(pair_view.spec_parse(s@) == Some((n as int, (v1@, v2@))));
                     };
@@ -189,7 +189,7 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
                     pair_view.lemma_parse_length(s@);
                 }
 
-                Ok((n, PairValue(OptionDeep::Some(v1), v2)))
+                Ok((n, (OptionDeep::Some(v1), v2)))
             }
             Err(_) => {
                 match self.1.parse(s) {
@@ -205,7 +205,7 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
                             assert(c2_spec == Some((n as int, v2@)));
 
                             let opt_spec = self@.spec_parse(s@);
-                            assert(opt_spec == Some((n as int, PairValue(OptionDeep::<
+                            assert(opt_spec == Some((n as int, (OptionDeep::<
                                 <<C1 as Combinator<'a, &'a [u8], Vec<u8>>>::Type as View
                             >::V>::None, v2@)))) by {
                                 assert(self.1@.disjoint_from(&self.0@));
@@ -216,7 +216,7 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
                             self.1@.lemma_parse_length(s@);
                         }
 
-                        Ok((n, PairValue(OptionDeep::None, v2)))
+                        Ok((n, (OptionDeep::None, v2)))
                     }
                     Err(e) => {
                         proof {
@@ -240,8 +240,8 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let len = match v {
-            PairValue(OptionDeep::Some(v1), v2) => (&self.0, &self.1).serialize((v1, v2), data, pos),
-            PairValue(OptionDeep::None, v2) => self.1.serialize(v2, data, pos),
+            (OptionDeep::Some(v1), v2) => (&self.0, &self.1).serialize((v1, v2), data, pos),
+            (OptionDeep::None, v2) => self.1.serialize(v2, data, pos),
         }?;
 
         proof {

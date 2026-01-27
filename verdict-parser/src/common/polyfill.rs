@@ -1,7 +1,5 @@
 //! Some util functions not yet available in Verus
 
-#![forbid(unsafe_code)]
-
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Write;
