@@ -103,7 +103,7 @@ impl<Inner, M> Serializability for super::Mapped<Inner, M> where
 
 impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
     Inner: Unambiguity,
-    M: Mapper<In = Inner::ST>,
+    M: Mapper<In = Inner::PVal>,
  {
     open spec fn unambiguous(&self) -> bool {
         self.inner.unambiguous()

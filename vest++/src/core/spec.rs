@@ -16,6 +16,10 @@ pub trait SpecParser {
     spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)>;
 }
 
+pub open spec fn disjoint<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> bool {
+    forall|input: Seq<u8>| p1.spec_parse(input) is Some && p2.spec_parse(input) is Some ==> false
+}
+
 pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
     p.spec_parse(ibuf) is None
 }
@@ -86,8 +90,8 @@ pub trait Serializability: SpecSerializerDps {
 
 /// Conditions for unambiguously composing formats.
 /// This is meant to be an smt-friendlier version of [`Serializability`]
-pub trait Unambiguity: SpecSerializerDps {
-    /// Unambiguity constraint for serializer combinators.
+pub trait Unambiguity: SpecParser {
+    /// Unambiguity constraint for composing combinators.
     open spec fn unambiguous(&self) -> bool {
         true
     }

@@ -165,12 +165,11 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Optional<A,
     }
 }
 
-impl<A: Unambiguity + SpecParser, B: Unambiguity> Unambiguity for super::Optional<A, B> {
+impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Optional<A, B> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
-        &&& forall|vb: B::ST, obuf: Seq<u8>|
-            vb.wf() ==> parser_fails_on(self.0, #[trigger] self.1.spec_serialize_dps(vb, obuf))
+        &&& disjoint(self.0, self.1)
     }
 }
 

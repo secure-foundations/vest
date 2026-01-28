@@ -51,10 +51,10 @@ impl<A: Serializability, Pred: SpecPred<A::ST>> Serializability for super::Refin
     }
 }
 
-impl<A: Unambiguity, Pred: SpecPred<A::ST>> Unambiguity for super::Refined<A, Pred> {
+impl<A: Unambiguity, Pred: SpecPred<A::PVal>> Unambiguity for super::Refined<A, Pred> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.inner.unambiguous()
-        &&& forall|v: Self::ST| v.pred == self.pred
+        &&& forall|v: Self::PVal| v.pred == self.pred
     }
 }
 
@@ -126,7 +126,7 @@ impl<Inner> Serializability for super::Tag<Inner, Inner::ST> where Inner: Serial
     }
 }
 
-impl<Inner: Unambiguity> Unambiguity for super::Tag<Inner, Inner::ST> {
+impl<Inner: Unambiguity> Unambiguity for super::Tag<Inner, Inner::PVal> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.inner.unambiguous()
         &&& self.tag.wf()

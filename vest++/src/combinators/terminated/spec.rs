@@ -77,7 +77,7 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where A: SpecSerializer, B
 impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Terminated<A, B> {
     open spec fn unambiguous(&self) -> bool {
         &&& (self.0, self.1).unambiguous()
-        &&& exists|vb: B::ST| vb.wf()
+        &&& exists|vb: B::PVal| vb.wf()
     }
 }
 

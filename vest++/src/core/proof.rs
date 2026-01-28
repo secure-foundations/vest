@@ -43,7 +43,7 @@ pub trait SPRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
-          Unambiguity<ST = Self::T>,
+          Unambiguity,
 {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
@@ -80,7 +80,7 @@ pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
-          Unambiguity<ST = Self::T>,
+          Unambiguity,
 {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires

@@ -3,6 +3,27 @@ use vstd::prelude::*;
 
 verus! {
 
+impl<A: SPRoundTripDps> super::Opt<A> {
+    proof fn lemma_serialize_parse_roundtrip(&self, v: Option<A::T>, obuf: Seq<u8>)
+        requires
+            self.0.unambiguous(),
+            parser_fails_on(self.0, obuf),
+        ensures
+            v.wf() ==> {
+                let ibuf = self.spec_serialize_dps(v, obuf);
+                let n = self.byte_len(v) as int;
+                self.spec_parse(ibuf) == Some((n, v))
+            },
+    {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.theorem_serialize_dps_parse_roundtrip(vv, obuf);
+            },
+        }
+    }
+}
+
 impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
@@ -36,24 +57,16 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
     B,
 > {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        let opt = super::Opt(self.0);
         if v.wf() {
             let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
             self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
-            match v.0 {
-                Some(v0) => {
-                    let serialized0 = self.0.spec_serialize_dps(v0, serialized1);
-                    self.0.theorem_serialize_dps_parse_roundtrip(v0, serialized1);
-                    self.0.lemma_serialize_dps_buf(v0, serialized1);
-                    self.0.lemma_serialize_dps_len(v0, serialized1);
-                    if let Some((n0, _)) = self.0.spec_parse(serialized0) {
-                        assert(n0 == serialized0.len() - serialized1.len());
-                        assert(serialized0.skip(n0) == serialized1);
-                    }
-                },
-                None => {
-                    assert(serialized1.skip(0) == serialized1);
-                },
-            }
+            let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
+            opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
+            let n0 = serialized0.len() - serialized1.len();
+            opt.lemma_serialize_dps_buf(v.0, serialized1);
+            opt.lemma_serialize_dps_len(v.0, serialized1);
+            assert(serialized0.skip(n0) == serialized1);
         }
     }
 }

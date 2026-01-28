@@ -49,7 +49,7 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where A: SpecSerializer, B: 
 impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Preceded<A, B> {
     open spec fn unambiguous(&self) -> bool {
         &&& (self.0, self.1).unambiguous()
-        &&& exists|va: A::ST| va.wf()
+        &&& exists|va: A::PVal| va.wf()
     }
 }
 
