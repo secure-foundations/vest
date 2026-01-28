@@ -1,3 +1,6 @@
+use crate::combinators::disjoint::{
+    lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_tag,
+};
 use crate::combinators::{Eof, Opt, Optional, Refined, Tag, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -60,6 +63,8 @@ proof fn test_opt_compose() {
 }
 
 proof fn test_chaining_end_with_eof() {
+    broadcast use lemma_disjoint_tag, lemma_disjoint_eof, lemma_disjoint_optional;
+
     #[verusfmt::skip]
     let c = Optional(Refined { inner: U8, pred: Pred2 },
             Optional(Refined { inner: U8, pred: Pred1 },
@@ -72,27 +77,7 @@ proof fn test_chaining_end_with_eof() {
     let tag1 = Tag { inner: U16Le, tag: 1 };
     let tag2 = Tag { inner: U16Le, tag: 2 };
     let d = Optional(tag0, Optional(tag1, Optional(tag2, Eof)));
-    // U16Le.theorem_serialize_dps_parse_roundtrip(2, Seq::empty());
-    // U16Le.theorem_serialize_dps_parse_roundtrip(0, Seq::empty());
-    // U16Le.theorem_serialize_dps_parse_roundtrip(1, Seq::empty());
-    assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
-        tag0,
-        #[trigger] tag1.spec_serialize_dps(vb, obuf),
-    ) by {
-        U16Le.theorem_serialize_dps_parse_roundtrip(tag1.tag, obuf);
-    }
-    assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
-        tag0,
-        #[trigger] tag2.spec_serialize_dps(vb, obuf),
-    ) by {
-        U16Le.theorem_serialize_dps_parse_roundtrip(tag2.tag, obuf);
-    }
-    assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
-        tag1,
-        #[trigger] tag2.spec_serialize_dps(vb, obuf),
-    ) by {
-        U16Le.theorem_serialize_dps_parse_roundtrip(tag2.tag, obuf);
-    }
+
     assert(d.unambiguous());
 }
 

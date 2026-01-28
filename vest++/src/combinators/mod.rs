@@ -1,5 +1,6 @@
 pub mod berbool;
 pub mod choice;
+pub mod disjoint;
 pub mod fixed;
 pub mod mapped;
 pub mod opt;

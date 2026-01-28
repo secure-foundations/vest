@@ -1,3 +1,4 @@
+use crate::combinators::disjoint::*;
 use crate::combinators::{Choice, Either, Refined, Tag, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -36,6 +37,17 @@ proof fn test_choice_compose1() {
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
     assert(c.spec_parse(ibuf) == Some((2int, v)));
+}
+
+proof fn test_choice_balanced() {
+    let tag1 = Tag { inner: U16Le, tag: 1u16 };
+    let tag2 = Tag { inner: U16Le, tag: 2u16 };
+    let tag3 = Tag { inner: U16Le, tag: 3u16 };
+    let tag4 = Tag { inner: U16Le, tag: 4u16 };
+    let c = Choice(Choice(tag1, tag2), Choice(tag3, tag4));
+    broadcast use lemma_disjoint_choice;
+
+    assert(c.unambiguous());
 }
 
 } // verus!

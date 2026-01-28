@@ -8,7 +8,7 @@ verus! {
 
 // (Non)-malleability Examples
 // Helper functions that impose certain trait bounds
-proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::ST, obuf: Seq<u8>)
+proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq<u8>)
     requires
         serializer.unambiguous(),
 {
