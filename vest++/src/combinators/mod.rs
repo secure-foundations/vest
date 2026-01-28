@@ -14,7 +14,7 @@ pub mod tuple;
 pub mod uints;
 
 pub use berbool::BerBool;
-pub use choice::{Choice, Either};
+pub use choice::{Alt, Choice, Either};
 pub use fixed::Fixed;
 pub use mapped::Mapped;
 pub use opt::{Opt, Optional};

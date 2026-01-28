@@ -20,6 +20,18 @@ pub open spec fn disjoint<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> boo
     forall|input: Seq<u8>| p1.spec_parse(input) is Some && p2.spec_parse(input) is Some ==> false
 }
 
+/// For pairs of parsers that produce disjoint sets of values.
+/// This is the necessary condition for [`crate::combinators::Alt`] to be non-malleable.
+pub trait DisjointRanges<Other: SpecParser<PVal = Self::PVal>>: SpecParser {
+    /// Lemma: the two parsers produce disjoint sets of values
+    proof fn lemma_disjoint_ranges(&self, other: &Other, buf1: Seq<u8>, buf2: Seq<u8>)
+        ensures
+            self.spec_parse(buf1) matches Some((_, v1)) && other.spec_parse(buf2) matches Some(
+                (_, v2),
+            ) ==> v1 != v2,
+    ;
+}
+
 pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
     p.spec_parse(ibuf) is None
 }

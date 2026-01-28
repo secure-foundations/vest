@@ -135,4 +135,122 @@ impl<A, B> SpecByteLen for super::Choice<A, B> where A: SpecByteLen, B: SpecByte
     }
 }
 
+impl<A: SpecParser, B: SpecParser<PVal = A::PVal>> SpecParser for super::Alt<A, B> {
+    type PVal = A::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        if let None = self.0.spec_parse(ibuf) {
+            self.1.spec_parse(ibuf)
+        } else {
+            self.0.spec_parse(ibuf)
+        }
+    }
+}
+
+impl<A: GoodParser, B: GoodParser<PVal = A::PVal>> GoodParser for super::Alt<A, B> {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_length(ibuf);
+        self.1.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_wf(ibuf);
+        self.1.lemma_parse_wf(ibuf);
+    }
+}
+
+pub open spec fn triv(b: bool) -> bool {
+    true
+}
+
+impl<A, B> SpecSerializerDps for super::Alt<A, B> where
+    A: SpecSerializerDps,
+    B: SpecSerializerDps<ST = A::ST>,
+ {
+    type ST = A::ST;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.spec_serialize_dps(v, obuf)
+        } else {
+            self.1.spec_serialize_dps(v, obuf)
+        }
+    }
+}
+
+impl<A: Unambiguity, B: Unambiguity<PVal = A::PVal>> Unambiguity for super::Alt<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& disjoint(self.0, self.1)
+    }
+}
+
+impl<A, B> GoodSerializerDps for super::Alt<A, B> where
+    A: GoodSerializerDps,
+    B: GoodSerializerDps<T = A::T>,
+ {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.lemma_serialize_dps_buf(v, obuf)
+        } else {
+            self.1.lemma_serialize_dps_buf(v, obuf)
+        }
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.lemma_serialize_dps_len(v, obuf)
+        } else {
+            self.1.lemma_serialize_dps_len(v, obuf)
+        }
+    }
+}
+
+impl<A, B> SpecSerializer for super::Alt<A, B> where
+    A: SpecSerializer,
+    B: SpecSerializer<SVal = A::SVal>,
+ {
+    type SVal = A::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.spec_serialize(v)
+        } else {
+            self.1.spec_serialize(v)
+        }
+    }
+}
+
+impl<A, B> GoodSerializer for super::Alt<A, B> where
+    A: GoodSerializer,
+    B: GoodSerializer<T = A::T>,
+ {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.lemma_serialize_len(v)
+        } else {
+            self.1.lemma_serialize_len(v)
+        }
+    }
+}
+
+impl<A, B> SpecByteLen for super::Alt<A, B> where A: SpecByteLen, B: SpecByteLen<T = A::T> {
+    type T = A::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let b = choose|flip: bool| triv(flip);
+        if b {
+            self.0.byte_len(v)
+        } else {
+            self.1.byte_len(v)
+        }
+    }
+}
+
 } // verus!

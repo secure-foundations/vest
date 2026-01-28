@@ -9,4 +9,6 @@ verus! {
 
 pub struct Choice<A, B>(pub A, pub B);
 
+pub struct Alt<A, B>(pub A, pub B);
+
 } // verus!
