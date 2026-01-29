@@ -169,7 +169,7 @@ impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Optional<A, B> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
-        &&& disjoint(self.0, self.1)
+        &&& disjoint_domains(self.0, self.1)
     }
 }
 

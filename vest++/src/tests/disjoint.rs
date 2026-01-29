@@ -1,7 +1,7 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::*;
-use crate::core::spec::*;
+use crate::core::{spec::*, types};
 use vstd::prelude::*;
 
 verus! {
@@ -93,6 +93,29 @@ proof fn test_choice_with_repeat() {
     let rep = Repeat(tag1, eof);
     let c = Choice(rep, tag2);
 
+    assert(c.unambiguous());
+}
+
+struct Odd;
+
+impl SpecPred<u8> for Odd {
+    open spec fn apply(&self, value: u8) -> bool {
+        value % 2 != 0
+    }
+}
+
+struct Even;
+
+impl SpecPred<u8> for Even {
+    open spec fn apply(&self, value: u8) -> bool {
+        value % 2 == 0
+    }
+}
+
+proof fn test_disjointness_refined() {
+    let odd = Refined { inner: U8, pred: Odd };
+    let even = Refined { inner: U8, pred: Even };
+    let c = Choice(odd, even);
     assert(c.unambiguous());
 }
 

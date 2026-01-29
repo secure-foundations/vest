@@ -16,7 +16,7 @@ pub trait SpecParser {
     spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)>;
 }
 
-pub open spec fn disjoint<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> bool {
+pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> bool {
     forall|input: Seq<u8>| p1.spec_parse(input) is Some && p2.spec_parse(input) is Some ==> false
 }
 

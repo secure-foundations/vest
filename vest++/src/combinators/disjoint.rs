@@ -7,7 +7,7 @@ use super::refined::{Refined, Tag};
 use super::tail::Eof;
 use super::terminated::Terminated;
 use super::Repeat;
-use crate::core::spec::{disjoint, GoodParser, SpecParser};
+use crate::core::spec::{disjoint_domains, GoodParser, SpecParser};
 use crate::core::types::SpecPred;
 use vstd::prelude::*;
 
@@ -22,7 +22,7 @@ pub broadcast proof fn lemma_disjoint_tag<Inner: SpecParser>(
         tag1.inner == tag2.inner,
         tag1.tag != tag2.tag,
     ensures
-        #[trigger] disjoint(tag1, tag2),
+        #[trigger] disjoint_domains(tag1, tag2),
 {
 }
 
@@ -37,7 +37,7 @@ pub broadcast proof fn lemma_disjoint_refined<
         r1.inner == r2.inner,
         forall|v: Inner::PVal| r1.pred.apply(v) ==> !r2.pred.apply(v),
     ensures
-        #[trigger] disjoint(r1, r2),
+        #[trigger] disjoint_domains(r1, r2),
 {
 }
 
@@ -48,9 +48,9 @@ pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: S
     t1: (U1, V1),
 )
     requires
-        disjoint(t, t1.0),
+        disjoint_domains(t, t1.0),
     ensures
-        #[trigger] disjoint(t, t1),
+        #[trigger] disjoint_domains(t, t1),
 {
 }
 
@@ -61,9 +61,9 @@ pub broadcast proof fn lemma_disjoint_preceded<U: SpecParser, U1: SpecParser, V1
     p1: Preceded<U1, V1>,
 )
     requires
-        disjoint(p, p1.0),
+        disjoint_domains(p, p1.0),
     ensures
-        #[trigger] disjoint(p, p1),
+        #[trigger] disjoint_domains(p, p1),
 {
 }
 
@@ -74,9 +74,9 @@ pub broadcast proof fn lemma_disjoint_terminated<U: SpecParser, U1: SpecParser, 
     p1: Terminated<U1, V1>,
 )
     requires
-        disjoint(p, p1.0),
+        disjoint_domains(p, p1.0),
     ensures
-        #[trigger] disjoint(p, p1),
+        #[trigger] disjoint_domains(p, p1),
 {
 }
 
@@ -87,9 +87,9 @@ pub broadcast proof fn lemma_disjoint_mapped<
     M1: Mapper<In = Inner1::PVal>,
 >(p: P, m: Mapped<Inner1, M1>)
     requires
-        disjoint(p, m.inner),
+        disjoint_domains(p, m.inner),
     ensures
-        #[trigger] disjoint(p, m),
+        #[trigger] disjoint_domains(p, m),
 {
 }
 
@@ -99,10 +99,10 @@ pub broadcast proof fn lemma_disjoint_choice<S1: SpecParser, S2: SpecParser, S3:
     other: S3,
 )
     requires
-        disjoint(choice.0, other),
-        disjoint(choice.1, other),
+        disjoint_domains(choice.0, other),
+        disjoint_domains(choice.1, other),
     ensures
-        #[trigger] disjoint(choice, other),
+        #[trigger] disjoint_domains(choice, other),
 {
 }
 
@@ -112,10 +112,10 @@ pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: 
     optional: Optional<A, B>,
 )
     requires
-        disjoint(p, optional.0),
-        disjoint(p, optional.1),
+        disjoint_domains(p, optional.0),
+        disjoint_domains(p, optional.1),
     ensures
-        #[trigger] disjoint(p, optional),
+        #[trigger] disjoint_domains(p, optional),
 {
     assert forall|input: Seq<u8>| #[trigger] input.skip(0) == input by {}
 }
@@ -126,10 +126,10 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
     repeat: Repeat<A, B>,
 )
     requires
-        disjoint(p, repeat.0),
-        disjoint(p, repeat.1),
+        disjoint_domains(p, repeat.0),
+        disjoint_domains(p, repeat.1),
     ensures
-        #[trigger] disjoint(p, repeat),
+        #[trigger] disjoint_domains(p, repeat),
 {
     assert forall|input: Seq<u8>| #[trigger] input.skip(0) == input by {}
 }
@@ -139,7 +139,7 @@ pub broadcast proof fn lemma_disjoint_eof<P: GoodParser>(p: P, eof: Eof)
     requires
         p.spec_parse(seq![]) is None,
     ensures
-        #[trigger] disjoint(p, eof),
+        #[trigger] disjoint_domains(p, eof),
 {
     assert forall|input: Seq<u8>|
         #![auto]
