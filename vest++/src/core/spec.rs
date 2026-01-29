@@ -24,11 +24,12 @@ pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2
 /// This is the necessary condition for [`crate::combinators::Alt`] to be non-malleable.
 pub trait DisjointRanges<Other: SpecParser<PVal = Self::PVal>>: SpecParser {
     /// Lemma: the two parsers produce disjoint sets of values
+    #[verusfmt::skip]
     proof fn lemma_disjoint_ranges(&self, other: &Other, buf1: Seq<u8>, buf2: Seq<u8>)
         ensures
-            self.spec_parse(buf1) matches Some((_, v1)) && other.spec_parse(buf2) matches Some(
-                (_, v2),
-            ) ==> v1 != v2,
+            self.spec_parse(buf1) matches Some((_, v1)) &&
+            other.spec_parse(buf2) matches Some((_, v2)) ==>
+            v1 != v2,
     ;
 }
 

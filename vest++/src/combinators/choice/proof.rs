@@ -62,7 +62,6 @@ impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B
     }
 }
 
-
 impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::Alt<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         if v.wf() {
@@ -81,7 +80,7 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
 impl<A, B> NonMalleable for super::Alt<A, B> where
     A: NonMalleable + DisjointRanges<B>,
     B: NonMalleable<PVal = A::PVal>,
-{
+ {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
@@ -105,8 +104,6 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
     }
 }
 
-
-
 impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral<SVal = A::SVal>,
@@ -121,7 +118,10 @@ impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
     }
 }
 
-impl<A, B> EquivSerializers for super::Alt<A, B> where A: EquivSerializers, B: EquivSerializers<SVal = A::SVal> {
+impl<A, B> EquivSerializers for super::Alt<A, B> where
+    A: EquivSerializers,
+    B: EquivSerializers<SVal = A::SVal>,
+ {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let b = choose|flip: bool| triv(flip);
         if b {
@@ -131,7 +131,5 @@ impl<A, B> EquivSerializers for super::Alt<A, B> where A: EquivSerializers, B: E
         }
     }
 }
-
-
 
 } // verus!
