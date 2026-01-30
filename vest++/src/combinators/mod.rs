@@ -23,4 +23,4 @@ pub use refined::{Refined, Tag};
 pub use star::{Repeat, Star};
 pub use tail::{Eof, Tail};
 pub use terminated::Terminated;
-pub use uints::{U16Be, U16Le, U8};
+pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

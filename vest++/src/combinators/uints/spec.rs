@@ -99,6 +99,122 @@ impl IsoMapper for U16BeMapper {
     }
 }
 
+pub struct U32LeMapper;
+
+impl Mapper for U32LeMapper {
+    type In = [u8; 4];
+
+    type Out = u32;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        (i[0] as u32) | (i[1] as u32) << 8 | (i[2] as u32) << 16 | (i[3] as u32) << 24
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        [
+            (o & 0xff) as u8,
+            ((o >> 8) & 0xff) as u8,
+            ((o >> 16) & 0xff) as u8,
+            ((o >> 24) & 0xff) as u8,
+        ]
+    }
+}
+
+impl IsoMapper for U32LeMapper {
+    proof fn lemma_map_wf(&self, v: Self::In) {
+        if v.wf() {
+            assert(self.spec_map(v).wf());
+        }
+    }
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+        if v.wf() {
+            assert(self.spec_map_rev(v).wf());
+        }
+    }
+
+    proof fn lemma_map_iso(&self, i: Self::In) {
+        let x = self.spec_map(i);
+        let i0 = i[0] as u32;
+        let i1 = i[1] as u32;
+        let i2 = i[2] as u32;
+        let i3 = i[3] as u32;
+        assert(((x == i0 | i1 << 8 | i2 << 16 | i3 << 24) && (i0 < 256) && (i1 < 256) && (i2 < 256)
+            && (i3 < 256)) ==> i0 == (x & 0xff) && i1 == ((x >> 8) & 0xff) && i2 == ((x >> 16)
+            & 0xff) && i3 == ((x >> 24) & 0xff)) by (bit_vector);
+        assert(self.spec_map_rev(self.spec_map(i)) == i);
+    }
+
+    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+            &&& (o >> 16) & 0xff < 256
+            &&& (o >> 24) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8 | ((o >> 16) & 0xff) << 16 | ((o >> 24)
+            & 0xff) << 24)) by (bit_vector);
+    }
+}
+
+pub struct U32BeMapper;
+
+impl Mapper for U32BeMapper {
+    type In = [u8; 4];
+
+    type Out = u32;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        (i[0] as u32) << 24 | (i[1] as u32) << 16 | (i[2] as u32) << 8 | (i[3] as u32)
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        [
+            ((o >> 24) & 0xff) as u8,
+            ((o >> 16) & 0xff) as u8,
+            ((o >> 8) & 0xff) as u8,
+            (o & 0xff) as u8,
+        ]
+    }
+}
+
+impl IsoMapper for U32BeMapper {
+    proof fn lemma_map_wf(&self, v: Self::In) {
+        if v.wf() {
+            assert(self.spec_map(v).wf());
+        }
+    }
+
+    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
+        if v.wf() {
+            assert(self.spec_map_rev(v).wf());
+        }
+    }
+
+    proof fn lemma_map_iso(&self, i: Self::In) {
+        let x = self.spec_map(i);
+        let i0 = i[0] as u32;
+        let i1 = i[1] as u32;
+        let i2 = i[2] as u32;
+        let i3 = i[3] as u32;
+        assert(((x == i0 << 24 | i1 << 16 | i2 << 8 | i3) && (i0 < 256) && (i1 < 256) && (i2 < 256)
+            && (i3 < 256)) ==> i0 == ((x >> 24) & 0xff) && i1 == ((x >> 16) & 0xff) && i2 == ((x
+            >> 8) & 0xff) && i3 == (x & 0xff)) by (bit_vector);
+        assert(self.spec_map_rev(self.spec_map(i)) == i);
+    }
+
+    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+            &&& (o >> 16) & 0xff < 256
+            &&& (o >> 24) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == (((o >> 24) & 0xff) << 24 | ((o >> 16) & 0xff) << 16 | ((o >> 8) & 0xff) << 8
+            | (o & 0xff))) by (bit_vector);
+    }
+}
+
 impl SpecParser for super::U8 {
     type PVal = u8;
 
@@ -297,6 +413,138 @@ impl GoodSerializer for super::U16Be {
 
 impl SpecByteLen for super::U16Be {
     type T = u16;
+}
+
+impl SpecParser for super::U32Le {
+    type PVal = u32;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl SpecSerializerDps for super::U32Le {
+    type ST = u32;
+
+    open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.spec_serialize_dps(v, obuf)
+    }
+}
+
+impl SpecSerializer for super::U32Le {
+    type SVal = u32;
+
+    open spec fn spec_serialize(&self, v: u32) -> Seq<u8> {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.spec_serialize(v)
+    }
+}
+
+impl GoodParser for super::U32Le {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_wf(ibuf);
+    }
+}
+
+impl Serializability for super::U32Le {
+    open spec fn serializable(&self, v: u32, obuf: Seq<u8>) -> bool {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.serializable(v, obuf)
+    }
+}
+
+impl Unambiguity for super::U32Le {
+    open spec fn unambiguous(&self) -> bool {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.unambiguous()
+    }
+}
+
+impl GoodSerializerDps for super::U32Le {
+    proof fn lemma_serialize_dps_buf(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_dps_buf(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U32Le {
+    proof fn lemma_serialize_len(&self, v: u32) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U32Le {
+    type T = u32;
+}
+
+impl SpecParser for super::U32Be {
+    type PVal = u32;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl SpecSerializerDps for super::U32Be {
+    type ST = u32;
+
+    open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.spec_serialize_dps(v, obuf)
+    }
+}
+
+impl SpecSerializer for super::U32Be {
+    type SVal = u32;
+
+    open spec fn spec_serialize(&self, v: u32) -> Seq<u8> {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.spec_serialize(v)
+    }
+}
+
+impl GoodParser for super::U32Be {
+    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_length(ibuf);
+    }
+
+    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_wf(ibuf);
+    }
+}
+
+impl Serializability for super::U32Be {
+    open spec fn serializable(&self, v: u32, obuf: Seq<u8>) -> bool {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.serializable(v, obuf)
+    }
+}
+
+impl Unambiguity for super::U32Be {
+    open spec fn unambiguous(&self) -> bool {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.unambiguous()
+    }
+}
+
+impl GoodSerializerDps for super::U32Be {
+    proof fn lemma_serialize_dps_buf(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_serialize_dps_buf(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U32Be {
+    proof fn lemma_serialize_len(&self, v: u32) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U32Be {
+    type T = u32;
 }
 
 } // verus!
