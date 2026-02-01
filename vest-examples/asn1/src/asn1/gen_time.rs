@@ -52,7 +52,7 @@ impl SpecCombinator for GeneralizedTime {
     open spec fn wf(&self, v: Self::Type) -> bool {
         LengthWrapped(GeneralizedTimeInner).wf(v)
     }
-    
+
     open spec fn requires(&self) -> bool {
         LengthWrapped(GeneralizedTimeInner).requires()
     }
@@ -70,7 +70,7 @@ impl SecureSpecCombinator for GeneralizedTime {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         true
     }
@@ -86,9 +86,9 @@ impl SecureSpecCombinator for GeneralizedTime {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         LengthWrapped(GeneralizedTimeInner).lemma_prefix_secure(s1, s2);
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -130,7 +130,7 @@ impl SpecCombinator for GeneralizedTimeInner {
         u8_to_two_chars(minute).is_some() &&
         u8_to_two_chars(second).is_some()
     }
-    
+
     open spec fn requires(&self) -> bool {
         true
     }
@@ -532,7 +532,7 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
     closed spec fn is_prefix_secure() -> bool {
         false
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         true
     }
@@ -561,9 +561,9 @@ impl SecureSpecCombinator for GeneralizedTimeInner {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -572,10 +572,9 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTimeInner {
     type Type = GeneralizedTimeValueInner;
     type SType = &'a GeneralizedTimeValueInner;
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length(&self, v: Self::SType) -> usize {
         proof {
-            assume(self@.wf(_v@));
-            assume(self@.spec_serialize(_v@).len() == 15);
+            assert(self@.spec_serialize(v@).len() == 15);
         }
         15
     }

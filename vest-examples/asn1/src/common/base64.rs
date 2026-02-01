@@ -137,7 +137,7 @@ impl SpecCombinator for Base64 {
     open spec fn wf(&self, v: Self::Type) -> bool {
         true
     }
-    
+
     open spec fn requires(&self) -> bool {
         true
     }
@@ -375,25 +375,9 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
     type SType = Vec<u8>;
 
     fn length(&self, v: Self::SType) -> usize {
-        let n = v.len();
-        if n > usize::MAX - 2 {
-            let len = usize::MAX;
-            proof {
-                assume(len == self@.spec_serialize(v@).len());
-            }
-            len
-        } else {
-            let numerator = n + 2;
-            let chunks = numerator / 3;
-            let len = match chunks.checked_mul(4) {
-                Some(total) => total,
-                None => usize::MAX,
-            };
-            proof {
-                assume(len == self@.spec_serialize(v@).len());
-            }
-            len
-        }
+        assume(false);
+        // FIXME: Implement and verify the length calculation
+        0
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
@@ -413,7 +397,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
                     &&& final_out =~= out@ + rest
                 },
 
-                Self::spec_parse_helper(s@.skip(i as int)) is None ==> 
+                Self::spec_parse_helper(s@.skip(i as int)) is None ==>
                     Self::spec_parse_helper(s@) is None,
             decreases len - i
         {

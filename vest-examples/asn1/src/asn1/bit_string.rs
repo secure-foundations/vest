@@ -88,7 +88,10 @@ impl<'a> BitStringValue<'a> {
         if Self::wf(s) {
             proof {
                 assert(BitStringValue::spec_wf(s@));
-                assume(BitString::wf(&BitString, s@));
+                assert(s@.len() == s.len() as int);
+                assert(s@.len() <= usize::MAX as int);
+                OctetString::lemma_wf_always(s@);
+                assert(BitString::wf(&BitString, s@));
             }
             Some(BitStringValue(s))
         } else {
@@ -147,7 +150,7 @@ impl SpecCombinator for BitString {
     open spec fn wf(&self, v: Self::Type) -> bool {
            OctetString.wf(v) && BitStringValue::spec_wf(v)
     }
-    
+
     open spec fn requires(&self) -> bool {
         OctetString.requires()
     }
@@ -178,7 +181,7 @@ impl SecureSpecCombinator for BitString {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         true
     }
@@ -196,9 +199,9 @@ impl SecureSpecCombinator for BitString {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         OctetString.lemma_prefix_secure(s1, s2);
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 

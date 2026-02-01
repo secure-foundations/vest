@@ -25,11 +25,11 @@ impl VarUInt {
 
 impl SpecCombinator for VarUInt {
     type Type = VarUIntResult;
-    
+
     open spec fn wf(&self, v: Self::Type) -> bool {
         self.in_bound(v)
     }
-    
+
     open spec fn requires(&self) -> bool {
         self.wf()
     }
@@ -271,7 +271,7 @@ impl SecureSpecCombinator for VarUInt {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         self.0 > 0
     }
@@ -537,10 +537,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarUInt {
     type Type = VarUIntResult;
     type SType = VarUIntResult;
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length(&self, v: Self::SType) -> usize {
         let len = self.0;
         proof {
-            assume(self@.spec_serialize(_v@).len() == len);
+            self.lemma_serialize_ok(v);
         }
         len
     }
@@ -795,7 +795,7 @@ impl SpecCombinator for VarInt {
     open spec fn wf(&self, v: Self::Type) -> bool {
         n_byte_min_signed!(self.0) <= v && v <= n_byte_max_signed!(self.0)
     }
-    
+
     open spec fn requires(&self) -> bool {
         self.to_var_uint().wf()
     }
@@ -823,7 +823,7 @@ impl SecureSpecCombinator for VarInt {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         self.0 > 0
     }
@@ -931,7 +931,7 @@ impl SecureSpecCombinator for VarInt {
             assert(self.spec_parse(s1 + s2) == Some((n, sign_extend!(raw, self.0))));
         }
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>)
     {
         let uint = self.to_var_uint();
@@ -949,7 +949,7 @@ impl SecureSpecCombinator for VarInt {
             }
         }
     }
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     {
         let uint = self.to_var_uint();
@@ -975,10 +975,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
     type Type = VarIntResult;
     type SType = VarIntResult;
 
-    fn length(&self, _v: Self::SType) -> usize {
+    fn length(&self, v: Self::SType) -> usize {
         let len = self.0;
         proof {
-            assume(self@.spec_serialize(_v@).len() == len);
+            let uint = self.to_var_uint();
+            let masked = (v as VarUIntResult) & n_byte_max_unsigned!(self.0);
+            VarUInt::lemma_mask_fits(self.0, v as VarUIntResult);
+            uint.lemma_serialize_ok(masked);
         }
         len
     }

@@ -102,7 +102,7 @@ impl<T: PolyfillClone> PolyfillClone for RepeatResult<T> {
         proof {
             assert(items.len() == self.0.len());
             assert(forall |j| #![auto] 0 <= j < items.len() ==> items[j]@ == self.0[j]@);
-            assume(RepeatResult(items)@ == self@);
+            assert(RepeatResult(items)@ =~= self@);
         }
 
         RepeatResult(items)

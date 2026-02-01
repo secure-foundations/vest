@@ -87,7 +87,7 @@ impl<T: SpecCombinator> SpecCombinator for Cached<T> {
     open spec fn wf(&self, v: Self::Type) -> bool {
         self.0.wf(v)
     }
-    
+
     open spec fn requires(&self) -> bool {
         self.0.requires()
     }
@@ -105,7 +105,7 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
     open spec fn is_prefix_secure() -> bool {
         T::is_prefix_secure()
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         self.0.is_productive()
     }
@@ -121,11 +121,11 @@ impl<T: SecureSpecCombinator> SecureSpecCombinator for Cached<T> {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         self.0.lemma_prefix_secure(s1, s2)
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         self.0.lemma_parse_length(s)
     }
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
         self.0.lemma_parse_productive(s)
     }
@@ -157,7 +157,8 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
         }
         let serialized = slice_take(s, n);
         proof {
-            assume(serialized@ =~= self.0@.spec_serialize(x@));
+            self.0@.theorem_parse_serialize_roundtrip(s@);
+            assert(serialized@ =~= self.0@.spec_serialize(x@));
         }
         Ok((n, CachedValue { inner: x, combinator: Ghost(self.0), serialized }))
     }

@@ -15,7 +15,7 @@ impl SpecCombinator for OctetString {
     open spec fn wf(&self, v: Self::Type) -> bool {
         new_spec_octet_string_inner().wf((v.len() as LengthValue, v))
     }
-    
+
     open spec fn requires(&self) -> bool {
         new_spec_octet_string_inner().requires()
     }
@@ -36,7 +36,7 @@ impl SecureSpecCombinator for OctetString {
     open spec fn is_prefix_secure() -> bool {
         SpecOctetStringInner::is_prefix_secure()
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         new_spec_octet_string_inner().is_productive()
     }
@@ -52,13 +52,22 @@ impl SecureSpecCombinator for OctetString {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         new_spec_octet_string_inner().lemma_prefix_secure(s1, s2);
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         new_spec_octet_string_inner().lemma_parse_length(s);
     }
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
         new_spec_octet_string_inner().lemma_parse_productive(s);
+    }
+}
+
+impl OctetString {
+    pub proof fn lemma_wf_always(v: Seq<u8>)
+        requires v.len() <= usize::MAX as int
+        ensures OctetString.wf(v)
+    {
+        assert(v.len() as usize as int == v.len());
     }
 }
 
@@ -141,7 +150,7 @@ mod test {
     fn serialize_octet_string(v: &[u8]) -> Result<Vec<u8>, SerializeError> {
         let mut data = vec![0; v.len() + 10];
         data[0] = 0x04; // Prepend the tag byte
-    let len = OctetString.serialize(&v, &mut data, 1)?;
+        let len = OctetString.serialize(&v, &mut data, 1)?;
         data.truncate(len + 1);
         Ok(data)
     }

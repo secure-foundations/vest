@@ -43,7 +43,7 @@ impl SpecCombinator for UTCTime {
     open spec fn wf(&self, v: Self::Type) -> bool {
         LengthWrapped(UTCTimeInner).wf(v)
     }
-    
+
     open spec fn requires(&self) -> bool {
         LengthWrapped(UTCTimeInner).requires()
     }
@@ -61,7 +61,7 @@ impl SecureSpecCombinator for UTCTime {
     open spec fn is_prefix_secure() -> bool {
         true
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         true
     }
@@ -77,9 +77,9 @@ impl SecureSpecCombinator for UTCTime {
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
         LengthWrapped(UTCTimeInner).lemma_prefix_secure(s1, s2);
     }
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -156,7 +156,7 @@ impl SpecCombinator for UTCTimeInner {
             u8_to_two_chars(v.minute).is_some() &&
             match (v.second, v.time_zone) {
                 (OptionDeep::None, UTCTimeZone::UTC) => true,
-                (OptionDeep::Some(second), UTCTimeZone::UTC) => 
+                (OptionDeep::Some(second), UTCTimeZone::UTC) =>
                 u8_to_two_chars(second).is_some(),
                 (OptionDeep::None, UTCTimeZone::UTCPlus(off_hour, off_minute)) |
                 (OptionDeep::None, UTCTimeZone::UTCMinus(off_hour, off_minute)) =>
@@ -169,7 +169,7 @@ impl SpecCombinator for UTCTimeInner {
                 u8_to_two_chars(off_minute).is_some(),
             }
     }
-    
+
     open spec fn requires(&self) -> bool {
         true
     }
@@ -358,7 +358,7 @@ impl SecureSpecCombinator for UTCTimeInner {
     open spec fn is_prefix_secure() -> bool {
         false
     }
-    
+
     open spec fn is_productive(&self) -> bool {
         true
     }
@@ -382,9 +382,9 @@ impl SecureSpecCombinator for UTCTimeInner {
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {}
-    
+
     proof fn lemma_parse_length(&self, s: Seq<u8>) {}
-    
+
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
 }
 
@@ -393,18 +393,29 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTCTimeInner {
     type SType = &'a UTCTimeValueInner;
 
     fn length(&self, v: Self::SType) -> usize {
+        // - YYMMDDhhmmZ: 11 bytes (no second, UTC)
+        // - YYMMDDhhmmssZ: 13 bytes (with second, UTC)
+        // - YYMMDDhhmm+hhmm or YYMMDDhhmm-hhmm: 15 bytes (no second, offset)
+        // - YYMMDDhhmmss+hhmm or YYMMDDhhmmss-hhmm: 17 bytes (with second, offset)
+
+        let has_second = matches!(v.second, OptionDeep::Some(_));
+        let has_offset = matches!(v.time_zone, UTCTimeZone::UTCPlus(_, _) | UTCTimeZone::UTCMinus(_, _));
+
+        let len: usize = if has_second && has_offset {
+            17
+        } else if has_second && !has_offset {
+            13
+        } else if !has_second && has_offset {
+            15
+        } else {
+            11
+        };
+
         proof {
-            assume(self@.wf(v@));
-            let ser = self@.spec_serialize(v@);
-            assume(match (v.second, v.time_zone) {
-                (OptionDeep::Some(_), _) => ser.len() as usize == 13,
-                (OptionDeep::None, _) => ser.len() as usize == 11,
-            });
+            assert(self@.spec_serialize(v@).len() == len);
         }
-        match v.second {
-            OptionDeep::Some(_) => 13,
-            OptionDeep::None => 11,
-        }
+
+        len
     }
 
     fn parse(&self, v: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
