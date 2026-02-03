@@ -182,19 +182,22 @@ where
     }
 }
 
-/// Combinator that runs its inner combinator only when `cond` is true.
-pub struct Cond<Inner> {
-    /// Whether the inner combinator is allowed to run.
-    pub cond: bool,
+/// Combinator that runs its inner combinator only when `lhs` equals `rhs`.
+pub struct CondEq<T, Inner> {
+    /// The left-hand side of the equality comparison.
+    pub lhs: T,
+    /// The right-hand side of the equality comparison.
+    pub rhs: T,
     /// The conditional combinator.
     pub inner: Inner,
 }
 
-impl<I, O, Inner> Combinator<I, O> for Cond<Inner>
+impl<I, O, T, Inner> Combinator<I, O> for CondEq<T, Inner>
 where
     I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
+    T: PartialEq,
 {
     type Type<'p>
         = Inner::Type<'p>
@@ -217,7 +220,7 @@ where
     where
         I: 'p,
     {
-        if self.cond {
+        if self.lhs == self.rhs {
             self.inner.parse(s)
         } else {
             Err(ParseError::CondFailed)
@@ -233,7 +236,7 @@ where
     where
         I: 's,
     {
-        if self.cond {
+        if self.lhs == self.rhs {
             self.inner.serialize(v, data, pos)
         } else {
             Err(SerializeError::Other("condition not satisfied".into()))
@@ -241,7 +244,7 @@ where
     }
 
     fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        if self.cond {
+        if self.lhs == self.rhs {
             self.inner.generate(g)
         } else {
             Err(GenerateError::CondFailed)
@@ -301,12 +304,62 @@ where
     }
 
     fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        loop {
-            let (m, value) = self.1.generate(g)?;
-            if m == self.0 .0 {
-                return Ok((m, value));
-            }
-            std::dbg!("AndThen generation retrying due to size mismatch.", self.0 .0, m);
+        self.1.generate(g)
+    }
+}
+
+/// Combinator that makes sure `Inner` parses/serializes exactly `n` bytes.
+pub struct FixedLen<Inner>(pub usize, pub Inner);
+
+impl<I, O, Inner> Combinator<I, O> for FixedLen<Inner>
+where
+    I: VestInput + ?Sized,
+    O: VestOutput<I>,
+    Inner: Combinator<I, O>,
+{
+    type Type<'p>
+        = Inner::Type<'p>
+    where
+        I: 'p;
+    type SType<'s>
+        = Inner::SType<'s>
+    where
+        I: 's;
+    type GType = Inner::GType;
+
+    fn length<'s>(&self, _v: Self::SType<'s>) -> usize
+    where
+        I: 's,
+    {
+        self.0
+    }
+
+    fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        I: 'p,
+    {
+        let (n, chunk) = <_ as Combinator<I, O>>::parse(&Variable(self.0), s)?;
+        let (m, value) = self.1.parse(&chunk)?;
+        if m == n {
+            Ok((n, value))
+        } else {
+            Err(ParseError::AndThenUnusedBytes)
         }
+    }
+
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut O,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        I: 's,
+    {
+        self.1.serialize(v, data, pos)
+    }
+
+    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        self.1.generate(g)
     }
 }

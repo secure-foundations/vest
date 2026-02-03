@@ -30,12 +30,19 @@ impl GenSt {
 pub trait FromRef<'s, T> {
     /// Convert from a reference to the serialization type.
     fn ref_to_stype(val: &'s T) -> Self;
+
+    /// Convert from a mutable reference of [`T`] to a mutable reference of the serialization type.
+    fn mut_ref_to_mut_stype(val: &mut T) -> &mut Self;
 }
 
 /// Blanket implementation for Copy types where SType equals Type.
 impl<'s, T: Copy> FromRef<'s, T> for T {
     fn ref_to_stype(val: &'s T) -> Self {
         *val
+    }
+
+    fn mut_ref_to_mut_stype(val: &mut T) -> &mut Self {
+        val
     }
 }
 
