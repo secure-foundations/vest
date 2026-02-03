@@ -33,7 +33,7 @@
 
 use vest_lib::properties::*;
 use vest_lib::regular::bytes::{Fixed, Variable};
-use vest_lib::regular::modifier::{AndThen, Cond, Mapped, Mapper};
+use vest_lib::regular::modifier::{AndThen, CondEq, FixedLen, Mapped, Mapper};
 use vest_lib::regular::repetition::RepeatN;
 use vest_lib::regular::sequence::Pair;
 use vest_lib::regular::uints::{U16Le, U32Le, U8};
@@ -136,8 +136,9 @@ impl Mapper for MsgMapper {
 }
 
 type Msg2Comb = Mapped<(U8, RepeatN<U32Le>), Msg2Mapper>;
-type PayloadChoice = Choice<Cond<Fixed<32>>, Cond<Msg2Comb>>;
-type PayloadComb = AndThen<Variable, PayloadChoice>;
+type PayloadChoice = Choice<CondEq<u8, Fixed<32>>, CondEq<u8, Msg2Comb>>;
+// type PayloadComb = AndThen<Variable, PayloadChoice>;
+type PayloadComb = FixedLen<PayloadChoice>;
 type TlvComb = Mapped<Pair<(U8, U16Le), PayloadComb, fn((u8, u16)) -> PayloadComb>, MsgMapper>;
 
 fn msg2_combinator() -> Msg2Comb {
@@ -146,16 +147,19 @@ fn msg2_combinator() -> Msg2Comb {
 
 fn payload_combinator((tag, len): (u8, u16)) -> PayloadComb {
     let choice = Choice(
-        Cond {
-            cond: tag == 1,
+        CondEq {
+            lhs: tag,
+            rhs: 1,
             inner: Fixed::<32>,
         },
-        Cond {
-            cond: tag == 2,
+        CondEq {
+            lhs: tag,
+            rhs: 2,
             inner: msg2_combinator(),
         },
     );
-    AndThen(Variable(len as usize), choice)
+    // AndThen(Variable(len as usize), choice)
+    FixedLen(len as usize, choice)
 }
 
 fn tlv_combinator() -> TlvComb {
