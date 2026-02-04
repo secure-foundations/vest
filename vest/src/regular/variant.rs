@@ -115,8 +115,6 @@ where
 ///     type Type<'p> = MsgValue<'p>;
 ///     type SType<'s> = &'s MsgValue<'s>;
 ///     type GType = MsgValueOwned;
-///     type TypeEnum = MsgValue;
-///     type GTypeEnum = MsgValueOwned;
 /// }
 ///
 /// }
@@ -130,11 +128,9 @@ macro_rules! enum_combinator {
             ),+ $(,)?
         }
         impl Combinator<$I:ty, $O:ty> {
-            type Type<$p:lifetime> = $Type:ty;
+            type Type<$p:lifetime> = $Type:ident<$pl:lifetime>;
             type SType<$s:lifetime> = $SType:ty;
-            type GType = $GType:ty;
-            type TypeEnum = $TypeEnum:ident;
-            type GTypeEnum = $GTypeEnum:ident;
+            type GType = $GType:ident;
         }
     ) => {
         $vis enum $Enum {
@@ -148,7 +144,7 @@ macro_rules! enum_combinator {
             $I: $crate::buf_traits::VestInput,
             $O: $crate::buf_traits::VestOutput<$I>,
         {
-            type Type<$p> = $Type;
+            type Type<$p> = $Type<$p>;
             type SType<$s> = $SType;
             type GType = $GType;
 
@@ -158,7 +154,7 @@ macro_rules! enum_combinator {
             {
                 match (self, v) {
                     $(
-                        ($Enum::$Variant(inner), $TypeEnum::$Variant(val)) => {
+                        ($Enum::$Variant(inner), $Type::$Variant(val)) => {
                             <$Inner as $crate::properties::Combinator<$I, $O>>::length(
                                 inner,
                                 val,
@@ -183,7 +179,7 @@ macro_rules! enum_combinator {
                                 <$Inner as $crate::properties::Combinator<$I, $O>>::parse(
                                     inner, s,
                                 )?;
-                            Ok((n, $TypeEnum::$Variant(v)))
+                            Ok((n, $Type::$Variant(v)))
                         }
                     )+
                 }
@@ -200,7 +196,7 @@ macro_rules! enum_combinator {
             {
                 match (self, v) {
                     $(
-                        ($Enum::$Variant(inner), $TypeEnum::$Variant(val)) => {
+                        ($Enum::$Variant(inner), $Type::$Variant(val)) => {
                             <$Inner as $crate::properties::Combinator<$I, $O>>::serialize(
                                 inner,
                                 val,
@@ -226,7 +222,7 @@ macro_rules! enum_combinator {
                                 <$Inner as $crate::properties::Combinator<$I, $O>>::generate(
                                     inner, g,
                                 )?;
-                            Ok((n, $GTypeEnum::$Variant(v)))
+                            Ok((n, $GType::$Variant(v)))
                         }
                     )+
                 }

@@ -10,12 +10,12 @@ where
     /// The dependent combinator type for parsing/serialization.
     type Out: Combinator<I, O>;
     /// The dependent combinator type for generation.
-    type OutGen<'a>: Combinator<I, O, GType = <Self::Out as Combinator<I, O>>::GType>;
+    type OutGen<'g>: Combinator<I, O, GType = <Self::Out as Combinator<I, O>>::GType>;
 
     /// Build the dependent combinator for parsing/serialization.
-    fn dep_snd<'a>(&self, fst: In::SType<'a>) -> Self::Out;
+    fn dep_snd<'s>(&self, fst: In::SType<'s>) -> Self::Out;
     /// Build the dependent combinator for generation.
-    fn dep_snd_gen<'a>(&self, fst: &'a mut In::GType) -> Self::OutGen<'a>;
+    fn dep_snd_gen<'g>(&self, fst: &'g mut In::GType) -> Self::OutGen<'g>;
 }
 
 /// Dependent pair combinator where the second combinator depends on the result
