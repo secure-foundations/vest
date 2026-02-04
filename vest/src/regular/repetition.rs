@@ -76,7 +76,7 @@ where
         Ok(pos - start)
     }
 
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         let mut values = Vec::with_capacity(self.1);
         let mut generated: usize = 0;
         for _ in 0..self.1 {
@@ -157,7 +157,7 @@ where
         Ok(pos - start)
     }
 
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         let mut values = Vec::new();
         let mut generated: usize = 0;
         let len: u16 = g.rng.random();

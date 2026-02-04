@@ -7,6 +7,7 @@ pub enum ParseError {
     /// The second combinator of AndThen did not consume all bytes
     AndThenUnusedBytes,
     UnexpectedEndOfInput,
+    FixedLenViolation,
     OrdChoiceNoMatch,
     CondFailed,
     TryMapFailed,
@@ -65,6 +66,9 @@ impl core::fmt::Display for ParseError {
         match self {
             ParseError::AndThenUnusedBytes => {
                 write!(f, "`AndThen` combinator did not consume all bytes")
+            }
+            ParseError::FixedLenViolation => {
+                write!(f, "`FixedLen` combinator failed")
             }
             ParseError::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),
             ParseError::OrdChoiceNoMatch => {

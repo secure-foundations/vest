@@ -1,7 +1,7 @@
 use crate::{
     buf_traits::{VestInput, VestOutput},
     errors::{GenerateError, ParseError, SerializeError},
-    properties::{Combinator, GResult, GenSt, FromRef},
+    properties::{Combinator, FromRef, GResult, GenSt},
     regular::sequence::UnitCombinator,
 };
 
@@ -96,7 +96,7 @@ where
         self.inner.serialize(self.tag.into(), data, pos)
     }
 
-    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         let n = self.length(());
         Ok((n, ()))
     }

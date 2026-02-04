@@ -128,7 +128,7 @@ where
     /// The generation function.
     /// This function generates a value of type `Self::GType` along with the
     /// number of bytes that would be produced when serializing this value.
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError>;
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError>;
 
     /// Convert from generated type to [`Self::SType`] for serialization.
     fn ref_gtype_to_stype<'s>(v: &'s Self::GType) -> Self::SType<'s>
@@ -139,7 +139,7 @@ where
     }
 }
 
-impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &C
+impl<I, O, C: Combinator<I, O>> Combinator<I, O> for &mut C
 where
     I: VestInput + ?Sized,
     O: VestOutput<I>,
@@ -160,14 +160,14 @@ where
     where
         I: 's,
     {
-        (*self).length(v)
+        (**self).length(v)
     }
 
     fn parse<'p>(&self, s: &'p I) -> Result<(usize, Self::Type<'p>), ParseError>
     where
         I: 'p,
     {
-        (*self).parse(s)
+        (**self).parse(s)
     }
 
     fn serialize<'s>(
@@ -179,11 +179,11 @@ where
     where
         I: 's,
     {
-        (*self).serialize(v, data, pos)
+        (**self).serialize(v, data, pos)
     }
 
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        (*self).generate(g)
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        (**self).generate(g)
     }
 }
 
@@ -230,7 +230,7 @@ where
         (**self).serialize(v, data, pos)
     }
 
-    fn generate(&self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         (**self).generate(g)
     }
 }

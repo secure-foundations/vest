@@ -42,7 +42,7 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for Fail {
         Err(SerializeError::Other(self.0.clone()))
     }
 
-    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         Err(GenerateError::Other(self.0.clone()))
     }
 }

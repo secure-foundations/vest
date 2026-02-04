@@ -44,7 +44,7 @@ impl<'x, I: VestInput + ?Sized, O: VestOutput<I>> Combinator<I, O> for End {
         Ok(0)
     }
 
-    fn generate(&self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+    fn generate(&mut self, _g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         Ok((0, ()))
     }
 }
