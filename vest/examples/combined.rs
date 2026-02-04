@@ -20,10 +20,9 @@
 //! ```
 
 use vest_lib::properties::*;
-use vest_lib::regular::bytes::Variable;
-use vest_lib::regular::modifier::{AndThen, Mapped, Mapper};
+use vest_lib::regular::modifier::{FixedLen, Length, Mapped, Mapper};
 use vest_lib::regular::repetition::Repeat;
-use vest_lib::regular::sequence::{Pair, Preceded};
+use vest_lib::regular::sequence::{DepCombinator, Pair, Preceded};
 use vest_lib::regular::tag::Tag;
 use vest_lib::regular::uints::{U16Be, U16Le, U32Le, U8};
 
@@ -122,44 +121,42 @@ impl Mapper for PacketMapper {
     type DstOwned = Packet;
 }
 
-fn record_combinator() -> Mapped<(U32Le, U32Le), RecordMapper> {
+fn record_combinator() -> RecordComb {
     Mapped::new((U32Le, U32Le), RecordMapper)
 }
 
-fn header_combinator() -> Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper> {
+fn header_combinator() -> HeaderComb {
     let magic = Tag::new(U16Be, 0xCAFEu16);
     Mapped::new(Preceded(magic, (U8, U8)), HeaderMapper)
 }
 
-fn payload_combinator(len: u16) -> AndThen<Variable, Repeat<Mapped<(U32Le, U32Le), RecordMapper>>> {
-    AndThen(Variable(len as usize), Repeat::new(record_combinator()))
-}
-
 type RecordComb = Mapped<(U32Le, U32Le), RecordMapper>;
-type PayloadComb = AndThen<Variable, Repeat<RecordComb>>;
+type PayloadComb<'a> = FixedLen<'a, Repeat<RecordComb>>;
 
 type HeaderComb = Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper>;
 
-type PacketCombinator =
-    Mapped<(HeaderComb, Pair<U16Le, PayloadComb, fn(u16) -> PayloadComb>), PacketMapper>;
+type PacketCombinator = Mapped<(HeaderComb, Pair<U16Le, PayloadDep>), PacketMapper>;
+
+struct PayloadDep;
+impl DepCombinator<U16Le, [u8], Vec<u8>> for PayloadDep {
+    type Out = PayloadComb<'static>;
+    type OutGen<'a> = PayloadComb<'a>;
+
+    fn dep_snd<'a>(&self, len: u16) -> Self::Out {
+        FixedLen(Length::from_value(len.into()), Repeat(record_combinator()))
+    }
+
+    fn dep_snd_gen<'a>(&self, len: &'a mut u16) -> Self::OutGen<'a> {
+        FixedLen(Length::from_u16_mut(len), Repeat(record_combinator()))
+    }
+}
 
 fn packet_combinator() -> PacketCombinator {
     Mapped::new(
-        (header_combinator(), Pair::new(U16Le, payload_combinator)),
+        (header_combinator(), Pair::new(U16Le, PayloadDep)),
         PacketMapper,
     )
 }
-
-// // type PacketCombinator = (HeaderComb, Pair<U16Le, PayloadComb, fn(u16) -> PayloadComb>);
-
-// fn packet_combinator() -> (HeaderComb, Pair<U16Le, PayloadComb, impl Fn(u16) -> PayloadComb>) {
-//     (
-//         header_combinator(),
-//         // Pair::new(U16Le, payload_combinator),
-//         Pair::new(U16Le, |len|
-//           AndThen(Variable(len as usize), Repeat::new(record_combinator()))),
-//     )
-// }
 
 fn example_record() {
     println!("\n=== Record Combinator ===");
@@ -208,42 +205,6 @@ fn example_header() {
     assert_eq!(parsed.version, 1);
     assert_eq!(parsed.flags, 0x42);
     println!("  Header roundtrip passed!");
-}
-
-fn example_payload() {
-    println!("\n=== Payload with AndThen (Variable >>= Repeat) ===");
-
-    // Create some records
-    let records: [Record; 3] = [
-        Record { id: 1, value: 100 },
-        Record { id: 2, value: 200 },
-        Record { id: 3, value: 300 },
-    ];
-    let records_slice: &[Record] = &records;
-
-    // Each record is 8 bytes (2 x u32le), so 3 records = 24 bytes
-    let payload_len: u16 = 24;
-
-    let payload_comb = payload_combinator(payload_len);
-
-    let mut buf = vec![0u8; 32];
-    let written = <_ as Combinator<[u8], _>>::serialize(&payload_comb, records_slice, &mut buf, 0)
-        .expect("serialize");
-    println!("  Serialized Payload ({} records, {} bytes):", 3, written);
-    println!("  Bytes: {:02X?}", &buf[..written]);
-
-    let (consumed, parsed) =
-        <_ as Combinator<_, Vec<u8>>>::parse(&payload_comb, &buf[..written]).expect("parse");
-    println!("  Parsed {} records:", parsed.len());
-    for (i, r) in parsed.iter().enumerate() {
-        println!("    Record {}: id={}, value={}", i, r.id, r.value);
-    }
-    assert_eq!(consumed, 24);
-    assert_eq!(parsed.len(), 3);
-    assert_eq!(parsed[0], Record { id: 1, value: 100 });
-    assert_eq!(parsed[1], Record { id: 2, value: 200 });
-    assert_eq!(parsed[2], Record { id: 3, value: 300 });
-    println!("  Payload roundtrip passed!");
 }
 
 fn example_full_packet() {
@@ -336,11 +297,10 @@ fn example_full_packet() {
 fn example_packet_generation() {
     println!("\n=== Packet Generation Example ===");
 
-    let pkt_comb = packet_combinator();
+    let mut pkt_comb = packet_combinator();
 
-    let mut gen_st = GenSt::new(12345); //
-    let (generated_bytes, generated_packet) = <_ as Combinator<[u8], Vec<u8>>>::generate(&pkt_comb, &mut gen_st)
-        .expect("generate");
+    let mut gen_st = GenSt::new(100);
+    let (generated_bytes, generated_packet) = pkt_comb.generate(&mut gen_st).expect("generate");
 
     println!("  Generated Packet ({} bytes):", generated_bytes);
     println!(
@@ -349,9 +309,9 @@ fn example_packet_generation() {
     );
     println!("    Payload length: {} bytes", generated_packet.len);
     println!("    Records ({}):", generated_packet.records.len());
-    for (i, r) in generated_packet.records.iter().enumerate() {
-        println!("      [{}] id={}, value={}", i, r.id, r.value);
-    }
+    // for (i, r) in generated_packet.records.iter().enumerate() {
+    //     println!("      [{}] id={}, value={}", i, r.id, r.value);
+    // }
 
     println!("  Packet generation completed!");
 }
@@ -359,7 +319,6 @@ fn example_packet_generation() {
 fn main() {
     example_record();
     example_header();
-    example_payload();
     example_full_packet();
     example_packet_generation();
 }
