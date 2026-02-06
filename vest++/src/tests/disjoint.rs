@@ -17,6 +17,7 @@ broadcast use {
     lemma_disjoint_optional,
     lemma_disjoint_repeat,
     lemma_disjoint_eof,
+    lemma_disjoint_tuple_2,
 };
 
 proof fn test_disjointness_tags() {
@@ -117,6 +118,17 @@ proof fn test_disjointness_refined() {
     let even = Refined { inner: U8, pred: Even };
     let c = Choice(odd, even);
     assert(c.unambiguous());
+}
+
+proof fn test_disjointness_shared_prefix() {
+    let tag1 = Tag { inner: U8, tag: 1u8 };
+    let tag2 = Tag { inner: U8, tag: 2u8 };
+    let tag3 = Tag { inner: U8, tag: 3u8 };
+    let c_left = (tag1, (tag2, tag2));
+    let c_right = (tag1, (tag2, tag3));
+    let c_main = Choice(c_left, c_right);
+
+    assert(c_main.unambiguous());
 }
 
 } // verus!

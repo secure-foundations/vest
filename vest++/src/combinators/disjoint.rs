@@ -54,6 +54,26 @@ pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: S
 {
 }
 
+/// Two tuple parsers are disjoint if their first parsers are disjoint (already covered by [`lemma_disjoint_tuple`]),
+/// or their first parsers consume the same number of bytes and their second parsers are disjoint.
+pub broadcast proof fn lemma_disjoint_tuple_2<
+    A: SpecParser,
+    B: SpecParser,
+    C: SpecParser,
+    D: SpecParser,
+>(t1: (A, B), t2: (C, D))
+    requires
+        forall|input: Seq<u8>| #[trigger]
+            t1.0.spec_parse(input) matches Some((n1, _))
+            ==> t2.0.spec_parse(input) matches Some((n2, _))
+            ==> n1 == n2,
+        disjoint_domains(t1.1, t2.1),
+    ensures
+        #[trigger] disjoint_domains(t1, t2),
+{
+
+}
+
 /// A [`Preceded`] parser is disjoint from another parser if its first
 /// parser is disjoint from the other parser.
 pub broadcast proof fn lemma_disjoint_preceded<U: SpecParser, U1: SpecParser, V1: SpecParser>(
