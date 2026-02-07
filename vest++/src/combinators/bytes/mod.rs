@@ -7,4 +7,6 @@ verus! {
 
 pub struct Fixed<const N: usize>;
 
+pub struct Varied(pub usize);
+
 } // verus!

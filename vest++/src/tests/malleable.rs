@@ -1,4 +1,4 @@
-use crate::combinators::fixed::spec::axiom_array_from_seq;
+use crate::combinators::bytes::spec::axiom_array_from_seq;
 use crate::combinators::refined::Tag;
 use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated, U16Le, U8};
 use crate::core::{proof::*, spec::*};
