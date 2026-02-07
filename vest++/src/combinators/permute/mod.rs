@@ -5,15 +5,14 @@ use vstd::prelude::*;
 use crate::combinators::choice::Alt;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::Mapped;
-use crate::core::spec::SpecType;
 use core::marker::PhantomData;
 
 verus! {
 
-/// Mapper that swaps a pair (B, A) to (A, B)
+/// Mapper that swaps a pair `(B, A)` to `(A, B)`
 pub struct Swap2Mapper<A, B>(pub PhantomData<(A, B)>);
 
-impl<A: SpecType, B: SpecType> Mapper for Swap2Mapper<A, B> {
+impl<A, B> Mapper for Swap2Mapper<A, B> {
     type In = (B, A);
 
     type Out = (A, B);
@@ -27,13 +26,7 @@ impl<A: SpecType, B: SpecType> Mapper for Swap2Mapper<A, B> {
     }
 }
 
-impl<A: SpecType, B: SpecType> IsoMapper for Swap2Mapper<A, B> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B> IsoMapper for Swap2Mapper<A, B> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -41,10 +34,10 @@ impl<A: SpecType, B: SpecType> IsoMapper for Swap2Mapper<A, B> {
     }
 }
 
-/// Mapper for Permute3: (B, (A, C)) -> (A, (B, C))
+/// Mapper for Permute3: `(B, (A, C)) -> (A, (B, C))`
 pub struct Swap3Mapper1<A, B, C>(pub PhantomData<(A, B, C)>);
 
-impl<A: SpecType, B: SpecType, C: SpecType> Mapper for Swap3Mapper1<A, B, C> {
+impl<A, B, C> Mapper for Swap3Mapper1<A, B, C> {
     type In = (B, (A, C));
 
     type Out = (A, (B, C));
@@ -58,13 +51,7 @@ impl<A: SpecType, B: SpecType, C: SpecType> Mapper for Swap3Mapper1<A, B, C> {
     }
 }
 
-impl<A: SpecType, B: SpecType, C: SpecType> IsoMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B, C> IsoMapper for Swap3Mapper1<A, B, C> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -72,10 +59,10 @@ impl<A: SpecType, B: SpecType, C: SpecType> IsoMapper for Swap3Mapper1<A, B, C> 
     }
 }
 
-/// Mapper for Permute3: (C, (A, B)) -> (A, (B, C))
+/// Mapper for Permute3: `(C, (A, B)) -> (A, (B, C))`
 pub struct Swap3Mapper2<A, B, C>(pub PhantomData<(A, B, C)>);
 
-impl<A: SpecType, B: SpecType, C: SpecType> Mapper for Swap3Mapper2<A, B, C> {
+impl<A, B, C> Mapper for Swap3Mapper2<A, B, C> {
     type In = (C, (A, B));
 
     type Out = (A, (B, C));
@@ -89,13 +76,7 @@ impl<A: SpecType, B: SpecType, C: SpecType> Mapper for Swap3Mapper2<A, B, C> {
     }
 }
 
-impl<A: SpecType, B: SpecType, C: SpecType> IsoMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B, C> IsoMapper for Swap3Mapper2<A, B, C> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -103,10 +84,10 @@ impl<A: SpecType, B: SpecType, C: SpecType> IsoMapper for Swap3Mapper2<A, B, C> 
     }
 }
 
-/// Mapper for Permute4: (B, (A, (C, D))) -> (A, (B, (C, D)))
+/// Mapper for Permute4: `(B, (A, (C, D))) -> (A, (B, (C, D)))`
 pub struct Swap4Mapper1<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper1<A, B, C, D> {
+impl<A, B, C, D> Mapper for Swap4Mapper1<A, B, C, D> {
     type In = (B, (A, (C, D)));
 
     type Out = (A, (B, (C, D)));
@@ -120,13 +101,7 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper1
     }
 }
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B, C, D> IsoMapper for Swap4Mapper1<A, B, C, D> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -134,10 +109,10 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapp
     }
 }
 
-/// Mapper for Permute4: (C, (A, (B, D))) -> (A, (B, (C, D)))
+/// Mapper for Permute4: `(C, (A, (B, D))) -> (A, (B, (C, D)))`
 pub struct Swap4Mapper2<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper2<A, B, C, D> {
+impl<A, B, C, D> Mapper for Swap4Mapper2<A, B, C, D> {
     type In = (C, (A, (B, D)));
 
     type Out = (A, (B, (C, D)));
@@ -151,13 +126,7 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper2
     }
 }
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B, C, D> IsoMapper for Swap4Mapper2<A, B, C, D> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -165,10 +134,10 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapp
     }
 }
 
-/// Mapper for Permute4: (D, (A, (B, C))) -> (A, (B, (C, D)))
+/// Mapper for Permute4: `(D, (A, (B, C))) -> (A, (B, (C, D)))`
 pub struct Swap4Mapper3<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper3<A, B, C, D> {
+impl<A, B, C, D> Mapper for Swap4Mapper3<A, B, C, D> {
     type In = (D, (A, (B, C)));
 
     type Out = (A, (B, (C, D)));
@@ -182,13 +151,7 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> Mapper for Swap4Mapper3
     }
 }
 
-impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
+impl<A, B, C, D> IsoMapper for Swap4Mapper3<A, B, C, D> {
     proof fn lemma_map_iso(&self, i: Self::In) {
     }
 
@@ -196,11 +159,14 @@ impl<A: SpecType, B: SpecType, C: SpecType, D: SpecType> IsoMapper for Swap4Mapp
     }
 }
 
-/// Permute2<P1, P2> parses either (P1, P2) or (P2, P1) and produces (P1::PVal, P2::PVal)
-/// Permute2 ::= Alt((P1, P2), Mapped((P2, P1), swap))
+/// `Permute2<P1, P2>` parses either `(P1, P2)` or `(P2, P1)` and produces `(P1::PVal, P2::PVal)`
+///
+/// `Permute2 ::= Alt((P1, P2), Mapped((P2, P1), swap))`
 pub struct Permute2<P1, P2>(pub P1, pub P2);
 
-/// Permute3<A, B, C> parses any permutation of A, B, C and produces (A::PVal, (B::PVal, C::PVal))
+/// `Permute3<A, B, C>` parses any permutation of A, B, C and produces `(A::PVal, (B::PVal, C::PVal))`
+///
+/// ```
 /// Permute3(A, B, C) ::= Alt(
 ///     (A, Permute2(B, C)),
 ///     Alt(
@@ -208,9 +174,12 @@ pub struct Permute2<P1, P2>(pub P1, pub P2);
 ///         Mapped((C, Permute2(A, B)), swap3),
 ///     )
 /// )
+/// ```
 pub struct Permute3<A, B, C>(pub A, pub B, pub C);
 
-/// Permute4<A, B, C, D> parses any permutation and produces (A::PVal, (B::PVal, (C::PVal, D::PVal)))
+/// `Permute4<A, B, C, D>` parses any permutation and produces `(A::PVal, (B::PVal, (C::PVal, D::PVal)))`
+///
+/// ```
 /// Permute4(A, B, C, D) ::= Alt(
 ///     (A, Permute3(B, C, D)),
 ///     Alt(
@@ -221,6 +190,7 @@ pub struct Permute3<A, B, C>(pub A, pub B, pub C);
 ///         )
 ///     )
 /// )
+/// ```
 pub struct Permute4<A, B, C, D>(pub A, pub B, pub C, pub D);
 
 } // verus!

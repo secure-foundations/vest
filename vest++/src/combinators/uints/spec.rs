@@ -22,18 +22,6 @@ impl Mapper for U16LeMapper {
 }
 
 impl IsoMapper for U16LeMapper {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-        if v.wf() {
-            assert(self.spec_map(v).wf());
-        }
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-        if v.wf() {
-            assert(self.spec_map_rev(v).wf());
-        }
-    }
-
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
@@ -69,18 +57,6 @@ impl Mapper for U16BeMapper {
 }
 
 impl IsoMapper for U16BeMapper {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-        if v.wf() {
-            assert(self.spec_map(v).wf());
-        }
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-        if v.wf() {
-            assert(self.spec_map_rev(v).wf());
-        }
-    }
-
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
@@ -121,18 +97,6 @@ impl Mapper for U32LeMapper {
 }
 
 impl IsoMapper for U32LeMapper {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-        if v.wf() {
-            assert(self.spec_map(v).wf());
-        }
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-        if v.wf() {
-            assert(self.spec_map_rev(v).wf());
-        }
-    }
-
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u32;
@@ -179,18 +143,6 @@ impl Mapper for U32BeMapper {
 }
 
 impl IsoMapper for U32BeMapper {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-        if v.wf() {
-            assert(self.spec_map(v).wf());
-        }
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-        if v.wf() {
-            assert(self.spec_map_rev(v).wf());
-        }
-    }
-
     proof fn lemma_map_iso(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u32;
@@ -227,6 +179,14 @@ impl SpecParser for super::U8 {
     }
 }
 
+impl Consistency for super::U8 {
+    type Val = u8;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
+    }
+}
+
 impl SpecSerializerDps for super::U8 {
     type ST = u8;
 
@@ -247,7 +207,7 @@ impl GoodParser for super::U8 {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -269,18 +229,22 @@ impl GoodSerializerDps for super::U8 {
     }
 
     proof fn lemma_serialize_dps_len(&self, v: u8, obuf: Seq<u8>) {
-        assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == v.blen());
+        assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == 1);
     }
 }
 
 impl GoodSerializer for super::U8 {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        assert(self.spec_serialize(v).len() == v.blen());
+        assert(self.spec_serialize(v).len() == 1);
     }
 }
 
 impl SpecByteLen for super::U8 {
     type T = u8;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        1
+    }
 }
 
 impl SpecParser for super::U16Le {
@@ -288,6 +252,14 @@ impl SpecParser for super::U16Le {
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U16Le {
+    type Val = u16;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
     }
 }
 
@@ -312,8 +284,8 @@ impl GoodParser for super::U16Le {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -347,6 +319,10 @@ impl GoodSerializer for super::U16Le {
 
 impl SpecByteLen for super::U16Le {
     type T = u16;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        2
+    }
 }
 
 impl SpecParser for super::U16Be {
@@ -354,6 +330,14 @@ impl SpecParser for super::U16Be {
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u16)> {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U16Be {
+    type Val = u16;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
     }
 }
 
@@ -378,8 +362,8 @@ impl GoodParser for super::U16Be {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -413,6 +397,10 @@ impl GoodSerializer for super::U16Be {
 
 impl SpecByteLen for super::U16Be {
     type T = u16;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        2
+    }
 }
 
 impl SpecParser for super::U32Le {
@@ -420,6 +408,14 @@ impl SpecParser for super::U32Le {
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
         Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U32Le {
+    type Val = u32;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
     }
 }
 
@@ -444,8 +440,8 @@ impl GoodParser for super::U32Le {
         Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -479,6 +475,10 @@ impl GoodSerializer for super::U32Le {
 
 impl SpecByteLen for super::U32Le {
     type T = u32;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        4
+    }
 }
 
 impl SpecParser for super::U32Be {
@@ -486,6 +486,14 @@ impl SpecParser for super::U32Be {
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
         Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U32Be {
+    type Val = u32;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
     }
 }
 
@@ -510,8 +518,8 @@ impl GoodParser for super::U32Be {
         Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -545,6 +553,10 @@ impl GoodSerializer for super::U32Be {
 
 impl SpecByteLen for super::U32Be {
     type T = u32;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        4
+    }
 }
 
 } // verus!

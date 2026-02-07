@@ -9,7 +9,7 @@ impl<A: SPRoundTripDps> super::Opt<A> {
             self.0.unambiguous(),
             parser_fails_on(self.0, obuf),
         ensures
-            v.wf() ==> {
+            self.consistent(v) ==> {
                 let ibuf = self.spec_serialize_dps(v, obuf);
                 let n = self.byte_len(v) as int;
                 self.spec_parse(ibuf) == Some((n, v))
@@ -18,7 +18,9 @@ impl<A: SPRoundTripDps> super::Opt<A> {
         match v {
             None => {},
             Some(vv) => {
-                self.0.theorem_serialize_dps_parse_roundtrip(vv, obuf);
+                if self.consistent(Some(vv)) {
+                    self.0.theorem_serialize_dps_parse_roundtrip(vv, obuf);
+                }
             },
         }
     }
@@ -58,16 +60,14 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
 > {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let opt = super::Opt(self.0);
-        if v.wf() {
-            let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
-            let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
-            opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
-            let n0 = serialized0.len() - serialized1.len();
-            opt.lemma_serialize_dps_buf(v.0, serialized1);
-            opt.lemma_serialize_dps_len(v.0, serialized1);
-            assert(serialized0.skip(n0) == serialized1);
-        }
+        let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+        self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
+        let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
+        opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
+        let n0 = serialized0.len() - serialized1.len();
+        opt.lemma_serialize_dps_buf(v.0, serialized1);
+        opt.lemma_serialize_dps_len(v.0, serialized1);
+        assert(serialized0.skip(n0) == serialized1);
     }
 }
 

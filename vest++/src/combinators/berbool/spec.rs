@@ -20,11 +20,19 @@ impl SpecParser for super::BerBool {
     }
 }
 
+impl Consistency for super::BerBool {
+    type Val = bool;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
+    }
+}
+
 impl GoodParser for super::BerBool {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -71,10 +79,8 @@ impl Unambiguity for super::BerBool {
 
 impl GoodSerializerDps for super::BerBool {
     proof fn lemma_serialize_dps_buf(&self, v: bool, obuf: Seq<u8>) {
-        if v.wf() {
-            let serialized = self.spec_serialize_dps(v, obuf);
-            assert(serialized.len() == 1 + obuf.len());
-        }
+        let serialized = self.spec_serialize_dps(v, obuf);
+        assert(serialized.len() == 1 + obuf.len());
     }
 
     proof fn lemma_serialize_dps_len(&self, v: bool, obuf: Seq<u8>) {
@@ -88,6 +94,10 @@ impl GoodSerializer for super::BerBool {
 
 impl SpecByteLen for super::BerBool {
     type T = bool;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        1
+    }
 }
 
 } // verus!

@@ -16,17 +16,19 @@ pub trait SPRoundTripDps where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializerDps<ST = Self::T> +
+          Consistency<Val = Self::T> +
           Unambiguity,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>)
         requires
             self.unambiguous(),
+            self.consistent(v),
         ensures
-            v.wf() ==> {
+            ({
                 let ibuf = self.spec_serialize_dps(v, obuf);
                 let n = self.byte_len(v) as int;
                 self.spec_parse(ibuf) == Some((n, v))
-            },
+            }),
     ;
 }
 
@@ -43,16 +45,18 @@ pub trait SPRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
+          Consistency<Val = Self::T> +
           Unambiguity,
 {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
             self.unambiguous(),
+            self.consistent(v),
         ensures
-            v.wf() ==> {
+            ({
                 let bytes = self.spec_serialize(v);
                 self.spec_parse(bytes) == Some((bytes.len() as int, v))
-            },
+            }),
     ;
 }
 
@@ -108,7 +112,7 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         let c = self;
         if let Some((n, v)) = c.spec_parse(ibuf) {
-            c.lemma_parse_wf(ibuf);
+            c.lemma_parse_consistent(ibuf);
             c.theorem_serialize_parse_roundtrip(v);
 
             let serialized = c.spec_serialize(v);

@@ -22,15 +22,26 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
     }
 }
 
+impl<A: Consistency, B: Consistency> Consistency for super::Choice<A, B> {
+    type Val = Either<A::Val, B::Val>;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        match v {
+            Either::Left(va) => self.0.consistent(va),
+            Either::Right(vb) => self.1.consistent(vb),
+        }
+    }
+}
+
 impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         self.1.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_wf(ibuf);
-        self.1.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_consistent(ibuf);
+        self.1.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -147,15 +158,23 @@ impl<A: SpecParser, B: SpecParser<PVal = A::PVal>> SpecParser for super::Alt<A, 
     }
 }
 
+impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A, B> {
+    type Val = A::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.0.consistent(v) || self.1.consistent(v)
+    }
+}
+
 impl<A: GoodParser, B: GoodParser<PVal = A::PVal>> GoodParser for super::Alt<A, B> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
         self.1.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_wf(ibuf);
-        self.1.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_consistent(ibuf);
+        self.1.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -164,14 +183,13 @@ pub open spec fn triv(b: bool) -> bool {
 }
 
 impl<A, B> SpecSerializerDps for super::Alt<A, B> where
-    A: SpecSerializerDps,
-    B: SpecSerializerDps<ST = A::ST>,
+    A: SpecSerializerDps + Consistency<Val = A::ST>,
+    B: SpecSerializerDps<ST = A::ST> + Consistency<Val = B::ST>,
  {
     type ST = A::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.spec_serialize_dps(v, obuf)
         } else {
             self.1.spec_serialize_dps(v, obuf)
@@ -188,12 +206,11 @@ impl<A: Unambiguity, B: Unambiguity<PVal = A::PVal>> Unambiguity for super::Alt<
 }
 
 impl<A, B> GoodSerializerDps for super::Alt<A, B> where
-    A: GoodSerializerDps,
-    B: GoodSerializerDps<T = A::T>,
+    A: GoodSerializerDps + Consistency<Val = A::ST>,
+    B: GoodSerializerDps<T = A::T> + Consistency<Val = B::ST>,
  {
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.lemma_serialize_dps_buf(v, obuf)
         } else {
             self.1.lemma_serialize_dps_buf(v, obuf)
@@ -201,8 +218,7 @@ impl<A, B> GoodSerializerDps for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.lemma_serialize_dps_len(v, obuf)
         } else {
             self.1.lemma_serialize_dps_len(v, obuf)
@@ -211,14 +227,13 @@ impl<A, B> GoodSerializerDps for super::Alt<A, B> where
 }
 
 impl<A, B> SpecSerializer for super::Alt<A, B> where
-    A: SpecSerializer,
-    B: SpecSerializer<SVal = A::SVal>,
+    A: SpecSerializer + Consistency<Val = A::SVal>,
+    B: SpecSerializer<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
     type SVal = A::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.spec_serialize(v)
         } else {
             self.1.spec_serialize(v)
@@ -227,12 +242,11 @@ impl<A, B> SpecSerializer for super::Alt<A, B> where
 }
 
 impl<A, B> GoodSerializer for super::Alt<A, B> where
-    A: GoodSerializer,
-    B: GoodSerializer<T = A::T>,
+    A: GoodSerializer + Consistency<Val = A::SVal>,
+    B: GoodSerializer<T = A::T> + Consistency<Val = B::SVal>,
  {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.lemma_serialize_len(v)
         } else {
             self.1.lemma_serialize_len(v)
@@ -240,12 +254,14 @@ impl<A, B> GoodSerializer for super::Alt<A, B> where
     }
 }
 
-impl<A, B> SpecByteLen for super::Alt<A, B> where A: SpecByteLen, B: SpecByteLen<T = A::T> {
+impl<A, B> SpecByteLen for super::Alt<A, B> where
+    A: SpecByteLen + Consistency<Val = A::T>,
+    B: SpecByteLen<T = A::T> + Consistency<Val = B::T>,
+ {
     type T = A::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.byte_len(v)
         } else {
             self.1.byte_len(v)

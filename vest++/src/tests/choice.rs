@@ -13,7 +13,6 @@ proof fn test_choice_compose() {
     let c = Choice(Tag { inner: U8, tag: 0u8 }, Tag { inner: U8, tag: 2u8 });
     let obuf = Seq::empty();
     let v = Either::Right(());
-    assert(v.wf());
     assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
@@ -26,17 +25,9 @@ proof fn test_choice_compose1() {
     let c = Choice(tag1, tag2);
     let obuf = Seq::empty();
     let v = Either::Right(());
-    assert(v.wf());
     tag1.theorem_serialize_parse_roundtrip(());
     tag2.theorem_serialize_parse_roundtrip(());
-    assert(c.unambiguous()) by {
-        assert forall|vb: (), obuf: Seq<u8>| vb.wf() implies parser_fails_on(
-            tag1,
-            #[trigger] tag2.spec_serialize_dps(vb, obuf),
-        ) by {
-            U16Le.theorem_serialize_dps_parse_roundtrip(tag2.tag, obuf);
-        }
-    }
+    assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
     assert(c.spec_parse(ibuf) == Some((2int, v)));
@@ -68,28 +59,19 @@ proof fn test_alt_tag() {
     assert(alt_parser.spec_parse(buf_invalid) is None);
 }
 
-struct Not0x81;
-
-impl SpecPred<u8> for Not0x81 {
-    open spec fn apply(&self, value: u8) -> bool {
-        value != 0x81u8
-    }
-}
-
 proof fn test_alt_flexible_length_encoding() {
-    let not_81 = Refined { inner: U8, pred: Not0x81 };
+    let not_81 = Refined { inner: U8, pred: |value: u8| value != 0x81u8 };
     let short_form = not_81;
     let long_form_prefix = Tag { inner: U8, tag: 0x81u8 };
     let long_form = Preceded(long_form_prefix, not_81);
     let alt_parser = Alt(long_form, short_form);
-    assert(().wf());
     assert(alt_parser.unambiguous());
 
     let buf_short: Seq<u8> = seq![42u8];
     let buf_long: Seq<u8> = seq![0x81u8, 42u8];
 
-    assert(alt_parser.spec_parse(buf_short) matches Some((_, Subset { val: 42u8, pred: _ })));
-    assert(alt_parser.spec_parse(buf_long) matches Some((_, Subset { val: 42u8, pred: _ })));
+    assert(alt_parser.spec_parse(buf_short) == Some((1int, 42u8)));
+    assert(alt_parser.spec_parse(buf_long) == Some((2int, 42u8)));
 }
 
 // =============================================================================
@@ -123,16 +105,16 @@ impl SpecPred<u8> for NotVarintTag {
 struct U8ToU32Mapper;
 
 impl Mapper for U8ToU32Mapper {
-    type In = Subset<u8, NotVarintTag>;
+    type In = u8;
 
     type Out = u32;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        i.val as u32
+        i as u32
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        Subset { val: (o & 0xFF) as u8, pred: NotVarintTag }
+        (o & 0xFF) as u8
     }
 }
 
@@ -170,7 +152,6 @@ proof fn test_malleable_varint_parsing() {
     let u32_form = Preceded(u32_tag, U32Le);
 
     let varint = Alt(u32_form, Alt(u16_form, u8_form));
-    assert(().wf());
     assert(varint.unambiguous());
 
     // Value 100 (0x64) - can be encoded three ways:

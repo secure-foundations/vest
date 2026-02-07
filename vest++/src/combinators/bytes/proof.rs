@@ -7,8 +7,6 @@ impl<const N: usize> SPRoundTripDps for super::Fixed<N> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         broadcast use super::spec::axiom_array_from_seq;
 
-        if v.wf() {
-        }
     }
 }
 
@@ -30,8 +28,7 @@ impl<const N: usize> EquivSerializers for super::Fixed<N> {
 }
 
 impl SPRoundTripDps for super::Varied {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>)
-    {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
     }
 }
 
@@ -48,14 +45,6 @@ impl EquivSerializersGeneral for super::Varied {
 impl EquivSerializers for super::Varied {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
     }
-}
-
-proof fn test_varied_sp_roundtrip(v: Seq<u8>, obuf: Seq<u8>)
-    requires v.len() == 10
-{
-    let s = super::Varied(10);
-    assert(s.unambiguous());
-    s.theorem_serialize_dps_parse_roundtrip(v, obuf);
 }
 
 } // verus!

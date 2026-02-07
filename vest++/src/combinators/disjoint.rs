@@ -7,8 +7,8 @@ use super::refined::{Refined, Tag};
 use super::tail::Eof;
 use super::terminated::Terminated;
 use super::Repeat;
+use crate::core::spec::SpecPred;
 use crate::core::spec::{disjoint_domains, GoodParser, SpecParser};
-use crate::core::types::SpecPred;
 use vstd::prelude::*;
 
 verus! {
@@ -64,14 +64,13 @@ pub broadcast proof fn lemma_disjoint_tuple_2<
 >(t1: (A, B), t2: (C, D))
     requires
         forall|input: Seq<u8>| #[trigger]
-            t1.0.spec_parse(input) matches Some((n1, _))
-            ==> t2.0.spec_parse(input) matches Some((n2, _))
-            ==> n1 == n2,
+            t1.0.spec_parse(input) matches Some((n1, _)) ==> t2.0.spec_parse(input) matches Some(
+                (n2, _),
+            ) ==> n1 == n2,
         disjoint_domains(t1.1, t2.1),
     ensures
         #[trigger] disjoint_domains(t1, t2),
 {
-
 }
 
 /// A [`Preceded`] parser is disjoint from another parser if its first

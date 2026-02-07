@@ -7,15 +7,13 @@ verus! {
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        if v.wf() {
-            match v {
-                Either::Left(va) => {
-                    self.0.theorem_serialize_dps_parse_roundtrip(va, obuf);
-                },
-                Either::Right(vb) => {
-                    self.1.theorem_serialize_dps_parse_roundtrip(vb, obuf);
-                },
-            }
+        match v {
+            Either::Left(va) => {
+                self.0.theorem_serialize_dps_parse_roundtrip(va, obuf);
+            },
+            Either::Right(vb) => {
+                self.1.theorem_serialize_dps_parse_roundtrip(vb, obuf);
+            },
         }
     }
 }
@@ -64,13 +62,10 @@ impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::Alt<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        if v.wf() {
-            let b = choose|flip: bool| triv(flip);
-            if b {
-                self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);
-            } else {
-                self.1.theorem_serialize_dps_parse_roundtrip(v, obuf);
-            }
+        if self.0.consistent(v) {
+            self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        } else {
+            self.1.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 }
@@ -105,12 +100,11 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
 }
 
 impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
-    A: EquivSerializersGeneral,
-    B: EquivSerializersGeneral<SVal = A::SVal>,
+    A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
+    B: EquivSerializersGeneral<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.lemma_serialize_equiv(v, obuf);
         } else {
             self.1.lemma_serialize_equiv(v, obuf);
@@ -119,12 +113,11 @@ impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
 }
 
 impl<A, B> EquivSerializers for super::Alt<A, B> where
-    A: EquivSerializers,
-    B: EquivSerializers<SVal = A::SVal>,
+    A: EquivSerializers + Consistency<Val = A::SVal>,
+    B: EquivSerializers<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let b = choose|flip: bool| triv(flip);
-        if b {
+        if self.0.consistent(v) {
             self.0.lemma_serialize_equiv_on_empty(v);
         } else {
             self.1.lemma_serialize_equiv_on_empty(v);

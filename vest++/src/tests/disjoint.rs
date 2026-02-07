@@ -1,7 +1,7 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::*;
-use crate::core::{spec::*, types};
+use crate::core::spec::*;
 use vstd::prelude::*;
 
 verus! {
@@ -30,8 +30,6 @@ proof fn test_disjointness_tags() {
     let t2 = (tag3, tag4);
     let c1 = Choice(t1, t2);
     assert(c1.unambiguous());
-
-    assert(().wf());
 
     let p1 = Preceded(tag1, tag2);
     assert(p1.unambiguous());

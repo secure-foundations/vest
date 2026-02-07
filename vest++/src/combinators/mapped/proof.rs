@@ -6,15 +6,12 @@ verus! {
 
 impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
-    M: IsoMapper<In = Inner::PVal>,
+    M: IsoMapper<In = Inner::T>,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        if v.wf() {
-            self.mapper.lemma_map_rev_wf(v);
-            let inner_v = self.mapper.spec_map_rev(v);
-            self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
-            self.mapper.lemma_map_iso_rev(v);
-        }
+        let inner_v = self.mapper.spec_map_rev(v);
+        self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
+        self.mapper.lemma_map_iso_rev(v);
     }
 }
 

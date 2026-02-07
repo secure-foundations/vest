@@ -17,6 +17,14 @@ impl<A, B> SpecParser for (A, B) where A: SpecParser, B: SpecParser {
     }
 }
 
+impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
+    type Val = (A::Val, B::Val);
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.0.consistent(v.0) && self.1.consistent(v.1)
+    }
+}
+
 impl<A, B> GoodParser for (A, B) where A: GoodParser, B: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
@@ -25,10 +33,10 @@ impl<A, B> GoodParser for (A, B) where A: GoodParser, B: GoodParser {
         }
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_consistent(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_wf(ibuf.skip(n1));
+            self.1.lemma_parse_consistent(ibuf.skip(n1));
         }
     }
 }

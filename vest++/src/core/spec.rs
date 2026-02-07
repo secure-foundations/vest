@@ -1,4 +1,3 @@
-pub use super::types::*;
 use vstd::prelude::*;
 
 verus! {
@@ -6,7 +5,7 @@ verus! {
 /// Parser specification.
 pub trait SpecParser {
     /// The type of parsed values.
-    type PVal: SpecType;
+    type PVal;
 
     /// Parser specification for values of [`Self::PT`].
     ///
@@ -38,24 +37,59 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
 }
 
 /// A well-behaved parser that satisfies key properties.
-pub trait GoodParser: SpecParser {
+pub trait GoodParser: SpecParser + Consistency<Val = Self::PVal> {
     /// Lemma: parser returns valid buffer positions
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>)
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 
-    /// Lemma: parser returns well-formed values
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>)
+    /// Lemma: parser returns consistent values
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>)
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> v.wf(),
+            self.spec_parse(ibuf) matches Some((n, v)) ==> self.consistent(v),
     ;
+}
+
+/// Establish the consistency between the value and the combinator denotation.
+///
+/// ## Examples
+///
+/// - For a [`crate::combinators::Refined`] combinator, the consistency condition would be the refinement predicate.
+/// - For a [`crate::combinators::Varied`] combinator, the consistency condition would be that the value's length is equal to `varied.0`.
+pub trait Consistency {
+    type Val;
+
+    spec fn consistent(&self, v: Self::Val) -> bool;
+}
+
+/// Combinators whose consistency requirement admits at most one value.
+///
+/// This is used by combinators like [`crate::combinators::Preceded`] and
+/// [`crate::combinators::Terminated`], where one component value is omitted.
+pub trait AdmitsUniqueVal: Consistency {
+    proof fn lemma_unique_consistent_val(&self, v1: Self::Val, v2: Self::Val)
+        ensures
+            self.consistent(v1) && self.consistent(v2) ==> v1 == v2,
+    ;
+}
+
+pub trait SpecPred<T> {
+    spec fn apply(&self, value: T) -> bool;
+}
+
+pub type PredFnSpec<T> = spec_fn(T) -> bool;
+
+impl<T> SpecPred<T> for PredFnSpec<T> {
+    open spec fn apply(&self, value: T) -> bool {
+        self(value)
+    }
 }
 
 /// Serializer specification trait (destination passing style).
 pub trait SpecSerializerDps {
     /// The type of values to be serialized.
-    type ST: SpecType;
+    type ST;
 
     /// Destination passing style serializer specification for values of [`Self::ST`].
     ///
@@ -67,27 +101,18 @@ pub trait SpecSerializerDps {
 /// Denote the serialized byte length of values of [`Self::T`].
 pub trait SpecByteLen {
     /// The type of values that can be serialized.
-    type T: SpecType;
+    type T;
 
-    /// The byte length of values of [`Self::T`].
-    ///
-    /// The default implementation simply uses the `blen` method of [`Self::T`].
-    /// All primitive combinators use this default implementation.
-    ///
-    /// This method is needed primarily because combinators that omit parsed values (like [`crate::combinators::Preceded`],
-    ///  [`crate::combinators::Terminated`], and [`crate::combinators::Tag`])
-    /// may not have a meaningful byte length just from [`Self::T`].
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        v.blen()
-    }
+    /// The byte length of [`Self::T`].
+    spec fn byte_len(&self, v: Self::T) -> nat;
 }
 
 /// Serializer specification trait.
 pub trait SpecSerializer {
     /// The type of values to be serialized.
-    type SVal: SpecType;
+    type SVal;
 
-    /// Serializer specification for values of [`Self::ST`].
+    /// Serializer specification for values of [`Self::SVal`].
     ///
     /// Takes a value `v` and returns the serialized bytes.
     spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8>;
@@ -163,7 +188,7 @@ pub type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
 
 pub type SerializableSpecFn<T> = spec_fn(T, Seq<u8>) -> bool;
 
-impl<T: SpecType> SpecParser for ParserSpecFn<T> {
+impl<T> SpecParser for ParserSpecFn<T> {
     type PVal = T;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -171,7 +196,7 @@ impl<T: SpecType> SpecParser for ParserSpecFn<T> {
     }
 }
 
-impl<T: SpecType> SpecSerializerDps for SerializerDPSSpecFn<T> {
+impl<T> SpecSerializerDps for SerializerDPSSpecFn<T> {
     type ST = T;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -179,7 +204,7 @@ impl<T: SpecType> SpecSerializerDps for SerializerDPSSpecFn<T> {
     }
 }
 
-impl<T: SpecType> SpecSerializer for SerializerSpecFn<T> {
+impl<T> SpecSerializer for SerializerSpecFn<T> {
     type SVal = T;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {

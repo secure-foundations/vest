@@ -7,8 +7,7 @@ verus! {
 
 impl SPRoundTripDps for super::U8 {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u8, obuf: Seq<u8>) {
-        if v.wf() {
-        }
+        assert(self.spec_parse(self.spec_serialize_dps(v, obuf)) == Some((1int, v)));
     }
 }
 

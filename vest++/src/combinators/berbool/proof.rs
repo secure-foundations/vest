@@ -7,7 +7,6 @@ impl SPRoundTripDps for super::BerBool {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let serialized = self.spec_serialize_dps(v, obuf);
         let n = self.byte_len(v) as int;
-        assert(self.byte_len(v) == v.blen());
         assert(n == 1int);
 
         if v {

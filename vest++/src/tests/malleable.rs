@@ -11,6 +11,7 @@ verus! {
 proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq<u8>)
     requires
         serializer.unambiguous(),
+        serializer.consistent(v),
 {
     serializer.theorem_serialize_parse_roundtrip(v);
 }
@@ -36,35 +37,35 @@ proof fn requires_deterministic<T: EquivSerializersGeneral>(
 
 // These compositions fail to implement `PSRoundTrip`, `NonMalleable`, or `EquivSerializers`
 // traits because they involve `Preceded` or `Terminated` with combinators that lack
-// `UniqueWfValue`.
+// `AdmitsUniqueVal`.
 proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let val0 = 0u8;
     let val1 = 0u8;
     let parser = Preceded(U8, U8);
-    assert(val0.wf());
+    assert(parser.consistent(val0)) by {}
     requires_sp_roundtrip(parser, val1, obuf);
-    // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have UniqueWfValue
+    // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_non_unique_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let parser = Preceded(U8, U8);
-    // requires_non_malleable(parser, buf1, buf2); // Should fail: A does not have UniqueWfValue
+    // requires_non_malleable(parser, buf1, buf2); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_non_unique_prefix_deterministic(v: Seq<u8>, obuf: Seq<u8>) {
     let combinator = Preceded(U8, U8);
-    // requires_deterministic(combinator, v, obuf); // Should fail: A does not have UniqueWfValue
+    // requires_deterministic(combinator, v, obuf); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_terminated_non_unique_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let parser = Terminated(U8, U8);
-    // requires_non_malleable(parser, buf1, buf2); // Should fail: B does not have UniqueWfValue
+    // requires_non_malleable(parser, buf1, buf2); // Should fail: B does not have AdmitsUniqueVal
 }
 
 proof fn test_terminated_refined_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let refined = Refined { inner: U8, pred: |v: u8| v == 0 };
     let parser = Terminated(U8, refined);
-    // requires_non_malleable(parser, buf1, buf2); // Should fail: Refined does not have UniqueWfValue
+    // requires_non_malleable(parser, buf1, buf2); // Should fail: Refined does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -73,27 +74,28 @@ proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     // requires_non_malleable(outer, buf1, buf2); // Should fail: multiple sources of non-uniqueness
     let val1 = 0u8;
     let val2 = 0u8;
-    assert(val1.wf());
-    assert(val2.wf());
+    assert(inner.1.consistent(0u8));
+    assert(outer.0.consistent(0u8));
+    assert(outer.consistent(val1));
+    assert(outer.consistent(val2));
     let obuf = Seq::empty();
     let v = 0u8;
     requires_sp_roundtrip(outer, v, obuf);
 }
 
-// Unlike Fixed and Refined, Tag has UniqueWfValue because it restricts
-// its well-formed values to exactly one value (the tag).
+// Tag has AdmitsUniqueVal because it restricts
+// its consistent values to exactly one value (the tag).
 proof fn test_preceded_tag_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let tag = Tag { inner: Fixed::<2>, tag: [0u8, 0u8] };
     let combinator = Preceded(tag, U8);
-    assert(().wf());
     assert(combinator.unambiguous());
-    requires_ps_roundtrip(combinator, ibuf);  // Should pass: Tag has UniqueWfValue
+    requires_ps_roundtrip(combinator, ibuf);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_preceded_tag_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let tag = Tag { inner: U8, tag: 0u8 };
     let parser = Preceded(tag, U8);
-    requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has UniqueWfValue
+    requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
@@ -101,17 +103,16 @@ proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
     let tag = Tag { inner: U8, tag: val };
     let serializer = Preceded(tag, U8);
 
-    assert(().wf());
     assert(serializer.unambiguous()) by {
         unambiguous_pair((tag, U8));
     }
-    requires_deterministic(serializer, v, obuf);  // Should pass: Tag has UniqueWfValue
+    requires_deterministic(serializer, v, obuf);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_terminated_tag_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let tag = Tag { inner: U8, tag: 0xFFu8 };
     let parser = Terminated(U8, tag);
-    requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has UniqueWfValue
+    requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_mixed_preceded_terminated_with_tag_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -119,7 +120,7 @@ proof fn test_mixed_preceded_terminated_with_tag_non_malleable(buf1: Seq<u8>, bu
     let tag2 = Tag { inner: U8, tag: 0x02u8 };
     let inner = Terminated(U8, tag1);
     let outer = Preceded(tag2, inner);
-    requires_non_malleable(outer, buf1, buf2);  // Should pass: both Tags have UniqueWfValue
+    requires_non_malleable(outer, buf1, buf2);  // Should pass: both Tags have AdmitsUniqueVal
 }
 
 proof fn test_double_terminated_tag_deterministic(v: u8)
@@ -137,10 +138,9 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let footer_buf = tag2.spec_serialize_dps((), obuf);
     let inner_buf = tag1.spec_serialize_dps((), footer_buf);
 
-    assert(().wf());
     assert(inner.unambiguous());
     assert(outer.unambiguous());
-    requires_deterministic(outer, v, obuf);  // Should pass: both Tags have UniqueWfValue
+    requires_deterministic(outer, v, obuf);  // Should pass: both Tags have AdmitsUniqueVal
 }
 
 // BerBool: Malleable Boolean Combinator Tests
@@ -183,8 +183,6 @@ proof fn test_large_format_with_berbools() {
     // establish well-formedness of header and footer (for serializability)
     let header_val = 0xAAu8;
     let footer_val = 0xFFu8;
-    assert(().wf());
-
     assert(format_inner.unambiguous());
 
     assert(format.0.0.unambiguous());
@@ -196,6 +194,9 @@ proof fn test_large_format_with_berbools() {
     assert(format.unambiguous()) by {
         unambiguous_pair((format.0, format.1));
     }
+    assert(format.0.0.consistent(()));
+    assert(format.1.consistent(()));
+    assert(format.consistent(v));
     requires_sp_roundtrip(format, v, obuf);
     // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
 

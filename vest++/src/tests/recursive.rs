@@ -11,21 +11,6 @@ pub enum NestedBracesT {
     Eps,
 }
 
-impl SpecType for NestedBracesT {
-    open spec fn wf(&self) -> bool {
-        wf_nested_braces(*self)
-    }
-
-    open spec fn blen(&self) -> nat
-        decreases self,
-    {
-        match self {
-            NestedBracesT::Brace(inner) => 2 + inner.blen(),
-            NestedBracesT::Eps => 0,
-        }
-    }
-}
-
 pub open spec fn height(n: NestedBracesT) -> nat
     decreases n,
 {
@@ -58,12 +43,6 @@ impl Mapper for NestedBracesMapper {
 }
 
 impl IsoMapper for NestedBracesMapper {
-    proof fn lemma_map_wf(&self, v: Self::In) {
-    }
-
-    proof fn lemma_map_rev_wf(&self, v: Self::Out) {
-    }
-
     proof fn lemma_map_iso(&self, i: Self::In) {
         match i {
             Either::Left(_) => {},
@@ -87,12 +66,20 @@ impl SpecParser for NestedBracesCombinator {
     }
 }
 
+impl Consistency for NestedBracesCombinator {
+    type Val = NestedBracesT;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        wf_nested_braces(v)
+    }
+}
+
 impl GoodParser for NestedBracesCombinator {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         lemma_parse_length_nested_braces(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
         lemma_parse_wf_nested_braces(ibuf);
     }
 }

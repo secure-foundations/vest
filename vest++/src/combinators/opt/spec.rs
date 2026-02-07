@@ -14,13 +14,24 @@ impl<A> SpecParser for super::Opt<A> where A: SpecParser {
     }
 }
 
+impl<A> Consistency for super::Opt<A> where A: Consistency {
+    type Val = Option<A::Val>;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        match v {
+            None => true,
+            Some(vv) => self.0.consistent(vv),
+        }
+    }
+}
+
 impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -115,13 +126,21 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
     }
 }
 
-impl<A: GoodParser, B: GoodParser> GoodParser for super::Optional<A, B> {
+impl<A, B> Consistency for super::Optional<A, B> where A: Consistency, B: Consistency {
+    type Val = (Option<A::Val>, B::Val);
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        (super::Opt(self.0), self.1).consistent(v)
+    }
+}
+
+impl<A, B> GoodParser for super::Optional<A, B> where A: GoodParser, B: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_parse_length(ibuf)
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_wf(ibuf)
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_consistent(ibuf)
     }
 }
 

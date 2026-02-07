@@ -8,7 +8,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
         requires
             self.inner.unambiguous(),
             parser_fails_on(self.inner, obuf),
-            vs.wf(),
+            self.consistent(vs),
         ensures
             self.spec_parse(self.spec_serialize_dps(vs, obuf)) == Some(
                 ((self.spec_serialize_dps(vs, obuf).len() - obuf.len()) as int, vs),
@@ -25,9 +25,11 @@ impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
             assert(serialized == self.inner.spec_serialize_dps(v, rest_buf));
 
             // induction
+            assert(self.consistent(rest));
             self.lemma_serialize_parse_roundtrip_rec(rest, obuf);
 
             // base
+            assert(self.inner.consistent(v));
             self.inner.theorem_serialize_dps_parse_roundtrip(v, rest_buf);
             self.inner.lemma_serialize_dps_buf(v, rest_buf);
             self.inner.lemma_serialize_dps_len(v, rest_buf);
@@ -233,16 +235,14 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
 > {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let star = super::Star { inner: self.0 };
-        if v.wf() {
-            let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
-            self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
-            let serialized0 = star.spec_serialize_dps(v.0, serialized1);
-            star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
-            let n0 = serialized0.len() - serialized1.len();
-            star.lemma_serialize_dps_buf(v.0, serialized1);
-            star.lemma_serialize_dps_len(v.0, serialized1);
-            assert(serialized0.skip(n0) == serialized1);
-        }
+        let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+        self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
+        let serialized0 = star.spec_serialize_dps(v.0, serialized1);
+        star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
+        let n0 = serialized0.len() - serialized1.len();
+        star.lemma_serialize_dps_buf(v.0, serialized1);
+        star.lemma_serialize_dps_len(v.0, serialized1);
+        assert(serialized0.skip(n0) == serialized1);
     }
 }
 

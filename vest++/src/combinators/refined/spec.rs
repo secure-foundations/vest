@@ -3,82 +3,105 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, Pred: SpecPred<A::PVal>> SpecParser for super::Refined<A, Pred> where A: SpecParser {
-    type PVal = Subset<A::PVal, Pred>;
+impl<A, Pred> SpecParser for super::Refined<A, Pred> where A: SpecParser, Pred: SpecPred<A::PVal> {
+    type PVal = A::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.inner.spec_parse(ibuf) {
-            Some((n, v)) if self.pred.apply(v) => Some((n, Subset { val: v, pred: self.pred })),
+            Some((n, v)) if self.pred.apply(v) => Some((n, v)),
             _ => None,
         }
     }
 }
 
-impl<A: GoodParser, Pred: SpecPred<A::PVal>> GoodParser for super::Refined<A, Pred> {
+impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred: SpecPred<A::Val> {
+    type Val = A::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.inner.consistent(v) && self.pred.apply(v)
+    }
+}
+
+impl<A, Pred> GoodParser for super::Refined<A, Pred> where
+    A: GoodParser,
+    Pred: SpecPred<A::PVal>,
+ {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_consistent(ibuf);
     }
 }
 
-impl<A, Pred: SpecPred<A::ST>> SpecSerializerDps for super::Refined<A, Pred> where
+impl<A, Pred> SpecSerializerDps for super::Refined<A, Pred> where
     A: SpecSerializerDps,
+    Pred: SpecPred<A::ST>,
  {
-    type ST = Subset<A::ST, Pred>;
+    type ST = A::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        self.inner.spec_serialize_dps(v.val, obuf)
+        self.inner.spec_serialize_dps(v, obuf)
     }
 }
 
-impl<A, Pred: SpecPred<A::SVal>> SpecSerializer for super::Refined<A, Pred> where
+impl<A, Pred> SpecSerializer for super::Refined<A, Pred> where
     A: SpecSerializer,
+    Pred: SpecPred<A::SVal>,
  {
-    type SVal = Subset<A::SVal, Pred>;
+    type SVal = A::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        self.inner.spec_serialize(v.val)
+        self.inner.spec_serialize(v)
     }
 }
 
-impl<A: Serializability, Pred: SpecPred<A::ST>> Serializability for super::Refined<A, Pred> {
+impl<A, Pred> Serializability for super::Refined<A, Pred> where
+    A: Serializability + Consistency<Val = A::ST>,
+    Pred: SpecPred<A::ST>,
+ {
     open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        &&& v.pred == self.pred
-        &&& self.inner.serializable(v.val, obuf)
+        self.inner.consistent(v) && self.pred.apply(v) && self.inner.serializable(v, obuf)
     }
 }
 
-impl<A: Unambiguity, Pred: SpecPred<A::PVal>> Unambiguity for super::Refined<A, Pred> {
+impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
+    A: Unambiguity,
+    Pred: SpecPred<A::PVal>,
+ {
     open spec fn unambiguous(&self) -> bool {
-        &&& self.inner.unambiguous()
-        &&& forall|v: Self::PVal| v.pred == self.pred
+        self.inner.unambiguous()
     }
 }
 
-impl<A: GoodSerializerDps, Pred: SpecPred<A::ST>> GoodSerializerDps for super::Refined<A, Pred> {
+impl<A, Pred> GoodSerializerDps for super::Refined<A, Pred> where
+    A: GoodSerializerDps,
+    Pred: SpecPred<A::ST>,
+ {
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_buf(v.val, obuf);
+        self.inner.lemma_serialize_dps_buf(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_len(v.val, obuf);
+        self.inner.lemma_serialize_dps_len(v, obuf);
     }
 }
 
-impl<A: GoodSerializer, Pred: SpecPred<A::SVal>> GoodSerializer for super::Refined<A, Pred> {
+impl<A, Pred> GoodSerializer for super::Refined<A, Pred> where
+    A: GoodSerializer,
+    Pred: SpecPred<A::SVal>,
+ {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        self.inner.lemma_serialize_len(v.val);
+        self.inner.lemma_serialize_len(v);
     }
 }
 
-impl<A: SpecByteLen, Pred: SpecPred<A::T>> SpecByteLen for super::Refined<A, Pred> {
-    type T = Subset<A::T, Pred>;
+impl<A, Pred> SpecByteLen for super::Refined<A, Pred> where A: SpecByteLen, Pred: SpecPred<A::T> {
+    type T = A::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.inner.byte_len(v.val)
+        self.inner.byte_len(v)
     }
 }
 
@@ -93,13 +116,26 @@ impl<Inner> SpecParser for super::Tag<Inner, Inner::PVal> where Inner: SpecParse
     }
 }
 
-impl<Inner: GoodParser> GoodParser for super::Tag<Inner, Inner::PVal> {
+impl<Inner> Consistency for super::Tag<Inner, Inner::Val> where Inner: Consistency {
+    type Val = ();
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        self.inner.consistent(self.tag)
+    }
+}
+
+impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consistency {
+    proof fn lemma_unique_consistent_val(&self, v1: Self::Val, v2: Self::Val) {
+    }
+}
+
+impl<Inner> GoodParser for super::Tag<Inner, Inner::PVal> where Inner: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -119,17 +155,9 @@ impl<Inner> SpecSerializer for super::Tag<Inner, Inner::SVal> where Inner: SpecS
     }
 }
 
-impl<Inner> Serializability for super::Tag<Inner, Inner::ST> where Inner: Serializability {
-    open spec fn serializable(&self, _v: Self::ST, obuf: Seq<u8>) -> bool {
-        &&& self.tag.wf()
-        &&& self.inner.serializable(self.tag, obuf)
-    }
-}
-
-impl<Inner: Unambiguity> Unambiguity for super::Tag<Inner, Inner::PVal> {
+impl<Inner> Unambiguity for super::Tag<Inner, Inner::PVal> where Inner: Unambiguity {
     open spec fn unambiguous(&self) -> bool {
-        &&& self.inner.unambiguous()
-        &&& self.tag.wf()
+        self.inner.unambiguous()
     }
 }
 
@@ -143,16 +171,16 @@ impl<Inner> GoodSerializerDps for super::Tag<Inner, Inner::ST> where Inner: Good
     }
 }
 
-impl<Inner: GoodSerializer> GoodSerializer for super::Tag<Inner, Inner::SVal> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+impl<Inner> GoodSerializer for super::Tag<Inner, Inner::SVal> where Inner: GoodSerializer {
+    proof fn lemma_serialize_len(&self, _v: Self::SVal) {
         self.inner.lemma_serialize_len(self.tag);
     }
 }
 
-impl<Inner: SpecByteLen> SpecByteLen for super::Tag<Inner, Inner::T> {
+impl<Inner> SpecByteLen for super::Tag<Inner, Inner::T> where Inner: SpecByteLen {
     type T = ();
 
-    open spec fn byte_len(&self, v: Self::T) -> nat {
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
         self.inner.byte_len(self.tag)
     }
 }

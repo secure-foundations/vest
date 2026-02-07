@@ -3,11 +3,12 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTripDps, Pred: SpecPred<A::PVal>> SPRoundTripDps for super::Refined<A, Pred> {
+impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
+    A: SPRoundTripDps,
+    Pred: SpecPred<A::PVal>,
+ {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        if v.wf() {
-            self.inner.theorem_serialize_dps_parse_roundtrip(v.val, obuf)
-        }
+        self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf)
     }
 }
 
@@ -27,7 +28,7 @@ impl<A, Pred> EquivSerializersGeneral for super::Refined<A, Pred> where
     Pred: SpecPred<A::SVal>,
  {
     proof fn lemma_serialize_equiv(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v.val, obuf);
+        self.inner.lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -36,7 +37,7 @@ impl<A, Pred> EquivSerializers for super::Refined<A, Pred> where
     Pred: SpecPred<A::SVal>,
  {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::ST) {
-        self.inner.lemma_serialize_equiv_on_empty(v.val);
+        self.inner.lemma_serialize_equiv_on_empty(v);
     }
 }
 

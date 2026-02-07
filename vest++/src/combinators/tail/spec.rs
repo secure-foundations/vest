@@ -11,11 +11,19 @@ impl SpecParser for super::Tail {
     }
 }
 
+impl Consistency for super::Tail {
+    type Val = Seq<u8>;
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
+    }
+}
+
 impl GoodParser for super::Tail {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -64,11 +72,24 @@ impl SpecParser for super::Eof {
     }
 }
 
+impl Consistency for super::Eof {
+    type Val = ();
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
+    }
+}
+
+impl AdmitsUniqueVal for super::Eof {
+    proof fn lemma_unique_consistent_val(&self, v1: Self::Val, v2: Self::Val) {
+    }
+}
+
 impl GoodParser for super::Eof {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -95,8 +116,8 @@ impl SpecSerializer for super::Eof {
 impl SpecByteLen for super::Eof {
     type T = ();
 
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        v.blen()
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        0
     }
 }
 

@@ -1,5 +1,4 @@
 use crate::core::{proof::*, spec::*};
-use vstd::calc;
 use vstd::prelude::*;
 
 verus! {
@@ -16,39 +15,6 @@ pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
         (#[trigger] array_from_seq::<N>(s))@ == s,
 ;
 
-pub proof fn lemma_seq_u8_blen_is_len(v: Seq<u8>)
-    ensures
-        v.blen() == v.len(),
-    decreases v.len(),
-{
-    let f = |acc: nat, elem: u8| acc + elem.blen();
-
-    if v.len() == 0 {
-    } else {
-        let first = v[0];
-        let rest = v.skip(1);
-
-        lemma_seq_u8_blen_is_len(rest);
-
-        calc! {
-            (==)
-            v.fold_left(0, f); {
-                v.lemma_fold_left_alt(0, f);
-            }
-            v.fold_left_alt(0, f); {}
-            rest.fold_left_alt(f(0, first), f); {}
-            rest.fold_left_alt(first.blen(), f); {
-                assert(first.blen() == 1);
-                rest.lemma_fold_left_alt(first.blen(), f);
-            }
-            rest.fold_left(first.blen(), f); {
-                super::super::star::proof::lemma_fold_left_accumulate_nat(rest, first.blen(), f);
-            }
-            first.blen() + rest.fold_left(0, f);
-        }
-    }
-}
-
 impl<const N: usize> SpecParser for super::Fixed<N> {
     type PVal = [u8; N];
 
@@ -61,12 +27,19 @@ impl<const N: usize> SpecParser for super::Fixed<N> {
     }
 }
 
+impl<const N: usize> Consistency for super::Fixed<N> {
+    type Val = [u8; N];
+
+    open spec fn consistent(&self, _v: Self::Val) -> bool {
+        true
+    }
+}
+
 impl<const N: usize> GoodParser for super::Fixed<N> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        assert forall|i: int| 0 <= i < N implies #[trigger] ibuf[i].wf() by {}
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -96,9 +69,7 @@ impl<const N: usize> Unambiguity for super::Fixed<N> {
 
 impl<const N: usize> GoodSerializerDps for super::Fixed<N> {
     proof fn lemma_serialize_dps_buf(&self, v: [u8; N], obuf: Seq<u8>) {
-        if v.wf() {
-            assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
-        }
+        assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: [u8; N], obuf: Seq<u8>) {
@@ -112,6 +83,10 @@ impl<const N: usize> GoodSerializer for super::Fixed<N> {
 
 impl<const N: usize> SpecByteLen for super::Fixed<N> {
     type T = [u8; N];
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        N as nat
+    }
 }
 
 impl SpecParser for super::Varied {
@@ -126,11 +101,19 @@ impl SpecParser for super::Varied {
     }
 }
 
+impl Consistency for super::Varied {
+    type Val = Seq<u8>;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        v.len() == self.0
+    }
+}
+
 impl GoodParser for super::Varied {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -152,36 +135,33 @@ impl SpecSerializer for super::Varied {
 
 impl Unambiguity for super::Varied {
     open spec fn unambiguous(&self) -> bool {
-        forall|b: Self::PVal| b.len() == self.0
+        true
     }
 }
 
 impl GoodSerializerDps for super::Varied {
     proof fn lemma_serialize_dps_buf(&self, v: Seq<u8>, obuf: Seq<u8>) {
-        if v.wf() {
-            assert(self.spec_serialize_dps(v, obuf) == v + obuf);
-        }
+        assert(self.spec_serialize_dps(v, obuf) == v + obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Seq<u8>, obuf: Seq<u8>) {
-        lemma_seq_u8_blen_is_len(v);
         assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == v.len());
-        assert(self.byte_len(v) == v.blen());
     }
 }
 
 impl GoodSerializer for super::Varied {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        lemma_seq_u8_blen_is_len(v);
         assert(self.spec_serialize(v).len() == v.len());
-        assert(self.byte_len(v) == v.blen());
     }
 }
 
 impl SpecByteLen for super::Varied {
     type T = Seq<u8>;
-}
 
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        v.len()
+    }
+}
 
 // pub open spec fn fill_array_rec<const N: usize>(base: [u8; N], s: Seq<u8>, i: nat) -> [u8; N]
 //     recommends

@@ -34,15 +34,15 @@ impl<A: GoodParser> super::Star<A> {
         }
     }
 
-    proof fn lemma_parse_rec_wf(&self, ibuf: Seq<u8>)
+    proof fn lemma_parse_rec_consistent(&self, ibuf: Seq<u8>)
         ensures
-            self.parse_rec(ibuf).1.wf(),
+            self.consistent(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
     {
-        self.inner.lemma_parse_wf(ibuf);
+        self.inner.lemma_parse_consistent(ibuf);
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
-                self.lemma_parse_rec_wf(ibuf.skip(n));
+                self.lemma_parse_rec_consistent(ibuf.skip(n));
             }
         }
     }
@@ -57,13 +57,21 @@ impl<A: SpecParser> SpecParser for super::Star<A> {
     }
 }
 
-impl<A: GoodParser> GoodParser for super::Star<A> {
+impl<A> Consistency for super::Star<A> where A: Consistency {
+    type Val = Seq<A::Val>;
+
+    open spec fn consistent(&self, vs: Self::Val) -> bool {
+        forall|i: int| 0 <= i < vs.len() ==> #[trigger] self.inner.consistent(vs[i])
+    }
+}
+
+impl<A> GoodParser for super::Star<A> where A: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        self.lemma_parse_rec_wf(ibuf);
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_rec_consistent(ibuf);
     }
 }
 
@@ -199,13 +207,21 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Repeat<A, B> {
     }
 }
 
-impl<A: GoodParser, B: GoodParser> GoodParser for super::Repeat<A, B> {
+impl<A, B> Consistency for super::Repeat<A, B> where A: Consistency, B: Consistency {
+    type Val = (Seq<A::Val>, B::Val);
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        (super::Star { inner: self.0 }, self.1).consistent(v)
+    }
+}
+
+impl<A, B> GoodParser for super::Repeat<A, B> where A: GoodParser, B: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_length(ibuf)
     }
 
-    proof fn lemma_parse_wf(&self, ibuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_wf(ibuf)
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_consistent(ibuf)
     }
 }
 

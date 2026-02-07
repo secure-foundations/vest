@@ -40,12 +40,12 @@ proof fn test_opt_compose() {
     );
     let obuf = seq![0u8; 10];
     // let v = ((Some(seq![2u8]), Some(seq![1u8])), Some(seq![2u8]));
-    let v = (Some(Subset { val: 2u8, pred: Pred2 }), (None, Subset { val: 3u8, pred: Pred3 }));
+    let v = (Some(2u8), (None, 3u8));
     // let v = (Some(seq![0u8]), (Some(seq![1u8]), Some(seq![2u8])));
     // let v1 = (Some(seq![0u8]), (Some(seq![1u8]), None));
     // let v2 = (Some(seq![0u8]), (None, Some(seq![2u8])));
     // let v3 = (None, (Some(seq![1u8]), Some(seq![2u8])));
-    assert(v.wf());
+    assert(c.consistent(v));
     assert(c.unambiguous());
     // assert(c.wf(v1));
     // assert(c.wf(v2));
@@ -66,9 +66,9 @@ proof fn test_chaining_end_with_eof() {
     broadcast use lemma_disjoint_tag, lemma_disjoint_eof, lemma_disjoint_optional;
 
     #[verusfmt::skip]
-    let c = Optional(Refined { inner: U8, pred: Pred2 },
-            Optional(Refined { inner: U8, pred: Pred1 },
-            Optional(Refined { inner: U8, pred: Pred3 },
+    let c = Optional(Refined { inner: U8, pred: |x: u8| x == 1u8 },
+            Optional(Refined { inner: U8, pred: |x: u8| x == 2u8 },
+            Optional(Refined { inner: U8, pred: |x: u8| x == 3u8 },
             Eof)));
     assert(c.unambiguous());
 
