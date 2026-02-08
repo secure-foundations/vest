@@ -23,10 +23,7 @@ impl<A, B> Consistency for super::Preceded<A, B> where A: Consistency, B: Consis
     }
 }
 
-impl<A, B> GoodParser for super::Preceded<A, B> where
-    A: GoodParser,
-    B: GoodParser,
- {
+impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodParser {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         (self.0, self.1).lemma_parse_length(ibuf);
     }
@@ -61,10 +58,7 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where
     }
 }
 
-impl<A, B> Unambiguity for super::Preceded<A, B> where
-    A: Unambiguity,
-    B: Unambiguity,
- {
+impl<A, B> Unambiguity for super::Preceded<A, B> where A: Unambiguity, B: Unambiguity {
     open spec fn unambiguous(&self) -> bool {
         (self.0, self.1).unambiguous()
     }

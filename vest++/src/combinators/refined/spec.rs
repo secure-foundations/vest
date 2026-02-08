@@ -22,10 +22,7 @@ impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred
     }
 }
 
-impl<A, Pred> GoodParser for super::Refined<A, Pred> where
-    A: GoodParser,
-    Pred: SpecPred<A::PVal>,
- {
+impl<A, Pred> GoodParser for super::Refined<A, Pred> where A: GoodParser, Pred: SpecPred<A::PVal> {
     proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_length(ibuf);
     }
