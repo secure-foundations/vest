@@ -23,9 +23,23 @@ impl<A, B> Consistency for super::Preceded<A, B> where A: Consistency, B: Consis
     }
 }
 
-impl<A, B> GoodParser for super::Preceded<A, B> where A: GoodParser, B: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        (self.0, self.1).lemma_parse_length(ibuf);
+impl<A, B> GoodParser for super::Preceded<A, B> where
+    A: GoodParser + AdmitsUniqueVal,
+    B: GoodParser,
+ {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_byte_len(ibuf);
+        (self.0, self.1).lemma_parse_consistent(ibuf);
+        if let Some((n, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
+            let va_wit = choose|va_wit: A::T| self.0.consistent(va_wit);
+            self.0.lemma_unique_consistent_val(va_wit, va);
+            assert(self.byte_len(vb) == (self.0, self.1).byte_len((va, vb)));
+            assert(n == self.byte_len(vb));
+        }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

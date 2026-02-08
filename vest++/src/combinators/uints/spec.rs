@@ -204,7 +204,10 @@ impl SpecSerializer for super::U8 {
 }
 
 impl GoodParser for super::U8 {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -280,8 +283,12 @@ impl SpecSerializer for super::U16Le {
 }
 
 impl GoodParser for super::U16Le {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -358,8 +365,12 @@ impl SpecSerializer for super::U16Be {
 }
 
 impl GoodParser for super::U16Be {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -436,8 +447,12 @@ impl SpecSerializer for super::U32Le {
 }
 
 impl GoodParser for super::U32Le {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -514,8 +529,12 @@ impl SpecSerializer for super::U32Be {
 }
 
 impl GoodParser for super::U32Be {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

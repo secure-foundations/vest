@@ -26,8 +26,17 @@ impl<A> Consistency for super::Opt<A> where A: Consistency {
 }
 
 impl<A> GoodParser for super::Opt<A> where A: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            Some((n, vv)) => {
+                self.0.lemma_parse_byte_len(ibuf);
+            },
+            None => {},
+        }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -135,8 +144,12 @@ impl<A, B> Consistency for super::Optional<A, B> where A: Consistency, B: Consis
 }
 
 impl<A, B> GoodParser for super::Optional<A, B> where A: GoodParser, B: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_length(ibuf)
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_len_bound(ibuf)
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_byte_len(ibuf)
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

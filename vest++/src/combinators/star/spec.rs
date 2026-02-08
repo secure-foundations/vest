@@ -21,12 +21,23 @@ impl<A: SpecParser> super::Star<A> {
 }
 
 impl<A: GoodParser> super::Star<A> {
+    proof fn lemma_byte_len_cons(&self, v: A::T, vs: Seq<A::T>)
+        ensures
+            self.byte_len(seq![v] + vs) == self.inner.byte_len(v) + self.byte_len(vs),
+    {
+        let f = |acc: nat, elem: A::T| acc + self.inner.byte_len(elem);
+        (seq![v] + vs).lemma_fold_left_alt(0, f);
+        vs.lemma_fold_left_alt(self.inner.byte_len(v), f);
+        lemma_fold_left_accumulate_nat(vs, self.inner.byte_len(v), f);
+        assert((seq![v] + vs).skip(1) == vs);
+    }
+
     proof fn lemma_parse_rec_length(&self, ibuf: Seq<u8>)
         ensures
             0 <= self.parse_rec(ibuf).0 <= ibuf.len(),
         decreases ibuf.len(),
     {
-        self.inner.lemma_parse_length(ibuf);
+        self.inner.lemma_parse_len_bound(ibuf);
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 self.lemma_parse_rec_length(ibuf.skip(n));
@@ -43,6 +54,21 @@ impl<A: GoodParser> super::Star<A> {
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 self.lemma_parse_rec_consistent(ibuf.skip(n));
+            }
+        }
+    }
+
+    proof fn lemma_parse_rec_byte_len(&self, ibuf: Seq<u8>)
+        ensures
+            self.parse_rec(ibuf).0 == self.byte_len(self.parse_rec(ibuf).1),
+        decreases ibuf.len(),
+    {
+        self.inner.lemma_parse_byte_len(ibuf);
+        if let Some((n, v)) = self.inner.spec_parse(ibuf) {
+            if 0 < n <= ibuf.len() {
+                let (n_rest, vs) = self.parse_rec(ibuf.skip(n));
+                self.lemma_parse_rec_byte_len(ibuf.skip(n));
+                self.lemma_byte_len_cons(v, vs);
             }
         }
     }
@@ -66,8 +92,12 @@ impl<A> Consistency for super::Star<A> where A: Consistency {
 }
 
 impl<A> GoodParser for super::Star<A> where A: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_rec_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -216,8 +246,12 @@ impl<A, B> Consistency for super::Repeat<A, B> where A: Consistency, B: Consiste
 }
 
 impl<A, B> GoodParser for super::Repeat<A, B> where A: GoodParser, B: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_length(ibuf)
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_len_bound(ibuf)
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_byte_len(ibuf)
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

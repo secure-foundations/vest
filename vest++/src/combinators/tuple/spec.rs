@@ -26,10 +26,17 @@ impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
 }
 
 impl<A, B> GoodParser for (A, B) where A: GoodParser, B: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_len_bound(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_length(ibuf.skip(n1));
+            self.1.lemma_parse_len_bound(ibuf.skip(n1));
+        }
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_byte_len(ibuf);
+        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
+            self.1.lemma_parse_byte_len(ibuf.skip(n1));
         }
     }
 

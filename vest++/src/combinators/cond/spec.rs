@@ -24,9 +24,15 @@ impl<Inner: Consistency> Consistency for super::Cond<Inner> {
 }
 
 impl<Inner: GoodParser> GoodParser for super::Cond<Inner> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         if self.0 {
-            self.1.lemma_parse_length(ibuf);
+            self.1.lemma_parse_len_bound(ibuf);
+        }
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        if self.0 {
+            self.1.lemma_parse_byte_len(ibuf);
         }
     }
 

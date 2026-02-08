@@ -29,7 +29,10 @@ impl Consistency for super::BerBool {
 }
 
 impl GoodParser for super::BerBool {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

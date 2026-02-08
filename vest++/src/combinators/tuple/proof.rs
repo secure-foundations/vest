@@ -32,10 +32,10 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
                     let (n2a, _) = self.0.spec_parse(buf2)->0;
                     let (n1b, _) = self.1.spec_parse(buf1.skip(n1a))->0;
                     let (n2b, _) = self.1.spec_parse(buf2.skip(n2a))->0;
-                    self.0.lemma_parse_length(buf1);
-                    self.0.lemma_parse_length(buf2);
-                    self.1.lemma_parse_length(buf1.skip(n1a));
-                    self.1.lemma_parse_length(buf2.skip(n2a));
+                    self.0.lemma_parse_len_bound(buf1);
+                    self.0.lemma_parse_len_bound(buf2);
+                    self.1.lemma_parse_len_bound(buf1.skip(n1a));
+                    self.1.lemma_parse_len_bound(buf2.skip(n2a));
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     self.1.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);

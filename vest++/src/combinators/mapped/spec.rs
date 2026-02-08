@@ -59,8 +59,15 @@ impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
     Inner: GoodParser,
     M: IsoMapper<In = Inner::PVal>,
  {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_byte_len(ibuf);
+        if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
+            self.mapper.lemma_map_iso(inner_v);
+        }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

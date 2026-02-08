@@ -34,30 +34,6 @@ impl<P1, P2> Consistency for super::Permute2<P1, P2> where P1: Consistency, P2: 
     }
 }
 
-impl<P1, P2> GoodParser for super::Permute2<P1, P2> where P1: GoodParser, P2: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, self.1),
-            Mapped {
-                inner: (self.1, self.0),
-                mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
-            },
-        );
-        inner.lemma_parse_length(ibuf);
-    }
-
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, self.1),
-            Mapped {
-                inner: (self.1, self.0),
-                mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
-            },
-        );
-        inner.lemma_parse_consistent(ibuf);
-    }
-}
-
 impl<P1, P2> SpecSerializerDps for super::Permute2<P1, P2> where
     P1: SpecSerializerDps,
     P2: SpecSerializerDps,
@@ -165,46 +141,6 @@ impl<A, B, C> Consistency for super::Permute3<A, B, C> where
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
         (self.0, (self.1, self.2)).consistent(v)
-    }
-}
-
-impl<A, B, C> GoodParser for super::Permute3<A, B, C> where
-    A: GoodParser,
-    B: GoodParser,
-    C: GoodParser,
- {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, super::Permute2(self.1, self.2)),
-            Alt(
-                Mapped {
-                    inner: (self.1, super::Permute2(self.0, self.2)),
-                    mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
-                },
-                Mapped {
-                    inner: (self.2, super::Permute2(self.0, self.1)),
-                    mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
-                },
-            ),
-        );
-        inner.lemma_parse_length(ibuf);
-    }
-
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, super::Permute2(self.1, self.2)),
-            Alt(
-                Mapped {
-                    inner: (self.1, super::Permute2(self.0, self.2)),
-                    mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
-                },
-                Mapped {
-                    inner: (self.2, super::Permute2(self.0, self.1)),
-                    mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
-                },
-            ),
-        );
-        inner.lemma_parse_consistent(ibuf);
     }
 }
 
@@ -341,59 +277,6 @@ impl<A, B, C, D> Consistency for super::Permute4<A, B, C, D> where
     open spec fn consistent(&self, v: Self::Val) -> bool {
         self.0.consistent(v.0) && self.1.consistent(v.1.0) && self.2.consistent(v.1.1.0)
             && self.3.consistent(v.1.1.1)
-    }
-}
-
-impl<A, B, C, D> GoodParser for super::Permute4<A, B, C, D> where
-    A: GoodParser,
-    B: GoodParser,
-    C: GoodParser,
-    D: GoodParser,
- {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, super::Permute3(self.1, self.2, self.3)),
-            Alt(
-                Mapped {
-                    inner: (self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                },
-                Alt(
-                    Mapped {
-                        inner: (self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                    },
-                    Mapped {
-                        inner: (self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                    },
-                ),
-            ),
-        );
-        inner.lemma_parse_length(ibuf);
-    }
-
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        let inner = Alt(
-            (self.0, super::Permute3(self.1, self.2, self.3)),
-            Alt(
-                Mapped {
-                    inner: (self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                },
-                Alt(
-                    Mapped {
-                        inner: (self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                    },
-                    Mapped {
-                        inner: (self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
-                    },
-                ),
-            ),
-        );
-        inner.lemma_parse_consistent(ibuf);
     }
 }
 

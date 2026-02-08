@@ -20,7 +20,10 @@ impl Consistency for super::Tail {
 }
 
 impl GoodParser for super::Tail {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -86,7 +89,10 @@ impl AdmitsUniqueVal for super::Eof {
 }
 
 impl GoodParser for super::Eof {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

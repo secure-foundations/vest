@@ -74,9 +74,30 @@ impl Consistency for NestedBracesCombinator {
     }
 }
 
+pub open spec fn byte_len_nested_braces(v: NestedBracesT) -> nat
+    decreases height(v),
+{
+    match v {
+        NestedBracesT::Brace(inner) => 3 + byte_len_nested_braces(*inner),
+        NestedBracesT::Eps => 1,
+    }
+}
+
+impl SpecByteLen for NestedBracesCombinator {
+    type T = NestedBracesT;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        byte_len_nested_braces(v)
+    }
+}
+
 impl GoodParser for NestedBracesCombinator {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         lemma_parse_length_nested_braces(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        lemma_parse_byte_len_nested_braces(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -118,6 +139,17 @@ proof fn lemma_parse_wf_nested_braces(ibuf: Seq<u8>)
     if ibuf.len() >= 2 {
         let rem = ibuf.skip(2);
         lemma_parse_wf_nested_braces(rem);
+    }
+}
+
+proof fn lemma_parse_byte_len_nested_braces(ibuf: Seq<u8>)
+    ensures
+        p_nested_braces(ibuf) matches Some((n, v)) ==> n == byte_len_nested_braces(v),
+    decreases ibuf.len(),
+{
+    if ibuf.len() >= 2 {
+        let rem = ibuf.skip(2);
+        lemma_parse_byte_len_nested_braces(rem);
     }
 }
 

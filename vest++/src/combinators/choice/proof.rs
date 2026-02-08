@@ -73,8 +73,8 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
 // NonMalleable only holds for [`Alt`] when the two parsers produce disjoint sets of values.
 // This ensures that if two byte sequences parse to the same value, they must have used the same underlying parser.
 impl<A, B> NonMalleable for super::Alt<A, B> where
-    A: NonMalleable + DisjointRanges<B>,
-    B: NonMalleable<PVal = A::PVal>,
+    A: NonMalleable + DisjointFrom<B>,
+    B: NonMalleable<T = A::T>,
  {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
@@ -89,9 +89,21 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
                         // Both use parser B
                         self.1.lemma_parse_non_malleable(buf1, buf2);
                     } else {
-                        // One uses A, one uses B - this contradicts DisjointRanges
-                        self.0.lemma_disjoint_ranges(&self.1, buf1, buf2);
-                        assert(v1 != v2);
+                        // buf1 uses A; buf2 uses B
+                        if a_parses_buf1 && !a_parses_buf2 {
+                            self.0.lemma_parse_consistent(buf1);
+                            self.1.lemma_parse_consistent(buf2);
+                            assert(self.0.consistent(v1));
+                            assert(self.1.consistent(v2));
+                            self.0.lemma_disjoint(&self.1, v1);
+                        } else {
+                            // buf1 uses B; buf2 uses A
+                            self.1.lemma_parse_consistent(buf1);
+                            self.0.lemma_parse_consistent(buf2);
+                            assert(self.1.consistent(v1));
+                            assert(self.0.consistent(v2));
+                            self.0.lemma_disjoint(&self.1, v1);
+                        }
                     }
                 }
             }

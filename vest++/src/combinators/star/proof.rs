@@ -106,8 +106,8 @@ impl<A: NonMalleable> super::Star<A> {
                         assert(buf1.skip(m1).take(n1_rest) == buf2.skip(m2).take(n2_rest));
 
                         // need to show buf1.take(n1) == buf2.take(n2)
-                        self.lemma_parse_length(buf1.skip(m1));
-                        self.lemma_parse_length(buf2.skip(m2));
+                        self.lemma_parse_len_bound(buf1.skip(m1));
+                        self.lemma_parse_len_bound(buf2.skip(m2));
                         assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(n1_rest));
                         assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(n2_rest));
                     }

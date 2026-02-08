@@ -19,16 +19,14 @@ pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2
     forall|input: Seq<u8>| p1.spec_parse(input) is Some && p2.spec_parse(input) is Some ==> false
 }
 
-/// For pairs of parsers that produce disjoint sets of values.
+/// Combinator denotations that admit disjoint sets of values.
+///
 /// This is the necessary condition for [`crate::combinators::Alt`] to be non-malleable.
-pub trait DisjointRanges<Other: SpecParser<PVal = Self::PVal>>: SpecParser {
-    /// Lemma: the two parsers produce disjoint sets of values
-    #[verusfmt::skip]
-    proof fn lemma_disjoint_ranges(&self, other: &Other, buf1: Seq<u8>, buf2: Seq<u8>)
+pub trait DisjointFrom<Other: Consistency<Val = Self::Val>>: Consistency {
+    /// Lemma: the combinator [`Self`] and the combinator [`Other`] are disjoint if there is no value `v` that is consistent with both combinator denotations.
+    proof fn lemma_disjoint(&self, other: &Other, v: Self::Val)
         ensures
-            self.spec_parse(buf1) matches Some((_, v1)) &&
-            other.spec_parse(buf2) matches Some((_, v2)) ==>
-            v1 != v2,
+            self.consistent(v) && other.consistent(v) ==> false,
     ;
 }
 
@@ -37,11 +35,17 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
 }
 
 /// A well-behaved parser that satisfies key properties.
-pub trait GoodParser: SpecParser + Consistency<Val = Self::PVal> {
+pub trait GoodParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
     /// Lemma: parser returns valid buffer positions
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>)
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>)
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
+    ;
+
+    /// Lemma: parser returns valid buffer positions
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>)
+        ensures
+            self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
 
     /// Lemma: parser returns consistent values

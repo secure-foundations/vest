@@ -23,9 +23,23 @@ impl<A, B> Consistency for super::Terminated<A, B> where A: Consistency, B: Cons
     }
 }
 
-impl<A, B> GoodParser for super::Terminated<A, B> where A: GoodParser, B: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        (self.0, self.1).lemma_parse_length(ibuf);
+impl<A, B> GoodParser for super::Terminated<A, B> where
+    A: GoodParser,
+    B: GoodParser + AdmitsUniqueVal,
+ {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_byte_len(ibuf);
+        (self.0, self.1).lemma_parse_consistent(ibuf);
+        if let Some((n, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
+            let vb_wit = choose|vb_wit: B::T| self.1.consistent(vb_wit);
+            self.1.lemma_unique_consistent_val(vb_wit, vb);
+            assert(self.byte_len(va) == (self.0, self.1).byte_len((va, vb)));
+            assert(n == self.byte_len(va));
+        }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

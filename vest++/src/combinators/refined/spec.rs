@@ -23,8 +23,12 @@ impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred
 }
 
 impl<A, Pred> GoodParser for super::Refined<A, Pred> where A: GoodParser, Pred: SpecPred<A::PVal> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -127,8 +131,12 @@ impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consi
 }
 
 impl<Inner> GoodParser for super::Tag<Inner, Inner::PVal> where Inner: GoodParser {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {

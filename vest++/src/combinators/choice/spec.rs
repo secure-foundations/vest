@@ -34,9 +34,14 @@ impl<A: Consistency, B: Consistency> Consistency for super::Choice<A, B> {
 }
 
 impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-        self.1.lemma_parse_length(ibuf);
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_len_bound(ibuf);
+        self.1.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_byte_len(ibuf);
+        self.1.lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -166,10 +171,26 @@ impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A,
     }
 }
 
-impl<A: GoodParser, B: GoodParser<PVal = A::PVal>> GoodParser for super::Alt<A, B> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_length(ibuf);
-        self.1.lemma_parse_length(ibuf);
+impl<A, B> GoodParser for super::Alt<A, B> where
+    A: GoodParser + DisjointFrom<B>,
+    B: GoodParser<T = A::T>,
+ {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_len_bound(ibuf);
+        self.1.lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_byte_len(ibuf);
+        self.1.lemma_parse_byte_len(ibuf);
+        self.0.lemma_parse_consistent(ibuf);
+        self.1.lemma_parse_consistent(ibuf);
+        if let Some((n, v)) = self.0.spec_parse(ibuf) {
+            assert(n == self.byte_len(v));
+        } else if let Some((n, v)) = self.1.spec_parse(ibuf) {
+            assert(self.1.consistent(v));
+            self.0.lemma_disjoint(&self.1, v);
+        }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
