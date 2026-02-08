@@ -1,4 +1,5 @@
 use super::choice::Choice;
+use super::cond::Cond;
 use super::mapped::spec::Mapper;
 use super::mapped::Mapped;
 use super::opt::Optional;
@@ -38,6 +39,18 @@ pub broadcast proof fn lemma_disjoint_refined<
         forall|v: Inner::PVal| r1.pred.apply(v) ==> !r2.pred.apply(v),
     ensures
         #[trigger] disjoint_domains(r1, r2),
+{
+}
+
+/// Two [`Cond`] parsers are disjoint if their conditions are mutually exclusive.
+pub broadcast proof fn lemma_disjoint_cond<Inner1: SpecParser, Inner2: SpecParser>(
+    c1: Cond<Inner1>,
+    c2: Cond<Inner2>,
+)
+    requires
+        c1.0 && c2.0 ==> false,
+    ensures
+        #[trigger] disjoint_domains(c1, c2),
 {
 }
 
