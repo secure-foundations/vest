@@ -36,7 +36,10 @@ impl<const N: usize> Consistency for super::Fixed<N> {
 }
 
 impl<const N: usize> GoodParser for super::Fixed<N> {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -110,7 +113,10 @@ impl Consistency for super::Varied {
 }
 
 impl GoodParser for super::Varied {
-    proof fn lemma_parse_length(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
@@ -160,6 +166,114 @@ impl SpecByteLen for super::Varied {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         v.len()
+    }
+}
+
+impl<Inner: SpecParser> SpecParser for super::ExactLen<Inner> {
+    type PVal = Inner::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match super::Varied(self.0).spec_parse(ibuf) {
+            None => None,
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => Some((len_a, v)),
+                _ => None,
+            },
+        }
+    }
+}
+
+impl<Inner: Consistency + SpecByteLen<T = Inner::Val>> Consistency for super::ExactLen<Inner> {
+    type Val = Inner::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.1.consistent(v)
+        &&& self.0 == self.1.byte_len(v)
+    }
+}
+
+impl<Inner: GoodParser> GoodParser for super::ExactLen<Inner> {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        match super::Varied(self.0).spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, _)) if len_a == len_b => self.1.lemma_parse_len_bound(chunk),
+                _ => {},
+            },
+        }
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        match super::Varied(self.0).spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => {
+                    self.1.lemma_parse_byte_len(chunk);
+                    assert(len_a == self.0 as int);
+                    assert(self.byte_len(v) == self.0 as nat);
+                },
+                _ => {},
+            },
+        }
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        match super::Varied(self.0).spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => {
+                    self.1.lemma_parse_byte_len(chunk);
+                    self.1.lemma_parse_consistent(chunk)
+                },
+                _ => {},
+            },
+        }
+    }
+}
+
+impl<Inner: SpecSerializerDps> SpecSerializerDps for super::ExactLen<Inner> {
+    type ST = Inner::ST;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.1.spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<Inner: SpecSerializer> SpecSerializer for super::ExactLen<Inner> {
+    type SVal = Inner::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.1.spec_serialize(v)
+    }
+}
+
+impl<Inner: Unambiguity> Unambiguity for super::ExactLen<Inner> {
+    open spec fn unambiguous(&self) -> bool {
+        self.1.unambiguous()
+    }
+}
+
+impl<Inner: GoodSerializerDps> GoodSerializerDps for super::ExactLen<Inner> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.1.lemma_serialize_dps_buf(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.1.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<Inner: GoodSerializer> GoodSerializer for super::ExactLen<Inner> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.1.lemma_serialize_len(v);
+    }
+}
+
+impl<Inner: SpecByteLen> SpecByteLen for super::ExactLen<Inner> {
+    type T = Inner::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.1.byte_len(v)
     }
 }
 

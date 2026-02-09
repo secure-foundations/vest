@@ -9,4 +9,6 @@ pub struct Fixed<const N: usize>;
 
 pub struct Varied(pub usize);
 
+pub struct ExactLen<Inner>(pub usize, pub Inner);
+
 } // verus!
