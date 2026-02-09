@@ -31,6 +31,14 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
     }
 }
 
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Choice<A, B> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        self.0.lemma_no_lookahead(i1, i2);
+        self.1.lemma_no_lookahead(i1, i2);
+        assert(disjoint_domains(self.0, self.1));
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
@@ -108,6 +116,17 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
                 }
             }
         }
+    }
+}
+
+impl<A, B> NoLookAhead for super::Alt<A, B> where
+    A: NoLookAhead + DisjointFrom<B>,
+    B: NoLookAhead<T = A::T>,
+ {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        self.0.lemma_no_lookahead(i1, i2);
+        self.1.lemma_no_lookahead(i1, i2);
+        assert(disjoint_domains(self.0, self.1));
     }
 }
 

@@ -42,7 +42,9 @@ proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let val0 = 0u8;
     let val1 = 0u8;
     let parser = Preceded(U8, U8);
-    assert(parser.consistent(val0)) by {}
+    assert(parser.consistent(val0)) by {
+        assert(parser.1.consistent(val0));
+    }
     requires_sp_roundtrip(parser, val1, obuf);
     // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have AdmitsUniqueVal
 }

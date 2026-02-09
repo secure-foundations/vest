@@ -136,6 +136,32 @@ pub trait NonMalleable: GoodParser {
     ;
 }
 
+pub trait NoLookAhead: GoodParser + Unambiguity {
+    #[verusfmt::skip]
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.unambiguous(),
+        ensures
+            self.spec_parse(i1) matches Some((n, v)) ==>
+            0 <= n <= i2.len() ==> i2.take(n) == i1.take(n) ==>
+            self.spec_parse(i2) == Some((n, v)),
+    ;
+
+    proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.unambiguous(),
+        ensures
+            self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),
+    {
+        self.lemma_no_lookahead(i1, i1 + i2);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            self.lemma_parse_len_bound(i1);
+            assert(0 <= n <= (i1 + i2).len());
+            assert(i1.take(n) == (i1 + i2).take(n));
+        }
+    }
+}
+
 /// Combinators that implement both DPS and non-DPS serialization specs and
 /// establish their equivalence
 pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {

@@ -42,7 +42,7 @@ pub trait GoodParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 
-    /// Lemma: parser returns valid buffer positions
+    /// Lemma: parser returns the correct # of bytes consumed w.r.t. the value
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>)
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),

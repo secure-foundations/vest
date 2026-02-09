@@ -1,3 +1,4 @@
+use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::{calc, prelude::*};
 
@@ -121,6 +122,49 @@ impl<A: NonMalleable> super::Star<A> {
 impl<A: NonMalleable> NonMalleable for super::Star<A> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.lemma_parse_non_malleable_rec(buf1, buf2);
+    }
+}
+
+impl<A: NoLookAhead> super::Star<A> {
+    proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.inner.unambiguous(),
+            parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
+        ensures
+            ({
+                let r = self.parse_rec(i1);
+                0 <= r.0 <= i2.len() ==> i2.take(r.0) == i1.take(r.0) ==> self.parse_rec(i2) == r
+            }),
+        decreases i1.len(),
+    {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        let (n, vs) = self.parse_rec(i1);
+        match self.inner.spec_parse(i1) {
+            Some((m, v)) if 0 < m <= i1.len() => {
+                let i1_rest = i1.skip(m);
+                let i2_rest = i2.skip(m);
+                let (n_rest, vs_rest) = self.parse_rec(i1_rest);
+                self.lemma_parse_len_bound(i1_rest);
+                if 0 <= n <= i2.len() {
+                    if i2.take(n) == i1.take(n) {
+                        assert(i2.take(m) == i1.take(m));
+                        self.inner.lemma_no_lookahead(i1, i2);
+                        assert(i2_rest.take(n_rest) == i1_rest.take(n_rest)) by {
+                            lemma_take_skip(i1, m, n_rest);
+                            lemma_take_skip(i2, m, n_rest);
+                        };
+                        assert(parser_fails_on(self.inner, i2_rest.skip(n_rest))) by {
+                            broadcast use vstd::seq_lib::lemma_seq_skip_of_skip;
+
+                        };
+                        self.lemma_parse_rec_no_lookahead_conditional(i1_rest, i2_rest);
+                        assert(self.parse_rec(i2) == (m + n_rest, seq![v] + vs_rest));
+                    }
+                }
+            },
+            _ => {},
+        }
     }
 }
 
@@ -254,6 +298,35 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        let star = super::Star { inner: self.0 };
+        self.lemma_parse_len_bound(i1);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n0, v0)) = star.spec_parse(i1) {
+                        if let Some((n1, v1)) = self.1.spec_parse(i1.skip(n0)) {
+                            star.lemma_parse_len_bound(i1);
+                            self.1.lemma_parse_len_bound(i1.skip(n0));
+                            assert(i2.take(n0) == i1.take(n0));
+                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+                                lemma_take_skip(i1, n0, n1);
+                                lemma_take_skip(i2, n0, n1);
+                            };
+                            self.1.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+                            assert(disjoint_domains(self.0, self.1));
+                            star.lemma_parse_rec_no_lookahead_conditional(i1, i2);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

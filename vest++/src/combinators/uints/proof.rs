@@ -20,6 +20,19 @@ impl NonMalleable for super::U8 {
     }
 }
 
+impl NoLookAhead for super::U8 {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(i2.take(1int)[0] == i1.take(1int)[0]);
+                    assert(self.spec_parse(i2) == Some((n, v)));
+                }
+            }
+        }
+    }
+}
+
 impl EquivSerializersGeneral for super::U8 {
     proof fn lemma_serialize_equiv(&self, v: u8, obuf: Seq<u8>) {
     }
@@ -47,6 +60,20 @@ impl SPRoundTripDps for super::U16Le {
 impl NonMalleable for super::U16Le {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl NoLookAhead for super::U16Le {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        let mapped = Mapped { inner: Fixed::<2>, mapper: U16LeMapper };
+        mapped.lemma_no_lookahead(i1, i2);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.spec_parse(i2) == Some((n, v)));
+                }
+            }
+        }
     }
 }
 
@@ -82,6 +109,20 @@ impl NonMalleable for super::U16Be {
     }
 }
 
+impl NoLookAhead for super::U16Be {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        let mapped = Mapped { inner: Fixed::<2>, mapper: U16BeMapper };
+        mapped.lemma_no_lookahead(i1, i2);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.spec_parse(i2) == Some((n, v)));
+                }
+            }
+        }
+    }
+}
+
 impl EquivSerializersGeneral for super::U16Be {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_equiv(v, obuf);
@@ -109,6 +150,20 @@ impl NonMalleable for super::U32Le {
     }
 }
 
+impl NoLookAhead for super::U32Le {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        let mapped = Mapped { inner: Fixed::<4>, mapper: U32LeMapper };
+        mapped.lemma_no_lookahead(i1, i2);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.spec_parse(i2) == Some((n, v)));
+                }
+            }
+        }
+    }
+}
+
 impl EquivSerializersGeneral for super::U32Le {
     proof fn lemma_serialize_equiv(&self, v: u32, obuf: Seq<u8>) {
         Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_equiv(v, obuf);
@@ -133,6 +188,20 @@ impl SPRoundTripDps for super::U32Be {
 impl NonMalleable for super::U32Be {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl NoLookAhead for super::U32Be {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        let mapped = Mapped { inner: Fixed::<4>, mapper: U32BeMapper };
+        mapped.lemma_no_lookahead(i1, i2);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.spec_parse(i2) == Some((n, v)));
+                }
+            }
+        }
     }
 }
 

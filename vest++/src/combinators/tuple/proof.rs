@@ -49,6 +49,43 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
     }
 }
 
+pub(crate) proof fn lemma_take_skip<T>(s: Seq<T>, n1: int, n2: int)
+    requires
+        0 <= n1,
+        0 <= n2,
+        n1 + n2 <= s.len(),
+    ensures
+        s.take(n1 + n2).skip(n1) == s.skip(n1).take(n2),
+{
+}
+
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for (A, B) {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n1, v1)) = self.0.spec_parse(i1) {
+                        if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
+                            self.lemma_parse_len_bound(i1);
+                            self.0.lemma_parse_len_bound(i1);
+                            self.1.lemma_parse_len_bound(i1.skip(n1));
+                            assert(i2.take(n1) == i1.take(n1));
+                            self.0.lemma_no_lookahead(i1, i2);
+                            assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
+                                lemma_take_skip(i1, n1, n2);
+                                lemma_take_skip(i2, n1, n2);
+                            };
+                            self.1.lemma_no_lookahead(i1.skip(n1), i2.skip(n1));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for (A, B) where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,

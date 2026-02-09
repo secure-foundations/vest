@@ -23,6 +23,18 @@ impl<A: NonMalleable, Pred: SpecPred<A::PVal>> NonMalleable for super::Refined<A
     }
 }
 
+impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, Pred> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    self.inner.lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
+    }
+}
+
 impl<A, Pred> EquivSerializersGeneral for super::Refined<A, Pred> where
     A: EquivSerializersGeneral,
     Pred: SpecPred<A::SVal>,
@@ -55,6 +67,18 @@ impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
 impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner, Inner::PVal> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.inner.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<Inner: NoLookAhead> NoLookAhead for super::Tag<Inner, Inner::PVal> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    self.inner.lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
     }
 }
 

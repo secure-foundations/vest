@@ -39,6 +39,21 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     }
 }
 
+impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
+    Inner: NoLookAhead,
+    M: IsoMapper<In = Inner::PVal>,
+ {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    self.inner.lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
+    }
+}
+
 impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     Inner: EquivSerializersGeneral,
     M: Mapper<In = Inner::SVal>,

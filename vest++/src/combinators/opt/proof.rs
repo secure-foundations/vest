@@ -1,3 +1,4 @@
+use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -22,6 +23,29 @@ impl<A: SPRoundTripDps> super::Opt<A> {
                     self.0.theorem_serialize_dps_parse_roundtrip(vv, obuf);
                 }
             },
+        }
+    }
+}
+
+impl<A: NoLookAhead> super::Opt<A> {
+    proof fn lemma_opt_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.0.unambiguous(),
+            parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
+        ensures
+            self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
+                == i1.take(n) ==> self.spec_parse(i2) == Some((n, v)),
+    {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n0, v0)) = self.0.spec_parse(i1) {
+                        self.0.lemma_no_lookahead(i1, i2);
+                    } else {
+                        assert(self.0.spec_parse(i2) is None);
+                    }
+                }
+            }
         }
     }
 }
@@ -79,6 +103,36 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        let opt = super::Opt(self.0);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n0, a)) = self.0.spec_parse(i1) {
+                        if let Some((n1, b)) = self.1.spec_parse(i1.skip(n0)) {
+                            opt.lemma_parse_len_bound(i1);
+                            self.1.lemma_parse_len_bound(i1.skip(n0));
+                            assert(i2.take(n0) == i1.take(n0));
+                            opt.lemma_opt_no_lookahead(i1, i2);
+                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+                                lemma_take_skip(i1, n0, n1);
+                                lemma_take_skip(i2, n0, n1);
+                            };
+                            self.1.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+                        }
+                    } else if let Some((n1, b)) = self.1.spec_parse(i1) {
+                        assert(disjoint_domains(self.0, self.1));
+                        self.1.lemma_no_lookahead(i1, i2);
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -45,6 +45,21 @@ impl<A, B> NonMalleable for super::Preceded<A, B> where
     }
 }
 
+impl<A, B> NoLookAhead for super::Preceded<A, B> where
+    A: NoLookAhead + AdmitsUniqueVal,
+    B: NoLookAhead,
+ {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, vb)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    (self.0, self.1).lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for super::Preceded<A, B> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral,
