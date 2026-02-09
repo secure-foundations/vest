@@ -149,7 +149,8 @@ pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: 
     ensures
         #[trigger] disjoint_domains(p, optional),
 {
-    assert forall|input: Seq<u8>| #[trigger] input.skip(0) == input by {}
+    broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
+
 }
 
 /// A [`Repeat`] parser (which is `(Star<A>, B)`) is disjoint from another parser if both `A` and `B` are disjoint from it.
@@ -163,7 +164,8 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
     ensures
         #[trigger] disjoint_domains(p, repeat),
 {
-    assert forall|input: Seq<u8>| #[trigger] input.skip(0) == input by {}
+    broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
+
 }
 
 /// An [`Eof`] parser is disjoint from another parser if the other parser is productive.
