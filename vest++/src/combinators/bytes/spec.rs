@@ -173,12 +173,9 @@ impl<Inner: SpecParser> SpecParser for super::ExactLen<Inner> {
     type PVal = Inner::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => None,
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => Some((len_a, v)),
-                _ => None,
-            },
+        match self.1.spec_parse(ibuf) {
+            Some((len, v)) if len == self.0 => Some((len, v)),
+            _ => None,
         }
     }
 }
@@ -194,39 +191,30 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>> Consistency for super::Ex
 
 impl<Inner: GoodParser> GoodParser for super::ExactLen<Inner> {
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, _)) if len_a == len_b => self.1.lemma_parse_len_bound(chunk),
-                _ => {},
-            },
+        match self.1.spec_parse(ibuf) {
+            Some((len, _)) if len == self.0 => self.1.lemma_parse_len_bound(ibuf),
+            _ => {},
         }
     }
 
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => {
-                    self.1.lemma_parse_byte_len(chunk);
-                    assert(len_a == self.0 as int);
-                    assert(self.byte_len(v) == self.0 as nat);
-                },
-                _ => {},
+        match self.1.spec_parse(ibuf) {
+            Some((len, v)) if len == self.0 => {
+                self.1.lemma_parse_byte_len(ibuf);
+                assert(len == self.0 as int);
+                assert(self.byte_len(v) == self.0 as nat);
             },
+            _ => {},
         }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => {
-                    self.1.lemma_parse_byte_len(chunk);
-                    self.1.lemma_parse_consistent(chunk)
-                },
-                _ => {},
+        match self.1.spec_parse(ibuf) {
+            Some((len, v)) if len == self.0 => {
+                self.1.lemma_parse_byte_len(ibuf);
+                self.1.lemma_parse_consistent(ibuf)
             },
+            _ => {},
         }
     }
 }
