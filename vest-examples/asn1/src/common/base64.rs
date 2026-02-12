@@ -129,13 +129,22 @@ impl Base64 {
             }
         }
     }
+
+    pub proof fn lemma_serialize_len(v: Seq<u8>)
+        ensures Self::spec_serialize_helper(v).len() == (v.len() + 2) / 3 * 4
+        decreases v.len()
+    {
+        if v.len() != 0 && v.len() > 3 {
+            Self::lemma_serialize_len(v.skip(3));
+        }
+    }
 }
 
 impl SpecCombinator for Base64 {
     type Type = Seq<u8>;
 
     open spec fn wf(&self, v: Self::Type) -> bool {
-        true
+        Self::spec_serialize_helper(v).len() <= usize::MAX
     }
 
     open spec fn requires(&self) -> bool {
@@ -143,7 +152,11 @@ impl SpecCombinator for Base64 {
     }
 
     open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
-        Self::spec_parse_helper(s)
+        if s.len() <= usize::MAX {
+            Self::spec_parse_helper(s)
+        } else {
+            None
+        }
     }
 
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
@@ -232,21 +245,22 @@ impl SecureSpecCombinator for Base64 {
                 assert(len == 0);
                 assert(parsed =~= v);
             }
-        } else {
-            let s = self.spec_serialize(v);
+        } else if self.wf(v) {
+            let s = Self::spec_serialize_helper(v);
+            assert(s.len() <= usize::MAX);
 
             broadcast use
                 Base64::encode_spec_decode_6_bit_bytes,
                 Base64::spec_encode_6_bit_bytes_range,
                 Base64::decode_spec_encode_6_bit_bytes;
 
-            if v.len() < 3 {
+            if v.len() <= 3 {
                 assert(s.skip(4) == empty);
             } else {
                 self.theorem_serialize_parse_roundtrip(v.skip(3));
-                let s_rest = self.spec_serialize(v.skip(3));
-                assume(s.skip(4) =~= s_rest);
-                assume(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
+                let s_rest = Self::spec_serialize_helper(v.skip(3));
+                assert(s.skip(4) =~= s_rest);
+                assert(s =~= seq![ s[0], s[1], s[2], s[3] ] + s.skip(4));
             }
 
             if let Some((_, parsed)) = self.spec_parse(s) {
@@ -262,12 +276,12 @@ impl SecureSpecCombinator for Base64 {
 
         if s.len() == 0 {
             if let Some((_, parsed)) = self.spec_parse(s) {
+                let serialized = self.spec_serialize(empty);
                 assert(parsed == empty);
+                assert(self.wf(parsed));
+                assert(serialized == s);
+                assert(s.take(0) == empty);
             }
-
-            let serialized = self.spec_serialize(empty);
-            assert(serialized == s);
-            assert(empty.subrange(0, 0) == empty);
         } else {
             if let Some((len, v)) = self.spec_parse(s) {
                 broadcast use
@@ -280,17 +294,17 @@ impl SecureSpecCombinator for Base64 {
 
                     if let Some((len_rest, v_rest)) = self.spec_parse(s.skip(4)) {
                         let s_rest = self.spec_serialize(v_rest);
-                        assume(s.skip(4) =~= s_rest);
+                        assert(s.skip(4) =~= s_rest);
 
                         if v.len() >= 3 {
-                            assume(v_rest =~= v.skip(3));
+                            assert(v_rest =~= v.skip(3));
                         } else if v.len() == 1 || v.len() == 2 {
                             assert(s.len() == 4);
+                        } else {
+                            let s2 = self.spec_serialize(v);
+                            assert(s2 =~= s);
+                            assert(s2.take(s2.len() as int) =~= s);
                         }
-
-                        let s2 = self.spec_serialize(v);
-                        assume(s2 =~= s);
-                        assume(s2.subrange(0, s2.len() as int) =~= s);
                     }
                 }
             }
@@ -375,9 +389,16 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Base64 {
     type SType = Vec<u8>;
 
     fn length(&self, v: Self::SType) -> usize {
-        assume(false);
-        // FIXME: Implement and verify the length calculation
-        0
+        proof {
+            Self::lemma_serialize_len(v@);
+        }
+
+        if v.len().checked_add(2).is_none() ||
+            ((v.len() + 2) / 3).checked_mul(4).is_none() {
+            return 0;
+        }
+
+        (v.len() + 2) / 3 * 4
     }
 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
