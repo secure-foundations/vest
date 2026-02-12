@@ -1,8 +1,12 @@
 pub mod berbool;
+pub mod bytes;
 pub mod choice;
+pub mod cond;
+pub mod dependent;
 pub mod disjoint;
-pub mod fixed;
+pub mod implicit;
 pub mod mapped;
+pub mod marker;
 pub mod opt;
 pub mod permute;
 pub mod preceded;
@@ -15,9 +19,13 @@ pub mod tuple;
 pub mod uints;
 
 pub use berbool::BerBool;
+pub use bytes::{Fixed, Varied};
 pub use choice::{Alt, Choice, Either};
-pub use fixed::Fixed;
+pub use cond::Cond;
+pub use dependent::{Bind, DepCombinator, TVLeaf, TVNode, TVOr, VariedU16, VariedU8, VoidTag};
+pub use implicit::{Implicit, ImplicitAuto};
 pub use mapped::Mapped;
+pub use marker::{Empty, Void};
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
