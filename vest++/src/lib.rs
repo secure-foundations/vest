@@ -1,3 +1,4 @@
+#![feature(never_type)]
 #![allow(unused_imports)]
 
 pub mod combinators;
