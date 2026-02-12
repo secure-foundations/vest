@@ -1,7 +1,9 @@
 #![allow(unused_imports)]
 
 mod choice;
+mod dependent;
 mod disjoint;
+mod implicit;
 mod malleable;
 mod mapped;
 mod opt;
