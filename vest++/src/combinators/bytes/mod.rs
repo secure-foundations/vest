@@ -11,4 +11,6 @@ pub struct Varied(pub usize);
 
 pub struct ExactLen<Inner>(pub usize, pub Inner);
 
+pub struct AndThen<A, B>(pub A, pub B);
+
 } // verus!

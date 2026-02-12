@@ -1,6 +1,8 @@
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
+use super::Varied;
+
 verus! {
 
 pub uninterp spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
@@ -274,6 +276,117 @@ impl<Inner: GoodSerializer> GoodSerializer for super::ExactLen<Inner> {
 
 impl<Inner: SpecByteLen> SpecByteLen for super::ExactLen<Inner> {
     type T = Inner::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.1.byte_len(v)
+    }
+}
+
+impl<Then: SpecParser> SpecParser for super::AndThen<Varied, Then> {
+    type PVal = Then::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match self.0.spec_parse(ibuf) {
+            None => None,
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => Some((len_a, v)),
+                _ => None,
+            },
+        }
+    }
+}
+
+impl<Then: Consistency + SpecByteLen<T = Then::Val>> Consistency for super::AndThen<Varied, Then> {
+    type Val = Then::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.1.consistent(v)
+        &&& self.0.0 == self.1.byte_len(v)
+    }
+}
+
+impl<Then: GoodParser> GoodParser for super::AndThen<Varied, Then> {
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, _)) if len_a == len_b => self.1.lemma_parse_len_bound(chunk),
+                _ => {},
+            },
+        }
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => {
+                    self.1.lemma_parse_byte_len(chunk);
+                    assert(len_a == self.0.0 as int);
+                    assert(self.byte_len(v) == self.0.0 as nat);
+                },
+                _ => {},
+            },
+        }
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => {
+                    self.1.lemma_parse_byte_len(chunk);
+                    self.1.lemma_parse_consistent(chunk)
+                },
+                _ => {},
+            },
+        }
+    }
+}
+
+impl<Then: SpecSerializerDps> SpecSerializerDps for super::AndThen<Varied, Then> {
+    type ST = Then::ST;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.0.spec_serialize_dps(self.1.spec_serialize_dps(v, seq![]), obuf)
+    }
+}
+
+impl<Then: SpecSerializer> SpecSerializer for super::AndThen<Varied, Then> {
+    type SVal = Then::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let inner_bytes = self.1.spec_serialize(v);
+        self.0.spec_serialize(inner_bytes)
+    }
+}
+
+impl<Then: Unambiguity> Unambiguity for super::AndThen<Varied, Then> {
+    open spec fn unambiguous(&self) -> bool {
+        self.1.unambiguous()
+    }
+}
+
+impl<Then: GoodSerializer + EquivSerializers> GoodSerializerDps for super::AndThen<Varied, Then> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.0.lemma_serialize_dps_buf(self.1.spec_serialize_dps(v, seq![]), obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.1.lemma_serialize_equiv_on_empty(v);
+        self.1.lemma_serialize_len(v);
+        self.0.lemma_serialize_dps_len(self.1.spec_serialize_dps(v, seq![]), obuf);
+    }
+}
+
+impl<Then: GoodSerializer> GoodSerializer for super::AndThen<Varied, Then> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.1.lemma_serialize_len(v);
+    }
+}
+
+impl<Then: SpecByteLen> SpecByteLen for super::AndThen<Varied, Then> {
+    type T = Then::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.1.byte_len(v)
