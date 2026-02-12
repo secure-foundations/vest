@@ -1,0 +1,282 @@
+use crate::combinators::bytes::ExactLen;
+use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
+use crate::combinators::{Choice, Cond, Either, Implicit, ImplicitAuto, U16Le, U32Le, Varied, U8};
+use crate::core::{proof::*, spec::*};
+use vstd::prelude::*;
+
+verus! {
+
+proof fn test_implicit_fmt1_roundtrip() {
+    let fmt1 = Implicit(U8, |len: u8| Varied(len as usize));
+    let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
+
+    assert(fmt1.unambiguous());
+    assert(fmt1.consistent(v)) by {
+        let len = v.len() as u8;
+        assert(fmt1.0.consistent(len));
+        assert(fmt1.1(len).consistent(v));
+    };
+    fmt1.theorem_serialize_parse_roundtrip(v);
+
+    let ibuf = fmt1.spec_serialize(v);
+    assert(fmt1.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
+}
+
+proof fn test_implicit_fmt3_roundtrip() {
+    broadcast use lemma_disjoint_cond;
+
+    let fmt3 = Implicit(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
+
+    let v0 = Either::Left(0x1234u16);
+    let v1 = Either::Right(0x78563412u32);
+
+    assert(fmt3.unambiguous());
+
+    assert(fmt3.consistent(v0)) by {
+        let tag = 0u8;
+        assert(fmt3.0.consistent(tag));
+        assert(fmt3.1(tag).consistent(v0));
+    };
+    fmt3.theorem_serialize_parse_roundtrip(v0);
+    let ibuf0 = fmt3.spec_serialize(v0);
+    assert(fmt3.spec_parse(ibuf0) == Some((ibuf0.len() as int, v0)));
+    let buf0 = seq![0u8, 0x34u8, 0x12u8];
+    if let Some((n0, parsed0)) = fmt3.spec_parse(buf0) {
+        assert(n0 == 3int);
+        assert(parsed0 is Left);
+    }
+    assert(fmt3.consistent(v1)) by {
+        let tag = 1u8;
+        assert(fmt3.0.consistent(tag));
+        assert(fmt3.1(tag).consistent(v1));
+    };
+    fmt3.theorem_serialize_parse_roundtrip(v1);
+    let ibuf1 = fmt3.spec_serialize(v1);
+    assert(fmt3.spec_parse(ibuf1) == Some((ibuf1.len() as int, v1)));
+    let buf1 = seq![1u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8];
+    if let Some((n1, parsed1)) = fmt3.spec_parse(buf1) {
+        assert(n1 == 5int);
+        assert(parsed1 is Right);
+    }
+}
+
+proof fn test_implicit_inferred_fmt1_roundtrip() {
+    let fmt1 = ImplicitAuto(U8, |len: u8| Varied(len as usize), |v: Seq<u8>| v.len() as u8);
+    let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
+
+    assert(fmt1.unambiguous());
+    assert(fmt1.consistent(v));
+    fmt1.theorem_serialize_parse_roundtrip(v);
+
+    let ibuf = fmt1.spec_serialize(v);
+    assert(fmt1.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
+}
+
+proof fn test_implicit_inferred_fmt2_roundtrip() {
+    // fmt2 = {
+    //   @len1: u8
+    //   fixed: [u8; 3]
+    //   @len2: u16
+    //   varied1: [u8; @len1]
+    //   varied2: [u8; @len2]
+    //   varied3: [u8; @len1]
+    // }
+    #[verusfmt::skip]
+    let fmt2 =
+        // Format:
+        ImplicitAuto(U8, |len1: u8|
+        (Fixed::<3>,
+        ImplicitAuto(U16Le, |len2: u16|
+        (Varied(len1 as usize),
+        (Varied(len2 as usize),
+         Varied(len1 as usize))),
+        // Recovery logics:
+        |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16)),
+        |v: ([u8; 3], (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8);
+
+    let v = (
+        [0x10u8, 0x20u8, 0x30u8],
+        (seq![0x10u8, 0x20u8], (seq![0x30u8, 0x40u8, 0x50u8], seq![0x30u8, 0x40u8])),
+    );
+    assert(fmt2.unambiguous());
+    assert(fmt2.consistent(v));
+    fmt2.theorem_serialize_parse_roundtrip(v);
+
+    let ibuf = fmt2.spec_serialize(v);
+    assert(fmt2.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
+}
+
+proof fn test_implicit_inferred_fmt3_roundtrip() {
+    broadcast use lemma_disjoint_cond;
+    // fmt3 = {
+    //   @tag: u8
+    //   val: choose(@tag) {
+    //     0 => u16le,
+    //     1 => u32le,
+    //     2 => [u8; 1],
+    //   }
+    // }
+    #[verusfmt::skip]
+    let fmt3 =
+        // Format:
+        ImplicitAuto(U8, |tag|
+            Choice(Cond(tag == 0u8, U16Le),
+            Choice(Cond(tag == 1u8, U32Le),
+                   Cond(tag == 2u8, Fixed::<0>))),
+        // Recovery logics:
+        |v: Either<u16, Either<u32, [u8; 0]>>|
+            {
+                match v {
+                    Either::Left(_) => 0u8,
+                    Either::Right(Either::Left(_)) => 1u8,
+                    Either::Right(Either::Right(_)) => 2u8,
+                }
+            },
+    );
+
+    let v0 = Either::Left(0x1234u16);
+    let v1 = Either::Right(Either::Left(0x78563412u32));
+    let v2 = Either::Right(Either::Right([]));
+
+    assert(fmt3.unambiguous());
+    assert(fmt3.consistent(v0));
+    assert(fmt3.consistent(v1));
+    assert(fmt3.consistent(v2));
+
+    fmt3.theorem_serialize_parse_roundtrip(v0);
+    fmt3.theorem_serialize_parse_roundtrip(v1);
+    fmt3.theorem_serialize_parse_roundtrip(v2);
+}
+
+proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
+    broadcast use lemma_disjoint_cond;
+
+    use Either::{Left as Inl, Right as Inr};
+    use Either as Sum;
+
+    // tlv = {
+    //   @tag: u8
+    //   @len1: u8
+    //   padding: [u8; 3]
+    //   @len2: u16
+    //   v1: [u8; @len1]
+    //   v2: [u8; @len2] >>= choose(@tag) {
+    //     0 => Tail,
+    //     1 => [u8; @len2],
+    //     2 => Repeat(u16le, Eof),
+    //   }
+    // }
+    #[verusfmt::skip]
+    let tlv =
+        // Format:
+        ImplicitAuto(U8, |tag: u8|
+        ImplicitAuto(U8, |len1: u8|
+        (Fixed::<3>,
+        ImplicitAuto(U16Le, |len2: u16|
+        (Varied(len1 as usize),
+        ExactLen(len2 as usize, Choice(Cond(tag == 0u8, Tail),
+                                 Choice(Cond(tag == 1u8, Varied(len2 as usize)),
+                                        Cond(tag == 2u8, Repeat(U16Le, Eof)))))),
+        // Recovery logics:
+        |v: (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>)| {
+            let (v1, v2) = v;
+            let len2 = match v2 {
+                Inl(val) => val.len() as u16,
+                Inr(Inl(val)) => val.len() as u16,
+                Inr(Inr((val))) => Repeat(U16Le, Eof).byte_len(val) as u16,
+            };
+            len2
+        })),
+        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| v.1.0.len() as u8),
+        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| {
+            let (padding, (v1, v2)) = v;
+            let tag = match v2 {
+                Inl(_) => 0u8,
+                Inr(Inl(_)) => 1u8,
+                Inr(Inr(_)) => 2u8,
+            };
+            tag
+        });
+
+    let padding = [0xDEu8, 0xADu8, 0xBEu8];
+    let v1 = seq![0xffu8; 5];
+
+    let v2_1 = Inl(seq![0xEFu8, 0xBEu8]);
+    let v2_2 = Inr(Inl(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
+    // let v2_3 = Inr(Inr((seq![0xEFu16, 0xBEu16], ())));
+
+    let msg1 = (padding, (v1, v2_1));
+    let msg2 = (padding, (v1, v2_2));
+    // let msg3 = (padding, (v1, v2_3));
+
+    assert(tlv.unambiguous());
+    assert(tlv.consistent(msg1));
+    assert(tlv.consistent(msg2));
+    // assert(tlv.consistent(msg3));
+
+    tlv.theorem_serialize_parse_roundtrip(msg1);
+    tlv.theorem_serialize_parse_roundtrip(msg2);
+
+    let ibuf16 = tlv.spec_serialize(msg1);
+    let ibuf32 = tlv.spec_serialize(msg2);
+    assert(tlv.spec_parse(ibuf16) == Some((ibuf16.len() as int, msg1)));
+    assert(tlv.spec_parse(ibuf32) == Some((ibuf32.len() as int, msg2)));
+
+    #[verusfmt::skip]
+    let tlv2 =
+        Implicit(U8, |tag: u8|
+        Implicit(U8, |len1: u8|
+        (Fixed::<3>,
+        Implicit(U16Le, |len2: u16|
+        (Varied(len1 as usize),
+        ExactLen(len2 as usize, Choice(Cond(tag == 0u8, Tail),
+                                 Choice(Cond(tag == 1u8, Varied(len2 as usize)),
+                                        Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
+
+    assert(tlv2.unambiguous());
+    assert(tlv2.consistent(msg1)) by {
+        let tag = 0u8;
+        let len1 = 5u8;
+        let len2 = 2u16;
+
+        assert(tlv2.0.consistent(tag));
+        assert(tlv2.1(tag).0.consistent(len1));
+        assert(tlv2.1(tag).1(len1).0.consistent(padding));
+        assert(tlv2.1(tag).1(len1).1.0.consistent(len2));
+        assert(tlv2.1(tag).1(len1).1.1(len2).0.consistent(v1));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.1.consistent(v2_1));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.0 == tlv2.1(tag).1(len1).1.1(len2).1.1.byte_len(
+            v2_1,
+        ));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.consistent(v2_1));
+        assert(tlv2.1(tag).1(len1).1.1(len2).consistent((v1, v2_1)));
+        assert(tlv2.1(tag).1(len1).1.consistent((v1, v2_1)));
+        assert(tlv2.1(tag).1(len1).consistent(msg1));
+        assert(tlv2.1(tag).consistent(msg1));
+    }
+    assert(tlv2.consistent(msg2)) by {
+        let tag = 1u8;
+        let len1 = 5u8;
+        let len2 = 4u16;
+
+        assert(tlv2.0.consistent(tag));
+        assert(tlv2.1(tag).0.consistent(len1));
+        assert(tlv2.1(tag).1(len1).0.consistent(padding));
+        assert(tlv2.1(tag).1(len1).1.0.consistent(len2));
+        assert(tlv2.1(tag).1(len1).1.1(len2).0.consistent(v1));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.1.consistent(v2_2));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.0 == tlv2.1(tag).1(len1).1.1(len2).1.1.byte_len(
+            v2_2,
+        ));
+        assert(tlv2.1(tag).1(len1).1.1(len2).1.consistent(v2_2));
+        assert(tlv2.1(tag).1(len1).1.1(len2).consistent((v1, v2_2)));
+        assert(tlv2.1(tag).1(len1).1.consistent((v1, v2_2)));
+        assert(tlv2.1(tag).1(len1).consistent(msg2));
+        assert(tlv2.1(tag).consistent(msg2));
+    }
+
+    tlv2.theorem_serialize_parse_roundtrip(msg1);
+    tlv2.theorem_serialize_parse_roundtrip(msg2);
+}
+
+} // verus!
