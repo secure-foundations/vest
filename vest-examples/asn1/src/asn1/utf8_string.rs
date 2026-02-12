@@ -1,0 +1,201 @@
+use super::*;
+use vstd::prelude::*;
+use vstd::vstd::slice::slice_subrange;
+
+verus! {
+
+/// Combainator for UTF8String in ASN.1
+#[derive(Debug, View)]
+pub struct UTF8String;
+
+asn1_tagged!(UTF8String, tag_of!(UTF8_STRING));
+
+pub type SpecUTF8StringValue = Seq<char>;
+pub type UTF8StringValue<'a> = &'a str;
+pub type UTF8StringValueOwned = String;
+
+impl SpecCombinator for UTF8String {
+    type Type = SpecUTF8StringValue;
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        let s = spec_serialize_utf8(v);
+        s.len() <= LengthValue::MAX &&
+        Length.spec_serialize(s.len() as LengthValue).len() + s.len() <= usize::MAX
+    }
+    
+    open spec fn requires(&self) -> bool {
+        true
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        match Length.spec_parse(s) {
+            Some((n, l)) => {
+                if n + l <= usize::MAX && n + l <= s.len() {
+                    match spec_parse_utf8(s.skip(n).take(l as int)) {
+                        Some(parsed) => Some((n + l, parsed)),
+                        None => None,
+                    }
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let s = spec_serialize_utf8(v);
+        let buf = Length.spec_serialize(s.len() as LengthValue);
+        if buf.len() + s.len() <= usize::MAX {
+            buf + s
+        } else {
+            seq![]
+        }
+    }
+}
+
+impl SecureSpecCombinator for UTF8String {
+    open spec fn is_prefix_secure() -> bool {
+        true
+    }
+    
+    open spec fn is_productive(&self) -> bool {
+        true
+    }
+
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let s = spec_serialize_utf8(v);
+
+        if s.len() <= LengthValue::MAX {
+            Length.theorem_serialize_parse_roundtrip(s.len() as LengthValue);
+            spec_utf8_serialize_parse_roundtrip(v);
+
+            let buf = Length.spec_serialize(s.len() as LengthValue);
+            if buf.len() + s.len() <= usize::MAX {
+                Length.lemma_prefix_secure(buf, s);
+                assert((buf + s).skip(buf.len() as int).take(s.len() as int) == s);
+            }
+        }
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        if let Some((n, l)) = Length.spec_parse(buf) {
+            if n + l <= buf.len() {
+                let s = buf.skip(n).take(l as int);
+
+                Length.theorem_parse_serialize_roundtrip(buf);
+                spec_utf8_parse_serialize_roundtrip(s);
+                assert(buf.subrange(0, n + l) == buf.subrange(0, n) + buf.skip(n).take(l as int));
+            }
+        }
+    }
+
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        Length.lemma_prefix_secure(s1, s2);
+
+        if let Some((n, l)) = Length.spec_parse(s1) {
+            if n + l <= s1.len() {
+                assert(s1.skip(n).take(l as int) =~= (s1 + s2).skip(n).take(l as int));
+            }
+        }
+    }
+    
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {}
+    
+    proof fn lemma_parse_productive(&self, s: Seq<u8>) {}
+}
+
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
+    type Type = UTF8StringValue<'a>;
+    type SType = &'a Self::Type;
+
+    fn length(&self, v: Self::SType) -> usize {
+        let s = str_to_utf8(*v);
+        let length_len = Length.length(s.len() as LengthValue);
+        length_len + s.len()
+    }
+
+    #[inline(always)]
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) {
+        let (n, l) = Length.parse(s)?;
+
+        if let Some(total_len) = n.checked_add(l as usize) {
+            if total_len <= s.len() {
+                match utf8_to_str(slice_take(slice_subrange(s, n, s.len()), l as usize)) {
+                    Some(parsed) => Ok((total_len, parsed)),
+                    _ => Err(ParseError::Other("Invalid UTF-8".to_string()))
+                }
+            } else {
+                Err(ParseError::UnexpectedEndOfInput)
+            }
+        } else {
+            Err(ParseError::Other("Size overflow".to_string()))
+        }
+    }
+
+    #[inline(always)]
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
+        let s = str_to_utf8(*v);
+        let n = Length.serialize(s.len() as LengthValue, data, pos)?;
+
+        if pos.checked_add(n).is_none() {
+            return Err(SerializeError::Other("Size overflow".to_string()));
+        }
+
+        if (pos + n).checked_add(s.len()).is_none() {
+            return Err(SerializeError::Other("Size overflow".to_string()));
+        }
+
+        if pos + n + s.len() >= data.len() {
+            return Err(SerializeError::InsufficientBuffer);
+        }
+
+        let ghost data_after_len = data@;
+
+        // No Vec::splice yet in Verus
+        for i in 0..s.len()
+            invariant
+                pos + n + s.len() <= usize::MAX,
+                pos + n + s.len() < data.len() == data_after_len.len(),
+
+                data@ =~= seq_splice(data_after_len, (pos + n) as usize, s@.take(i as int)),
+        {
+            data.set(pos + n + i, s[i]);
+        }
+
+        assert(data@ =~= seq_splice(old(data)@, pos, Length.spec_serialize(s@.len() as LengthValue) + s@));
+
+        Ok(n + s.len())
+    }
+}
+
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use der::Encode;
+
+    fn serialize_utf8_string(v: &str) -> Result<Vec<u8>, SerializeError> {
+        let mut data = vec![0; v.len() + 10];
+        data[0] = 0x0c; // Prepend the tag byte
+        let len = UTF8String.serialize(&v, &mut data, 1)?;
+        data.truncate(len + 1);
+        Ok(data)
+    }
+
+    #[test]
+    fn diff_with_der() {
+        let diff = |s: &str| {
+            let res1 = serialize_utf8_string(s).map_err(|_| ());
+            let res2 = s.to_string().to_der().map_err(|_| ());
+            assert_eq!(res1, res2);
+        };
+
+        diff("");
+        diff("asdsad");
+        diff("黑风雷");
+        diff("👨‍👩‍👧‍👦");
+        diff("黑风雷".repeat(256).as_str());
+    }
+}

@@ -27,3 +27,5 @@ Cargo.lock
 
 # patches
 *.diff
+
+.DS_Store
