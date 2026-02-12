@@ -27,8 +27,8 @@ pub trait LosslessImplicit<A: Consistency, B: Consistency> {
         value: B::Val,
     )
         ensures
-            fmt.0.consistent(k1) && (fmt.1)(k1).consistent(value) && fmt.0.consistent(k2)
-                && (fmt.1)(k2).consistent(value) ==> k1 == k2,
+            fmt.0.consistent(k1) && (fmt.1)(k1).consistent(value) && fmt.0.consistent(k2) && (
+            fmt.1)(k2).consistent(value) ==> k1 == k2,
     ;
 }
 
@@ -41,8 +41,8 @@ pub trait LosslessImplicitAuto<A: Consistency, B: Consistency> {
         value: B::Val,
     )
         ensures
-            fmt.0.consistent(k1) && (fmt.1)(k1).consistent(value) && fmt.0.consistent(k2)
-                && (fmt.1)(k2).consistent(value) ==> k1 == k2,
+            fmt.0.consistent(k1) && (fmt.1)(k1).consistent(value) && fmt.0.consistent(k2) && (
+            fmt.1)(k2).consistent(value) ==> k1 == k2,
     ;
 }
 

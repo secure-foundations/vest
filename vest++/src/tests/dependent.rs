@@ -6,7 +6,7 @@ use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{disjoint::*, Empty, Preceded, Refined, Void, VoidTag};
 use crate::combinators::{
     Bind, Choice, Cond, DepCombinator, Either, Eof, Fixed, Mapped, Repeat, TVLeaf, TVNode, TVOr,
-    Tag, Tail, U16Le, U32Le, Varied, VariedU16, VariedU8, U8,
+    Tag, Tail, U16Le, U32Le, VLData, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -14,7 +14,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_dependent_varied_u8() {
-    let fmt = Bind(U8, VariedU8);
+    let fmt = Bind(U8, VLData());
     let value = seq![0xAAu8, 0xBBu8, 0xCCu8];
 
     assert(fmt.unambiguous());
@@ -87,10 +87,10 @@ proof fn test_dependent_nary_custom_tag() {
 }
 
 proof fn test_dependent_n_consecutive_lengths_values() {
-    let fmt = Bind((U8, (U16Le, U8)), (VariedU8, (VariedU16, VariedU8)));
+    let fmt = Bind((U8, (U16Le, U8)), (VLData(), (VLData(), VLData())));
     let value = (
-        seq![0x6Eu8, 0x61u8, 0x6Du8, 0x65u8],
-        (seq![0x69u8, 0x64u8, 0x2Du8, 0x31u8, 0x32u8], seq![0x34u8, 0x35u8]),
+        seq![0x6Eu8; u8::MAX as nat],
+        (seq![0x69u8; u16::MAX as nat], seq![0x34u8; u8::MAX as nat]),
     );
 
     assert(fmt.unambiguous());
@@ -159,7 +159,11 @@ type ComplexBody = (
     ),
 );
 
-type V2Fmt = TLVal<u8, TVOr<u8, Tail, TVOr<u8, Tail, TVOr<u8, Repeat<U16Le, Eof>, VoidTag<u8>>>>>;
+type V2Fmt = TLVal<
+    u8,
+    u8,
+    TVOr<u8, Tail, TVOr<u8, Tail, TVOr<u8, Repeat<U16Le, Eof>, VoidTag<u8>>>>,
+>;
 
 #[verusfmt::skip]
 pub open spec fn v2_fmt() -> V2Fmt {
@@ -183,7 +187,7 @@ impl DepCombinator for TLVRest {
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let (tag, (len1, len2)) = key;
         let padding_fmt = Fixed::<3>;
-        let v1_fmt = VariedU8.apply(len1);
+        let v1_fmt = VLData().apply(len1);
         let v2_fmt = v2_fmt().apply((tag, len2));
         let magic_fmt = Refined {
             inner: Fixed::<4>,
@@ -195,7 +199,7 @@ impl DepCombinator for TLVRest {
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         let (padding, (v1, (v2, magic))) = value;
         let (tag, len2) = v2_fmt().recover(v2);
-        let len1 = VariedU8.recover(v1);
+        let len1 = VLData().recover(v1);
         (tag, (len1, len2))
     }
 
@@ -255,27 +259,29 @@ impl DepCombinator for TXSegwitRest {
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let txin_count = key;
-        let txins_fmt = VariedU8.apply(txin_count);
-        let rest_fmt = Bind(U8, TXSegwitRestRest{ txin_count });
+        let txins_fmt = VLData().apply(txin_count);
+        let rest_fmt = Bind(U8, TXSegwitRestRest { txin_count });
         (txins_fmt, rest_fmt)
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         let (txins, rest_val) = value;
         let (txouts, (witness, lock_time)) = rest_val;
-        let txin_count = VariedU8.recover(txins);
+        let txin_count = VLData().recover(txins);
         txin_count
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         if self.apply(key).consistent(value) {
             let (txins, rest_val) = value;
-            VariedU8.lemma_recover_consistent(key, txins);
+            VLData().lemma_recover_consistent(key, txins);
         }
     }
 }
 
-pub struct TXSegwitRestRest{ pub txin_count: u8 }
+pub struct TXSegwitRestRest {
+    pub txin_count: u8,
+}
 
 impl DepCombinator for TXSegwitRestRest {
     type Key = u8;
@@ -287,15 +293,15 @@ impl DepCombinator for TXSegwitRestRest {
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let txin_count = self.txin_count;
         let txout_count = key;
-        let txouts_fmt = VariedU8.apply(txout_count);
-        let witness_fmt = VariedU8.apply(txin_count);
+        let txouts_fmt = VLData().apply(txout_count);
+        let witness_fmt = VLData().apply(txin_count);
         let lock_time_fmt = U32Le;
         (txouts_fmt, (witness_fmt, lock_time_fmt))
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         let (txouts, (witness, lock_time)) = value;
-        let txout_count = VariedU8.recover(txouts);
+        let txout_count = VLData().recover(txouts);
         txout_count
     }
 
@@ -303,7 +309,7 @@ impl DepCombinator for TXSegwitRestRest {
         if self.apply(key).consistent(value) {
             let txouts = value.0;
             assert(self.apply(key).0.consistent(txouts));
-            VariedU8.lemma_recover_consistent(key, txouts);
+            VLData().lemma_recover_consistent(key, txouts);
         }
     }
 }

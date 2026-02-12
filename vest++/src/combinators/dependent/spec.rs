@@ -1,5 +1,6 @@
 use super::*;
 use crate::combinators::bytes::ExactLen;
+use crate::combinators::length::AsLen;
 use crate::combinators::{Choice, Cond, Either, Varied, Void};
 use crate::core::spec::*;
 use vstd::pervasive::arbitrary;
@@ -200,51 +201,31 @@ impl<Head, Nested> DepCombinator for Bind<Head, Nested> where
     }
 }
 
-// Enabling patterns like `Bind(U8, VariedU8)` and `Bind(U16, VariedU16)`.
-// e.g.,
-// ```
-// fmt = {
-//   @l1: u8,
-//   payload1: [u8; @l1],
-// }
-impl DepCombinator for VariedU8 {
-    type Key = u8;
+// Enabling patterns like `Bind(U8, VariedU8())`, `Bind(U16, VariedU16())`,
+// and arbitrary user length types implementing `AsLen`.
+impl<Len: AsLen> DepCombinator for VariedLen<Len> {
+    type Key = Len;
 
     type Val = Seq<u8>;
 
-    type Body = Varied;
+    type Body = Varied<Len>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
-        Varied(key as usize)
+        Varied(key)
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        value.len() as u8
+        Len::from_nat(value.len())
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
+        if self.apply(key).consistent(value) {
+            Len::lemma_lossless_casting(key);
+            assert(value.len() == key.as_usize());
+            assert(value.len() == key.as_usize() as nat);
+        }
     }
 }
-
-impl DepCombinator for VariedU16 {
-    type Key = u16;
-
-    type Val = Seq<u8>;
-
-    type Body = Varied;
-
-    open spec fn apply(&self, key: Self::Key) -> Self::Body {
-        Varied(key as usize)
-    }
-
-    open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        value.len() as u16
-    }
-
-    proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
-    }
-}
-
 
 // Enabling Patterns like `Bind((H1, H2), (T1, T2))`.
 // e.g.,
@@ -382,28 +363,36 @@ impl<Tag, C: Consistency> DepCombinator for TVLeaf<Tag, C> {
     }
 }
 
-impl<Tag, V> DepCombinator for TLVal<Tag, V> where
+impl<Tag, Len, V> DepCombinator for TLVal<Tag, Len, V> where
+    Len: AsLen,
     V: DepCombinator<Key = Tag>,
     V::Body: SpecByteLen<T = V::Val>,
  {
-    type Key = (Tag, u8);
+    type Key = (Tag, Len);
 
     type Val = V::Val;
 
-    type Body = ExactLen<V::Body>;
+    type Body = ExactLen<V::Body, Len>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let (tag, len) = key;
-        ExactLen(len as usize, self.0.apply(tag))
+        ExactLen(len, self.0.apply(tag))
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         let tag = self.0.recover(value);
-        (tag, self.0.apply(tag).byte_len(value) as u8)
+        let body = self.0.apply(tag);
+        (tag, Len::from_nat(body.byte_len(value)))
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
-        self.0.lemma_recover_consistent(key.0, value);
+        if self.apply(key).consistent(value) {
+            self.0.lemma_recover_consistent(key.0, value);
+            Len::lemma_lossless_casting(key.1);
+            let body = self.0.apply(key.0);
+            assert(body.byte_len(value) == key.1.as_usize());
+            assert(body.byte_len(value) == key.1.as_usize() as nat);
+        }
     }
 }
 

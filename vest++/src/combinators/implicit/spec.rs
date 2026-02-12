@@ -220,10 +220,7 @@ impl<A, B> super::LosslessImplicitAuto<A, B> for super::ImplicitAuto<
     A,
     spec_fn(A::Val) -> B,
     spec_fn(B::Val) -> A::Val,
-> where
-    A: Consistency + AdmitsUniqueVal,
-    B: Consistency,
- {
+> where A: Consistency + AdmitsUniqueVal, B: Consistency {
     proof fn lemma_value_determines_key(
         fmt: &super::ImplicitAuto<A, spec_fn(A::Val) -> B, spec_fn(B::Val) -> A::Val>,
         k1: A::Val,

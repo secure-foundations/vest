@@ -35,11 +35,13 @@ pub trait DepCombinator {
 /// - serialize: recover a `key` from the value via `Tail::recover`, then serialize the `body` with that `key`, and finally serialize the `key`
 pub struct Bind<Head, Tail>(pub Head, pub Tail);
 
-/// Length dependency for `Varied` with a `u8` header length.
-pub struct VariedU8;
+/// Length dependency for `Varied` with generic length type.
+pub struct VariedLen<Len>(pub core::marker::PhantomData<Len>);
 
-/// Length dependency for `Varied` with a `u16` header length.
-pub struct VariedU16;
+#[allow(non_snake_case)]
+pub open spec fn VLData<Len>() -> VariedLen<Len> {
+    VariedLen(core::marker::PhantomData)
+}
 
 /// Tagged-value idiom.
 ///
@@ -56,12 +58,13 @@ pub open spec fn Uninhabited<Tag>() -> VoidTag<Tag> {
 }
 
 /// The TLV idiom that expects a `(tag, len)` header before the body, where the body is expected to be `len` bytes long.
-pub struct TLVal<Tag, Body>(pub Body, pub core::marker::PhantomData<Tag>);
+pub struct TLVal<Tag, Len, Body>(pub Body, pub core::marker::PhantomData<(Tag, Len)>);
 
 #[allow(non_snake_case)]
-pub open spec fn TLV<Tag, Body>(body: Body) -> TLVal<Tag, Body> {
+pub open spec fn TLV<Tag, Len, Body>(body: Body) -> TLVal<Tag, Len, Body> {
     TLVal(body, core::marker::PhantomData)
 }
+
 /// The tree version of [`TagVal`] for balanced choices.
 pub struct TagValNode<Tag, Left, Right>(pub Left, pub Right, pub core::marker::PhantomData<Tag>);
 
@@ -76,6 +79,5 @@ pub open spec fn TVNode<Tag, Left, Right>(left: Left, right: Right) -> TagValNod
 > {
     TagValNode(left, right, core::marker::PhantomData)
 }
-
 
 } // verus!

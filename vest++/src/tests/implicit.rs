@@ -7,7 +7,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_implicit_fmt1_roundtrip() {
-    let fmt1 = Implicit(U8, |len: u8| Varied(len as usize));
+    let fmt1 = Implicit(U8, |len: u8| Varied(len));
     let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
 
     assert(fmt1.unambiguous());
@@ -61,7 +61,7 @@ proof fn test_implicit_fmt3_roundtrip() {
 }
 
 proof fn test_implicit_inferred_fmt1_roundtrip() {
-    let fmt1 = ImplicitAuto(U8, |len: u8| Varied(len as usize), |v: Seq<u8>| v.len() as u8);
+    let fmt1 = ImplicitAuto(U8, |len: u8| Varied(len), |v: Seq<u8>| v.len() as u8);
     let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
 
     assert(fmt1.unambiguous());
@@ -87,9 +87,9 @@ proof fn test_implicit_inferred_fmt2_roundtrip() {
         ImplicitAuto(U8, |len1: u8|
         (Fixed::<3>,
         ImplicitAuto(U16Le, |len2: u16|
-        (Varied(len1 as usize),
-        (Varied(len2 as usize),
-         Varied(len1 as usize))),
+        (Varied(len1),
+        (Varied(len2),
+         Varied(len1))),
         // Recovery logics:
         |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16)),
         |v: ([u8; 3], (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8);
@@ -116,6 +116,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
     //     2 => [u8; 1],
     //   }
     // }
+
     #[verusfmt::skip]
     let fmt3 =
         // Format:
@@ -173,9 +174,9 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         ImplicitAuto(U8, |len1: u8|
         (Fixed::<3>,
         ImplicitAuto(U16Le, |len2: u16|
-        (Varied(len1 as usize),
-        ExactLen(len2 as usize, Choice(Cond(tag == 0u8, Tail),
-                                 Choice(Cond(tag == 1u8, Varied(len2 as usize)),
+        (Varied(len1),
+        ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
+                                 Choice(Cond(tag == 1u8, Varied(len2)),
                                         Cond(tag == 2u8, Repeat(U16Le, Eof)))))),
         // Recovery logics:
         |v: (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>)| {
@@ -228,9 +229,9 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         Implicit(U8, |len1: u8|
         (Fixed::<3>,
         Implicit(U16Le, |len2: u16|
-        (Varied(len1 as usize),
-        ExactLen(len2 as usize, Choice(Cond(tag == 0u8, Tail),
-                                 Choice(Cond(tag == 1u8, Varied(len2 as usize)),
+        (Varied(len1),
+        ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
+                                 Choice(Cond(tag == 1u8, Varied(len2)),
                                         Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
 
     assert(tlv2.unambiguous());

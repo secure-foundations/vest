@@ -152,11 +152,7 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
     }
 }
 
-impl<A, B> NonMalleable for super::ImplicitAuto<
-    A,
-    spec_fn(A::T) -> B,
-    spec_fn(B::T) -> A::T,
-> where
+impl<A, B> NonMalleable for super::ImplicitAuto<A, spec_fn(A::T) -> B, spec_fn(B::T) -> A::T> where
     Self: GoodParser<T = B::T>,
     A: NonMalleable,
     B: NonMalleable,

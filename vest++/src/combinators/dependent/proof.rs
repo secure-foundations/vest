@@ -26,7 +26,6 @@ impl<Head, Tail> SPRoundTripDps for super::Bind<Head, Tail> where
     }
 }
 
-
 impl<Head, Tail> NonMalleable for super::Bind<Head, Tail> where
     Head: NonMalleable,
     Tail: super::DepCombinator<Key = Head::T>,
