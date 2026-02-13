@@ -181,3 +181,10 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 }
 
 } // verus!
+
+pub use crate::core::fns::{
+    EquivSerializersGeneralSpecs, EquivSerializersSpecs, NoLookAheadSpecs, NonMalleableSpecs,
+    PSRoundTripSpecs, SPRoundTripDpsSpecs, SPRoundTripSpecs, WfEquivSerializers,
+    WfEquivSerializersGeneral, WfNoLookAhead, WfNonMalleable, WfPSRoundTrip, WfSPRoundTrip,
+    WfSPRoundTripDps,
+};

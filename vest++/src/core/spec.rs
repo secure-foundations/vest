@@ -182,38 +182,8 @@ impl<T> SpecCombinator for T where
 {
 }
 
-pub type WfSpecFn<T> = spec_fn(T) -> bool;
-
-pub type ParserSpecFn<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
-
-pub type SerializerDPSSpecFn<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
-
-pub type SerializerSpecFn<T> = spec_fn(T) -> Seq<u8>;
-
-pub type SerializableSpecFn<T> = spec_fn(T, Seq<u8>) -> bool;
-
-impl<T> SpecParser for ParserSpecFn<T> {
-    type PVal = T;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        (self)(ibuf)
-    }
-}
-
-impl<T> SpecSerializerDps for SerializerDPSSpecFn<T> {
-    type ST = T;
-
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (self)(v, obuf)
-    }
-}
-
-impl<T> SpecSerializer for SerializerSpecFn<T> {
-    type SVal = T;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (self)(v)
-    }
-}
-
 } // verus!
+pub use crate::core::fns::{
+    ByteLenFnSpec, ParserFnSpec, ParserSpecs, SerializerDPSFnSpec, SerializerDPSSpecs,
+    SerializerFnSpec, SerializerSpecs, UnambiguityFnSpec, WfParser, WfSerializer, WfSerializerDps,
+};
