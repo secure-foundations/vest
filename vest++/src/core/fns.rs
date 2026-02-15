@@ -291,12 +291,13 @@ impl<T> Unambiguity for SPRoundTripDpsSpecs<T> {
 impl<T> WfSPRoundTripDps for SPRoundTripDpsSpecs<T> {
     open spec fn ih(&self) -> bool {
         forall|v: T, obuf: Seq<u8>| #[trigger]
-            self.spec_parse(self.spec_serialize_dps(v, obuf))
-            == Some((self.byte_len(v) as int, v))
+            self.spec_parse(self.spec_serialize_dps(v, obuf)) == Some((self.byte_len(v) as int, v))
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert(self.spec_parse(self.spec_serialize_dps(v, obuf)) == Some((self.byte_len(v) as int, v)));
+        assert(self.spec_parse(self.spec_serialize_dps(v, obuf)) == Some(
+            (self.byte_len(v) as int, v),
+        ));
     }
 }
 
@@ -374,8 +375,9 @@ impl<T> Unambiguity for SPRoundTripSpecs<T> {
 impl<T> WfSPRoundTrip for SPRoundTripSpecs<T> {
     open spec fn ih(&self) -> bool {
         forall|v: T| #[trigger]
-            self.spec_parse(self.spec_serialize(v))
-            == Some((self.spec_serialize(v).len() as int, v))
+            self.spec_parse(self.spec_serialize(v)) == Some(
+                (self.spec_serialize(v).len() as int, v),
+            )
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
@@ -467,9 +469,7 @@ impl<T> WfPSRoundTrip for PSRoundTripSpecs<T> {
     }
 }
 
-pub trait WfNonMalleable:
-    SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T>
-{
+pub trait WfNonMalleable: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
     open spec fn ih(&self) -> bool {
         true
     }
@@ -490,9 +490,9 @@ pub type NonMalleableSpecs<T> = ParserSpecs<T>;
 impl<T> WfNonMalleable for NonMalleableSpecs<T> {
     open spec fn ih(&self) -> bool {
         forall|buf1: Seq<u8>, buf2: Seq<u8>| #[trigger]
-            self.spec_parse(buf1) matches Some((n1, v1)) ==>
-            #[trigger] self.spec_parse(buf2) matches Some((n2, v2)) ==> v1 == v2 ==> buf1.take(n1)
-                == buf2.take(n2)
+            self.spec_parse(buf1) matches Some((n1, v1)) ==> #[trigger] self.spec_parse(
+                buf2,
+            ) matches Some((n2, v2)) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(n2)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {

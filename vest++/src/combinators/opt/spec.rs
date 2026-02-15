@@ -31,14 +31,14 @@ impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     }
 
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-            assert(self.inv());
+        assert(self.inv());
         self.0.lemma_parse_len_bound(ibuf);
     }
 
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
         match self.0.spec_parse(ibuf) {
             Some((n, vv)) => {
-                    assert(self.inv());
+                assert(self.inv());
                 self.0.lemma_parse_byte_len(ibuf);
             },
             None => {},
@@ -46,7 +46,7 @@ impl<A> GoodParser for super::Opt<A> where A: GoodParser {
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-            assert(self.inv());
+        assert(self.inv());
         self.0.lemma_parse_consistent(ibuf);
     }
 }

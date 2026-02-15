@@ -188,7 +188,6 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 }
 
 } // verus!
-
 pub use crate::core::fns::{
     EquivSerializersGeneralSpecs, EquivSerializersSpecs, NonMalleableSpecs, PSRoundTripSpecs,
     SPRoundTripDpsSpecs, SPRoundTripSpecs, WfEquivSerializers, WfEquivSerializersGeneral,

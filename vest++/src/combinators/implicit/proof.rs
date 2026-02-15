@@ -196,7 +196,6 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
 //         }
 //     }
 // }
-
 impl<A, B> EquivSerializersGeneral for super::ImplicitAuto<
     A,
     spec_fn(A::SVal) -> B,
