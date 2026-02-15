@@ -27,6 +27,11 @@ impl<A, B> GoodParser for super::Preceded<A, B> where
     A: GoodParser + AdmitsUniqueVal,
     B: GoodParser,
  {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         (self.0, self.1).lemma_parse_len_bound(ibuf);
     }

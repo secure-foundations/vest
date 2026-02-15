@@ -68,6 +68,8 @@ impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
 
 impl<A: NonMalleable> super::Star<A> {
     proof fn lemma_parse_non_malleable_rec(&self, buf1: Seq<u8>, buf2: Seq<u8>)
+        requires
+            self.inv(),
         ensures
             ({
                 let (n1, v1) = self.parse_rec(buf1);
@@ -128,6 +130,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
 impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
+            self.inv(),
             self.inner.unambiguous(),
             parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
         ensures

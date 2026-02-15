@@ -53,6 +53,11 @@ impl<A, B> GoodParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
     B: GoodParser,
     Self: super::LosslessImplicit<A, B>,
  {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_len_bound(ibuf);
         if let Some((n1, a)) = self.0.spec_parse(ibuf) {

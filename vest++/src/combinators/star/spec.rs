@@ -33,6 +33,8 @@ impl<A: GoodParser> super::Star<A> {
     }
 
     proof fn lemma_parse_rec_length(&self, ibuf: Seq<u8>)
+        requires
+            self.inner.inv(),
         ensures
             0 <= self.parse_rec(ibuf).0 <= ibuf.len(),
         decreases ibuf.len(),
@@ -46,6 +48,8 @@ impl<A: GoodParser> super::Star<A> {
     }
 
     proof fn lemma_parse_rec_consistent(&self, ibuf: Seq<u8>)
+        requires
+            self.inner.inv(),
         ensures
             self.consistent(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
@@ -59,6 +63,8 @@ impl<A: GoodParser> super::Star<A> {
     }
 
     proof fn lemma_parse_rec_byte_len(&self, ibuf: Seq<u8>)
+        requires
+            self.inner.inv(),
         ensures
             self.parse_rec(ibuf).0 == self.byte_len(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
@@ -92,6 +98,10 @@ impl<A> Consistency for super::Star<A> where A: Consistency {
 }
 
 impl<A> GoodParser for super::Star<A> where A: GoodParser {
+    open spec fn inv(&self) -> bool {
+        self.inner.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
     }
@@ -246,6 +256,11 @@ impl<A, B> Consistency for super::Repeat<A, B> where A: Consistency, B: Consiste
 }
 
 impl<A, B> GoodParser for super::Repeat<A, B> where A: GoodParser, B: GoodParser {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_len_bound(ibuf)
     }

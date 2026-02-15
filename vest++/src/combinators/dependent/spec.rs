@@ -46,6 +46,11 @@ impl<Head, Tail> GoodParser for Bind<Head, Tail> where
     Tail: DepCombinator<Key = Head::PVal>,
     Tail::Body: GoodParser<T = Tail::Val>,
  {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_len_bound(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {

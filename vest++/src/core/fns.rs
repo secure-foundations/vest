@@ -1,6 +1,6 @@
 use crate::core::spec::{
-    Consistency, PredFnSpec, SpecByteLen, SpecParser, SpecSerializer, SpecSerializerDps,
-    Unambiguity,
+    Consistency, GoodParser, PredFnSpec, SpecByteLen, SpecParser, SpecSerializer,
+    SpecSerializerDps, Unambiguity,
 };
 use vstd::prelude::*;
 
@@ -54,40 +54,6 @@ impl<T> SpecSerializer for SerializerFnSpec<T> {
     }
 }
 
-/// A well-behaved parser that satisfies key properties.
-///
-/// This is tailored for function-backed parser specs and intentionally named
-/// differently from [`crate::core::spec::GoodParser`] for compatibility.
-pub trait WfParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
-    open spec fn ih(&self) -> bool {
-        true
-    }
-
-    /// Lemma: parser returns valid buffer positions
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>)
-        requires
-            self.ih(),
-        ensures
-            self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
-    ;
-
-    /// Lemma: parser returns the correct # of bytes consumed w.r.t. the value
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>)
-        requires
-            self.ih(),
-        ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
-    ;
-
-    /// Lemma: parser returns consistent values
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>)
-        requires
-            self.ih(),
-        ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> self.consistent(v),
-    ;
-}
-
 pub type ParserSpecs<T> = (ParserFnSpec<T>, PredFnSpec<T>, ByteLenFnSpec<T>);
 
 impl<T> SpecByteLen for ParserSpecs<T> {
@@ -114,13 +80,14 @@ impl<T> Consistency for ParserSpecs<T> {
     }
 }
 
-impl<T> WfParser for ParserSpecs<T> {
-    open spec fn ih(&self) -> bool {
+impl<T> GoodParser for ParserSpecs<T> {
+    open spec fn inv(&self) -> bool {
+        let (p_fn, c_fn, len_fn) = *self;
         forall|i: Seq<u8>| #[trigger]
-            (self.0)(i) matches Some((n, v)) ==> {
+            (p_fn)(i) matches Some((n, v)) ==> {
                 &&& 0 <= n <= i.len()
-                &&& n == (self.2)(v)
-                &&& (self.1)(v)
+                &&& n == (len_fn)(v)
+                &&& (c_fn)(v)
             }
     }
 
@@ -533,115 +500,6 @@ impl<T> WfNonMalleable for NonMalleableSpecs<T> {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
                     assert(buf1.take(n1) == buf2.take(n2));
-                }
-            }
-        }
-    }
-}
-
-pub trait WfNoLookAhead: WfParser + Unambiguity {
-    open spec fn ih_no_lookahead(&self) -> bool {
-        true
-    }
-
-    #[verusfmt::skip]
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
-        requires
-            self.ih_no_lookahead(),
-            self.unambiguous(),
-            self.ih(),
-        ensures
-            self.spec_parse(i1) matches Some((n, v)) ==>
-            0 <= n <= i2.len() ==> i2.take(n) == i1.take(n) ==>
-            self.spec_parse(i2) == Some((n, v)),
-    ;
-
-    proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
-        requires
-            self.ih_no_lookahead(),
-            self.unambiguous(),
-            self.ih(),
-        ensures
-            self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),
-    {
-        self.lemma_no_lookahead(i1, i1 + i2);
-        if let Some((n, v)) = self.spec_parse(i1) {
-            self.lemma_parse_len_bound(i1);
-            assert(0 <= n <= (i1 + i2).len());
-            assert(i1.take(n) == (i1 + i2).take(n));
-        }
-    }
-}
-
-pub type NoLookAheadSpecs<T> = (
-    ParserFnSpec<T>,
-    PredFnSpec<T>,
-    ByteLenFnSpec<T>,
-    UnambiguityFnSpec,
-);
-
-impl<T> SpecByteLen for NoLookAheadSpecs<T> {
-    type T = T;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.2)(v)
-    }
-}
-
-impl<T> SpecParser for NoLookAheadSpecs<T> {
-    type PVal = T;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        (self.0)(ibuf)
-    }
-}
-
-impl<T> Consistency for NoLookAheadSpecs<T> {
-    type Val = T;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        (self.1)(v)
-    }
-}
-
-impl<T> Unambiguity for NoLookAheadSpecs<T> {
-    open spec fn unambiguous(&self) -> bool {
-        (self.3)()
-    }
-}
-
-impl<T> WfParser for NoLookAheadSpecs<T> {
-    open spec fn ih(&self) -> bool {
-        forall|i: Seq<u8>| #[trigger]
-            (self.0)(i) matches Some((n, v)) ==> {
-                &&& 0 <= n <= i.len()
-                &&& n == (self.2)(v)
-                &&& (self.1)(v)
-            }
-    }
-
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-    }
-
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-    }
-
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-    }
-}
-
-impl<T> WfNoLookAhead for NoLookAheadSpecs<T> {
-    open spec fn ih_no_lookahead(&self) -> bool {
-        forall|i1: Seq<u8>, i2: Seq<u8>| #[trigger]
-            self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
-                == i1.take(n) ==> #[trigger] self.spec_parse(i2) == Some((n, v))
-    }
-
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.spec_parse(i2) == Some((n, v)));
                 }
             }
         }

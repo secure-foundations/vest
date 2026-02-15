@@ -199,6 +199,10 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>, Len: AsLen> Consistency f
 }
 
 impl<Inner: GoodParser, Len: AsLen> GoodParser for super::ExactLen<Inner, Len> {
+    open spec fn inv(&self) -> bool {
+        self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         match super::Varied(self.0).spec_parse(ibuf) {
             None => {},
@@ -316,6 +320,10 @@ impl<Len: AsLen, Then: Consistency + SpecByteLen<T = Then::Val>> Consistency for
 }
 
 impl<Len: AsLen, Then: GoodParser> GoodParser for super::AndThen<Varied<Len>, Then> {
+    open spec fn inv(&self) -> bool {
+        self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         match self.0.spec_parse(ibuf) {
             None => {},

@@ -59,6 +59,10 @@ impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
     Inner: GoodParser,
     M: IsoMapper<In = Inner::PVal>,
  {
+    open spec fn inv(&self) -> bool {
+        self.inner.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_len_bound(ibuf);
     }

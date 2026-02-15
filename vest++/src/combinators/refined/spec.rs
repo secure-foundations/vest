@@ -23,6 +23,10 @@ impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred
 }
 
 impl<A, Pred> GoodParser for super::Refined<A, Pred> where A: GoodParser, Pred: SpecPred<A::PVal> {
+    open spec fn inv(&self) -> bool {
+        self.inner.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_len_bound(ibuf);
     }
@@ -131,6 +135,10 @@ impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consi
 }
 
 impl<Inner> GoodParser for super::Tag<Inner, Inner::PVal> where Inner: GoodParser {
+    open spec fn inv(&self) -> bool {
+        self.inner.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_len_bound(ibuf);
     }

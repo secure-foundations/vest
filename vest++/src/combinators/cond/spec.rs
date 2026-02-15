@@ -24,6 +24,10 @@ impl<Inner: Consistency> Consistency for super::Cond<Inner> {
 }
 
 impl<Inner: GoodParser> GoodParser for super::Cond<Inner> {
+    open spec fn inv(&self) -> bool {
+        self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         if self.0 {
             self.1.lemma_parse_len_bound(ibuf);

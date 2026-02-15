@@ -30,6 +30,7 @@ impl<A: SPRoundTripDps> super::Opt<A> {
 impl<A: NoLookAhead> super::Opt<A> {
     proof fn lemma_opt_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
+            self.0.inv(),
             self.0.unambiguous(),
             parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
         ensures

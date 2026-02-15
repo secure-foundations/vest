@@ -36,20 +36,35 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
 
 /// A well-behaved parser that satisfies key properties.
 pub trait GoodParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
+    /// Invariants for the parser specification [`SpecParser`] w.r.t.
+    /// the consistency condition defined by [`Consistency`] as well as the
+    /// byte length function defined by [`SpecByteLen`].
+    ///
+    /// This is primarily used for restricting recursive combinator definitions
+    open spec fn inv(&self) -> bool {
+        true
+    }
+
     /// Lemma: parser returns valid buffer positions
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>)
+        requires
+            self.inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 
     /// Lemma: parser returns the correct # of bytes consumed w.r.t. the value
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>)
+        requires
+            self.inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
 
     /// Lemma: parser returns consistent values
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>)
+        requires
+            self.inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.consistent(v),
     ;
@@ -185,5 +200,5 @@ impl<T> SpecCombinator for T where
 } // verus!
 pub use crate::core::fns::{
     ByteLenFnSpec, ParserFnSpec, ParserSpecs, SerializerDPSFnSpec, SerializerDPSSpecs,
-    SerializerFnSpec, SerializerSpecs, UnambiguityFnSpec, WfParser, WfSerializer, WfSerializerDps,
+    SerializerFnSpec, SerializerSpecs, UnambiguityFnSpec, WfSerializer, WfSerializerDps,
 };

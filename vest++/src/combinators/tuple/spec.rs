@@ -26,6 +26,11 @@ impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
 }
 
 impl<A, B> GoodParser for (A, B) where A: GoodParser, B: GoodParser {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_len_bound(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {

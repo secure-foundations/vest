@@ -152,50 +152,50 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
     }
 }
 
-impl<A, B> NonMalleable for super::ImplicitAuto<A, spec_fn(A::T) -> B, spec_fn(B::T) -> A::T> where
-    Self: GoodParser<T = B::T>,
-    A: NonMalleable,
-    B: NonMalleable,
-    Self: super::LosslessImplicitAuto<A, B>,
- {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        if let Some((n1, v1)) = self.spec_parse(buf1) {
-            if let Some((n2, v2)) = self.spec_parse(buf2) {
-                if v1 == v2 {
-                    let (n1a, a1) = self.0.spec_parse(buf1)->0;
-                    let (n2a, a2) = self.0.spec_parse(buf2)->0;
-                    let next1 = (self.1)(a1);
-                    let next2 = (self.1)(a2);
-                    let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
-                    self.0.lemma_parse_consistent(buf1);
-                    self.0.lemma_parse_consistent(buf2);
-                    next1.lemma_parse_consistent(buf1.skip(n1a));
-                    next2.lemma_parse_consistent(buf2.skip(n2a));
-                    <Self as super::LosslessImplicitAuto<A, B>>::lemma_value_determines_key(
-                        self,
-                        a1,
-                        a2,
-                        v,
-                    );
-                    assert(a1 == a2 && next1 == next2);
-                    let next = next1;
-                    self.0.lemma_parse_len_bound(buf1);
-                    self.0.lemma_parse_len_bound(buf2);
-                    next.lemma_parse_len_bound(buf1.skip(n1a));
-                    next.lemma_parse_len_bound(buf2.skip(n2a));
-                    self.0.lemma_parse_non_malleable(buf1, buf2);
-                    next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
-                    assert(n1 == n1a + n1b && n2 == n2a + n2b);
-                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
-                    }
-                }
-            }
-        }
-    }
-}
+// impl<A, B> NonMalleable for super::ImplicitAuto<A, spec_fn(A::T) -> B, spec_fn(B::T) -> A::T> where
+//     Self: GoodParser<T = B::T>,
+//     A: NonMalleable,
+//     B: NonMalleable,
+//     Self: super::LosslessImplicitAuto<A, B>,
+//  {
+//     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+//         if let Some((n1, v1)) = self.spec_parse(buf1) {
+//             if let Some((n2, v2)) = self.spec_parse(buf2) {
+//                 if v1 == v2 {
+//                     let (n1a, a1) = self.0.spec_parse(buf1)->0;
+//                     let (n2a, a2) = self.0.spec_parse(buf2)->0;
+//                     let next1 = (self.1)(a1);
+//                     let next2 = (self.1)(a2);
+//                     let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
+//                     let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
+//                     self.0.lemma_parse_consistent(buf1);
+//                     self.0.lemma_parse_consistent(buf2);
+//                     next1.lemma_parse_consistent(buf1.skip(n1a));
+//                     next2.lemma_parse_consistent(buf2.skip(n2a));
+//                     <Self as super::LosslessImplicitAuto<A, B>>::lemma_value_determines_key(
+//                         self,
+//                         a1,
+//                         a2,
+//                         v,
+//                     );
+//                     assert(a1 == a2 && next1 == next2);
+//                     let next = next1;
+//                     self.0.lemma_parse_len_bound(buf1);
+//                     self.0.lemma_parse_len_bound(buf2);
+//                     next.lemma_parse_len_bound(buf1.skip(n1a));
+//                     next.lemma_parse_len_bound(buf2.skip(n2a));
+//                     self.0.lemma_parse_non_malleable(buf1, buf2);
+//                     next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+//                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
+//                     assert(buf1.take(n1) == buf2.take(n2)) by {
+//                         assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
+//                         assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 impl<A, B> EquivSerializersGeneral for super::ImplicitAuto<
     A,

@@ -34,6 +34,11 @@ impl<A: Consistency, B: Consistency> Consistency for super::Choice<A, B> {
 }
 
 impl<A: GoodParser, B: GoodParser> GoodParser for super::Choice<A, B> {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_len_bound(ibuf);
         self.1.lemma_parse_len_bound(ibuf);
@@ -175,6 +180,11 @@ impl<A, B> GoodParser for super::Alt<A, B> where
     A: GoodParser + DisjointFrom<B>,
     B: GoodParser<T = A::T>,
  {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.1.inv()
+    }
+
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_len_bound(ibuf);
         self.1.lemma_parse_len_bound(ibuf);

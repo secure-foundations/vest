@@ -84,10 +84,12 @@ pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
+          GoodParser +
           Unambiguity,
 {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires
+            self.inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
@@ -95,6 +97,7 @@ pub trait PSRoundTrip where
 
     proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
+            self.inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
@@ -129,6 +132,8 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
 pub trait NonMalleable: GoodParser {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
+        requires
+            self.inv(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>
@@ -140,6 +145,7 @@ pub trait NoLookAhead: GoodParser + Unambiguity {
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
+            self.inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==>
@@ -149,6 +155,7 @@ pub trait NoLookAhead: GoodParser + Unambiguity {
 
     proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
+            self.inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),
@@ -183,8 +190,7 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 } // verus!
 
 pub use crate::core::fns::{
-    EquivSerializersGeneralSpecs, EquivSerializersSpecs, NoLookAheadSpecs, NonMalleableSpecs,
-    PSRoundTripSpecs, SPRoundTripDpsSpecs, SPRoundTripSpecs, WfEquivSerializers,
-    WfEquivSerializersGeneral, WfNoLookAhead, WfNonMalleable, WfPSRoundTrip, WfSPRoundTrip,
-    WfSPRoundTripDps,
+    EquivSerializersGeneralSpecs, EquivSerializersSpecs, NonMalleableSpecs, PSRoundTripSpecs,
+    SPRoundTripDpsSpecs, SPRoundTripSpecs, WfEquivSerializers, WfEquivSerializersGeneral,
+    WfNonMalleable, WfPSRoundTrip, WfSPRoundTrip, WfSPRoundTripDps,
 };
