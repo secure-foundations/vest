@@ -2,6 +2,8 @@ pub mod spec;
 
 use vstd::prelude::*;
 
+pub use spec::RecBody;
+
 verus! {
 
 /// The "fixpoint" combinator for recursive parser/serializer.
