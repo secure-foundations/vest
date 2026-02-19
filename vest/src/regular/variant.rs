@@ -508,6 +508,7 @@ impl<Fst, Snd> SecureSpecCombinator for OptThen<Fst, Snd> where
     }
 
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>) {
+        vstd::slice::axiom_slice_ext_equal(&[true], &[true]);
         if Fst::is_prefix_secure() && Snd::is_prefix_secure() {
             self.0.0.0.lemma_prefix_secure(s1, s2);
             self.0.0.lemma_parse_length(s1);
