@@ -27,6 +27,6 @@ verus! {
 /// );
 ///
 /// ```
-pub struct Fix<Body>(pub Body);
+pub struct Fix<const LIMIT: usize, Body>(pub Body);
 
 } // verus!

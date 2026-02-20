@@ -3,12 +3,8 @@ use vstd::prelude::*;
 
 verus! {
 
-pub trait Height {
-    spec fn height(&self) -> nat;
-}
-
 pub trait RecBody {
-    type Val: Height;
+    type Val;
 
     spec fn parse_body(&self, rec: ParserFnSpec<Self::Val>) -> ParserFnSpec<Self::Val>;
 
@@ -16,52 +12,86 @@ pub trait RecBody {
 
     spec fn consistent_body(&self, rec: PredFnSpec<Self::Val>) -> PredFnSpec<Self::Val>;
 
-    proof fn lemma_body_smaller_height(
+    proof fn lemma_body_preservation(
         &self,
-        rec: ParserFnSpec<Self::Val>,
-        ibuf: Seq<u8>,
-        rem: Seq<u8>,
-        ni: int,
-        nr: int,
-        vi: Self::Val,
-        vr: Self::Val,
+        p_rec: ParserFnSpec<Self::Val>,
+        c_rec: PredFnSpec<Self::Val>,
+        b_rec: ByteLenFnSpec<Self::Val>,
     )
         requires
-            rem.len() < ibuf.len(),
-            self.parse_body(rec)(ibuf) == Some((ni, vi)),
-            rec(rem) == Some((nr, vr)),
+            good_parser(p_rec, c_rec, b_rec),
         ensures
-            vr.height() < vi.height(),
+            good_parser(
+                self.parse_body(p_rec),
+                self.consistent_body(c_rec),
+                self.byte_len_body(b_rec),
+            ),
     ;
 }
 
-impl<Body: RecBody> SpecParser for super::Fix<Body> {
+impl<const LIMIT: usize, Body: RecBody> SpecParser for super::Fix<LIMIT, Body> {
     type PVal = Body::Val;
 
-    open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)>
-        decreases input.len(), 1nat,
-    {
-        self.0.parse_body(self.parse_callback(input))(input)
+    open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
+        self.spec_parse_with_gas(LIMIT as nat, input)
     }
 }
 
-impl<Body: RecBody> Consistency for super::Fix<Body> {
+impl<const LIMIT: usize, Body: RecBody> Consistency for super::Fix<LIMIT, Body> {
     type Val = Body::Val;
 
-    open spec fn consistent(&self, v: Self::Val) -> bool
-        decreases v.height(), 1nat,
-    {
-        self.0.consistent_body(self.consistent_callback(v))(v)
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.consistent_with_gas(LIMIT as nat, v)
     }
 }
 
-impl<Body: RecBody> SpecByteLen for super::Fix<Body> {
+impl<const LIMIT: usize, Body: RecBody> SpecByteLen for super::Fix<LIMIT, Body> {
     type T = Body::Val;
 
-    open spec fn byte_len(&self, v: Self::T) -> nat
-        decreases v.height(), 1nat,
-    {
-        self.0.byte_len_body(self.byte_len_callback(v))(v)
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.byte_len_with_gas(LIMIT as nat, v)
+    }
+}
+
+pub type ParserSpecs<T> = (ParserFnSpec<T>, PredFnSpec<T>, ByteLenFnSpec<T>);
+
+impl<T> SpecByteLen for ParserSpecs<T> {
+    type T = T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        (self.2)(v)
+    }
+}
+
+impl<T> SpecParser for ParserSpecs<T> {
+    type PVal = T;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        (self.0)(ibuf)
+    }
+}
+
+impl<T> Consistency for ParserSpecs<T> {
+    type Val = T;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        (self.1)(v)
+    }
+}
+
+impl<T> GoodParser for ParserSpecs<T> {
+    open spec fn inv(&self) -> bool {
+        let (p_fn, c_fn, b_fn) = *self;
+        good_parser(p_fn, c_fn, b_fn)
+    }
+
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -78,79 +108,82 @@ pub open spec fn good_parser<T>(
         }
 }
 
-impl<Body: RecBody> super::Fix<Body> {
-    pub open spec fn parse_callback(&self, input: Seq<u8>) -> ParserFnSpec<Body::Val>
-        decreases input.len(), 0nat,
+impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
+    pub open spec fn spec_parse_with_gas(&self, gas: nat, input: Seq<u8>) -> Option<
+        (int, Body::Val),
+    >
+        decreases gas, 1nat,
     {
-        |rem: Seq<u8>|
+        self.0.parse_body(self.parse_callback(gas))(input)
+    }
+
+    pub open spec fn consistent_with_gas(&self, gas: nat, v: Body::Val) -> bool
+        decreases gas, 1nat,
+    {
+        self.0.consistent_body(self.consistent_callback(gas))(v)
+    }
+
+    pub open spec fn byte_len_with_gas(&self, gas: nat, v: Body::Val) -> nat
+        decreases gas, 1nat,
+    {
+        self.0.byte_len_body(self.byte_len_callback(gas))(v)
+    }
+
+    pub open spec fn parse_callback(&self, gas: nat) -> ParserFnSpec<Body::Val>
+        decreases gas, 0nat,
+    {
+        |ibuf: Seq<u8>|
             {
-                if rem.len() < input.len() {
-                    self.spec_parse(rem)
+                if gas > 0 {
+                    self.spec_parse_with_gas((gas - 1) as nat, ibuf)
                 } else {
                     None
                 }
             }
     }
 
-    pub open spec fn consistent_callback(&self, v: Body::Val) -> PredFnSpec<Body::Val>
-        decreases v.height(), 0nat,
+    pub open spec fn consistent_callback(&self, gas: nat) -> PredFnSpec<Body::Val>
+        decreases gas, 0nat,
     {
         |vv: Body::Val|
             {
-                if vv.height() < v.height() {
-                    self.consistent(vv)
+                if gas > 0 {
+                    self.consistent_with_gas((gas - 1) as nat, vv)
                 } else {
                     false
                 }
             }
     }
 
-    pub open spec fn byte_len_callback(&self, v: Body::Val) -> ByteLenFnSpec<Body::Val>
-        decreases v.height(), 0nat,
+    pub open spec fn byte_len_callback(&self, gas: nat) -> ByteLenFnSpec<Body::Val>
+        decreases gas, 0nat,
     {
         |vv: Body::Val|
             {
-                if vv.height() < v.height() {
-                    self.byte_len(vv)
+                if gas > 0 {
+                    self.byte_len_with_gas((gas - 1) as nat, vv)
                 } else {
                     0
                 }
             }
     }
 
-    pub open spec fn induction(&self) -> bool {
-        forall|
-            p_rec: ParserFnSpec<Body::Val>,
-            b_rec: ByteLenFnSpec<Body::Val>,
-            c_rec: PredFnSpec<Body::Val>,
-        |
-            {
-                good_parser(p_rec, c_rec, b_rec) ==> good_parser(
-                    self.0.parse_body(p_rec),
-                    self.0.consistent_body(c_rec),
-                    self.0.byte_len_body(b_rec),
-                )
-            }
-    }
-
-    proof fn good_parser_by_induction(&self, input: Seq<u8>, n: int, v: Body::Val)
-        requires
-            self.induction(),
+    proof fn good_parser_by_induction(&self, gas: nat, input: Seq<u8>, n: int, v: Body::Val)
         ensures
-            self.spec_parse(input) == Some((n, v)) ==> {
+            self.spec_parse_with_gas(gas, input) == Some((n, v)) ==> {
                 &&& 0 <= n <= input.len()
-                &&& self.consistent(v)
-                &&& self.byte_len(v) == n
+                &&& self.consistent_with_gas(gas, v)
+                &&& self.byte_len_with_gas(gas, v) == n
             },
-        decreases input.len(),
+        decreases gas,
     {
         // vacuous case
-        if !(self.spec_parse(input) == Some((n, v))) {
+        if !(self.spec_parse_with_gas(gas, input) == Some((n, v))) {
             return ;
         }
-        let callback_p = self.parse_callback(input);
-        let callback_c = self.consistent_callback(v);
-        let callback_b = self.byte_len_callback(v);
+        let callback_p = self.parse_callback(gas);
+        let callback_c = self.consistent_callback(gas);
+        let callback_b = self.byte_len_callback(gas);
 
         // establish good_parser(callback_p, callback_c, callback_b)
         assert forall|rem: Seq<u8>| #[trigger]
@@ -160,61 +193,167 @@ impl<Body: RecBody> super::Fix<Body> {
                 &&& callback_b(vv) == nn
             } by {
             if let Some((nn, vv)) = callback_p(rem) {
-                if rem.len() < input.len() {
-                    self.good_parser_by_induction(rem, nn, vv);
-                    // IH gives: 0 <= nn <= rem.len(), self.consistent(vv), self.byte_len(vv) == nn
-                    assert(0 <= nn <= rem.len());
+                self.good_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+                // IH gives: 0 <= nn <= rem.len(), consistent_with_gas(gas - 1, vv), byte_len_with_gas(gas - 1, vv) == nn
+                assert(0 <= nn <= rem.len());
 
-                    assert(self.spec_parse(input) == Some((n, v)));
-                    assert(self.spec_parse(rem) == Some((nn, vv)));
-                    assert(self.0.parse_body(callback_p)(input) == Some((n, v)));
-                    assert(callback_p(rem) == Some((nn, vv)));
-                    self.0.lemma_body_smaller_height(callback_p, input, rem, n, nn, v, vv);
-                    assert(vv.height() < v.height());
-                    assert(self.consistent(vv) == callback_c(vv));
-                    assert(self.byte_len(vv) == callback_b(vv));
-                    assert(callback_c(vv));
-                    assert(callback_b(vv) == nn);
-                }
+                assert(self.spec_parse_with_gas((gas - 1) as nat, rem) == Some((nn, vv)));
+                assert(self.consistent_with_gas((gas - 1) as nat, vv) == callback_c(vv));
+                assert(self.byte_len_with_gas((gas - 1) as nat, vv) == callback_b(vv));
+                assert(callback_c(vv));
+                assert(callback_b(vv) == nn);
             }
         }
 
         assert(good_parser(callback_p, callback_c, callback_b));
-        // By `self.induction()`
-        assert(good_parser(
-            self.0.parse_body(callback_p),
-            self.0.consistent_body(callback_c),
-            self.0.byte_len_body(callback_b),
-        ));
+        self.0.lemma_body_preservation(callback_p, callback_c, callback_b);
         // By definition
-        assert(self.spec_parse(input) == self.0.parse_body(callback_p)(input));
-        assert(self.consistent(v) == self.0.consistent_body(callback_c)(v));
-        assert(self.byte_len(v) == self.0.byte_len_body(callback_b)(v));
+        assert(self.spec_parse_with_gas(gas, input) == self.0.parse_body(callback_p)(input));
+        assert(self.consistent_with_gas(gas, v) == self.0.consistent_body(callback_c)(v));
+        assert(self.byte_len_with_gas(gas, v) == self.0.byte_len_body(callback_b)(v));
     }
 }
 
-impl<Body: RecBody> GoodParser for super::Fix<Body> {
-    open spec fn inv(&self) -> bool {
-        self.induction()
-    }
-
+impl<const LIMIT: usize, Body: RecBody> GoodParser for super::Fix<LIMIT, Body> {
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
-            self.good_parser_by_induction(ibuf, n, v);
+            self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
     }
 
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
-            self.good_parser_by_induction(ibuf, n, v);
+            self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
-            self.good_parser_by_induction(ibuf, n, v);
+            self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
     }
+}
+
+/*
+ * Example recursive parser: nested braces
+ */
+
+use crate::combinators::*;
+use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+
+pub enum NestedBracesT {
+    Brace(Box<NestedBracesT>),
+    Eps,
+}
+
+pub struct NestedBracesMapper;
+
+impl Mapper for NestedBracesMapper {
+    type In = Either<NestedBracesT, ()>;
+
+    type Out = NestedBracesT;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        match i {
+            Either::Left(inner) => NestedBracesT::Brace(Box::new(inner)),
+            Either::Right(()) => NestedBracesT::Eps,
+        }
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        match o {
+            NestedBracesT::Brace(inner) => Either::Left(*inner),
+            NestedBracesT::Eps => Either::Right(()),
+        }
+    }
+}
+
+impl IsoMapper for NestedBracesMapper {
+    proof fn lemma_map_iso(&self, i: Self::In) {
+        match i {
+            Either::Left(_) => {},
+            Either::Right(u) => {
+                assert(u == ());
+            },
+        }
+    }
+
+    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    }
+}
+
+pub open spec fn nested_braces_body<Rec>(rec: Rec) -> Mapped<
+    Choice<Terminated<Preceded<Tag<U8, u8>, Rec>, Tag<U8, u8>>, Tag<U8, u8>>,
+    NestedBracesMapper,
+> {
+    Mapped {
+        inner: Choice(
+            Terminated(
+                Preceded(Tag { inner: U8, tag: 0x7Bu8 }, rec),
+                Tag { inner: U8, tag: 0x7Du8 },
+            ),
+            Tag { inner: U8, tag: 0x00u8 },
+        ),
+        mapper: NestedBracesMapper,
+    }
+}
+
+pub struct NestedBracesBody;
+
+impl RecBody for NestedBracesBody {
+    type Val = NestedBracesT;
+
+    open spec fn parse_body(&self, rec: ParserFnSpec<Self::Val>) -> ParserFnSpec<Self::Val> {
+        |input: Seq<u8>| nested_braces_body(rec).spec_parse(input)
+    }
+
+    open spec fn byte_len_body(&self, rec: ByteLenFnSpec<Self::Val>) -> ByteLenFnSpec<Self::Val> {
+        |v: Self::Val| nested_braces_body(rec).byte_len(v)
+    }
+
+    open spec fn consistent_body(&self, rec: PredFnSpec<Self::Val>) -> PredFnSpec<Self::Val> {
+        |v: Self::Val| nested_braces_body(rec).consistent(v)
+        // |v: Self::Val|
+        //     exists|p: ParserFnSpec<Self::Val>, b: ByteLenFnSpec<Self::Val>| #[trigger]
+        //         nested_braces_body((p, rec, b)).consistent(v)
+    }
+
+    proof fn lemma_body_preservation(
+        &self,
+        p_rec: ParserFnSpec<Self::Val>,
+        c_rec: PredFnSpec<Self::Val>,
+        b_rec: ByteLenFnSpec<Self::Val>,
+    ) {
+        assert forall|input: Seq<u8>| #[trigger]
+            self.parse_body(p_rec)(input) matches Some((n, v)) ==> {
+                &&& 0 <= n <= input.len()
+                &&& self.consistent_body(c_rec)(v)
+                &&& self.byte_len_body(b_rec)(v) == n
+            } by {
+            let body = nested_braces_body((p_rec, c_rec, b_rec));
+            body.lemma_parse_len_bound(input);
+            body.lemma_parse_byte_len(input);
+            body.lemma_parse_consistent(input);
+            let body_cons = nested_braces_body(c_rec);
+            assert(body_cons.inner.0.0.0.consistent(()));
+            assert(body_cons.inner.0.1.consistent(()));
+        }
+    }
+}
+
+proof fn nested_braces_good_parser() {
+    let nested_braces = super::Fix::<10, _>(NestedBracesBody);
+
+    let input = seq![0x7Bu8, 0x00u8, 0x7Du8];
+
+    assert(nested_braces.spec_parse(input) == Some((3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))))) by {
+        let body10 = nested_braces_body(nested_braces.parse_callback(10nat));
+        assert(body10.spec_parse(input) == Some((3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps)))));
+    };
+
+    nested_braces.lemma_parse_byte_len(input);
+    nested_braces.lemma_parse_consistent(input);
+    nested_braces.lemma_parse_len_bound(input);
 }
 
 } // verus!

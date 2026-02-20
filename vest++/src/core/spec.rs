@@ -40,7 +40,7 @@ pub trait GoodParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val
     /// the consistency condition defined by [`Consistency`] as well as the
     /// byte length function defined by [`SpecByteLen`].
     ///
-    /// This is primarily used for restricting recursive combinator definitions
+    /// This is primarily used for using functions as combinators. See [`crate::core::fns`] for more details.
     open spec fn inv(&self) -> bool {
         true
     }
@@ -199,6 +199,6 @@ impl<T> SpecCombinator for T where
 
 } // verus!
 pub use crate::core::fns::{
-    ByteLenFnSpec, ParserFnSpec, ParserSpecs, SerializerDPSFnSpec, SerializerDPSSpecs,
-    SerializerFnSpec, SerializerSpecs, UnambiguityFnSpec, WfSerializer, WfSerializerDps,
+    ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerDPSSpecs, SerializerFnSpec,
+    SerializerSpecs, UnambiguityFnSpec,
 };
