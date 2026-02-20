@@ -182,7 +182,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<2, _, _>(s, |b| u16::from_le_bytes(b))
+        parse_int::<2, _, _>(s, u16::from_le_bytes)
     }
 
     fn serialize<'s>(
@@ -229,7 +229,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<4, _, _>(s, |b| u32::from_le_bytes(b))
+        parse_int::<4, _, _>(s, u32::from_le_bytes)
     }
 
     fn serialize<'s>(
@@ -276,7 +276,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<8, _, _>(s, |b| u64::from_le_bytes(b))
+        parse_int::<8, _, _>(s, u64::from_le_bytes)
     }
 
     fn serialize<'s>(
@@ -323,7 +323,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<2, _, _>(s, |b| u16::from_be_bytes(b))
+        parse_int::<2, _, _>(s, u16::from_be_bytes)
     }
 
     fn serialize<'s>(
@@ -370,7 +370,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<4, _, _>(s, |b| u32::from_be_bytes(b))
+        parse_int::<4, _, _>(s, u32::from_be_bytes)
     }
 
     fn serialize<'s>(
@@ -417,7 +417,7 @@ where
     where
         I: 'p,
     {
-        parse_int::<8, _, _>(s, |b| u64::from_be_bytes(b))
+        parse_int::<8, _, _>(s, u64::from_be_bytes)
     }
 
     fn serialize<'s>(
