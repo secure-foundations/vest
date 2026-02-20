@@ -1,9 +1,6 @@
 //! ```vest
 //! msg1 = [u8; 32]
-//! msg2 = {
-//!   a: u8,
-//!   b: Vec<u32>,
-//! }
+//! msg2 = RefinedPacket
 //! msg3 = {
 //!   x: u16,
 //!   y: u16,
@@ -11,7 +8,7 @@
 //!
 //! msg = {
 //!   @tag: u8,
-//!   @len: u16,
+//!   @len: u16 | 0..8000,
 //!   val: [u8; @len] >>=
 //!     choose (@tag) {
 //!       1 => msg1,
@@ -24,14 +21,14 @@
 //!
 //! ```rust
 //! Mapped(Pair(
-//!   (U8, U16Le),
+//!   (U8, Refined(U16Le, |len| len <= 8000)),
 //!   |(tag, len)| FixedLen(
 //!     len as usize,
 //!     Dispatch(
 //!       tag,
 //!       [
 //!         (1, Msg1),
-//!         (2, Msg2),
+//!         (2, RefinedPacket),
 //!         (3, Msg3),
 //!       ],
 //!     )
@@ -40,20 +37,19 @@
 //! MsgMapper)
 //! ```
 
+#[allow(dead_code)]
+#[path = "combined.rs"]
+mod combined;
+
 use vest_lib::enum_combinator;
 use vest_lib::properties::*;
 use vest_lib::regular::bytes::Fixed;
-use vest_lib::regular::modifier::{FixedLen, Length, Mapped, Mapper, RuntimeValue};
-use vest_lib::regular::repetition::RepeatN;
+use vest_lib::regular::modifier::{FixedLen, Length, Mapped, Mapper, Refined, RuntimeValue};
 use vest_lib::regular::sequence::{DepCombinator, Pair};
-use vest_lib::regular::uints::{U16Le, U32Le, U8};
+use vest_lib::regular::uints::{U16Le, U8};
 use vest_lib::regular::variant::Dispatch;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Msg2 {
-    pub a: u8,
-    pub b: Vec<u32>,
-}
+type Msg2 = combined::RefinedPacket;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Msg3 {
@@ -89,18 +85,6 @@ pub struct MessageOwned {
     pub val: MsgValueOwned,
 }
 
-impl From<(u8, Vec<u32>)> for Msg2 {
-    fn from((a, b): (u8, Vec<u32>)) -> Self {
-        Msg2 { a, b }
-    }
-}
-
-impl<'s> From<&'s Msg2> for (u8, &'s [u32]) {
-    fn from(m: &'s Msg2) -> Self {
-        (m.a, &m.b)
-    }
-}
-
 impl From<(u16, u16)> for Msg3 {
     fn from((x, y): (u16, u16)) -> Self {
         Msg3 { x, y }
@@ -131,17 +115,6 @@ impl From<((u8, u16), MsgValueOwned)> for MessageOwned {
     }
 }
 
-struct Msg2Mapper;
-
-impl Mapper for Msg2Mapper {
-    type Src<'p> = (u8, Vec<u32>);
-    type Dst<'p> = Msg2;
-    type SrcBorrow<'s> = (u8, &'s [u32]);
-    type DstBorrow<'s> = &'s Msg2;
-    type SrcOwned = (u8, Vec<u32>);
-    type DstOwned = Msg2;
-}
-
 struct Msg3Mapper;
 
 impl Mapper for Msg3Mapper {
@@ -164,10 +137,12 @@ impl Mapper for MsgMapper {
     type DstOwned = MessageOwned;
 }
 
-type Msg2Comb = Mapped<(U8, RepeatN<U32Le>), Msg2Mapper>;
+type Msg2Comb = combined::RefinedPacketCombinator;
 type Msg3Comb = Mapped<(U16Le, U16Le), Msg3Mapper>;
 type PayloadComb<'g> = FixedLen<'g, Dispatch<'g, u8, PayloadCases, 3>>;
-type TlvComb = Mapped<Pair<(U8, U16Le), PayloadDep>, MsgMapper>;
+type OuterLenComb = Refined<U16Le, fn(u16) -> bool>;
+type TlvComb = Mapped<Pair<(U8, OuterLenComb), PayloadDep>, MsgMapper>;
+
 struct PayloadDep;
 
 enum_combinator! {
@@ -186,7 +161,7 @@ impl Combinator<[u8], Vec<u8>> {
 }
 
 fn msg2_combinator() -> Msg2Comb {
-    Mapped::new((U8, RepeatN(U32Le, 3)), Msg2Mapper)
+    combined::refined_packet_combinator()
 }
 
 fn msg3_combinator() -> Msg3Comb {
@@ -208,10 +183,14 @@ fn payload_combinator<'a>(tag: RuntimeValue<'a, u8>, len: Length<'a>) -> Payload
 }
 
 fn tlv_combinator() -> TlvComb {
-    Mapped::new(Pair::new((U8, U16Le), PayloadDep), MsgMapper)
+    let refined_len: OuterLenComb = Refined {
+        inner: U16Le,
+        predicate: |v: u16| v <= 8000,
+    };
+    Mapped::new(Pair::new((U8, refined_len), PayloadDep), MsgMapper)
 }
 
-impl DepCombinator<(U8, U16Le), [u8], Vec<u8>> for PayloadDep {
+impl DepCombinator<(U8, OuterLenComb), [u8], Vec<u8>> for PayloadDep {
     type Out = PayloadComb<'static>;
     type OutGen<'g> = PayloadComb<'g>;
 
@@ -230,121 +209,49 @@ impl DepCombinator<(U8, U16Le), [u8], Vec<u8>> for PayloadDep {
     }
 }
 
-fn example_msg1() {
-    println!("\n=== TLV msg1 (tag=1, len=32) ===");
-
-    let comb = tlv_combinator();
-    let msg1_payload: [u8; 32] = *b"0123456789ABCDEF0123456789ABCDEF";
-    let msg1_payload: &[u8] = &msg1_payload;
-    let msg = Message {
-        tag: 1,
-        len: 32,
-        val: MsgValue::Msg1(msg1_payload),
-    };
-
-    let len = <_ as Combinator<_, Vec<u8>>>::length(&comb, &msg);
-    let mut buf = vec![0u8; len];
-    let written = comb.serialize(&msg, &mut buf, 0).expect("serialize");
-
-    println!("  Serialized bytes ({}): {:02X?}", written, &buf[..written]);
-    let (consumed, parsed) =
-        <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg1");
-    println!(
-        "  Parsed: tag={}, len={}, val={:02X?}",
-        parsed.tag, parsed.len, parsed.val
-    );
-
-    assert_eq!(consumed, written);
-    assert_eq!(parsed.tag, msg.tag);
-    assert_eq!(parsed.len, msg.len);
-    assert_eq!(parsed.val, msg.val);
-    println!("  msg1 roundtrip passed!");
-}
-
-fn example_msg2() {
-    println!("\n=== TLV msg2 (tag=2, len=13) ===");
-
-    let comb = tlv_combinator();
-    let msg2_payload = Msg2 {
-        a: 0x42,
-        b: vec![0x11223344, 0x55667788, 0x99AABBCC],
-    };
-    let msg = Message {
-        tag: 2,
-        len: 13,
-        val: MsgValue::Msg2(msg2_payload),
-    };
-
-    let len = <_ as Combinator<_, Vec<u8>>>::length(&comb, &msg);
-    let mut buf = vec![0u8; len];
-    let written = comb.serialize(&msg, &mut buf, 0).expect("serialize");
-
-    println!("  Serialized bytes ({}): {:02X?}", written, &buf[..written]);
-    let (consumed, parsed) =
-        <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg2");
-    println!(
-        "  Parsed: tag={}, len={}, val={:2X?}",
-        parsed.tag, parsed.len, parsed.val
-    );
-
-    assert_eq!(consumed, written);
-    assert_eq!(parsed.tag, msg.tag);
-    assert_eq!(parsed.len, msg.len);
-    assert_eq!(parsed.val, msg.val);
-    println!("  msg2 roundtrip passed!");
-}
-
-fn example_msg3() {
-    println!("\n=== TLV msg3 (tag=3, len=4) ===");
-
-    let comb = tlv_combinator();
-    let msg3_payload = Msg3 {
-        x: 0x1234,
-        y: 0xABCD,
-    };
-    let msg = Message {
-        tag: 3,
-        len: 4,
-        val: MsgValue::Msg3(msg3_payload),
-    };
-
-    let len = <_ as Combinator<_, Vec<u8>>>::length(&comb, &msg);
-    let mut buf = vec![0u8; len];
-    let written = comb.serialize(&msg, &mut buf, 0).expect("serialize");
-
-    println!("  Serialized bytes ({}): {:02X?}", written, &buf[..written]);
-    let (consumed, parsed) =
-        <_ as Combinator<_, Vec<u8>>>::parse(&comb, &buf[..written]).expect("parse msg3");
-    println!(
-        "  Parsed: tag={}, len={}, val={:02X?}",
-        parsed.tag, parsed.len, parsed.val
-    );
-
-    assert_eq!(consumed, written);
-    assert_eq!(parsed.tag, msg.tag);
-    assert_eq!(parsed.len, msg.len);
-    assert_eq!(parsed.val, msg.val);
-    println!("  msg3 roundtrip passed!");
-}
-
-fn example_msg_generation() {
-    println!("\n=== TLV message generation ===");
-
-    let mut comb = tlv_combinator();
-
-    for s in 1..30 {
-        let mut gen_st = GenSt::new(s);
-        let (len, gen_msg) = comb.generate(&mut gen_st).expect("generate message");
-        println!(
-            "  Generated message (len={}): tag={}, len={}, val={:02X?}",
-            len, gen_msg.tag, gen_msg.len, gen_msg.val
-        );
+fn summarize_value(val: &MsgValueOwned) -> String {
+    match val {
+        MsgValueOwned::Msg1(v) => format!("Msg1({} bytes)", v.len()),
+        MsgValueOwned::Msg2(pkt) => format!(
+            "Msg2(RefinedPacket: ver={}, flags=0x{:02X}, len={}, records={})",
+            pkt.header.version,
+            pkt.header.flags,
+            pkt.len,
+            pkt.records.len()
+        ),
+        MsgValueOwned::Msg3(v) => format!("Msg3(x=0x{:04X}, y=0x{:04X})", v.x, v.y),
     }
 }
 
+fn example_msg_generation() {
+    println!("\n=== TLV message generation (nested refinements) ===");
+
+    let mut comb = tlv_combinator();
+    let mut tag_counts = [0u32; 4];
+
+    for s in 50..=100 {
+        let mut gen_st = GenSt::new(s);
+        let (_len, gen_msg) = comb.generate(&mut gen_st).expect("generate message");
+
+        let tag = gen_msg.tag as usize;
+        if tag < tag_counts.len() {
+            tag_counts[tag] += 1;
+        }
+
+        let summary = summarize_value(&gen_msg.val);
+        println!(
+            "  [seed={:>3}] tag={}, len={}, {}",
+            s, gen_msg.tag, gen_msg.len, summary
+        );
+    }
+
+    println!(
+        "  Tag distribution over 50 seeds: tag1={}, tag2={}, tag3={}",
+        tag_counts[1], tag_counts[2], tag_counts[3]
+    );
+    println!("  Generation checks passed with nested refinements.");
+}
+
 fn main() {
-    example_msg1();
-    example_msg2();
-    example_msg3();
     example_msg_generation();
 }

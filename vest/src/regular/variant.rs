@@ -90,6 +90,16 @@ where
         }
         self.branches[idx].1.generate(g)
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        let Some(idx) = self.branch_index() else {
+            return false;
+        };
+        self.branches[idx].1.well_formed(v)
+    }
 }
 
 /// Define an enum and implement `Combinator` for it in one place.
@@ -227,6 +237,22 @@ macro_rules! enum_combinator {
                     )+
                 }
             }
+
+            fn well_formed<$s>(&self, v: Self::SType<$s>) -> bool
+            where
+                $I: $s,
+            {
+                match (self, v) {
+                    $(
+                        ($Enum::$Variant(inner), $Type::$Variant(val)) => {
+                            <$Inner as $crate::properties::Combinator<$I, $O>>::well_formed(
+                                inner, val,
+                            )
+                        }
+                    )+,
+                    _ => false,
+                }
+            }
         }
     };
 }
@@ -309,6 +335,16 @@ where
             Ok((n, Either::Right(v)))
         }
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        match v {
+            Either::Left(v) => self.0.well_formed(v),
+            Either::Right(v) => self.1.well_formed(v),
+        }
+    }
 }
 
 /// Optional combinator that never fails; consumes zero bytes on `None`.
@@ -386,6 +422,16 @@ where
             Ok((0, None))
         }
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        match v {
+            Some(v) => self.0.well_formed(v),
+            None => true,
+        }
+    }
 }
 
 /// Parse an optional prefix followed by a required tail.
@@ -461,5 +507,16 @@ where
         } else {
             Ok((n1, (None, v1)))
         }
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        let fst_ok = match v.0 {
+            Some(v0) => self.0 .0.well_formed(v0),
+            None => true,
+        };
+        fst_ok && self.1.well_formed(v.1)
     }
 }

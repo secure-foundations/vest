@@ -18,9 +18,18 @@
 //!     value: u32,
 //! }
 //! ```
+//!
+//!
+//! ```vest
+//! RefinedPacket = {
+//!     header: Header,
+//!     @payload_len: u16 | 8..10000,
+//!     payload: [u8; @payload_len] >>= Vec<Record>,
+//! }
+//! ```
 
 use vest_lib::properties::*;
-use vest_lib::regular::modifier::{FixedLen, Length, Mapped, Mapper};
+use vest_lib::regular::modifier::{FixedLen, Length, Mapped, Mapper, Refined};
 use vest_lib::regular::repetition::Repeat;
 use vest_lib::regular::sequence::{DepCombinator, Pair, Preceded};
 use vest_lib::regular::tag::Tag;
@@ -44,6 +53,8 @@ pub struct Packet {
     pub len: u16,
     pub records: Vec<Record>,
 }
+
+pub type RefinedPacket = Packet;
 
 // Record: (u32, u32) <-> Record
 impl From<(u32, u32)> for Record {
@@ -88,7 +99,7 @@ impl<'a, 's: 'a> From<&'s Packet> for (Header, (u16, &'a [Record])) {
     }
 }
 
-struct HeaderMapper;
+pub struct HeaderMapper;
 
 impl Mapper for HeaderMapper {
     type Src<'p> = (u8, u8);
@@ -99,7 +110,7 @@ impl Mapper for HeaderMapper {
     type DstOwned = Header;
 }
 
-struct RecordMapper;
+pub struct RecordMapper;
 
 impl Mapper for RecordMapper {
     type Src<'p> = (u32, u32);
@@ -110,7 +121,7 @@ impl Mapper for RecordMapper {
     type DstOwned = Record;
 }
 
-struct PacketMapper;
+pub struct PacketMapper;
 
 impl Mapper for PacketMapper {
     type Src<'p> = (Header, (u16, Vec<Record>));
@@ -121,23 +132,23 @@ impl Mapper for PacketMapper {
     type DstOwned = Packet;
 }
 
-fn record_combinator() -> RecordComb {
+pub fn record_combinator() -> RecordComb {
     Mapped::new((U32Le, U32Le), RecordMapper)
 }
 
-fn header_combinator() -> HeaderComb {
+pub fn header_combinator() -> HeaderComb {
     let magic = Tag::new(U16Be, 0xCAFEu16);
     Mapped::new(Preceded(magic, (U8, U8)), HeaderMapper)
 }
 
-type RecordComb = Mapped<(U32Le, U32Le), RecordMapper>;
-type PayloadComb<'a> = FixedLen<'a, Repeat<RecordComb>>;
+pub type RecordComb = Mapped<(U32Le, U32Le), RecordMapper>;
+pub type PayloadComb<'a> = FixedLen<'a, Repeat<RecordComb>>;
 
-type HeaderComb = Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper>;
+pub type HeaderComb = Mapped<Preceded<Tag<U16Be, u16>, (U8, U8)>, HeaderMapper>;
 
-type PacketCombinator = Mapped<(HeaderComb, Pair<U16Le, PayloadDep>), PacketMapper>;
+pub type PacketCombinator = Mapped<(HeaderComb, Pair<U16Le, PayloadDep>), PacketMapper>;
 
-struct PayloadDep;
+pub struct PayloadDep;
 impl DepCombinator<U16Le, [u8], Vec<u8>> for PayloadDep {
     type Out = PayloadComb<'static>;
     type OutGen<'a> = PayloadComb<'a>;
@@ -151,9 +162,45 @@ impl DepCombinator<U16Le, [u8], Vec<u8>> for PayloadDep {
     }
 }
 
-fn packet_combinator() -> PacketCombinator {
+pub fn packet_combinator() -> PacketCombinator {
     Mapped::new(
         (header_combinator(), Pair::new(U16Le, PayloadDep)),
+        PacketMapper,
+    )
+}
+
+// ============================================================================
+// Refined-length Packet combinator
+// ============================================================================
+
+pub type RefinedLenComb = Refined<U16Le, fn(u16) -> bool>;
+pub type RefinedPacketCombinator =
+    Mapped<(HeaderComb, Pair<RefinedLenComb, RefinedPayloadDep>), PacketMapper>;
+
+pub struct RefinedPayloadDep;
+impl DepCombinator<RefinedLenComb, [u8], Vec<u8>> for RefinedPayloadDep {
+    type Out = PayloadComb<'static>;
+    type OutGen<'a> = PayloadComb<'a>;
+
+    fn dep_snd<'a>(&self, len: u16) -> Self::Out {
+        FixedLen(Length::from_value(len.into()), Repeat(record_combinator()))
+    }
+
+    fn dep_snd_gen<'a>(&self, len: &'a mut u16) -> Self::OutGen<'a> {
+        FixedLen(Length::from_u16_mut(len), Repeat(record_combinator()))
+    }
+}
+
+pub fn refined_packet_combinator() -> RefinedPacketCombinator {
+    let refined_len: RefinedLenComb = Refined {
+        inner: U16Le,
+        predicate: |v: u16| v >= 8 && v <= 10000,
+    };
+    Mapped::new(
+        (
+            header_combinator(),
+            Pair::new(refined_len, RefinedPayloadDep),
+        ),
         PacketMapper,
     )
 }
@@ -309,11 +356,74 @@ fn example_packet_generation() {
     );
     println!("    Payload length: {} bytes", generated_packet.len);
     println!("    Records ({}):", generated_packet.records.len());
-    // for (i, r) in generated_packet.records.iter().enumerate() {
-    //     println!("      [{}] id={}, value={}", i, r.id, r.value);
-    // }
 
     println!("  Packet generation completed!");
+}
+
+fn example_refined_length_generation() {
+    println!("\n=== Refined Length + FixedLen Generation Demo ===");
+    println!("  Predicate: 8 <= payload_len <= 10000");
+
+    let mut pkt_comb = refined_packet_combinator();
+    let num_trials = 20;
+    let mut all_valid = true;
+
+    for seed in 1..=num_trials {
+        let mut gen_st = GenSt::new(seed);
+        let (_generated_bytes, generated_packet) =
+            pkt_comb.generate(&mut gen_st).expect("generate");
+
+        let len = generated_packet.len;
+        let num_records = generated_packet.records.len();
+        let valid = len >= 8 && len <= 10000;
+
+        println!(
+            "  [seed={:>2}] len={:>5}, records={:>3}  {}",
+            seed,
+            len,
+            num_records,
+            if valid { "OK" } else { "VIOLATED!" }
+        );
+
+        if !valid {
+            all_valid = false;
+        }
+
+        assert!(
+            len >= 8 && len <= 10000,
+            "Refined predicate violated: len={} not in [8, 4000]",
+            len
+        );
+    }
+
+    if all_valid {
+        println!(
+            "\n  All {} generated packets satisfied the refined length predicate!",
+            num_trials
+        );
+    }
+
+    // Also verify roundtrip: serialize then parse
+    println!("\n  Roundtrip verification:");
+    let mut gen_st = GenSt::new(42);
+    let (_gen_bytes, gen_pkt) = pkt_comb.generate(&mut gen_st).expect("generate");
+
+    let pkt_combinator = refined_packet_combinator();
+    let len = <_ as Combinator<_, Vec<u8>>>::length(&pkt_combinator, &gen_pkt);
+    let mut buf = vec![0u8; len];
+    let written = <_ as Combinator<[u8], _>>::serialize(&pkt_combinator, &gen_pkt, &mut buf, 0)
+        .expect("serialize generated packet");
+    let (consumed, parsed) =
+        <_ as Combinator<_, Vec<u8>>>::parse(&pkt_combinator, &buf[..written]).expect("parse back");
+
+    assert_eq!(consumed, written);
+    assert_eq!(parsed.len, gen_pkt.len);
+    assert_eq!(parsed.records, gen_pkt.records);
+    println!(
+        "    Generated packet (len={}, {} records) survived roundtrip!",
+        gen_pkt.len,
+        gen_pkt.records.len()
+    );
 }
 
 fn main() {
@@ -321,4 +431,5 @@ fn main() {
     example_header();
     example_full_packet();
     example_packet_generation();
+    example_refined_length_generation();
 }

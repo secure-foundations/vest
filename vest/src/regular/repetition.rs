@@ -86,6 +86,13 @@ where
         }
         Ok((generated, values))
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        v.len() == self.1 && v.iter().all(|item| self.0.well_formed(*item))
+    }
 }
 
 /// Repeat the inner combinator until input is exhausted.
@@ -167,5 +174,12 @@ where
             values.push(v);
         }
         Ok((generated, values))
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        v.iter().all(|item| self.0.well_formed(*item))
     }
 }

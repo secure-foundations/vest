@@ -106,13 +106,21 @@ where
     where
         I: 's,
     {
-        let src: Inner::SType<'s> = self.mapper.backward(v).into();
+        let src: Inner::SType<'s> = self.mapper.backward(v);
         self.inner.serialize(src, data, pos)
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         let (n, v) = self.inner.generate(g)?;
         Ok((n, self.mapper.forward_owned(v)))
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        let src: Inner::SType<'s> = self.mapper.backward(v);
+        self.inner.well_formed(src)
     }
 }
 
@@ -173,12 +181,20 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        loop {
+        for _ in 0..MAX_GENERATE_RETRIES {
             let (n, v) = self.inner.generate(g)?;
             if (self.predicate)(Inner::SType::ref_to_stype(&v)) {
                 return Ok((n, v));
             }
         }
+        Err(GenerateError::TooManyRetries)
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        (self.predicate)(v)
     }
 }
 
@@ -283,6 +299,13 @@ where
         *self.lhs.as_mut() = self.rhs;
         self.inner.generate(g)
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        *self.lhs.as_ref() == self.rhs && self.inner.well_formed(v)
+    }
 }
 
 /// Combinator that chains a variable-length parser with a parser for its contents.
@@ -293,6 +316,7 @@ where
     I: VestInput + ?Sized,
     O: VestOutput<I>,
     Next: Combinator<I, O>,
+    for<'s> Next::SType<'s>: Copy,
 {
     type Type<'p>
         = Next::Type<'p>
@@ -338,6 +362,13 @@ where
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         self.1.generate(g)
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        self.0 .0 == self.1.length(v) && self.1.well_formed(v)
     }
 }
 
@@ -403,6 +434,7 @@ where
     I: VestInput + ?Sized,
     O: VestOutput<I>,
     Inner: Combinator<I, O>,
+    for<'s> Inner::SType<'s>: Copy,
 {
     type Type<'p>
         = Inner::Type<'p>
@@ -462,5 +494,12 @@ where
                 return Ok((n, v));
             }
         }
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        self.0.get() == self.1.length(v) && self.1.well_formed(v)
     }
 }

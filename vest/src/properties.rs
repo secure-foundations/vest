@@ -2,6 +2,10 @@ pub use crate::buf_traits::*;
 pub use crate::errors::*;
 use alloc::boxed::Box;
 
+/// Maximum number of retries for generation.
+/// (e.g., when a dependent combinator overwrites a refined field).
+pub const MAX_GENERATE_RETRIES: usize = 1000;
+
 /// The parse result of a combinator.
 pub type PResult<T, E> = Result<(usize, T), E>;
 
@@ -130,6 +134,20 @@ where
     /// number of bytes that would be produced when serializing this value.
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError>;
 
+    /// Well-formedness check for generated values.
+    ///
+    /// This is used by [`crate::regular::sequence::Pair`] to post-validate the first field
+    /// after the dependent second combinator has potentially overwritten it.
+    ///
+    /// Primitive combinators typically use the default `true`. Higher-order combinators
+    /// override this to propagate checks to their inner/generated fields.
+    fn well_formed<'s>(&self, _v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        true
+    }
+
     /// Convert from generated type to [`Self::SType`] for serialization.
     fn ref_gtype_to_stype<'s>(v: &'s Self::GType) -> Self::SType<'s>
     where
@@ -185,6 +203,13 @@ where
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         (**self).generate(g)
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        (**self).well_formed(v)
+    }
 }
 
 impl<I, O, C: Combinator<I, O>> Combinator<I, O> for Box<C>
@@ -232,5 +257,12 @@ where
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
         (**self).generate(g)
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        (**self).well_formed(v)
     }
 }

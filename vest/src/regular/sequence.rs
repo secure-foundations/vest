@@ -39,6 +39,7 @@ where
     Fst: Combinator<I, O>,
     Dep: DepCombinator<Fst, I, O>,
     for<'p, 's> Fst::SType<'s>: FromRef<'s, Fst::Type<'p>> + Copy,
+    for<'s> Fst::SType<'s>: FromRef<'s, Fst::GType>,
 {
     type Type<'p>
         = (Fst::Type<'p>, <Dep::Out as Combinator<I, O>>::Type<'p>)
@@ -84,12 +85,28 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        let (g1, mut v1) = self.fst.generate(g)?;
-        let (g2, v2) = {
-            let mut dep_snd = self.snd.dep_snd_gen(&mut v1);
-            dep_snd.generate(g)?
-        };
-        Ok((g1 + g2, (v1, v2)))
+        for _ in 0..MAX_GENERATE_RETRIES {
+            let (g1, mut v1) = self.fst.generate(g)?;
+            let (g2, v2) = {
+                let mut dep_snd = self.snd.dep_snd_gen(&mut v1);
+                dep_snd.generate(g)?
+            };
+            // Post-validate: the dependent combinator may have overwritten v1
+            // (e.g., FixedLen sets the length, Dispatch sets the tag).
+            // If fst has a refinement, we must check that v1 still satisfies it.
+            if self.fst.well_formed(Fst::SType::ref_to_stype(&v1)) {
+                return Ok((g1 + g2, (v1, v2)));
+            }
+        }
+        Err(GenerateError::TooManyRetries)
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        let (v1, v2) = v;
+        self.fst.well_formed(v1) && self.snd.dep_snd(v1).well_formed(v2)
     }
 }
 
@@ -146,6 +163,13 @@ where
         let (g1, v1) = self.0.generate(g)?;
         let (g2, v2) = self.1.generate(g)?;
         Ok((g1 + g2, (v1, v2)))
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        self.0.well_formed(v.0) && self.1.well_formed(v.1)
     }
 }
 
@@ -223,6 +247,13 @@ where
         let (g2, v2) = self.1.generate(g)?;
         Ok((g1 + g2, v2))
     }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        self.1.well_formed(v)
+    }
 }
 
 pub struct Terminated<Fst, Snd>(pub Fst, pub Snd);
@@ -279,5 +310,12 @@ where
         let g2 = self.1.length_unit();
         let (g1, v1) = self.0.generate(g)?;
         Ok((g1 + g2, v1))
+    }
+
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        I: 's,
+    {
+        self.0.well_formed(v)
     }
 }
