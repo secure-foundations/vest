@@ -447,8 +447,20 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        let (n, v) = self.1.generate(g)?;
-        self.0.set(n);
-        Ok((n, v))
+        loop {
+            let (n, v) = self.1.generate(g)?;
+            // std::dbg!(&self.0);
+            // std::dbg!(n);
+            if match self.0 {
+                Length::Value(_) => true,
+                Length::RefU8(_) => n <= u8::MAX as usize,
+                Length::RefU16(_) => n <= u16::MAX as usize,
+                Length::RefU32(_) => n <= u32::MAX as usize,
+                Length::RefU64(_) => n <= u64::MAX as usize,
+            } {
+                self.0.set(n);
+                return Ok((n, v));
+            }
+        }
     }
 }

@@ -219,8 +219,9 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let g1 = self.0.length_unit();
         let (g2, v2) = self.1.generate(g)?;
-        Ok((g2, v2))
+        Ok((g1 + g2, v2))
     }
 }
 
@@ -275,7 +276,8 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let g2 = self.1.length_unit();
         let (g1, v1) = self.0.generate(g)?;
-        Ok((g1, v1))
+        Ok((g1 + g2, v1))
     }
 }
