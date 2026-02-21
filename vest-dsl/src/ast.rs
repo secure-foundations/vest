@@ -371,6 +371,7 @@ impl<'i> EnumCombinator<'i> {
 pub struct Enum<'i> {
     pub name: Identifier<'i>,
     pub value: i128,
+    pub type_annotation: Option<IntCombinator>,
     pub span: Span<'i>,
 }
 
@@ -970,7 +971,10 @@ impl Display for EnumCombinator<'_> {
 
 impl Display for Enum<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} = {}", self.name, self.value)
+        match &self.type_annotation {
+            Some(ty) => write!(f, "{} = {}{}", self.name, self.value, ty),
+            None => write!(f, "{} = {}", self.name, self.value),
+        }
     }
 }
 
@@ -1639,11 +1643,35 @@ fn build_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
     let name = build_id(next_rule);
     let next_rule = inner_rules.next().unwrap();
     let value_span = next_rule.as_span();
-    let value = build_const_int(next_rule);
+    let (value, type_annotation) = build_typed_const_int(next_rule);
     // Create a span that covers the entire enum
     let span = Span::new(name.span.get_input(), name.span.start(), value_span.end())
         .expect("Failed to create span for enum");
-    Enum { name, value, span }
+    Enum {
+        name,
+        value,
+        type_annotation,
+        span,
+    }
+}
+
+fn build_typed_const_int(pair: pest::iterators::Pair<Rule>) -> (i128, Option<IntCombinator>) {
+    let mut inner_rules = pair.into_inner();
+    let const_int_pair = inner_rules.next().unwrap();
+    let value = build_const_int(const_int_pair);
+    let type_annotation = inner_rules.next().map(build_int_type_suffix);
+    (value, type_annotation)
+}
+
+fn build_int_type_suffix(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
+    let s = pair.as_str();
+    let (sign, width_str) = s.split_at(1);
+    let width: u8 = width_str.parse().unwrap();
+    match sign {
+        "u" => IntCombinator::Unsigned(width),
+        "i" => IntCombinator::Signed(width),
+        _ => unreachable!(),
+    }
 }
 
 fn build_choices<'i>(inner_rules: pest::iterators::Pairs<'i, Rule>) -> Choices<'i> {

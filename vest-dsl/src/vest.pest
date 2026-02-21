@@ -69,7 +69,7 @@ wrap_post       = { ("," ~ const_combinator)* }
 enum_combinator       =  { enum ~ "{" ~ (non_exhaustive_enum | exhaustive_enum) ~ "}" }
 exhaustive_enum       =  { enum_field+ }
 non_exhaustive_enum   =  { enum_field+ ~ non_exhaustive_marker }
-enum_field            =  { variant_id ~ "=" ~ const_int ~ "," }
+enum_field            =  { variant_id ~ "=" ~ typed_const_int ~ "," }
 non_exhaustive_marker = _{ "..." }
 
 /// ordered choice `combinator`
@@ -129,6 +129,10 @@ const_fields            = _{ (const_combinator ~ ",")+ }
 
 const_choice_combinator = { choose ~ "{" ~ const_choice* ~ "}" }
 const_choice            = { variant_id ~ "(" ~ const_combinator ~ ")" ~ "," }
+
+/// integer literal with optional type suffix, e.g. 0u8, 0x1111u16
+typed_const_int   = ${ const_int ~ int_type_suffix? }
+int_type_suffix   = @{ ("u" | "i") ~ ("8" | "16" | "24" | "32" | "64") }
 
 /// decimal literal, e.g. 15213
 decimal = @{ ASCII_DIGIT+ }

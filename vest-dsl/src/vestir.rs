@@ -735,7 +735,7 @@ impl GlobalCtx {
 
 pub mod lowering {
     use crate::ast;
-    use crate::type_check::infer_enum_type;
+    use crate::type_check::resolve_enum_type;
     use crate::vestir as ir;
 
     #[inline]
@@ -964,12 +964,12 @@ pub mod lowering {
             match e {
                 ast::EnumCombinator::Exhaustive { enums, .. } => ir::EnumCombinator::Exhaustive {
                     enums: enums.clone().into_iter().map(Into::into).collect(),
-                    inferred: infer_enum_type(&enums).into(),
+                    inferred: resolve_enum_type(&enums).into(),
                 },
                 ast::EnumCombinator::NonExhaustive { enums, .. } => {
                     ir::EnumCombinator::NonExhaustive {
                         enums: enums.clone().into_iter().map(Into::into).collect(),
-                        inferred: infer_enum_type(&enums).into(),
+                        inferred: resolve_enum_type(&enums).into(),
                     }
                 }
             }
