@@ -10,3 +10,16 @@ enum_constraints = {
   baz: my_enum | { A, C },
   const tag: my_enum = A,
 }
+
+my_typed_enum = enum {
+  X = 0x01u16,
+  Y = 0x02u16,
+  Z = 0x03u16,
+}
+
+typed_enum_constraints = {
+  foo: my_typed_enum | X,
+  bar: my_typed_enum | !Y,
+  baz: my_typed_enum | { X, Z },
+  const tag: my_typed_enum = X,
+}

@@ -1,0 +1,6 @@
+// value 256 is out of range for u8 (0 to 255)
+bad_enum = enum {
+  A = 0u8,
+  B = 1u8,
+  C = 256u8,
+}
