@@ -974,7 +974,7 @@ fn check_combinator_invocation<'ast>(
                                     EnumCombinator::Exhaustive { enums, span }
                                     | EnumCombinator::NonExhaustive { enums, span },
                                 ) => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                                    combinator: infer_enum_type(&enums),
+                                    combinator: resolve_enum_type(&enums),
                                     constraint: None,
                                     span: span.clone(),
                                 }),
@@ -1641,7 +1641,7 @@ fn check_choice_combinator<'ast>(
                     // check if it's non-exhaustive enum (which is equivalent to an int choice)
                     match enum_ {
                         EnumCombinator::NonExhaustive { enums, span } => {
-                            let int_combinator = infer_enum_type(enums);
+                            let int_combinator = resolve_enum_type(enums);
                             let mut patterns = Vec::new();
                             for (pattern, combinator) in ints {
                                 if let Some(pattern) = pattern {
@@ -1886,11 +1886,48 @@ fn check_enum_combinator(
     span: Span,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    let combinator = infer_enum_type(enums);
+    // Check that type annotations are consistent:
+    // all present type suffixes must agree (unsuffixed values are allowed).
+    let first_annotated = enums.iter().find(|e| e.type_annotation.is_some());
+    if let Some(first) = first_annotated {
+        let expected_ty = first.type_annotation.as_ref().unwrap();
+        for e in enums {
+            if let Some(ref ty) = e.type_annotation {
+                if ty != expected_ty {
+                    let msg = format!(
+                        "Inconsistent type annotations: `{}` has type suffix `{}` but `{}` has `{}`",
+                        first.name, expected_ty, e.name, ty
+                    );
+                    Report::build(ReportKind::Error, (source.0, span_as_range(&e.span)))
+                        .with_message("inconsistent enum type annotations")
+                        .with_label(
+                            Label::new((source.0, span_as_range(&e.span)))
+                                .with_message(&msg)
+                                .with_color(Color::Red),
+                        )
+                        .finish()
+                        .eprint(source)
+                        .unwrap();
+                    return Err(VestError::TypeError);
+                }
+            }
+        }
+    }
+
+    let combinator = resolve_enum_type(enums);
     for Enum { value, .. } in enums {
         check_const_int_combinator(&combinator, value, &span, source)?;
     }
     Ok(())
+}
+
+/// Resolve the underlying integer type for an enum.
+pub fn resolve_enum_type(enums: &[Enum]) -> IntCombinator {
+    if let Some(first) = enums.iter().find_map(|e| e.type_annotation.as_ref()) {
+        first.clone()
+    } else {
+        infer_enum_type(enums)
+    }
 }
 
 /// 1. if no negative values, use Unsigned
