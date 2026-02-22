@@ -85,8 +85,8 @@ where
     }
 
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        let (g1, mut v1) = self.fst.generate(g)?;
         for _ in 0..MAX_GENERATE_RETRIES {
-            let (g1, mut v1) = self.fst.generate(g)?;
             let (g2, v2) = {
                 let mut dep_snd = self.snd.dep_snd_gen(&mut v1);
                 dep_snd.generate(g)?
