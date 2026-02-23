@@ -232,6 +232,32 @@ impl<Len: AsLen> DepCombinator for VariedLen<Len> {
     }
 }
 
+// Similar to `VariedLen`, but with the body being an arbitrary combinator instead of just `Varied`.
+impl<Len, Then> DepCombinator for VariedLenOf<Len, Then> where
+    Len: AsLen,
+    Then: SpecByteLen + Consistency<Val = Then::T>,
+ {
+    type Key = Len;
+
+    type Val = Then::Val;
+
+    type Body = ExactLen<Then, Len>;
+
+    open spec fn apply(&self, key: Self::Key) -> Self::Body {
+        ExactLen(key, self.1)
+    }
+
+    open spec fn recover(&self, value: Self::Val) -> Self::Key {
+        Len::from_nat(self.1.byte_len(value))
+    }
+
+    proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
+        if self.apply(key).consistent(value) {
+            Len::lemma_lossless_casting(key);
+        }
+    }
+}
+
 // Enabling Patterns like `Bind((H1, H2), (T1, T2))`.
 // e.g.,
 // ```

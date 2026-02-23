@@ -38,9 +38,16 @@ pub struct Bind<Head, Tail>(pub Head, pub Tail);
 /// Length dependency for `Varied` with generic length type.
 pub struct VariedLen<Len>(pub core::marker::PhantomData<Len>);
 
+pub struct VariedLenOf<Len, Then>(pub core::marker::PhantomData<Len>, pub Then);
+
 #[allow(non_snake_case)]
 pub open spec fn VLData<Len>() -> VariedLen<Len> {
     VariedLen(core::marker::PhantomData)
+}
+
+#[allow(non_snake_case)]
+pub open spec fn VLDataOf<Len, C>(c: C) -> VariedLenOf<Len, C> {
+    VariedLenOf(core::marker::PhantomData, c)
 }
 
 /// Tagged-value idiom.
@@ -61,7 +68,7 @@ pub open spec fn Uninhabited<Tag>() -> VoidTag<Tag> {
 pub struct TLVal<Tag, Len, Body>(pub Body, pub core::marker::PhantomData<(Tag, Len)>);
 
 #[allow(non_snake_case)]
-pub open spec fn TLV<Tag, Len, Body>(body: Body) -> TLVal<Tag, Len, Body> {
+pub open spec fn TLVOf<Tag, Len, Body>(body: Body) -> TLVal<Tag, Len, Body> {
     TLVal(body, core::marker::PhantomData)
 }
 
