@@ -1,3 +1,4 @@
+use crate::combinators::preceded::Preceded;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -195,6 +196,124 @@ impl<Inner> SpecByteLen for super::Tag<Inner, Inner::T> where Inner: SpecByteLen
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
         self.inner.byte_len(self.tag)
+    }
+}
+
+impl<Tg, Of> SpecParser for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
+    Of: SpecParser,
+ {
+    type PVal = Of::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_parse(ibuf)
+    }
+}
+
+impl<Tg, Of> Consistency for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + Consistency<Val = Tg::T>,
+    Of: Consistency,
+ {
+    type Val = Of::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.0.consistent(self.1) && self.2.consistent(
+            v,
+        )
+        // Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).consistent(v)
+
+    }
+}
+
+impl<Tg, Of> GoodParser for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + GoodParser,
+    Of: GoodParser,
+ {
+    open spec fn inv(&self) -> bool {
+        &&& self.0.inv()
+        &&& self.2.inv()
+    }
+
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_len_bound(ibuf)
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_byte_len(ibuf)
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_consistent(ibuf)
+    }
+}
+
+impl<Tg, Of> SpecSerializerDps for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializerDps<ST = Tg::T> + Consistency<Val = Tg::T>,
+    Of: SpecSerializerDps,
+ {
+    type ST = Of::ST;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<Tg, Of> SpecSerializer for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializer<SVal = Tg::T> + Consistency<Val = Tg::T>,
+    Of: SpecSerializer,
+ {
+    type SVal = Of::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize(v)
+    }
+}
+
+impl<Tg, Of> Unambiguity for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + Unambiguity + SpecParser<PVal = Tg::T>,
+    Of: Unambiguity,
+ {
+    open spec fn unambiguous(&self) -> bool {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).unambiguous()
+    }
+}
+
+impl<Tg, Of> GoodSerializerDps for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + GoodSerializerDps + Consistency<Val = Tg::T>,
+    Of: GoodSerializerDps,
+ {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_buf(
+            v,
+            obuf,
+        );
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_len(
+            v,
+            obuf,
+        );
+    }
+}
+
+impl<Tg, Of> GoodSerializer for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + GoodSerializer + Consistency<Val = Tg::T>,
+    Of: GoodSerializer,
+ {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_len(v);
+    }
+}
+
+impl<Tg, Of> SpecByteLen for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + Consistency<Val = Tg::T>,
+    Of: SpecByteLen,
+ {
+    type T = Of::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).byte_len(v)
     }
 }
 
