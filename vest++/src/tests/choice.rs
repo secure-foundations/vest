@@ -1,7 +1,7 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{
-    Alt, BerBool, Choice, Fixed, Mapped, Preceded, Refined, Sum, Tag, Terminated, U16Le, U32Le, U8,
+    Alt, BerBool, Choice, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -61,8 +61,7 @@ proof fn test_alt_tag() {
 proof fn test_alt_flexible_length_encoding() {
     let not_81 = Refined { inner: U8, pred: |value: u8| value != 0x81u8 };
     let short_form = not_81;
-    let long_form_prefix = Tag { inner: U8, tag: 0x81u8 };
-    let long_form = Preceded(long_form_prefix, not_81);
+    let long_form = Tagged(U8, 0x81u8, not_81);
     let alt_parser = Alt(long_form, short_form);
     assert(alt_parser.unambiguous());
 
@@ -135,9 +134,6 @@ impl Mapper for U16ToU32Mapper {
 }
 
 proof fn test_malleable_varint_parsing() {
-    let u16_tag = Tag { inner: U8, tag: VARINT_TAG_U16 };
-    let u32_tag = Tag { inner: U8, tag: VARINT_TAG_U32 };
-
     // Direct u8 form: values 0x00-0xFC encoded as single byte
     let u8_form = Mapped {
         inner: Refined { inner: U8, pred: NotVarintTag },
@@ -145,10 +141,10 @@ proof fn test_malleable_varint_parsing() {
     };
 
     // u16 form: 0xFD prefix + 2 bytes little-endian
-    let u16_form = Mapped { inner: Preceded(u16_tag, U16Le), mapper: U16ToU32Mapper };
+    let u16_form = Mapped { inner: Tagged(U8, VARINT_TAG_U16, U16Le), mapper: U16ToU32Mapper };
 
     // u32 form: 0xFE prefix + 4 bytes little-endian
-    let u32_form = Preceded(u32_tag, U32Le);
+    let u32_form = Tagged(U8, VARINT_TAG_U32, U32Le);
 
     let varint = Alt(u32_form, Alt(u16_form, u8_form));
     assert(varint.unambiguous());

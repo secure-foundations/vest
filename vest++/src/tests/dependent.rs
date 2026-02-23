@@ -1,12 +1,12 @@
 use std::prelude::v1;
 
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::dependent::{TLVal, TagValNode, Uninhabited, TLV};
+use crate::combinators::dependent::{TLVOf, TLVal, TagValNode, Uninhabited};
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
-use crate::combinators::{disjoint::*, Empty, Preceded, Refined, Void, VoidTag};
+use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
     Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVNode, TVOr, Tag,
-    Tail, U16Le, U32Le, VLData, Varied, U8,
+    Tagged, Tail, U16Le, U32Le, VLData, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -116,7 +116,7 @@ proof fn test_dependent_simple_tlv() {
     #[verusfmt::skip]
     let tlv =
         Bind((U16Le, U8),
-        TLV(
+        TLVOf(
         TVNode(
             TVNode(
                 TVLeaf(0u16, Tail), TVLeaf(1u16, Tail)
@@ -167,7 +167,7 @@ type V2Fmt = TLVal<
 
 #[verusfmt::skip]
 pub open spec fn v2_fmt() -> V2Fmt {
-    TLV(
+    TLVOf(
         TVOr(0u8, Tail,
         TVOr(1u8, Tail,
         TVOr(2u8, Repeat(U16Le, Eof),
@@ -344,10 +344,10 @@ proof fn test_bitcoin_tx() {
     //   witness: [witness; @txin_count],
     //   lock_time: u32le,
     // }
-    let flag_fmt = Tag { inner: U8, tag: 1u8 };
     #[verusfmt::skip]
-    let tx_segwit = Preceded(
-        flag_fmt,
+    let tx_segwit = Tagged(
+        U8,
+        1u8,
         Bind(
             U8,
             TXSegwitRest,
@@ -362,7 +362,6 @@ proof fn test_bitcoin_tx() {
     let value = (txins, (txouts, (witness, lock_time)));
 
     assert(tx_segwit.unambiguous());
-    assert(flag_fmt.consistent(()));
     assert(tx_segwit.consistent(value));
     tx_segwit.theorem_serialize_parse_roundtrip(value);
 
