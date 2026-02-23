@@ -6,16 +6,16 @@ use super::Varied;
 
 verus! {
 
-pub uninterp spec fn array_from_seq<const N: usize>(s: Seq<u8>) -> [u8; N]
+pub uninterp spec fn array_from_seq<const N: usize, T>(s: Seq<T>) -> [T; N]
     recommends
         s.len() == N,
 ;
 
-pub broadcast axiom fn axiom_array_from_seq<const N: usize>(s: Seq<u8>)
+pub broadcast axiom fn axiom_array_from_seq<const N: usize, T>(s: Seq<T>)
     requires
         s.len() == N,
     ensures
-        (#[trigger] array_from_seq::<N>(s))@ == s,
+        (#[trigger] array_from_seq::<N, T>(s))@ == s,
 ;
 
 impl<const N: usize> SpecParser for super::Fixed<N> {
@@ -25,7 +25,7 @@ impl<const N: usize> SpecParser for super::Fixed<N> {
         if ibuf.len() < N as int {
             None
         } else {
-            Some((N as int, array_from_seq::<N>(ibuf.take(N as int))))
+            Some((N as int, array_from_seq(ibuf.take(N as int))))
         }
     }
 }
