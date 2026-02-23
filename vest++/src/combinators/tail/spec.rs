@@ -58,6 +58,11 @@ impl SpecByteLen for super::Tail {
     }
 }
 
+impl BytesCombinator for super::Tail {
+    proof fn lemma_byte_len_is_buf_len(&self, s: Seq<u8>) {
+    }
+}
+
 impl GoodSerializer for super::Tail {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
     }

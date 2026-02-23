@@ -312,10 +312,12 @@ impl RecBody for NestedBracesBody {
     }
 
     open spec fn consistent_body(&self, rec: PredFnSpec<Self::Val>) -> PredFnSpec<Self::Val> {
-        |v: Self::Val| nested_braces_body(rec).consistent(v)
+        |v: Self::Val|
+            nested_braces_body(rec).consistent(v)
         // |v: Self::Val|
         //     exists|p: ParserFnSpec<Self::Val>, b: ByteLenFnSpec<Self::Val>| #[trigger]
         //         nested_braces_body((p, rec, b)).consistent(v)
+
     }
 
     proof fn lemma_body_preservation(
@@ -346,9 +348,13 @@ proof fn nested_braces_good_parser() {
 
     let input = seq![0x7Bu8, 0x00u8, 0x7Du8];
 
-    assert(nested_braces.spec_parse(input) == Some((3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))))) by {
+    assert(nested_braces.spec_parse(input) == Some(
+        (3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))),
+    )) by {
         let body10 = nested_braces_body(nested_braces.parse_callback(10nat));
-        assert(body10.spec_parse(input) == Some((3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps)))));
+        assert(body10.spec_parse(input) == Some(
+            (3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))),
+        ));
     };
 
     nested_braces.lemma_parse_byte_len(input);

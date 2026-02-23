@@ -126,6 +126,14 @@ pub trait SpecByteLen {
     spec fn byte_len(&self, v: Self::T) -> nat;
 }
 
+/// Encapsulate "bytes combinators".
+pub trait BytesCombinator: SpecByteLen<T = Seq<u8>> {
+    proof fn lemma_byte_len_is_buf_len(&self, buf: Seq<u8>)
+        ensures
+            self.byte_len(buf) == buf.len(),
+    ;
+}
+
 /// Serializer specification trait.
 pub trait SpecSerializer {
     /// The type of values to be serialized.

@@ -75,24 +75,7 @@ impl<Inner, Len> SPRoundTripDps for super::ExactLen<Inner, Len> where
 
 impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Len> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        if let Some((n1, v1)) = self.spec_parse(buf1) {
-            if let Some((n2, v2)) = self.spec_parse(buf2) {
-                if v1 == v2 {
-                    self.lemma_parse_byte_len(buf1);
-                    self.lemma_parse_byte_len(buf2);
-                    self.lemma_parse_consistent(buf1);
-                    self.lemma_parse_consistent(buf2);
-                    let chunk1 = buf1.take(self.0.as_usize() as int);
-                    let chunk2 = buf2.take(self.0.as_usize() as int);
-                    self.1.lemma_parse_non_malleable(chunk1, chunk2);
-                    assert(chunk1.take(self.0.as_usize() as int) == chunk2.take(
-                        self.0.as_usize() as int,
-                    ));
-                    assert(chunk1.take(self.0.as_usize() as int) == chunk1);
-                    assert(chunk2.take(self.0.as_usize() as int) == chunk2);
-                }
-            }
-        }
+        super::AndThen(super::Varied(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
@@ -101,6 +84,7 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 // because it always consumes the same number of bytes when it succeeds
 impl<Inner: GoodParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        super::AndThen(super::Varied(self.0), self.1).lemma_no_lookahead(i1, i2);
     }
 }
 
@@ -110,15 +94,13 @@ impl<Inner: GoodParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLe
 // because it "boxes" the inner serializer from the outside context `obuf`
 impl<Inner: EquivSerializers, Len: AsLen> EquivSerializersGeneral for super::ExactLen<Inner, Len> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let inner_bytes = self.1.spec_serialize(v);
-        super::Varied(self.0).lemma_serialize_equiv(inner_bytes, obuf);
-        self.1.lemma_serialize_equiv_on_empty(v);
+        super::AndThen(super::Varied(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<Inner: EquivSerializers, Len: AsLen> EquivSerializers for super::ExactLen<Inner, Len> {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        self.1.lemma_serialize_equiv_on_empty(v);
+        super::AndThen(super::Varied(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 
@@ -135,38 +117,55 @@ impl<Len, Then> SPRoundTripDps for super::AndThen<Varied<Len>, Then> where
     }
 }
 
-impl<Len: AsLen, Then: NonMalleable> NonMalleable for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> NonMalleable for super::AndThen<A, Then> where
+    A: BytesCombinator + NonMalleable,
+    Then: NonMalleable,
+ {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
-                    self.lemma_parse_byte_len(buf1);
-                    self.lemma_parse_byte_len(buf2);
-                    self.lemma_parse_consistent(buf1);
-                    self.lemma_parse_consistent(buf2);
-                    let chunk1 = buf1.take(self.0.0.as_usize() as int);
-                    let chunk2 = buf2.take(self.0.0.as_usize() as int);
+                    let (n1a, chunk1) = self.0.spec_parse(buf1)->0;
+                    let (n2a, chunk2) = self.0.spec_parse(buf2)->0;
+                    let (n1b, v1b) = self.1.spec_parse(chunk1)->0;
+                    let (n2b, v2b) = self.1.spec_parse(chunk2)->0;
+                    self.0.lemma_parse_byte_len(buf1);
+                    self.0.lemma_parse_byte_len(buf2);
+                    self.0.lemma_byte_len_is_buf_len(chunk1);
+                    self.0.lemma_byte_len_is_buf_len(chunk2);
+                    self.0.lemma_parse_non_malleable(buf1, buf2);
                     self.1.lemma_parse_non_malleable(chunk1, chunk2);
-                    assert(chunk1.take(self.0.0.as_usize() as int) == chunk2.take(
-                        self.0.0.as_usize() as int,
-                    ));
-                    assert(chunk1.take(self.0.0.as_usize() as int) == chunk1);
-                    assert(chunk2.take(self.0.0.as_usize() as int) == chunk2);
+                    assert(n1 == n1a && n2 == n2a);
+                    assert(chunk1.take(n1a) == chunk2.take(n2a));
+                    assert(chunk1.take(n1a) == chunk1);
+                    assert(chunk2.take(n2a) == chunk2);
+                    assert(chunk1 == chunk2);
+                    assert(buf1.take(n1a) == buf2.take(n2a));
                 }
             }
         }
     }
 }
 
-impl<Len: AsLen, Then: GoodParser + Unambiguity> NoLookAhead for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
+    A: BytesCombinator + NoLookAhead,
+    Then: GoodParser + Unambiguity,
+ {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    self.0.lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
     }
 }
 
-impl<Len: AsLen, Then: EquivSerializers> EquivSerializersGeneral for super::AndThen<
-    Varied<Len>,
-    Then,
-> {
+impl<A, Then> EquivSerializersGeneral for super::AndThen<A, Then> where
+    A: EquivSerializersGeneral<SVal = Seq<u8>, ST = Seq<u8>>,
+    Then: EquivSerializers,
+ {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let inner_bytes = self.1.spec_serialize(v);
         self.0.lemma_serialize_equiv(inner_bytes, obuf);
@@ -174,9 +173,13 @@ impl<Len: AsLen, Then: EquivSerializers> EquivSerializersGeneral for super::AndT
     }
 }
 
-impl<Len: AsLen, Then: EquivSerializers> EquivSerializers for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> EquivSerializers for super::AndThen<A, Then> where
+    A: EquivSerializers<SVal = Seq<u8>, ST = Seq<u8>>,
+    Then: EquivSerializers,
+ {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         self.1.lemma_serialize_equiv_on_empty(v);
+        self.0.lemma_serialize_equiv_on_empty(self.1.spec_serialize(v));
     }
 }
 

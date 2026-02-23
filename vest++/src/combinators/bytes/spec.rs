@@ -172,17 +172,16 @@ impl<Len: AsLen> SpecByteLen for super::Varied<Len> {
     }
 }
 
+impl<Len: AsLen> BytesCombinator for super::Varied<Len> {
+    proof fn lemma_byte_len_is_buf_len(&self, s: Seq<u8>) {
+    }
+}
+
 impl<Inner: SpecParser, Len: AsLen> SpecParser for super::ExactLen<Inner, Len> {
     type PVal = Inner::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => None,
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => Some((len_a, v)),
-                _ => None,
-            },
-        }
+        super::AndThen(super::Varied(self.0), self.1).spec_parse(ibuf)
     }
 }
 
@@ -200,44 +199,19 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>, Len: AsLen> Consistency f
 
 impl<Inner: GoodParser, Len: AsLen> GoodParser for super::ExactLen<Inner, Len> {
     open spec fn inv(&self) -> bool {
-        self.1.inv()
+        super::AndThen(super::Varied(self.0), self.1).inv()
     }
 
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, _)) if len_a == len_b => self.1.lemma_parse_len_bound(chunk),
-                _ => {},
-            },
-        }
+        super::AndThen(super::Varied(self.0), self.1).lemma_parse_len_bound(ibuf);
     }
 
     proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => {
-                    self.1.lemma_parse_byte_len(chunk);
-                    assert(len_a == self.0.as_usize() as int);
-                    assert(self.byte_len(v) == self.0.as_usize() as nat);
-                },
-                _ => {},
-            },
-        }
+        super::AndThen(super::Varied(self.0), self.1).lemma_parse_byte_len(ibuf);
     }
 
     proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        match super::Varied(self.0).spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => {
-                    self.1.lemma_parse_byte_len(chunk);
-                    self.1.lemma_parse_consistent(chunk)
-                },
-                _ => {},
-            },
-        }
+        super::AndThen(super::Varied(self.0), self.1).lemma_parse_consistent(ibuf);
     }
 }
 
@@ -245,7 +219,7 @@ impl<Inner: SpecSerializerDps, Len: AsLen> SpecSerializerDps for super::ExactLen
     type ST = Inner::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        super::Varied(self.0).spec_serialize_dps(self.1.spec_serialize_dps(v, seq![]), obuf)
+        super::AndThen(super::Varied(self.0), self.1).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -253,35 +227,32 @@ impl<Inner: SpecSerializer, Len: AsLen> SpecSerializer for super::ExactLen<Inner
     type SVal = Inner::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        let inner_bytes = self.1.spec_serialize(v);
-        super::Varied(self.0).spec_serialize(inner_bytes)
+        super::AndThen(super::Varied(self.0), self.1).spec_serialize(v)
     }
 }
 
 impl<Inner: Unambiguity, Len: AsLen> Unambiguity for super::ExactLen<Inner, Len> {
     open spec fn unambiguous(&self) -> bool {
-        self.1.unambiguous()
+        super::AndThen(super::Varied(self.0), self.1).unambiguous()
     }
 }
 
-impl<Inner: GoodSerializer + EquivSerializers, Len: AsLen> GoodSerializerDps for super::ExactLen<
-    Inner,
-    Len,
-> {
+impl<Inner, Len> GoodSerializerDps for super::ExactLen<Inner, Len> where
+    Inner: GoodSerializer + EquivSerializers,
+    Len: AsLen,
+ {
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        super::Varied(self.0).lemma_serialize_dps_buf(self.1.spec_serialize_dps(v, seq![]), obuf);
+        super::AndThen(super::Varied(self.0), self.1).lemma_serialize_dps_buf(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.1.lemma_serialize_equiv_on_empty(v);
-        self.1.lemma_serialize_len(v);
-        super::Varied(self.0).lemma_serialize_dps_len(self.1.spec_serialize_dps(v, seq![]), obuf);
+        super::AndThen(super::Varied(self.0), self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
 
 impl<Inner: GoodSerializer, Len: AsLen> GoodSerializer for super::ExactLen<Inner, Len> {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        self.1.lemma_serialize_len(v);
+        super::AndThen(super::Varied(self.0), self.1).lemma_serialize_len(v);
     }
 }
 
@@ -289,11 +260,14 @@ impl<Inner: SpecByteLen, Len: AsLen> SpecByteLen for super::ExactLen<Inner, Len>
     type T = Inner::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.1.byte_len(v)
+        super::AndThen(super::Varied(self.0), self.1).byte_len(v)
     }
 }
 
-impl<Len: AsLen, Then: SpecParser> SpecParser for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> SpecParser for super::AndThen<A, Then> where
+    A: SpecParser<PVal = Seq<u8>>,
+    Then: SpecParser,
+ {
     type PVal = Then::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -307,24 +281,29 @@ impl<Len: AsLen, Then: SpecParser> SpecParser for super::AndThen<Varied<Len>, Th
     }
 }
 
-impl<Len: AsLen, Then: Consistency + SpecByteLen<T = Then::Val>> Consistency for super::AndThen<
-    Varied<Len>,
-    Then,
-> {
+impl<A, Then> Consistency for super::AndThen<A, Then> where
+    A: Consistency<Val = Seq<u8>> + SpecByteLen<T = Seq<u8>>,
+    Then: Consistency + SpecByteLen<T = Then::Val>,
+ {
     type Val = Then::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
         &&& self.1.consistent(v)
-        &&& self.0.0.as_usize() == self.1.byte_len(v)
+        &&& exists|chunk: Seq<u8>|
+            self.0.consistent(chunk) && self.0.byte_len(chunk) == self.1.byte_len(v)
     }
 }
 
-impl<Len: AsLen, Then: GoodParser> GoodParser for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> GoodParser for super::AndThen<A, Then> where
+    A: BytesCombinator + GoodParser,
+    Then: GoodParser,
+ {
     open spec fn inv(&self) -> bool {
-        self.1.inv()
+        self.0.inv() && self.1.inv()
     }
 
     proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_len_bound(ibuf);
         match self.0.spec_parse(ibuf) {
             None => {},
             Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
@@ -340,8 +319,7 @@ impl<Len: AsLen, Then: GoodParser> GoodParser for super::AndThen<Varied<Len>, Th
             Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
                 Some((len_b, v)) if len_a == len_b => {
                     self.1.lemma_parse_byte_len(chunk);
-                    assert(len_a == self.0.0.as_usize() as int);
-                    assert(self.byte_len(v) == self.0.0.as_usize() as nat);
+                    assert(self.byte_len(v) == self.1.byte_len(v));
                 },
                 _ => {},
             },
@@ -353,8 +331,11 @@ impl<Len: AsLen, Then: GoodParser> GoodParser for super::AndThen<Varied<Len>, Th
             None => {},
             Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
                 Some((len_b, v)) if len_a == len_b => {
+                    self.0.lemma_parse_consistent(ibuf);
+                    self.0.lemma_parse_byte_len(ibuf);
                     self.1.lemma_parse_byte_len(chunk);
-                    self.1.lemma_parse_consistent(chunk)
+                    self.1.lemma_parse_consistent(chunk);
+                    assert(self.0.consistent(chunk));
                 },
                 _ => {},
             },
@@ -362,7 +343,10 @@ impl<Len: AsLen, Then: GoodParser> GoodParser for super::AndThen<Varied<Len>, Th
     }
 }
 
-impl<Len: AsLen, Then: SpecSerializerDps> SpecSerializerDps for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> SpecSerializerDps for super::AndThen<A, Then> where
+    A: SpecSerializerDps<ST = Seq<u8>>,
+    Then: SpecSerializerDps,
+ {
     type ST = Then::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -370,7 +354,10 @@ impl<Len: AsLen, Then: SpecSerializerDps> SpecSerializerDps for super::AndThen<V
     }
 }
 
-impl<Len: AsLen, Then: SpecSerializer> SpecSerializer for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> SpecSerializer for super::AndThen<A, Then> where
+    A: SpecSerializer<SVal = Seq<u8>>,
+    Then: SpecSerializer,
+ {
     type SVal = Then::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -379,16 +366,19 @@ impl<Len: AsLen, Then: SpecSerializer> SpecSerializer for super::AndThen<Varied<
     }
 }
 
-impl<Len: AsLen, Then: Unambiguity> Unambiguity for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> Unambiguity for super::AndThen<A, Then> where
+    A: Unambiguity<PVal = Seq<u8>>,
+    Then: Unambiguity,
+ {
     open spec fn unambiguous(&self) -> bool {
-        self.1.unambiguous()
+        self.0.unambiguous() && self.1.unambiguous()
     }
 }
 
-impl<Len: AsLen, Then: GoodSerializer + EquivSerializers> GoodSerializerDps for super::AndThen<
-    Varied<Len>,
-    Then,
-> {
+impl<A, Then> GoodSerializerDps for super::AndThen<A, Then> where
+    A: BytesCombinator + GoodSerializerDps,
+    Then: GoodSerializer + EquivSerializers,
+ {
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         self.0.lemma_serialize_dps_buf(self.1.spec_serialize_dps(v, seq![]), obuf);
     }
@@ -396,17 +386,25 @@ impl<Len: AsLen, Then: GoodSerializer + EquivSerializers> GoodSerializerDps for 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
         self.1.lemma_serialize_equiv_on_empty(v);
         self.1.lemma_serialize_len(v);
-        self.0.lemma_serialize_dps_len(self.1.spec_serialize_dps(v, seq![]), obuf);
+        let inner_bytes = self.1.spec_serialize_dps(v, seq![]);
+        self.0.lemma_serialize_dps_len(inner_bytes, obuf);
+        self.0.lemma_byte_len_is_buf_len(inner_bytes);
     }
 }
 
-impl<Len: AsLen, Then: GoodSerializer> GoodSerializer for super::AndThen<Varied<Len>, Then> {
+impl<A, Then> GoodSerializer for super::AndThen<A, Then> where
+    A: BytesCombinator + GoodSerializer,
+    Then: GoodSerializer,
+ {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        let inner_bytes = self.1.spec_serialize(v);
         self.1.lemma_serialize_len(v);
+        self.0.lemma_serialize_len(inner_bytes);
+        self.0.lemma_byte_len_is_buf_len(inner_bytes);
     }
 }
 
-impl<Len: AsLen, Then: SpecByteLen> SpecByteLen for super::AndThen<Varied<Len>, Then> {
+impl<A, Then: SpecByteLen> SpecByteLen for super::AndThen<A, Then> {
     type T = Then::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {

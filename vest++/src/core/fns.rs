@@ -72,7 +72,6 @@ impl<T> SpecSerializerDps for SerializerDPSSpecs<T> {
     }
 }
 
-
 pub type SerializerSpecs<T> = (SerializerFnSpec<T>, ByteLenFnSpec<T>);
 
 impl<T> SpecByteLen for SerializerSpecs<T> {
