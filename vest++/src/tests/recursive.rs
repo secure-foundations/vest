@@ -23,21 +23,21 @@ pub open spec fn height(n: NestedBracesT) -> nat
 pub struct NestedBracesMapper;
 
 impl Mapper for NestedBracesMapper {
-    type In = Either<NestedBracesT, ()>;
+    type In = Sum<NestedBracesT, ()>;
 
     type Out = NestedBracesT;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
-            Either::Left(inner) => NestedBracesT::Brace(Box::new(inner)),
-            Either::Right(()) => NestedBracesT::Eps,
+            Sum::Inl(inner) => NestedBracesT::Brace(Box::new(inner)),
+            Sum::Inr(()) => NestedBracesT::Eps,
         }
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
-            NestedBracesT::Brace(inner) => Either::Left(*inner),
-            NestedBracesT::Eps => Either::Right(()),
+            NestedBracesT::Brace(inner) => Sum::Inl(*inner),
+            NestedBracesT::Eps => Sum::Inr(()),
         }
     }
 }
@@ -45,8 +45,8 @@ impl Mapper for NestedBracesMapper {
 impl IsoMapper for NestedBracesMapper {
     proof fn lemma_map_iso(&self, i: Self::In) {
         match i {
-            Either::Left(_) => {},
-            Either::Right(u) => {
+            Sum::Inl(_) => {},
+            Sum::Inr(u) => {
                 assert(u == ());
             },
         }

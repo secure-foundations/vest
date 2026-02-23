@@ -1,4 +1,4 @@
-use crate::combinators::{Choice, Either, Optional, Refined, Tag, U8};
+use crate::combinators::{Choice, Optional, Refined, Sum, Tag, U8};
 use crate::core::{proof::*, spec::*};
 
 use vstd::prelude::*;

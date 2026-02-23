@@ -3,19 +3,19 @@ use vstd::prelude::*;
 
 verus! {
 
-pub enum Either<A, B> {
-    Left(A),
-    Right(B),
+pub enum Sum<A, B> {
+    Inl(A),
+    Inr(B),
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
-    type PVal = Either<A::PVal, B::PVal>;
+    type PVal = Sum<A::PVal, B::PVal>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.0.spec_parse(ibuf) {
-            Some((n, va)) => Some((n, Either::Left(va))),
+            Some((n, va)) => Some((n, Sum::Inl(va))),
             None => match self.1.spec_parse(ibuf) {
-                Some((n, vb)) => Some((n, Either::Right(vb))),
+                Some((n, vb)) => Some((n, Sum::Inr(vb))),
                 None => None,
             },
         }
@@ -23,12 +23,12 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
 }
 
 impl<A: Consistency, B: Consistency> Consistency for super::Choice<A, B> {
-    type Val = Either<A::Val, B::Val>;
+    type Val = Sum<A::Val, B::Val>;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
         match v {
-            Either::Left(va) => self.0.consistent(va),
-            Either::Right(vb) => self.1.consistent(vb),
+            Sum::Inl(va) => self.0.consistent(va),
+            Sum::Inr(vb) => self.1.consistent(vb),
         }
     }
 }
@@ -59,23 +59,23 @@ impl<A, B> SpecSerializerDps for super::Choice<A, B> where
     A: SpecSerializerDps,
     B: SpecSerializerDps,
  {
-    type ST = Either<A::ST, B::ST>;
+    type ST = Sum<A::ST, B::ST>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         match v {
-            Either::Left(va) => self.0.spec_serialize_dps(va, obuf),
-            Either::Right(vb) => self.1.spec_serialize_dps(vb, obuf),
+            Sum::Inl(va) => self.0.spec_serialize_dps(va, obuf),
+            Sum::Inr(vb) => self.1.spec_serialize_dps(vb, obuf),
         }
     }
 }
 
 impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: SpecSerializer {
-    type SVal = Either<A::SVal, B::SVal>;
+    type SVal = Sum<A::SVal, B::SVal>;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         match v {
-            Either::Left(va) => self.0.spec_serialize(va),
-            Either::Right(vb) => self.1.spec_serialize(vb),
+            Sum::Inl(va) => self.0.spec_serialize(va),
+            Sum::Inr(vb) => self.1.spec_serialize(vb),
         }
     }
 }
@@ -87,8 +87,8 @@ impl<A, B> Serializability for super::Choice<A, B> where
     #[verusfmt::skip]
     open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
         match v {
-            Either::Left(va) => self.0.serializable(va, obuf),
-            Either::Right(vb) => {
+            Sum::Inl(va) => self.0.serializable(va, obuf),
+            Sum::Inr(vb) => {
                 &&& self.1.serializable(vb, obuf)
                 // To ensure the parser can recover the choice made during serialization
                 &&& self.0.spec_parse(self.1.spec_serialize_dps(vb, obuf)) is None
@@ -111,10 +111,10 @@ impl<A, B> GoodSerializerDps for super::Choice<A, B> where
  {
     proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.lemma_serialize_dps_buf(va, obuf);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.lemma_serialize_dps_buf(vb, obuf);
             },
         }
@@ -122,10 +122,10 @@ impl<A, B> GoodSerializerDps for super::Choice<A, B> where
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.lemma_serialize_dps_len(va, obuf);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.lemma_serialize_dps_len(vb, obuf);
             },
         }
@@ -135,10 +135,10 @@ impl<A, B> GoodSerializerDps for super::Choice<A, B> where
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Choice<A, B> {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.lemma_serialize_len(va);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.lemma_serialize_len(vb);
             },
         }
@@ -146,12 +146,12 @@ impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Choice<A, B
 }
 
 impl<A, B> SpecByteLen for super::Choice<A, B> where A: SpecByteLen, B: SpecByteLen {
-    type T = Either<A::T, B::T>;
+    type T = Sum<A::T, B::T>;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         match v {
-            Either::Left(va) => self.0.byte_len(va),
-            Either::Right(vb) => self.1.byte_len(vb),
+            Sum::Inl(va) => self.0.byte_len(va),
+            Sum::Inr(vb) => self.1.byte_len(vb),
         }
     }
 }

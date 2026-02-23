@@ -1,7 +1,7 @@
 use super::*;
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::length::AsLen;
-use crate::combinators::{Choice, Cond, Either, Varied, Void};
+use crate::combinators::{Choice, Cond, Sum, Varied, Void};
 use crate::core::spec::*;
 use vstd::pervasive::arbitrary;
 use vstd::prelude::*;
@@ -268,7 +268,7 @@ impl<Tag, C, Rest> DepCombinator for TVOr<Tag, C, Rest> where
  {
     type Key = Tag;
 
-    type Val = Either<C::Val, Rest::Val>;
+    type Val = Sum<C::Val, Rest::Val>;
 
     type Body = Choice<Cond<C>, Rest::Body>;
 
@@ -278,18 +278,18 @@ impl<Tag, C, Rest> DepCombinator for TVOr<Tag, C, Rest> where
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         match value {
-            Either::Left(_) => self.0,
-            Either::Right(vr) => self.2.recover(vr),
+            Sum::Inl(_) => self.0,
+            Sum::Inr(vr) => self.2.recover(vr),
         }
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         if self.apply(key).consistent(value) {
             match value {
-                Either::Left(vl) => {
+                Sum::Inl(vl) => {
                     assert(self.recover(value) == key);
                 },
-                Either::Right(vr) => {
+                Sum::Inr(vr) => {
                     self.2.lemma_recover_consistent(key, vr);
                 },
             }
@@ -322,7 +322,7 @@ impl<Tag, Left, Right> DepCombinator for TagValNode<Tag, Left, Right> where
  {
     type Key = Tag;
 
-    type Val = Either<Left::Val, Right::Val>;
+    type Val = Sum<Left::Val, Right::Val>;
 
     type Body = Choice<Left::Body, Right::Body>;
 
@@ -332,17 +332,17 @@ impl<Tag, Left, Right> DepCombinator for TagValNode<Tag, Left, Right> where
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         match value {
-            Either::Left(vl) => self.0.recover(vl),
-            Either::Right(vr) => self.1.recover(vr),
+            Sum::Inl(vl) => self.0.recover(vl),
+            Sum::Inr(vr) => self.1.recover(vr),
         }
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         match value {
-            Either::Left(vl) => {
+            Sum::Inl(vl) => {
                 self.0.lemma_recover_consistent(key, vl);
             },
-            Either::Right(vr) => {
+            Sum::Inr(vr) => {
                 self.1.lemma_recover_consistent(key, vr);
             },
         }

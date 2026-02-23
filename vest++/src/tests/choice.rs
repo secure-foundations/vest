@@ -1,8 +1,7 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{
-    Alt, BerBool, Choice, Either, Fixed, Mapped, Preceded, Refined, Tag, Terminated, U16Le, U32Le,
-    U8,
+    Alt, BerBool, Choice, Fixed, Mapped, Preceded, Refined, Sum, Tag, Terminated, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -12,7 +11,7 @@ verus! {
 proof fn test_choice_compose() {
     let c = Choice(Tag { inner: U8, tag: 0u8 }, Tag { inner: U8, tag: 2u8 });
     let obuf = Seq::empty();
-    let v = Either::Right(());
+    let v = Sum::Inr(());
     assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
@@ -24,7 +23,7 @@ proof fn test_choice_compose1() {
     let tag2 = Tag { inner: U16Le, tag: 2u16 };
     let c = Choice(tag1, tag2);
     let obuf = Seq::empty();
-    let v = Either::Right(());
+    let v = Sum::Inr(());
     tag1.theorem_serialize_parse_roundtrip(());
     tag2.theorem_serialize_parse_roundtrip(());
     assert(c.unambiguous());

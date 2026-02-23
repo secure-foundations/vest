@@ -1,5 +1,5 @@
 use super::spec::triv;
-use crate::combinators::Either;
+use crate::combinators::Sum;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -8,10 +8,10 @@ verus! {
 impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.theorem_serialize_dps_parse_roundtrip(va, obuf);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.theorem_serialize_dps_parse_roundtrip(vb, obuf);
             },
         }
@@ -45,10 +45,10 @@ impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
  {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.lemma_serialize_equiv(va, obuf);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.lemma_serialize_equiv(vb, obuf);
             },
         }
@@ -58,10 +58,10 @@ impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
 impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B: EquivSerializers {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         match v {
-            Either::Left(va) => {
+            Sum::Inl(va) => {
                 self.0.lemma_serialize_equiv_on_empty(va);
             },
-            Either::Right(vb) => {
+            Sum::Inr(vb) => {
                 self.1.lemma_serialize_equiv_on_empty(vb);
             },
         }

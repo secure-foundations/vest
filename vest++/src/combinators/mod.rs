@@ -21,7 +21,7 @@ pub mod uints;
 
 pub use berbool::BerBool;
 pub use bytes::{Fixed, Varied};
-pub use choice::{Alt, Choice, Either};
+pub use choice::{Alt, Choice, Sum};
 pub use cond::Cond;
 pub use dependent::{Bind, DepCombinator, TVLeaf, TVNode, TVOr, VLData, VoidTag};
 pub use implicit::{Implicit, ImplicitAuto};

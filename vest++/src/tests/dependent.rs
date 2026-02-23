@@ -5,8 +5,8 @@ use crate::combinators::dependent::{TLVal, TagValNode, Uninhabited, TLV};
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{disjoint::*, Empty, Preceded, Refined, Void, VoidTag};
 use crate::combinators::{
-    Bind, Choice, Cond, DepCombinator, Either, Eof, Fixed, Mapped, Repeat, TVLeaf, TVNode, TVOr,
-    Tag, Tail, U16Le, U32Le, VLData, Varied, U8,
+    Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVNode, TVOr, Tag,
+    Tail, U16Le, U32Le, VLData, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -35,9 +35,9 @@ proof fn test_dependent_nary_tagval() {
         TVOr(2u8, Empty, Uninhabited()))),
     );
 
-    let v0 = Either::Left(0x1234u16);
-    let v1 = Either::Right(Either::Left(0x78563412u32));
-    let v2 = Either::Right(Either::Right(Either::Left(())));
+    let v0 = Sum::Inl(0x1234u16);
+    let v1 = Sum::Inr(Sum::Inl(0x78563412u32));
+    let v2 = Sum::Inr(Sum::Inr(Sum::Inl(())));
 
     assert(fmt.unambiguous());
     assert(fmt.consistent(v0));
@@ -72,9 +72,9 @@ proof fn test_dependent_nary_custom_tag() {
         Uninhabited()))),
     );
 
-    let v0 = Either::Left(0x1234u16);
-    let v1 = Either::Right(Either::Left(0x78563412u32));
-    let v2 = Either::Right(Either::Right(Either::Left(())));
+    let v0 = Sum::Inl(0x1234u16);
+    let v1 = Sum::Inr(Sum::Inl(0x78563412u32));
+    let v2 = Sum::Inr(Sum::Inr(Sum::Inl(())));
 
     assert(fmt.unambiguous());
     assert(fmt.consistent(v0));
@@ -127,9 +127,9 @@ proof fn test_dependent_simple_tlv() {
         )),
     );
 
-    let v0 = Either::Left(Either::Left(seq![0xAAu8, 0xBBu8]));
-    let v1 = Either::Left(Either::Right(seq![0xCCu8, 0xDDu8]));
-    let v2 = Either::Right(Either::Left((seq![], ())));
+    let v0 = Sum::Inl(Sum::Inl(seq![0xAAu8, 0xBBu8]));
+    let v1 = Sum::Inl(Sum::Inr(seq![0xCCu8, 0xDDu8]));
+    let v2 = Sum::Inr(Sum::Inl((seq![], ())));
 
     assert(tlv.unambiguous());
     assert(tlv.consistent(v0));
@@ -143,7 +143,7 @@ proof fn test_dependent_simple_tlv() {
 
 type ComplexVal = (
     [u8; 3],
-    (Seq<u8>, (Either<Seq<u8>, Either<Seq<u8>, Either<(Seq<u16>, ()), !>>>, [u8; 4])),
+    (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), !>>>, [u8; 4])),
 );
 
 type ComplexBody = (
@@ -228,9 +228,9 @@ proof fn test_dependent_complex_tlv() {
     let padding = [0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
 
-    let v2_1 = Either::Left(seq![0xEFu8, 0xBEu8]);
-    let v2_2 = Either::Right(Either::Left(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
-    let v2_3 = Either::Right(Either::Right(Either::Left((seq![], ()))));
+    let v2_1 = Sum::Inl(seq![0xEFu8, 0xBEu8]);
+    let v2_2 = Sum::Inr(Sum::Inl(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
+    let v2_3 = Sum::Inr(Sum::Inr(Sum::Inl((seq![], ()))));
 
     let magic = [0x12u8, 0x34u8, 0x56u8, 0x78u8];
 
@@ -376,7 +376,7 @@ pub enum MyTag {
     C = 3,
 }
 
-pub type MyTagIn = Either<(), Either<(), ()>>;
+pub type MyTagIn = Sum<(), Sum<(), ()>>;
 
 pub struct MyTagMapper;
 
@@ -387,17 +387,17 @@ impl Mapper for MyTagMapper {
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
-            Either::Left(()) => MyTag::A,
-            Either::Right(Either::Left(())) => MyTag::B,
-            Either::Right(Either::Right(())) => MyTag::C,
+            Sum::Inl(()) => MyTag::A,
+            Sum::Inr(Sum::Inl(())) => MyTag::B,
+            Sum::Inr(Sum::Inr(())) => MyTag::C,
         }
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
-            MyTag::A => Either::Left(()),
-            MyTag::B => Either::Right(Either::Left(())),
-            MyTag::C => Either::Right(Either::Right(())),
+            MyTag::A => Sum::Inl(()),
+            MyTag::B => Sum::Inr(Sum::Inl(())),
+            MyTag::C => Sum::Inr(Sum::Inr(())),
         }
     }
 }
@@ -405,11 +405,11 @@ impl Mapper for MyTagMapper {
 impl IsoMapper for MyTagMapper {
     proof fn lemma_map_iso(&self, i: Self::In) {
         match i {
-            Either::Left(vl) => {},
-            Either::Right(vr) => {
+            Sum::Inl(vl) => {},
+            Sum::Inr(vr) => {
                 match vr {
-                    Either::Left(vl) => {},
-                    Either::Right(vr) => {},
+                    Sum::Inl(vl) => {},
+                    Sum::Inr(vr) => {},
                 }
             },
         }

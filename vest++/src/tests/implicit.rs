@@ -1,6 +1,6 @@
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{Choice, Cond, Either, Implicit, ImplicitAuto, U16Le, U32Le, Varied, U8};
+use crate::combinators::{Choice, Cond, Implicit, ImplicitAuto, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -27,8 +27,8 @@ proof fn test_implicit_fmt3_roundtrip() {
 
     let fmt3 = Implicit(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
 
-    let v0 = Either::Left(0x1234u16);
-    let v1 = Either::Right(0x78563412u32);
+    let v0 = Sum::Inl(0x1234u16);
+    let v1 = Sum::Inr(0x78563412u32);
 
     assert(fmt3.unambiguous());
 
@@ -43,7 +43,7 @@ proof fn test_implicit_fmt3_roundtrip() {
     let buf0 = seq![0u8, 0x34u8, 0x12u8];
     if let Some((n0, parsed0)) = fmt3.spec_parse(buf0) {
         assert(n0 == 3int);
-        assert(parsed0 is Left);
+        assert(parsed0 is Inl);
     }
     assert(fmt3.consistent(v1)) by {
         let tag = 1u8;
@@ -56,7 +56,7 @@ proof fn test_implicit_fmt3_roundtrip() {
     let buf1 = seq![1u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8];
     if let Some((n1, parsed1)) = fmt3.spec_parse(buf1) {
         assert(n1 == 5int);
-        assert(parsed1 is Right);
+        assert(parsed1 is Inr);
     }
 }
 
@@ -125,19 +125,19 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
             Choice(Cond(tag == 1u8, U32Le),
                    Cond(tag == 2u8, Fixed::<0>))),
         // Recovery logics:
-        |v: Either<u16, Either<u32, [u8; 0]>>|
+        |v: Sum<u16, Sum<u32, [u8; 0]>>|
             {
                 match v {
-                    Either::Left(_) => 0u8,
-                    Either::Right(Either::Left(_)) => 1u8,
-                    Either::Right(Either::Right(_)) => 2u8,
+                    Sum::Inl(_) => 0u8,
+                    Sum::Inr(Sum::Inl(_)) => 1u8,
+                    Sum::Inr(Sum::Inr(_)) => 2u8,
                 }
             },
     );
 
-    let v0 = Either::Left(0x1234u16);
-    let v1 = Either::Right(Either::Left(0x78563412u32));
-    let v2 = Either::Right(Either::Right([]));
+    let v0 = Sum::Inl(0x1234u16);
+    let v1 = Sum::Inr(Sum::Inl(0x78563412u32));
+    let v2 = Sum::Inr(Sum::Inr([]));
 
     assert(fmt3.unambiguous());
     assert(fmt3.consistent(v0));
@@ -152,8 +152,8 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
 proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     broadcast use lemma_disjoint_cond;
 
-    use Either::{Left as Inl, Right as Inr};
-    use Either as Sum;
+    use Sum::{Inl as Inl, Inr as Inr};
+    use Sum as Sum;
 
     // tlv = {
     //   @tag: u8

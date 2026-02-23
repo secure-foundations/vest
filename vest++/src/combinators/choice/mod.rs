@@ -3,7 +3,7 @@ pub mod spec;
 
 use vstd::prelude::*;
 
-pub use spec::Either;
+pub use spec::Sum;
 
 verus! {
 
