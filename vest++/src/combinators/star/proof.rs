@@ -1,3 +1,5 @@
+use crate::combinators::bytes::spec::{array_from_seq, axiom_array_from_seq};
+use crate::combinators::length::AsLen;
 use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::{calc, prelude::*};
@@ -273,6 +275,208 @@ impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGene
 impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         self.lemma_serialize_equiv_rec(v, Seq::empty());
+    }
+}
+
+impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + GoodSerializerDps, N: AsLen {
+    proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<C::PVal>, count: nat, obuf: Seq<u8>)
+        requires
+            self.1.unambiguous(),
+            vs.len() == count,
+            (super::Star { inner: self.1 }.consistent(vs)),
+        ensures
+            self.parse_n_rec(count, self.spec_serialize_dps(vs, obuf)) == Some(
+                ((self.spec_serialize_dps(vs, obuf).len() - obuf.len()) as int, vs),
+            ),
+        decreases count,
+    {
+        if count == 0 {
+        } else {
+            let v0 = vs[0];
+            let rest = vs.skip(1);
+            let rest_buf = self.spec_serialize_dps(rest, obuf);
+            let serialized = self.spec_serialize_dps(vs, obuf);
+
+            self.lemma_serialize_parse_roundtrip_rec(rest, (count - 1) as nat, obuf);
+
+            self.1.theorem_serialize_dps_parse_roundtrip(v0, rest_buf);
+            self.1.lemma_serialize_dps_buf(v0, rest_buf);
+            self.1.lemma_serialize_dps_len(v0, rest_buf);
+
+            let n0 = (serialized.len() - rest_buf.len()) as int;
+            assert(serialized.skip(n0) == rest_buf);
+        }
+    }
+}
+
+impl<C, N> SPRoundTripDps for super::RepeatN<C, N> where
+    C: SPRoundTripDps + GoodSerializerDps,
+    N: AsLen,
+ {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        self.lemma_serialize_parse_roundtrip_rec(v, self.0.as_usize() as nat, obuf);
+        self.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
+    #[verusfmt::skip]
+    proof fn lemma_parse_non_malleable_rec(&self, count: nat, buf1: Seq<u8>, buf2: Seq<u8>)
+        requires
+            self.1.inv(),
+        ensures
+            self.parse_n_rec(count, buf1) matches Some((n1, v1)) ==>
+            self.parse_n_rec(count, buf2) matches Some((n2, v2)) ==>
+            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+        decreases count,
+    {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        if count == 0 {
+        } else {
+            if let Some((n1, v1)) = self.parse_n_rec(count, buf1) {
+                if let Some((n2, v2)) = self.parse_n_rec(count, buf2) {
+                    if v1 == v2 {
+                        let (m1, a1) = self.1.spec_parse(buf1)->0;
+                        let (m2, a2) = self.1.spec_parse(buf2)->0;
+                        let (r1, rest1) = self.parse_n_rec((count - 1) as nat, buf1.skip(m1))->0;
+                        let (r2, rest2) = self.parse_n_rec((count - 1) as nat, buf2.skip(m2))->0;
+                        assert(v1 == seq![a1] + rest1);
+                        assert(v2 == seq![a2] + rest2);
+                        assert(a1 == a2) by {
+                            assert(a1 == v1[0]);
+                            assert(a2 == v2[0]);
+                        }
+                        assert(rest1 == rest2) by {
+                            assert(rest1 == v1.skip(1));
+                            assert(rest2 == v2.skip(1));
+                        }
+
+                        self.1.lemma_parse_len_bound(buf1);
+                        self.1.lemma_parse_len_bound(buf2);
+                        self.lemma_parse_n_len_bound((count - 1) as nat, buf1.skip(m1));
+                        self.lemma_parse_n_len_bound((count - 1) as nat, buf2.skip(m2));
+                        self.1.lemma_parse_non_malleable(buf1, buf2);
+                        assert(buf1.take(m1) == buf2.take(m2));
+
+                        self.lemma_parse_non_malleable_rec((count - 1) as nat, buf1.skip(m1), buf2.skip(m2));
+                        assert(buf1.skip(m1).take(r1) == buf2.skip(m2).take(r2));
+
+                        assert(n1 == m1 + r1);
+                        assert(n2 == m2 + r2);
+                        assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(r1));
+                        assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(r2));
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<C: NonMalleable, N: AsLen> NonMalleable for super::RepeatN<C, N> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        self.lemma_parse_non_malleable_rec(self.0.as_usize() as nat, buf1, buf2);
+    }
+}
+
+impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
+    proof fn lemma_no_lookahead_rec(&self, count: nat, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.1.inv(),
+            self.1.unambiguous(),
+        ensures
+            self.parse_n_rec(count, i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
+                == i1.take(n) ==> self.parse_n_rec(count, i2) == Some((n, v)),
+        decreases count,
+    {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        if count == 0 {
+        } else {
+            if let Some((n, v)) = self.parse_n_rec(count, i1) {
+                if 0 <= n <= i2.len() {
+                    if i2.take(n) == i1.take(n) {
+                        let (m, a) = self.1.spec_parse(i1)->0;
+                        let (r, rest) = self.parse_n_rec((count - 1) as nat, i1.skip(m))->0;
+                        assert(v == seq![a] + rest);
+                        assert(n == m + r);
+                        self.1.lemma_parse_len_bound(i1);
+                        self.lemma_parse_n_len_bound((count - 1) as nat, i1.skip(m));
+                        assert(0 <= m <= n);
+                        assert(i2.take(m) == i1.take(m));
+                        self.1.lemma_no_lookahead(i1, i2);
+                        assert(i2.skip(m).take(r) == i1.skip(m).take(r)) by {
+                            lemma_take_skip(i1, m, r);
+                            lemma_take_skip(i2, m, r);
+                        };
+                        self.lemma_no_lookahead_rec((count - 1) as nat, i1.skip(m), i2.skip(m));
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<C: NoLookAhead, N: AsLen> NoLookAhead for super::RepeatN<C, N> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        self.lemma_no_lookahead_rec(self.0.as_usize() as nat, i1, i2);
+    }
+}
+
+impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializersGeneral for super::RepeatN<C, N> {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        super::Star { inner: self.1 }.lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C, N> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        super::Star { inner: self.1 }.lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where
+    C: SPRoundTripDps + GoodSerializerDps,
+ {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+
+        let rep = super::RepeatN(N, self.0);
+        rep.theorem_serialize_dps_parse_roundtrip(v@, obuf);
+    }
+}
+
+impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+
+        let rep = super::RepeatN(N, self.0);
+        rep.lemma_parse_exactly_n_times(buf1);
+        rep.lemma_parse_exactly_n_times(buf2);
+        rep.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+
+        let rep = super::RepeatN(N, self.0);
+        rep.lemma_parse_exactly_n_times(i1);
+        rep.lemma_no_lookahead(i1, i2);
+        rep.lemma_parse_exactly_n_times(i2);
+    }
+}
+
+impl<const N: usize, C: EquivSerializersGeneral> EquivSerializersGeneral for super::Array<N, C> {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_serialize_equiv(v@, obuf);
+    }
+}
+
+impl<const N: usize, C: EquivSerializersGeneral> EquivSerializers for super::Array<N, C> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        super::RepeatN(N, self.0).lemma_serialize_equiv_on_empty(v@);
     }
 }
 

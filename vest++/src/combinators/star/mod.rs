@@ -11,4 +11,8 @@ pub struct Star<A> {
 
 pub struct Repeat<A, B>(pub A, pub B);
 
+pub struct RepeatN<C, N = u8>(pub N, pub C);
+
+pub struct Array<const N: usize, C>(pub C);
+
 } // verus!

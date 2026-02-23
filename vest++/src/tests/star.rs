@@ -1,4 +1,4 @@
-use crate::combinators::{Refined, Repeat, Tag, U16Le, U8};
+use crate::combinators::{Array, Refined, Repeat, RepeatN, Tag, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -60,6 +60,32 @@ proof fn test_repeat_with_tuple_inner() {
     let n = rep.byte_len(v) as int;
     rep.theorem_serialize_dps_parse_roundtrip(v, obuf);
     assert(rep.spec_parse(ibuf) == Some((n, v)));
+}
+
+proof fn test_repeatn_roundtrip_basic() {
+    let inner = Refined { inner: U8, pred: |x: u8| x < 0x80u8 };
+    let rep = RepeatN(3u8, inner);
+    let v: Seq<u8> = seq![0x00u8, 0x01u8, 0x02u8];
+
+    assert(rep.consistent(v));
+    assert(rep.unambiguous());
+    let ibuf = rep.spec_serialize(v);
+    let n = ibuf.len() as int;
+    rep.theorem_serialize_parse_roundtrip(v);
+    assert(rep.spec_parse(ibuf) == Some((n, v)));
+}
+
+proof fn test_array_roundtrip_basic() {
+    let inner = Refined { inner: U8, pred: |x: u8| x != 0xFFu8 };
+    let arr = Array::<3, _>(inner);
+    let v: [u8; 3] = [0x10u8, 0x20u8, 0x30u8];
+
+    assert(arr.consistent(v));
+    assert(arr.unambiguous());
+    let ibuf = arr.spec_serialize(v);
+    let n = ibuf.len() as int;
+    arr.theorem_serialize_parse_roundtrip(v);
+    assert(arr.spec_parse(ibuf) == Some((n, v)));
 }
 
 } // verus!

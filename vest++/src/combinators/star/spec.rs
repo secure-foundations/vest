@@ -1,3 +1,5 @@
+use crate::combinators::bytes::spec::array_from_seq;
+use crate::combinators::length::AsLen;
 use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -236,6 +238,274 @@ impl<A: SpecByteLen> SpecByteLen for super::Star<A> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         v.fold_left(0, |acc: nat, elem| acc + self.inner.byte_len(elem))
+    }
+}
+
+impl<C: SpecParser, N: AsLen> super::RepeatN<C, N> {
+    pub open spec fn parse_n_rec(&self, count: nat, ibuf: Seq<u8>) -> Option<(int, Seq<C::PVal>)>
+        decreases count,
+    {
+        if count == 0 {
+            Some((0, Seq::empty()))
+        } else {
+            match self.1.spec_parse(ibuf) {
+                Some((n0, v0)) => match self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+                    Some((n1, vs1)) => Some((n0 + n1, seq![v0] + vs1)),
+                    None => None,
+                },
+                None => None,
+            }
+        }
+    }
+
+    proof fn lemma_parse_n_rec_count(&self, count: nat, ibuf: Seq<u8>)
+        ensures
+            self.parse_n_rec(count, ibuf) matches Some((_, vs)) ==> vs.len() == count,
+        decreases count,
+    {
+        if count == 0 {
+        } else {
+            if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
+                self.lemma_parse_n_rec_count((count - 1) as nat, ibuf.skip(n0));
+            }
+        }
+    }
+
+    pub proof fn lemma_parse_exactly_n_times(&self, ibuf: Seq<u8>)
+        ensures
+            self.spec_parse(ibuf) matches Some((_, vs)) ==> vs.len() == self.0.as_usize(),
+    {
+        self.lemma_parse_n_rec_count(self.0.as_usize() as nat, ibuf);
+    }
+}
+
+impl<C: SpecParser, N: AsLen> SpecParser for super::RepeatN<C, N> {
+    type PVal = Seq<C::PVal>;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        self.parse_n_rec(self.0.as_usize() as nat, ibuf)
+    }
+}
+
+impl<C: Consistency, N: AsLen> Consistency for super::RepeatN<C, N> {
+    type Val = Seq<C::Val>;
+
+    open spec fn consistent(&self, vs: Self::Val) -> bool {
+        &&& vs.len() == self.0.as_usize()
+        &&& super::Star { inner: self.1 }.consistent(vs)
+    }
+}
+
+impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
+    pub(crate) proof fn lemma_parse_n_len_bound(&self, count: nat, ibuf: Seq<u8>)
+        requires
+            self.1.inv(),
+        ensures
+            self.parse_n_rec(count, ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
+        decreases count,
+    {
+        if count == 0 {
+        } else {
+            self.1.lemma_parse_len_bound(ibuf);
+            if let Some((n0, _v0)) = self.1.spec_parse(ibuf) {
+                self.lemma_parse_n_len_bound((count - 1) as nat, ibuf.skip(n0));
+            }
+        }
+    }
+
+    proof fn lemma_parse_n_byte_len(&self, count: nat, ibuf: Seq<u8>)
+        requires
+            self.1.inv(),
+        ensures
+            self.parse_n_rec(count, ibuf) matches Some((n, vs)) ==> n == (super::Star {
+                inner: self.1,
+            }).byte_len(vs),
+        decreases count,
+    {
+        if count == 0 {
+        } else {
+            self.1.lemma_parse_byte_len(ibuf);
+            if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
+                self.lemma_parse_n_byte_len((count - 1) as nat, ibuf.skip(n0));
+                if let Some((n1, vs1)) = self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+                    let star = super::Star { inner: self.1 };
+                    star.lemma_byte_len_cons(v0, vs1);
+                }
+            }
+        }
+    }
+
+    proof fn lemma_parse_n_consistent(&self, count: nat, ibuf: Seq<u8>)
+        requires
+            self.1.inv(),
+        ensures
+            self.parse_n_rec(count, ibuf) matches Some((_, vs)) ==> {
+                &&& vs.len() == count
+                &&& super::Star { inner: self.1 }.consistent(vs)
+            },
+        decreases count,
+    {
+        if count == 0 {
+        } else {
+            self.1.lemma_parse_consistent(ibuf);
+            if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
+                self.lemma_parse_n_consistent((count - 1) as nat, ibuf.skip(n0));
+            }
+        }
+    }
+}
+
+impl<C: GoodParser, N: AsLen> GoodParser for super::RepeatN<C, N> {
+    open spec fn inv(&self) -> bool {
+        self.1.inv()
+    }
+
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_n_len_bound(self.0.as_usize() as nat, ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_n_byte_len(self.0.as_usize() as nat, ibuf);
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_n_consistent(self.0.as_usize() as nat, ibuf);
+    }
+}
+
+impl<C: SpecSerializerDps, N: AsLen> SpecSerializerDps for super::RepeatN<C, N> {
+    type ST = Seq<C::ST>;
+
+    open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        super::Star { inner: self.1 }.spec_serialize_dps(vs, obuf)
+    }
+}
+
+impl<C: SpecSerializer, N: AsLen> SpecSerializer for super::RepeatN<C, N> {
+    type SVal = Seq<C::SVal>;
+
+    open spec fn spec_serialize(&self, vs: Self::SVal) -> Seq<u8> {
+        super::Star { inner: self.1 }.spec_serialize(vs)
+    }
+}
+
+impl<C: Unambiguity, N: AsLen> Unambiguity for super::RepeatN<C, N> {
+    open spec fn unambiguous(&self) -> bool {
+        self.1.unambiguous()
+    }
+}
+
+impl<C: GoodSerializerDps, N: AsLen> GoodSerializerDps for super::RepeatN<C, N> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::Star { inner: self.1 }.lemma_serialize_dps_buf(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::Star { inner: self.1 }.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<C: GoodSerializer, N: AsLen> GoodSerializer for super::RepeatN<C, N> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        super::Star { inner: self.1 }.lemma_serialize_len(v);
+    }
+}
+
+impl<C: SpecByteLen, N: AsLen> SpecByteLen for super::RepeatN<C, N> {
+    type T = Seq<C::T>;
+
+    open spec fn byte_len(&self, vs: Self::T) -> nat {
+        super::Star { inner: self.1 }.byte_len(vs)
+    }
+}
+
+impl<const N: usize, C: SpecParser> SpecParser for super::Array<N, C> {
+    type PVal = [C::PVal; N];
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match super::RepeatN(N, self.0).spec_parse(ibuf) {
+            Some((n, vs)) => Some((n, array_from_seq::<N, C::PVal>(vs))),
+            _ => None,
+        }
+    }
+}
+
+impl<const N: usize, C: Consistency> Consistency for super::Array<N, C> {
+    type Val = [C::Val; N];
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        super::RepeatN(N, self.0).consistent(v@)
+    }
+}
+
+impl<const N: usize, C: GoodParser> GoodParser for super::Array<N, C> {
+    open spec fn inv(&self) -> bool {
+        super::RepeatN(N, self.0).inv()
+    }
+
+    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_parse_len_bound(ibuf);
+    }
+
+    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+        broadcast use super::super::bytes::spec::axiom_array_from_seq;
+
+        let rep = super::RepeatN(N, self.0);
+        rep.lemma_parse_byte_len(ibuf);
+        rep.lemma_parse_exactly_n_times(ibuf);
+    }
+
+    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+        broadcast use super::super::bytes::spec::axiom_array_from_seq;
+
+        let rep = super::RepeatN(N, self.0);
+        rep.lemma_parse_consistent(ibuf);
+    }
+}
+
+impl<const N: usize, C: SpecSerializerDps> SpecSerializerDps for super::Array<N, C> {
+    type ST = [C::ST; N];
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        super::RepeatN(N, self.0).spec_serialize_dps(v@, obuf)
+    }
+}
+
+impl<const N: usize, C: SpecSerializer> SpecSerializer for super::Array<N, C> {
+    type SVal = [C::SVal; N];
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        super::RepeatN(N, self.0).spec_serialize(v@)
+    }
+}
+
+impl<const N: usize, C: Unambiguity> Unambiguity for super::Array<N, C> {
+    open spec fn unambiguous(&self) -> bool {
+        super::RepeatN(N, self.0).unambiguous()
+    }
+}
+
+impl<const N: usize, C: GoodSerializerDps> GoodSerializerDps for super::Array<N, C> {
+    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_serialize_dps_buf(v@, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_serialize_dps_len(v@, obuf);
+    }
+}
+
+impl<const N: usize, C: GoodSerializer> GoodSerializer for super::Array<N, C> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        super::RepeatN(N, self.0).lemma_serialize_len(v@);
+    }
+}
+
+impl<const N: usize, C: SpecByteLen> SpecByteLen for super::Array<N, C> {
+    type T = [C::T; N];
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        super::RepeatN(N, self.0).byte_len(v@)
     }
 }
 

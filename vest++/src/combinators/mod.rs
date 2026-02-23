@@ -34,7 +34,7 @@ pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
 pub use recursive::{Fix, RecBody};
 pub use refined::{Refined, Tag};
-pub use star::{Repeat, Star};
+pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, Tail};
 pub use terminated::Terminated;
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};
