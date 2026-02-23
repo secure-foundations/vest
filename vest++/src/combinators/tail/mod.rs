@@ -9,4 +9,8 @@ pub struct Tail;
 
 pub struct Eof;
 
+pub struct OptionalEof<C>(pub C);
+
+pub struct RepeatUtilEof<C>(pub C);
+
 } // verus!

@@ -1,4 +1,7 @@
-use crate::core::{proof::*, spec::*};
+use crate::{
+    combinators::{Optional, Repeat},
+    core::{proof::*, spec::*},
+};
 use vstd::prelude::*;
 
 verus! {
@@ -38,6 +41,42 @@ impl NonMalleable for super::Eof {
 
 impl EquivSerializers for super::Eof {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+    }
+}
+
+impl<C: SPRoundTripDps + GoodSerializerDps> SPRoundTripDps for super::OptionalEof<C> {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        Optional(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
+    }
+}
+
+impl<C: NonMalleable> NonMalleable for super::OptionalEof<C> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        Optional(self.0, super::Eof).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<C: EquivSerializersGeneral> EquivSerializers for super::OptionalEof<C> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        Optional(self.0, super::Eof).lemma_serialize_equiv_on_empty((v, ()));
+    }
+}
+
+impl<C: SPRoundTripDps + GoodSerializerDps> SPRoundTripDps for super::RepeatUtilEof<C> {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        Repeat(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
+    }
+}
+
+impl<C: NonMalleable> NonMalleable for super::RepeatUtilEof<C> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        Repeat(self.0, super::Eof).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<C: EquivSerializersGeneral> EquivSerializers for super::RepeatUtilEof<C> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        Repeat(self.0, super::Eof).lemma_serialize_equiv_on_empty((v, ()));
     }
 }
 
