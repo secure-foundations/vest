@@ -1,6 +1,8 @@
 # Vest
 
-Vest is a *formally verified* combinator library for parsing and serializing binary data.
+`vest_lib` is a *formally verified* combinator library for parsing and serializing binary data. It is the backend of the [Vest](https://github.com/secure-foundations/vest) framework, which can automatically produce verified parsers and serializers from a high-level format description.
+
+This document primarily serves as a reference for users who want to use the combinator library directly to achieve greater flexibility in the parsing and serialization process. For a more automated workflow, refer to the [`vest`](https://crates.io/crates/vest) crate and some examples of using [Vest DSL](https://github.com/secure-foundations/vest/tree/main/vest-examples#using-the-vest-dsl-with-buildrs).
 
 ## Formally Verified Parsing and Serialization
 

@@ -21,6 +21,7 @@ Each subdirectory is a separate Cargo package that showcases different aspects o
 - **`pair`** & **`depend`**: Example showing how to use the `Pair` combinator for sequentially composing combinators, including _dependent_ formats where later fields depend on earlier ones.
 - **`repeat`**: Example showing how to handle repeated fields using the `Repeat` combinator.
 - **`wireguard`**: WireGuard protocol message formats implemented directly using Vest combinators.
+- **`asn1`**: ASN.1 primitives in Vest.
 
 ## Verifying Examples
 

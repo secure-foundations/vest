@@ -18,6 +18,7 @@ macro_param_list = { var_id ~ ("," ~ var_id)* }
 combinator       = { ("(" ~ combinator_inner ~ ")" | combinator_inner) ~ (">>=" ~ combinator)? }
 combinator_inner = {
     constraint_int_combinator
+  | constraint_enum_combinator
   | macro_invocation
   | struct_combinator
   | wrap_combinator
@@ -41,6 +42,12 @@ constraint_elem           =  { const_int_range | const_int }
 const_int_range           =  { const_int? ~ ".." ~ const_int? }
 const_int                 = ${ hex | decimal | ascii }
 
+/// an enum combinator with an optional set of constraints
+constraint_enum_combinator = { combinator_invocation ~ ("|" ~ enum_constraint) }
+enum_constraint            = { enum_constraint_elem | enum_constraint_set | "!" ~ enum_constraint }
+enum_constraint_set        = { "{" ~ enum_constraint_elem ~ ("," ~ enum_constraint_elem)* ~ "}" }
+enum_constraint_elem       =  { variant_id }
+
 /// sequence of `combinator` with semantic labels
 struct_combinator = { "{" ~ (field ~ ",")* ~ "}" }
 field             = {
@@ -62,7 +69,7 @@ wrap_post       = { ("," ~ const_combinator)* }
 enum_combinator       =  { enum ~ "{" ~ (non_exhaustive_enum | exhaustive_enum) ~ "}" }
 exhaustive_enum       =  { enum_field+ }
 non_exhaustive_enum   =  { enum_field+ ~ non_exhaustive_marker }
-enum_field            =  { variant_id ~ "=" ~ const_int ~ "," }
+enum_field            =  { variant_id ~ "=" ~ typed_const_int ~ "," }
 non_exhaustive_marker = _{ "..." }
 
 /// ordered choice `combinator`
@@ -100,6 +107,7 @@ const_combinator = {
     vec ~ "<" ~ const_combinator ~ ">"
   | const_array_combinator
   | const_int_combinator
+  | const_enum_combinator
   | const_id
   | const_struct_combinator
   | const_choice_combinator
@@ -114,11 +122,17 @@ repeat_int_array_expr  =  { "[" ~ const_int ~ ";" ~ const_int ~ "]" }
 
 const_int_combinator = { int_combinator ~ "=" ~ const_int }
 
+const_enum_combinator = { combinator_invocation ~ "=" ~ variant_id }
+
 const_struct_combinator =  { "{" ~ const_fields ~ "}" }
 const_fields            = _{ (const_combinator ~ ",")+ }
 
 const_choice_combinator = { choose ~ "{" ~ const_choice* ~ "}" }
 const_choice            = { variant_id ~ "(" ~ const_combinator ~ ")" ~ "," }
+
+/// integer literal with optional type suffix, e.g. 0u8, 0x1111u16
+typed_const_int   = ${ const_int ~ int_type_suffix? }
+int_type_suffix   = @{ ("u" | "i") ~ ("8" | "16" | "24" | "32" | "64") }
 
 /// decimal literal, e.g. 15213
 decimal = @{ ASCII_DIGIT+ }

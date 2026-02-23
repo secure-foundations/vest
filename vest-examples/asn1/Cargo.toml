@@ -1,0 +1,24 @@
+[package]
+name = "asn1"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vstd.workspace = true
+vest_lib.workspace = true
+asn1-macros = { path = "../asn1-macros" }
+paste = "1.0.15"
+
+[dev-dependencies]
+der = { version = "0.7.9", features = [ "alloc", "oid" ] }
+base64 = "0.22.1"
+
+[features]
+default = []
+trace = []
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"

@@ -5,8 +5,6 @@ edition.workspace = true
 
 [dependencies]
 vstd.workspace = true
-verus_builtin.workspace = true
-verus_builtin_macros.workspace = true
 vest_lib.workspace = true
 
 [package.metadata.verus]

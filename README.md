@@ -7,37 +7,31 @@
 
 ## Overview
 
-Vest is a research project aiming for high-assurance and performant parsing and serialization of _binary data formats_ in [Verus](https://github.com/verus-lang/verus). It features a library of **formally verified** binary parsers, serializers, and their combinators, as well as a domain-specific language (DSL) for expressing binary formats described in RFCs or other specifications.
+Vest is a research project aiming for high-assurance and performant parsing and serialization of _binary data formats_ in [Verus](https://github.com/verus-lang/verus). It features a library of **formally verified** binary parsers, serializers, and their combinators, as well as a domain-specific language (DSL) for expressing binary formats described in external specifications, or used internally in applications. 
 
-See [vest-examples](vest-examples/README.md) for an overview of how to construct various binary formats using the Vest DSL or directly using combinators.
+Parsers and serializers produced by Vest are guaranteed to satisfy:
 
-## Background
+- **Memory and arithmetic safety**: 
+  - Vest parsers and serializers are implemented in *safe* Rust, so the Rust's ownership and borrowing system ensures that they are immune to use-after-free, double-free, among other memory safety bugs.
+  - Vest parsers and serializers are verified using Verus, with which we prove that they are free of out-of-bounds accesses, integer overflows/underflows, and other arithmetic bugs.
+- **Termination and panic-freedom**: Vest parsers and serializers are guaranteed to terminate and never panic on any input.
+- **Efficiency and functional correctness**: Vest parsers and serializers read/modify *existing* buffers without unnecessary copying or allocation, and are verified to behave exactly as defined by their high-level functional specifications.
 
-**Parsing and serialization of binary data**
+For higher assurance, Vest's functional parser and serializer specifications are proven to satisfy the following correctness and security properties, which are crucial for preventing parser malleability and format confusion attacks:
 
-In the context of binary formats, parsing refers to the process of interpreting raw byte sequences as structured data, while serialization refers to the reverse process of encoding structured data as raw byte sequences. Binary formats are essential in domains like network protocols, file systems, and embedded systems, where data is often transmitted or stored in a compact binary form.
+- **Parser soundness**: If the parser successfully parses an input, then the output is guaranteed to be a valid instance of the specified format.
+- **Parser completeness (surjectivity)**: For every valid instance of the specified format, there exists an input that the parser can successfully parse to produce that instance.
+- **Parser non-malleability (injectivity)**: If the parser successfully parses an input, then any modification to the input will cause the parser to behave differently (e.g., fail to parse, or produce a different output), preventing parser malleability attacks.
+- **Serializer injectivity**: No two different valid instances of the specified format can be serialized to the same output.
+- **Round-trip properties**: For unambiguous and non-malleable formats, the parser and serializer are mutual inverses (i.e., parsing a serialized bytestring should yield the original value, and serializing a parsed value should yield the original bytestring). 
 
-**Formally verified parsing and serialization**
-
-Binary formats are notoriously difficult to parse and serialize correctly, due to the complexity of the formats and the potential for errors in the (highly-optimized) implementation. Vest aims to address this problem by _formally verifying_ the correctness and security of the efficient parsing and serialization code using the Rust type system and [Verus](https://github.com/verus-lang/verus), a deductive verification tool for Rust.
-
-We leverage Rust's ownership, borrowing, and lifetime system to _safely_ implement "zero-copy" parsing and "in-place" serialization of binary formats, which means that we can parse and serialize binary data without any unnecessary copying or allocation. We don't use `unsafe` so the Rust type system provides us with strong guarantees about the memory safety of the code. We use Verus to verify the more nuanced properties of the code, such as the top-level round-trip properties of the parsing and serialization functions.
-
-- For every binary sequence `b`, if `parse(b)` succeeds, producing a result `(n, m)`, then `serialize(m)` should reproduce the original input `b`, truncated to `n` bytes.
-- For every structured data `m`, if `serialize(m)` produces a binary sequence `b`, then `parse(b)` should successfully consuming the entire input `b` and produce the original structured data `m`.
-
-These round-trip properties ensure that the parsing and serialization functions are mutual inverses and hence immune to parser malleability attacks ([EverParse](https://www.microsoft.com/en-us/research/publication/everparse/)) and format confusion attacks ([Comparse](https://dl.acm.org/doi/10.1145/3576915.3623201)).
-
-**Parser and serializer combinators**
-
-It's certainly possible to implement and verify parsers and serializers for single protocol formats or file formats manually, but this approach is tedious, and not reusable. Binary formats often share common patterns, such as fixed-size fields, variable-size fields, a sequence of fields, a tagged union of fields, repeated fields, etc.
-
-Leveraging the power of Rust's traits and generics,
-Vest provides a set of combinators with unified interface (for both parsing and serializing) that can be used to build complex parsers and serializers from simple ones, where the formal properties of the combinators are verified once and for all.
+> While the above properties are desirable for security-critical protocol/file formats, data formats in the wild can be complex and may not satisfy all of them (e.g., formats that accept non-canonical encodings, or even "error-tolerant"). We aim to provide a flexible framework that provides (non-expert) users with the tools to specify and reason about different properties of their formats, and to make informed trade-offs between security and flexibility. Some initial progress towards this goal can be found at [this branch](https://github.com/secure-foundations/vest/tree/vest2.0) (let us know if you're interested in trying it out or contributing to it!).
 
 ## Usage
 
 Vest DSL (implemented separately in the `vest-dsl` crate) provides a domain-specific language (DSL) for expressing binary formats in a concise and readable way. The DSL is designed to be close to the syntax of Rust data type declarations, with added expressivity like type refinements, internal dependencies within formats, and external dependencies among different formats, enabling the user to define a variety of binary formats found in RFCs or other external specifications. The DSL is type checked and translated into a set of combinators defined and verified in the `vest` crate. It's recommended to use the Vest DSL to define binary formats to avoid the boilerplate of manually constructing combinators, but it's also possible to use the combinators directly.
+
+> While we are actively working on a more complete documentation of Vest DSL, you may find [vest-examples](vest-examples/README.md) for an overview of how to construct various binary formats using the DSL or directly using combinators.
 
 ### `.vest` files
 
