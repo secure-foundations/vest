@@ -6,7 +6,7 @@
   "lsp": {
     "rust-analyzer": {
       "binary": {
-        "path": "/Users/yicai/.local/bin/verus-analyzer",
+        "path": "~/.local/bin/verus-analyzer",
         "arguments": [],
       },
       "initialization_options": {
