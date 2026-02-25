@@ -11,7 +11,6 @@ verus! {
 ///
 /// This trait is primarily used *internally* to achieve better composability of combinators.
 /// See [`SPRoundTrip`] for the top-level, more user-friendly serialize-parse theorem.
-#[verusfmt::skip]
 pub trait SPRoundTripDps where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
@@ -40,7 +39,6 @@ pub trait SPRoundTripDps where
 /// if they only implement the necessary spec traits. However, we provide generic
 /// proofs (aka blanket implementations) for combinators that already implement and prove
 /// [`SPRoundTripDps`], [`GoodSerializer`], and [`EquivSerializers`].
-#[verusfmt::skip]
 pub trait SPRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
@@ -79,7 +77,6 @@ impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
 /// if they implement the necessary spec traits. However, we provide generic
 /// proofs (aka blanket implementations) for combinators that already implement and prove
 /// [`SPRoundTrip`] and [`NonMalleable`].
-#[verusfmt::skip]
 pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +

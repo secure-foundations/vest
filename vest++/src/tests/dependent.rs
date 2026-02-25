@@ -2,11 +2,12 @@ use std::prelude::v1;
 
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::dependent::{TLVOf, TLVal, TagValNode, Uninhabited};
+use crate::combinators::dependent::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
-    Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVNode, TVOr, Tag,
-    Tagged, Tail, U16Le, U32Le, VLData, Varied, U8,
+    Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag, Tagged,
+    Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

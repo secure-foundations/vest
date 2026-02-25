@@ -72,7 +72,7 @@ pub open spec fn TLVOf<Tag, Len, Body>(body: Body) -> TLVal<Tag, Len, Body> {
     TLVal(body, core::marker::PhantomData)
 }
 
-/// The tree version of [`TagVal`] for balanced choices.
+/// The tree version of [`TVOr`] for balanced choices.
 pub struct TagValNode<Tag, Left, Right>(pub Left, pub Right, pub core::marker::PhantomData<Tag>);
 
 /// Leaf for tagged union trees

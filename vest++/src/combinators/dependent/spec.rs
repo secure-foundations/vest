@@ -3,7 +3,7 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::length::AsLen;
 use crate::combinators::{Choice, Cond, Sum, Varied, Void};
 use crate::core::spec::*;
-use vstd::pervasive::arbitrary;
+use crate::Never;
 use vstd::prelude::*;
 
 verus! {
@@ -326,7 +326,7 @@ impl<Tag, C, Rest> DepCombinator for TVOr<Tag, C, Rest> where
 impl<Tag> DepCombinator for VoidTag<Tag> {
     type Key = Tag;
 
-    type Val = !;
+    type Val = Never;
 
     type Body = Void;
 
@@ -335,6 +335,7 @@ impl<Tag> DepCombinator for VoidTag<Tag> {
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
+        use vstd::pervasive::arbitrary;
         arbitrary::<Tag>()
     }
 

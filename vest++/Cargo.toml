@@ -11,3 +11,6 @@ verify = true
 
 [package.metadata.verus.ide]
 extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }

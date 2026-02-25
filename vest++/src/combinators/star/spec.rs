@@ -1,6 +1,4 @@
-use crate::combinators::bytes::spec::array_from_seq;
 use crate::combinators::length::AsLen;
-use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -27,6 +25,8 @@ impl<A: GoodParser> super::Star<A> {
         ensures
             self.byte_len(seq![v] + vs) == self.inner.byte_len(v) + self.byte_len(vs),
     {
+        use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
+
         let f = |acc: nat, elem: A::T| acc + self.inner.byte_len(elem);
         (seq![v] + vs).lemma_fold_left_alt(0, f);
         vs.lemma_fold_left_alt(self.inner.byte_len(v), f);
@@ -202,6 +202,8 @@ impl<A> GoodSerializerDps for super::Star<A> where A: GoodSerializerDps {
     proof fn lemma_serialize_dps_len(&self, vs: Self::ST, obuf: Seq<u8>)
         decreases vs.len(),
     {
+        use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
+
         if vs.len() == 0 {
         } else {
             let v0 = vs[0];
@@ -423,6 +425,8 @@ impl<const N: usize, C: SpecParser> SpecParser for super::Array<N, C> {
     type PVal = [C::PVal; N];
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        use crate::combinators::bytes::spec::array_from_seq;
+
         match super::RepeatN(N, self.0).spec_parse(ibuf) {
             Some((n, vs)) => Some((n, array_from_seq::<N, C::PVal>(vs))),
             _ => None,

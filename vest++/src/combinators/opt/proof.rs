@@ -1,4 +1,3 @@
-use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -110,6 +109,7 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
+        use crate::combinators::tuple::proof::lemma_take_skip;
 
         let opt = super::Opt(self.0);
         if let Some((n, v)) = self.spec_parse(i1) {

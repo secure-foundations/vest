@@ -1,5 +1,4 @@
 use super::spec::*;
-use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -45,6 +44,8 @@ impl<A, B> NoLookAhead for super::Implicit<A, spec_fn(A::PVal) -> B> where
  {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
+
+        use crate::combinators::tuple::proof::lemma_take_skip;
 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {

@@ -23,7 +23,7 @@ pub use berbool::BerBool;
 pub use bytes::{Fixed, Varied};
 pub use choice::{Alt, Choice, Sum};
 pub use cond::Cond;
-pub use dependent::{Bind, DepCombinator, TLVOf, TVLeaf, TVNode, TVOr, VLData, VLDataOf, VoidTag};
+pub use dependent::{Bind, DepCombinator, TVLeaf, TVOr, VoidTag};
 pub use implicit::{Implicit, ImplicitAuto};
 pub use length::AsLen;
 pub use length::AsLen as AsLength;

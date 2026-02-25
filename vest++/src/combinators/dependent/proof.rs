@@ -1,4 +1,3 @@
-use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -73,6 +72,8 @@ impl<Head, Tail> NoLookAhead for super::Bind<Head, Tail> where
  {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
+
+        use crate::combinators::tuple::proof::lemma_take_skip;
 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {

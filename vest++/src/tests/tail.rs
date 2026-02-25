@@ -45,7 +45,13 @@ proof fn test_chain_end_with_tailopt() {
         Repeat(f4,
         OptionalEof(f5)))));
 
-    let v = (0x11u8, ([0x22u8, 0x33u8, 0x44u8], (Some([0x00u8]), (seq![0x1122u16, 0x3344u16], Some(0x66778899u32)))));
+    let v = (
+        0x11u8,
+        (
+            [0x22u8, 0x33u8, 0x44u8],
+            (Some([0x00u8]), (seq![0x1122u16, 0x3344u16], Some(0x66778899u32))),
+        ),
+    );
 
     assert(c.consistent(v));
     assert(c.unambiguous());

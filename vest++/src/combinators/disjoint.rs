@@ -9,7 +9,7 @@ use super::tail::Eof;
 use super::terminated::Terminated;
 use super::Repeat;
 use crate::core::spec::SpecPred;
-use crate::core::spec::{disjoint_domains, GoodParser, SpecParser};
+use crate::core::spec::*;
 use vstd::prelude::*;
 
 verus! {

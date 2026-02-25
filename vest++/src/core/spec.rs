@@ -187,22 +187,18 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
 }
 
 /// Combined parser and serializer specification trait.
-#[verusfmt::skip]
-pub trait SpecCombinator:
-    SpecByteLen +
-    SpecParser<PVal = Self::T> +
-    SpecSerializer<SVal = Self::T> +
-    SpecSerializerDps<ST = Self::T>
-{
+pub trait SpecCombinator: SpecByteLen + SpecParser<PVal = Self::T> + SpecSerializer<
+    SVal = Self::T,
+> + SpecSerializerDps<ST = Self::T> {
+
 }
 
-#[verusfmt::skip]
 impl<T> SpecCombinator for T where
-    T:  SpecByteLen +
-        SpecParser<PVal = Self::T> +
-        SpecSerializer<SVal = Self::T> +
-        SpecSerializerDps<ST = Self::T>
-{
+    T: SpecByteLen + SpecParser<PVal = Self::T> + SpecSerializer<
+        SVal = Self::T,
+    > + SpecSerializerDps<ST = Self::T>,
+ {
+
 }
 
 } // verus!

@@ -1,4 +1,5 @@
 use crate::core::{proof::*, spec::*};
+use crate::Never;
 use vstd::prelude::*;
 
 verus! {
@@ -80,7 +81,7 @@ impl SpecByteLen for super::Empty {
 }
 
 impl SpecParser for super::Void {
-    type PVal = !;
+    type PVal = Never;
 
     open spec fn spec_parse(&self, _ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         None
@@ -88,7 +89,7 @@ impl SpecParser for super::Void {
 }
 
 impl Consistency for super::Void {
-    type Val = !;
+    type Val = Never;
 
     open spec fn consistent(&self, _v: Self::Val) -> bool {
         false
@@ -112,7 +113,7 @@ impl GoodParser for super::Void {
 }
 
 impl SpecSerializerDps for super::Void {
-    type ST = !;
+    type ST = Never;
 
     // It doesn't matter what we put here since there are no consistent values for Void.
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -121,7 +122,7 @@ impl SpecSerializerDps for super::Void {
 }
 
 impl SpecSerializer for super::Void {
-    type SVal = !;
+    type SVal = Never;
 
     // It doesn't matter what we put here since there are no consistent values for Void.
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -149,7 +150,7 @@ impl GoodSerializer for super::Void {
 }
 
 impl SpecByteLen for super::Void {
-    type T = !;
+    type T = Never;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         0

@@ -1,6 +1,4 @@
-use crate::combinators::bytes::spec::{array_from_seq, axiom_array_from_seq};
 use crate::combinators::length::AsLen;
-use crate::combinators::tuple::proof::lemma_take_skip;
 use crate::core::{proof::*, spec::*};
 use vstd::{calc, prelude::*};
 
@@ -142,6 +140,7 @@ impl<A: NoLookAhead> super::Star<A> {
             }),
         decreases i1.len(),
     {
+        use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
         let (n, vs) = self.parse_rec(i1);
@@ -389,6 +388,7 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
                 == i1.take(n) ==> self.parse_n_rec(count, i2) == Some((n, v)),
         decreases count,
     {
+        use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
         if count == 0 {
@@ -439,6 +439,8 @@ impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where
     C: SPRoundTripDps + GoodSerializerDps,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        use crate::combinators::bytes::spec::axiom_array_from_seq;
+
         broadcast use axiom_array_from_seq;
 
         let rep = super::RepeatN(N, self.0);
@@ -448,6 +450,8 @@ impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where
 
 impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        use crate::combinators::bytes::spec::axiom_array_from_seq;
+
         broadcast use axiom_array_from_seq;
 
         let rep = super::RepeatN(N, self.0);
@@ -459,6 +463,8 @@ impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
 
 impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        use crate::combinators::bytes::spec::axiom_array_from_seq;
+
         broadcast use axiom_array_from_seq;
 
         let rep = super::RepeatN(N, self.0);
@@ -510,6 +516,7 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
 
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
         let star = super::Star { inner: self.0 };

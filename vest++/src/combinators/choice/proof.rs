@@ -1,4 +1,3 @@
-use super::spec::triv;
 use crate::combinators::Sum;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
