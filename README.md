@@ -12,7 +12,7 @@ Vest is a research project aiming for high-assurance and performant parsing and 
 Parsers and serializers produced by Vest are guaranteed to satisfy:
 
 - **Memory and arithmetic safety**: 
-  - Vest parsers and serializers are implemented in *safe* Rust, so the Rust's ownership and borrowing system ensures that they are immune to use-after-free, double-free, among other memory safety bugs.
+  - Vest parsers and serializers are implemented in *safe* Rust, so Rust's ownership and borrowing system ensures that they are immune to use-after-free, double-free, and other memory-safety bugs.
   - Vest parsers and serializers are verified using Verus, with which we prove that they are free of out-of-bounds accesses, integer overflows/underflows, and other arithmetic bugs.
 - **Termination and panic-freedom**: Vest parsers and serializers are guaranteed to terminate and never panic on any input.
 - **Efficiency and functional correctness**: Vest parsers and serializers read/modify *existing* buffers without unnecessary copying or allocation, and are verified to behave exactly as defined by their high-level functional specifications.
@@ -20,12 +20,15 @@ Parsers and serializers produced by Vest are guaranteed to satisfy:
 For higher assurance, Vest's functional parser and serializer specifications are proven to satisfy the following correctness and security properties, which are crucial for preventing parser malleability and format confusion attacks:
 
 - **Parser soundness**: If the parser successfully parses an input, then the output is guaranteed to be a valid instance of the specified format.
-- **Parser completeness (surjectivity)**: For every valid instance of the specified format, there exists an input that the parser can successfully parse to produce that instance.
-- **Parser non-malleability (injectivity)**: If the parser successfully parses an input, then any modification to the input will cause the parser to behave differently (e.g., fail to parse, or produce a different output), preventing parser malleability attacks.
-- **Serializer injectivity**: No two different valid instances of the specified format can be serialized to the same output.
+- **Parser completeness**: For every valid instance of the specified format, there exists an input that the parser can successfully parse to produce that instance.
+- **Parser non-malleability**: If the parser successfully parses an input, then any *in-place modification* or *truncation* of the input will cause the parser to behave differently (e.g., fail to parse, or produce a different output), ensuring *unique* binary representations.
+- **Parser non-extensibility**: If the parser successfully parses an input, then it will produce the same output on any *extension* of the input[^1]. 
+- **Serializer non-ambiguity**: No two distinct valid instances of the specified format can be serialized to the same output.
 - **Round-trip properties**: For unambiguous and non-malleable formats, the parser and serializer are mutual inverses (i.e., parsing a serialized bytestring should yield the original value, and serializing a parsed value should yield the original bytestring). 
 
-> While the above properties are desirable for security-critical protocol/file formats, data formats in the wild can be complex and may not satisfy all of them (e.g., formats that accept non-canonical encodings, or even "error-tolerant"). We aim to provide a flexible framework that provides (non-expert) users with the tools to specify and reason about different properties of their formats, and to make informed trade-offs between security and flexibility. Some initial progress towards this goal can be found at [this branch](https://github.com/secure-foundations/vest/tree/vest2.0) (let us know if you're interested in trying it out or contributing to it!).
+While the above properties are desirable for security-critical protocol/file formats, data formats in the wild can be complex and may not satisfy all of them (e.g., some formats accept non-canonical encodings or provide error tolerance). We aim to provide a flexible framework that gives (non-expert) users the tools to specify and reason about different properties of their formats, and to make informed trade-offs between security and flexibility. Some initial progress towards this goal can be found on [this branch](https://github.com/secure-foundations/vest/tree/vest2.0) (let us know if you're interested in trying it out or contributing to it!).
+
+[^1]: Certain formats (e.g., TLS) do allow for extensions, but only in the *middle* of the format, (which are usually protected by length fields) and hence the format as a whole can still satisfy non-extensibility. We are working on supporting formats that need *tail-extensions* (e.g., *streaming* formats).
 
 ## Usage
 
