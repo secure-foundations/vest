@@ -1,3 +1,6 @@
+//! Broadcast lemmas establishing [`disjoint_domains`](crate::core::spec::disjoint_domains)
+//! for common combinator compositions.
+
 use super::choice::Choice;
 use super::cond::Cond;
 use super::mapped::spec::Mapper;
@@ -14,7 +17,7 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Two [`Tag`] parsers are disjoint if they have the same inner parser but different tag values.
+/// Two [`Tag`] parsers with the same inner parser but different tag values are disjoint.
 pub broadcast proof fn lemma_disjoint_tag<Inner: SpecParser>(
     tag1: Tag<Inner, Inner::PVal>,
     tag2: Tag<Inner, Inner::PVal>,
@@ -27,8 +30,7 @@ pub broadcast proof fn lemma_disjoint_tag<Inner: SpecParser>(
 {
 }
 
-/// Two [`Refined`] parsers are disjoint if they have the same inner parser
-/// and their predicates are mutually exclusive.
+/// Two [`Refined`] parsers with the same inner parser and mutually exclusive predicates are disjoint.
 pub broadcast proof fn lemma_disjoint_refined<
     Inner: SpecParser,
     P1: SpecPred<Inner::PVal>,
@@ -42,7 +44,7 @@ pub broadcast proof fn lemma_disjoint_refined<
 {
 }
 
-/// Two [`Cond`] parsers are disjoint if their conditions are mutually exclusive.
+/// Two [`Cond`] parsers with mutually exclusive conditions are disjoint.
 pub broadcast proof fn lemma_disjoint_cond<Inner1: SpecParser, Inner2: SpecParser>(
     c1: Cond<Inner1>,
     c2: Cond<Inner2>,
@@ -54,8 +56,7 @@ pub broadcast proof fn lemma_disjoint_cond<Inner1: SpecParser, Inner2: SpecParse
 {
 }
 
-/// A tuple parser is disjoint from another parser if its first
-/// parser is disjoint from the other parser.
+/// A tuple parser is disjoint from another parser if its first component is.
 pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: SpecParser>(
     t: U,
     t1: (U1, V1),
@@ -67,8 +68,7 @@ pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: S
 {
 }
 
-/// Two tuple parsers are disjoint if their first parsers are disjoint (already covered by [`lemma_disjoint_tuple`]),
-/// or their first parsers consume the same number of bytes and their second parsers are disjoint.
+/// Two tuples are disjoint if their first parsers consume equal bytes and their second parsers are disjoint.
 pub broadcast proof fn lemma_disjoint_tuple_2<
     A: SpecParser,
     B: SpecParser,
@@ -86,8 +86,7 @@ pub broadcast proof fn lemma_disjoint_tuple_2<
 {
 }
 
-/// A [`Preceded`] parser is disjoint from another parser if its first
-/// parser is disjoint from the other parser.
+/// A [`Preceded`] parser is disjoint from another parser if its prefix is.
 pub broadcast proof fn lemma_disjoint_preceded<U: SpecParser, U1: SpecParser, V1: SpecParser>(
     p: U,
     p1: Preceded<U1, V1>,
@@ -99,8 +98,7 @@ pub broadcast proof fn lemma_disjoint_preceded<U: SpecParser, U1: SpecParser, V1
 {
 }
 
-/// A [`Terminated`] parser is disjoint from another parser if its first
-/// parser is disjoint from the other parser.
+/// A [`Terminated`] parser is disjoint from another parser if its prefix is.
 pub broadcast proof fn lemma_disjoint_terminated<U: SpecParser, U1: SpecParser, V1: SpecParser>(
     p: U,
     p1: Terminated<U1, V1>,
@@ -112,7 +110,7 @@ pub broadcast proof fn lemma_disjoint_terminated<U: SpecParser, U1: SpecParser, 
 {
 }
 
-/// A [`Mapped`] parser is disjoint from another parser if its inner parser is disjoint from it.
+/// A [`Mapped`] parser is disjoint from another parser if its inner parser is.
 pub broadcast proof fn lemma_disjoint_mapped<
     P: SpecParser,
     Inner1: SpecParser,
@@ -125,7 +123,7 @@ pub broadcast proof fn lemma_disjoint_mapped<
 {
 }
 
-/// A [`Choice`] parser is disjoint from another parser if both branches are disjoint from it.
+/// A [`Choice`] parser is disjoint from another parser if both branches are.
 pub broadcast proof fn lemma_disjoint_choice<S1: SpecParser, S2: SpecParser, S3: SpecParser>(
     choice: Choice<S1, S2>,
     other: S3,
@@ -138,7 +136,7 @@ pub broadcast proof fn lemma_disjoint_choice<S1: SpecParser, S2: SpecParser, S3:
 {
 }
 
-/// A [`Optional`] parser (which is `(Opt<A>, B)`) is disjoint from another parser if both `A` and `B` are disjoint from it.
+/// An [`Optional<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
 pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: SpecParser>(
     p: P,
     optional: Optional<A, B>,
@@ -153,7 +151,7 @@ pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: 
 
 }
 
-/// A [`Repeat`] parser (which is `(Star<A>, B)`) is disjoint from another parser if both `A` and `B` are disjoint from it.
+/// A [`Repeat<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
 pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: SpecParser>(
     p: P,
     repeat: Repeat<A, B>,
@@ -168,7 +166,7 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
 
 }
 
-/// An [`Eof`] parser is disjoint from another parser if the other parser is productive.
+/// A productive parser (one that fails on empty input) is disjoint from [`Eof`].
 pub broadcast proof fn lemma_disjoint_eof<P: GoodParser>(p: P, eof: Eof)
     requires
         p.spec_parse(seq![]) is None,

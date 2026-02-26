@@ -125,17 +125,7 @@ impl<A: SpecSerializerDps> super::Star<A> {
     }
 }
 
-impl<A: Serializability> super::Star<A> {
-    /// all elements are serializable with the appropriate intermediate buffers
-    pub open spec fn elems_serializable(&self, vs: Seq<A::ST>, obuf: Seq<u8>) -> bool {
-        forall|i: int|
-            #![auto]
-            0 <= i < vs.len() ==> self.inner.serializable(
-                vs[i],
-                self.rfold_serialize_dps(vs.skip(i + 1), obuf),
-            )
-    }
-}
+
 
 impl<A: Unambiguity> Unambiguity for super::Star<A> {
     open spec fn unambiguous(&self) -> bool {
@@ -186,13 +176,7 @@ impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
     }
 }
 
-impl<A> Serializability for super::Star<A> where A: Serializability + SpecParser {
-    open spec fn serializable(&self, vs: Self::ST, obuf: Seq<u8>) -> bool {
-        // make sure the inner parser won't accidentally consume `obuf`
-        &&& self.inner.spec_parse(obuf) is None
-        &&& self.elems_serializable(vs, obuf)
-    }
-}
+
 
 impl<A> GoodSerializerDps for super::Star<A> where A: GoodSerializerDps {
     proof fn lemma_serialize_dps_buf(&self, vs: Self::ST, obuf: Seq<u8>) {

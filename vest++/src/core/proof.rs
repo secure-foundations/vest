@@ -1,3 +1,5 @@
+//! Correctness and security proof traits for Vest++ combinators.
+
 use crate::core::spec::SpecParser;
 
 use super::spec::*;
@@ -5,12 +7,20 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Serialize-Parse roundtrip property: serializing (in DPS style) then parsing recovers the original value
+/// Serialize-parse roundtrip (DPS).
 ///
-/// ## Note
+/// Serializing a consistent value in DPS style and parsing the result recovers the
+/// original value, consuming exactly `byte_len(v)` bytes.
 ///
-/// This trait is primarily used *internally* to achieve better composability of combinators.
-/// See [`SPRoundTrip`] for the top-level, more user-friendly serialize-parse theorem.
+/// This is a low-level trait. Individual combinators in the library prove this directly;
+/// the higher-level property [`SPRoundTrip`] is derived via a blanket impl composing this with
+/// [`GoodSerializer`] and [`EquivSerializers`].
+///
+/// ## Note on user-defined combinators
+///
+/// User-defined combinators should prefer proving this trait to proving [`SPRoundTrip`], as
+/// 1. it's a stronger property and proving and implementing this trait would make Rust/Verus auto-derive a proof for [`SPRoundTrip`];
+/// 2. it makes the combinator composable with the rest of the library, which are all built on this stronger property.
 pub trait SPRoundTripDps where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
@@ -31,14 +41,15 @@ pub trait SPRoundTripDps where
     ;
 }
 
-/// Serialize-Parse roundtrip property: serializing then parsing recovers the original value
+/// Serialize-parse roundtrip.
 ///
-/// ## Note
+/// Serializing a consistent value and parsing the result recovers `v`, consuming
+/// the entire serialized buffer. Automatically derived for combinators implementing
+/// [`SPRoundTripDps`] + [`GoodSerializer`] + [`EquivSerializers`].
 ///
-/// Technically, this theorem can be directly proved for individual combinators
-/// if they only implement the necessary spec traits. However, we provide generic
-/// proofs (aka blanket implementations) for combinators that already implement and prove
-/// [`SPRoundTripDps`], [`GoodSerializer`], and [`EquivSerializers`].
+/// ## Note on user-defined combinators
+///
+/// User-defined combinators should prefer proving [`SPRoundTripDps`] to proving this trait. See the note on [`SPRoundTripDps`] for details.
 pub trait SPRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
@@ -58,8 +69,6 @@ pub trait SPRoundTrip where
     ;
 }
 
-// Prove [`SPRoundTrip`] once-and-for-all if the combinator already implements and
-// proves [`GoodSerializer`] and [`EquivSerializers`]
 impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
         let empty = Seq::empty();
@@ -69,14 +78,13 @@ impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
     }
 }
 
-/// Parse-Serialize roundtrip property: parsing then serializing preserves the input prefix
+/// Parse-serialize roundtrip.
 ///
-/// ## Note
+/// Parsing a buffer and serializing the result reproduces the consumed bytes.
 ///
-/// Technically, this theorem can be directly proved for individual combinators
-/// if they implement the necessary spec traits. However, we provide generic
-/// proofs (aka blanket implementations) for combinators that already implement and prove
-/// [`SPRoundTrip`] and [`NonMalleable`].
+/// Automatically derived for combinators implementing [`SPRoundTrip`] + [`NonMalleable`].
+///
+/// User-defined combinators can also prove this directly.
 pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
@@ -106,8 +114,6 @@ pub trait PSRoundTrip where
     }
 }
 
-// Prove [`PSRoundTrip`] once-and-for-all if the combinator already implements and
-// proves [`SPRoundTrip`] and [`NonMalleable`]
 impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         let c = self;
@@ -125,7 +131,10 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
     }
 }
 
-/// Non-malleability property: equal parsed values imply equal input prefixes
+/// Parser non-malleability.
+///
+/// If two buffers parse to equal values, their consumed bytes are identical—i.e.,
+/// each semantic value has a unique byte-level representation.
 pub trait NonMalleable: GoodParser {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
@@ -138,6 +147,12 @@ pub trait NonMalleable: GoodParser {
     ;
 }
 
+/// No-lookahead property for parsers.
+///
+/// Intuitively: the parser's behavior does not depend on "future" bytes beyond the consumed prefix
+/// (i.e., it does not need to "look ahead"/"peek" at them to decide how to parse the prefix).
+///
+/// Formally: if two buffers share a common prefix that successfully parses, then they parse to the same value.
 pub trait NoLookAhead: GoodParser + Unambiguity {
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
@@ -166,18 +181,22 @@ pub trait NoLookAhead: GoodParser + Unambiguity {
     }
 }
 
-/// Combinators that implement both DPS and non-DPS serialization specs and
-/// establish their equivalence
+/// Full DPS ↔ non-DPS serializer equivalence for *any* output buffer.
+///
+/// See [`EquivSerializers`] for the weaker empty-buffer variant.
 pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
-    /// Lemma: serializer equivalence between DPS and non-DPS specs
+    /// Lemma: `spec_serialize_dps(v, obuf) == spec_serialize(v) + obuf`.
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
 }
 
+/// DPS ↔ non-DPS serializer equivalence on the empty buffer.
+///
+/// Sufficient for deriving [`SPRoundTrip`] from [`SPRoundTripDps`].
 pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
-    /// Lemma: serializer equivalence between DPS and non-DPS specs
+    /// Lemma: `spec_serialize_dps(v, []) == spec_serialize(v)`.
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal)
         ensures
             self.spec_serialize_dps(v, seq![]) == self.spec_serialize(v),

@@ -72,9 +72,7 @@ impl SpecSerializer for super::BerBool {
     }
 }
 
-impl Serializability for super::BerBool {
 
-}
 
 impl Unambiguity for super::BerBool {
 

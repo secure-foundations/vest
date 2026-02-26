@@ -73,16 +73,6 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
     }
 }
 
-impl<A> Serializability for super::Opt<A> where A: Serializability + SpecParser {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        match v {
-            // To ensure the parser will not try to consume serialized bytes in
-            // `obuf` when the value is `None`
-            None => self.0.spec_parse(obuf) is None,
-            Some(vv) => self.0.serializable(vv, obuf),
-        }
-    }
-}
 
 impl<A: Unambiguity> Unambiguity for super::Opt<A> {
     open spec fn unambiguous(&self) -> bool {

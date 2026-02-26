@@ -69,14 +69,7 @@ impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer 
     }
 }
 
-impl<A, B> Serializability for (A, B) where A: Serializability, B: Serializability {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.1.serializable(v.1, obuf) && self.0.serializable(
-            v.0,
-            self.1.spec_serialize_dps(v.1, obuf),
-        )
-    }
-}
+
 
 impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
     open spec fn unambiguous(&self) -> bool {

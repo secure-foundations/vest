@@ -1,17 +1,26 @@
+//! Mapper traits for isomorphic type transformations used by [`super::Mapped`].
+
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
+/// A pair of spec functions forming a bidirectional mapping.
 type IsoFns<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
 
+/// A bidirectional mapping between two types (forward for parsing, reverse for
+/// serialization). For roundtrip guarantees, implement and prove [`IsoMapper`].
 pub trait Mapper {
+    /// The input type.
     type In;
 
+    /// The output type.
     type Out;
 
+    /// Forward mapping (used during parsing).
     spec fn spec_map(&self, i: Self::In) -> Self::Out;
 
+    /// Reverse mapping (used during serialization).
     spec fn spec_map_rev(&self, o: Self::Out) -> Self::In;
 }
 
@@ -29,12 +38,15 @@ impl<In, Out> Mapper for IsoFns<In, Out> {
     }
 }
 
+/// A [`Mapper`] proven bijective, thus forming an isomorphism between the input and output types.
 pub trait IsoMapper: Mapper {
+    /// `spec_map_rev(spec_map(i)) == i`.
     proof fn lemma_map_iso(&self, i: Self::In)
         ensures
             self.spec_map_rev(self.spec_map(i)) == i,
     ;
 
+    /// `spec_map(spec_map_rev(o)) == o`.
     proof fn lemma_map_iso_rev(&self, o: Self::Out)
         ensures
             self.spec_map(self.spec_map_rev(o)) == o,
@@ -104,14 +116,6 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> Serializability for super::Mapped<Inner, M> where
-    Inner: Serializability,
-    M: Mapper<In = Inner::ST>,
- {
-    open spec fn serializable(&self, v: M::Out, obuf: Seq<u8>) -> bool {
-        self.inner.serializable(self.mapper.spec_map_rev(v), obuf)
-    }
-}
 
 impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
     Inner: Unambiguity,

@@ -66,11 +66,6 @@ impl<Inner: SpecSerializer> SpecSerializer for super::Cond<Inner> {
     }
 }
 
-impl<Inner: Serializability> Serializability for super::Cond<Inner> {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.0 && self.1.serializable(v, obuf)
-    }
-}
 
 impl<Inner: Unambiguity> Unambiguity for super::Cond<Inner> {
     open spec fn unambiguous(&self) -> bool {

@@ -5,6 +5,10 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Isomorphic mapper: `[u8; 2]` ↔ `u16` in **little-endian** byte order.
+///
+/// Forward: `[lo, hi]` → `lo | (hi << 8)`.
+/// Reverse: `v` → `[(v & 0xff) as u8, ((v >> 8) & 0xff) as u8]`.
 pub struct U16LeMapper;
 
 impl Mapper for U16LeMapper {
@@ -40,6 +44,10 @@ impl IsoMapper for U16LeMapper {
     }
 }
 
+/// Isomorphic mapper: `[u8; 2]` ↔ `u16` in **big-endian** byte order.
+///
+/// Forward: `[hi, lo]` → `(hi << 8) | lo`.
+/// Reverse: `v` → `[((v >> 8) & 0xff) as u8, (v & 0xff) as u8]`.
 pub struct U16BeMapper;
 
 impl Mapper for U16BeMapper {
@@ -75,6 +83,10 @@ impl IsoMapper for U16BeMapper {
     }
 }
 
+/// Isomorphic mapper: `[u8; 4]` ↔ `u32` in **little-endian** byte order.
+///
+/// Forward: `[b0, b1, b2, b3]` → `b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)`.
+/// Reverse: `v` → `[(v & 0xff) as u8, ((v >> 8) & 0xff) as u8, ((v >> 16) & 0xff) as u8, ((v >> 24) & 0xff) as u8]`.
 pub struct U32LeMapper;
 
 impl Mapper for U32LeMapper {
@@ -121,6 +133,10 @@ impl IsoMapper for U32LeMapper {
     }
 }
 
+/// Isomorphic mapper: `[u8; 4]` ↔ `u32` in **big-endian** byte order.
+///
+/// Forward: `[b3, b2, b1, b0]` → `(b3 << 24) | (b2 << 16) | (b1 << 8) | b0`.
+/// Reverse: `v` → `[((v >> 24) & 0xff) as u8, ((v >> 16) & 0xff) as u8, ((v >> 8) & 0xff) as u8, (v & 0xff) as u8]`.
 pub struct U32BeMapper;
 
 impl Mapper for U32BeMapper {
@@ -214,11 +230,7 @@ impl GoodParser for super::U8 {
     }
 }
 
-impl Serializability for super::U8 {
-    open spec fn serializable(&self, v: u8, obuf: Seq<u8>) -> bool {
-        true
-    }
-}
+
 
 impl Unambiguity for super::U8 {
     open spec fn unambiguous(&self) -> bool {
@@ -296,11 +308,7 @@ impl GoodParser for super::U16Le {
     }
 }
 
-impl Serializability for super::U16Le {
-    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.serializable(v, obuf)
-    }
-}
+
 
 impl Unambiguity for super::U16Le {
     open spec fn unambiguous(&self) -> bool {
@@ -378,11 +386,7 @@ impl GoodParser for super::U16Be {
     }
 }
 
-impl Serializability for super::U16Be {
-    open spec fn serializable(&self, v: u16, obuf: Seq<u8>) -> bool {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.serializable(v, obuf)
-    }
-}
+
 
 impl Unambiguity for super::U16Be {
     open spec fn unambiguous(&self) -> bool {
@@ -460,11 +464,7 @@ impl GoodParser for super::U32Le {
     }
 }
 
-impl Serializability for super::U32Le {
-    open spec fn serializable(&self, v: u32, obuf: Seq<u8>) -> bool {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.serializable(v, obuf)
-    }
-}
+
 
 impl Unambiguity for super::U32Le {
     open spec fn unambiguous(&self) -> bool {
@@ -542,11 +542,7 @@ impl GoodParser for super::U32Be {
     }
 }
 
-impl Serializability for super::U32Be {
-    open spec fn serializable(&self, v: u32, obuf: Seq<u8>) -> bool {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.serializable(v, obuf)
-    }
-}
+
 
 impl Unambiguity for super::U32Be {
     open spec fn unambiguous(&self) -> bool {

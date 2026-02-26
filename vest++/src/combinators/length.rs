@@ -1,16 +1,21 @@
+//! The length abstraction [`AsLen`] for types usable as format length (or count) fields.
+//!
+//! Implemented for [`u8`], [`u16`], [`u32`], and [`usize`].
+
 use vstd::prelude::*;
 
 verus! {
 
-/// Types that can safely act as format length (or count) fields.
+/// Types that can serve as format length (or count) fields, with proof of lossless
+/// `usize`/`nat` conversions.
 pub trait AsLen: Sized {
-    /// Use as the machine integer `usize`
+    /// Convert to `usize`.
     spec fn as_usize(self) -> usize;
 
-    /// Get the machine integer value from an abstract natural number
+    /// Construct from a `nat`.
     spec fn from_nat(n: nat) -> Self;
 
-    /// The conversion from Self to usize and back is lossless
+    /// `from_nat(v.as_usize() as nat) == v`.
     proof fn lemma_lossless_casting(v: Self)
         ensures
             Self::from_nat(v.as_usize() as nat) == v,

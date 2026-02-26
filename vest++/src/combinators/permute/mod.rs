@@ -1,3 +1,6 @@
+//! Combinators for parsing permutations of sub-parsers.
+
+/// Specification trait implementations for this combinator.
 pub mod spec;
 
 use vstd::prelude::*;

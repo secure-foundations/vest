@@ -3,15 +3,21 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Defines one level of a recursive format for use with [`super::Fix`].
 pub trait RecBody {
+    /// The type of values parsed/serialized by this recursive format.
     type Val;
 
+    /// Parser for one level, given a recursive callback.
     spec fn parse_body(&self, rec: ParserFnSpec<Self::Val>) -> ParserFnSpec<Self::Val>;
 
+    /// Byte-length function for one level, given a recursive callback.
     spec fn byte_len_body(&self, rec: ByteLenFnSpec<Self::Val>) -> ByteLenFnSpec<Self::Val>;
 
+    /// Consistency predicate for one level, given a recursive callback.
     spec fn consistent_body(&self, rec: PredFnSpec<Self::Val>) -> PredFnSpec<Self::Val>;
 
+    /// [`good_parser`] is preserved through one level of unfolding.
     proof fn lemma_body_preservation(
         &self,
         p_rec: ParserFnSpec<Self::Val>,
@@ -53,6 +59,7 @@ impl<const LIMIT: usize, Body: RecBody> SpecByteLen for super::Fix<LIMIT, Body> 
     }
 }
 
+/// Bundled triple of parser, consistency, and byte-length spec functions.
 pub type ParserSpecs<T> = (ParserFnSpec<T>, PredFnSpec<T>, ByteLenFnSpec<T>);
 
 impl<T> SpecByteLen for ParserSpecs<T> {
@@ -95,6 +102,7 @@ impl<T> GoodParser for ParserSpecs<T> {
     }
 }
 
+/// The functional version of [`GoodParser`].
 pub open spec fn good_parser<T>(
     parser: ParserFnSpec<T>,
     consistent: PredFnSpec<T>,
@@ -109,6 +117,8 @@ pub open spec fn good_parser<T>(
 }
 
 impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
+    /// Parse with a given amount of gas. Unfolds one level via
+    /// `body.parse_body` with a callback that recurses at `gas - 1`.
     pub open spec fn spec_parse_with_gas(&self, gas: nat, input: Seq<u8>) -> Option<
         (int, Body::Val),
     >
@@ -117,18 +127,21 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
         self.0.parse_body(self.parse_callback(gas))(input)
     }
 
+    /// Consistency check with given gas.
     pub open spec fn consistent_with_gas(&self, gas: nat, v: Body::Val) -> bool
         decreases gas, 1nat,
     {
         self.0.consistent_body(self.consistent_callback(gas))(v)
     }
 
+    /// Byte-length computation with given gas.
     pub open spec fn byte_len_with_gas(&self, gas: nat, v: Body::Val) -> nat
         decreases gas, 1nat,
     {
         self.0.byte_len_body(self.byte_len_callback(gas))(v)
     }
 
+    /// Recursive parser callback: recurses at `gas - 1`, returns `None` at zero.
     pub open spec fn parse_callback(&self, gas: nat) -> ParserFnSpec<Body::Val>
         decreases gas, 0nat,
     {
@@ -142,6 +155,7 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
             }
     }
 
+    /// Recursive consistency callback: recurses at `gas - 1`, returns `false` at zero.
     pub open spec fn consistent_callback(&self, gas: nat) -> PredFnSpec<Body::Val>
         decreases gas, 0nat,
     {
@@ -155,6 +169,7 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
             }
     }
 
+    /// Recursive byte-length callback: recurses at `gas - 1`, returns `0` at zero.
     pub open spec fn byte_len_callback(&self, gas: nat) -> ByteLenFnSpec<Body::Val>
         decreases gas, 0nat,
     {
@@ -168,6 +183,7 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
             }
     }
 
+    /// Inductive proof that `spec_parse_with_gas` satisfies [`good_parser`].
     proof fn good_parser_by_induction(&self, gas: nat, input: Seq<u8>, n: int, v: Body::Val)
         ensures
             self.spec_parse_with_gas(gas, input) == Some((n, v)) ==> {
@@ -241,11 +257,15 @@ impl<const LIMIT: usize, Body: RecBody> GoodParser for super::Fix<LIMIT, Body> {
 use crate::combinators::*;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 
+/// Example recursive value type: nested braces `{...}` or empty `\0`.
 pub enum NestedBracesT {
+    /// A brace-wrapped recursive value: `'{' inner '}'`.
     Brace(Box<NestedBracesT>),
+    /// The empty (base case) value: `'\0'`.
     Eps,
 }
 
+/// Mapper between `Sum<NestedBracesT, ()>` and `NestedBracesT`.
 pub struct NestedBracesMapper;
 
 impl Mapper for NestedBracesMapper {
@@ -282,6 +302,7 @@ impl IsoMapper for NestedBracesMapper {
     }
 }
 
+/// One level of the nested-braces format: `'{' rec '}' | '\0'`.
 pub open spec fn nested_braces_body<Rec>(rec: Rec) -> Mapped<
     Choice<Terminated<Preceded<Tag<U8, u8>, Rec>, Tag<U8, u8>>, Tag<U8, u8>>,
     NestedBracesMapper,
@@ -298,6 +319,7 @@ pub open spec fn nested_braces_body<Rec>(rec: Rec) -> Mapped<
     }
 }
 
+/// [`RecBody`] for the nested-braces example.
 pub struct NestedBracesBody;
 
 impl RecBody for NestedBracesBody {

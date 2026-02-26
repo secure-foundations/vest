@@ -1,4 +1,8 @@
+//! Implicit sequential dependency combinators.
+
+/// Correctness proofs for this combinator.
 pub mod proof;
+/// Specification trait implementations for this combinator.
 pub mod spec;
 
 use crate::core::spec::Consistency;
@@ -6,20 +10,22 @@ use vstd::prelude::*;
 
 verus! {
 
-/// The sequentially dependent combinator.
+/// Dependent sequential combinator with implicit key recovery.
 ///
-/// - parse: parse `A` first, then parse `B(a)` where `a` is the parsed result of `A`. Only return the parsed value of `B(a)`
-/// - serialize: infer the implicit `a` from the output value and serialize `B(a)`, then serialize `A` with the inferred `a`.
+/// Parsing semantics: parses `A` to get a key, then parses `B(key)`, returning only
+/// the value from `B`.
+/// During serialization, the key is recovered existentially. Prefer [`super::Bind`]
+/// to avoid existential reasoning.
 pub struct Implicit<A, B>(pub A, pub B);
 
-/// Dependent sequential combinator with user-provided recovery logic.
-///
-/// Like [`Implicit`], but uses an explicit `recover` function to get back the
-/// original `a` from the output value for consistency checking and serialization.
+/// Dependent sequential combinator with explicit recovery function.
 pub struct ImplicitAuto<A, B, Recover>(pub A, pub B, pub Recover);
 
-/// Lossless key embedding condition for [`Implicit`]
+/// Lossless key embedding condition for [`Implicit`].
+///
+/// Ensures the body value uniquely determines the key.
 pub trait LosslessImplicit<A: Consistency, B: Consistency> {
+    /// The body value uniquely determines the key.
     proof fn lemma_value_uniquely_determines_key(
         fmt: &Implicit<A, spec_fn(A::Val) -> B>,
         k1: A::Val,
@@ -32,8 +38,11 @@ pub trait LosslessImplicit<A: Consistency, B: Consistency> {
     ;
 }
 
-/// Lossless key embedding condition for [`ImplicitAuto`]
+/// Lossless key embedding condition for [`ImplicitAuto`].
+///
+/// Same uniqueness property as [`LosslessImplicit`].
 pub trait LosslessImplicitAuto<A: Consistency, B: Consistency> {
+    /// The body value uniquely determines the key.
     proof fn lemma_value_determines_key(
         fmt: &ImplicitAuto<A, spec_fn(A::Val) -> B, spec_fn(B::Val) -> A::Val>,
         k1: A::Val,

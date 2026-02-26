@@ -65,9 +65,7 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> Serializability for super::Fixed<N> {
 
-}
 
 impl<const N: usize> Unambiguity for super::Fixed<N> {
 

@@ -1,3 +1,5 @@
+//! Type aliases and trait implementations allowing plain `spec_fn`s to serve as combinators.
+
 use crate::core::spec::{
     Consistency, GoodParser, PredFnSpec, SpecByteLen, SpecParser, SpecSerializer,
     SpecSerializerDps, Unambiguity,
@@ -6,12 +8,16 @@ use vstd::prelude::*;
 
 verus! {
 
+/// A spec-level function that computes the serialized byte length of a value.
 pub type ByteLenFnSpec<T> = spec_fn(T) -> nat;
 
+/// A spec-level parser function.
 pub type ParserFnSpec<T> = spec_fn(Seq<u8>) -> Option<(int, T)>;
 
+/// A spec-level serializer function in the "DPS" style.
 pub type SerializerDPSFnSpec<T> = spec_fn(T, Seq<u8>) -> Seq<u8>;
 
+/// A spec-level serializer function.
 pub type SerializerFnSpec<T> = spec_fn(T) -> Seq<u8>;
 
 impl<T> Consistency for PredFnSpec<T> {
@@ -54,6 +60,7 @@ impl<T> SpecSerializer for SerializerFnSpec<T> {
     }
 }
 
+/// A bundled DPS serializer: pairs a [`SerializerDPSFnSpec`] with a [`ByteLenFnSpec`].
 pub type SerializerDPSSpecs<T> = (SerializerDPSFnSpec<T>, ByteLenFnSpec<T>);
 
 impl<T> SpecByteLen for SerializerDPSSpecs<T> {
@@ -72,6 +79,7 @@ impl<T> SpecSerializerDps for SerializerDPSSpecs<T> {
     }
 }
 
+/// A bundled non-DPS serializer: pairs a [`SerializerFnSpec`] with a [`ByteLenFnSpec`].
 pub type SerializerSpecs<T> = (SerializerFnSpec<T>, ByteLenFnSpec<T>);
 
 impl<T> SpecByteLen for SerializerSpecs<T> {
@@ -90,6 +98,7 @@ impl<T> SpecSerializer for SerializerSpecs<T> {
     }
 }
 
+/// A spec-level unambiguity predicate.
 pub type UnambiguityFnSpec = spec_fn() -> bool;
 
 } // verus!

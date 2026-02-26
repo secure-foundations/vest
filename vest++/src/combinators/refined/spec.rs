@@ -63,14 +63,7 @@ impl<A, Pred> SpecSerializer for super::Refined<A, Pred> where
     }
 }
 
-impl<A, Pred> Serializability for super::Refined<A, Pred> where
-    A: Serializability + Consistency<Val = A::ST>,
-    Pred: SpecPred<A::ST>,
- {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        self.inner.consistent(v) && self.pred.apply(v) && self.inner.serializable(v, obuf)
-    }
-}
+
 
 impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
     A: Unambiguity,

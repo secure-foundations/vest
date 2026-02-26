@@ -3,8 +3,11 @@ use vstd::prelude::*;
 
 verus! {
 
+/// The sum type.
 pub enum Sum<A, B> {
+    /// Left injection.
     Inl(A),
+    /// Right injection.
     Inr(B),
 }
 
@@ -80,22 +83,7 @@ impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: Sp
     }
 }
 
-impl<A, B> Serializability for super::Choice<A, B> where
-    A: Serializability + SpecParser,
-    B: Serializability,
- {
-    #[verusfmt::skip]
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        match v {
-            Sum::Inl(va) => self.0.serializable(va, obuf),
-            Sum::Inr(vb) => {
-                &&& self.1.serializable(vb, obuf)
-                // To ensure the parser can recover the choice made during serialization
-                &&& self.0.spec_parse(self.1.spec_serialize_dps(vb, obuf)) is None
-            },
-        }
-    }
-}
+
 
 impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Choice<A, B> {
     open spec fn unambiguous(&self) -> bool {

@@ -1,3 +1,6 @@
+//! Bounded fixpoint combinator for recursive formats.
+
+/// Specification trait implementations for this combinator.
 pub mod spec;
 
 use vstd::prelude::*;
@@ -6,27 +9,11 @@ pub use spec::RecBody;
 
 verus! {
 
-/// The "fixpoint" combinator for recursive parser/serializer.
+/// Bounded fixpoint combinator: recursive format up to `LIMIT` levels of nesting.
 ///
-/// ## Usage:
+/// Parsing semantics: parses with `Body`, which may recursively refer to `Fix` (up to `LIMIT` times).
 ///
-/// ```rust
-/// let parser = Fix(|rec|
-///     |i|
-///         Mapped {
-///             inner: Choice(
-///                 Terminated(
-///                     Preceded(Tag { inner: U8, tag: 0x7B }, rec),
-///                     Tag { inner: U8, tag: 0x7D},
-///                 ),
-///                 Empty,
-///             ),
-///             mapper: NestedBracesMapper,
-///         }.spec_parse(i)
-///
-/// );
-///
-/// ```
+/// TODO: this combinator currently only supports parsing; we should add serialization support as well.
 pub struct Fix<const LIMIT: usize, Body>(pub Body);
 
 } // verus!
