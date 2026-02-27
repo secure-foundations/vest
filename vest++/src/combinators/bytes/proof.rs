@@ -82,7 +82,7 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 // [`ExactLen`] can make "look-ahead" parsers (e.g., [`Tail`] and [`Eof`]) non-look-ahead
 // (s.t. they can no longer "predict" the future)
 // because it always consumes the same number of bytes when it succeeds
-impl<Inner: GoodParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
+impl<Inner: SoundParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_no_lookahead(i1, i2);
     }
@@ -129,8 +129,8 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
                     let (n2a, chunk2) = self.0.spec_parse(buf2)->0;
                     let (n1b, v1b) = self.1.spec_parse(chunk1)->0;
                     let (n2b, v2b) = self.1.spec_parse(chunk2)->0;
-                    self.0.lemma_parse_byte_len(buf1);
-                    self.0.lemma_parse_byte_len(buf2);
+                    self.0.lemma_parse_sound_consumption(buf1);
+                    self.0.lemma_parse_sound_consumption(buf2);
                     self.0.lemma_byte_len_is_buf_len(chunk1);
                     self.0.lemma_byte_len_is_buf_len(chunk2);
                     self.0.lemma_parse_non_malleable(buf1, buf2);
@@ -149,7 +149,7 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
 
 impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
     A: BytesCombinator + NoLookAhead,
-    Then: GoodParser + Unambiguity,
+    Then: SoundParser + Unambiguity,
  {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {

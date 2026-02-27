@@ -44,7 +44,6 @@
 //! ```
 //!
 //! See the [`combinators`] module for the full catalog of available combinators.
-
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
 #![warn(missing_docs)]

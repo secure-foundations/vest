@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 impl<A, B> SPRoundTripDps for super::Terminated<A, B> where
-    A: SPRoundTripDps + GoodSerializerDps,
+    A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -30,8 +30,8 @@ impl<A, B> NonMalleable for super::Terminated<A, B> where
                 if v1 == v2 {
                     if let Some((_, (va1, vb1))) = (self.0, self.1).spec_parse(buf1) {
                         if let Some((_, (va2, vb2))) = (self.0, self.1).spec_parse(buf2) {
-                            (self.0, self.1).lemma_parse_consistent(buf1);
-                            (self.0, self.1).lemma_parse_consistent(buf2);
+                            (self.0, self.1).lemma_parse_sound_value(buf1);
+                            (self.0, self.1).lemma_parse_sound_value(buf2);
                             self.1.lemma_unique_consistent_val(vb1, vb2);
                             assert((va1, vb1) == (va2, vb2));
 

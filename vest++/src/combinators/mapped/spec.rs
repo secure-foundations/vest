@@ -1,5 +1,4 @@
 //! Mapper traits for isomorphic type transformations used by [`super::Mapped`].
-
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -67,27 +66,27 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> GoodParser for super::Mapped<Inner, M> where
-    Inner: GoodParser,
+impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
+    Inner: SoundParser,
     M: IsoMapper<In = Inner::PVal>,
  {
     open spec fn inv(&self) -> bool {
         self.inner.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
         if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
             self.mapper.lemma_map_iso(inner_v);
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
         if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
             self.mapper.lemma_map_iso(inner_v);
         }
@@ -116,7 +115,6 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     }
 }
 
-
 impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
     Inner: Unambiguity,
     M: Mapper<In = Inner::PVal>,
@@ -126,12 +124,12 @@ impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> GoodSerializerDps for super::Mapped<Inner, M> where
-    Inner: GoodSerializerDps,
+impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
+    Inner: NonTailFmt,
     M: Mapper<In = Inner::ST>,
  {
-    proof fn lemma_serialize_dps_buf(&self, v: M::Out, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_buf(self.mapper.spec_map_rev(v), obuf);
+    proof fn lemma_serialize_dps_prepend(&self, v: M::Out, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(self.mapper.spec_map_rev(v), obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: M::Out, obuf: Seq<u8>) {

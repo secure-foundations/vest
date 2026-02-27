@@ -1,5 +1,4 @@
 //! Bounded fixpoint combinator for recursive formats.
-
 /// Specification trait implementations for this combinator.
 pub mod spec;
 

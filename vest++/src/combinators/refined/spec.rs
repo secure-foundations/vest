@@ -23,21 +23,24 @@ impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred
     }
 }
 
-impl<A, Pred> GoodParser for super::Refined<A, Pred> where A: GoodParser, Pred: SpecPred<A::PVal> {
+impl<A, Pred> SoundParser for super::Refined<A, Pred> where
+    A: SoundParser,
+    Pred: SpecPred<A::PVal>,
+ {
     open spec fn inv(&self) -> bool {
         self.inner.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -63,8 +66,6 @@ impl<A, Pred> SpecSerializer for super::Refined<A, Pred> where
     }
 }
 
-
-
 impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
     A: Unambiguity,
     Pred: SpecPred<A::PVal>,
@@ -74,12 +75,9 @@ impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
     }
 }
 
-impl<A, Pred> GoodSerializerDps for super::Refined<A, Pred> where
-    A: GoodSerializerDps,
-    Pred: SpecPred<A::ST>,
- {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_buf(v, obuf);
+impl<A, Pred> NonTailFmt for super::Refined<A, Pred> where A: NonTailFmt, Pred: SpecPred<A::ST> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -128,21 +126,21 @@ impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consi
     }
 }
 
-impl<Inner> GoodParser for super::Tag<Inner, Inner::PVal> where Inner: GoodParser {
+impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundParser {
     open spec fn inv(&self) -> bool {
         self.inner.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -168,9 +166,9 @@ impl<Inner> Unambiguity for super::Tag<Inner, Inner::PVal> where Inner: Unambigu
     }
 }
 
-impl<Inner> GoodSerializerDps for super::Tag<Inner, Inner::ST> where Inner: GoodSerializerDps {
-    proof fn lemma_serialize_dps_buf(&self, _v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_buf(self.tag, obuf);
+impl<Inner> NonTailFmt for super::Tag<Inner, Inner::ST> where Inner: NonTailFmt {
+    proof fn lemma_serialize_dps_prepend(&self, _v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(self.tag, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, _v: Self::ST, obuf: Seq<u8>) {
@@ -218,25 +216,27 @@ impl<Tg, Of> Consistency for super::Tagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> GoodParser for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + GoodParser,
-    Of: GoodParser,
+impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + SoundParser,
+    Of: SoundParser,
  {
     open spec fn inv(&self) -> bool {
         &&& self.0.inv()
         &&& self.2.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_len_bound(ibuf)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_safe(ibuf)
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_byte_len(ibuf)
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_sound_consumption(
+            ibuf,
+        )
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_consistent(ibuf)
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_sound_value(ibuf)
     }
 }
 
@@ -271,12 +271,12 @@ impl<Tg, Of> Unambiguity for super::Tagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> GoodSerializerDps for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + GoodSerializerDps + Consistency<Val = Tg::T>,
-    Of: GoodSerializerDps,
+impl<Tg, Of> NonTailFmt for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + NonTailFmt + Consistency<Val = Tg::T>,
+    Of: NonTailFmt,
  {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_buf(
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_prepend(
             v,
             obuf,
         );

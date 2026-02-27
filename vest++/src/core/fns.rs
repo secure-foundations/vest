@@ -1,7 +1,6 @@
 //! Type aliases and trait implementations allowing plain `spec_fn`s to serve as combinators.
-
 use crate::core::spec::{
-    Consistency, GoodParser, PredFnSpec, SpecByteLen, SpecParser, SpecSerializer,
+    Consistency, PredFnSpec, SoundParser, SpecByteLen, SpecParser, SpecSerializer,
     SpecSerializerDps, Unambiguity,
 };
 use vstd::prelude::*;

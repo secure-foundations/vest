@@ -41,30 +41,30 @@ impl<Head, Tail> Consistency for Bind<Head, Tail> where
     }
 }
 
-impl<Head, Tail> GoodParser for Bind<Head, Tail> where
-    Head: GoodParser,
+impl<Head, Tail> SoundParser for Bind<Head, Tail> where
+    Head: SoundParser,
     Tail: DepCombinator<Key = Head::PVal>,
-    Tail::Body: GoodParser<T = Tail::Val>,
+    Tail::Body: SoundParser<T = Tail::Val>,
  {
     open spec fn inv(&self) -> bool {
         &&& self.0.inv()
         &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_safe(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_len_bound(ibuf.skip(n1));
+            body.lemma_parse_safe(ibuf.skip(n1));
         }
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_consumption(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_byte_len(ibuf.skip(n1));
-            body.lemma_parse_consistent(ibuf.skip(n1));
+            body.lemma_parse_sound_consumption(ibuf.skip(n1));
+            body.lemma_parse_sound_value(ibuf.skip(n1));
             if let Some((n2, value)) = body.spec_parse(ibuf.skip(n1)) {
                 self.1.lemma_recover_consistent(key, value);
                 assert(self.1.recover(value) == key);
@@ -73,11 +73,11 @@ impl<Head, Tail> GoodParser for Bind<Head, Tail> where
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_consistent(ibuf.skip(n1));
+            body.lemma_parse_sound_value(ibuf.skip(n1));
             if let Some((_n2, value)) = body.spec_parse(ibuf.skip(n1)) {
                 self.1.lemma_recover_consistent(key, value);
                 assert(self.1.recover(value) == key);
@@ -126,18 +126,18 @@ impl<Head, Tail> Unambiguity for Bind<Head, Tail> where
     }
 }
 
-impl<Head, Tail> GoodSerializerDps for Bind<Head, Tail> where
-    Head: GoodSerializerDps,
+impl<Head, Tail> NonTailFmt for Bind<Head, Tail> where
+    Head: NonTailFmt,
     Tail: DepCombinator<Key = Head::ST>,
-    Tail::Body: GoodSerializerDps<T = Tail::Val>,
+    Tail::Body: NonTailFmt<T = Tail::Val>,
  {
-    proof fn lemma_serialize_dps_buf(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let body = self.1.apply(key);
         let body_buf = body.spec_serialize_dps(value, obuf);
 
-        body.lemma_serialize_dps_buf(value, obuf);
-        self.0.lemma_serialize_dps_buf(key, body_buf);
+        body.lemma_serialize_dps_prepend(value, obuf);
+        self.0.lemma_serialize_dps_prepend(key, body_buf);
 
         let witness_body = choose|w: Seq<u8>| body.spec_serialize_dps(value, obuf) == w + obuf;
         let witness_prefix = choose|w: Seq<u8>|

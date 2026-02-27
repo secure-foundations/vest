@@ -25,14 +25,14 @@ impl AdmitsUniqueVal for super::Empty {
     }
 }
 
-impl GoodParser for super::Empty {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::Empty {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -56,8 +56,8 @@ impl Unambiguity for super::Empty {
 
 }
 
-impl GoodSerializerDps for super::Empty {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl NonTailFmt for super::Empty {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == Seq::<u8>::empty() + obuf);
     }
 
@@ -101,14 +101,14 @@ impl AdmitsUniqueVal for super::Void {
     }
 }
 
-impl GoodParser for super::Void {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::Void {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -134,8 +134,8 @@ impl Unambiguity for super::Void {
 
 }
 
-impl GoodSerializerDps for super::Void {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl NonTailFmt for super::Void {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let new_buf = Seq::<u8>::empty();
         assert(obuf == new_buf + obuf);
     }

@@ -1,5 +1,4 @@
 //! BER-encoded boolean combinator.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

@@ -20,7 +20,7 @@ impl<A: SpecParser> super::Star<A> {
     }
 }
 
-impl<A: GoodParser> super::Star<A> {
+impl<A: SoundParser> super::Star<A> {
     proof fn lemma_byte_len_cons(&self, v: A::T, vs: Seq<A::T>)
         ensures
             self.byte_len(seq![v] + vs) == self.inner.byte_len(v) + self.byte_len(vs),
@@ -41,7 +41,7 @@ impl<A: GoodParser> super::Star<A> {
             0 <= self.parse_rec(ibuf).0 <= ibuf.len(),
         decreases ibuf.len(),
     {
-        self.inner.lemma_parse_len_bound(ibuf);
+        self.inner.lemma_parse_safe(ibuf);
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 self.lemma_parse_rec_length(ibuf.skip(n));
@@ -56,7 +56,7 @@ impl<A: GoodParser> super::Star<A> {
             self.consistent(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
     {
-        self.inner.lemma_parse_consistent(ibuf);
+        self.inner.lemma_parse_sound_value(ibuf);
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 self.lemma_parse_rec_consistent(ibuf.skip(n));
@@ -71,7 +71,7 @@ impl<A: GoodParser> super::Star<A> {
             self.parse_rec(ibuf).0 == self.byte_len(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
     {
-        self.inner.lemma_parse_byte_len(ibuf);
+        self.inner.lemma_parse_sound_consumption(ibuf);
         if let Some((n, v)) = self.inner.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 let (n_rest, vs) = self.parse_rec(ibuf.skip(n));
@@ -99,20 +99,20 @@ impl<A> Consistency for super::Star<A> where A: Consistency {
     }
 }
 
-impl<A> GoodParser for super::Star<A> where A: GoodParser {
+impl<A> SoundParser for super::Star<A> where A: SoundParser {
     open spec fn inv(&self) -> bool {
         self.inner.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_byte_len(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_consistent(ibuf);
     }
 }
@@ -125,15 +125,13 @@ impl<A: SpecSerializerDps> super::Star<A> {
     }
 }
 
-
-
 impl<A: Unambiguity> Unambiguity for super::Star<A> {
     open spec fn unambiguous(&self) -> bool {
         self.inner.unambiguous()
     }
 }
 
-impl<A: GoodSerializerDps> super::Star<A> {
+impl<A: NonTailFmt> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         ensures
             exists|new_buf: Seq<u8>| self.rfold_serialize_dps(vs, obuf) == new_buf + obuf,
@@ -151,7 +149,7 @@ impl<A: GoodSerializerDps> super::Star<A> {
                 self.rfold_serialize_dps(rest, obuf) == wit + obuf;
 
             // base
-            self.inner.lemma_serialize_dps_buf(vs[0], rest_buf);
+            self.inner.lemma_serialize_dps_prepend(vs[0], rest_buf);
             let fst_witness = choose|wit: Seq<u8>|
                 self.inner.spec_serialize_dps(vs[0], rest_buf) == wit + rest_buf;
 
@@ -176,10 +174,8 @@ impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
     }
 }
 
-
-
-impl<A> GoodSerializerDps for super::Star<A> where A: GoodSerializerDps {
-    proof fn lemma_serialize_dps_buf(&self, vs: Self::ST, obuf: Seq<u8>) {
+impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
+    proof fn lemma_serialize_dps_prepend(&self, vs: Self::ST, obuf: Seq<u8>) {
         self.lemma_rfold_serialize_buf(vs, obuf);
     }
 
@@ -282,7 +278,7 @@ impl<C: Consistency, N: AsLen> Consistency for super::RepeatN<C, N> {
     }
 }
 
-impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
+impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
     pub(crate) proof fn lemma_parse_n_len_bound(&self, count: nat, ibuf: Seq<u8>)
         requires
             self.1.inv(),
@@ -292,7 +288,7 @@ impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
     {
         if count == 0 {
         } else {
-            self.1.lemma_parse_len_bound(ibuf);
+            self.1.lemma_parse_safe(ibuf);
             if let Some((n0, _v0)) = self.1.spec_parse(ibuf) {
                 self.lemma_parse_n_len_bound((count - 1) as nat, ibuf.skip(n0));
             }
@@ -310,7 +306,7 @@ impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
     {
         if count == 0 {
         } else {
-            self.1.lemma_parse_byte_len(ibuf);
+            self.1.lemma_parse_sound_consumption(ibuf);
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
                 self.lemma_parse_n_byte_len((count - 1) as nat, ibuf.skip(n0));
                 if let Some((n1, vs1)) = self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
@@ -333,7 +329,7 @@ impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
     {
         if count == 0 {
         } else {
-            self.1.lemma_parse_consistent(ibuf);
+            self.1.lemma_parse_sound_value(ibuf);
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
                 self.lemma_parse_n_consistent((count - 1) as nat, ibuf.skip(n0));
             }
@@ -341,20 +337,20 @@ impl<C: GoodParser, N: AsLen> super::RepeatN<C, N> {
     }
 }
 
-impl<C: GoodParser, N: AsLen> GoodParser for super::RepeatN<C, N> {
+impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
     open spec fn inv(&self) -> bool {
         self.1.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.lemma_parse_n_len_bound(self.0.as_usize() as nat, ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         self.lemma_parse_n_byte_len(self.0.as_usize() as nat, ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.lemma_parse_n_consistent(self.0.as_usize() as nat, ibuf);
     }
 }
@@ -381,9 +377,9 @@ impl<C: Unambiguity, N: AsLen> Unambiguity for super::RepeatN<C, N> {
     }
 }
 
-impl<C: GoodSerializerDps, N: AsLen> GoodSerializerDps for super::RepeatN<C, N> {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        super::Star { inner: self.1 }.lemma_serialize_dps_buf(v, obuf);
+impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::Star { inner: self.1 }.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -426,28 +422,28 @@ impl<const N: usize, C: Consistency> Consistency for super::Array<N, C> {
     }
 }
 
-impl<const N: usize, C: GoodParser> GoodParser for super::Array<N, C> {
+impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
     open spec fn inv(&self) -> bool {
         super::RepeatN(N, self.0).inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use super::super::bytes::spec::axiom_array_from_seq;
 
         let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_byte_len(ibuf);
+        rep.lemma_parse_sound_consumption(ibuf);
         rep.lemma_parse_exactly_n_times(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use super::super::bytes::spec::axiom_array_from_seq;
 
         let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_consistent(ibuf);
+        rep.lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -473,9 +469,9 @@ impl<const N: usize, C: Unambiguity> Unambiguity for super::Array<N, C> {
     }
 }
 
-impl<const N: usize, C: GoodSerializerDps> GoodSerializerDps for super::Array<N, C> {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_serialize_dps_buf(v@, obuf);
+impl<const N: usize, C: NonTailFmt> NonTailFmt for super::Array<N, C> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_serialize_dps_prepend(v@, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -513,22 +509,22 @@ impl<A, B> Consistency for super::Repeat<A, B> where A: Consistency, B: Consiste
     }
 }
 
-impl<A, B> GoodParser for super::Repeat<A, B> where A: GoodParser, B: GoodParser {
+impl<A, B> SoundParser for super::Repeat<A, B> where A: SoundParser, B: SoundParser {
     open spec fn inv(&self) -> bool {
         &&& self.0.inv()
         &&& self.1.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_len_bound(ibuf)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_safe(ibuf)
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_byte_len(ibuf)
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_sound_consumption(ibuf)
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_consistent(ibuf)
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_parse_sound_value(ibuf)
     }
 }
 
@@ -548,9 +544,9 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Repeat<A, B
     }
 }
 
-impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Repeat<A, B> {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_buf(v, obuf)
+impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Repeat<A, B> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_prepend(v, obuf)
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {

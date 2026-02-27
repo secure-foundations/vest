@@ -1,5 +1,4 @@
 //! Fixed- and variable-length byte sequence combinators.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

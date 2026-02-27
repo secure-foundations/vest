@@ -1,5 +1,4 @@
 //! Dependent sequential combinators with auto recovery.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

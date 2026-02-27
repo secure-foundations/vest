@@ -1,5 +1,4 @@
 //! Sequential composition discarding the prefix.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

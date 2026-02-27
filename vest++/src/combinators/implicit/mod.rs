@@ -1,5 +1,4 @@
 //! Implicit sequential dependency combinators.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

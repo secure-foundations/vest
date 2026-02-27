@@ -78,10 +78,7 @@ impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
     }
 }
 
-impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for super::Optional<
-    A,
-    B,
-> {
+impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Optional<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let opt = super::Opt(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
@@ -89,7 +86,7 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
         let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
         opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
         let n0 = serialized0.len() - serialized1.len();
-        opt.lemma_serialize_dps_buf(v.0, serialized1);
+        opt.lemma_serialize_dps_prepend(v.0, serialized1);
         opt.lemma_serialize_dps_len(v.0, serialized1);
         assert(serialized0.skip(n0) == serialized1);
     }
@@ -109,6 +106,7 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
+
         use crate::combinators::tuple::proof::lemma_take_skip;
 
         let opt = super::Opt(self.0);
@@ -117,8 +115,8 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n0, a)) = self.0.spec_parse(i1) {
                         if let Some((n1, b)) = self.1.spec_parse(i1.skip(n0)) {
-                            opt.lemma_parse_len_bound(i1);
-                            self.1.lemma_parse_len_bound(i1.skip(n0));
+                            opt.lemma_parse_safe(i1);
+                            self.1.lemma_parse_safe(i1.skip(n0));
                             assert(i2.take(n0) == i1.take(n0));
                             opt.lemma_opt_no_lookahead(i1, i2);
                             assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {

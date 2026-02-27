@@ -23,22 +23,22 @@ impl<A, B> Consistency for super::Terminated<A, B> where A: Consistency, B: Cons
     }
 }
 
-impl<A, B> GoodParser for super::Terminated<A, B> where
-    A: GoodParser,
-    B: GoodParser + AdmitsUniqueVal,
+impl<A, B> SoundParser for super::Terminated<A, B> where
+    A: SoundParser,
+    B: SoundParser + AdmitsUniqueVal,
  {
     open spec fn inv(&self) -> bool {
         &&& self.0.inv()
         &&& self.1.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        (self.0, self.1).lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        (self.0, self.1).lemma_parse_byte_len(ibuf);
-        (self.0, self.1).lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_sound_consumption(ibuf);
+        (self.0, self.1).lemma_parse_sound_value(ibuf);
         if let Some((n, (va, vb))) = (self.0, self.1).spec_parse(ibuf) {
             let vb_wit = choose|vb_wit: B::T| self.1.consistent(vb_wit);
             self.1.lemma_unique_consistent_val(vb_wit, vb);
@@ -47,8 +47,8 @@ impl<A, B> GoodParser for super::Terminated<A, B> where
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        (self.0, self.1).lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        (self.0, self.1).lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -82,13 +82,13 @@ impl<A, B> Unambiguity for super::Terminated<A, B> where A: Unambiguity, B: Unam
     }
 }
 
-impl<A, B> GoodSerializerDps for super::Terminated<A, B> where
-    A: GoodSerializerDps,
-    B: GoodSerializerDps + Consistency<Val = B::ST>,
+impl<A, B> NonTailFmt for super::Terminated<A, B> where
+    A: NonTailFmt,
+    B: NonTailFmt + Consistency<Val = B::ST>,
  {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
-        (self.0, self.1).lemma_serialize_dps_buf((v, vb), obuf);
+        (self.0, self.1).lemma_serialize_dps_prepend((v, vb), obuf);
 
     }
 

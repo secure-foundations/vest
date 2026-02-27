@@ -89,7 +89,7 @@ pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
-          GoodParser +
+          SoundParser +
           Unambiguity,
 {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
@@ -118,7 +118,7 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         let c = self;
         if let Some((n, v)) = c.spec_parse(ibuf) {
-            c.lemma_parse_consistent(ibuf);
+            c.lemma_parse_sound_value(ibuf);
             c.theorem_serialize_parse_roundtrip(v);
 
             let serialized = c.spec_serialize(v);
@@ -135,7 +135,7 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
 ///
 /// If two buffers parse to equal values, their consumed bytes are identical—i.e.,
 /// each semantic value has a unique byte-level representation.
-pub trait NonMalleable: GoodParser {
+pub trait NonMalleable: SoundParser {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
@@ -153,7 +153,7 @@ pub trait NonMalleable: GoodParser {
 /// (i.e., it does not need to "look ahead"/"peek" at them to decide how to parse the prefix).
 ///
 /// Formally: if two buffers share a common prefix that successfully parses, then they parse to the same value.
-pub trait NoLookAhead: GoodParser + Unambiguity {
+pub trait NoLookAhead: SoundParser + Unambiguity {
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
@@ -174,7 +174,7 @@ pub trait NoLookAhead: GoodParser + Unambiguity {
     {
         self.lemma_no_lookahead(i1, i1 + i2);
         if let Some((n, v)) = self.spec_parse(i1) {
-            self.lemma_parse_len_bound(i1);
+            self.lemma_parse_safe(i1);
             assert(0 <= n <= (i1 + i2).len());
             assert(i1.take(n) == (i1 + i2).take(n));
         }
@@ -185,7 +185,7 @@ pub trait NoLookAhead: GoodParser + Unambiguity {
 ///
 /// See [`EquivSerializers`] for the weaker empty-buffer variant.
 pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
-    /// Lemma: `spec_serialize_dps(v, obuf) == spec_serialize(v) + obuf`.
+    /// `spec_serialize_dps(v, obuf) == spec_serialize(v) + obuf`.
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
@@ -196,7 +196,7 @@ pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self:
 ///
 /// Sufficient for deriving [`SPRoundTrip`] from [`SPRoundTripDps`].
 pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
-    /// Lemma: `spec_serialize_dps(v, []) == spec_serialize(v)`.
+    /// `spec_serialize_dps(v, []) == spec_serialize(v)`.
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal)
         ensures
             self.spec_serialize_dps(v, seq![]) == self.spec_serialize(v),

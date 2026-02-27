@@ -98,15 +98,15 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
                     } else {
                         // buf1 uses A; buf2 uses B
                         if a_parses_buf1 && !a_parses_buf2 {
-                            self.0.lemma_parse_consistent(buf1);
-                            self.1.lemma_parse_consistent(buf2);
+                            self.0.lemma_parse_sound_value(buf1);
+                            self.1.lemma_parse_sound_value(buf2);
                             assert(self.0.consistent(v1));
                             assert(self.1.consistent(v2));
                             self.0.lemma_disjoint(&self.1, v1);
                         } else {
                             // buf1 uses B; buf2 uses A
-                            self.1.lemma_parse_consistent(buf1);
-                            self.0.lemma_parse_consistent(buf2);
+                            self.1.lemma_parse_sound_value(buf1);
+                            self.0.lemma_parse_sound_value(buf2);
                             assert(self.1.consistent(v1));
                             assert(self.0.consistent(v2));
                             self.0.lemma_disjoint(&self.1, v1);

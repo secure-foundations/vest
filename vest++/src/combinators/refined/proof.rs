@@ -98,7 +98,7 @@ impl<Inner> EquivSerializers for super::Tag<Inner, Inner::SVal> where Inner: Equ
 }
 
 impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + SPRoundTripDps + GoodSerializerDps,
+    Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
     Of: SPRoundTripDps,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {

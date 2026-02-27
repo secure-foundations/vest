@@ -4,7 +4,7 @@ use crate::combinators::disjoint::{
     lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_repeat, lemma_disjoint_tag,
 };
 use crate::combinators::{
-    Bind, Cond, Eof, Fixed, Optional, OptionalEof, Repeat, RepeatUtilEof, Tag, Tagged, Tail, U16Le,
+    Bind, Cond, Eof, Fixed, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail, U16Le,
     U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
@@ -43,7 +43,7 @@ proof fn test_chain_end_with_tailopt() {
         (f2,
         Optional(f3,
         Repeat(f4,
-        OptionalEof(f5)))));
+        OptionalEnd(f5)))));
 
     let v = (
         0x11u8,
@@ -62,7 +62,7 @@ proof fn test_chain_end_with_tailrepeat() {
     let f1 = U8;
     let f2 = Fixed::<3>;
     let f3 = Tagged(U8, 0xA2, U8);
-    let f4 = Tagged(U8, 0xB2, Bind(U16Le, VLDataOf(RepeatUtilEof(U16Le))));
+    let f4 = Tagged(U8, 0xB2, Bind(U16Le, VLDataOf(RepeatTillEnd(U16Le))));
     let f5 = U32Le;
 
     #[verusfmt::skip]
@@ -71,7 +71,7 @@ proof fn test_chain_end_with_tailrepeat() {
         (f2,
         Optional(f3,
         (f4,
-        RepeatUtilEof(f5)))));
+        RepeatTillEnd(f5)))));
 
     let v = (0x11u8, ([0x22u8, 0x33u8, 0x44u8], (None::<u8>, (seq![], seq![0x99u32, 0xffu32]))));
 
@@ -92,8 +92,8 @@ proof fn test_exactlen_recovers_no_lookahead() {
     // ExactLen recovers NoLookAhead.
     requires_no_lookahead(ExactLen(2u8, Tail));
     requires_no_lookahead(ExactLen(0u8, Eof));
-    requires_no_lookahead(ExactLen(1u8, OptionalEof(U8)));
-    requires_no_lookahead(ExactLen(2u8, RepeatUtilEof(U8)));
+    requires_no_lookahead(ExactLen(1u8, OptionalEnd(U8)));
+    requires_no_lookahead(ExactLen(2u8, RepeatTillEnd(U8)));
 }
 
 } // verus!

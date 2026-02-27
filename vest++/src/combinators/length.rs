@@ -1,7 +1,6 @@
 //! The length abstraction [`AsLen`] for types usable as format length (or count) fields.
 //!
 //! Implemented for [`u8`], [`u16`], [`u32`], and [`usize`].
-
 use vstd::prelude::*;
 
 verus! {

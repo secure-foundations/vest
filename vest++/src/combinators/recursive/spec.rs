@@ -86,19 +86,19 @@ impl<T> Consistency for ParserSpecs<T> {
     }
 }
 
-impl<T> GoodParser for ParserSpecs<T> {
+impl<T> SoundParser for ParserSpecs<T> {
     open spec fn inv(&self) -> bool {
         let (p_fn, c_fn, b_fn) = *self;
         good_parser(p_fn, c_fn, b_fn)
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -230,20 +230,20 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
     }
 }
 
-impl<const LIMIT: usize, Body: RecBody> GoodParser for super::Fix<LIMIT, Body> {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl<const LIMIT: usize, Body: RecBody> SoundParser for super::Fix<LIMIT, Body> {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.good_parser_by_induction(LIMIT as nat, ibuf, n, v);
         }
@@ -355,9 +355,9 @@ impl RecBody for NestedBracesBody {
                 &&& self.byte_len_body(b_rec)(v) == n
             } by {
             let body = nested_braces_body((p_rec, c_rec, b_rec));
-            body.lemma_parse_len_bound(input);
-            body.lemma_parse_byte_len(input);
-            body.lemma_parse_consistent(input);
+            body.lemma_parse_safe(input);
+            body.lemma_parse_sound_consumption(input);
+            body.lemma_parse_sound_value(input);
             let body_cons = nested_braces_body(c_rec);
             assert(body_cons.inner.0.0.0.consistent(()));
             assert(body_cons.inner.0.1.consistent(()));
@@ -379,9 +379,9 @@ proof fn nested_braces_good_parser() {
         ));
     };
 
-    nested_braces.lemma_parse_byte_len(input);
-    nested_braces.lemma_parse_consistent(input);
-    nested_braces.lemma_parse_len_bound(input);
+    nested_braces.lemma_parse_sound_consumption(input);
+    nested_braces.lemma_parse_sound_value(input);
+    nested_braces.lemma_parse_safe(input);
 }
 
 } // verus!

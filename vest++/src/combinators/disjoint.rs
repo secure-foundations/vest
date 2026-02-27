@@ -1,6 +1,5 @@
 //! Broadcast lemmas establishing [`disjoint_domains`](crate::core::spec::disjoint_domains)
 //! for common combinator compositions.
-
 use super::choice::Choice;
 use super::cond::Cond;
 use super::mapped::spec::Mapper;
@@ -167,7 +166,7 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
 }
 
 /// A productive parser (one that fails on empty input) is disjoint from [`Eof`].
-pub broadcast proof fn lemma_disjoint_eof<P: GoodParser>(p: P, eof: Eof)
+pub broadcast proof fn lemma_disjoint_eof<P: SoundParser>(p: P, eof: Eof)
     requires
         p.spec_parse(seq![]) is None,
     ensures

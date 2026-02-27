@@ -22,14 +22,14 @@ impl Consistency for super::Tail {
     }
 }
 
-impl GoodParser for super::Tail {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::Tail {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -96,14 +96,14 @@ impl AdmitsUniqueVal for super::Eof {
     }
 }
 
-impl GoodParser for super::Eof {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::Eof {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -140,7 +140,7 @@ impl GoodSerializer for super::Eof {
     }
 }
 
-impl<C: SpecParser> SpecParser for super::OptionalEof<C> {
+impl<C: SpecParser> SpecParser for super::OptionalEnd<C> {
     type PVal = Option<C::PVal>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -151,7 +151,7 @@ impl<C: SpecParser> SpecParser for super::OptionalEof<C> {
     }
 }
 
-impl<C> Consistency for super::OptionalEof<C> where C: Consistency {
+impl<C> Consistency for super::OptionalEnd<C> where C: Consistency {
     type Val = Option<C::Val>;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -159,25 +159,25 @@ impl<C> Consistency for super::OptionalEof<C> where C: Consistency {
     }
 }
 
-impl<C> GoodParser for super::OptionalEof<C> where C: GoodParser {
+impl<C> SoundParser for super::OptionalEnd<C> where C: SoundParser {
     open spec fn inv(&self) -> bool {
         self.0.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Optional(self.0, super::Eof).lemma_parse_len_bound(ibuf)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Optional(self.0, super::Eof).lemma_parse_safe(ibuf)
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Optional(self.0, super::Eof).lemma_parse_byte_len(ibuf)
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Optional(self.0, super::Eof).lemma_parse_sound_consumption(ibuf)
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Optional(self.0, super::Eof).lemma_parse_consistent(ibuf)
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Optional(self.0, super::Eof).lemma_parse_sound_value(ibuf)
     }
 }
 
-impl<C: SpecSerializerDps> SpecSerializerDps for super::OptionalEof<C> {
+impl<C: SpecSerializerDps> SpecSerializerDps for super::OptionalEnd<C> {
     type ST = Option<C::ST>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -185,7 +185,7 @@ impl<C: SpecSerializerDps> SpecSerializerDps for super::OptionalEof<C> {
     }
 }
 
-impl<C: SpecSerializer> SpecSerializer for super::OptionalEof<C> {
+impl<C: SpecSerializer> SpecSerializer for super::OptionalEnd<C> {
     type SVal = Option<C::SVal>;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -193,13 +193,13 @@ impl<C: SpecSerializer> SpecSerializer for super::OptionalEof<C> {
     }
 }
 
-impl<C: GoodSerializer> GoodSerializer for super::OptionalEof<C> {
+impl<C: GoodSerializer> GoodSerializer for super::OptionalEnd<C> {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         Optional(self.0, super::Eof).lemma_serialize_len((v, ()));
     }
 }
 
-impl<C: SpecByteLen> SpecByteLen for super::OptionalEof<C> {
+impl<C: SpecByteLen> SpecByteLen for super::OptionalEnd<C> {
     type T = Option<C::T>;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -207,13 +207,13 @@ impl<C: SpecByteLen> SpecByteLen for super::OptionalEof<C> {
     }
 }
 
-impl<C: Unambiguity> Unambiguity for super::OptionalEof<C> {
+impl<C: Unambiguity> Unambiguity for super::OptionalEnd<C> {
     open spec fn unambiguous(&self) -> bool {
         Optional(self.0, super::Eof).unambiguous()
     }
 }
 
-impl<C: SpecParser> SpecParser for super::RepeatUtilEof<C> {
+impl<C: SpecParser> SpecParser for super::RepeatTillEnd<C> {
     type PVal = Seq<C::PVal>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -224,7 +224,7 @@ impl<C: SpecParser> SpecParser for super::RepeatUtilEof<C> {
     }
 }
 
-impl<C> Consistency for super::RepeatUtilEof<C> where C: Consistency {
+impl<C> Consistency for super::RepeatTillEnd<C> where C: Consistency {
     type Val = Seq<C::Val>;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -232,25 +232,25 @@ impl<C> Consistency for super::RepeatUtilEof<C> where C: Consistency {
     }
 }
 
-impl<C> GoodParser for super::RepeatUtilEof<C> where C: GoodParser {
+impl<C> SoundParser for super::RepeatTillEnd<C> where C: SoundParser {
     open spec fn inv(&self) -> bool {
         self.0.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Repeat(self.0, super::Eof).lemma_parse_len_bound(ibuf)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Repeat(self.0, super::Eof).lemma_parse_safe(ibuf)
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Repeat(self.0, super::Eof).lemma_parse_byte_len(ibuf)
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Repeat(self.0, super::Eof).lemma_parse_sound_consumption(ibuf)
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Repeat(self.0, super::Eof).lemma_parse_consistent(ibuf)
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Repeat(self.0, super::Eof).lemma_parse_sound_value(ibuf)
     }
 }
 
-impl<C: SpecSerializerDps> SpecSerializerDps for super::RepeatUtilEof<C> {
+impl<C: SpecSerializerDps> SpecSerializerDps for super::RepeatTillEnd<C> {
     type ST = Seq<C::ST>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -258,7 +258,7 @@ impl<C: SpecSerializerDps> SpecSerializerDps for super::RepeatUtilEof<C> {
     }
 }
 
-impl<C: SpecSerializer> SpecSerializer for super::RepeatUtilEof<C> {
+impl<C: SpecSerializer> SpecSerializer for super::RepeatTillEnd<C> {
     type SVal = Seq<C::SVal>;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -266,13 +266,13 @@ impl<C: SpecSerializer> SpecSerializer for super::RepeatUtilEof<C> {
     }
 }
 
-impl<C: GoodSerializer> GoodSerializer for super::RepeatUtilEof<C> {
+impl<C: GoodSerializer> GoodSerializer for super::RepeatTillEnd<C> {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         Repeat(self.0, super::Eof).lemma_serialize_len((v, ()));
     }
 }
 
-impl<C: SpecByteLen> SpecByteLen for super::RepeatUtilEof<C> {
+impl<C: SpecByteLen> SpecByteLen for super::RepeatTillEnd<C> {
     type T = Seq<C::T>;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -280,7 +280,7 @@ impl<C: SpecByteLen> SpecByteLen for super::RepeatUtilEof<C> {
     }
 }
 
-impl<C: Unambiguity> Unambiguity for super::RepeatUtilEof<C> {
+impl<C: Unambiguity> Unambiguity for super::RepeatTillEnd<C> {
     open spec fn unambiguous(&self) -> bool {
         Repeat(self.0, super::Eof).unambiguous()
     }

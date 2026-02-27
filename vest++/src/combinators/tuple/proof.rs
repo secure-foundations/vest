@@ -3,13 +3,13 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for (A, B) {
+impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for (A, B) {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(v.0, serialized1);
-        self.0.lemma_serialize_dps_buf(v.0, serialized1);
+        self.0.lemma_serialize_dps_prepend(v.0, serialized1);
         self.0.lemma_serialize_dps_len(v.0, serialized1);
         if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
             assert(n0 == serialized0.len() - serialized1.len());
@@ -32,10 +32,10 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
                     let (n2a, _) = self.0.spec_parse(buf2)->0;
                     let (n1b, _) = self.1.spec_parse(buf1.skip(n1a))->0;
                     let (n2b, _) = self.1.spec_parse(buf2.skip(n2a))->0;
-                    self.0.lemma_parse_len_bound(buf1);
-                    self.0.lemma_parse_len_bound(buf2);
-                    self.1.lemma_parse_len_bound(buf1.skip(n1a));
-                    self.1.lemma_parse_len_bound(buf2.skip(n2a));
+                    self.0.lemma_parse_safe(buf1);
+                    self.0.lemma_parse_safe(buf2);
+                    self.1.lemma_parse_safe(buf1.skip(n1a));
+                    self.1.lemma_parse_safe(buf2.skip(n2a));
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     self.1.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
@@ -68,9 +68,9 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for (A, B) {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n1, v1)) = self.0.spec_parse(i1) {
                         if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
-                            self.lemma_parse_len_bound(i1);
-                            self.0.lemma_parse_len_bound(i1);
-                            self.1.lemma_parse_len_bound(i1.skip(n1));
+                            self.lemma_parse_safe(i1);
+                            self.0.lemma_parse_safe(i1);
+                            self.1.lemma_parse_safe(i1.skip(n1));
                             assert(i2.take(n1) == i1.take(n1));
                             self.0.lemma_no_lookahead(i1, i2);
                             assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {

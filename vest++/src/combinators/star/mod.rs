@@ -1,5 +1,4 @@
 //! Zero-or-more repetition combinators.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

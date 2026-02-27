@@ -1,5 +1,4 @@
 //! Tail-position combinators.
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.
@@ -32,9 +31,9 @@ pub struct Tail;
 pub struct Eof;
 
 /// Sugar for `Optional(C, Eof)`.
-pub struct OptionalEof<C>(pub C);
+pub struct OptionalEnd<C>(pub C);
 
 /// Sugar for `Repeat(C, Eof)`.
-pub struct RepeatUtilEof<C>(pub C);
+pub struct RepeatTillEnd<C>(pub C);
 
 } // verus!

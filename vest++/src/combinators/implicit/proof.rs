@@ -5,7 +5,7 @@ use vstd::prelude::*;
 verus! {
 
 impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
-    A: SPRoundTripDps + GoodSerializerDps,
+    A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
@@ -15,7 +15,7 @@ impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
         let serialized = self.0.spec_serialize_dps(a, next_buf);
         next.theorem_serialize_dps_parse_roundtrip(value, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(a, next_buf);
-        self.0.lemma_serialize_dps_buf(a, next_buf);
+        self.0.lemma_serialize_dps_prepend(a, next_buf);
         self.0.lemma_serialize_dps_len(a, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
@@ -53,9 +53,9 @@ impl<A, B> NoLookAhead for super::Implicit<A, spec_fn(A::PVal) -> B> where
                     if let Some((n1, a)) = self.0.spec_parse(i1) {
                         let next = (self.1)(a);
                         if let Some((n2, v_next)) = next.spec_parse(i1.skip(n1)) {
-                            self.lemma_parse_len_bound(i1);
-                            self.0.lemma_parse_len_bound(i1);
-                            next.lemma_parse_len_bound(i1.skip(n1));
+                            self.lemma_parse_safe(i1);
+                            self.0.lemma_parse_safe(i1);
+                            next.lemma_parse_safe(i1.skip(n1));
                             assert(i2.take(n1) == i1.take(n1));
                             self.0.lemma_no_lookahead(i1, i2);
                             assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
@@ -101,10 +101,10 @@ impl<A, B> NonMalleable for super::Implicit<A, spec_fn(A::PVal) -> B> where
                     let next2 = (self.1)(a2);
                     let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
                     let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
-                    self.0.lemma_parse_consistent(buf1);
-                    self.0.lemma_parse_consistent(buf2);
-                    next1.lemma_parse_consistent(buf1.skip(n1a));
-                    next2.lemma_parse_consistent(buf2.skip(n2a));
+                    self.0.lemma_parse_sound_value(buf1);
+                    self.0.lemma_parse_sound_value(buf2);
+                    next1.lemma_parse_sound_value(buf1.skip(n1a));
+                    next2.lemma_parse_sound_value(buf2.skip(n2a));
                     <Self as super::LosslessImplicit<A, B>>::lemma_value_uniquely_determines_key(
                         self,
                         a1,
@@ -113,10 +113,10 @@ impl<A, B> NonMalleable for super::Implicit<A, spec_fn(A::PVal) -> B> where
                     );
                     assert(a1 == a2 && next1 == next2);
                     let next = next1;
-                    self.0.lemma_parse_len_bound(buf1);
-                    self.0.lemma_parse_len_bound(buf2);
-                    next.lemma_parse_len_bound(buf1.skip(n1a));
-                    next.lemma_parse_len_bound(buf2.skip(n2a));
+                    self.0.lemma_parse_safe(buf1);
+                    self.0.lemma_parse_safe(buf2);
+                    next.lemma_parse_safe(buf1.skip(n1a));
+                    next.lemma_parse_safe(buf2.skip(n2a));
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
@@ -134,7 +134,7 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
     A,
     spec_fn(A::T) -> B,
     spec_fn(B::T) -> A::T,
-> where A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps {
+> where A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
         let a = (self.2)(value);
         let next = (self.1)(a);
@@ -144,7 +144,7 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
         assert(self.0.consistent(a) && next.consistent(value));
         next.theorem_serialize_dps_parse_roundtrip(value, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(a, next_buf);
-        self.0.lemma_serialize_dps_buf(a, next_buf);
+        self.0.lemma_serialize_dps_prepend(a, next_buf);
         self.0.lemma_serialize_dps_len(a, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
@@ -169,10 +169,10 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
 //                     let next2 = (self.1)(a2);
 //                     let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
 //                     let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
-//                     self.0.lemma_parse_consistent(buf1);
-//                     self.0.lemma_parse_consistent(buf2);
-//                     next1.lemma_parse_consistent(buf1.skip(n1a));
-//                     next2.lemma_parse_consistent(buf2.skip(n2a));
+//                     self.0.lemma_parse_sound_value(buf1);
+//                     self.0.lemma_parse_sound_value(buf2);
+//                     next1.lemma_parse_sound_value(buf1.skip(n1a));
+//                     next2.lemma_parse_sound_value(buf2.skip(n2a));
 //                     <Self as super::LosslessImplicitAuto<A, B>>::lemma_value_determines_key(
 //                         self,
 //                         a1,
@@ -181,10 +181,10 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
 //                     );
 //                     assert(a1 == a2 && next1 == next2);
 //                     let next = next1;
-//                     self.0.lemma_parse_len_bound(buf1);
-//                     self.0.lemma_parse_len_bound(buf2);
-//                     next.lemma_parse_len_bound(buf1.skip(n1a));
-//                     next.lemma_parse_len_bound(buf2.skip(n2a));
+//                     self.0.lemma_parse_safe(buf1);
+//                     self.0.lemma_parse_safe(buf2);
+//                     next.lemma_parse_safe(buf1.skip(n1a));
+//                     next.lemma_parse_safe(buf2.skip(n2a));
 //                     self.0.lemma_parse_non_malleable(buf1, buf2);
 //                     next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
 //                     assert(n1 == n1a + n1b && n2 == n2a + n2b);

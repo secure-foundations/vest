@@ -219,18 +219,16 @@ impl SpecSerializer for super::U8 {
     }
 }
 
-impl GoodParser for super::U8 {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::U8 {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
-
-
 
 impl Unambiguity for super::U8 {
     open spec fn unambiguous(&self) -> bool {
@@ -238,8 +236,8 @@ impl Unambiguity for super::U8 {
     }
 }
 
-impl GoodSerializerDps for super::U8 {
-    proof fn lemma_serialize_dps_buf(&self, v: u8, obuf: Seq<u8>) {
+impl NonTailFmt for super::U8 {
+    proof fn lemma_serialize_dps_prepend(&self, v: u8, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == seq![v] + obuf);
     }
 
@@ -294,21 +292,19 @@ impl SpecSerializer for super::U16Le {
     }
 }
 
-impl GoodParser for super::U16Le {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_len_bound(ibuf);
+impl SoundParser for super::U16Le {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_parse_sound_value(ibuf);
     }
 }
-
-
 
 impl Unambiguity for super::U16Le {
     open spec fn unambiguous(&self) -> bool {
@@ -316,9 +312,9 @@ impl Unambiguity for super::U16Le {
     }
 }
 
-impl GoodSerializerDps for super::U16Le {
-    proof fn lemma_serialize_dps_buf(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_dps_buf(v, obuf);
+impl NonTailFmt for super::U16Le {
+    proof fn lemma_serialize_dps_prepend(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16LeMapper }.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: u16, obuf: Seq<u8>) {
@@ -372,21 +368,19 @@ impl SpecSerializer for super::U16Be {
     }
 }
 
-impl GoodParser for super::U16Be {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_len_bound(ibuf);
+impl SoundParser for super::U16Be {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_parse_sound_value(ibuf);
     }
 }
-
-
 
 impl Unambiguity for super::U16Be {
     open spec fn unambiguous(&self) -> bool {
@@ -394,9 +388,9 @@ impl Unambiguity for super::U16Be {
     }
 }
 
-impl GoodSerializerDps for super::U16Be {
-    proof fn lemma_serialize_dps_buf(&self, v: u16, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_dps_buf(v, obuf);
+impl NonTailFmt for super::U16Be {
+    proof fn lemma_serialize_dps_prepend(&self, v: u16, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<2>, mapper: U16BeMapper }.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: u16, obuf: Seq<u8>) {
@@ -450,21 +444,19 @@ impl SpecSerializer for super::U32Le {
     }
 }
 
-impl GoodParser for super::U32Le {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_len_bound(ibuf);
+impl SoundParser for super::U32Le {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_parse_sound_value(ibuf);
     }
 }
-
-
 
 impl Unambiguity for super::U32Le {
     open spec fn unambiguous(&self) -> bool {
@@ -472,9 +464,9 @@ impl Unambiguity for super::U32Le {
     }
 }
 
-impl GoodSerializerDps for super::U32Le {
-    proof fn lemma_serialize_dps_buf(&self, v: u32, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_dps_buf(v, obuf);
+impl NonTailFmt for super::U32Le {
+    proof fn lemma_serialize_dps_prepend(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32LeMapper }.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {
@@ -528,21 +520,19 @@ impl SpecSerializer for super::U32Be {
     }
 }
 
-impl GoodParser for super::U32Be {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_len_bound(ibuf);
+impl SoundParser for super::U32Be {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_byte_len(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_sound_consumption(ibuf);
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_parse_sound_value(ibuf);
     }
 }
-
-
 
 impl Unambiguity for super::U32Be {
     open spec fn unambiguous(&self) -> bool {
@@ -550,9 +540,9 @@ impl Unambiguity for super::U32Be {
     }
 }
 
-impl GoodSerializerDps for super::U32Be {
-    proof fn lemma_serialize_dps_buf(&self, v: u32, obuf: Seq<u8>) {
-        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_serialize_dps_buf(v, obuf);
+impl NonTailFmt for super::U32Be {
+    proof fn lemma_serialize_dps_prepend(&self, v: u32, obuf: Seq<u8>) {
+        Mapped { inner: Fixed::<4>, mapper: U32BeMapper }.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {

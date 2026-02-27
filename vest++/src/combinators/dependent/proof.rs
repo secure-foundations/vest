@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 impl<Head, Tail> SPRoundTripDps for super::Bind<Head, Tail> where
-    Head: SPRoundTripDps + GoodSerializerDps,
+    Head: SPRoundTripDps + NonTailFmt,
     Tail: super::DepCombinator<Key = Head::T>,
     Tail::Body: SPRoundTripDps<T = Tail::Val>,
  {
@@ -16,7 +16,7 @@ impl<Head, Tail> SPRoundTripDps for super::Bind<Head, Tail> where
         assert(self.0.consistent(key) && next.consistent(value));
         next.theorem_serialize_dps_parse_roundtrip(value, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(key, next_buf);
-        self.0.lemma_serialize_dps_buf(key, next_buf);
+        self.0.lemma_serialize_dps_prepend(key, next_buf);
         self.0.lemma_serialize_dps_len(key, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
@@ -40,18 +40,18 @@ impl<Head, Tail> NonMalleable for super::Bind<Head, Tail> where
                     let body2 = self.1.apply(k2);
                     let (n1b, v) = body1.spec_parse(buf1.skip(n1a))->0;
                     let (n2b, v) = body2.spec_parse(buf2.skip(n2a))->0;
-                    self.0.lemma_parse_consistent(buf1);
-                    self.0.lemma_parse_consistent(buf2);
-                    body1.lemma_parse_consistent(buf1.skip(n1a));
-                    body2.lemma_parse_consistent(buf2.skip(n2a));
+                    self.0.lemma_parse_sound_value(buf1);
+                    self.0.lemma_parse_sound_value(buf2);
+                    body1.lemma_parse_sound_value(buf1.skip(n1a));
+                    body2.lemma_parse_sound_value(buf2.skip(n2a));
                     self.1.lemma_recover_consistent(k1, v);
                     self.1.lemma_recover_consistent(k2, v);
                     assert(k1 == k2 && body1 == body2);
                     let body = body1;
-                    self.0.lemma_parse_len_bound(buf1);
-                    self.0.lemma_parse_len_bound(buf2);
-                    body.lemma_parse_len_bound(buf1.skip(n1a));
-                    body.lemma_parse_len_bound(buf2.skip(n2a));
+                    self.0.lemma_parse_safe(buf1);
+                    self.0.lemma_parse_safe(buf2);
+                    body.lemma_parse_safe(buf1.skip(n1a));
+                    body.lemma_parse_safe(buf2.skip(n2a));
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     body.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
@@ -81,9 +81,9 @@ impl<Head, Tail> NoLookAhead for super::Bind<Head, Tail> where
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
                         let body = self.1.apply(key);
                         if let Some((n2, _v2)) = body.spec_parse(i1.skip(n1)) {
-                            self.lemma_parse_len_bound(i1);
-                            self.0.lemma_parse_len_bound(i1);
-                            body.lemma_parse_len_bound(i1.skip(n1));
+                            self.lemma_parse_safe(i1);
+                            self.0.lemma_parse_safe(i1);
+                            body.lemma_parse_safe(i1.skip(n1));
                             assert(i2.take(n1) == i1.take(n1));
                             self.0.lemma_no_lookahead(i1, i2);
                             assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {

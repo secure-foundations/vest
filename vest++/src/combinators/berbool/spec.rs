@@ -28,14 +28,14 @@ impl Consistency for super::BerBool {
     }
 }
 
-impl GoodParser for super::BerBool {
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+impl SoundParser for super::BerBool {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -72,14 +72,12 @@ impl SpecSerializer for super::BerBool {
     }
 }
 
-
-
 impl Unambiguity for super::BerBool {
 
 }
 
-impl GoodSerializerDps for super::BerBool {
-    proof fn lemma_serialize_dps_buf(&self, v: bool, obuf: Seq<u8>) {
+impl NonTailFmt for super::BerBool {
+    proof fn lemma_serialize_dps_prepend(&self, v: bool, obuf: Seq<u8>) {
         let serialized = self.spec_serialize_dps(v, obuf);
         assert(serialized.len() == 1 + obuf.len());
     }

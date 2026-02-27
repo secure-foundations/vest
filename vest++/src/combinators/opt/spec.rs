@@ -25,29 +25,29 @@ impl<A> Consistency for super::Opt<A> where A: Consistency {
     }
 }
 
-impl<A> GoodParser for super::Opt<A> where A: GoodParser {
+impl<A> SoundParser for super::Opt<A> where A: SoundParser {
     open spec fn inv(&self) -> bool {
         self.0.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         assert(self.inv());
-        self.0.lemma_parse_len_bound(ibuf);
+        self.0.lemma_parse_safe(ibuf);
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         match self.0.spec_parse(ibuf) {
             Some((n, vv)) => {
                 assert(self.inv());
-                self.0.lemma_parse_byte_len(ibuf);
+                self.0.lemma_parse_sound_consumption(ibuf);
             },
             None => {},
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         assert(self.inv());
-        self.0.lemma_parse_consistent(ibuf);
+        self.0.lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -73,21 +73,20 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
     }
 }
 
-
 impl<A: Unambiguity> Unambiguity for super::Opt<A> {
     open spec fn unambiguous(&self) -> bool {
         self.0.unambiguous()
     }
 }
 
-impl<A> GoodSerializerDps for super::Opt<A> where A: GoodSerializerDps {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
+impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
             },
             Some(vv) => {
-                self.0.lemma_serialize_dps_buf(vv, obuf);
+                self.0.lemma_serialize_dps_prepend(vv, obuf);
             },
         }
     }
@@ -140,22 +139,22 @@ impl<A, B> Consistency for super::Optional<A, B> where A: Consistency, B: Consis
     }
 }
 
-impl<A, B> GoodParser for super::Optional<A, B> where A: GoodParser, B: GoodParser {
+impl<A, B> SoundParser for super::Optional<A, B> where A: SoundParser, B: SoundParser {
     open spec fn inv(&self) -> bool {
         &&& self.0.inv()
         &&& self.1.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_len_bound(ibuf)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_safe(ibuf)
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_byte_len(ibuf)
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_sound_consumption(ibuf)
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_consistent(ibuf)
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_parse_sound_value(ibuf)
     }
 }
 
@@ -167,9 +166,9 @@ impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Op
     }
 }
 
-impl<A: GoodSerializerDps, B: GoodSerializerDps> GoodSerializerDps for super::Optional<A, B> {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_serialize_dps_buf(v, obuf)
+impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Optional<A, B> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        (super::Opt(self.0), self.1).lemma_serialize_dps_prepend(v, obuf)
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {

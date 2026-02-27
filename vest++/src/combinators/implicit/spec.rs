@@ -48,9 +48,9 @@ impl<A, B> super::LosslessImplicit<A, B> for super::Implicit<A, spec_fn(A::Val) 
     }
 }
 
-impl<A, B> GoodParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
-    A: GoodParser,
-    B: GoodParser,
+impl<A, B> SoundParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
+    A: SoundParser,
+    B: SoundParser,
     Self: super::LosslessImplicit<A, B>,
  {
     open spec fn inv(&self) -> bool {
@@ -58,21 +58,21 @@ impl<A, B> GoodParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
         &&& forall|a: A::PVal| #[trigger] (self.1)(a).inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_len_bound(ibuf);
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_safe(ibuf);
         if let Some((n1, a)) = self.0.spec_parse(ibuf) {
             let next = (self.1)(a);
-            next.lemma_parse_len_bound(ibuf.skip(n1));
+            next.lemma_parse_safe(ibuf.skip(n1));
         }
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_byte_len(ibuf);
-        self.0.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_consumption(ibuf);
+        self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, a_parsed)) = self.0.spec_parse(ibuf) {
             let parsed_next = (self.1)(a_parsed);
-            parsed_next.lemma_parse_byte_len(ibuf.skip(n1));
-            parsed_next.lemma_parse_consistent(ibuf.skip(n1));
+            parsed_next.lemma_parse_sound_consumption(ibuf.skip(n1));
+            parsed_next.lemma_parse_sound_value(ibuf.skip(n1));
             if let Some((n2, v)) = parsed_next.spec_parse(ibuf.skip(n1)) {
                 let a = choose|a: A::T| self.0.consistent(a) && (self.1)(a).consistent(v);
                 <Self as super::LosslessImplicit<A, B>>::lemma_value_uniquely_determines_key(
@@ -88,11 +88,11 @@ impl<A, B> GoodParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_consistent(ibuf);
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, a)) = self.0.spec_parse(ibuf) {
             let next = (self.1)(a);
-            next.lemma_parse_consistent(ibuf.skip(n1));
+            next.lemma_parse_sound_value(ibuf.skip(n1));
             if let Some((_n2, v)) = next.spec_parse(ibuf.skip(n1)) {
                 assert(self.consistent(v));
             }
@@ -136,17 +136,17 @@ impl<A, B> Unambiguity for super::Implicit<A, spec_fn(A::PVal) -> B> where
     }
 }
 
-impl<A, B> GoodSerializerDps for super::Implicit<A, spec_fn(A::ST) -> B> where
-    A: GoodSerializerDps + Consistency<Val = A::ST>,
-    B: GoodSerializerDps + Consistency<Val = B::ST>,
+impl<A, B> NonTailFmt for super::Implicit<A, spec_fn(A::ST) -> B> where
+    A: NonTailFmt + Consistency<Val = A::ST>,
+    B: NonTailFmt + Consistency<Val = B::ST>,
  {
-    proof fn lemma_serialize_dps_buf(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let a = choose|a: A::ST| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
         let next_buf = next.spec_serialize_dps(value, obuf);
 
-        next.lemma_serialize_dps_buf(value, obuf);
-        self.0.lemma_serialize_dps_buf(a, next_buf);
+        next.lemma_serialize_dps_prepend(value, obuf);
+        self.0.lemma_serialize_dps_prepend(a, next_buf);
 
         let witness_next = choose|w: Seq<u8>| next.spec_serialize_dps(value, obuf) == w + obuf;
         let witness_prefix = choose|w: Seq<u8>|
@@ -280,21 +280,18 @@ impl<A, B, Infer> Unambiguity for super::ImplicitAuto<A, spec_fn(A::PVal) -> B, 
     }
 }
 
-impl<A, B> GoodSerializerDps for super::ImplicitAuto<
+impl<A, B> NonTailFmt for super::ImplicitAuto<
     A,
     spec_fn(A::ST) -> B,
     spec_fn(B::ST) -> A::ST,
-> where
-    A: GoodSerializerDps + Consistency<Val = A::ST>,
-    B: GoodSerializerDps + Consistency<Val = B::ST>,
- {
-    proof fn lemma_serialize_dps_buf(&self, value: Self::ST, obuf: Seq<u8>) {
+> where A: NonTailFmt + Consistency<Val = A::ST>, B: NonTailFmt + Consistency<Val = B::ST> {
+    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let a = (self.2)(value);
         let next = (self.1)(a);
         let next_buf = next.spec_serialize_dps(value, obuf);
 
-        next.lemma_serialize_dps_buf(value, obuf);
-        self.0.lemma_serialize_dps_buf(a, next_buf);
+        next.lemma_serialize_dps_prepend(value, obuf);
+        self.0.lemma_serialize_dps_prepend(a, next_buf);
 
         let witness_next = choose|w: Seq<u8>| next.spec_serialize_dps(value, obuf) == w + obuf;
         let witness_prefix = choose|w: Seq<u8>|

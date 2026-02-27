@@ -23,26 +23,26 @@ impl<Inner: Consistency> Consistency for super::Cond<Inner> {
     }
 }
 
-impl<Inner: GoodParser> GoodParser for super::Cond<Inner> {
+impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
     open spec fn inv(&self) -> bool {
         self.1.inv()
     }
 
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         if self.0 {
-            self.1.lemma_parse_len_bound(ibuf);
+            self.1.lemma_parse_safe(ibuf);
         }
     }
 
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         if self.0 {
-            self.1.lemma_parse_byte_len(ibuf);
+            self.1.lemma_parse_sound_consumption(ibuf);
         }
     }
 
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if self.0 {
-            self.1.lemma_parse_consistent(ibuf);
+            self.1.lemma_parse_sound_value(ibuf);
             if let Some((_, v)) = self.1.spec_parse(ibuf) {
                 assert(self.consistent(v));
             }
@@ -66,16 +66,15 @@ impl<Inner: SpecSerializer> SpecSerializer for super::Cond<Inner> {
     }
 }
 
-
 impl<Inner: Unambiguity> Unambiguity for super::Cond<Inner> {
     open spec fn unambiguous(&self) -> bool {
         self.1.unambiguous()
     }
 }
 
-impl<Inner: GoodSerializerDps> GoodSerializerDps for super::Cond<Inner> {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        self.1.lemma_serialize_dps_buf(v, obuf);
+impl<Inner: NonTailFmt> NonTailFmt for super::Cond<Inner> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.1.lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {

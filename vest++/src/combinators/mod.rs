@@ -57,8 +57,8 @@
 //! |---|---|
 //! | [`Tail`] | Like [`Varied`], but at the tail position (underspecify the format and allow trailing data) |
 //! | [`Eof`] | Signals end-of-file (no trailing data) |
-//! | [`OptionalEof<C>`] | Same as `Optional<C, Eof>` (for convenience) |
-//! | [`RepeatUtilEof<C>`] | Same as `Repeat<C, Eof>` (for convenience) |
+//! | [`OptionalEnd<C>`] | Same as `Optional<C, Eof>` (for convenience) |
+//! | [`RepeatTillEnd<C>`] | Same as `Repeat<C, Eof>` (for convenience) |
 //!
 //! # Marker combinators
 //!
@@ -72,7 +72,6 @@
 //! | Combinator | Description |
 //! |---|---|
 //! | [`Fix<LIMIT, Body>`] | (Compile-time) bounded fixpoint for recursive formats |
-
 pub mod berbool;
 pub mod bytes;
 pub mod choice;
@@ -109,6 +108,6 @@ pub use preceded::Preceded;
 pub use recursive::{Fix, RecBody};
 pub use refined::{Refined, Tag, Tagged};
 pub use star::{Array, Repeat, RepeatN, Star};
-pub use tail::{Eof, OptionalEof, RepeatUtilEof, Tail};
+pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

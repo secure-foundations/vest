@@ -4,7 +4,7 @@ use vstd::{calc, prelude::*};
 
 verus! {
 
-impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
+impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PVal>, obuf: Seq<u8>)
         requires
             self.inner.unambiguous(),
@@ -32,7 +32,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
             // base
             assert(self.inner.consistent(v));
             self.inner.theorem_serialize_dps_parse_roundtrip(v, rest_buf);
-            self.inner.lemma_serialize_dps_buf(v, rest_buf);
+            self.inner.lemma_serialize_dps_prepend(v, rest_buf);
             self.inner.lemma_serialize_dps_len(v, rest_buf);
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
@@ -52,7 +52,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + GoodSerializerDps {
                 assert(self.parse_rec(rest_buf) == (0int, Seq::<A::PVal>::empty()));
                 // from I.H.:
                 assert(self.parse_rec(rest_buf) == (rest_buf.len() - obuf.len(), rest));
-                self.lemma_serialize_dps_buf(rest, obuf);
+                self.lemma_serialize_dps_prepend(rest, obuf);
 
                 // therefore:
                 assert(rest_buf == obuf);
@@ -109,8 +109,8 @@ impl<A: NonMalleable> super::Star<A> {
                         assert(buf1.skip(m1).take(n1_rest) == buf2.skip(m2).take(n2_rest));
 
                         // need to show buf1.take(n1) == buf2.take(n2)
-                        self.lemma_parse_len_bound(buf1.skip(m1));
-                        self.lemma_parse_len_bound(buf2.skip(m2));
+                        self.lemma_parse_safe(buf1.skip(m1));
+                        self.lemma_parse_safe(buf2.skip(m2));
                         assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(n1_rest));
                         assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(n2_rest));
                     }
@@ -149,7 +149,7 @@ impl<A: NoLookAhead> super::Star<A> {
                 let i1_rest = i1.skip(m);
                 let i2_rest = i2.skip(m);
                 let (n_rest, vs_rest) = self.parse_rec(i1_rest);
-                self.lemma_parse_len_bound(i1_rest);
+                self.lemma_parse_safe(i1_rest);
                 if 0 <= n <= i2.len() {
                     if i2.take(n) == i1.take(n) {
                         assert(i2.take(m) == i1.take(m));
@@ -277,7 +277,7 @@ impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
     }
 }
 
-impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + GoodSerializerDps, N: AsLen {
+impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<C::PVal>, count: nat, obuf: Seq<u8>)
         requires
             self.1.unambiguous(),
@@ -299,7 +299,7 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + GoodSerializerDps, N: 
             self.lemma_serialize_parse_roundtrip_rec(rest, (count - 1) as nat, obuf);
 
             self.1.theorem_serialize_dps_parse_roundtrip(v0, rest_buf);
-            self.1.lemma_serialize_dps_buf(v0, rest_buf);
+            self.1.lemma_serialize_dps_prepend(v0, rest_buf);
             self.1.lemma_serialize_dps_len(v0, rest_buf);
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
@@ -308,10 +308,7 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + GoodSerializerDps, N: 
     }
 }
 
-impl<C, N> SPRoundTripDps for super::RepeatN<C, N> where
-    C: SPRoundTripDps + GoodSerializerDps,
-    N: AsLen,
- {
+impl<C, N> SPRoundTripDps for super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         self.lemma_serialize_parse_roundtrip_rec(v, self.0.as_usize() as nat, obuf);
         self.lemma_serialize_dps_len(v, obuf);
@@ -351,8 +348,8 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
                             assert(rest2 == v2.skip(1));
                         }
 
-                        self.1.lemma_parse_len_bound(buf1);
-                        self.1.lemma_parse_len_bound(buf2);
+                        self.1.lemma_parse_safe(buf1);
+                        self.1.lemma_parse_safe(buf2);
                         self.lemma_parse_n_len_bound((count - 1) as nat, buf1.skip(m1));
                         self.lemma_parse_n_len_bound((count - 1) as nat, buf2.skip(m2));
                         self.1.lemma_parse_non_malleable(buf1, buf2);
@@ -400,7 +397,7 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
                         let (r, rest) = self.parse_n_rec((count - 1) as nat, i1.skip(m))->0;
                         assert(v == seq![a] + rest);
                         assert(n == m + r);
-                        self.1.lemma_parse_len_bound(i1);
+                        self.1.lemma_parse_safe(i1);
                         self.lemma_parse_n_len_bound((count - 1) as nat, i1.skip(m));
                         assert(0 <= m <= n);
                         assert(i2.take(m) == i1.take(m));
@@ -435,9 +432,7 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C
     }
 }
 
-impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where
-    C: SPRoundTripDps + GoodSerializerDps,
- {
+impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where C: SPRoundTripDps + NonTailFmt {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         use crate::combinators::bytes::spec::axiom_array_from_seq;
 
@@ -486,10 +481,7 @@ impl<const N: usize, C: EquivSerializersGeneral> EquivSerializers for super::Arr
     }
 }
 
-impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps for super::Repeat<
-    A,
-    B,
-> {
+impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Repeat<A, B> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let star = super::Star { inner: self.0 };
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
@@ -497,7 +489,7 @@ impl<A: SPRoundTripDps + GoodSerializerDps, B: SPRoundTripDps> SPRoundTripDps fo
         let serialized0 = star.spec_serialize_dps(v.0, serialized1);
         star.lemma_serialize_parse_roundtrip_rec(v.0, serialized1);
         let n0 = serialized0.len() - serialized1.len();
-        star.lemma_serialize_dps_buf(v.0, serialized1);
+        star.lemma_serialize_dps_prepend(v.0, serialized1);
         star.lemma_serialize_dps_len(v.0, serialized1);
         assert(serialized0.skip(n0) == serialized1);
     }
@@ -520,14 +512,14 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
         broadcast use vstd::seq_lib::group_seq_properties;
 
         let star = super::Star { inner: self.0 };
-        self.lemma_parse_len_bound(i1);
+        self.lemma_parse_safe(i1);
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n0, v0)) = star.spec_parse(i1) {
                         if let Some((n1, v1)) = self.1.spec_parse(i1.skip(n0)) {
-                            star.lemma_parse_len_bound(i1);
-                            self.1.lemma_parse_len_bound(i1.skip(n0));
+                            star.lemma_parse_safe(i1);
+                            self.1.lemma_parse_safe(i1.skip(n0));
                             assert(i2.take(n0) == i1.take(n0));
                             assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
                                 lemma_take_skip(i1, n0, n1);

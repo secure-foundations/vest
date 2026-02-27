@@ -1,5 +1,4 @@
 //! Marker combinators: unit (`Empty`) and uninhabitable (`Void`).
-
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

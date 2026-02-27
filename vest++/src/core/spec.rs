@@ -1,5 +1,4 @@
 //! Core specification traits for Vest++ combinators.
-
 use vstd::prelude::*;
 
 verus! {
@@ -41,36 +40,39 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
     p.spec_parse(ibuf) is None
 }
 
-/// A well-behaved parser that satisfies key properties.
-pub trait GoodParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
+/// Parser soundness.
+///
+/// This trait specifies basic properties that a parser must satisfy to be considered sound w.r.t.
+/// its format spec.
+pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
     /// Optional invariant (used by spec-function combinators; struct-based combinators
     /// typically leave this as `true`).
     open spec fn inv(&self) -> bool {
         true
     }
 
-    /// Lemma: For any successful parse `Some((n, _))`, `0 <= n <= ibuf.len()`.
-    proof fn lemma_parse_len_bound(&self, ibuf: Seq<u8>)
+    /// For any successful parse `Some((n, _))`, `0 <= n <= ibuf.len()`.
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>)
         requires
             self.inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 
-    /// Lemma: For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
-    proof fn lemma_parse_byte_len(&self, ibuf: Seq<u8>)
+    /// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)
         requires
             self.inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
 
-    /// Lemma: For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
-    proof fn lemma_parse_consistent(&self, ibuf: Seq<u8>)
+    /// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>)
         requires
             self.inv(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> self.consistent(v),
+            self.spec_parse(ibuf) matches Some((_, v)) ==> self.consistent(v),
     ;
 }
 
@@ -153,7 +155,6 @@ pub trait SpecSerializer {
     /// The type of values to be serialized.
     type SVal;
 
-
     /// Serializes `v` into a fresh byte sequence.
     spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8>;
 }
@@ -166,15 +167,25 @@ pub trait Unambiguity: SpecParser {
     }
 }
 
-/// A well-behaved DPS serializer that satisfies key properties.
-pub trait GoodSerializerDps: SpecByteLen + SpecSerializerDps<ST = Self::T> {
-    /// Lemma: serializer *prepends* bytes to the output buffer.
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>)
+/// A non-tail format combinator would allow for things to be serialized after itself.
+///
+/// ## Notable formats that are *not* non-tail (i.e., tail formats)
+///
+/// - [`crate::combinators::Tail`]
+/// - [`crate::combinators::Eof`]
+/// - [`crate::combinators::OptionalEnd`]
+/// - [`crate::combinators::RepeatTillEnd`]
+pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
+    /// The serializer prepends to `obuf` (so it will leave `obuf` intact, no truncation, corruption, etc.).
+    ///
+    /// Another way to think about this is that the format allows for trailing bytes after itself, whereas a tail format
+    /// would only allow for leading bytes before itself.
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>)
         ensures
             exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 
-    /// Lemma: number of bytes prepended equals `byte_len(v)`.
+    /// number of bytes prepended equals `byte_len(v)`.
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>)
         ensures
             self.spec_serialize_dps(v, obuf).len() - obuf.len() == self.byte_len(v),
@@ -183,7 +194,7 @@ pub trait GoodSerializerDps: SpecByteLen + SpecSerializerDps<ST = Self::T> {
 
 /// A well-behaved serializer.
 pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
-    /// Lemma: serialized byte sequence has the expected length.
+    /// serialized byte sequence has the expected length.
     proof fn lemma_serialize_len(&self, v: Self::SVal)
         ensures
             self.spec_serialize(v).len() == self.byte_len(v),

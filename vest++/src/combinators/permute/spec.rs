@@ -69,12 +69,9 @@ impl<P1, P2> Unambiguity for super::Permute2<P1, P2> where P1: Unambiguity, P2: 
     }
 }
 
-impl<P1, P2> GoodSerializerDps for super::Permute2<P1, P2> where
-    P1: GoodSerializerDps,
-    P2: GoodSerializerDps,
- {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, self.1).lemma_serialize_dps_buf(v, obuf);
+impl<P1, P2> NonTailFmt for super::Permute2<P1, P2> where P1: NonTailFmt, P2: NonTailFmt {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        (self.0, self.1).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -191,13 +188,13 @@ impl<A, B, C> Unambiguity for super::Permute3<A, B, C> where
     }
 }
 
-impl<A, B, C> GoodSerializerDps for super::Permute3<A, B, C> where
-    A: GoodSerializerDps,
-    B: GoodSerializerDps,
-    C: GoodSerializerDps,
+impl<A, B, C> NonTailFmt for super::Permute3<A, B, C> where
+    A: NonTailFmt,
+    B: NonTailFmt,
+    C: NonTailFmt,
  {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_buf(v, obuf);
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        (self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -336,14 +333,14 @@ impl<A, B, C, D> Unambiguity for super::Permute4<A, B, C, D> where
     }
 }
 
-impl<A, B, C, D> GoodSerializerDps for super::Permute4<A, B, C, D> where
-    A: GoodSerializerDps,
-    B: GoodSerializerDps,
-    C: GoodSerializerDps,
-    D: GoodSerializerDps,
+impl<A, B, C, D> NonTailFmt for super::Permute4<A, B, C, D> where
+    A: NonTailFmt,
+    B: NonTailFmt,
+    C: NonTailFmt,
+    D: NonTailFmt,
  {
-    proof fn lemma_serialize_dps_buf(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_buf(v, obuf);
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
