@@ -60,5 +60,5 @@ pub mod combinators;
 pub mod core;
 
 /// Test suite exercising the combinator library with concrete examples.
-#[cfg(test)]
+// #[cfg(test)]
 pub mod tests;

@@ -113,13 +113,6 @@ impl SpecSerializerDps for NestedBracesCombinator {
     }
 }
 
-impl Serializability for NestedBracesCombinator {
-    open spec fn serializable(&self, v: Self::ST, obuf: Seq<u8>) -> bool {
-        // TODO
-        true
-    }
-}
-
 proof fn lemma_parse_length_nested_braces(ibuf: Seq<u8>)
     ensures
         p_nested_braces(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
