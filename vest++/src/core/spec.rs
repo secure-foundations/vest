@@ -176,17 +176,26 @@ pub trait Unambiguity: SpecParser {
 /// - [`crate::combinators::OptionalEnd`]
 /// - [`crate::combinators::RepeatTillEnd`]
 pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
+    /// Optional invariant for DPS serializer proofs.
+    open spec fn serialize_dps_inv(&self) -> bool {
+        true
+    }
+
     /// The serializer prepends to `obuf` (so it will leave `obuf` intact, no truncation, corruption, etc.).
     ///
     /// Another way to think about this is that the format allows for trailing bytes after itself, whereas a tail format
     /// would only allow for leading bytes before itself.
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>)
+        requires
+            self.serialize_dps_inv(),
         ensures
             exists|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf,
     ;
 
     /// number of bytes prepended equals `byte_len(v)`.
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>)
+        requires
+            self.serialize_dps_inv(),
         ensures
             self.spec_serialize_dps(v, obuf).len() - obuf.len() == self.byte_len(v),
     ;
@@ -194,8 +203,15 @@ pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
 
 /// A well-behaved serializer.
 pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
+    /// Optional invariant for serializer-length proofs.
+    open spec fn serialize_inv(&self) -> bool {
+        true
+    }
+
     /// serialized byte sequence has the expected length.
     proof fn lemma_serialize_len(&self, v: Self::SVal)
+        requires
+            self.serialize_inv(),
         ensures
             self.spec_serialize(v).len() == self.byte_len(v),
     ;
@@ -218,6 +234,5 @@ impl<T> SpecCombinator for T where
 
 } // verus!
 pub use crate::core::fns::{
-    ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerDPSSpecs, SerializerFnSpec,
-    SerializerSpecs, UnambiguityFnSpec,
+    ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerFnSpec, UnambiguityFnSpec,
 };

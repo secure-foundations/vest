@@ -7,6 +7,12 @@ impl<A, B> SPRoundTripDps for super::Preceded<A, B> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let va = choose|va: A::ST| #![auto] self.0.consistent(va);
         (self.0, self.1).theorem_serialize_dps_parse_roundtrip((va, v), obuf);

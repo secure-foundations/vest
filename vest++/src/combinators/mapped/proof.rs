@@ -8,6 +8,10 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
     M: IsoMapper<In = Inner::T>,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.inner.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);

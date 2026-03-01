@@ -76,6 +76,11 @@ impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
 }
 
 impl<A, B> NonTailFmt for (A, B) where A: NonTailFmt, B: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
@@ -95,6 +100,11 @@ impl<A, B> NonTailFmt for (A, B) where A: NonTailFmt, B: NonTailFmt {
 }
 
 impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.1.lemma_serialize_len(v.1);
         self.0.lemma_serialize_len(v.0);

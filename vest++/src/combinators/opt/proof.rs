@@ -6,6 +6,7 @@ verus! {
 impl<A: SPRoundTripDps> super::Opt<A> {
     proof fn lemma_serialize_parse_roundtrip(&self, v: Option<A::T>, obuf: Seq<u8>)
         requires
+            self.0.sp_roundtrip_dps_inv(),
             self.0.unambiguous(),
             parser_fails_on(self.0, obuf),
         ensures
@@ -83,6 +84,12 @@ impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
 }
 
 impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Optional<A, B> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let opt = super::Opt(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);

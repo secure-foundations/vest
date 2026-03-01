@@ -10,6 +10,7 @@ verus! {
 // Helper functions that impose certain trait bounds
 proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq<u8>)
     requires
+        serializer.sp_roundtrip_inv(),
         serializer.unambiguous(),
         serializer.consistent(v),
 {

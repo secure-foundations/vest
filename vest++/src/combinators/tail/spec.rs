@@ -194,6 +194,10 @@ impl<C: SpecSerializer> SpecSerializer for super::OptionalEnd<C> {
 }
 
 impl<C: GoodSerializer> GoodSerializer for super::OptionalEnd<C> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.0.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         Optional(self.0, super::Eof).lemma_serialize_len((v, ()));
     }
@@ -267,6 +271,10 @@ impl<C: SpecSerializer> SpecSerializer for super::RepeatTillEnd<C> {
 }
 
 impl<C: GoodSerializer> GoodSerializer for super::RepeatTillEnd<C> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.0.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         Repeat(self.0, super::Eof).lemma_serialize_len((v, ()));
     }

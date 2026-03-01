@@ -92,6 +92,11 @@ impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Choice<A, B> {
 }
 
 impl<A, B> NonTailFmt for super::Choice<A, B> where A: NonTailFmt, B: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             Sum::Inl(va) => {
@@ -116,6 +121,11 @@ impl<A, B> NonTailFmt for super::Choice<A, B> where A: NonTailFmt, B: NonTailFmt
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Choice<A, B> {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         match v {
             Sum::Inl(va) => {
@@ -223,6 +233,11 @@ impl<A, B> NonTailFmt for super::Alt<A, B> where
     A: NonTailFmt + Consistency<Val = A::ST>,
     B: NonTailFmt<T = A::T> + Consistency<Val = B::ST>,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         if self.0.consistent(v) {
             self.0.lemma_serialize_dps_prepend(v, obuf)
@@ -259,6 +274,11 @@ impl<A, B> GoodSerializer for super::Alt<A, B> where
     A: GoodSerializer + Consistency<Val = A::SVal>,
     B: GoodSerializer<T = A::T> + Consistency<Val = B::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         if self.0.consistent(v) {
             self.0.lemma_serialize_len(v)

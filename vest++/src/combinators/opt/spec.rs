@@ -80,6 +80,10 @@ impl<A: Unambiguity> Unambiguity for super::Opt<A> {
 }
 
 impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.0.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         match v {
             None => {
@@ -102,6 +106,10 @@ impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
 }
 
 impl<A: GoodSerializer> GoodSerializer for super::Opt<A> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.0.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         match v {
             None => {},
@@ -167,6 +175,11 @@ impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Op
 }
 
 impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Optional<A, B> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_serialize_dps_prepend(v, obuf)
     }
@@ -177,6 +190,11 @@ impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Optional<A, B> {
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Optional<A, B> {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (super::Opt(self.0), self.1).lemma_serialize_len(v);
     }

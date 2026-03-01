@@ -237,6 +237,10 @@ impl<Inner, Len> NonTailFmt for super::ExactLen<Inner, Len> where
     Inner: GoodSerializer + EquivSerializers,
     Len: AsLen,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_dps_prepend(v, obuf);
     }
@@ -247,6 +251,10 @@ impl<Inner, Len> NonTailFmt for super::ExactLen<Inner, Len> where
 }
 
 impl<Inner: GoodSerializer, Len: AsLen> GoodSerializer for super::ExactLen<Inner, Len> {
+    open spec fn serialize_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_len(v);
     }
@@ -375,6 +383,11 @@ impl<A, Then> NonTailFmt for super::AndThen<A, Then> where
     A: BytesCombinator + NonTailFmt,
     Then: GoodSerializer + EquivSerializers,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         self.0.lemma_serialize_dps_prepend(self.1.spec_serialize_dps(v, seq![]), obuf);
     }
@@ -392,6 +405,11 @@ impl<A, Then> GoodSerializer for super::AndThen<A, Then> where
     A: BytesCombinator + GoodSerializer,
     Then: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         let inner_bytes = self.1.spec_serialize(v);
         self.1.lemma_serialize_len(v);

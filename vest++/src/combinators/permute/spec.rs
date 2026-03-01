@@ -70,6 +70,11 @@ impl<P1, P2> Unambiguity for super::Permute2<P1, P2> where P1: Unambiguity, P2: 
 }
 
 impl<P1, P2> NonTailFmt for super::Permute2<P1, P2> where P1: NonTailFmt, P2: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         (self.0, self.1).lemma_serialize_dps_prepend(v, obuf);
     }
@@ -83,6 +88,11 @@ impl<P1, P2> GoodSerializer for super::Permute2<P1, P2> where
     P1: GoodSerializer,
     P2: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (self.0, self.1).lemma_serialize_len(v);
     }
@@ -193,6 +203,12 @@ impl<A, B, C> NonTailFmt for super::Permute3<A, B, C> where
     B: NonTailFmt,
     C: NonTailFmt,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+        &&& self.2.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         (self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_prepend(v, obuf);
     }
@@ -207,6 +223,12 @@ impl<A, B, C> GoodSerializer for super::Permute3<A, B, C> where
     B: GoodSerializer,
     C: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+        &&& self.2.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (self.0, super::Permute2(self.1, self.2)).lemma_serialize_len(v);
     }
@@ -339,6 +361,13 @@ impl<A, B, C, D> NonTailFmt for super::Permute4<A, B, C, D> where
     C: NonTailFmt,
     D: NonTailFmt,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+        &&& self.2.serialize_dps_inv()
+        &&& self.3.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_prepend(v, obuf);
     }
@@ -354,6 +383,13 @@ impl<A, B, C, D> GoodSerializer for super::Permute4<A, B, C, D> where
     C: GoodSerializer,
     D: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+        &&& self.2.serialize_inv()
+        &&& self.3.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_len(v);
     }

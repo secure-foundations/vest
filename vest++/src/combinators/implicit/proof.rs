@@ -8,6 +8,12 @@ impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& forall|a: A::T| #[trigger] (self.1)(a).sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
         let a = choose|a: A::T| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
@@ -140,6 +146,12 @@ impl<A, B> SPRoundTripDps for super::ImplicitAuto<
     spec_fn(A::T) -> B,
     spec_fn(B::T) -> A::T,
 > where A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& forall|a: A::T| #[trigger] (self.1)(a).sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
         let a = (self.2)(value);
         let next = (self.1)(a);

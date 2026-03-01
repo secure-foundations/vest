@@ -128,6 +128,10 @@ impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     Inner: NonTailFmt,
     M: Mapper<In = Inner::ST>,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: M::Out, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(self.mapper.spec_map_rev(v), obuf);
     }
@@ -141,6 +145,10 @@ impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     Inner: GoodSerializer,
     M: Mapper<In = Inner::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: M::Out) {
         self.inner.lemma_serialize_len(self.mapper.spec_map_rev(v));
     }

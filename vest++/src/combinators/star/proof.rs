@@ -7,6 +7,8 @@ verus! {
 impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PVal>, obuf: Seq<u8>)
         requires
+            self.inner.sp_roundtrip_dps_inv(),
+            self.inner.serialize_dps_inv(),
             self.inner.unambiguous(),
             parser_fails_on(self.inner, obuf),
             self.consistent(vs),
@@ -286,6 +288,8 @@ impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
 impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<C::PVal>, count: nat, obuf: Seq<u8>)
         requires
+            self.1.sp_roundtrip_dps_inv(),
+            self.1.serialize_dps_inv(),
             self.1.unambiguous(),
             vs.len() == count,
             (super::Star { inner: self.1 }.consistent(vs)),
@@ -315,6 +319,11 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
 }
 
 impl<C, N> SPRoundTripDps for super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.1.sp_roundtrip_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         self.lemma_serialize_parse_roundtrip_rec(v, self.0.as_usize() as nat, obuf);
         self.lemma_serialize_dps_len(v, obuf);
@@ -444,6 +453,11 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C
 }
 
 impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where C: SPRoundTripDps + NonTailFmt {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         use crate::combinators::bytes::spec::axiom_array_from_seq;
 
@@ -497,6 +511,12 @@ impl<const N: usize, C: EquivSerializersGeneral> EquivSerializers for super::Arr
 }
 
 impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Repeat<A, B> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let star = super::Star { inner: self.0 };
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);

@@ -133,6 +133,8 @@ impl<A: Unambiguity> Unambiguity for super::Star<A> {
 
 impl<A: NonTailFmt> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
+        requires
+            self.serialize_dps_inv(),
         ensures
             exists|new_buf: Seq<u8>| self.rfold_serialize_dps(vs, obuf) == new_buf + obuf,
         decreases vs.len(),
@@ -175,6 +177,10 @@ impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
 }
 
 impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, vs: Self::ST, obuf: Seq<u8>) {
         self.lemma_rfold_serialize_buf(vs, obuf);
     }
@@ -203,6 +209,10 @@ impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
 }
 
 impl<A: GoodSerializer> GoodSerializer for super::Star<A> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal)
         decreases v.len(),
     {
@@ -378,6 +388,10 @@ impl<C: Unambiguity, N: AsLen> Unambiguity for super::RepeatN<C, N> {
 }
 
 impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         super::Star { inner: self.1 }.lemma_serialize_dps_prepend(v, obuf);
     }
@@ -388,6 +402,10 @@ impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
 }
 
 impl<C: GoodSerializer, N: AsLen> GoodSerializer for super::RepeatN<C, N> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         super::Star { inner: self.1 }.lemma_serialize_len(v);
     }
@@ -470,6 +488,10 @@ impl<const N: usize, C: Unambiguity> Unambiguity for super::Array<N, C> {
 }
 
 impl<const N: usize, C: NonTailFmt> NonTailFmt for super::Array<N, C> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        super::RepeatN(N, self.0).serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_serialize_dps_prepend(v@, obuf);
     }
@@ -480,6 +502,10 @@ impl<const N: usize, C: NonTailFmt> NonTailFmt for super::Array<N, C> {
 }
 
 impl<const N: usize, C: GoodSerializer> GoodSerializer for super::Array<N, C> {
+    open spec fn serialize_inv(&self) -> bool {
+        super::RepeatN(N, self.0).serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         super::RepeatN(N, self.0).lemma_serialize_len(v@);
     }
@@ -545,6 +571,11 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Repeat<A, B
 }
 
 impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Repeat<A, B> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_serialize_dps_prepend(v, obuf)
     }
@@ -555,6 +586,11 @@ impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Repeat<A, B> {
 }
 
 impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Repeat<A, B> {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         (super::Star { inner: self.0 }, self.1).lemma_serialize_len(v);
     }

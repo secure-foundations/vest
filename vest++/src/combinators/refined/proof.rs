@@ -8,6 +8,10 @@ impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
     A: SPRoundTripDps,
     Pred: SpecPred<A::PVal>,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.inner.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf)
     }
@@ -59,6 +63,10 @@ impl<A, Pred> EquivSerializers for super::Refined<A, Pred> where
 }
 
 impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.inner.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, _v: Self::ST, obuf: Seq<u8>) {
         self.inner.theorem_serialize_dps_parse_roundtrip(self.tag, obuf);
     }
@@ -109,6 +117,13 @@ impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
     Of: SPRoundTripDps,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        let tag = super::Tag { inner: self.0, tag: self.1 };
+        &&& tag.sp_roundtrip_dps_inv()
+        &&& tag.serialize_dps_inv()
+        &&& self.2.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let tag = super::Tag { inner: self.0, tag: self.1 };
         assert(tag.consistent(()));

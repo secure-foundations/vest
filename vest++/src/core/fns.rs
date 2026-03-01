@@ -59,44 +59,6 @@ impl<T> SpecSerializer for SerializerFnSpec<T> {
     }
 }
 
-/// A bundled DPS serializer: pairs a [`SerializerDPSFnSpec`] with a [`ByteLenFnSpec`].
-pub type SerializerDPSSpecs<T> = (SerializerDPSFnSpec<T>, ByteLenFnSpec<T>);
-
-impl<T> SpecByteLen for SerializerDPSSpecs<T> {
-    type T = T;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.1)(v)
-    }
-}
-
-impl<T> SpecSerializerDps for SerializerDPSSpecs<T> {
-    type ST = T;
-
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (self.0)(v, obuf)
-    }
-}
-
-/// A bundled non-DPS serializer: pairs a [`SerializerFnSpec`] with a [`ByteLenFnSpec`].
-pub type SerializerSpecs<T> = (SerializerFnSpec<T>, ByteLenFnSpec<T>);
-
-impl<T> SpecByteLen for SerializerSpecs<T> {
-    type T = T;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.1)(v)
-    }
-}
-
-impl<T> SpecSerializer for SerializerSpecs<T> {
-    type SVal = T;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (self.0)(v)
-    }
-}
-
 /// A spec-level unambiguity predicate.
 pub type UnambiguityFnSpec = spec_fn() -> bool;
 

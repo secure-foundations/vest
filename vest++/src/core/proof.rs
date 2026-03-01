@@ -28,8 +28,13 @@ pub trait SPRoundTripDps where
           Consistency<Val = Self::T> +
           Unambiguity,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        true
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>)
         requires
+            self.sp_roundtrip_dps_inv(),
             self.unambiguous(),
             self.consistent(v),
         ensures
@@ -57,8 +62,13 @@ pub trait SPRoundTrip where
           Consistency<Val = Self::T> +
           Unambiguity,
 {
+    open spec fn sp_roundtrip_inv(&self) -> bool {
+        true
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
+            self.sp_roundtrip_inv(),
             self.unambiguous(),
             self.consistent(v),
         ensures
@@ -70,6 +80,10 @@ pub trait SPRoundTrip where
 }
 
 impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
+    open spec fn sp_roundtrip_inv(&self) -> bool {
+        self.serialize_inv() && self.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
         let empty = Seq::empty();
         self.theorem_serialize_dps_parse_roundtrip(v, empty);
@@ -119,7 +133,7 @@ pub trait PSRoundTrip where
 
 impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
     open spec fn ps_roundtrip_inv(&self) -> bool {
-        self.sound_inv() && self.nonmal_inv()
+        self.sound_inv() && self.nonmal_inv() && self.sp_roundtrip_inv()
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {

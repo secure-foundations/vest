@@ -131,6 +131,11 @@ impl<Head, Tail> NonTailFmt for Bind<Head, Tail> where
     Tail: DepCombinator<Key = Head::ST>,
     Tail::Body: NonTailFmt<T = Tail::Val>,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& forall|key: Head::ST| #[trigger] self.1.apply(key).serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let body = self.1.apply(key);
@@ -159,6 +164,11 @@ impl<Head, Tail> GoodSerializer for Bind<Head, Tail> where
     Tail: DepCombinator<Key = Head::SVal>,
     Tail::Body: GoodSerializer<T = Tail::Val>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& forall|key: Head::SVal| #[trigger] self.1.apply(key).serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, value: Self::SVal) {
         let key = self.1.recover(value);
         let body = self.1.apply(key);

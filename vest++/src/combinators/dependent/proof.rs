@@ -8,6 +8,12 @@ impl<Head, Tail> SPRoundTripDps for super::Bind<Head, Tail> where
     Tail: super::DepCombinator<Key = Head::T>,
     Tail::Body: SPRoundTripDps<T = Tail::Val>,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.0.serialize_dps_inv()
+        &&& forall|key: Head::T| #[trigger] self.1.apply(key).sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let next = self.1.apply(key);

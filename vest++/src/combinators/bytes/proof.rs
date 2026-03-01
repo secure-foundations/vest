@@ -64,6 +64,11 @@ impl<Inner, Len> SPRoundTripDps for super::ExactLen<Inner, Len> where
     Inner: EquivSerializers + GoodSerializer + SPRoundTrip,
     Len: AsLen,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.1.serialize_inv()
+        &&& self.1.sp_roundtrip_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let inner_bytes = self.1.spec_serialize_dps(v, seq![]);
         self.1.lemma_serialize_equiv_on_empty(v);
@@ -112,6 +117,11 @@ impl<Len, Then> SPRoundTripDps for super::AndThen<Varied<Len>, Then> where
     Then: EquivSerializers + GoodSerializer + SPRoundTrip,
     Len: AsLen,
  {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.1.serialize_inv()
+        &&& self.1.sp_roundtrip_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let inner_bytes = self.1.spec_serialize_dps(v, seq![]);
         self.1.lemma_serialize_equiv_on_empty(v);

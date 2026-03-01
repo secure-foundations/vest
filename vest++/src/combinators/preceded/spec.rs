@@ -87,6 +87,11 @@ impl<A, B> NonTailFmt for super::Preceded<A, B> where
     A: NonTailFmt + Consistency<Val = A::ST>,
     B: NonTailFmt,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let va = choose|va: A::ST| #![auto] self.0.consistent(va);
         (self.0, self.1).lemma_serialize_dps_prepend((va, v), obuf);
@@ -102,6 +107,11 @@ impl<A, B> GoodSerializer for super::Preceded<A, B> where
     A: GoodSerializer + Consistency<Val = A::SVal>,
     B: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         let va = choose|va: A::SVal| #![auto] self.0.consistent(va);
         (self.0, self.1).lemma_serialize_len((va, v));

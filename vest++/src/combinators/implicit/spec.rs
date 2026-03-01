@@ -140,6 +140,11 @@ impl<A, B> NonTailFmt for super::Implicit<A, spec_fn(A::ST) -> B> where
     A: NonTailFmt + Consistency<Val = A::ST>,
     B: NonTailFmt + Consistency<Val = B::ST>,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& forall|a: A::ST| #[trigger] (self.1)(a).serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let a = choose|a: A::ST| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
@@ -167,6 +172,11 @@ impl<A, B> GoodSerializer for super::Implicit<A, spec_fn(A::SVal) -> B> where
     A: GoodSerializer + Consistency<Val = A::SVal>,
     B: GoodSerializer + Consistency<Val = B::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, value: Self::SVal) {
         let a = choose|a: A::SVal| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
@@ -285,6 +295,11 @@ impl<A, B> NonTailFmt for super::ImplicitAuto<
     spec_fn(A::ST) -> B,
     spec_fn(B::ST) -> A::ST,
 > where A: NonTailFmt + Consistency<Val = A::ST>, B: NonTailFmt + Consistency<Val = B::ST> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& forall|a: A::ST| #[trigger] (self.1)(a).serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
         let a = (self.2)(value);
         let next = (self.1)(a);
@@ -316,6 +331,11 @@ impl<A, B> GoodSerializer for super::ImplicitAuto<
     A: GoodSerializer + Consistency<Val = A::SVal>,
     B: GoodSerializer + Consistency<Val = B::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, value: Self::SVal) {
         let a = (self.2)(value);
         let next = (self.1)(a);

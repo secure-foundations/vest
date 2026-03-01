@@ -4,6 +4,10 @@ use vstd::prelude::*;
 verus! {
 
 impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Cond<Inner> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         self.1.theorem_serialize_dps_parse_roundtrip(v, obuf);
     }

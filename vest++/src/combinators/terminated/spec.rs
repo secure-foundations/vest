@@ -86,6 +86,11 @@ impl<A, B> NonTailFmt for super::Terminated<A, B> where
     A: NonTailFmt,
     B: NonTailFmt + Consistency<Val = B::ST>,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
         (self.0, self.1).lemma_serialize_dps_prepend((v, vb), obuf);
@@ -102,6 +107,11 @@ impl<A, B> GoodSerializer for super::Terminated<A, B> where
     A: GoodSerializer,
     B: GoodSerializer + Consistency<Val = B::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         let vb = choose|vb: B::SVal| #![auto] self.1.consistent(vb);
         (self.0, self.1).lemma_serialize_len((v, vb));

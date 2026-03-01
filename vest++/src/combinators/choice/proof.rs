@@ -5,6 +5,11 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         match v {
             Sum::Inl(va) => {
@@ -73,6 +78,11 @@ impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B
 }
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::Alt<A, B> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        &&& self.0.sp_roundtrip_dps_inv()
+        &&& self.1.sp_roundtrip_dps_inv()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         if self.0.consistent(v) {
             self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);

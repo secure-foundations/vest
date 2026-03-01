@@ -73,6 +73,10 @@ impl<Inner: Unambiguity> Unambiguity for super::Cond<Inner> {
 }
 
 impl<Inner: NonTailFmt> NonTailFmt for super::Cond<Inner> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.1.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         self.1.lemma_serialize_dps_prepend(v, obuf);
     }
@@ -83,6 +87,10 @@ impl<Inner: NonTailFmt> NonTailFmt for super::Cond<Inner> {
 }
 
 impl<Inner: GoodSerializer> GoodSerializer for super::Cond<Inner> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.1.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.1.lemma_serialize_len(v);
     }

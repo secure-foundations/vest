@@ -76,6 +76,10 @@ impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
 }
 
 impl<A, Pred> NonTailFmt for super::Refined<A, Pred> where A: NonTailFmt, Pred: SpecPred<A::ST> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
@@ -89,6 +93,10 @@ impl<A, Pred> GoodSerializer for super::Refined<A, Pred> where
     A: GoodSerializer,
     Pred: SpecPred<A::SVal>,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.inner.lemma_serialize_len(v);
     }
@@ -167,6 +175,10 @@ impl<Inner> Unambiguity for super::Tag<Inner, Inner::PVal> where Inner: Unambigu
 }
 
 impl<Inner> NonTailFmt for super::Tag<Inner, Inner::ST> where Inner: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, _v: Self::ST, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(self.tag, obuf);
     }
@@ -177,6 +189,10 @@ impl<Inner> NonTailFmt for super::Tag<Inner, Inner::ST> where Inner: NonTailFmt 
 }
 
 impl<Inner> GoodSerializer for super::Tag<Inner, Inner::SVal> where Inner: GoodSerializer {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, _v: Self::SVal) {
         self.inner.lemma_serialize_len(self.tag);
     }
@@ -275,6 +291,11 @@ impl<Tg, Of> NonTailFmt for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + NonTailFmt + Consistency<Val = Tg::T>,
     Of: NonTailFmt,
  {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.2.serialize_dps_inv()
+    }
+
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_prepend(
             v,
@@ -294,6 +315,11 @@ impl<Tg, Of> GoodSerializer for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + GoodSerializer + Consistency<Val = Tg::T>,
     Of: GoodSerializer,
  {
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.2.serialize_inv()
+    }
+
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_len(v);
     }
