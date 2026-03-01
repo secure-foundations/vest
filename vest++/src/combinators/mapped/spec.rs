@@ -70,8 +70,8 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
     Inner: SoundParser,
     M: IsoMapper<In = Inner::PVal>,
  {
-    open spec fn inv(&self) -> bool {
-        self.inner.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

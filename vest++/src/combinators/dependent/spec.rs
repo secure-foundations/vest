@@ -46,9 +46,9 @@ impl<Head, Tail> SoundParser for Bind<Head, Tail> where
     Tail: DepCombinator<Key = Head::PVal>,
     Tail::Body: SoundParser<T = Tail::Val>,
  {
-    open spec fn inv(&self) -> bool {
-        &&& self.0.inv()
-        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).inv()
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

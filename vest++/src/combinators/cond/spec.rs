@@ -24,8 +24,8 @@ impl<Inner: Consistency> Consistency for super::Cond<Inner> {
 }
 
 impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
-    open spec fn inv(&self) -> bool {
-        self.1.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.1.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

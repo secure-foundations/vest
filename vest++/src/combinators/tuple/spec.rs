@@ -26,9 +26,9 @@ impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
 }
 
 impl<A, B> SoundParser for (A, B) where A: SoundParser, B: SoundParser {
-    open spec fn inv(&self) -> bool {
-        &&& self.0.inv()
-        &&& self.1.inv()
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

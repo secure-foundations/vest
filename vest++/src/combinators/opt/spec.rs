@@ -26,19 +26,19 @@ impl<A> Consistency for super::Opt<A> where A: Consistency {
 }
 
 impl<A> SoundParser for super::Opt<A> where A: SoundParser {
-    open spec fn inv(&self) -> bool {
-        self.0.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.0.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        assert(self.inv());
+        assert(self.sound_inv());
         self.0.lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         match self.0.spec_parse(ibuf) {
             Some((n, vv)) => {
-                assert(self.inv());
+                assert(self.sound_inv());
                 self.0.lemma_parse_sound_consumption(ibuf);
             },
             None => {},
@@ -46,7 +46,7 @@ impl<A> SoundParser for super::Opt<A> where A: SoundParser {
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        assert(self.inv());
+        assert(self.sound_inv());
         self.0.lemma_parse_sound_value(ibuf);
     }
 }
@@ -140,9 +140,9 @@ impl<A, B> Consistency for super::Optional<A, B> where A: Consistency, B: Consis
 }
 
 impl<A, B> SoundParser for super::Optional<A, B> where A: SoundParser, B: SoundParser {
-    open spec fn inv(&self) -> bool {
-        &&& self.0.inv()
-        &&& self.1.inv()
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

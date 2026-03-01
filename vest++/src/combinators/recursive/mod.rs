@@ -4,7 +4,7 @@ pub mod spec;
 
 use vstd::prelude::*;
 
-pub use spec::RecBody;
+pub use spec::{RecPBody, SoundRecPBody};
 
 verus! {
 

@@ -69,7 +69,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
 impl<A: NonMalleable> super::Star<A> {
     proof fn lemma_parse_non_malleable_rec(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
         ensures
             ({
                 let (n1, v1) = self.parse_rec(buf1);
@@ -130,7 +130,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
 impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
             self.inner.unambiguous(),
             parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
         ensures
@@ -319,7 +319,7 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable_rec(&self, count: nat, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.1.inv(),
+            self.1.sound_inv(),
         ensures
             self.parse_n_rec(count, buf1) matches Some((n1, v1)) ==>
             self.parse_n_rec(count, buf2) matches Some((n2, v2)) ==>
@@ -378,7 +378,7 @@ impl<C: NonMalleable, N: AsLen> NonMalleable for super::RepeatN<C, N> {
 impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_no_lookahead_rec(&self, count: nat, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.1.inv(),
+            self.1.sound_inv(),
             self.1.unambiguous(),
         ensures
             self.parse_n_rec(count, i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)

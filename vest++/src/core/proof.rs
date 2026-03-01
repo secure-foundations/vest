@@ -94,7 +94,7 @@ pub trait PSRoundTrip where
 {
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
@@ -102,7 +102,7 @@ pub trait PSRoundTrip where
 
     proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
@@ -139,7 +139,7 @@ pub trait NonMalleable: SoundParser {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>
@@ -157,7 +157,7 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==>
@@ -167,7 +167,7 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
 
     proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),

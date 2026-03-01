@@ -53,9 +53,9 @@ impl<A, B> SoundParser for super::Implicit<A, spec_fn(A::PVal) -> B> where
     B: SoundParser,
     Self: super::LosslessImplicit<A, B>,
  {
-    open spec fn inv(&self) -> bool {
-        &&& self.0.inv()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).inv()
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

@@ -47,14 +47,14 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
 pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
     /// Optional invariant (used by spec-function combinators; struct-based combinators
     /// typically leave this as `true`).
-    open spec fn inv(&self) -> bool {
+    open spec fn sound_inv(&self) -> bool {
         true
     }
 
     /// For any successful parse `Some((n, _))`, `0 <= n <= ibuf.len()`.
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
@@ -62,7 +62,7 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
     /// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
@@ -70,7 +70,7 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
     /// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>)
         requires
-            self.inv(),
+            self.sound_inv(),
         ensures
             self.spec_parse(ibuf) matches Some((_, v)) ==> self.consistent(v),
     ;

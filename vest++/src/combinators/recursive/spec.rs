@@ -31,7 +31,7 @@ impl<T> Consistency for ParserSpecs<T> {
 }
 
 impl<T> SoundParser for ParserSpecs<T> {
-    open spec fn inv(&self) -> bool {
+    open spec fn sound_inv(&self) -> bool {
         let (p_fn, c_fn, b_fn) = *self;
         sound_parser(p_fn, c_fn, b_fn)
     }
@@ -61,53 +61,56 @@ pub open spec fn sound_parser<T>(
 }
 
 /// Defines one level of a recursive format for use with [`super::Fix`].
-pub trait RecBody {
+pub trait RecPBody {
     /// The type of values parsed/serialized by this recursive format.
-    type Val;
+    type T;
 
     /// The combinator type returned by [`Self::body`].
-    type BodyComb: SoundParser<T = Self::Val>;
+    type Body: SpecByteLen<T = Self::T> + SpecParser<PVal = Self::T> + Consistency<Val = Self::T>;
 
     /// Define the body for one level of the recursive format, where `rec`
     /// is the bundled callback for the recursive position.
-    spec fn body(&self, rec: ParserSpecs<Self::Val>) -> Self::BodyComb;
+    spec fn body(&self, rec: ParserSpecs<Self::T>) -> Self::Body;
+}
 
-    /// Induction: if the callback `rec` satisfies `inv`, then unfolding the body also satisfies `inv`.
-    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::Val>)
+/// Soundness for [`RecPBody`].
+pub trait SoundRecPBody: RecPBody where Self::Body: SoundParser<T = Self::T> {
+    /// Induction: if the callback `rec` satisfies `sound_inv`, then unfolding the body also satisfies `sound_inv`.
+    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::T>)
         requires
-            rec.inv(),
+            rec.sound_inv(),
         ensures
-            self.body(rec).inv(),
+            self.body(rec).sound_inv(),
     ;
 }
 
-impl<const LIMIT: usize, Body: RecBody> SpecParser for super::Fix<LIMIT, Body> {
-    type PVal = Body::Val;
+impl<const LIMIT: usize, Body: RecPBody> SpecParser for super::Fix<LIMIT, Body> {
+    type PVal = Body::T;
 
     open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
         self.spec_parse_with_gas(LIMIT as nat, input)
     }
 }
 
-impl<const LIMIT: usize, Body: RecBody> Consistency for super::Fix<LIMIT, Body> {
-    type Val = Body::Val;
+impl<const LIMIT: usize, Body: RecPBody> Consistency for super::Fix<LIMIT, Body> {
+    type Val = Body::T;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
         self.consistent_with_gas(LIMIT as nat, v)
     }
 }
 
-impl<const LIMIT: usize, Body: RecBody> SpecByteLen for super::Fix<LIMIT, Body> {
-    type T = Body::Val;
+impl<const LIMIT: usize, Body: RecPBody> SpecByteLen for super::Fix<LIMIT, Body> {
+    type T = Body::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.byte_len_with_gas(LIMIT as nat, v)
     }
 }
 
-impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
+impl<const LIMIT: usize, Body: RecPBody> super::Fix<LIMIT, Body> {
     /// Bundled recursive callback
-    pub open spec fn specs_callback(&self, gas: nat) -> ParserSpecs<Body::Val>
+    pub open spec fn specs_callback(&self, gas: nat) -> ParserSpecs<Body::T>
         decreases gas, 0nat,
     {
         (
@@ -119,7 +122,7 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
                         None
                     }
                 },
-            |vv: Body::Val|
+            |vv: Body::T|
                 {
                     if gas > 0 {
                         self.consistent_with_gas((gas - 1) as nat, vv)
@@ -127,7 +130,7 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
                         false
                     }
                 },
-            |vv: Body::Val|
+            |vv: Body::T|
                 {
                     if gas > 0 {
                         self.byte_len_with_gas((gas - 1) as nat, vv)
@@ -140,30 +143,32 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
 
     /// Parse with a given amount of gas. Unfolds one level via
     /// `body` with a callback that recurses at `gas - 1`.
-    pub open spec fn spec_parse_with_gas(&self, gas: nat, input: Seq<u8>) -> Option<
-        (int, Body::Val),
-    >
+    pub open spec fn spec_parse_with_gas(&self, gas: nat, input: Seq<u8>) -> Option<(int, Body::T)>
         decreases gas, 1nat,
     {
         self.0.body(self.specs_callback(gas)).spec_parse(input)
     }
 
     /// Consistency check with given gas.
-    pub open spec fn consistent_with_gas(&self, gas: nat, v: Body::Val) -> bool
+    pub open spec fn consistent_with_gas(&self, gas: nat, v: Body::T) -> bool
         decreases gas, 1nat,
     {
         self.0.body(self.specs_callback(gas)).consistent(v)
     }
 
     /// Byte-length computation with given gas.
-    pub open spec fn byte_len_with_gas(&self, gas: nat, v: Body::Val) -> nat
+    pub open spec fn byte_len_with_gas(&self, gas: nat, v: Body::T) -> nat
         decreases gas, 1nat,
     {
         self.0.body(self.specs_callback(gas)).byte_len(v)
     }
+}
 
+impl<const LIMIT: usize, Body: SoundRecPBody> super::Fix<LIMIT, Body> where
+    Body::Body: SoundParser<T = Body::T>,
+ {
     /// Inductive proof that `spec_parse_with_gas` satisfies [`sound_parser`].
-    proof fn sound_parser_by_induction(&self, gas: nat, input: Seq<u8>, n: int, v: Body::Val)
+    proof fn sound_parser_by_induction(&self, gas: nat, input: Seq<u8>, n: int, v: Body::T)
         ensures
             self.spec_parse_with_gas(gas, input) == Some((n, v)) ==> {
                 &&& 0 <= n <= input.len()
@@ -200,11 +205,11 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
         }
 
         assert(sound_parser(callback_p, callback_c, callback_b));
-        assert(callback.inv());
+        assert(callback.sound_inv());
 
         self.0.lemma_body_inv_preservation(callback);
         let body = self.0.body(callback);
-        assert(body.inv());
+        assert(body.sound_inv());
 
         body.lemma_parse_safe(input);
         body.lemma_parse_sound_consumption(input);
@@ -217,7 +222,9 @@ impl<const LIMIT: usize, Body: RecBody> super::Fix<LIMIT, Body> {
     }
 }
 
-impl<const LIMIT: usize, Body: RecBody> SoundParser for super::Fix<LIMIT, Body> {
+impl<const LIMIT: usize, Body: SoundRecPBody> SoundParser for super::Fix<LIMIT, Body> where
+    Body::Body: SoundParser<T = Body::T>,
+ {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.sound_parser_by_induction(LIMIT as nat, ibuf, n, v);
@@ -308,20 +315,22 @@ type NestedBracesBodyComb<Rec> = Mapped<
     NestedBracesMapper,
 >;
 
-/// [`RecBody`] for the nested-braces example.
+/// [`RecPBody`] for the nested-braces example.
 pub struct NestedBracesBody;
 
-impl RecBody for NestedBracesBody {
-    type Val = NestedBracesT;
+impl RecPBody for NestedBracesBody {
+    type T = NestedBracesT;
 
-    type BodyComb = NestedBracesBodyComb<ParserSpecs<NestedBracesT>>;
+    type Body = NestedBracesBodyComb<ParserSpecs<NestedBracesT>>;
 
-    open spec fn body(&self, rec: ParserSpecs<Self::Val>) -> Self::BodyComb {
+    open spec fn body(&self, rec: ParserSpecs<Self::T>) -> Self::Body {
         nested_braces_body(rec)
     }
+}
 
-    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::Val>) {
-        assert(self.body(rec).inv());
+impl SoundRecPBody for NestedBracesBody {
+    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::T>) {
+        assert(self.body(rec).sound_inv());
     }
 }
 

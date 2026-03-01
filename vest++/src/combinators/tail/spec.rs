@@ -160,8 +160,8 @@ impl<C> Consistency for super::OptionalEnd<C> where C: Consistency {
 }
 
 impl<C> SoundParser for super::OptionalEnd<C> where C: SoundParser {
-    open spec fn inv(&self) -> bool {
-        self.0.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.0.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -233,8 +233,8 @@ impl<C> Consistency for super::RepeatTillEnd<C> where C: Consistency {
 }
 
 impl<C> SoundParser for super::RepeatTillEnd<C> where C: SoundParser {
-    open spec fn inv(&self) -> bool {
-        self.0.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.0.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

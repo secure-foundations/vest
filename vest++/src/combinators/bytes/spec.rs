@@ -194,8 +194,8 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>, Len: AsLen> Consistency f
 }
 
 impl<Inner: SoundParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len> {
-    open spec fn inv(&self) -> bool {
-        super::AndThen(super::Varied(self.0), self.1).inv()
+    open spec fn sound_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -294,8 +294,8 @@ impl<A, Then> SoundParser for super::AndThen<A, Then> where
     A: BytesCombinator + SoundParser,
     Then: SoundParser,
  {
-    open spec fn inv(&self) -> bool {
-        self.0.inv() && self.1.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.0.sound_inv() && self.1.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

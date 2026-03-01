@@ -27,8 +27,8 @@ impl<A, Pred> SoundParser for super::Refined<A, Pred> where
     A: SoundParser,
     Pred: SpecPred<A::PVal>,
  {
-    open spec fn inv(&self) -> bool {
-        self.inner.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -127,8 +127,8 @@ impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consi
 }
 
 impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundParser {
-    open spec fn inv(&self) -> bool {
-        self.inner.inv()
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -220,9 +220,9 @@ impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
-    open spec fn inv(&self) -> bool {
-        &&& self.0.inv()
-        &&& self.2.inv()
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.2.sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {

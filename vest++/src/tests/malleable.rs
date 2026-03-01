@@ -18,7 +18,7 @@ proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq
 
 proof fn requires_ps_roundtrip<T: PSRoundTrip>(parser: T, ibuf: Seq<u8>)
     requires
-        parser.inv(),
+        parser.sound_inv(),
         parser.unambiguous(),
 {
     parser.theorem_parse_serialize_roundtrip(ibuf);
@@ -26,7 +26,7 @@ proof fn requires_ps_roundtrip<T: PSRoundTrip>(parser: T, ibuf: Seq<u8>)
 
 proof fn requires_non_malleable<T: NonMalleable>(parser: T, buf1: Seq<u8>, buf2: Seq<u8>)
     requires
-        parser.inv(),
+        parser.sound_inv(),
 {
     parser.lemma_parse_non_malleable(buf1, buf2);
 }
