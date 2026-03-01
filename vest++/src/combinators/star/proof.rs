@@ -1,4 +1,5 @@
 use crate::combinators::length::AsLen;
+use crate::combinators::Pair;
 use crate::core::{proof::*, spec::*};
 use vstd::{calc, prelude::*};
 
@@ -542,7 +543,7 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
+        Pair(super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
@@ -581,13 +582,13 @@ impl<
     B: EquivSerializersGeneral,
 > EquivSerializersGeneral for super::Repeat<A, B> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
+        Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Repeat<A, B> {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        (super::Star { inner: self.0 }, self.1).lemma_serialize_equiv_on_empty(v);
+        Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 

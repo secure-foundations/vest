@@ -1,4 +1,7 @@
-use crate::core::{proof::*, spec::*};
+use crate::{
+    combinators::Pair,
+    core::{proof::*, spec::*},
+};
 use vstd::prelude::*;
 
 verus! {
@@ -135,7 +138,7 @@ impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
     type PVal = (Option<A::PVal>, B::PVal);
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        (super::Opt(self.0), self.1).spec_parse(ibuf)
+        Pair(super::Opt(self.0), self.1).spec_parse(ibuf)
     }
 }
 
@@ -143,7 +146,7 @@ impl<A, B> Consistency for super::Optional<A, B> where A: Consistency, B: Consis
     type Val = (Option<A::Val>, B::Val);
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        (super::Opt(self.0), self.1).consistent(v)
+        Pair(super::Opt(self.0), self.1).consistent(v)
     }
 }
 
@@ -154,15 +157,15 @@ impl<A, B> SoundParser for super::Optional<A, B> where A: SoundParser, B: SoundP
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_safe(ibuf)
+        Pair(super::Opt(self.0), self.1).lemma_parse_safe(ibuf)
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_sound_consumption(ibuf)
+        Pair(super::Opt(self.0), self.1).lemma_parse_sound_consumption(ibuf)
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_parse_sound_value(ibuf)
+        Pair(super::Opt(self.0), self.1).lemma_parse_sound_value(ibuf)
     }
 }
 
@@ -170,7 +173,7 @@ impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Op
     type ST = (Option<A::ST>, B::ST);
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (super::Opt(self.0), self.1).spec_serialize_dps(v, obuf)
+        Pair(super::Opt(self.0), self.1).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -181,11 +184,11 @@ impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Optional<A, B> {
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_serialize_dps_prepend(v, obuf)
+        Pair(super::Opt(self.0), self.1).lemma_serialize_dps_prepend(v, obuf)
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        (super::Opt(self.0), self.1).lemma_serialize_dps_len(v, obuf);
+        Pair(super::Opt(self.0), self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -196,7 +199,7 @@ impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Optional<A,
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        (super::Opt(self.0), self.1).lemma_serialize_len(v);
+        Pair(super::Opt(self.0), self.1).lemma_serialize_len(v);
     }
 }
 
@@ -204,7 +207,7 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Optional<A, B> {
     type T = (Option<A::T>, B::T);
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        (super::Opt(self.0), self.1).byte_len(v)
+        Pair(super::Opt(self.0), self.1).byte_len(v)
     }
 }
 
@@ -212,7 +215,7 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Optional<A,
     type SVal = (Option<A::SVal>, B::SVal);
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (super::Opt(self.0), self.1).spec_serialize(v)
+        Pair(super::Opt(self.0), self.1).spec_serialize(v)
     }
 }
 

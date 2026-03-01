@@ -4,6 +4,7 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::dependent::{TLVOf, TLVal, TagValNode, Uninhabited};
 use crate::combinators::dependent::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
     Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag, Tagged,
@@ -88,7 +89,7 @@ proof fn test_dependent_nary_custom_tag() {
 }
 
 proof fn test_dependent_n_consecutive_lengths_values() {
-    let fmt = Bind((U8, (U16Le, U8)), (VLData(), (VLData(), VLData())));
+    let fmt = Bind(Pair(U8, Pair(U16Le, U8)), Pair(VLData(), Pair(VLData(), VLData())));
     let value = (
         seq![0x6Eu8; u8::MAX as nat],
         (seq![0x69u8; u16::MAX as nat], seq![0x34u8; u8::MAX as nat]),
@@ -116,7 +117,7 @@ proof fn test_dependent_simple_tlv() {
     //
     #[verusfmt::skip]
     let tlv =
-        Bind((U16Le, U8),
+        Bind(Pair(U16Le, U8),
         TLVOf(
         TVNode(
             TVNode(
@@ -147,18 +148,18 @@ type ComplexVal = (
     (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), !>>>, [u8; 4])),
 );
 
-type ComplexBody = (
+type ComplexBody = Pair<
     Fixed<3>,
-    (
+    Pair<
         Varied,
-        (
+        Pair<
             ExactLen<
                 Choice<Cond<Tail>, Choice<Cond<Tail>, Choice<Cond<Repeat<U16Le, Eof>>, Void>>>,
             >,
             Refined<Fixed::<4>, spec_fn([u8; 4]) -> bool>,
-        ),
-    ),
-);
+        >,
+    >,
+>;
 
 type V2Fmt = TLVal<
     u8,
@@ -194,7 +195,7 @@ impl DepCombinator for TLVRest {
             inner: Fixed::<4>,
             pred: |x: [u8; 4]| x == [0x12u8, 0x34u8, 0x56u8, 0x78u8],
         };
-        (padding_fmt, (v1_fmt, (v2_fmt, magic_fmt)))
+        Pair(padding_fmt, Pair(v1_fmt, Pair(v2_fmt, magic_fmt)))
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
@@ -224,7 +225,7 @@ proof fn test_dependent_complex_tlv() {
     // }
     broadcast use lemma_disjoint_cond;
 
-    let tlv = Bind((U8, (U8, U8)), TLVRest);
+    let tlv = Bind(Pair(U8, Pair(U8, U8)), TLVRest);
 
     let padding = [0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
@@ -256,13 +257,13 @@ impl DepCombinator for TXSegwitRest {
 
     type Val = (Seq<u8>, <TXSegwitRestRest as DepCombinator>::Val);
 
-    type Body = (Varied, Bind<U8, TXSegwitRestRest>);
+    type Body = Pair<Varied, Bind<U8, TXSegwitRestRest>>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let txin_count = key;
         let txins_fmt = VLData().apply(txin_count);
         let rest_fmt = Bind(U8, TXSegwitRestRest { txin_count });
-        (txins_fmt, rest_fmt)
+        Pair(txins_fmt, rest_fmt)
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
@@ -289,7 +290,7 @@ impl DepCombinator for TXSegwitRestRest {
 
     type Val = (Seq<u8>, (Seq<u8>, u32));
 
-    type Body = (Varied, (Varied, U32Le));
+    type Body = Pair<Varied, Pair<Varied, U32Le>>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let txin_count = self.txin_count;
@@ -297,7 +298,7 @@ impl DepCombinator for TXSegwitRestRest {
         let txouts_fmt = VLData().apply(txout_count);
         let witness_fmt = VLData().apply(txin_count);
         let lock_time_fmt = U32Le;
-        (txouts_fmt, (witness_fmt, lock_time_fmt))
+        Pair(txouts_fmt, Pair(witness_fmt, lock_time_fmt))
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {

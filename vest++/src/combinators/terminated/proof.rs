@@ -1,4 +1,7 @@
-use crate::core::{proof::*, spec::*};
+use crate::{
+    combinators::Pair,
+    core::{proof::*, spec::*},
+};
 use vstd::prelude::*;
 
 verus! {
@@ -15,7 +18,7 @@ impl<A, B> SPRoundTripDps for super::Terminated<A, B> where
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
-        (self.0, self.1).theorem_serialize_dps_parse_roundtrip((v, vb), obuf);
+        Pair(self.0, self.1).theorem_serialize_dps_parse_roundtrip((v, vb), obuf);
     }
 }
 
@@ -39,14 +42,14 @@ impl<A, B> NonMalleable for super::Terminated<A, B> where
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
-                    if let Some((_, (va1, vb1))) = (self.0, self.1).spec_parse(buf1) {
-                        if let Some((_, (va2, vb2))) = (self.0, self.1).spec_parse(buf2) {
-                            (self.0, self.1).lemma_parse_sound_value(buf1);
-                            (self.0, self.1).lemma_parse_sound_value(buf2);
+                    if let Some((_, (va1, vb1))) = Pair(self.0, self.1).spec_parse(buf1) {
+                        if let Some((_, (va2, vb2))) = Pair(self.0, self.1).spec_parse(buf2) {
+                            Pair(self.0, self.1).lemma_parse_sound_value(buf1);
+                            Pair(self.0, self.1).lemma_parse_sound_value(buf2);
                             self.1.lemma_unique_consistent_val(vb1, vb2);
                             assert((va1, vb1) == (va2, vb2));
 
-                            (self.0, self.1).lemma_parse_non_malleable(buf1, buf2);
+                            Pair(self.0, self.1).lemma_parse_non_malleable(buf1, buf2);
                         }
                     }
                 }
@@ -63,7 +66,7 @@ impl<A, B> NoLookAhead for super::Terminated<A, B> where
         if let Some((n, va)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
-                    (self.0, self.1).lemma_no_lookahead(i1, i2);
+                    Pair(self.0, self.1).lemma_no_lookahead(i1, i2);
                 }
             }
         }
@@ -76,7 +79,7 @@ impl<A, B> EquivSerializersGeneral for super::Terminated<A, B> where
  {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let vb = choose|vb: <B as SpecSerializer>::SVal| self.1.consistent(vb);
-        (self.0, self.1).lemma_serialize_equiv((v, vb), obuf);
+        Pair(self.0, self.1).lemma_serialize_equiv((v, vb), obuf);
     }
 }
 

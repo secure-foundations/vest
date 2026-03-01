@@ -9,6 +9,7 @@ use super::preceded::Preceded;
 use super::refined::{Refined, Tag};
 use super::tail::Eof;
 use super::terminated::Terminated;
+use super::tuple::Pair;
 use super::Repeat;
 use crate::core::spec::SpecPred;
 use crate::core::spec::*;
@@ -58,7 +59,7 @@ pub broadcast proof fn lemma_disjoint_cond<Inner1: SpecParser, Inner2: SpecParse
 /// A tuple parser is disjoint from another parser if its first component is.
 pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: SpecParser>(
     t: U,
-    t1: (U1, V1),
+    t1: Pair<U1, V1>,
 )
     requires
         disjoint_domains(t, t1.0),
@@ -73,7 +74,7 @@ pub broadcast proof fn lemma_disjoint_tuple_2<
     B: SpecParser,
     C: SpecParser,
     D: SpecParser,
->(t1: (A, B), t2: (C, D))
+>(t1: Pair<A, B>, t2: Pair<C, D>)
     requires
         forall|input: Seq<u8>| #[trigger]
             t1.0.spec_parse(input) matches Some((n1, _)) ==> t2.0.spec_parse(input) matches Some(

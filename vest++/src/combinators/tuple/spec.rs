@@ -3,7 +3,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, B> SpecParser for (A, B) where A: SpecParser, B: SpecParser {
+impl<A, B> SpecParser for super::Pair<A, B> where A: SpecParser, B: SpecParser {
     type PVal = (A::PVal, B::PVal);
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -17,7 +17,7 @@ impl<A, B> SpecParser for (A, B) where A: SpecParser, B: SpecParser {
     }
 }
 
-impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
+impl<A, B> Consistency for super::Pair<A, B> where A: Consistency, B: Consistency {
     type Val = (A::Val, B::Val);
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -25,7 +25,7 @@ impl<A, B> Consistency for (A, B) where A: Consistency, B: Consistency {
     }
 }
 
-impl<A, B> SoundParser for (A, B) where A: SoundParser, B: SoundParser {
+impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParser {
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& self.1.sound_inv()
@@ -53,7 +53,10 @@ impl<A, B> SoundParser for (A, B) where A: SoundParser, B: SoundParser {
     }
 }
 
-impl<A, B> SpecSerializerDps for (A, B) where A: SpecSerializerDps, B: SpecSerializerDps {
+impl<A, B> SpecSerializerDps for super::Pair<A, B> where
+    A: SpecSerializerDps,
+    B: SpecSerializerDps,
+ {
     type ST = (A::ST, B::ST);
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
@@ -61,7 +64,7 @@ impl<A, B> SpecSerializerDps for (A, B) where A: SpecSerializerDps, B: SpecSeria
     }
 }
 
-impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer {
+impl<A, B> SpecSerializer for super::Pair<A, B> where A: SpecSerializer, B: SpecSerializer {
     type SVal = (A::SVal, B::SVal);
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -69,13 +72,13 @@ impl<A, B> SpecSerializer for (A, B) where A: SpecSerializer, B: SpecSerializer 
     }
 }
 
-impl<A, B> Unambiguity for (A, B) where A: Unambiguity, B: Unambiguity {
+impl<A, B> Unambiguity for super::Pair<A, B> where A: Unambiguity, B: Unambiguity {
     open spec fn unambiguous(&self) -> bool {
         self.1.unambiguous() && self.0.unambiguous()
     }
 }
 
-impl<A, B> NonTailFmt for (A, B) where A: NonTailFmt, B: NonTailFmt {
+impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.1.serialize_dps_inv()
@@ -99,7 +102,7 @@ impl<A, B> NonTailFmt for (A, B) where A: NonTailFmt, B: NonTailFmt {
     }
 }
 
-impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer {
+impl<A, B> GoodSerializer for super::Pair<A, B> where A: GoodSerializer, B: GoodSerializer {
     open spec fn serialize_inv(&self) -> bool {
         &&& self.0.serialize_inv()
         &&& self.1.serialize_inv()
@@ -111,7 +114,7 @@ impl<A, B> GoodSerializer for (A, B) where A: GoodSerializer, B: GoodSerializer 
     }
 }
 
-impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for (A, B) {
+impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Pair<A, B> {
     type T = (A::T, B::T);
 
     open spec fn byte_len(&self, v: Self::T) -> nat {

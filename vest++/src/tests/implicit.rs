@@ -1,4 +1,5 @@
 use crate::combinators::bytes::ExactLen;
+use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
 use crate::combinators::{Choice, Cond, Implicit, ImplicitAuto, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
@@ -85,10 +86,10 @@ proof fn test_implicit_inferred_fmt2_roundtrip() {
     let fmt2 =
         // Format:
         ImplicitAuto(U8, |len1: u8|
-        (Fixed::<3>,
+        Pair(Fixed::<3>,
         ImplicitAuto(U16Le, |len2: u16|
-        (Varied(len1),
-        (Varied(len2),
+        Pair(Varied(len1),
+        Pair(Varied(len2),
          Varied(len1))),
         // Recovery logics:
         |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16)),
@@ -172,9 +173,9 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         // Format:
         ImplicitAuto(U8, |tag: u8|
         ImplicitAuto(U8, |len1: u8|
-        (Fixed::<3>,
+        Pair(Fixed::<3>,
         ImplicitAuto(U16Le, |len2: u16|
-        (Varied(len1),
+        Pair(Varied(len1),
         ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
                                  Choice(Cond(tag == 1u8, Varied(len2)),
                                         Cond(tag == 2u8, Repeat(U16Le, Eof)))))),
@@ -227,9 +228,9 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     let tlv2 =
         Implicit(U8, |tag: u8|
         Implicit(U8, |len1: u8|
-        (Fixed::<3>,
+        Pair(Fixed::<3>,
         Implicit(U16Le, |len2: u16|
-        (Varied(len1),
+        Pair(Varied(len1),
         ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
                                  Choice(Cond(tag == 1u8, Varied(len2)),
                                         Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));

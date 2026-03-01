@@ -1,6 +1,7 @@
 use super::*;
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::length::AsLen;
+use crate::combinators::tuple::Pair;
 use crate::combinators::{Choice, Cond, Sum, Varied, Void};
 use crate::core::spec::*;
 use crate::Never;
@@ -268,7 +269,7 @@ impl<Len, Then> DepCombinator for VariedLenOf<Len, Then> where
     }
 }
 
-// Enabling Patterns like `Bind((H1, H2), (T1, T2))`.
+// Enabling Patterns like `Bind(Pair(H1, H2), Pair(T1, T2))`.
 // e.g.,
 // ```
 // fmt = {
@@ -277,15 +278,15 @@ impl<Len, Then> DepCombinator for VariedLenOf<Len, Then> where
 //   payload1: [u8; @l1],
 //   payload2: [u8; @l2],
 // }
-impl<D1: DepCombinator, D2: DepCombinator> DepCombinator for (D1, D2) {
+impl<D1: DepCombinator, D2: DepCombinator> DepCombinator for Pair<D1, D2> {
     type Key = (D1::Key, D2::Key);
 
     type Val = (D1::Val, D2::Val);
 
-    type Body = (D1::Body, D2::Body);
+    type Body = Pair<D1::Body, D2::Body>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
-        (self.0.apply(key.0), self.1.apply(key.1))
+        Pair(self.0.apply(key.0), self.1.apply(key.1))
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {

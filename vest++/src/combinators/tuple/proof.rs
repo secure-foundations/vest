@@ -3,7 +3,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for (A, B) {
+impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Pair<A, B> {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
         &&& self.0.sp_roundtrip_dps_inv()
         &&& self.1.sp_roundtrip_dps_inv()
@@ -29,7 +29,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for (A, B
 //     B,
 // ) {
 // }
-impl<A: NonMalleable, B: NonMalleable> NonMalleable for (A, B) {
+impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Pair<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
         &&& self.1.nonmal_inv()
@@ -70,7 +70,7 @@ pub(crate) proof fn lemma_take_skip<T>(s: Seq<T>, n1: int, n2: int)
 {
 }
 
-impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for (A, B) {
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -97,7 +97,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for (A, B) {
     }
 }
 
-impl<A, B> EquivSerializersGeneral for (A, B) where
+impl<A, B> EquivSerializersGeneral for super::Pair<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
  {
@@ -122,7 +122,10 @@ impl<A, B> EquivSerializersGeneral for (A, B) where
     }
 }
 
-impl<A, B> EquivSerializers for (A, B) where A: EquivSerializersGeneral, B: EquivSerializers {
+impl<A, B> EquivSerializers for super::Pair<A, B> where
+    A: EquivSerializersGeneral,
+    B: EquivSerializers,
+ {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let empty = Seq::empty();
         let obuf = self.1.spec_serialize_dps(v.1, empty);

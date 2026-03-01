@@ -24,7 +24,7 @@ verus! {
 /// able to disambiguate `A` and `B` and hence more compositional.
 pub struct Opt<A>(pub A);
 
-/// Optional field with an arbitrary continuation, defined as `(Opt<A>, B)`.
+/// Optional field with an arbitrary continuation, defined as `Pair(Opt<A>, B)`.
 ///
 /// ## Unambiguity
 ///

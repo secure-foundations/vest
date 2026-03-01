@@ -26,7 +26,7 @@ pub struct Star<A> {
     pub inner: A,
 }
 
-/// Zero-or-more `A` followed by terminator `B`: sugar for `(Star<A>, B)`.
+/// Zero-or-more `A` followed by terminator `B`: sugar for `Pair(Star<A>, B)`.
 ///
 /// ## Unambiguity
 ///

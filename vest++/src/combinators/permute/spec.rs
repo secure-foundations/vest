@@ -1,5 +1,6 @@
 use crate::combinators::choice::Alt;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::tuple::Pair;
 use crate::combinators::Mapped;
 use crate::core::{proof::*, spec::*};
 use core::marker::PhantomData;
@@ -16,9 +17,9 @@ impl<P1, P2> SpecParser for super::Permute2<P1, P2> where P1: SpecParser, P2: Sp
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt(
-            (self.0, self.1),
+            Pair(self.0, self.1),
             Mapped {
-                inner: (self.1, self.0),
+                inner: Pair(self.1, self.0),
                 mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
             },
         );
@@ -30,7 +31,7 @@ impl<P1, P2> Consistency for super::Permute2<P1, P2> where P1: Consistency, P2: 
     type Val = (P1::Val, P2::Val);
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        (self.0, self.1).consistent(v)
+        Pair(self.0, self.1).consistent(v)
     }
 }
 
@@ -41,7 +42,7 @@ impl<P1, P2> SpecSerializerDps for super::Permute2<P1, P2> where
     type ST = (P1::ST, P2::ST);
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (self.0, self.1).spec_serialize_dps(v, obuf)
+        Pair(self.0, self.1).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -52,16 +53,16 @@ impl<P1, P2> SpecSerializer for super::Permute2<P1, P2> where
     type SVal = (P1::SVal, P2::SVal);
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (self.0, self.1).spec_serialize(v)
+        Pair(self.0, self.1).spec_serialize(v)
     }
 }
 
 impl<P1, P2> Unambiguity for super::Permute2<P1, P2> where P1: Unambiguity, P2: Unambiguity {
     open spec fn unambiguous(&self) -> bool {
         let inner = Alt(
-            (self.0, self.1),
+            Pair(self.0, self.1),
             Mapped {
-                inner: (self.1, self.0),
+                inner: Pair(self.1, self.0),
                 mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
             },
         );
@@ -76,11 +77,11 @@ impl<P1, P2> NonTailFmt for super::Permute2<P1, P2> where P1: NonTailFmt, P2: No
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, self.1).lemma_serialize_dps_prepend(v, obuf);
+        Pair(self.0, self.1).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, self.1).lemma_serialize_dps_len(v, obuf);
+        Pair(self.0, self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -94,7 +95,7 @@ impl<P1, P2> GoodSerializer for super::Permute2<P1, P2> where
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        (self.0, self.1).lemma_serialize_len(v);
+        Pair(self.0, self.1).lemma_serialize_len(v);
     }
 }
 
@@ -102,7 +103,7 @@ impl<P1: SpecByteLen, P2: SpecByteLen> SpecByteLen for super::Permute2<P1, P2> {
     type T = (P1::T, P2::T);
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.0, self.1).byte_len(v)
+        Pair(self.0, self.1).byte_len(v)
     }
 }
 
@@ -123,14 +124,14 @@ impl<A, B, C> SpecParser for super::Permute3<A, B, C> where
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt(
-            (self.0, super::Permute2(self.1, self.2)),
+            Pair(self.0, super::Permute2(self.1, self.2)),
             Alt(
                 Mapped {
-                    inner: (self.1, super::Permute2(self.0, self.2)),
+                    inner: Pair(self.1, super::Permute2(self.0, self.2)),
                     mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
                 },
                 Mapped {
-                    inner: (self.2, super::Permute2(self.0, self.1)),
+                    inner: Pair(self.2, super::Permute2(self.0, self.1)),
                     mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
                 },
             ),
@@ -147,7 +148,7 @@ impl<A, B, C> Consistency for super::Permute3<A, B, C> where
     type Val = (A::Val, (B::Val, C::Val));
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        (self.0, (self.1, self.2)).consistent(v)
+        Pair(self.0, Pair(self.1, self.2)).consistent(v)
     }
 }
 
@@ -159,7 +160,7 @@ impl<A, B, C> SpecSerializerDps for super::Permute3<A, B, C> where
     type ST = (A::ST, (B::ST, C::ST));
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (self.0, super::Permute2(self.1, self.2)).spec_serialize_dps(v, obuf)
+        Pair(self.0, super::Permute2(self.1, self.2)).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -171,7 +172,7 @@ impl<A, B, C> SpecSerializer for super::Permute3<A, B, C> where
     type SVal = (A::SVal, (B::SVal, C::SVal));
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (self.0, super::Permute2(self.1, self.2)).spec_serialize(v)
+        Pair(self.0, super::Permute2(self.1, self.2)).spec_serialize(v)
     }
 }
 
@@ -182,14 +183,14 @@ impl<A, B, C> Unambiguity for super::Permute3<A, B, C> where
  {
     open spec fn unambiguous(&self) -> bool {
         let inner = Alt(
-            (self.0, super::Permute2(self.1, self.2)),
+            Pair(self.0, super::Permute2(self.1, self.2)),
             Alt(
                 Mapped {
-                    inner: (self.1, super::Permute2(self.0, self.2)),
+                    inner: Pair(self.1, super::Permute2(self.0, self.2)),
                     mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
                 },
                 Mapped {
-                    inner: (self.2, super::Permute2(self.0, self.1)),
+                    inner: Pair(self.2, super::Permute2(self.0, self.1)),
                     mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
                 },
             ),
@@ -210,11 +211,11 @@ impl<A, B, C> NonTailFmt for super::Permute3<A, B, C> where
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_prepend(v, obuf);
+        Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_len(v, obuf);
+        Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -230,7 +231,7 @@ impl<A, B, C> GoodSerializer for super::Permute3<A, B, C> where
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        (self.0, super::Permute2(self.1, self.2)).lemma_serialize_len(v);
+        Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_len(v);
     }
 }
 
@@ -238,7 +239,7 @@ impl<A: SpecByteLen, B: SpecByteLen, C: SpecByteLen> SpecByteLen for super::Perm
     type T = (A::T, (B::T, C::T));
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.0, super::Permute2(self.1, self.2)).byte_len(v)
+        Pair(self.0, super::Permute2(self.1, self.2)).byte_len(v)
     }
 }
 
@@ -263,19 +264,19 @@ impl<A, B, C, D> SpecParser for super::Permute4<A, B, C, D> where
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt(
-            (self.0, super::Permute3(self.1, self.2, self.3)),
+            Pair(self.0, super::Permute3(self.1, self.2, self.3)),
             Alt(
                 Mapped {
-                    inner: (self.1, super::Permute3(self.0, self.2, self.3)),
+                    inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
                     mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                 },
                 Alt(
                     Mapped {
-                        inner: (self.2, super::Permute3(self.0, self.1, self.3)),
+                        inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
                         mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                     },
                     Mapped {
-                        inner: (self.3, super::Permute3(self.0, self.1, self.2)),
+                        inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
                         mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                     },
                 ),
@@ -308,7 +309,7 @@ impl<A, B, C, D> SpecSerializerDps for super::Permute4<A, B, C, D> where
     type ST = (A::ST, (B::ST, (C::ST, D::ST)));
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        (self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize_dps(v, obuf)
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -321,7 +322,7 @@ impl<A, B, C, D> SpecSerializer for super::Permute4<A, B, C, D> where
     type SVal = (A::SVal, (B::SVal, (C::SVal, D::SVal)));
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        (self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize(v)
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize(v)
     }
 }
 
@@ -333,19 +334,19 @@ impl<A, B, C, D> Unambiguity for super::Permute4<A, B, C, D> where
  {
     open spec fn unambiguous(&self) -> bool {
         let inner = Alt(
-            (self.0, super::Permute3(self.1, self.2, self.3)),
+            Pair(self.0, super::Permute3(self.1, self.2, self.3)),
             Alt(
                 Mapped {
-                    inner: (self.1, super::Permute3(self.0, self.2, self.3)),
+                    inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
                     mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                 },
                 Alt(
                     Mapped {
-                        inner: (self.2, super::Permute3(self.0, self.1, self.3)),
+                        inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
                         mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                     },
                     Mapped {
-                        inner: (self.3, super::Permute3(self.0, self.1, self.2)),
+                        inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
                         mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
                     },
                 ),
@@ -369,11 +370,11 @@ impl<A, B, C, D> NonTailFmt for super::Permute4<A, B, C, D> where
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_prepend(v, obuf);
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_len(v, obuf);
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -391,7 +392,7 @@ impl<A, B, C, D> GoodSerializer for super::Permute4<A, B, C, D> where
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        (self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_len(v);
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_len(v);
     }
 }
 
@@ -404,7 +405,7 @@ impl<
     type T = (A::T, (B::T, (C::T, D::T)));
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        (self.0, super::Permute3(self.1, self.2, self.3)).byte_len(v)
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).byte_len(v)
     }
 }
 

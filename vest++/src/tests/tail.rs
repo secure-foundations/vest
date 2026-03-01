@@ -3,6 +3,7 @@ use crate::combinators::dependent::VLDataOf;
 use crate::combinators::disjoint::{
     lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_repeat, lemma_disjoint_tag,
 };
+use crate::combinators::tuple::Pair;
 use crate::combinators::{
     Bind, Cond, Eof, Fixed, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail, U16Le,
     U32Le, U8,
@@ -13,7 +14,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_tail_compose() {
-    let c = (U8, Tail);
+    let c = Pair(U8, Tail);
     let obuf = Seq::empty();
     let v1 = (1u8, seq![3u8, 4u8, 5u8]);
     assert(c.unambiguous());
@@ -23,7 +24,7 @@ proof fn test_tail_compose() {
 }
 
 proof fn test_tail_ill_composed() {
-    let c = (Tail, U8);
+    let c = Pair(Tail, U8);
     let obuf = Seq::<u8>::empty();
     let v1 = (seq![3u8, 4u8, 5u8], 1u8);
     // the following line fails to compile, which is what we want
@@ -39,8 +40,8 @@ proof fn test_chain_end_with_tailopt() {
 
     #[verusfmt::skip]
     let c =
-        (f1,
-        (f2,
+        Pair(f1,
+        Pair(f2,
         Optional(f3,
         Repeat(f4,
         OptionalEnd(f5)))));
@@ -67,10 +68,10 @@ proof fn test_chain_end_with_tailrepeat() {
 
     #[verusfmt::skip]
     let c =
-        (f1,
-        (f2,
+        Pair(f1,
+        Pair(f2,
         Optional(f3,
-        (f4,
+        Pair(f4,
         RepeatTillEnd(f5)))));
 
     let v = (0x11u8, ([0x22u8, 0x33u8, 0x44u8], (None::<u8>, (seq![], seq![0x99u32, 0xffu32]))));

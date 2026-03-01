@@ -1,5 +1,6 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::Mapper;
+use crate::combinators::tuple::Pair;
 use crate::combinators::*;
 use crate::core::spec::*;
 use vstd::prelude::*;
@@ -26,8 +27,8 @@ proof fn test_disjointness_tags() {
     let tag3 = Tag { inner: U8, tag: 3u8 };
     let tag4 = Tag { inner: U8, tag: 4u8 };
 
-    let t1 = (tag1, tag2);
-    let t2 = (tag3, tag4);
+    let t1 = Pair(tag1, tag2);
+    let t2 = Pair(tag3, tag4);
     let c1 = Choice(t1, t2);
     assert(c1.unambiguous());
 
@@ -122,8 +123,8 @@ proof fn test_disjointness_shared_prefix() {
     let tag1 = Tag { inner: U8, tag: 1u8 };
     let tag2 = Tag { inner: U8, tag: 2u8 };
     let tag3 = Tag { inner: U8, tag: 3u8 };
-    let c_left = (tag1, (tag2, tag2));
-    let c_right = (tag1, (tag2, tag3));
+    let c_left = Pair(tag1, Pair(tag2, tag2));
+    let c_right = Pair(tag1, Pair(tag2, tag3));
     let c_main = Choice(c_left, c_right);
 
     assert(c_main.unambiguous());

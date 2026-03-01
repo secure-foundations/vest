@@ -1,3 +1,4 @@
+use crate::combinators::tuple::Pair;
 use crate::combinators::{Choice, Optional, Refined, Sum, Tag, U8};
 use crate::core::{proof::*, spec::*};
 
@@ -28,7 +29,7 @@ proof fn test() {
     let opt2 = Optional(Refined { inner: U8, pred: Pred0 }, Refined { inner: U8, pred: Pred1 });
     let choice1 = Choice(
         Tag { inner: U8, tag: 0 },
-        Choice(Tag { inner: U8, tag: 1 }, (Tag { inner: U8, tag: 10 }, U8)),
+        Choice(Tag { inner: U8, tag: 1 }, Pair(Tag { inner: U8, tag: 10 }, U8)),
     );
     // assert forall|vb: Subset<u8, PredFnSpec<u8>>, va: Subset<u8, PredFnSpec<u8>>| #![auto] mutual_exclusive(vb, va) by {}
     // assert forall|vb: Subset<u8, Pred0>, va: Subset<u8, Pred1>| #![auto] va.wf() implies !vb.wf() by {}

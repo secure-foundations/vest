@@ -14,17 +14,17 @@
 //!
 //! | Combinator | Description |
 //! |---|---|
-//! | [`(A, B)`](tuple::spec) | Sequential composition |
+//! | [`Pair<A, B>`] | Sequential composition |
 //! | [`Choice<A, B>`] | Non-malleable ordered alternative |
 //! | [`Alt<A, B>`] | Malleable ordered alternative |
 //! | [`Opt<A>`] | Optional value |
-//! | [`Optional<A, B>`] | Same as `(Opt<A>, B)`, but disambiguates `A` and `B` |
+//! | [`Optional<A, B>`] | Same as `Pair(Opt<A>, B)`, but disambiguates `A` and `B` |
 //! | [`Star<A>`] | The Kleene star: zero-or-more repetitions |
-//! | [`Repeat<A, B>`] | Same as `(Star<A>, B)`, but disambiguates `A` and `B` |
+//! | [`Repeat<A, B>`] | Same as `Pair(Star<A>, B)`, but disambiguates `A` and `B` |
 //! | [`RepeatN<C, Len>`] | Fixed number of repetitions determined by a length parameter |
 //! | [`Array<N, C>`] | Array of values of length `N` |
-//! | [`Preceded<A, B>`] | Same as `(A, B)`, but discards A's value |
-//! | [`Terminated<A, B>`] | Same as `(A, B)`, but discards B's value |
+//! | [`Preceded<A, B>`] | Same as `Pair(A, B)`, but discards A's value |
+//! | [`Terminated<A, B>`] | Same as `Pair(A, B)`, but discards B's value |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
 //! | [`Tag<Inner, T>`] | Matches a specific constant value |
@@ -85,7 +85,7 @@ pub mod marker;
 pub mod opt;
 pub mod permute;
 pub mod preceded;
-pub mod recursive;
+// pub mod recursive;
 pub mod refined;
 pub mod star;
 pub mod tail;
@@ -113,4 +113,5 @@ pub use refined::{Refined, Tag, Tagged};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
+pub use tuple::Pair;
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

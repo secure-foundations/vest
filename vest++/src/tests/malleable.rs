@@ -1,5 +1,6 @@
 use crate::combinators::bytes::spec::axiom_array_from_seq;
 use crate::combinators::refined::Tag;
+use crate::combinators::tuple::Pair;
 use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -112,7 +113,7 @@ proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
     let serializer = Preceded(tag, U8);
 
     assert(serializer.unambiguous()) by {
-        unambiguous_pair((tag, U8));
+        unambiguous_pair(Pair(tag, U8));
     }
     requires_deterministic(serializer, v, obuf);  // Should pass: Tag has AdmitsUniqueVal
 }
@@ -167,7 +168,7 @@ proof fn test_berbool_fails_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     // requires_non_malleable(parser, buf1, buf2); // Would fail: BerBool does not implement NonMalleable
 }
 
-proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: (A, B))
+proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: Pair<A, B>)
     requires
         pair.0.unambiguous(),
         pair.1.unambiguous(),
@@ -179,7 +180,7 @@ proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: (A, B))
 proof fn test_large_format_with_berbools() {
     // Format: [Header 0xAA] [(BerBool, BerBool, Fixed::<2>)] [Footer 0xFF]
     let val1 = 0x00u8;
-    let format_inner = ((BerBool, BerBool), Fixed::<2>);
+    let format_inner = Pair(Pair(BerBool, BerBool), Fixed::<2>);
     let format = Terminated(
         Preceded(Tag { inner: Fixed::<2>, tag: [val1, val1] }, format_inner),
         Tag { inner: U8, tag: 0xFFu8 },
@@ -197,10 +198,10 @@ proof fn test_large_format_with_berbools() {
     assert(format.0.1.unambiguous());
 
     assert(format.0.unambiguous()) by {
-        unambiguous_pair((format.0.0, format.0.1));
+        unambiguous_pair(Pair(format.0.0, format.0.1));
     }
     assert(format.unambiguous()) by {
-        unambiguous_pair((format.0, format.1));
+        unambiguous_pair(Pair(format.0, format.1));
     }
     assert(format.0.0.consistent(()));
     assert(format.1.consistent(()));
