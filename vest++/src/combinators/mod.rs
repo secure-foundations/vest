@@ -85,7 +85,7 @@ pub mod marker;
 pub mod opt;
 pub mod permute;
 pub mod preceded;
-// pub mod recursive;
+pub mod recursive;
 pub mod refined;
 pub mod star;
 pub mod tail;
