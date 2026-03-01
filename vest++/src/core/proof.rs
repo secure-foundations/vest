@@ -89,12 +89,15 @@ pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
-          SoundParser +
           Unambiguity,
 {
+    open spec fn ps_roundtrip_inv(&self) -> bool {
+        true
+    }
+
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.ps_roundtrip_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
@@ -102,7 +105,7 @@ pub trait PSRoundTrip where
 
     proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.ps_roundtrip_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
@@ -115,6 +118,10 @@ pub trait PSRoundTrip where
 }
 
 impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
+    open spec fn ps_roundtrip_inv(&self) -> bool {
+        self.sound_inv() && self.nonmal_inv()
+    }
+
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
         let c = self;
         if let Some((n, v)) = c.spec_parse(ibuf) {
@@ -136,10 +143,17 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
 /// If two buffers parse to equal values, their consumed bytes are identical—i.e.,
 /// each semantic value has a unique byte-level representation.
 pub trait NonMalleable: SoundParser {
+    /// Optional invariant (used by spec-function combinators; struct-based combinators
+    /// typically leave this as `true`)
+    open spec fn nonmal_inv(&self) -> bool {
+        true
+    }
+
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
             self.sound_inv(),
+            self.nonmal_inv(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>

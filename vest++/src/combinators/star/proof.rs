@@ -70,6 +70,7 @@ impl<A: NonMalleable> super::Star<A> {
     proof fn lemma_parse_non_malleable_rec(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
             self.sound_inv(),
+            self.nonmal_inv(),
         ensures
             ({
                 let (n1, v1) = self.parse_rec(buf1);
@@ -122,7 +123,12 @@ impl<A: NonMalleable> super::Star<A> {
 }
 
 impl<A: NonMalleable> NonMalleable for super::Star<A> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.inner.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        assert(self.nonmal_inv());
         self.lemma_parse_non_malleable_rec(buf1, buf2);
     }
 }
@@ -320,6 +326,7 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_parse_non_malleable_rec(&self, count: nat, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
             self.1.sound_inv(),
+            self.1.nonmal_inv(),
         ensures
             self.parse_n_rec(count, buf1) matches Some((n1, v1)) ==>
             self.parse_n_rec(count, buf2) matches Some((n2, v2)) ==>
@@ -370,6 +377,10 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
 }
 
 impl<C: NonMalleable, N: AsLen> NonMalleable for super::RepeatN<C, N> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.lemma_parse_non_malleable_rec(self.0.as_usize() as nat, buf1, buf2);
     }
@@ -444,6 +455,10 @@ impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where C: SPRoundTr
 }
 
 impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
+    open spec fn nonmal_inv(&self) -> bool {
+        super::RepeatN(N, self.0).nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         use crate::combinators::bytes::spec::axiom_array_from_seq;
 
@@ -501,6 +516,11 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
 // > PSRoundTrip for super::Repeat<A, B> {
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
     }

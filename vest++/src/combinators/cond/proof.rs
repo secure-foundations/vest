@@ -10,6 +10,10 @@ impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Cond<Inner> {
 }
 
 impl<Inner: NonMalleable> NonMalleable for super::Cond<Inner> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.1.lemma_parse_non_malleable(buf1, buf2);
     }

@@ -91,6 +91,11 @@ impl<A, B> NonMalleable for super::Implicit<A, spec_fn(A::PVal) -> B> where
     B: NonMalleable,
     Self: super::LosslessImplicit<A, B>,
  {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {

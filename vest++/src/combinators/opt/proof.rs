@@ -51,6 +51,10 @@ impl<A: NoLookAhead> super::Opt<A> {
 }
 
 impl<A: NonMalleable> NonMalleable for super::Opt<A> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.0.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
     }
@@ -98,6 +102,11 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
 // > PSRoundTrip for super::Optional<A, B> {
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         (super::Opt(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
     }

@@ -24,6 +24,10 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     Inner: NonMalleable,
     M: IsoMapper<In = Inner::PVal>,
  {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.inner.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {

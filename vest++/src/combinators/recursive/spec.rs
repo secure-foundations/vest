@@ -60,6 +60,48 @@ pub open spec fn sound_parser<T>(
         }
 }
 
+pub open spec fn parser_pair_some<T>(
+    parser: ParserFnSpec<T>,
+    buf1: Seq<u8>,
+    buf2: Seq<u8>,
+) -> Option<((int, T), (int, T))> {
+    match parser(buf1) {
+        Some((n1, v1)) => match parser(buf2) {
+            Some((n2, v2)) => Some(((n1, v1), (n2, v2))),
+            None => None,
+        },
+        None => None,
+    }
+}
+
+/// Functional non-malleability for parser functions.
+pub open spec fn non_malleable_parser<T>(parser: ParserFnSpec<T>) -> bool {
+    forall|buf1: Seq<u8>, buf2: Seq<u8>| #[trigger]
+        parser_pair_some(parser, buf1, buf2) matches Some(((n1, v1), (n2, v2))) ==> v1 == v2
+            ==> buf1.take(n1) == buf2.take(n2)
+}
+
+impl<T> NonMalleable for ParserSpecs<T> {
+    open spec fn nonmal_inv(&self) -> bool {
+        let (p_fn, _, _) = *self;
+        non_malleable_parser(p_fn)
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    let p_fn = self.0;
+                    assert(self.nonmal_inv());
+                    assert(parser_pair_some(p_fn, buf1, buf2) == Some(((n1, v1), (n2, v2))));
+                    assert(non_malleable_parser(p_fn));
+                    assert(buf1.take(n1) == buf2.take(n2));
+                }
+            }
+        }
+    }
+}
+
 /// Defines one level of a recursive format for use with [`super::Fix`].
 pub trait RecPBody {
     /// The type of values parsed/serialized by this recursive format.
@@ -76,11 +118,24 @@ pub trait RecPBody {
 /// Soundness for [`RecPBody`].
 pub trait SoundRecPBody: RecPBody where Self::Body: SoundParser<T = Self::T> {
     /// Induction: if the callback `rec` satisfies `sound_inv`, then unfolding the body also satisfies `sound_inv`.
-    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::T>)
+    proof fn lemma_body_sound_inv_preservation(&self, rec: ParserSpecs<Self::T>)
         requires
             rec.sound_inv(),
         ensures
             self.body(rec).sound_inv(),
+    ;
+}
+
+/// Non-malleability for [`RecPBody`].
+pub trait NonMalleableRecPBody: SoundRecPBody where Self::Body: NonMalleable<T = Self::T> {
+    /// Induction: if the callback `rec` satisfies `sound_inv` and `nonmal_inv`,
+    /// then unfolding the body also satisfies `nonmal_inv`.
+    proof fn lemma_body_nonmal_inv_preservation(&self, rec: ParserSpecs<Self::T>)
+        requires
+            rec.sound_inv(),
+            rec.nonmal_inv(),
+        ensures
+            self.body(rec).nonmal_inv(),
     ;
 }
 
@@ -207,7 +262,7 @@ impl<const LIMIT: usize, Body: SoundRecPBody> super::Fix<LIMIT, Body> where
         assert(sound_parser(callback_p, callback_c, callback_b));
         assert(callback.sound_inv());
 
-        self.0.lemma_body_inv_preservation(callback);
+        self.0.lemma_body_sound_inv_preservation(callback);
         let body = self.0.body(callback);
         assert(body.sound_inv());
 
@@ -240,6 +295,95 @@ impl<const LIMIT: usize, Body: SoundRecPBody> SoundParser for super::Fix<LIMIT, 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.sound_parser_by_induction(LIMIT as nat, ibuf, n, v);
+        }
+    }
+}
+
+impl<const LIMIT: usize, Body: NonMalleableRecPBody> super::Fix<LIMIT, Body> where
+    Body::Body: NonMalleable<T = Body::T>,
+ {
+    /// Inductive proof that `spec_parse_with_gas` is non-malleable.
+    proof fn non_malleable_by_induction(
+        &self,
+        gas: nat,
+        buf1: Seq<u8>,
+        buf2: Seq<u8>,
+        n1: int,
+        n2: int,
+        v1: Body::T,
+        v2: Body::T,
+    )
+        ensures
+            self.spec_parse_with_gas(gas, buf1) == Some((n1, v1)) ==> self.spec_parse_with_gas(
+                gas,
+                buf2,
+            ) == Some((n2, v2)) ==> v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+        decreases gas,
+    {
+        if !(self.spec_parse_with_gas(gas, buf1) == Some((n1, v1))) {
+            return ;
+        }
+        if !(self.spec_parse_with_gas(gas, buf2) == Some((n2, v2))) {
+            return ;
+        }
+        if !(v1 == v2) {
+            return ;
+        }
+        let callback = self.specs_callback(gas);
+        let callback_p = callback.0;
+        let callback_c = callback.1;
+        let callback_b = callback.2;
+
+        // establish sound_parser(callback_p, callback_c, callback_b)
+        assert forall|rem: Seq<u8>| #[trigger]
+            callback_p(rem) matches Some((nn, vv)) ==> {
+                &&& 0 <= nn <= rem.len()
+                &&& callback_c(vv)
+                &&& callback_b(vv) == nn
+            } by {
+            if let Some((nn, vv)) = callback_p(rem) {
+                self.sound_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+            }
+        }
+
+        // establish non_malleable_parser(callback_p)
+        assert forall|rem1: Seq<u8>, rem2: Seq<u8>| #[trigger]
+            parser_pair_some(callback_p, rem1, rem2) matches Some(((nn1, vv1), (nn2, vv2))) ==> vv1
+                == vv2 ==> rem1.take(nn1) == rem2.take(nn2) by {
+            if let Some(((nn1, vv1), (nn2, vv2))) = parser_pair_some(callback_p, rem1, rem2) {
+                self.non_malleable_by_induction((gas - 1) as nat, rem1, rem2, nn1, nn2, vv1, vv2);
+            }
+        }
+
+        assert(sound_parser(callback_p, callback_c, callback_b));
+        assert(non_malleable_parser(callback_p));
+        assert(callback.sound_inv());
+        assert(callback.nonmal_inv());
+
+        self.0.lemma_body_sound_inv_preservation(callback);
+        self.0.lemma_body_nonmal_inv_preservation(callback);
+        let body = self.0.body(callback);
+        assert(body.sound_inv());
+        assert(body.nonmal_inv());
+
+        body.lemma_parse_non_malleable(buf1, buf2);
+
+        // By definition
+        assert(self.spec_parse_with_gas(gas, buf1) == body.spec_parse(buf1));
+        assert(self.spec_parse_with_gas(gas, buf2) == body.spec_parse(buf2));
+    }
+}
+
+impl<const LIMIT: usize, Body: NonMalleableRecPBody> NonMalleable for super::Fix<LIMIT, Body> where
+    Body::Body: NonMalleable<T = Body::T>,
+ {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    self.non_malleable_by_induction(LIMIT as nat, buf1, buf2, n1, n2, v1, v2);
+                }
+            }
         }
     }
 }
@@ -329,8 +473,14 @@ impl RecPBody for NestedBracesBody {
 }
 
 impl SoundRecPBody for NestedBracesBody {
-    proof fn lemma_body_inv_preservation(&self, rec: ParserSpecs<Self::T>) {
+    proof fn lemma_body_sound_inv_preservation(&self, rec: ParserSpecs<Self::T>) {
         assert(self.body(rec).sound_inv());
+    }
+}
+
+impl NonMalleableRecPBody for NestedBracesBody {
+    proof fn lemma_body_nonmal_inv_preservation(&self, rec: ParserSpecs<Self::T>) {
+        assert(self.body(rec).nonmal_inv());
     }
 }
 
@@ -349,9 +499,12 @@ proof fn nested_braces_sound_parser() {
         ));
     };
 
+    let input2 = seq![0x7Bu8, 0x00u8, 0x7Du8, 0x7Bu8, 0x00u8, 0x7Du8];
+
     nested_braces.lemma_parse_sound_consumption(input);
     nested_braces.lemma_parse_sound_value(input);
     nested_braces.lemma_parse_safe(input);
+    nested_braces.lemma_parse_non_malleable(input, input2);
 }
 
 } // verus!

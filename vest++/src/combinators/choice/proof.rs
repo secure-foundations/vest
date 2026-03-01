@@ -24,6 +24,11 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B
 //     }
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.0.lemma_parse_non_malleable(buf1, buf2);
         self.1.lemma_parse_non_malleable(buf1, buf2);
@@ -83,6 +88,11 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
     A: NonMalleable + DisjointFrom<B>,
     B: NonMalleable<T = A::T>,
  {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& self.1.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {

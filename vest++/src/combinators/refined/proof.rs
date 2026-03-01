@@ -19,6 +19,10 @@ impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
 //     }
 // }
 impl<A: NonMalleable, Pred: SpecPred<A::PVal>> NonMalleable for super::Refined<A, Pred> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.inner.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.inner.lemma_parse_non_malleable(buf1, buf2);
     }
@@ -66,6 +70,10 @@ impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
 //     }
 // }
 impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner, Inner::PVal> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.inner.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         self.inner.lemma_parse_non_malleable(buf1, buf2);
     }
@@ -112,6 +120,11 @@ impl<Tg, Of> NonMalleable for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + NonMalleable,
     Of: NonMalleable,
  {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.nonmal_inv()
+        &&& self.2.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_non_malleable(
             buf1,

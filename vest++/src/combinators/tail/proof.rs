@@ -51,6 +51,10 @@ impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::OptionalEnd<C> {
 }
 
 impl<C: NonMalleable> NonMalleable for super::OptionalEnd<C> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.0.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Optional(self.0, super::Eof).lemma_parse_non_malleable(buf1, buf2);
     }
@@ -69,6 +73,10 @@ impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::RepeatTillEnd<C> 
 }
 
 impl<C: NonMalleable> NonMalleable for super::RepeatTillEnd<C> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.0.nonmal_inv()
+    }
+
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Repeat(self.0, super::Eof).lemma_parse_non_malleable(buf1, buf2);
     }
