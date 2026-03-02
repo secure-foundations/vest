@@ -66,6 +66,7 @@ impl<Inner, Len> SPRoundTripDps for super::ExactLen<Inner, Len> where
  {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
         &&& self.1.serialize_inv()
+        &&& self.1.equiv_inv()
         &&& self.1.sp_roundtrip_inv()
     }
 
@@ -92,6 +93,10 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 // (s.t. they can no longer "predict" the future)
 // because it always consumes the same number of bytes when it succeeds
 impl<Inner: SoundParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_no_lookahead(i1, i2);
     }
@@ -102,12 +107,20 @@ impl<Inner: SoundParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactL
 // (s.t. they can no longer "change" the past)
 // because it "boxes" the inner serializer from the outside context `obuf`
 impl<Inner: EquivSerializers, Len: AsLen> EquivSerializersGeneral for super::ExactLen<Inner, Len> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<Inner: EquivSerializers, Len: AsLen> EquivSerializers for super::ExactLen<Inner, Len> {
+    open spec fn equiv_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }
@@ -119,6 +132,7 @@ impl<Len, Then> SPRoundTripDps for super::AndThen<Varied<Len>, Then> where
  {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
         &&& self.1.serialize_inv()
+        &&& self.1.equiv_inv()
         &&& self.1.sp_roundtrip_inv()
     }
 
@@ -169,6 +183,10 @@ impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
     A: BytesCombinator + NoLookAhead,
     Then: SoundParser + Unambiguity,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.0.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -184,6 +202,11 @@ impl<A, Then> EquivSerializersGeneral for super::AndThen<A, Then> where
     A: EquivSerializersGeneral<SVal = Seq<u8>, ST = Seq<u8>>,
     Then: EquivSerializers,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let inner_bytes = self.1.spec_serialize(v);
         self.0.lemma_serialize_equiv(inner_bytes, obuf);
@@ -195,6 +218,11 @@ impl<A, Then> EquivSerializers for super::AndThen<A, Then> where
     A: EquivSerializers<SVal = Seq<u8>, ST = Seq<u8>>,
     Then: EquivSerializers,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         self.1.lemma_serialize_equiv_on_empty(v);
         self.0.lemma_serialize_equiv_on_empty(self.1.spec_serialize(v));

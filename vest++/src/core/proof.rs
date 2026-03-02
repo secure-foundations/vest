@@ -81,7 +81,7 @@ pub trait SPRoundTrip where
 
 impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
     open spec fn sp_roundtrip_inv(&self) -> bool {
-        self.serialize_inv() && self.sp_roundtrip_dps_inv()
+        self.serialize_inv() && self.sp_roundtrip_dps_inv() && self.equiv_inv()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
@@ -182,10 +182,15 @@ pub trait NonMalleable: SoundParser {
 ///
 /// Formally: if two buffers share a common prefix that successfully parses, then they parse to the same value.
 pub trait NoLookAhead: SoundParser + Unambiguity {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        true
+    }
+
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.sound_inv(),
+            self.no_lookahead_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==>
@@ -196,6 +201,7 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
     proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.sound_inv(),
+            self.no_lookahead_inv(),
             self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),
@@ -213,8 +219,14 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
 ///
 /// See [`EquivSerializers`] for the weaker empty-buffer variant.
 pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        true
+    }
+
     /// `spec_serialize_dps(v, obuf) == spec_serialize(v) + obuf`.
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>)
+        requires
+            self.equiv_general_inv(),
         ensures
             self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf,
     ;
@@ -224,8 +236,14 @@ pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self:
 ///
 /// Sufficient for deriving [`SPRoundTrip`] from [`SPRoundTripDps`].
 pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+    open spec fn equiv_inv(&self) -> bool {
+        true
+    }
+
     /// `spec_serialize_dps(v, []) == spec_serialize(v)`.
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal)
+        requires
+            self.equiv_inv(),
         ensures
             self.spec_serialize_dps(v, seq![]) == self.spec_serialize(v),
     ;

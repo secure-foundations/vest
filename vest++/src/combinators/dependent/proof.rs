@@ -81,6 +81,11 @@ impl<Head, Tail> NoLookAhead for super::Bind<Head, Tail> where
     Tail: super::DepCombinator<Key = Head::PVal>,
     Tail::Body: NoLookAhead<T = Tail::Val>,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -116,6 +121,11 @@ impl<Head, Tail> EquivSerializersGeneral for super::Bind<Head, Tail> where
     Tail: super::DepCombinator<Key = Head::SVal>,
     Tail::Body: EquivSerializersGeneral<SVal = Tail::Val>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|key: Head::SVal| #[trigger] self.1.apply(key).equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let next = self.1.apply(key);
@@ -130,6 +140,11 @@ impl<Head, Tail> EquivSerializers for super::Bind<Head, Tail> where
     Tail: super::DepCombinator<Key = Head::SVal>,
     Tail::Body: EquivSerializers<SVal = Tail::Val>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|key: Head::SVal| #[trigger] self.1.apply(key).equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         let key = self.1.recover(value);
         let next = self.1.apply(key);

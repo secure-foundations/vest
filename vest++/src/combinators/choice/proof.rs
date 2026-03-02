@@ -41,6 +41,11 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Choice<A, B> {
 }
 
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Choice<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         self.0.lemma_no_lookahead(i1, i2);
         self.1.lemma_no_lookahead(i1, i2);
@@ -52,6 +57,11 @@ impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
             Sum::Inl(va) => {
@@ -65,6 +75,11 @@ impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
 }
 
 impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B: EquivSerializers {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         match v {
             Sum::Inl(va) => {
@@ -142,6 +157,11 @@ impl<A, B> NoLookAhead for super::Alt<A, B> where
     A: NoLookAhead + DisjointFrom<B>,
     B: NoLookAhead<T = A::T>,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         self.0.lemma_no_lookahead(i1, i2);
         self.1.lemma_no_lookahead(i1, i2);
@@ -153,6 +173,11 @@ impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         if self.0.consistent(v) {
             self.0.lemma_serialize_equiv(v, obuf);
@@ -166,6 +191,11 @@ impl<A, B> EquivSerializers for super::Alt<A, B> where
     A: EquivSerializers + Consistency<Val = A::SVal>,
     B: EquivSerializers<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         if self.0.consistent(v) {
             self.0.lemma_serialize_equiv_on_empty(v);

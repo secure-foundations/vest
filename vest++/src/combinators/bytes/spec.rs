@@ -386,6 +386,7 @@ impl<A, Then> NonTailFmt for super::AndThen<A, Then> where
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.1.serialize_inv()
+        &&& self.1.equiv_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {

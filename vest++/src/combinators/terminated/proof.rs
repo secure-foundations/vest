@@ -62,6 +62,11 @@ impl<A, B> NoLookAhead for super::Terminated<A, B> where
     A: NoLookAhead,
     B: NoLookAhead + AdmitsUniqueVal,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, va)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -77,6 +82,11 @@ impl<A, B> EquivSerializersGeneral for super::Terminated<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let vb = choose|vb: <B as SpecSerializer>::SVal| self.1.consistent(vb);
         Pair(self.0, self.1).lemma_serialize_equiv((v, vb), obuf);
@@ -87,6 +97,11 @@ impl<A, B> EquivSerializers for super::Terminated<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializers + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let vb = choose|vb: B::SVal| self.1.consistent(vb);
         let empty = Seq::empty();

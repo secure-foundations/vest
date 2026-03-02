@@ -24,6 +24,10 @@ impl<Inner: NonMalleable> NonMalleable for super::Cond<Inner> {
 }
 
 impl<Inner: NoLookAhead> NoLookAhead for super::Cond<Inner> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -36,12 +40,20 @@ impl<Inner: NoLookAhead> NoLookAhead for super::Cond<Inner> {
 }
 
 impl<Inner: EquivSerializersGeneral> EquivSerializersGeneral for super::Cond<Inner> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         self.1.lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<Inner: EquivSerializers> EquivSerializers for super::Cond<Inner> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         self.1.lemma_serialize_equiv_on_empty(v);
     }

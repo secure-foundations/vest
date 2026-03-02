@@ -51,6 +51,10 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     Inner: NoLookAhead,
     M: IsoMapper<In = Inner::PVal>,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.inner.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -66,6 +70,10 @@ impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     Inner: EquivSerializersGeneral,
     M: Mapper<In = Inner::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv(inner_v, obuf);
@@ -76,6 +84,10 @@ impl<Inner, M> EquivSerializers for super::Mapped<Inner, M> where
     Inner: EquivSerializers,
     M: Mapper<In = Inner::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv_on_empty(inner_v);

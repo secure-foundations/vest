@@ -34,6 +34,7 @@ impl<A: NoLookAhead> super::Opt<A> {
     proof fn lemma_opt_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.0.sound_inv(),
+            self.0.no_lookahead_inv(),
             self.0.unambiguous(),
             parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
         ensures
@@ -65,6 +66,10 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
 }
 
 impl<A> EquivSerializersGeneral for super::Opt<A> where A: EquivSerializersGeneral {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         match v {
             None => {},
@@ -76,6 +81,10 @@ impl<A> EquivSerializersGeneral for super::Opt<A> where A: EquivSerializersGener
 }
 
 impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
+    open spec fn equiv_inv(&self) -> bool {
+        self.0.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         match v {
             None => {},
@@ -123,6 +132,11 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
 }
 
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -158,12 +172,22 @@ impl<
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
 > EquivSerializersGeneral for super::Optional<A, B> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         Pair(super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Optional<A, B> {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         Pair(super::Opt(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }

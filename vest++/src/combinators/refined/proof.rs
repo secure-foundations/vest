@@ -33,6 +33,10 @@ impl<A: NonMalleable, Pred: SpecPred<A::PVal>> NonMalleable for super::Refined<A
 }
 
 impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, Pred> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.inner.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -48,6 +52,10 @@ impl<A, Pred> EquivSerializersGeneral for super::Refined<A, Pred> where
     A: EquivSerializersGeneral,
     Pred: SpecPred<A::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::ST, obuf: Seq<u8>) {
         self.inner.lemma_serialize_equiv(v, obuf);
     }
@@ -57,6 +65,10 @@ impl<A, Pred> EquivSerializers for super::Refined<A, Pred> where
     A: EquivSerializers,
     Pred: SpecPred<A::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::ST) {
         self.inner.lemma_serialize_equiv_on_empty(v);
     }
@@ -88,6 +100,10 @@ impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner, Inner::PVal> {
 }
 
 impl<Inner: NoLookAhead> NoLookAhead for super::Tag<Inner, Inner::PVal> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.inner.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -102,12 +118,20 @@ impl<Inner: NoLookAhead> NoLookAhead for super::Tag<Inner, Inner::PVal> {
 impl<Inner> EquivSerializersGeneral for super::Tag<Inner, Inner::SVal> where
     Inner: EquivSerializersGeneral,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, _v: <Self as SpecSerializerDps>::ST, obuf: Seq<u8>) {
         self.inner.lemma_serialize_equiv(self.tag, obuf);
     }
 }
 
 impl<Inner> EquivSerializers for super::Tag<Inner, Inner::SVal> where Inner: EquivSerializers {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, _v: Self::ST) {
         self.inner.lemma_serialize_equiv_on_empty(self.tag);
     }
@@ -152,6 +176,11 @@ impl<Tg, Of> NoLookAhead for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + NoLookAhead,
     Of: NoLookAhead,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.2.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_no_lookahead(i1, i2);
     }
@@ -161,6 +190,11 @@ impl<Tg, Of> EquivSerializersGeneral for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, ST = Tg::T> + Consistency<Val = Tg::T>,
     Of: EquivSerializersGeneral,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.2.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::ST, obuf: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_equiv(v, obuf);
     }
@@ -170,6 +204,11 @@ impl<Tg, Of> EquivSerializers for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, ST = Tg::T> + Consistency<Val = Tg::T>,
     Of: EquivSerializers,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.2.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::ST) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_equiv_on_empty(
             v,

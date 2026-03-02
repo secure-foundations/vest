@@ -140,6 +140,7 @@ impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.sound_inv(),
+            self.inner.no_lookahead_inv(),
             self.inner.unambiguous(),
             parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
         ensures
@@ -183,6 +184,8 @@ impl<A: NoLookAhead> super::Star<A> {
 
 impl<A> super::Star<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<A::SVal>, obuf: Seq<u8>)
+        requires
+            self.inner.equiv_general_inv(),
         ensures
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
         decreases vs.len(),
@@ -275,12 +278,20 @@ pub(crate) proof fn lemma_fold_left_accumulate_nat<T>(
 }
 
 impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGeneral {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         self.lemma_serialize_equiv_rec(v, obuf);
     }
 }
 
 impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         self.lemma_serialize_equiv_rec(v, Seq::empty());
     }
@@ -400,6 +411,7 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_no_lookahead_rec(&self, count: nat, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.1.sound_inv(),
+            self.1.no_lookahead_inv(),
             self.1.unambiguous(),
         ensures
             self.parse_n_rec(count, i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
@@ -436,18 +448,30 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
 }
 
 impl<C: NoLookAhead, N: AsLen> NoLookAhead for super::RepeatN<C, N> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         self.lemma_no_lookahead_rec(self.0.as_usize() as nat, i1, i2);
     }
 }
 
 impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializersGeneral for super::RepeatN<C, N> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         super::Star { inner: self.1 }.lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C, N> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         super::Star { inner: self.1 }.lemma_serialize_equiv_on_empty(v);
     }
@@ -487,6 +511,10 @@ impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
 }
 
 impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.0.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         use crate::combinators::bytes::spec::axiom_array_from_seq;
 
@@ -500,12 +528,20 @@ impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
 }
 
 impl<const N: usize, C: EquivSerializersGeneral> EquivSerializersGeneral for super::Array<N, C> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_serialize_equiv(v@, obuf);
     }
 }
 
 impl<const N: usize, C: EquivSerializersGeneral> EquivSerializers for super::Array<N, C> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         super::RepeatN(N, self.0).lemma_serialize_equiv_on_empty(v@);
     }
@@ -548,6 +584,11 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
 }
 
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
@@ -581,12 +622,22 @@ impl<
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
 > EquivSerializersGeneral for super::Repeat<A, B> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
 impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Repeat<A, B> {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv_on_empty(v);
     }

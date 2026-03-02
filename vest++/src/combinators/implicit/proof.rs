@@ -34,6 +34,11 @@ impl<A, B> EquivSerializersGeneral for super::Implicit<A, spec_fn(A::SVal) -> B>
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
         let a = choose|a: A::SVal| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
@@ -48,6 +53,11 @@ impl<A, B> NoLookAhead for super::Implicit<A, spec_fn(A::PVal) -> B> where
     B: NoLookAhead,
     Self: super::LosslessImplicit<A, B>,
  {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -82,6 +92,11 @@ impl<A, B> EquivSerializers for super::Implicit<A, spec_fn(A::SVal) -> B> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializers + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         let a = choose|a: A::SVal| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
         let next = (self.1)(a);
@@ -222,6 +237,11 @@ impl<A, B> EquivSerializersGeneral for super::ImplicitAuto<
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
         let a = (self.2)(value);
         let next = (self.1)(a);
@@ -239,6 +259,11 @@ impl<A, B> EquivSerializers for super::ImplicitAuto<
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializers + Consistency<Val = B::SVal>,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& forall|a: A::SVal| #[trigger] (self.1)(a).equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         let a = (self.2)(value);
         let next = (self.1)(a);

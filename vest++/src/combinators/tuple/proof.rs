@@ -71,6 +71,11 @@ pub(crate) proof fn lemma_take_skip<T>(s: Seq<T>, n1: int, n2: int)
 }
 
 impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+    }
+
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -82,6 +87,9 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
                             self.1.lemma_parse_safe(i1.skip(n1));
+                            assert(self.no_lookahead_inv());
+                            assert(self.0.no_lookahead_inv());
+                            assert(self.1.no_lookahead_inv());
                             assert(i2.take(n1) == i1.take(n1));
                             self.0.lemma_no_lookahead(i1, i2);
                             assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
@@ -101,6 +109,11 @@ impl<A, B> EquivSerializersGeneral for super::Pair<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
  {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
 
@@ -126,6 +139,11 @@ impl<A, B> EquivSerializers for super::Pair<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializers,
  {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let empty = Seq::empty();
         let obuf = self.1.spec_serialize_dps(v.1, empty);

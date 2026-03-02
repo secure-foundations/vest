@@ -66,6 +66,10 @@ impl<C: NonMalleable> NonMalleable for super::OptionalEnd<C> {
 }
 
 impl<C: EquivSerializersGeneral> EquivSerializers for super::OptionalEnd<C> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         Optional(self.0, super::Eof).lemma_serialize_equiv_on_empty((v, ()));
     }
@@ -93,6 +97,10 @@ impl<C: NonMalleable> NonMalleable for super::RepeatTillEnd<C> {
 }
 
 impl<C: EquivSerializersGeneral> EquivSerializers for super::RepeatTillEnd<C> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         Repeat(self.0, super::Eof).lemma_serialize_equiv_on_empty((v, ()));
     }
