@@ -50,8 +50,7 @@ impl<SpecP, Cnstcy, Blen> SpecParser for ParserSpecs<SpecP, Cnstcy, Blen> where
 }
 
 /// A bundled DPS serializer: pairs a [`SerializerDPSFnSpec`] with a [`ByteLenFnSpec`].
-pub struct SerializerDPSSpecs<SpecSDPS, Blen>(pub SpecSDPS, pub Blen)
-where
+pub struct SerializerDPSSpecs<SpecSDPS, Blen>(pub SpecSDPS, pub Blen) where
     Blen: SpecByteLen,
     SpecSDPS: SpecSerializerDps<ST = Blen::T>,
 ;
@@ -116,7 +115,7 @@ pub open spec fn non_tail_fmt_dps<T>(
     byte_len: ByteLenFnSpec<T>,
 ) -> bool {
     &&& forall|v: T, obuf: Seq<u8>|
-        exists|new_buf: Seq<u8>| #[trigger] serializer_dps(v, obuf) == new_buf + obuf
+        exists|new_buf: Seq<u8>| (#[trigger] serializer_dps(v, obuf)) =~= new_buf.add(obuf)
     &&& forall|v: T, obuf: Seq<u8>| #[trigger]
         serializer_dps(v, obuf).len() - obuf.len() == byte_len(v)
 }
@@ -153,16 +152,23 @@ impl<SpecSDPS, Blen> NonTailFmt for SerializerDPSSpecs<SpecSDPS, Blen> where
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         let SerializerDPSSpecs(s_dps, b) = *self;
-        let (s_dps_fn, b_fn) = (|v, obuf| s_dps.spec_serialize_dps(v, obuf), |v| b.byte_len(v));
-        non_tail_fmt_dps(s_dps_fn, b_fn)
+        &&& forall|v: SpecSDPS::ST, obuf: Seq<u8>|
+            exists|new_buf: Seq<u8>| #[trigger] s_dps.spec_serialize_dps(v, obuf) == new_buf + obuf
+        &&& forall|v: SpecSDPS::ST, obuf: Seq<u8>| #[trigger]
+            s_dps.spec_serialize_dps(v, obuf).len() - obuf.len() == b.byte_len(v)
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        let _witness = choose|new_buf: Seq<u8>| self.spec_serialize_dps(v, obuf) == new_buf + obuf;
+        assert(self.serialize_dps_inv());
+        let SerializerDPSSpecs(s_dps, b) = *self;
+        let witness = choose|w: Seq<u8>| s_dps.spec_serialize_dps(v, obuf) == w + obuf;
+        assert(self.spec_serialize_dps(v, obuf) == witness + obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
         assert(self.serialize_dps_inv());
+        let SerializerDPSSpecs(s_dps, b) = *self;
+        assert(s_dps.spec_serialize_dps(v, obuf).len() - obuf.len() == b.byte_len(v));
     }
 }
 
@@ -182,12 +188,48 @@ impl<SpecP, Cnstcy, Blen> SoundParser for (SpecP, Cnstcy, Blen) where
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        let (p, c, b) = *self;
+        let (p_fn, c_fn, b_fn) = (
+            |i: Seq<u8>| p.spec_parse(i),
+            |v: Blen::T| c.consistent(v),
+            |v: Blen::T| b.byte_len(v),
+        );
+        assert(self.sound_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(sound_parser(p_fn, c_fn, b_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(0 <= n <= ibuf.len());
+        }
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        let (p, c, b) = *self;
+        let (p_fn, c_fn, b_fn) = (
+            |i: Seq<u8>| p.spec_parse(i),
+            |v: Blen::T| c.consistent(v),
+            |v: Blen::T| b.byte_len(v),
+        );
+        assert(self.sound_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(sound_parser(p_fn, c_fn, b_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(b_fn(v) == n);
+        }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        let (p, c, b) = *self;
+        let (p_fn, c_fn, b_fn) = (
+            |i: Seq<u8>| p.spec_parse(i),
+            |v: Blen::T| c.consistent(v),
+            |v: Blen::T| b.byte_len(v),
+        );
+        assert(self.sound_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(sound_parser(p_fn, c_fn, b_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(c_fn(v));
+        }
     }
 }
 
@@ -463,12 +505,13 @@ pub trait NonTailRecSBodyDPS: RecSBodyDPS + RecBLenBody<T = Self::ST> {
         &self,
         rec: SerializerDPSFnSpecs<Self::ST>,
     )
-        requires
-            SerializerDPSSpecs(rec.0, rec.1).serialize_dps_inv(),
         ensures
             ({
                 let (s_dps_cb, b_cb) = rec;
-                let rec_unfold = SerializerDPSSpecs(self.s_body_dps(s_dps_cb), self.blen_body(b_cb));
+                let rec_unfold = SerializerDPSSpecs(
+                    self.s_body_dps(s_dps_cb),
+                    self.blen_body(b_cb),
+                );
                 rec_unfold.serialize_dps_inv()
             }),
     ;
@@ -762,16 +805,21 @@ impl<const LIMIT: usize, Body: NonMalleableRecPBody> super::Fix<LIMIT, Body> {
 
         // establish non_malleable_parser(callback_p)
         assert forall|rem1: Seq<u8>, rem2: Seq<u8>| #[trigger]
-            parser_pair_some(callback_p, rem1, rem2) matches Some(((nn1, vv1), (nn2, vv2))) ==> vv1
-                == vv2 ==> rem1.take(nn1) == rem2.take(nn2) by {
+            parser_pair_some(callback_p, rem1, rem2) matches Some(((nn1, vv1), (nn2, vv2)))
+                ==> vv1 == vv2 ==> rem1.take(nn1) == rem2.take(nn2) by {
             if let Some(((nn1, vv1), (nn2, vv2))) = parser_pair_some(callback_p, rem1, rem2) {
-                self.non_malleable_by_induction((gas - 1) as nat, rem1, rem2, nn1, nn2, vv1, vv2);
+                if vv1 == vv2 {
+                    self.non_malleable_by_induction((gas - 1) as nat, rem1, rem2, nn1, nn2, vv1, vv2);
+                }
             }
         }
 
         let bundled_callback = (callback_p, callback_c, callback_b);
         assert(sound_parser(callback_p, callback_c, callback_b));
-        assert(non_malleable_parser(callback_p));
+        assert(bundled_callback.nonmal_inv()) by {
+            let p_fn = |ibuf: Seq<u8>| bundled_callback.0.spec_parse(ibuf);
+            assert(p_fn == callback_p);
+        }
 
         self.0.lemma_body_sound_inv_preservation(bundled_callback);
         self.0.lemma_body_nonmal_inv_preservation(bundled_callback);
@@ -848,29 +896,11 @@ impl<const LIMIT: usize, Body: NonTailRecSBodyDPS> super::Fix<LIMIT, Body> {
                 self.spec_serialize_dps_with_gas(gas, v, obuf) == new_buf + obuf,
             self.spec_serialize_dps_with_gas(gas, v, obuf).len() - obuf.len()
                 == self.byte_len_with_gas(gas, v),
-        decreases gas,
+        decreases gas, 1nat,
     {
         let callback_s = self.spec_serialize_dps_callback(gas);
         let callback_b = self.byte_len_callback(gas);
-
-        // establish non_tail_fmt_dps(callback_s, callback_b)
-        assert forall|vv: Body::ST, obuf: Seq<u8>| #[trigger]
-            callback_s(vv, obuf).len() - obuf.len() == callback_b(vv) by {
-            if gas > 0 {
-                self.nontail_dps_by_induction((gas - 1) as nat, vv, obuf);
-            }
-        }
-
-        // assert forall|vv: Body::ST, obuf: Seq<u8>| exists|new_buf: Seq<u8>| #[trigger] callback_s(vv, obuf) == new_buf + obuf by
-        // {
-        //     if gas > 0 {
-        //         self.nontail_dps_by_induction((gas - 1) as nat, vv, obuf);
-        //         let _witness = choose|new_buf: Seq<u8>| self.spec_serialize_dps_with_gas((gas - 1) as nat, vv, obuf) == new_buf + obuf;
-        //     }
-        // }
-
         let bundled_callback = (callback_s, callback_b);
-        assume(non_tail_fmt_dps(callback_s, callback_b));
 
         self.0.lemma_s_body_dps_serialize_dps_inv_preservation(bundled_callback);
         let body = SerializerDPSSpecs(self.0.s_body_dps(callback_s), self.0.blen_body(callback_b));
@@ -943,6 +973,10 @@ impl IsoMapper for NestedBracesMapper {
     }
 
     proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+        match o {
+            NestedBracesT::Brace(_) => {},
+            NestedBracesT::Eps => {},
+        }
     }
 }
 
@@ -1021,7 +1055,6 @@ impl RecSBodyDPS for NestedBracesBody {
 impl SoundRecPBody for NestedBracesBody {
     proof fn lemma_body_sound_inv_preservation(&self, rec: ParserFnSpecs<Self::PVal>) {
         let (p_cb, c_cb, b_cb) = rec;
-        assert(rec.sound_inv());
         let rec_unfold = (self.p_body(p_cb), self.cnstcy_body(c_cb), self.blen_body(b_cb));
         assert(rec_unfold.sound_inv());
     }
