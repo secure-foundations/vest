@@ -84,10 +84,13 @@ pub open spec fn non_tail_fmt_dps<T>(
     serializer_dps: SerializerDPSFnSpec<T>,
     byte_len: ByteLenFnSpec<T>,
 ) -> bool {
-    &&& forall|v: T, obuf: Seq<u8>|
-        exists|new_buf: Seq<u8>| (#[trigger] serializer_dps(v, obuf)) == new_buf + obuf
     &&& forall|v: T, obuf: Seq<u8>| #[trigger]
-        serializer_dps(v, obuf).len() - obuf.len() == byte_len(v)
+        serializer_dps(v, obuf).len() - obuf.len() == byte_len(
+            v,
+        )
+    // FIXME: Using existentials here cause verus fail to verify
+    &&& forall|v: T, obuf: Seq<u8>| #[trigger]
+        serializer_dps(v, obuf) == (choose|w: Seq<u8>| serializer_dps(v, obuf) == w + obuf) + obuf
 }
 
 /// Functional version of [`GoodSerializer`] for serializer functions.
@@ -348,13 +351,13 @@ impl<T> NonTailFmt for BundledSpecs<T> {
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let (_, b, _, _, s_dps) = *self;
-        let witness = choose|w: Seq<u8>| s_dps.spec_serialize_dps(v, obuf) == w + obuf;
-        assert(self.spec_serialize_dps(v, obuf) == witness + obuf);
+        let witness = choose|w: Seq<u8>| (s_dps)(v, obuf) == w + obuf;
+        assert((s_dps)(v, obuf) == witness + obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
         let (_, b, _, _, s_dps) = *self;
-        assert(s_dps.spec_serialize_dps(v, obuf).len() - obuf.len() == b.byte_len(v));
+        assert((s_dps)(v, obuf).len() - obuf.len() == (b)(v));
     }
 }
 
@@ -788,13 +791,14 @@ impl<const LIMIT: usize, Body: NonTailFmtRecBody> super::Fix<LIMIT, Body> where
         }
 
         assert forall|vv: Body::T, buf: Seq<u8>|
-            exists|new_buf: Seq<u8>| (#[trigger] callback_s_dps(vv, buf) == new_buf + buf) by {
+            exists|new_buf: Seq<u8>| (#[trigger] callback_s_dps(vv, buf)) == new_buf + buf by {
             if gas > 0 {
                 self.nontail_dps_by_induction((gas - 1) as nat, vv, buf);
                 let witness = choose|w: Seq<u8>|
                     self.spec_serialize_dps_gas((gas - 1) as nat, vv, buf) == w + buf;
                 assert(callback_s_dps(vv, buf) == witness + buf);
-                assert(exists|new_buf: Seq<u8>| callback_s_dps(vv, buf) == new_buf + buf);
+            } else {
+                assert(callback_s_dps(vv, buf) == Seq::<u8>::empty() + buf);
             }
         }
 
@@ -928,7 +932,6 @@ impl GoodSerializerRecBody for NestedBracesBody {
 
 impl NonTailFmtRecBody for NestedBracesBody {
     proof fn lemma_s_body_dps_serialize_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        assert(self.spec_body(rec).serialize_dps_inv());
     }
 }
 
