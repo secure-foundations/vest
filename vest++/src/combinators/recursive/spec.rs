@@ -248,6 +248,7 @@ pub type BundledSpecs<T> = (
     ParserFnSpec<T>,
     SerializerFnSpec<T>,
     SerializerDPSFnSpec<T>,
+    UnambiguityFnSpec,
 );
 
 pub open spec fn parser_specs<T>(bundled: BundledSpecs<T>) -> ParserSpecs<
@@ -345,19 +346,26 @@ impl<T> GoodSerializer for BundledSpecs<T> {
 
 impl<T> NonTailFmt for BundledSpecs<T> {
     open spec fn serialize_dps_inv(&self) -> bool {
-        let (_, b, _, _, s_dps) = *self;
+        let (_, b, _, _, s_dps, _) = *self;
         non_tail_fmt_dps(s_dps, b)
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        let (_, b, _, _, s_dps) = *self;
+        let (_, b, _, _, s_dps, _) = *self;
         let witness = choose|w: Seq<u8>| (s_dps)(v, obuf) == w + obuf;
         assert((s_dps)(v, obuf) == witness + obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        let (_, b, _, _, s_dps) = *self;
+        let (_, b, _, _, s_dps, _) = *self;
         assert((s_dps)(v, obuf).len() - obuf.len() == (b)(v));
+    }
+}
+
+impl<T> Unambiguity for BundledSpecs<T> {
+    open spec fn unambiguous(&self) -> bool {
+        let (_, _, _, _, _, u) = *self;
+        (u)()
     }
 }
 
@@ -484,6 +492,12 @@ impl<const LIMIT: usize, Body: SpecRecBody> super::Fix<LIMIT, Body> {
         self.0.spec_body(self.specs_callback(gas)).spec_serialize_dps(v, obuf)
     }
 
+    pub open spec fn unambiguity_gas(&self, gas: nat) -> bool
+        decreases gas, 2nat,
+    {
+        self.0.spec_body(self.specs_callback(gas)).unambiguous()
+    }
+
     pub open spec fn spec_parse_callback(&self, gas: nat) -> ParserFnSpec<Body::T>
         decreases gas, 0nat,
     {
@@ -539,6 +553,17 @@ impl<const LIMIT: usize, Body: SpecRecBody> super::Fix<LIMIT, Body> {
             }
     }
 
+    pub open spec fn unambiguity_callback(&self, gas: nat) -> UnambiguityFnSpec
+        decreases gas, 0nat,
+    {
+        ||
+            if gas > 0 {
+                self.unambiguity_gas((gas - 1) as nat)
+            } else {
+                false
+            }
+    }
+
     /// Bundled callbacks used when unfolding one recursive level.
     pub open spec fn specs_callback(&self, gas: nat) -> BundledSpecs<Body::T>
         decreases gas, 1nat,
@@ -549,6 +574,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> super::Fix<LIMIT, Body> {
             self.spec_parse_callback(gas),
             self.spec_serialize_callback(gas),
             self.spec_serialize_dps_callback(gas),
+            self.unambiguity_callback(gas),
         )
     }
 }
