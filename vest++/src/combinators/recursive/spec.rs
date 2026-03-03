@@ -1305,6 +1305,7 @@ impl EquivSerializersGeneralRecBody for NestedBracesBody {
     }
 }
 
+/// TODO: hide/automate this?
 proof fn nested_braces_unambiguous_gas(gas: nat)
     ensures
         super::Fix::<10, NestedBracesBody>(NestedBracesBody).unambiguity_gas(gas),
