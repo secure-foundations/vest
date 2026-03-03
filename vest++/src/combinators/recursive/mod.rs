@@ -4,7 +4,11 @@ pub mod spec;
 
 use vstd::prelude::*;
 
-pub use spec::{NonMalleableRecBody, SpecRecBody, SoundParserRecBody};
+pub use spec::{
+    EquivSerializersGeneralRecBody, GoodSerializerRecBody, NoLookAheadRecBody,
+    NonMalleableRecBody, NonTailFmtRecBody, SPRoundTripDpsRecBody, SpecRecBody,
+    SoundParserRecBody,
+};
 
 verus! {
 
