@@ -38,32 +38,71 @@ jobs:
           VERUS_RELEASE: ${{ matrix.verus-release }}
         run: |
           set -euo pipefail
-          url="https://github.com/verus-lang/verus/releases/latest/download/${VERUS_RELEASE}.zip"
-          curl -fL --retry 5 --retry-delay 2 --retry-all-errors -o verus.zip "$url"
-          unzip -q verus.zip
-          if [ ! -d "$VERUS_RELEASE" ]; then
-            echo "::error::Expected extracted directory '$VERUS_RELEASE' was not found."
-            ls -la
+          release_base="https://github.com/verus-lang/verus/releases"
+          latest_base="${release_base}/latest/download"
+          asset_suffix="${VERUS_RELEASE#verus-}"
+
+          curl_retry() {
+            curl -fL --retry 5 --retry-delay 2 --retry-all-errors "$@"
+          }
+
+          release_tag="$(
+            {
+              curl -fsSI --retry 5 --retry-delay 2 --retry-all-errors "${latest_base}/placeholder" \
+                | tr -d '\r' \
+                | sed -nE 's#^[Ll]ocation: https://github.com/verus-lang/verus/releases/download/(.+)/placeholder$#\1#p' \
+                | head -n1
+            } || true
+          )"
+
+          urls=()
+          if [ -n "$release_tag" ]; then
+            urls+=("${release_base}/download/${release_tag}/verus-${release_tag##*/}-${asset_suffix}.zip")
+          fi
+          urls+=("${latest_base}/${VERUS_RELEASE}.zip")
+          urls+=("${latest_base}/verus-${asset_suffix}.zip")
+
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+
+          downloaded_url=""
+          for url in "${urls[@]}"; do
+            echo "Trying Verus URL: $url"
+            if curl_retry -o "$tmp_dir/verus.zip" "$url"; then
+              downloaded_url="$url"
+              break
+            fi
+          done
+
+          if [ -z "$downloaded_url" ]; then
+            echo "::error::Unable to download Verus archive for '${VERUS_RELEASE}'."
             exit 1
           fi
-          mv "$VERUS_RELEASE" verus
 
-          rust_toolchain=""
-          if [ -f verus/rust-toolchain.toml ]; then
-            rust_toolchain="$(sed -nE 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' verus/rust-toolchain.toml | head -n1)"
-          elif [ -f verus/rust-toolchain ]; then
-            rust_toolchain="$(tr -d '[:space:]' < verus/rust-toolchain)"
+          unzip -q "$tmp_dir/verus.zip" -d "$tmp_dir/unpack"
+          set -- "$tmp_dir"/unpack/*
+          if [ "$#" -ne 1 ] || [ ! -d "$1" ]; then
+            echo "::error::Expected one top-level directory in Verus archive."
+            find "$tmp_dir/unpack" -mindepth 1 -maxdepth 1 -print
+            exit 1
           fi
 
+          rm -rf verus
+          mv "$1" verus
+
+          rust_toolchain=""
+          if [ -f verus/version.json ]; then
+            rust_toolchain="$(python3 -c 'import json; print(json.load(open("verus/version.json")).get("verus", {}).get("toolchain", ""))' 2>/dev/null || true)"
+          fi
           if [ -z "$rust_toolchain" ]; then
             rust_toolchain="$(./verus/verus 2>&1 | grep -oE 'nightly-[0-9]{4}-[0-9]{2}-[0-9]{2}|1\.[0-9]+\.[0-9]+-[a-z0-9_-]+' | head -n1 || true)"
           fi
-
           if [ -z "$rust_toolchain" ]; then
             echo "::error::Could not detect Verus Rust toolchain."
             exit 1
           fi
 
+          echo "Using Verus URL: $downloaded_url"
           echo "Using Verus Rust toolchain: $rust_toolchain"
           echo "rust_toolchain=$rust_toolchain" >> "$GITHUB_OUTPUT"
 
