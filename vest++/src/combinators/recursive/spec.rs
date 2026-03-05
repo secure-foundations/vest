@@ -209,10 +209,13 @@ pub open spec fn sp_roundtrip_dps_parser<T>(
 }
 
 /// Functional version of [`NoLookAhead`] for parsers.
-pub open spec fn no_lookahead_parser<T>(parser: ParserFnSpec<T>) -> bool {
+pub open spec fn no_lookahead_parser<T>(
+    parser: ParserFnSpec<T>,
+    unambiguous: UnambiguityFnSpec,
+) -> bool {
     forall|i1: Seq<u8>, i2: Seq<u8>|
-        (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
-            == i1.take(n) ==> #[trigger] parser(i2) == Some((n, v)))
+        unambiguous() ==> (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len()
+            ==> i2.take(n) == i1.take(n) ==> #[trigger] parser(i2) == Some((n, v)))
 }
 
 pub open spec fn parser_pair_some<T>(
@@ -406,17 +409,17 @@ impl<T> Unambiguity for BundledSpecs<T> {
 
 impl<T> NoLookAhead for BundledSpecs<T> {
     open spec fn no_lookahead_inv(&self) -> bool {
-        let (_, _, p, _, _, _) = *self;
-        no_lookahead_parser(p)
+        let (_, _, p, _, _, u) = *self;
+        no_lookahead_parser(p, u)
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        let (_, _, p, _, _, _) = *self;
+        let (_, _, p, _, _, u) = *self;
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
                     assert(self.unambiguous());
-                    assert(no_lookahead_parser(p));
+                    assert(no_lookahead_parser(p, u));
                     assert(p(i1) == Some((n, v)));
                     assert(p(i2) == Some((n, v)));
                 }
@@ -1120,18 +1123,19 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         v: Body::T,
     )
         requires
-            self.specs_callback(gas).no_lookahead_inv(),
             self.spec_parse_gas(gas, i1) == Some((n, v)),
             0 <= n <= i2.len(),
             i2.take(n) == i1.take(n),
             self.unambiguity_gas(gas),
         ensures
             self.spec_parse_gas(gas, i2) == Some((n, v)),
+        decreases gas,
     {
         let callback = self.specs_callback(gas);
         let callback_p = callback.2;
         let callback_c = callback.0;
         let callback_b = callback.1;
+        let callback_u = callback.5;
 
         // establish callback.sound_inv()
         assert forall|rem: Seq<u8>| #[trigger]
@@ -1142,6 +1146,18 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
             } by {
             if let Some((nn, vv)) = callback_p(rem) {
                 self.sound_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+            }
+        }
+
+        // establish callback.no_lookahead_inv()
+        assert forall|i1: Seq<u8>, i2: Seq<u8>| callback_u() implies (#[trigger] callback_p(
+            i1,
+        ) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n) == i1.take(n)
+            ==> #[trigger] callback_p(i2) == Some((n, v))) by {
+            if let Some((n, v)) = callback_p(i1) {
+                if 0 <= n && n <= i2.len() && i2.take(n) == i1.take(n) {
+                    self.no_lookahead_by_induction((gas - 1) as nat, i1, i2, n, v);
+                }
             }
         }
 
@@ -1167,10 +1183,6 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
 impl<const LIMIT: usize, Body: NoLookAheadRecBody> NoLookAhead for super::Fix<LIMIT, Body> where
     Body::Body: NoLookAhead,
  {
-    open spec fn no_lookahead_inv(&self) -> bool {
-        self.specs_callback(LIMIT as nat).no_lookahead_inv()
-    }
-
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -1333,18 +1345,19 @@ proof fn nested_braces_sound_parser() {
 
     let input2 = seq![0x7Bu8, 0x00u8, 0x7Du8, 0x7Bu8, 0x00u8, 0x7Du8];
 
-    nested_braces.lemma_parse_sound_consumption(input);
-    nested_braces.lemma_parse_sound_value(input);
     nested_braces.lemma_parse_safe(input);
+    nested_braces.lemma_parse_sound_value(input);
+    nested_braces.lemma_parse_sound_consumption(input);
     nested_braces.lemma_parse_non_malleable(input, input2);
-    // nested_braces.lemma_no_lookahead(input, input2);
     let (n, v) = nested_braces.spec_parse(input)->0;
     nested_braces.lemma_serialize_len(v);
 
     let serialized = nested_braces.spec_serialize(v);
     nested_braces_unambiguous_gas(10);
     assert(nested_braces.unambiguous());
+    nested_braces.lemma_no_lookahead(input, input2);
     nested_braces.theorem_serialize_parse_roundtrip(v);
+    nested_braces.theorem_parse_serialize_roundtrip(input);
 }
 
 } // verus!

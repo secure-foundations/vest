@@ -217,7 +217,7 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
     ;
 }
 
-/// Blanket super-trait combining parser, both serializers, and byte-length.
+/// Marker trait for all specification traits bundled together.
 pub trait SpecCombinator: SpecByteLen + Consistency<Val = Self::T> + Unambiguity + SpecParser<
     PVal = Self::T,
 > + SpecSerializer<SVal = Self::T> + SpecSerializerDps<ST = Self::T> {
