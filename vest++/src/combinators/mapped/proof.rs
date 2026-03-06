@@ -9,12 +9,14 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     M: IsoMapper<In = Inner::T>,
  {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.inner.sp_roundtrip_dps_inv()
+        &&& self.inner.sp_roundtrip_dps_inv()
+        &&& forall|v: Self::T| self.consistent(v) ==> self.mapper.wf_out(v)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
+        assert(self.mapper.wf_out(v));
         self.mapper.lemma_map_iso_rev(v);
     }
 }
@@ -38,6 +40,10 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
                 if v1 == v2 {
                     let (i_n1, i_v1) = self.inner.spec_parse(buf1)->0;
                     let (i_n2, i_v2) = self.inner.spec_parse(buf2)->0;
+                    self.inner.lemma_parse_sound_value(buf1);
+                    self.inner.lemma_parse_sound_value(buf2);
+                    assert(self.mapper.wf_in(i_v1));
+                    assert(self.mapper.wf_in(i_v2));
                     self.mapper.lemma_map_iso(i_v1);
                     self.mapper.lemma_map_iso(i_v2);
                     self.inner.lemma_parse_non_malleable(buf1, buf2);

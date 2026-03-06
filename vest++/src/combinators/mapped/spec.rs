@@ -21,6 +21,20 @@ pub trait Mapper {
 
     /// Reverse mapping (used during serialization).
     spec fn spec_map_rev(&self, o: Self::Out) -> Self::In;
+
+    /// Optional refinement predicates on the input type.
+    ///
+    /// This is the precondition for [`IsoMapper::lemma_map_iso`].
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        true
+    }
+
+    /// Optional refinement predicates on the output type.
+    ///
+    /// This is the precondition for [`IsoMapper::lemma_map_iso_rev`].
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        true
+    }
 }
 
 impl<In, Out> Mapper for IsoFns<In, Out> {
@@ -41,12 +55,16 @@ impl<In, Out> Mapper for IsoFns<In, Out> {
 pub trait IsoMapper: Mapper {
     /// `spec_map_rev(spec_map(i)) == i`.
     proof fn lemma_map_iso(&self, i: Self::In)
+        requires
+            self.wf_in(i),
         ensures
             self.spec_map_rev(self.spec_map(i)) == i,
     ;
 
     /// `spec_map(spec_map_rev(o)) == o`.
     proof fn lemma_map_iso_rev(&self, o: Self::Out)
+        requires
+            self.wf_out(o),
         ensures
             self.spec_map(self.spec_map_rev(o)) == o,
     ;
@@ -71,7 +89,8 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
     M: IsoMapper<In = Inner::PVal>,
  {
     open spec fn sound_inv(&self) -> bool {
-        self.inner.sound_inv()
+        &&& self.inner.sound_inv()
+        &&& forall|v: Inner::T| self.inner.consistent(v) ==> self.mapper.wf_in(v)
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -80,14 +99,17 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_consumption(ibuf);
-        if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
+        self.inner.lemma_parse_sound_value(ibuf);
+        if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
+            assert(self.mapper.wf_in(inner_v));
             self.mapper.lemma_map_iso(inner_v);
         }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_value(ibuf);
-        if let Some((n, inner_v)) = self.inner.spec_parse(ibuf) {
+        if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
+            assert(self.mapper.wf_in(inner_v));
             self.mapper.lemma_map_iso(inner_v);
         }
     }
