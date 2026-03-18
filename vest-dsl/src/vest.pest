@@ -82,8 +82,27 @@ vec_combinator = { (vec1 | vec) ~ "<" ~ combinator ~ ">" }
 /// like `vec_combinator` but with a separator
 sepby_combinator = { vec_combinator ~ "|" ~ const_combinator }
 
-/// fixed size array of `combinator` (specified by a `const_int` or `dependency_id`)
-array_combinator = { "[" ~ combinator ~ ";" ~ (const_int | depend_id) ~ "]" }
+/// fixed size array of `combinator` with length expression
+/// supports: const_int, depend_id, |format| (static size), and arithmetic (+, -, *, /)
+array_combinator = { "[" ~ combinator ~ ";" ~ length_expr ~ "]" }
+
+/// length expression with arithmetic operators (left-associative)
+length_expr = { length_term ~ ((add_op | sub_op) ~ length_term)* }
+length_term = { length_atom ~ ((mul_op | div_op) ~ length_atom)* }
+length_atom = {
+    size_expr
+  | const_int
+  | depend_id
+  | "(" ~ length_expr ~ ")"
+}
+
+/// static size expression: |type_name| returns byte size of a format
+size_expr = { "|" ~ var_id ~ "|" }
+
+add_op = { "+" }
+sub_op = { "-" }
+mul_op = { "*" }
+div_op = { "/" }
 
 /// an optional `combinator`
 option_combinator = { option ~ "<" ~ combinator ~ ">" }
@@ -148,7 +167,7 @@ var_id     = @{ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
 const_id   = @{ ASCII_ALPHA_UPPER ~ (ASCII_DIGIT | ASCII_ALPHA_UPPER | "_")* }
 variant_id = @{ (ASCII_ALPHA_UPPER ~ (ASCII_DIGIT | ASCII_ALPHA | "_")*) | "_" }
 stream_id  = @{ "$" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
-depend_id  = @{ "@" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* }
+depend_id  = @{ "@" ~ ASCII_ALPHA_LOWER ~ (ASCII_DIGIT | ASCII_ALPHA_LOWER | "_")* ~ ("." ~ var_id)* }
 
 // keywords
 
