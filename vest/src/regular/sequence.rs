@@ -18,7 +18,7 @@ impl<Fst, Snd> SpecCombinator for SpecPair<Fst, Snd> where
     open spec fn requires(&self) -> bool {
         &&& Fst::is_prefix_secure()
         &&& self.fst.requires()
-        &&& forall|i: Fst::Type| #[trigger] (self.snd)(i).requires()
+        &&& forall|i: Fst::Type| self.fst.wf(i) ==> #[trigger] (self.snd)(i).requires()
     }
 
     open spec fn wf(&self, v: Self::Type) -> bool {
@@ -57,7 +57,10 @@ impl<Fst, Snd> SecureSpecCombinator for SpecPair<Fst, Snd> where
         let buf1 = (self.snd)(v.0).spec_serialize(v.1);
         self.fst.theorem_serialize_parse_roundtrip(v.0);
         self.fst.lemma_prefix_secure(buf0, buf1);
-        (self.snd)(v.0).theorem_serialize_parse_roundtrip(v.1);
+        if self.wf(v) {
+            assert(self.fst.wf(v.0));
+            (self.snd)(v.0).theorem_serialize_parse_roundtrip(v.1);
+        }
         assert((buf0 + buf1).subrange(buf0.len() as int, buf.len() as int) == buf1);
     }
 
@@ -69,6 +72,7 @@ impl<Fst, Snd> SecureSpecCombinator for SpecPair<Fst, Snd> where
             let buf1 = buf.skip(n);
             assert(buf == buf0 + buf1);
             self.fst.theorem_parse_serialize_roundtrip(buf);
+            assert(self.fst.wf(v0));
             let (m, v1_) = (self.snd)(v0).spec_parse(buf1).unwrap();
             (self.snd)(v0).theorem_parse_serialize_roundtrip(buf1);
             (self.snd)(v0).lemma_parse_length(buf1);
@@ -92,6 +96,8 @@ impl<Fst, Snd> SecureSpecCombinator for SpecPair<Fst, Snd> where
                 self.fst.lemma_prefix_secure(buf0, buf1);
                 self.fst.lemma_prefix_secure(buf0, buf1.add(s2));
                 self.fst.lemma_prefix_secure(buf, s2);
+                self.fst.theorem_parse_serialize_roundtrip(buf);
+                assert(self.fst.wf(v0));
                 let snd = (self.snd)(v0);
                 let (m, v1_) = snd.spec_parse(buf1).unwrap();
                 assert(buf.add(s2).subrange(0, n as int) == buf0);
@@ -105,6 +111,8 @@ impl<Fst, Snd> SecureSpecCombinator for SpecPair<Fst, Snd> where
 
     proof fn lemma_parse_length(&self, s: Seq<u8>) {
         if let Some((n, v1)) = self.fst.spec_parse(s) {
+            self.fst.theorem_parse_serialize_roundtrip(s);
+            assert(self.fst.wf(v1));
             let snd = (self.snd)(v1);
             if let Some((m, v2)) = snd.spec_parse(s.subrange(n as int, s.len() as int)) {
                 self.fst.lemma_parse_length(s);
@@ -115,11 +123,13 @@ impl<Fst, Snd> SecureSpecCombinator for SpecPair<Fst, Snd> where
 
     open spec fn is_productive(&self) -> bool {
         ||| self.fst.is_productive()
-        ||| forall|v1| #[trigger] ((self.snd)(v1)).is_productive()
+        ||| forall|v1| self.fst.wf(v1) ==> #[trigger] ((self.snd)(v1)).is_productive()
     }
 
     proof fn lemma_parse_productive(&self, s: Seq<u8>) {
         if let Some((n, v1)) = self.fst.spec_parse(s) {
+            self.fst.theorem_parse_serialize_roundtrip(s);
+            assert(self.fst.wf(v1));
             let snd = (self.snd)(v1);
             if let Some((m, v2)) = snd.spec_parse(s.skip(n as int)) {
                 self.fst.lemma_parse_productive(s);
@@ -247,6 +257,9 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
     type SType = (Fst::SType, Snd::SType);
 
     fn length(&self, v: Self::SType) -> usize {
+        proof {
+            assert(self.fst@.wf(v.0@));
+        }
         let snd = self.snd.apply(POrSType::S(v.0));
         self.fst.length(v.0) + snd.length(v.1)
     }
@@ -254,15 +267,19 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
     open spec fn ex_requires(&self) -> bool {
         let spec_snd_dep = self.snd@;
         &&& self.fst.ex_requires()
-        &&& forall|i| #[trigger] self.snd.requires(i)
-        &&& forall|i, snd| #[trigger]
-            self.snd.ensures(i, snd) ==> snd.ex_requires() && snd@ == spec_snd_dep(i@)
+        &&& forall|i: POrSType<&Fst::Type, Fst::SType>|
+            self.fst@.wf(i@) ==> #[trigger] self.snd.requires(i)
+        &&& forall|i: POrSType<&Fst::Type, Fst::SType>, snd: Snd|
+            self.snd.requires(i) && #[trigger] self.snd.ensures(i, snd) ==> snd.ex_requires()
+                && snd@ == spec_snd_dep(i@)
     }
 
     fn parse(&self, s: I) -> (res: Result<(usize, Self::Type), ParseError>) {
         let (n, v1) = self.fst.parse(s.clone())?;
         proof {
             self@.fst.lemma_parse_length(s@);
+            self@.fst.theorem_parse_serialize_roundtrip(s@);
+            assert(self@.fst.wf(v1@));
         }
         let s_ = s.subrange(n, s.len());
         let snd = self.snd.apply(POrSType::P(&v1));
@@ -277,6 +294,9 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
         usize,
         SerializeError,
     >) {
+        proof {
+            assert(self.fst@.wf(v.0@));
+        }
         let snd = self.snd.apply(POrSType::S(v.0));
         let n = self.fst.serialize(v.0, data, pos)?;
         let m = snd.serialize(v.1, data, pos + n)?;
@@ -348,6 +368,9 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
     type SType = (Fst::SType, Snd::SType);
 
     fn length(&self, v: Self::SType) -> usize {
+        proof {
+            assert(self.0@.wf(v.0@));
+        }
         self.0.length(v.0) + self.1.length(v.1)
     }
 
@@ -359,6 +382,8 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
         let (n, v1) = self.0.parse(s.clone())?;
         proof {
             self@.0.lemma_parse_length(s@);
+            self@.0.theorem_parse_serialize_roundtrip(s@);
+            assert(self@.0.wf(v1@));
         }
         let s_ = s.subrange(n, s.len());
         let (m, v2) = self.1.parse(s_)?;
@@ -372,6 +397,9 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
         usize,
         SerializeError,
     >) {
+        proof {
+            assert(self.0@.wf(v.0@));
+        }
         let n = self.0.serialize(v.0, data, pos)?;
         let m = self.1.serialize(v.1, data, pos + n)?;
         assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
