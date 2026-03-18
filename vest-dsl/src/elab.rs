@@ -65,7 +65,7 @@ type MacroDefn<'ast> = (Vec<String>, Combinator<'ast>);
 /// Expand the macro invocations
 fn expand_macros(ast: &mut Vec<Definition>) {
     // collect the macro definitions
-    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder); 
+    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder);
     for defn in ast.iter() {
         if let Definition::MacroDefn { name, params, body } = defn {
             macro_defns.insert(name.name.clone(), (params.clone(), body.clone()));
@@ -433,14 +433,14 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
         CombinatorInner::Array(ArrayCombinator {
             combinator, len, ..
         }) => {
-            if let LengthSpecifier::Dependent(name) = len {
-                params.insert(Param::Dependent(name.to_owned()));
+            for dep_id in len.collect_dependent_ids() {
+                params.insert(Param::Dependent(dep_id.to_identifier()));
             }
             params.extend(collect_params(combinator));
         }
         CombinatorInner::Bytes(BytesCombinator { len, .. }) => {
-            if let LengthSpecifier::Dependent(name) = len {
-                params.insert(Param::Dependent(name.to_owned()));
+            for dep_id in len.collect_dependent_ids() {
+                params.insert(Param::Dependent(dep_id.to_identifier()));
             }
             if let Some(and_then) = &combinator.and_then {
                 params.extend(collect_params(and_then));
