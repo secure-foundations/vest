@@ -1,0 +1,10 @@
+// Invalid: non-dependent field access
+header = {
+    magic: u32,
+    len: u16,  // not @len, so can't be accessed
+}
+
+foo = {
+    @hdr: header,
+    data: [u8; @hdr.len],  // Error: 'len' is not a dependent field
+}

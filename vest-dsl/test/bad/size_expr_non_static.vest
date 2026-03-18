@@ -1,0 +1,9 @@
+// Invalid: size expression requires a statically-sized format
+opaque_payload = {
+    @len: u16,
+    body: [u8; @len],
+}
+
+bad = {
+    body: [u8; |opaque_payload|],
+}
