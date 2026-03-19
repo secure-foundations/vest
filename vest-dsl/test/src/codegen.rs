@@ -1313,7 +1313,8 @@ impl<'a, 'b, 'x> Continuation<Msg4Cont0Input<'a, 'b, 'x>> for Msg4Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg4Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg4_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg4_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> Self::Output {

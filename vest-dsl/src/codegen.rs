@@ -1816,7 +1816,8 @@ impl<'a, 'b, 'x> Continuation<{name}Cont{depth}Input<'a, 'b, 'x>> for {continuat
     open spec fn requires(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>) -> bool {{{continuation_requirements}}}
 
     open spec fn ensures(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>, o: Self::Output) -> bool {{
-        o@ == spec_{snaked_name}_cont{depth}({captured_self_args_view_prefix}deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_{snaked_name}_cont{depth}({captured_self_args_view_prefix}deps@)
     }}
 
     fn apply(&self, deps: {name}Cont{depth}Input<'a, 'b, 'x>) -> Self::Output {{
