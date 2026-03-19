@@ -265,28 +265,12 @@ impl<'ast> StaticSizeEnv<'ast> {
         use ConstCombinator::*;
 
         match combinator {
-            Vec(..) => None,
-            ConstArray(ConstArrayCombinator {
-                combinator, len, ..
-            }) => int_combinator_static_size(combinator)?.checked_mul(*len),
             ConstBytes(ConstBytesCombinator { len, .. }) => Some(*len),
             ConstInt(ConstIntCombinator { combinator, .. }) => {
                 int_combinator_static_size(combinator)
             }
             ConstEnum(ConstEnumCombinator { combinator, .. }) => {
                 self.format_size(&combinator.func.name)
-            }
-            ConstStruct(ConstStructCombinator(fields)) => {
-                fields.iter().try_fold(0usize, |acc, field| {
-                    acc.checked_add(self.const_combinator_size(field)?)
-                })
-            }
-            ConstChoice(ConstChoiceCombinator(choices)) => {
-                let sizes = choices
-                    .iter()
-                    .map(|choice| self.const_combinator_size(&choice.combinator))
-                    .collect::<std::vec::Vec<_>>();
-                common_static_size(sizes.into_iter())
             }
             ConstCombinatorInvocation { name, .. } => self.const_format_size(&name.name),
         }
@@ -586,112 +570,10 @@ fn check_const_combinator<'ast>(
             variant,
             span,
         }) => check_const_enum_combinator(combinator, variant, span, local_ctx, global_ctx, source),
-        ConstArray(combinator) => check_const_array_combinator(combinator, source),
         ConstBytes(combinator) => check_const_bytes_combinator(combinator, source),
-        ConstStruct(ConstStructCombinator(const_combinators)) => {
-            check_const_struct_combinator(const_combinators, local_ctx, global_ctx, source)
-        }
-        ConstChoice(ConstChoiceCombinator(const_choices)) => {
-            check_const_choice_combinator(const_choices, local_ctx, global_ctx, source)
-        }
-        Vec(const_combinator) => {
-            check_const_combinator(const_combinator, local_ctx, global_ctx, source)
-        }
         ConstCombinatorInvocation { name, span } => {
             check_const_combinator_invocation(name, *span, local_ctx, global_ctx, source)
         }
-    }
-}
-
-fn check_const_struct_combinator<'ast>(
-    const_combinators: &[ConstCombinator<'ast>],
-    local_ctx: &mut LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    for const_combinator in const_combinators {
-        check_const_combinator(const_combinator, local_ctx, global_ctx, source)?;
-    }
-    Ok(())
-}
-
-fn check_const_array_combinator(
-    ConstArrayCombinator {
-        combinator,
-        len,
-        values,
-        span,
-    }: &ConstArrayCombinator,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    match values {
-        ConstArray::Int {
-            ints: int_vals,
-            span: array_span,
-        } => {
-            if int_vals.len() != *len {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("mismatched array length")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                        "Length of array does not match the specified length (expected {}, got {})",
-                        len,
-                        int_vals.len()
-                    ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                Err(VestError::TypeError)
-            } else {
-                for value in int_vals {
-                    check_const_int_combinator(combinator, value, array_span, source)?;
-                }
-                Ok(())
-            }
-        }
-        ConstArray::Repeat {
-            repeat: int_val,
-            count,
-            span: array_span,
-        } => {
-            if *count != *len {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("mismatched array length")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                        "Length of array does not match the specified length (expected {}, got {})",
-                        len, count
-                    ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                Err(VestError::TypeError)
-            } else {
-                check_const_int_combinator(combinator, int_val, array_span, source)
-            }
-        }
-        ConstArray::Char {
-            span: array_span, ..
-        } => {
-            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                .with_message("mismatched array type")
-                .with_label(
-                    Label::new((source.0, span_as_range(array_span)))
-                        .with_message("char array literals should be of type `[u8; N]`")
-                        .with_color(Color::Red),
-                )
-                .finish()
-                .eprint(source)
-                .unwrap();
-            Err(VestError::TypeError)
-        }
-        ConstArray::Wildcard => Ok(()),
     }
 }
 
@@ -722,18 +604,6 @@ fn check_const_combinator_invocation<'ast>(
             Err(VestError::TypeError)
         }
     }
-}
-
-fn check_const_choice_combinator<'ast>(
-    const_choices: &[ConstChoice<'ast>],
-    local_ctx: &mut LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    for ConstChoice { combinator, .. } in const_choices {
-        check_const_combinator(combinator, local_ctx, global_ctx, source)?;
-    }
-    Ok(())
 }
 
 fn check_const_enum_combinator<'ast>(

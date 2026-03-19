@@ -55,17 +55,14 @@ field             = {
   | var_id ~ ":" ~ combinator
 }
 
-/// wrap a `combinator` with any number of `const_combinator`
-wrap_combinator       = { wrap ~ "(" ~ wrap_prior ~ combinator ~ wrap_post ~ ")" }
-wrap_prior            = { (wrap_const_combinator ~ ",")* }
-wrap_post             = { ("," ~ wrap_const_combinator)* }
-wrap_const_combinator = {
-    vec ~ "<" ~ const_combinator ~ ">"
-  | const_array_combinator
+/// wrap a `combinator` with any number of inline const combinators
+wrap_combinator         = { wrap ~ "(" ~ wrap_prior ~ combinator ~ wrap_post ~ ")" }
+wrap_prior              = { (inline_const_combinator ~ ",")* }
+wrap_post               = { ("," ~ inline_const_combinator)* }
+inline_const_combinator = {
+    const_bytes_combinator
   | const_int_combinator
   | const_enum_combinator
-  | const_struct_combinator
-  | const_choice_combinator
 }
 
 /// enum `combinator` for primitive types
@@ -120,17 +117,8 @@ param                 = { depend_id }
 macro_invocation = { var_id ~ "!" ~ "(" ~ macro_arg_list ~ ")" }
 macro_arg_list   = { combinator_inner ~ ("," ~ combinator_inner)* }
 
-const_combinator = {
-    vec ~ "<" ~ const_combinator ~ ">"
-  | const_array_combinator
-  | const_int_combinator
-  | const_enum_combinator
-  | const_id
-  | const_struct_combinator
-  | const_choice_combinator
-}
-
-const_array_combinator =  { "[" ~ int_combinator ~ ";" ~ const_int ~ "]" ~ "=" ~ const_array }
+const_combinator       =  { inline_const_combinator | const_id }
+const_bytes_combinator =  { "[" ~ "u8" ~ ";" ~ const_int ~ "]" ~ "=" ~ const_array }
 const_array            =  { const_char_array | const_int_array }
 const_char_array       = ${ "\"" ~ (!"\"" ~ char)* ~ "\"" }
 const_int_array        =  { int_array_expr | repeat_int_array_expr }
@@ -140,12 +128,6 @@ repeat_int_array_expr  =  { "[" ~ const_int ~ ";" ~ const_int ~ "]" }
 const_int_combinator = { int_combinator ~ "=" ~ const_int }
 
 const_enum_combinator = { combinator_invocation ~ "=" ~ variant_id }
-
-const_struct_combinator =  { "{" ~ const_fields ~ "}" }
-const_fields            = _{ (const_combinator ~ ",")+ }
-
-const_choice_combinator = { choose ~ "{" ~ const_choice* ~ "}" }
-const_choice            = { variant_id ~ "(" ~ const_combinator ~ ")" ~ "," }
 
 /// integer literal with optional type suffix, e.g. 0u8, 0x1111u16
 typed_const_int = ${ const_int ~ int_type_suffix? }

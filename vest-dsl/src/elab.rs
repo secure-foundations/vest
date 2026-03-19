@@ -371,20 +371,7 @@ fn expand_combinator<'ast>(
                 }
             }
         }
-        // CombinatorInner::Choice(ChoiceCombinator { depend_id, choices }) =>
-        // CombinatorInner::Bytes(BytesCombinator { len }) =>
-        // CombinatorInner::Tail(TailCombinator) =>
-        // CombinatorInner::ConstraintInt(..) => {}
         CombinatorInner::ConstraintEnum(..) => {}
-        // CombinatorInner::Wrap(..) => {}
-        // CombinatorInner::Enum(..) => {}
-        // CombinatorInner::SepBy(SepByCombinator { combinator, sep }) =>
-        // CombinatorInner::Vec(VecCombinator::Vec(combinator)) =>
-        // CombinatorInner::Vec(VecCombinator::Vec1(combinator)) =>
-        // CombinatorInner::Array(ArrayCombinator { combinator, len }) =>
-        // CombinatorInner::Apply(ApplyCombinator { stream, combinator }) =>
-        // CombinatorInner::Option(OptionCombinator(combinator)) =>
-        // CombinatorInner::Invocation(CombinatorInvocation { func, args }) =>
         _ => {}
     }
 }
@@ -567,42 +554,10 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
 }
 
 fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> {
-    let mut invocations = Vec::new();
     match const_combinator {
-        ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => {
-            for field in fields {
-                if let ConstCombinator::ConstCombinatorInvocation {
-                    name: invocation, ..
-                } = field
-                {
-                    invocations.push(invocation.name.to_owned());
-                }
-            }
-        }
-        ConstCombinator::ConstChoice(ConstChoiceCombinator(choices)) => {
-            for ConstChoice { combinator, .. } in choices {
-                if let ConstCombinator::ConstCombinatorInvocation {
-                    name: invocation, ..
-                } = combinator
-                {
-                    invocations.push(invocation.name.to_owned());
-                }
-            }
-        }
         ConstCombinator::ConstCombinatorInvocation {
             name: invocation, ..
-        } => {
-            invocations.push(invocation.name.to_owned());
-        }
-        ConstCombinator::Vec(combinator) => {
-            if let ConstCombinator::ConstCombinatorInvocation {
-                name: invocation, ..
-            } = combinator.as_ref()
-            {
-                invocations.push(invocation.name.to_owned());
-            }
-        }
-        _ => {}
+        } => vec![invocation.name.to_owned()],
+        _ => Vec::new(),
     }
-    invocations
 }

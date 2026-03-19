@@ -47,12 +47,10 @@ pub enum CombinatorInner {
     Wrap(WrapCombinator),
     Enum(EnumCombinator),
     Choice(ChoiceCombinator),
-    SepBy(SepByCombinator),
     Vec(VecCombinator),
     Array(ArrayCombinator),
     Bytes(BytesCombinator),
     Tail(TailCombinator),
-    Apply(ApplyCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
 }
@@ -121,7 +119,6 @@ pub enum StructField {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Param {
-    Stream(String),
     Dependent(String),
 }
 
@@ -166,13 +163,6 @@ pub enum Choices {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VecCombinator {
     Vec(Box<Combinator>),
-    Vec1(Box<Combinator>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SepByCombinator {
-    pub combinator: VecCombinator,
-    pub sep: ConstCombinator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -226,12 +216,6 @@ pub struct BytesCombinator {
 pub struct TailCombinator;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ApplyCombinator {
-    pub stream: String,
-    pub combinator: Box<Combinator>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CombinatorInvocation {
     pub func: String,
     pub args: Vec<Param>,
@@ -239,21 +223,10 @@ pub struct CombinatorInvocation {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ConstCombinator {
-    Vec(Box<ConstCombinator>),
-    ConstArray(ConstArrayCombinator),
     ConstBytes(ConstBytesCombinator),
     ConstInt(ConstIntCombinator),
     ConstEnum(ConstEnumCombinator),
-    ConstStruct(ConstStructCombinator),
-    ConstChoice(ConstChoiceCombinator),
     ConstCombinatorInvocation(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstArrayCombinator {
-    pub combinator: IntCombinator,
-    pub len: usize,
-    pub values: ConstArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -280,17 +253,6 @@ pub enum ConstArray {
 pub struct ConstIntCombinator {
     pub combinator: IntCombinator,
     pub value: i128,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstStructCombinator(pub Vec<ConstCombinator>);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoiceCombinator(pub Vec<ConstChoice>);
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoice {
-    pub tag: String,
-    pub combinator: ConstCombinator,
 }
 
 impl Display for Definition {
@@ -348,12 +310,10 @@ impl Display for CombinatorInner {
             CombinatorInner::Wrap(w) => write!(f, "{}", w),
             CombinatorInner::Enum(e) => write!(f, "{}", e),
             CombinatorInner::Choice(c) => write!(f, "{}", c),
-            CombinatorInner::SepBy(s) => write!(f, "{}", s),
             CombinatorInner::Vec(v) => write!(f, "{}", v),
             CombinatorInner::Array(a) => write!(f, "{}", a),
             CombinatorInner::Bytes(a) => write!(f, "{}", a),
             CombinatorInner::Tail(t) => write!(f, "{}", t),
-            CombinatorInner::Apply(a) => write!(f, "{}", a),
             CombinatorInner::Option(o) => write!(f, "{}", o),
             CombinatorInner::Invocation(i) => write!(f, "{}", i),
         }
@@ -461,21 +421,11 @@ impl Display for StructField {
 impl Display for ConstCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstCombinator::Vec(v) => write!(f, "{}", v),
-            ConstCombinator::ConstArray(a) => write!(f, "{}", a),
             ConstCombinator::ConstBytes(b) => write!(f, "{}", b),
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
             ConstCombinator::ConstEnum(e) => write!(f, "{}", e),
-            ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
-            ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
             ConstCombinator::ConstCombinatorInvocation(i) => write!(f, "{}", i),
         }
-    }
-}
-
-impl Display for ConstArrayCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}]", self.values)
     }
 }
 
@@ -523,36 +473,9 @@ impl Display for ConstIntCombinator {
     }
 }
 
-impl Display for ConstStructCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for combinator in &self.0 {
-            write!(f, "{}", combinator)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoiceCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for choice in &self.0 {
-            write!(f, "{}", choice)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoice {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.tag, self.combinator)
-    }
-}
-
 impl Display for Param {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Param::Stream(s) => write!(f, "${}", s),
             Param::Dependent(s) => write!(f, "{}", s),
         }
     }
@@ -636,17 +559,10 @@ impl Display for Choices {
     }
 }
 
-impl Display for SepByCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}_sepby_{}", self.combinator, self.sep)
-    }
-}
-
 impl Display for VecCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             VecCombinator::Vec(v) => write!(f, "{}*", v),
-            VecCombinator::Vec1(v) => write!(f, "{}+", v),
         }
     }
 }
@@ -691,12 +607,6 @@ impl Display for TailCombinator {
 impl Display for OptionCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}?", self.0)
-    }
-}
-
-impl Display for ApplyCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", self.stream, self.combinator)
     }
 }
 
@@ -1109,26 +1019,12 @@ pub mod lowering {
     impl<'i> From<ast::ConstCombinator<'i>> for ir::ConstCombinator {
         fn from(c: ast::ConstCombinator<'i>) -> Self {
             match c {
-                ast::ConstCombinator::Vec(b) => ir::ConstCombinator::Vec(Box::new((*b).into())),
-                ast::ConstCombinator::ConstArray(x) => ir::ConstCombinator::ConstArray(x.into()),
                 ast::ConstCombinator::ConstBytes(x) => ir::ConstCombinator::ConstBytes(x.into()),
                 ast::ConstCombinator::ConstInt(x) => ir::ConstCombinator::ConstInt(x.into()),
                 ast::ConstCombinator::ConstEnum(x) => ir::ConstCombinator::ConstEnum(x.into()),
-                ast::ConstCombinator::ConstStruct(x) => ir::ConstCombinator::ConstStruct(x.into()),
-                ast::ConstCombinator::ConstChoice(x) => ir::ConstCombinator::ConstChoice(x.into()),
                 ast::ConstCombinator::ConstCombinatorInvocation { name, .. } => {
                     ir::ConstCombinator::ConstCombinatorInvocation(id(name))
                 }
-            }
-        }
-    }
-
-    impl<'i> From<ast::ConstArrayCombinator<'i>> for ir::ConstArrayCombinator {
-        fn from(c: ast::ConstArrayCombinator<'i>) -> Self {
-            ir::ConstArrayCombinator {
-                combinator: c.combinator.into(),
-                len: c.len,
-                values: c.values.into(),
             }
         }
     }
@@ -1169,27 +1065,6 @@ pub mod lowering {
             ir::ConstIntCombinator {
                 combinator: c.combinator.into(),
                 value: c.value,
-            }
-        }
-    }
-
-    impl<'i> From<ast::ConstStructCombinator<'i>> for ir::ConstStructCombinator {
-        fn from(c: ast::ConstStructCombinator<'i>) -> Self {
-            ir::ConstStructCombinator(c.0.into_iter().map(Into::into).collect())
-        }
-    }
-
-    impl<'i> From<ast::ConstChoiceCombinator<'i>> for ir::ConstChoiceCombinator {
-        fn from(c: ast::ConstChoiceCombinator<'i>) -> Self {
-            ir::ConstChoiceCombinator(c.0.into_iter().map(Into::into).collect())
-        }
-    }
-
-    impl<'i> From<ast::ConstChoice<'i>> for ir::ConstChoice {
-        fn from(c: ast::ConstChoice<'i>) -> Self {
-            ir::ConstChoice {
-                tag: c.tag,
-                combinator: c.combinator.into(),
             }
         }
     }

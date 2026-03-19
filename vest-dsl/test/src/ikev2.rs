@@ -3584,79 +3584,79 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodyCombinator {
 pub type ProposalBodyCombinatorAlias = AndThen<bytes::Variable, Mapped<ProposalBodyCombinator2, ProposalBodyMapper>>;
 
 
-pub open spec fn spec_proposal_body(proposal_length: u16, num_transforms: u8, spi_size: SpecProposalSpiSizeByte) -> SpecProposalBodyCombinator {
+pub open spec fn spec_proposal_body(proposal_length: u16, spi_size: SpecProposalSpiSizeByte, num_transforms: u8) -> SpecProposalBodyCombinator {
     SpecProposalBodyCombinator(AndThen(bytes::Variable(((usize::spec_from(proposal_length) - 8)) as usize), Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_proposal_body_spi0(num_transforms) }, Choice(Cond { cond: spi_size == 4, inner: spec_proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: spec_proposal_body_spi8(num_transforms) })), mapper: ProposalBodyMapper }))
 }
 
-pub fn proposal_body<'a>(proposal_length: u16, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (o: ProposalBodyCombinator)
+pub fn proposal_body<'a>(proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (o: ProposalBodyCombinator)
     requires
         ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        ((num_transforms) >= 1 && (num_transforms) <= 255),
         spec_proposal_spi_size_byte().wf(spi_size@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
 
-    ensures o@ == spec_proposal_body(proposal_length@, num_transforms@, spi_size@),
+    ensures o@ == spec_proposal_body(proposal_length@, spi_size@, num_transforms@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = ProposalBodyCombinator(AndThen(bytes::Variable(((usize::ex_from(proposal_length) - 8)) as usize), Mapped { inner: ProposalBodyCombinator2(Choice::new(Cond { cond: spi_size == 0, inner: proposal_body_spi0(num_transforms) }, ProposalBodyCombinator1(Choice::new(Cond { cond: spi_size == 4, inner: proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: proposal_body_spi8(num_transforms) })))), mapper: ProposalBodyMapper }));
     // assert({
-    //     &&& combinator@ == spec_proposal_body(proposal_length@, num_transforms@, spi_size@)
+    //     &&& combinator@ == spec_proposal_body(proposal_length@, spi_size@, num_transforms@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_proposal_body<'a>(input: &'a [u8], proposal_length: u16, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (res: PResult<<ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_proposal_body<'a>(input: &'a [u8], proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (res: PResult<<ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        ((num_transforms) >= 1 && (num_transforms) <= 255),
         spec_proposal_spi_size_byte().wf(spi_size@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
 
     ensures
-        res matches Ok((n, v)) ==> spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
-        spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) == Some((n as int, v@)),
+        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_parse(input@) is None,
-        spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) is None,
+        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = proposal_body( proposal_length, num_transforms, spi_size );
+    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_proposal_body<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, proposal_length: u16, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_proposal_body<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_proposal_body(proposal_length@, num_transforms@, spi_size@).wf(v@),
+        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).wf(v@),
         ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        ((num_transforms) >= 1 && (num_transforms) <= 255),
         spec_proposal_spi_size_byte().wf(spi_size@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_serialize(v@))
+            &&& n == spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@))
         },
 {
-    let combinator = proposal_body( proposal_length, num_transforms, spi_size );
+    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
     combinator.serialize(v, data, pos)
 }
 
-pub fn proposal_body_len<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, proposal_length: u16, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (serialize_len: usize)
+pub fn proposal_body_len<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (serialize_len: usize)
     requires
-        spec_proposal_body(proposal_length@, num_transforms@, spi_size@).wf(v@),
-        spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).wf(v@),
+        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len() <= usize::MAX,
         ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        ((num_transforms) >= 1 && (num_transforms) <= 255),
         spec_proposal_spi_size_byte().wf(spi_size@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
 
     ensures
-        serialize_len == spec_proposal_body(proposal_length@, num_transforms@, spi_size@).spec_serialize(v@).len(),
+        serialize_len == spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len(),
 {
-    let combinator = proposal_body( proposal_length, num_transforms, spi_size );
+    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -3925,7 +3925,7 @@ impl View for ProposalCont1 {
 
 pub open spec fn spec_proposal_cont0(deps: ((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)) -> SpecProposalBodyCombinator {
     let ((((_, (_, proposal_length)), (_, protocol_id)), spi_size), num_transforms) = deps;
-    spec_proposal_body(proposal_length, num_transforms, spi_size)
+    spec_proposal_body(proposal_length, spi_size, num_transforms)
 }
 
 impl View for ProposalCont0 {
@@ -4121,7 +4121,7 @@ impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_transforms = *num_transforms;
-                proposal_body(proposal_length, num_transforms, spi_size)
+                proposal_body(proposal_length, spi_size, num_transforms)
             }
             POrSType::S(deps) => {
                 let ((((_, (_, proposal_length)), (_, protocol_id)), spi_size), num_transforms) = deps;
@@ -4129,7 +4129,7 @@ impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_transforms = *num_transforms;
-                proposal_body(proposal_length, num_transforms, spi_size)
+                proposal_body(proposal_length, spi_size, num_transforms)
             }
         }
     }

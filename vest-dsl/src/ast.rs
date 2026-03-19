@@ -612,13 +612,9 @@ impl PartialEq for CombinatorInvocation<'_> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ConstCombinator<'i> {
-    Vec(Box<ConstCombinator<'i>>),
-    ConstArray(ConstArrayCombinator<'i>),
     ConstBytes(ConstBytesCombinator<'i>),
     ConstInt(ConstIntCombinator<'i>),
     ConstEnum(ConstEnumCombinator<'i>),
-    ConstStruct(ConstStructCombinator<'i>),
-    ConstChoice(ConstChoiceCombinator<'i>),
     ConstCombinatorInvocation {
         name: Identifier<'i>,
         span: Span<'i>,
@@ -628,29 +624,11 @@ pub enum ConstCombinator<'i> {
 impl<'i> ConstCombinator<'i> {
     pub fn as_span(&self) -> Span<'i> {
         match self {
-            ConstCombinator::Vec(c) => c.as_span(),
-            ConstCombinator::ConstArray(c) => c.span,
             ConstCombinator::ConstBytes(c) => c.span,
             ConstCombinator::ConstInt(c) => c.span,
             ConstCombinator::ConstEnum(c) => c.span,
-            ConstCombinator::ConstStruct(..) => todo!("VestDSL does not support const structs yet"),
-            ConstCombinator::ConstChoice(..) => todo!("VestDSL does not support const choices yet"),
             ConstCombinator::ConstCombinatorInvocation { span, .. } => *span,
         }
-    }
-}
-
-#[derive(Debug, Clone, Eq, Hash)]
-pub struct ConstArrayCombinator<'i> {
-    pub combinator: IntCombinator,
-    pub len: usize,
-    pub values: ConstArray<'i>,
-    pub span: Span<'i>,
-}
-
-impl PartialEq for ConstArrayCombinator<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.combinator == other.combinator && self.len == other.len && self.values == other.values
     }
 }
 
@@ -758,17 +736,6 @@ impl PartialEq for ConstIntCombinator<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.combinator == other.combinator && self.value == other.value
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstStructCombinator<'i>(pub Vec<ConstCombinator<'i>>);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoiceCombinator<'i>(pub Vec<ConstChoice<'i>>);
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoice<'i> {
-    pub tag: String,
-    pub combinator: ConstCombinator<'i>,
 }
 
 impl Display for Identifier<'_> {
@@ -944,21 +911,11 @@ impl Display for StructField<'_> {
 impl Display for ConstCombinator<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstCombinator::Vec(v) => write!(f, "{}", v),
-            ConstCombinator::ConstArray(a) => write!(f, "{}", a),
             ConstCombinator::ConstBytes(b) => write!(f, "{}", b),
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
             ConstCombinator::ConstEnum(e) => write!(f, "{}", e),
-            ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
-            ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
             ConstCombinator::ConstCombinatorInvocation { name, .. } => write!(f, "{}", name),
         }
-    }
-}
-
-impl Display for ConstArrayCombinator<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}]", self.values)
     }
 }
 
@@ -1028,32 +985,6 @@ impl Display for ConstArray<'_> {
 impl Display for ConstIntCombinator<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}_{}", self.combinator, self.value)
-    }
-}
-
-impl Display for ConstStructCombinator<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for combinator in &self.0 {
-            write!(f, "{}", combinator)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoiceCombinator<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for choice in &self.0 {
-            write!(f, "{}", choice)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoice<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.tag, self.combinator)
     }
 }
 
@@ -1850,16 +1781,20 @@ fn build_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> VecCombinator<
 }
 
 fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombinator<'_> {
-    let mut inner_rules = match rule.as_rule() {
-        Rule::const_combinator | Rule::wrap_const_combinator => rule.into_inner(),
-        _ => unreachable!(),
-    };
-    let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
     match rule.as_rule() {
-        Rule::vec => ConstCombinator::Vec(Box::new(build_const_combinator(
-            inner_rules.next().unwrap(),
-        ))),
+        Rule::const_combinator | Rule::inline_const_combinator => {
+            build_const_combinator(rule.into_inner().next().unwrap())
+        }
+        Rule::const_bytes_combinator => {
+            let mut inner_rules = rule.into_inner();
+            let len = build_const_int(inner_rules.next().unwrap());
+            let len: usize = len
+                .try_into()
+                .unwrap_or_else(|_| panic!("length {} does not fit into usize", len));
+            let values = build_const_array(inner_rules.next().unwrap());
+            ConstCombinator::ConstBytes(ConstBytesCombinator { len, values, span })
+        }
         Rule::const_enum_combinator => {
             let mut inner_rules = rule.into_inner();
             let combinator = build_combinator_invocation(inner_rules.next().unwrap());
@@ -1869,27 +1804,6 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
                 variant,
                 span,
             })
-        }
-        Rule::const_array_combinator => {
-            let mut inner_rules = rule.into_inner();
-            let combinator = build_int_combinator(inner_rules.next().unwrap());
-            let len = build_const_int(inner_rules.next().unwrap());
-            let len: usize = len
-                .try_into()
-                .unwrap_or_else(|_| panic!("length {} does not fit into usize", len));
-            let values = build_const_array(inner_rules.next().unwrap());
-            // check for special case of `[u8; ...] = [...]` ==> ConstBytes
-            match combinator {
-                IntCombinator::Unsigned(8) => {
-                    ConstCombinator::ConstBytes(ConstBytesCombinator { len, values, span })
-                }
-                _ => ConstCombinator::ConstArray(ConstArrayCombinator {
-                    combinator,
-                    len,
-                    values,
-                    span,
-                }),
-            }
         }
         Rule::const_int_combinator => {
             let mut inner_rules = rule.into_inner();
@@ -1901,25 +1815,12 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
                 span,
             })
         }
-        Rule::const_struct_combinator => ConstCombinator::ConstStruct(ConstStructCombinator(
-            rule.into_inner().map(build_const_combinator).collect(),
-        )),
-        Rule::const_choice_combinator => ConstCombinator::ConstChoice(ConstChoiceCombinator(
-            rule.into_inner().map(build_const_choice).collect(),
-        )),
         Rule::const_id => ConstCombinator::ConstCombinatorInvocation {
             name: build_id(rule),
             span: span.clone(),
         },
         _ => unreachable!(),
     }
-}
-
-fn build_const_choice(pair: pest::iterators::Pair<'_, Rule>) -> ConstChoice<'_> {
-    let mut inner_rules = pair.into_inner();
-    let tag = inner_rules.next().unwrap().as_str().to_string();
-    let combinator = build_const_combinator(inner_rules.next().unwrap());
-    ConstChoice { tag, combinator }
 }
 
 fn build_enum_constraint(pair: pest::iterators::Pair<'_, Rule>) -> EnumConstraint<'_> {

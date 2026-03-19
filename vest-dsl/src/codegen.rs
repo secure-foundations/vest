@@ -238,7 +238,6 @@ where
                                 .iter()
                                 .map(|arg| match arg {
                                     Param::Dependent(arg) => view_expr(arg),
-                                    Param::Stream(..) => unimplemented!(),
                                 })
                                 .collect::<Vec<_>>()
                                 .join(", ");
@@ -416,19 +415,10 @@ fn msg_need_lifetime(combinator: &Combinator, ctx: &GlobalCtx) -> bool {
                 .iter()
                 .any(|(_, combinator)| msg_need_lifetime(combinator, ctx)),
         },
-        SepBy(SepByCombinator { combinator, sep }) => {
-            let combinator = Combinator {
-                inner: Vec(combinator.clone()),
-                and_then: None,
-            };
-            msg_need_lifetime(&combinator, ctx) || const_msg_need_lifetime(sep, ctx)
-        }
-        Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
-            msg_need_lifetime(combinator, ctx)
-        }
+        Vec(VecCombinator::Vec(combinator)) => msg_need_lifetime(combinator, ctx),
         Array(ArrayCombinator { combinator, .. }) => msg_need_lifetime(combinator, ctx),
         Option(OptionCombinator(combinator)) => msg_need_lifetime(combinator, ctx),
-        ConstraintInt(_) | ConstraintEnum(_) | Enum(_) | Apply(_) => false,
+        ConstraintInt(_) | ConstraintEnum(_) | Enum(_) => false,
         Invocation(_) => unreachable!("invocation should be resolved by now"),
     }
 }
@@ -467,15 +457,7 @@ fn dependent_param_defs(ctx: &CodegenCtx) -> Vec<(&str, &CombinatorInner)> {
 fn const_msg_need_lifetime(const_combinator: &ConstCombinator, ctx: &GlobalCtx) -> bool {
     let const_combinator = ctx.resolve_const(const_combinator);
     match const_combinator {
-        ConstCombinator::ConstArray(_) => true, // TODO: can be more fine-grained
         ConstCombinator::ConstBytes(_) => true, // TODO: can be more fine-grained
-        ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => fields
-            .iter()
-            .any(|field| const_msg_need_lifetime(field, ctx)),
-        ConstCombinator::ConstChoice(ConstChoiceCombinator(choices)) => choices
-            .iter()
-            .any(|ConstChoice { combinator, .. }| const_msg_need_lifetime(combinator, ctx)),
-        ConstCombinator::Vec(combinator) => const_msg_need_lifetime(combinator, ctx),
         ConstCombinator::ConstEnum(_)
         | ConstCombinator::ConstInt(_)
         | ConstCombinator::ConstCombinatorInvocation(_) => false,
@@ -769,9 +751,7 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Choice(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Array(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Vec(p) => p.gen_msg_type(name, mode, ctx),
-            CombinatorInner::SepBy(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Wrap(p) => p.gen_msg_type(name, mode, ctx),
-            CombinatorInner::Apply(p) => p.gen_msg_type(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_msg_type(name, mode, ctx),
         }
     }
@@ -794,9 +774,7 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Choice(p) => p.gen_combinator_type(name, mode, ctx),
             CombinatorInner::Array(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Vec(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
-            CombinatorInner::SepBy(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Wrap(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
-            CombinatorInner::Apply(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_type(upper_caml_name, mode, ctx),
         }
     }
@@ -813,9 +791,7 @@ impl Codegen for CombinatorInner {
             CombinatorInner::Choice(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Array(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Vec(p) => p.gen_combinator_expr(name, mode, ctx),
-            CombinatorInner::SepBy(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Wrap(p) => p.gen_combinator_expr(name, mode, ctx),
-            CombinatorInner::Apply(p) => p.gen_combinator_expr(name, mode, ctx),
             CombinatorInner::Option(p) => p.gen_combinator_expr(name, mode, ctx),
         }
     }
@@ -1091,12 +1067,8 @@ impl Codegen for CombinatorInvocation {
         let args = &self
             .args
             .iter()
-            .map(|arg| {
-                if let Param::Dependent(arg) = arg {
-                    arg.to_string()
-                } else {
-                    unimplemented!()
-                }
+            .map(|arg| match arg {
+                Param::Dependent(arg) => arg.to_string(),
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -2898,7 +2870,7 @@ impl Codegen for ArrayCombinator {
 impl Codegen for VecCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
         let inner = match self {
-            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+            VecCombinator::Vec(combinator) => {
                 combinator.gen_msg_type("", mode, &ctx.disable_top_level())
             }
         };
@@ -2931,7 +2903,7 @@ impl Codegen for VecCombinator {
         ctx: &mut CodegenCtx,
     ) -> (String, String) {
         let inner = match self {
-            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+            VecCombinator::Vec(combinator) => {
                 combinator.gen_combinator_type(name, mode, &mut ctx.disable_top_level())
             }
         };
@@ -2940,7 +2912,7 @@ impl Codegen for VecCombinator {
 
     fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
         let inner = match self {
-            VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator) => {
+            VecCombinator::Vec(combinator) => {
                 combinator.gen_combinator_expr(name, mode, &ctx.disable_top_level())
             }
         };
@@ -2949,25 +2921,6 @@ impl Codegen for VecCombinator {
             _ => format!("Repeat::new({})", inner.0),
         };
         (combinator_expr, inner.1)
-    }
-}
-
-impl Codegen for SepByCombinator {
-    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        todo!()
-    }
-
-    fn gen_combinator_type(
-        &self,
-        name: &str,
-        mode: Mode,
-        ctx: &mut CodegenCtx,
-    ) -> (String, String) {
-        todo!()
-    }
-
-    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
     }
 }
 
@@ -3120,25 +3073,6 @@ impl Codegen for WrapCombinator {
     }
 }
 
-impl Codegen for ApplyCombinator {
-    fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
-        todo!()
-    }
-
-    fn gen_combinator_type(
-        &self,
-        name: &str,
-        mode: Mode,
-        ctx: &mut CodegenCtx,
-    ) -> (String, String) {
-        todo!()
-    }
-
-    fn gen_combinator_expr(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> (String, String) {
-        todo!()
-    }
-}
-
 impl Codegen for OptionCombinator {
     fn gen_msg_type(&self, name: &str, mode: Mode, ctx: &CodegenCtx) -> String {
         let inner = &self.0.gen_msg_type("", mode, &ctx.disable_top_level());
@@ -3194,10 +3128,6 @@ impl Codegen for ConstCombinator {
             ConstCombinator::ConstInt(c) => c.gen_msg_type(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_msg_type(name, mode, ctx),
             ConstCombinator::ConstEnum(c) => c.gen_msg_type(name, mode, ctx),
-            ConstCombinator::ConstArray(..) => todo!(),
-            ConstCombinator::Vec(..) => todo!(),
-            ConstCombinator::ConstStruct(..) => todo!(),
-            ConstCombinator::ConstChoice(..) => todo!(),
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let invocked = match mode {
                     Mode::Spec => format!("Spec{}", name),
@@ -3243,10 +3173,6 @@ impl Codegen for ConstCombinator {
             ConstCombinator::ConstInt(c) => c.gen_combinator_type(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_combinator_type(name, mode, ctx),
             ConstCombinator::ConstEnum(c) => c.gen_combinator_type(name, mode, ctx),
-            ConstCombinator::ConstArray(..) => todo!(),
-            ConstCombinator::Vec(..) => todo!(),
-            ConstCombinator::ConstStruct(..) => todo!(),
-            ConstCombinator::ConstChoice(..) => todo!(),
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let invocked = snake_to_upper_caml(name);
                 match mode {
@@ -3276,10 +3202,6 @@ impl Codegen for ConstCombinator {
             ConstCombinator::ConstInt(c) => c.gen_combinator_expr(name, mode, ctx),
             ConstCombinator::ConstBytes(c) => c.gen_combinator_expr(name, mode, ctx),
             ConstCombinator::ConstEnum(c) => c.gen_combinator_expr(name, mode, ctx),
-            ConstCombinator::ConstArray(..) => todo!(),
-            ConstCombinator::Vec(..) => todo!(),
-            ConstCombinator::ConstStruct(..) => todo!(),
-            ConstCombinator::ConstChoice(..) => todo!(),
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let invocked = match mode {
                     Mode::Spec => format!("spec_{}", name),

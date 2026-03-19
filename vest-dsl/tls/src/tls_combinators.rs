@@ -14519,71 +14519,71 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientHelloExtensionExtensionData
 pub type ClientHelloExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<ClientHelloExtensionExtensionDataCombinator9, ClientHelloExtensionExtensionDataMapper>>;
 
 
-pub open spec fn spec_client_hello_extension_extension_data(ext_len: u16, extension_type: u16) -> SpecClientHelloExtensionExtensionDataCombinator {
+pub open spec fn spec_client_hello_extension_extension_data(extension_type: u16, ext_len: u16) -> SpecClientHelloExtensionExtensionDataCombinator {
     SpecClientHelloExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::spec_from(ext_len)) as usize), Mapped { inner: Choice(Cond { cond: extension_type == ExtensionType::SPEC_ServerName, inner: spec_server_name_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SignatureAlgorithms, inner: spec_signature_scheme_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SupportedGroups, inner: spec_named_group_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_StatusRequest, inner: spec_certificate_status_request() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_ApplicationLayerProtocolNegotiation, inner: spec_protocol_name_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SupportedVersions, inner: spec_supported_versions_client() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_KeyShare, inner: spec_key_share_client_hello() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_PskKeyExchangeModes, inner: spec_psk_key_exchange_modes() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_PreSharedKey, inner: spec_pre_shared_key_client_extension() }, Cond { cond: !(extension_type == ExtensionType::SPEC_ServerName || extension_type == ExtensionType::SPEC_SignatureAlgorithms || extension_type == ExtensionType::SPEC_SupportedGroups || extension_type == ExtensionType::SPEC_StatusRequest || extension_type == ExtensionType::SPEC_ApplicationLayerProtocolNegotiation || extension_type == ExtensionType::SPEC_SupportedVersions || extension_type == ExtensionType::SPEC_KeyShare || extension_type == ExtensionType::SPEC_PskKeyExchangeModes || extension_type == ExtensionType::SPEC_PreSharedKey), inner: spec_client_hello_extension_rest(ext_len, extension_type) }))))))))), mapper: ClientHelloExtensionExtensionDataMapper }))
 }
 
-pub fn client_hello_extension_extension_data<'a>(ext_len: u16, extension_type: u16) -> (o: ClientHelloExtensionExtensionDataCombinator)
+pub fn client_hello_extension_extension_data<'a>(extension_type: u16, ext_len: u16) -> (o: ClientHelloExtensionExtensionDataCombinator)
     requires
         spec_extension_type().wf(extension_type@),
 
-    ensures o@ == spec_client_hello_extension_extension_data(ext_len@, extension_type@),
+    ensures o@ == spec_client_hello_extension_extension_data(extension_type@, ext_len@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = ClientHelloExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::ex_from(ext_len)) as usize), Mapped { inner: ClientHelloExtensionExtensionDataCombinator9(Choice::new(Cond { cond: extension_type == ExtensionType::ServerName, inner: server_name_list() }, ClientHelloExtensionExtensionDataCombinator8(Choice::new(Cond { cond: extension_type == ExtensionType::SignatureAlgorithms, inner: signature_scheme_list() }, ClientHelloExtensionExtensionDataCombinator7(Choice::new(Cond { cond: extension_type == ExtensionType::SupportedGroups, inner: named_group_list() }, ClientHelloExtensionExtensionDataCombinator6(Choice::new(Cond { cond: extension_type == ExtensionType::StatusRequest, inner: certificate_status_request() }, ClientHelloExtensionExtensionDataCombinator5(Choice::new(Cond { cond: extension_type == ExtensionType::ApplicationLayerProtocolNegotiation, inner: protocol_name_list() }, ClientHelloExtensionExtensionDataCombinator4(Choice::new(Cond { cond: extension_type == ExtensionType::SupportedVersions, inner: supported_versions_client() }, ClientHelloExtensionExtensionDataCombinator3(Choice::new(Cond { cond: extension_type == ExtensionType::KeyShare, inner: key_share_client_hello() }, ClientHelloExtensionExtensionDataCombinator2(Choice::new(Cond { cond: extension_type == ExtensionType::PskKeyExchangeModes, inner: psk_key_exchange_modes() }, ClientHelloExtensionExtensionDataCombinator1(Choice::new(Cond { cond: extension_type == ExtensionType::PreSharedKey, inner: pre_shared_key_client_extension() }, Cond { cond: !(extension_type == ExtensionType::ServerName || extension_type == ExtensionType::SignatureAlgorithms || extension_type == ExtensionType::SupportedGroups || extension_type == ExtensionType::StatusRequest || extension_type == ExtensionType::ApplicationLayerProtocolNegotiation || extension_type == ExtensionType::SupportedVersions || extension_type == ExtensionType::KeyShare || extension_type == ExtensionType::PskKeyExchangeModes || extension_type == ExtensionType::PreSharedKey), inner: client_hello_extension_rest(ext_len, extension_type) })))))))))))))))))), mapper: ClientHelloExtensionExtensionDataMapper }));
     // assert({
-    //     &&& combinator@ == spec_client_hello_extension_extension_data(ext_len@, extension_type@)
+    //     &&& combinator@ == spec_client_hello_extension_extension_data(extension_type@, ext_len@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_client_hello_extension_extension_data<'a>(input: &'a [u8], ext_len: u16, extension_type: u16) -> (res: PResult<<ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_client_hello_extension_extension_data<'a>(input: &'a [u8], extension_type: u16, ext_len: u16) -> (res: PResult<<ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) == Some((n as int, v@)),
-        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) == Some((n as int, v@)),
+        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None,
-        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None,
+        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
+    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_client_hello_extension_extension_data<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ext_len: u16, extension_type: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_client_hello_extension_extension_data<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, extension_type: u16, ext_len: u16) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_client_hello_extension_extension_data(ext_len@, extension_type@).wf(v@),
+        spec_client_hello_extension_extension_data(extension_type@, ext_len@).wf(v@),
         spec_extension_type().wf(extension_type@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
+            &&& n == spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@))
         },
 {
-    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
+    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
     combinator.serialize(v, data, pos)
 }
 
-pub fn client_hello_extension_extension_data_len<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
+pub fn client_hello_extension_extension_data_len<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, extension_type: u16, ext_len: u16) -> (serialize_len: usize)
     requires
-        spec_client_hello_extension_extension_data(ext_len@, extension_type@).wf(v@),
-        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len() <= usize::MAX,
+        spec_client_hello_extension_extension_data(extension_type@, ext_len@).wf(v@),
+        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        serialize_len == spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len(),
+        serialize_len == spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len(),
 {
-    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
+    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -14746,7 +14746,7 @@ impl View for ClientHelloExtensionCont1 {
 
 pub open spec fn spec_client_hello_extension_cont0(deps: (u16, u16)) -> SpecClientHelloExtensionExtensionDataCombinator {
     let (extension_type, ext_len) = deps;
-    spec_client_hello_extension_extension_data(ext_len, extension_type)
+    spec_client_hello_extension_extension_data(extension_type, ext_len)
 }
 
 impl View for ClientHelloExtensionCont0 {
@@ -14872,13 +14872,13 @@ impl<'a, 'b, 'x> Continuation<ClientHelloExtensionCont0Input<'a, 'b, 'x>> for Cl
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                client_hello_extension_extension_data(ext_len, extension_type)
+                client_hello_extension_extension_data(extension_type, ext_len)
             }
             POrSType::S(deps) => {
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                client_hello_extension_extension_data(ext_len, extension_type)
+                client_hello_extension_extension_data(extension_type, ext_len)
             }
         }
     }
@@ -18531,71 +18531,71 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateExtensionExtensionData
 pub type CertificateExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<CertificateExtensionExtensionDataCombinator2, CertificateExtensionExtensionDataMapper>>;
 
 
-pub open spec fn spec_certificate_extension_extension_data(extension_type: u16, ext_len: u16) -> SpecCertificateExtensionExtensionDataCombinator {
+pub open spec fn spec_certificate_extension_extension_data(ext_len: u16, extension_type: u16) -> SpecCertificateExtensionExtensionDataCombinator {
     SpecCertificateExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::spec_from(ext_len)) as usize), Mapped { inner: Choice(Cond { cond: extension_type == ExtensionType::SPEC_StatusRequest, inner: spec_certificate_status() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SignedCertificateTimeStamp, inner: spec_signed_certificate_timestamp_list() }, Cond { cond: !(extension_type == ExtensionType::SPEC_StatusRequest || extension_type == ExtensionType::SPEC_SignedCertificateTimeStamp), inner: bytes::Variable((usize::spec_from(ext_len)) as usize) })), mapper: CertificateExtensionExtensionDataMapper }))
 }
 
-pub fn certificate_extension_extension_data<'a>(extension_type: u16, ext_len: u16) -> (o: CertificateExtensionExtensionDataCombinator)
+pub fn certificate_extension_extension_data<'a>(ext_len: u16, extension_type: u16) -> (o: CertificateExtensionExtensionDataCombinator)
     requires
         spec_extension_type().wf(extension_type@),
 
-    ensures o@ == spec_certificate_extension_extension_data(extension_type@, ext_len@),
+    ensures o@ == spec_certificate_extension_extension_data(ext_len@, extension_type@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = CertificateExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::ex_from(ext_len)) as usize), Mapped { inner: CertificateExtensionExtensionDataCombinator2(Choice::new(Cond { cond: extension_type == ExtensionType::StatusRequest, inner: certificate_status() }, CertificateExtensionExtensionDataCombinator1(Choice::new(Cond { cond: extension_type == ExtensionType::SignedCertificateTimeStamp, inner: signed_certificate_timestamp_list() }, Cond { cond: !(extension_type == ExtensionType::StatusRequest || extension_type == ExtensionType::SignedCertificateTimeStamp), inner: bytes::Variable((usize::ex_from(ext_len)) as usize) })))), mapper: CertificateExtensionExtensionDataMapper }));
     // assert({
-    //     &&& combinator@ == spec_certificate_extension_extension_data(extension_type@, ext_len@)
+    //     &&& combinator@ == spec_certificate_extension_extension_data(ext_len@, extension_type@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_certificate_extension_extension_data<'a>(input: &'a [u8], extension_type: u16, ext_len: u16) -> (res: PResult<<CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_certificate_extension_extension_data<'a>(input: &'a [u8], ext_len: u16, extension_type: u16) -> (res: PResult<<CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) == Some((n as int, v@)),
-        spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) == Some((n as int, v@)),
+        spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None,
-        spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None,
+        spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = certificate_extension_extension_data( extension_type, ext_len );
+    let combinator = certificate_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_certificate_extension_extension_data<'a>(v: <CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, extension_type: u16, ext_len: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_certificate_extension_extension_data<'a>(v: <CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ext_len: u16, extension_type: u16) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_certificate_extension_extension_data(extension_type@, ext_len@).wf(v@),
+        spec_certificate_extension_extension_data(ext_len@, extension_type@).wf(v@),
         spec_extension_type().wf(extension_type@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@))
+            &&& n == spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
-    let combinator = certificate_extension_extension_data( extension_type, ext_len );
+    let combinator = certificate_extension_extension_data( ext_len, extension_type );
     combinator.serialize(v, data, pos)
 }
 
-pub fn certificate_extension_extension_data_len<'a>(v: <CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, extension_type: u16, ext_len: u16) -> (serialize_len: usize)
+pub fn certificate_extension_extension_data_len<'a>(v: <CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
     requires
-        spec_certificate_extension_extension_data(extension_type@, ext_len@).wf(v@),
-        spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len() <= usize::MAX,
+        spec_certificate_extension_extension_data(ext_len@, extension_type@).wf(v@),
+        spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        serialize_len == spec_certificate_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len(),
+        serialize_len == spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len(),
 {
-    let combinator = certificate_extension_extension_data( extension_type, ext_len );
+    let combinator = certificate_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -18758,7 +18758,7 @@ impl View for CertificateExtensionCont1 {
 
 pub open spec fn spec_certificate_extension_cont0(deps: (u16, u16)) -> SpecCertificateExtensionExtensionDataCombinator {
     let (extension_type, ext_len) = deps;
-    spec_certificate_extension_extension_data(extension_type, ext_len)
+    spec_certificate_extension_extension_data(ext_len, extension_type)
 }
 
 impl View for CertificateExtensionCont0 {
@@ -18884,13 +18884,13 @@ impl<'a, 'b, 'x> Continuation<CertificateExtensionCont0Input<'a, 'b, 'x>> for Ce
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                certificate_extension_extension_data(extension_type, ext_len)
+                certificate_extension_extension_data(ext_len, extension_type)
             }
             POrSType::S(deps) => {
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                certificate_extension_extension_data(extension_type, ext_len)
+                certificate_extension_extension_data(ext_len, extension_type)
             }
         }
     }
