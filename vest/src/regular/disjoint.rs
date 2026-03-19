@@ -55,6 +55,42 @@ impl<U1, U2, V1, V2> DisjointFrom<(U2, V2)> for (U1, V1) where
     }
 }
 
+
+// if `U1` and `Refined<Inner2, P2>` are disjoint, then `Pair(U1, V1)` is also disjoint
+// from `Refined<Inner2, P2)`.
+impl<U1, Inner2, P2, V1> DisjointFrom<Refined<Inner2, P2>> for SpecPair<U1, V1> where
+    U1: DisjointFrom<Refined<Inner2, P2>>,
+    U1: SecureSpecCombinator,
+    Inner2: SpecCombinator,
+    P2: SpecPred<Inner2::Type>,
+    V1: SpecCombinator,
+ {
+    open spec fn disjoint_from(&self, other: &Refined<Inner2, P2>) -> bool {
+        self.fst.disjoint_from(other)
+    }
+
+    proof fn parse_disjoint_on(&self, other: &Refined<Inner2, P2>, buf: Seq<u8>) {
+        self.fst.parse_disjoint_on(other, buf)
+    }
+}
+
+// if `U1` and `U2` are disjoint, then `Pair(U1, V1)` and `(U2, V2)` are disjoint
+impl<U1, U2, V1, V2> DisjointFrom<(U2, V2)> for SpecPair<U1, V1> where
+    U1: DisjointFrom<U2>,
+    U1: SecureSpecCombinator,
+    U2: SecureSpecCombinator,
+    V1: SpecCombinator,
+    V2: SpecCombinator,
+ {
+    open spec fn disjoint_from(&self, other: &(U2, V2)) -> bool {
+        self.fst.disjoint_from(&other.0)
+    }
+
+    proof fn parse_disjoint_on(&self, other: &(U2, V2), buf: Seq<u8>) {
+        self.fst.parse_disjoint_on(&other.0, buf)
+    }
+}
+
 // if `U1` and `U2` are disjoint, then `preceded(U1, V1)` and `preceded(U2, V2)` are disjoint
 impl<U1, U2, V1, V2> DisjointFrom<Preceded<U2, V2>> for Preceded<U1, V1> where
     U1: DisjointFrom<U2>,
