@@ -305,7 +305,10 @@ fn expand_combinator<'ast>(
     used_names: &mut HashSet<String>,
 ) {
     if let Some(and_then) = &mut combinator.and_then {
-        expand_child_combinator(
+        // Keep the direct continuation inside the current named helper so the
+        // public type for `bytes >>= { ... }` / `bytes >>= choose { ... }`
+        // remains attached to this definition.
+        expand_combinator(
             &child_generated_name(name, "inner"),
             and_then,
             expanded,
@@ -538,7 +541,14 @@ fn generated_segment(segment: &str) -> String {
 }
 
 fn child_generated_name(parent: &str, segment: &str) -> String {
-    format!("{parent}_anon_{segment}")
+    if segment == "inner" {
+        // `FooInner` is already reserved by codegen for the parent definition's
+        // tuple/choice carrier type, so lifted anonymous continuations need a
+        // distinct suffix here.
+        format!("{parent}_anon_{segment}")
+    } else {
+        format!("{parent}_{segment}")
+    }
 }
 
 fn fresh_generated_name(base: &str, used_names: &mut HashSet<String>) -> String {

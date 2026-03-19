@@ -422,7 +422,7 @@ pub fn mydata_len<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>
 
                 
 
-pub enum SpecTstAnonMydata {
+pub enum SpecTstMydata {
     C0(SpecMydata),
     C1(SpecMydata),
     C2(SpecMydata),
@@ -456,82 +456,82 @@ pub enum SpecTstAnonMydata {
     C30(SpecMydata),
 }
 
-pub type SpecTstAnonMydataInner = Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, SpecMydata>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+pub type SpecTstMydataInner = Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, Either<SpecMydata, SpecMydata>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 
-impl SpecFrom<SpecTstAnonMydata> for SpecTstAnonMydataInner {
-    open spec fn spec_from(m: SpecTstAnonMydata) -> SpecTstAnonMydataInner {
+impl SpecFrom<SpecTstMydata> for SpecTstMydataInner {
+    open spec fn spec_from(m: SpecTstMydata) -> SpecTstMydataInner {
         match m {
-            SpecTstAnonMydata::C0(m) => Either::Left(m),
-            SpecTstAnonMydata::C1(m) => Either::Right(Either::Left(m)),
-            SpecTstAnonMydata::C2(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecTstAnonMydata::C3(m) => Either::Right(Either::Right(Either::Right(Either::Left(m)))),
-            SpecTstAnonMydata::C4(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))),
-            SpecTstAnonMydata::C5(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))),
-            SpecTstAnonMydata::C6(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))),
-            SpecTstAnonMydata::C7(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
-            SpecTstAnonMydata::C8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
-            SpecTstAnonMydata::C9(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
-            SpecTstAnonMydata::C10(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
-            SpecTstAnonMydata::C11(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
-            SpecTstAnonMydata::C12(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
-            SpecTstAnonMydata::C13(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
-            SpecTstAnonMydata::C14(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
-            SpecTstAnonMydata::C15(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
-            SpecTstAnonMydata::C16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
-            SpecTstAnonMydata::C17(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
-            SpecTstAnonMydata::C18(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
-            SpecTstAnonMydata::C19(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
-            SpecTstAnonMydata::C20(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
-            SpecTstAnonMydata::C21(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
-            SpecTstAnonMydata::C22(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
-            SpecTstAnonMydata::C23(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
-            SpecTstAnonMydata::C24(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
-            SpecTstAnonMydata::C25(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
-            SpecTstAnonMydata::C26(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
-            SpecTstAnonMydata::C27(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
-            SpecTstAnonMydata::C28(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
-            SpecTstAnonMydata::C29(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
-            SpecTstAnonMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
+            SpecTstMydata::C0(m) => Either::Left(m),
+            SpecTstMydata::C1(m) => Either::Right(Either::Left(m)),
+            SpecTstMydata::C2(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecTstMydata::C3(m) => Either::Right(Either::Right(Either::Right(Either::Left(m)))),
+            SpecTstMydata::C4(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))),
+            SpecTstMydata::C5(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))),
+            SpecTstMydata::C6(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))),
+            SpecTstMydata::C7(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
+            SpecTstMydata::C8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
+            SpecTstMydata::C9(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
+            SpecTstMydata::C10(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
+            SpecTstMydata::C11(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
+            SpecTstMydata::C12(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
+            SpecTstMydata::C13(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
+            SpecTstMydata::C14(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
+            SpecTstMydata::C15(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
+            SpecTstMydata::C16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
+            SpecTstMydata::C17(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
+            SpecTstMydata::C18(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
+            SpecTstMydata::C19(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
+            SpecTstMydata::C20(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
+            SpecTstMydata::C21(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
+            SpecTstMydata::C22(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
+            SpecTstMydata::C23(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
+            SpecTstMydata::C24(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
+            SpecTstMydata::C25(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
+            SpecTstMydata::C26(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
+            SpecTstMydata::C27(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
+            SpecTstMydata::C28(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
+            SpecTstMydata::C29(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
+            SpecTstMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
         }
     }
 
 }
 
                 
-impl SpecFrom<SpecTstAnonMydataInner> for SpecTstAnonMydata {
-    open spec fn spec_from(m: SpecTstAnonMydataInner) -> SpecTstAnonMydata {
+impl SpecFrom<SpecTstMydataInner> for SpecTstMydata {
+    open spec fn spec_from(m: SpecTstMydataInner) -> SpecTstMydata {
         match m {
-            Either::Left(m) => SpecTstAnonMydata::C0(m),
-            Either::Right(Either::Left(m)) => SpecTstAnonMydata::C1(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecTstAnonMydata::C2(m),
-            Either::Right(Either::Right(Either::Right(Either::Left(m)))) => SpecTstAnonMydata::C3(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))) => SpecTstAnonMydata::C4(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))) => SpecTstAnonMydata::C5(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))) => SpecTstAnonMydata::C6(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => SpecTstAnonMydata::C7(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => SpecTstAnonMydata::C8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => SpecTstAnonMydata::C9(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => SpecTstAnonMydata::C10(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => SpecTstAnonMydata::C11(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => SpecTstAnonMydata::C12(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => SpecTstAnonMydata::C13(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => SpecTstAnonMydata::C14(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => SpecTstAnonMydata::C15(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => SpecTstAnonMydata::C16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => SpecTstAnonMydata::C17(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => SpecTstAnonMydata::C18(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => SpecTstAnonMydata::C19(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => SpecTstAnonMydata::C20(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => SpecTstAnonMydata::C21(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => SpecTstAnonMydata::C22(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => SpecTstAnonMydata::C23(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => SpecTstAnonMydata::C24(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => SpecTstAnonMydata::C25(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => SpecTstAnonMydata::C26(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => SpecTstAnonMydata::C27(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => SpecTstAnonMydata::C28(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => SpecTstAnonMydata::C29(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => SpecTstAnonMydata::C30(m),
+            Either::Left(m) => SpecTstMydata::C0(m),
+            Either::Right(Either::Left(m)) => SpecTstMydata::C1(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecTstMydata::C2(m),
+            Either::Right(Either::Right(Either::Right(Either::Left(m)))) => SpecTstMydata::C3(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))) => SpecTstMydata::C4(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))) => SpecTstMydata::C5(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))) => SpecTstMydata::C6(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => SpecTstMydata::C7(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => SpecTstMydata::C8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => SpecTstMydata::C9(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => SpecTstMydata::C10(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => SpecTstMydata::C11(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => SpecTstMydata::C12(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => SpecTstMydata::C13(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => SpecTstMydata::C14(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => SpecTstMydata::C15(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => SpecTstMydata::C16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => SpecTstMydata::C17(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => SpecTstMydata::C18(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => SpecTstMydata::C19(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => SpecTstMydata::C20(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => SpecTstMydata::C21(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => SpecTstMydata::C22(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => SpecTstMydata::C23(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => SpecTstMydata::C24(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => SpecTstMydata::C25(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => SpecTstMydata::C26(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => SpecTstMydata::C27(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => SpecTstMydata::C28(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => SpecTstMydata::C29(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => SpecTstMydata::C30(m),
         }
     }
 
@@ -540,7 +540,7 @@ impl SpecFrom<SpecTstAnonMydataInner> for SpecTstAnonMydata {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TstAnonMydata<'a> {
+pub enum TstMydata<'a> {
     C0(Mydata<'a>),
     C1(Mydata<'a>),
     C2(Mydata<'a>),
@@ -574,142 +574,142 @@ pub enum TstAnonMydata<'a> {
     C30(Mydata<'a>),
 }
 
-pub type TstAnonMydataInner<'a> = Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Mydata<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+pub type TstMydataInner<'a> = Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Either<Mydata<'a>, Mydata<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 
-pub type TstAnonMydataInnerRef<'a> = Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, &'a Mydata<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+pub type TstMydataInnerRef<'a> = Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, Either<&'a Mydata<'a>, &'a Mydata<'a>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 
 
-impl<'a> View for TstAnonMydata<'a> {
-    type V = SpecTstAnonMydata;
+impl<'a> View for TstMydata<'a> {
+    type V = SpecTstMydata;
     open spec fn view(&self) -> Self::V {
         match self {
-            TstAnonMydata::C0(m) => SpecTstAnonMydata::C0(m@),
-            TstAnonMydata::C1(m) => SpecTstAnonMydata::C1(m@),
-            TstAnonMydata::C2(m) => SpecTstAnonMydata::C2(m@),
-            TstAnonMydata::C3(m) => SpecTstAnonMydata::C3(m@),
-            TstAnonMydata::C4(m) => SpecTstAnonMydata::C4(m@),
-            TstAnonMydata::C5(m) => SpecTstAnonMydata::C5(m@),
-            TstAnonMydata::C6(m) => SpecTstAnonMydata::C6(m@),
-            TstAnonMydata::C7(m) => SpecTstAnonMydata::C7(m@),
-            TstAnonMydata::C8(m) => SpecTstAnonMydata::C8(m@),
-            TstAnonMydata::C9(m) => SpecTstAnonMydata::C9(m@),
-            TstAnonMydata::C10(m) => SpecTstAnonMydata::C10(m@),
-            TstAnonMydata::C11(m) => SpecTstAnonMydata::C11(m@),
-            TstAnonMydata::C12(m) => SpecTstAnonMydata::C12(m@),
-            TstAnonMydata::C13(m) => SpecTstAnonMydata::C13(m@),
-            TstAnonMydata::C14(m) => SpecTstAnonMydata::C14(m@),
-            TstAnonMydata::C15(m) => SpecTstAnonMydata::C15(m@),
-            TstAnonMydata::C16(m) => SpecTstAnonMydata::C16(m@),
-            TstAnonMydata::C17(m) => SpecTstAnonMydata::C17(m@),
-            TstAnonMydata::C18(m) => SpecTstAnonMydata::C18(m@),
-            TstAnonMydata::C19(m) => SpecTstAnonMydata::C19(m@),
-            TstAnonMydata::C20(m) => SpecTstAnonMydata::C20(m@),
-            TstAnonMydata::C21(m) => SpecTstAnonMydata::C21(m@),
-            TstAnonMydata::C22(m) => SpecTstAnonMydata::C22(m@),
-            TstAnonMydata::C23(m) => SpecTstAnonMydata::C23(m@),
-            TstAnonMydata::C24(m) => SpecTstAnonMydata::C24(m@),
-            TstAnonMydata::C25(m) => SpecTstAnonMydata::C25(m@),
-            TstAnonMydata::C26(m) => SpecTstAnonMydata::C26(m@),
-            TstAnonMydata::C27(m) => SpecTstAnonMydata::C27(m@),
-            TstAnonMydata::C28(m) => SpecTstAnonMydata::C28(m@),
-            TstAnonMydata::C29(m) => SpecTstAnonMydata::C29(m@),
-            TstAnonMydata::C30(m) => SpecTstAnonMydata::C30(m@),
+            TstMydata::C0(m) => SpecTstMydata::C0(m@),
+            TstMydata::C1(m) => SpecTstMydata::C1(m@),
+            TstMydata::C2(m) => SpecTstMydata::C2(m@),
+            TstMydata::C3(m) => SpecTstMydata::C3(m@),
+            TstMydata::C4(m) => SpecTstMydata::C4(m@),
+            TstMydata::C5(m) => SpecTstMydata::C5(m@),
+            TstMydata::C6(m) => SpecTstMydata::C6(m@),
+            TstMydata::C7(m) => SpecTstMydata::C7(m@),
+            TstMydata::C8(m) => SpecTstMydata::C8(m@),
+            TstMydata::C9(m) => SpecTstMydata::C9(m@),
+            TstMydata::C10(m) => SpecTstMydata::C10(m@),
+            TstMydata::C11(m) => SpecTstMydata::C11(m@),
+            TstMydata::C12(m) => SpecTstMydata::C12(m@),
+            TstMydata::C13(m) => SpecTstMydata::C13(m@),
+            TstMydata::C14(m) => SpecTstMydata::C14(m@),
+            TstMydata::C15(m) => SpecTstMydata::C15(m@),
+            TstMydata::C16(m) => SpecTstMydata::C16(m@),
+            TstMydata::C17(m) => SpecTstMydata::C17(m@),
+            TstMydata::C18(m) => SpecTstMydata::C18(m@),
+            TstMydata::C19(m) => SpecTstMydata::C19(m@),
+            TstMydata::C20(m) => SpecTstMydata::C20(m@),
+            TstMydata::C21(m) => SpecTstMydata::C21(m@),
+            TstMydata::C22(m) => SpecTstMydata::C22(m@),
+            TstMydata::C23(m) => SpecTstMydata::C23(m@),
+            TstMydata::C24(m) => SpecTstMydata::C24(m@),
+            TstMydata::C25(m) => SpecTstMydata::C25(m@),
+            TstMydata::C26(m) => SpecTstMydata::C26(m@),
+            TstMydata::C27(m) => SpecTstMydata::C27(m@),
+            TstMydata::C28(m) => SpecTstMydata::C28(m@),
+            TstMydata::C29(m) => SpecTstMydata::C29(m@),
+            TstMydata::C30(m) => SpecTstMydata::C30(m@),
         }
     }
 }
 
 
-impl<'a> From<&'a TstAnonMydata<'a>> for TstAnonMydataInnerRef<'a> {
-    fn ex_from(m: &'a TstAnonMydata<'a>) -> TstAnonMydataInnerRef<'a> {
+impl<'a> From<&'a TstMydata<'a>> for TstMydataInnerRef<'a> {
+    fn ex_from(m: &'a TstMydata<'a>) -> TstMydataInnerRef<'a> {
         match m {
-            TstAnonMydata::C0(m) => Either::Left(m),
-            TstAnonMydata::C1(m) => Either::Right(Either::Left(m)),
-            TstAnonMydata::C2(m) => Either::Right(Either::Right(Either::Left(m))),
-            TstAnonMydata::C3(m) => Either::Right(Either::Right(Either::Right(Either::Left(m)))),
-            TstAnonMydata::C4(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))),
-            TstAnonMydata::C5(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))),
-            TstAnonMydata::C6(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))),
-            TstAnonMydata::C7(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
-            TstAnonMydata::C8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
-            TstAnonMydata::C9(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
-            TstAnonMydata::C10(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
-            TstAnonMydata::C11(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
-            TstAnonMydata::C12(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
-            TstAnonMydata::C13(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
-            TstAnonMydata::C14(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
-            TstAnonMydata::C15(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
-            TstAnonMydata::C16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
-            TstAnonMydata::C17(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
-            TstAnonMydata::C18(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
-            TstAnonMydata::C19(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
-            TstAnonMydata::C20(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
-            TstAnonMydata::C21(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
-            TstAnonMydata::C22(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
-            TstAnonMydata::C23(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
-            TstAnonMydata::C24(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
-            TstAnonMydata::C25(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
-            TstAnonMydata::C26(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
-            TstAnonMydata::C27(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
-            TstAnonMydata::C28(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
-            TstAnonMydata::C29(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
-            TstAnonMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
+            TstMydata::C0(m) => Either::Left(m),
+            TstMydata::C1(m) => Either::Right(Either::Left(m)),
+            TstMydata::C2(m) => Either::Right(Either::Right(Either::Left(m))),
+            TstMydata::C3(m) => Either::Right(Either::Right(Either::Right(Either::Left(m)))),
+            TstMydata::C4(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))),
+            TstMydata::C5(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))),
+            TstMydata::C6(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))),
+            TstMydata::C7(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))),
+            TstMydata::C8(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))),
+            TstMydata::C9(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))),
+            TstMydata::C10(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))),
+            TstMydata::C11(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))),
+            TstMydata::C12(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))),
+            TstMydata::C13(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))),
+            TstMydata::C14(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))),
+            TstMydata::C15(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))),
+            TstMydata::C16(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))),
+            TstMydata::C17(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))),
+            TstMydata::C18(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))),
+            TstMydata::C19(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))),
+            TstMydata::C20(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))),
+            TstMydata::C21(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))),
+            TstMydata::C22(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))),
+            TstMydata::C23(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))),
+            TstMydata::C24(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))),
+            TstMydata::C25(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))),
+            TstMydata::C26(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))),
+            TstMydata::C27(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))),
+            TstMydata::C28(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))),
+            TstMydata::C29(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))),
+            TstMydata::C30(m) => Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))),
         }
     }
 
 }
 
-impl<'a> From<TstAnonMydataInner<'a>> for TstAnonMydata<'a> {
-    fn ex_from(m: TstAnonMydataInner<'a>) -> TstAnonMydata<'a> {
+impl<'a> From<TstMydataInner<'a>> for TstMydata<'a> {
+    fn ex_from(m: TstMydataInner<'a>) -> TstMydata<'a> {
         match m {
-            Either::Left(m) => TstAnonMydata::C0(m),
-            Either::Right(Either::Left(m)) => TstAnonMydata::C1(m),
-            Either::Right(Either::Right(Either::Left(m))) => TstAnonMydata::C2(m),
-            Either::Right(Either::Right(Either::Right(Either::Left(m)))) => TstAnonMydata::C3(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))) => TstAnonMydata::C4(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))) => TstAnonMydata::C5(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))) => TstAnonMydata::C6(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => TstAnonMydata::C7(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => TstAnonMydata::C8(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => TstAnonMydata::C9(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => TstAnonMydata::C10(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => TstAnonMydata::C11(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => TstAnonMydata::C12(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => TstAnonMydata::C13(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => TstAnonMydata::C14(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => TstAnonMydata::C15(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => TstAnonMydata::C16(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => TstAnonMydata::C17(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => TstAnonMydata::C18(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => TstAnonMydata::C19(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => TstAnonMydata::C20(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => TstAnonMydata::C21(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => TstAnonMydata::C22(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => TstAnonMydata::C23(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => TstAnonMydata::C24(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => TstAnonMydata::C25(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => TstAnonMydata::C26(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => TstAnonMydata::C27(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => TstAnonMydata::C28(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => TstAnonMydata::C29(m),
-            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => TstAnonMydata::C30(m),
+            Either::Left(m) => TstMydata::C0(m),
+            Either::Right(Either::Left(m)) => TstMydata::C1(m),
+            Either::Right(Either::Right(Either::Left(m))) => TstMydata::C2(m),
+            Either::Right(Either::Right(Either::Right(Either::Left(m)))) => TstMydata::C3(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))) => TstMydata::C4(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))) => TstMydata::C5(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))) => TstMydata::C6(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))) => TstMydata::C7(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))) => TstMydata::C8(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))) => TstMydata::C9(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))) => TstMydata::C10(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))) => TstMydata::C11(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))) => TstMydata::C12(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))) => TstMydata::C13(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))) => TstMydata::C14(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))) => TstMydata::C15(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))) => TstMydata::C16(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))) => TstMydata::C17(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))) => TstMydata::C18(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))) => TstMydata::C19(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))) => TstMydata::C20(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))) => TstMydata::C21(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))) => TstMydata::C22(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))) => TstMydata::C23(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))) => TstMydata::C24(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))) => TstMydata::C25(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))) => TstMydata::C26(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))) => TstMydata::C27(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m))))))))))))))))))))))))))))) => TstMydata::C28(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Left(m)))))))))))))))))))))))))))))) => TstMydata::C29(m),
+            Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(Either::Right(m)))))))))))))))))))))))))))))) => TstMydata::C30(m),
         }
     }
     
 }
 
 
-pub struct TstAnonMydataMapper;
-impl View for TstAnonMydataMapper {
+pub struct TstMydataMapper;
+impl View for TstMydataMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for TstAnonMydataMapper {
-    type Src = SpecTstAnonMydataInner;
-    type Dst = SpecTstAnonMydata;
+impl SpecIso for TstMydataMapper {
+    type Src = SpecTstMydataInner;
+    type Dst = SpecTstMydata;
 }
-impl SpecIsoProof for TstAnonMydataMapper {
+impl SpecIsoProof for TstMydataMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -717,46 +717,46 @@ impl SpecIsoProof for TstAnonMydataMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso<'a> for TstAnonMydataMapper {
-    type Src = TstAnonMydataInner<'a>;
-    type Dst = TstAnonMydata<'a>;
-    type RefSrc = TstAnonMydataInnerRef<'a>;
+impl<'a> Iso<'a> for TstMydataMapper {
+    type Src = TstMydataInner<'a>;
+    type Dst = TstMydata<'a>;
+    type RefSrc = TstMydataInnerRef<'a>;
 }
 
-type SpecTstAnonMydataCombinatorAlias1 = Choice<Cond<SpecMydataCombinator>, Cond<SpecMydataCombinator>>;
-type SpecTstAnonMydataCombinatorAlias2 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias1>;
-type SpecTstAnonMydataCombinatorAlias3 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias2>;
-type SpecTstAnonMydataCombinatorAlias4 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias3>;
-type SpecTstAnonMydataCombinatorAlias5 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias4>;
-type SpecTstAnonMydataCombinatorAlias6 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias5>;
-type SpecTstAnonMydataCombinatorAlias7 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias6>;
-type SpecTstAnonMydataCombinatorAlias8 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias7>;
-type SpecTstAnonMydataCombinatorAlias9 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias8>;
-type SpecTstAnonMydataCombinatorAlias10 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias9>;
-type SpecTstAnonMydataCombinatorAlias11 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias10>;
-type SpecTstAnonMydataCombinatorAlias12 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias11>;
-type SpecTstAnonMydataCombinatorAlias13 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias12>;
-type SpecTstAnonMydataCombinatorAlias14 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias13>;
-type SpecTstAnonMydataCombinatorAlias15 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias14>;
-type SpecTstAnonMydataCombinatorAlias16 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias15>;
-type SpecTstAnonMydataCombinatorAlias17 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias16>;
-type SpecTstAnonMydataCombinatorAlias18 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias17>;
-type SpecTstAnonMydataCombinatorAlias19 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias18>;
-type SpecTstAnonMydataCombinatorAlias20 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias19>;
-type SpecTstAnonMydataCombinatorAlias21 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias20>;
-type SpecTstAnonMydataCombinatorAlias22 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias21>;
-type SpecTstAnonMydataCombinatorAlias23 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias22>;
-type SpecTstAnonMydataCombinatorAlias24 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias23>;
-type SpecTstAnonMydataCombinatorAlias25 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias24>;
-type SpecTstAnonMydataCombinatorAlias26 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias25>;
-type SpecTstAnonMydataCombinatorAlias27 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias26>;
-type SpecTstAnonMydataCombinatorAlias28 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias27>;
-type SpecTstAnonMydataCombinatorAlias29 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias28>;
-type SpecTstAnonMydataCombinatorAlias30 = Choice<Cond<SpecMydataCombinator>, SpecTstAnonMydataCombinatorAlias29>;
-pub struct SpecTstAnonMydataCombinator(pub SpecTstAnonMydataCombinatorAlias);
+type SpecTstMydataCombinatorAlias1 = Choice<Cond<SpecMydataCombinator>, Cond<SpecMydataCombinator>>;
+type SpecTstMydataCombinatorAlias2 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias1>;
+type SpecTstMydataCombinatorAlias3 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias2>;
+type SpecTstMydataCombinatorAlias4 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias3>;
+type SpecTstMydataCombinatorAlias5 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias4>;
+type SpecTstMydataCombinatorAlias6 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias5>;
+type SpecTstMydataCombinatorAlias7 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias6>;
+type SpecTstMydataCombinatorAlias8 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias7>;
+type SpecTstMydataCombinatorAlias9 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias8>;
+type SpecTstMydataCombinatorAlias10 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias9>;
+type SpecTstMydataCombinatorAlias11 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias10>;
+type SpecTstMydataCombinatorAlias12 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias11>;
+type SpecTstMydataCombinatorAlias13 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias12>;
+type SpecTstMydataCombinatorAlias14 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias13>;
+type SpecTstMydataCombinatorAlias15 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias14>;
+type SpecTstMydataCombinatorAlias16 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias15>;
+type SpecTstMydataCombinatorAlias17 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias16>;
+type SpecTstMydataCombinatorAlias18 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias17>;
+type SpecTstMydataCombinatorAlias19 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias18>;
+type SpecTstMydataCombinatorAlias20 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias19>;
+type SpecTstMydataCombinatorAlias21 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias20>;
+type SpecTstMydataCombinatorAlias22 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias21>;
+type SpecTstMydataCombinatorAlias23 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias22>;
+type SpecTstMydataCombinatorAlias24 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias23>;
+type SpecTstMydataCombinatorAlias25 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias24>;
+type SpecTstMydataCombinatorAlias26 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias25>;
+type SpecTstMydataCombinatorAlias27 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias26>;
+type SpecTstMydataCombinatorAlias28 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias27>;
+type SpecTstMydataCombinatorAlias29 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias28>;
+type SpecTstMydataCombinatorAlias30 = Choice<Cond<SpecMydataCombinator>, SpecTstMydataCombinatorAlias29>;
+pub struct SpecTstMydataCombinator(pub SpecTstMydataCombinatorAlias);
 
-impl SpecCombinator for SpecTstAnonMydataCombinator {
-    type Type = SpecTstAnonMydata;
+impl SpecCombinator for SpecTstMydataCombinator {
+    type Type = SpecTstMydata;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -766,9 +766,9 @@ impl SpecCombinator for SpecTstAnonMydataCombinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecTstAnonMydataCombinator {
+impl SecureSpecCombinator for SpecTstMydataCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecTstAnonMydataCombinatorAlias::is_prefix_secure() }
+    { SpecTstMydataCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -782,255 +782,255 @@ impl SecureSpecCombinator for SpecTstAnonMydataCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTstAnonMydataCombinatorAlias = Mapped<SpecTstAnonMydataCombinatorAlias30, TstAnonMydataMapper>;
-type TstAnonMydataCombinatorAlias1 = Choice<Cond<MydataCombinator>, Cond<MydataCombinator>>;
-type TstAnonMydataCombinatorAlias2 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator1>;
-type TstAnonMydataCombinatorAlias3 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator2>;
-type TstAnonMydataCombinatorAlias4 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator3>;
-type TstAnonMydataCombinatorAlias5 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator4>;
-type TstAnonMydataCombinatorAlias6 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator5>;
-type TstAnonMydataCombinatorAlias7 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator6>;
-type TstAnonMydataCombinatorAlias8 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator7>;
-type TstAnonMydataCombinatorAlias9 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator8>;
-type TstAnonMydataCombinatorAlias10 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator9>;
-type TstAnonMydataCombinatorAlias11 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator10>;
-type TstAnonMydataCombinatorAlias12 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator11>;
-type TstAnonMydataCombinatorAlias13 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator12>;
-type TstAnonMydataCombinatorAlias14 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator13>;
-type TstAnonMydataCombinatorAlias15 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator14>;
-type TstAnonMydataCombinatorAlias16 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator15>;
-type TstAnonMydataCombinatorAlias17 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator16>;
-type TstAnonMydataCombinatorAlias18 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator17>;
-type TstAnonMydataCombinatorAlias19 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator18>;
-type TstAnonMydataCombinatorAlias20 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator19>;
-type TstAnonMydataCombinatorAlias21 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator20>;
-type TstAnonMydataCombinatorAlias22 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator21>;
-type TstAnonMydataCombinatorAlias23 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator22>;
-type TstAnonMydataCombinatorAlias24 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator23>;
-type TstAnonMydataCombinatorAlias25 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator24>;
-type TstAnonMydataCombinatorAlias26 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator25>;
-type TstAnonMydataCombinatorAlias27 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator26>;
-type TstAnonMydataCombinatorAlias28 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator27>;
-type TstAnonMydataCombinatorAlias29 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator28>;
-type TstAnonMydataCombinatorAlias30 = Choice<Cond<MydataCombinator>, TstAnonMydataCombinator29>;
-pub struct TstAnonMydataCombinator1(pub TstAnonMydataCombinatorAlias1);
-impl View for TstAnonMydataCombinator1 {
-    type V = SpecTstAnonMydataCombinatorAlias1;
+pub type SpecTstMydataCombinatorAlias = Mapped<SpecTstMydataCombinatorAlias30, TstMydataMapper>;
+type TstMydataCombinatorAlias1 = Choice<Cond<MydataCombinator>, Cond<MydataCombinator>>;
+type TstMydataCombinatorAlias2 = Choice<Cond<MydataCombinator>, TstMydataCombinator1>;
+type TstMydataCombinatorAlias3 = Choice<Cond<MydataCombinator>, TstMydataCombinator2>;
+type TstMydataCombinatorAlias4 = Choice<Cond<MydataCombinator>, TstMydataCombinator3>;
+type TstMydataCombinatorAlias5 = Choice<Cond<MydataCombinator>, TstMydataCombinator4>;
+type TstMydataCombinatorAlias6 = Choice<Cond<MydataCombinator>, TstMydataCombinator5>;
+type TstMydataCombinatorAlias7 = Choice<Cond<MydataCombinator>, TstMydataCombinator6>;
+type TstMydataCombinatorAlias8 = Choice<Cond<MydataCombinator>, TstMydataCombinator7>;
+type TstMydataCombinatorAlias9 = Choice<Cond<MydataCombinator>, TstMydataCombinator8>;
+type TstMydataCombinatorAlias10 = Choice<Cond<MydataCombinator>, TstMydataCombinator9>;
+type TstMydataCombinatorAlias11 = Choice<Cond<MydataCombinator>, TstMydataCombinator10>;
+type TstMydataCombinatorAlias12 = Choice<Cond<MydataCombinator>, TstMydataCombinator11>;
+type TstMydataCombinatorAlias13 = Choice<Cond<MydataCombinator>, TstMydataCombinator12>;
+type TstMydataCombinatorAlias14 = Choice<Cond<MydataCombinator>, TstMydataCombinator13>;
+type TstMydataCombinatorAlias15 = Choice<Cond<MydataCombinator>, TstMydataCombinator14>;
+type TstMydataCombinatorAlias16 = Choice<Cond<MydataCombinator>, TstMydataCombinator15>;
+type TstMydataCombinatorAlias17 = Choice<Cond<MydataCombinator>, TstMydataCombinator16>;
+type TstMydataCombinatorAlias18 = Choice<Cond<MydataCombinator>, TstMydataCombinator17>;
+type TstMydataCombinatorAlias19 = Choice<Cond<MydataCombinator>, TstMydataCombinator18>;
+type TstMydataCombinatorAlias20 = Choice<Cond<MydataCombinator>, TstMydataCombinator19>;
+type TstMydataCombinatorAlias21 = Choice<Cond<MydataCombinator>, TstMydataCombinator20>;
+type TstMydataCombinatorAlias22 = Choice<Cond<MydataCombinator>, TstMydataCombinator21>;
+type TstMydataCombinatorAlias23 = Choice<Cond<MydataCombinator>, TstMydataCombinator22>;
+type TstMydataCombinatorAlias24 = Choice<Cond<MydataCombinator>, TstMydataCombinator23>;
+type TstMydataCombinatorAlias25 = Choice<Cond<MydataCombinator>, TstMydataCombinator24>;
+type TstMydataCombinatorAlias26 = Choice<Cond<MydataCombinator>, TstMydataCombinator25>;
+type TstMydataCombinatorAlias27 = Choice<Cond<MydataCombinator>, TstMydataCombinator26>;
+type TstMydataCombinatorAlias28 = Choice<Cond<MydataCombinator>, TstMydataCombinator27>;
+type TstMydataCombinatorAlias29 = Choice<Cond<MydataCombinator>, TstMydataCombinator28>;
+type TstMydataCombinatorAlias30 = Choice<Cond<MydataCombinator>, TstMydataCombinator29>;
+pub struct TstMydataCombinator1(pub TstMydataCombinatorAlias1);
+impl View for TstMydataCombinator1 {
+    type V = SpecTstMydataCombinatorAlias1;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator1, TstAnonMydataCombinatorAlias1);
+impl_wrapper_combinator!(TstMydataCombinator1, TstMydataCombinatorAlias1);
 
-pub struct TstAnonMydataCombinator2(pub TstAnonMydataCombinatorAlias2);
-impl View for TstAnonMydataCombinator2 {
-    type V = SpecTstAnonMydataCombinatorAlias2;
+pub struct TstMydataCombinator2(pub TstMydataCombinatorAlias2);
+impl View for TstMydataCombinator2 {
+    type V = SpecTstMydataCombinatorAlias2;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator2, TstAnonMydataCombinatorAlias2);
+impl_wrapper_combinator!(TstMydataCombinator2, TstMydataCombinatorAlias2);
 
-pub struct TstAnonMydataCombinator3(pub TstAnonMydataCombinatorAlias3);
-impl View for TstAnonMydataCombinator3 {
-    type V = SpecTstAnonMydataCombinatorAlias3;
+pub struct TstMydataCombinator3(pub TstMydataCombinatorAlias3);
+impl View for TstMydataCombinator3 {
+    type V = SpecTstMydataCombinatorAlias3;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator3, TstAnonMydataCombinatorAlias3);
+impl_wrapper_combinator!(TstMydataCombinator3, TstMydataCombinatorAlias3);
 
-pub struct TstAnonMydataCombinator4(pub TstAnonMydataCombinatorAlias4);
-impl View for TstAnonMydataCombinator4 {
-    type V = SpecTstAnonMydataCombinatorAlias4;
+pub struct TstMydataCombinator4(pub TstMydataCombinatorAlias4);
+impl View for TstMydataCombinator4 {
+    type V = SpecTstMydataCombinatorAlias4;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator4, TstAnonMydataCombinatorAlias4);
+impl_wrapper_combinator!(TstMydataCombinator4, TstMydataCombinatorAlias4);
 
-pub struct TstAnonMydataCombinator5(pub TstAnonMydataCombinatorAlias5);
-impl View for TstAnonMydataCombinator5 {
-    type V = SpecTstAnonMydataCombinatorAlias5;
+pub struct TstMydataCombinator5(pub TstMydataCombinatorAlias5);
+impl View for TstMydataCombinator5 {
+    type V = SpecTstMydataCombinatorAlias5;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator5, TstAnonMydataCombinatorAlias5);
+impl_wrapper_combinator!(TstMydataCombinator5, TstMydataCombinatorAlias5);
 
-pub struct TstAnonMydataCombinator6(pub TstAnonMydataCombinatorAlias6);
-impl View for TstAnonMydataCombinator6 {
-    type V = SpecTstAnonMydataCombinatorAlias6;
+pub struct TstMydataCombinator6(pub TstMydataCombinatorAlias6);
+impl View for TstMydataCombinator6 {
+    type V = SpecTstMydataCombinatorAlias6;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator6, TstAnonMydataCombinatorAlias6);
+impl_wrapper_combinator!(TstMydataCombinator6, TstMydataCombinatorAlias6);
 
-pub struct TstAnonMydataCombinator7(pub TstAnonMydataCombinatorAlias7);
-impl View for TstAnonMydataCombinator7 {
-    type V = SpecTstAnonMydataCombinatorAlias7;
+pub struct TstMydataCombinator7(pub TstMydataCombinatorAlias7);
+impl View for TstMydataCombinator7 {
+    type V = SpecTstMydataCombinatorAlias7;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator7, TstAnonMydataCombinatorAlias7);
+impl_wrapper_combinator!(TstMydataCombinator7, TstMydataCombinatorAlias7);
 
-pub struct TstAnonMydataCombinator8(pub TstAnonMydataCombinatorAlias8);
-impl View for TstAnonMydataCombinator8 {
-    type V = SpecTstAnonMydataCombinatorAlias8;
+pub struct TstMydataCombinator8(pub TstMydataCombinatorAlias8);
+impl View for TstMydataCombinator8 {
+    type V = SpecTstMydataCombinatorAlias8;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator8, TstAnonMydataCombinatorAlias8);
+impl_wrapper_combinator!(TstMydataCombinator8, TstMydataCombinatorAlias8);
 
-pub struct TstAnonMydataCombinator9(pub TstAnonMydataCombinatorAlias9);
-impl View for TstAnonMydataCombinator9 {
-    type V = SpecTstAnonMydataCombinatorAlias9;
+pub struct TstMydataCombinator9(pub TstMydataCombinatorAlias9);
+impl View for TstMydataCombinator9 {
+    type V = SpecTstMydataCombinatorAlias9;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator9, TstAnonMydataCombinatorAlias9);
+impl_wrapper_combinator!(TstMydataCombinator9, TstMydataCombinatorAlias9);
 
-pub struct TstAnonMydataCombinator10(pub TstAnonMydataCombinatorAlias10);
-impl View for TstAnonMydataCombinator10 {
-    type V = SpecTstAnonMydataCombinatorAlias10;
+pub struct TstMydataCombinator10(pub TstMydataCombinatorAlias10);
+impl View for TstMydataCombinator10 {
+    type V = SpecTstMydataCombinatorAlias10;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator10, TstAnonMydataCombinatorAlias10);
+impl_wrapper_combinator!(TstMydataCombinator10, TstMydataCombinatorAlias10);
 
-pub struct TstAnonMydataCombinator11(pub TstAnonMydataCombinatorAlias11);
-impl View for TstAnonMydataCombinator11 {
-    type V = SpecTstAnonMydataCombinatorAlias11;
+pub struct TstMydataCombinator11(pub TstMydataCombinatorAlias11);
+impl View for TstMydataCombinator11 {
+    type V = SpecTstMydataCombinatorAlias11;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator11, TstAnonMydataCombinatorAlias11);
+impl_wrapper_combinator!(TstMydataCombinator11, TstMydataCombinatorAlias11);
 
-pub struct TstAnonMydataCombinator12(pub TstAnonMydataCombinatorAlias12);
-impl View for TstAnonMydataCombinator12 {
-    type V = SpecTstAnonMydataCombinatorAlias12;
+pub struct TstMydataCombinator12(pub TstMydataCombinatorAlias12);
+impl View for TstMydataCombinator12 {
+    type V = SpecTstMydataCombinatorAlias12;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator12, TstAnonMydataCombinatorAlias12);
+impl_wrapper_combinator!(TstMydataCombinator12, TstMydataCombinatorAlias12);
 
-pub struct TstAnonMydataCombinator13(pub TstAnonMydataCombinatorAlias13);
-impl View for TstAnonMydataCombinator13 {
-    type V = SpecTstAnonMydataCombinatorAlias13;
+pub struct TstMydataCombinator13(pub TstMydataCombinatorAlias13);
+impl View for TstMydataCombinator13 {
+    type V = SpecTstMydataCombinatorAlias13;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator13, TstAnonMydataCombinatorAlias13);
+impl_wrapper_combinator!(TstMydataCombinator13, TstMydataCombinatorAlias13);
 
-pub struct TstAnonMydataCombinator14(pub TstAnonMydataCombinatorAlias14);
-impl View for TstAnonMydataCombinator14 {
-    type V = SpecTstAnonMydataCombinatorAlias14;
+pub struct TstMydataCombinator14(pub TstMydataCombinatorAlias14);
+impl View for TstMydataCombinator14 {
+    type V = SpecTstMydataCombinatorAlias14;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator14, TstAnonMydataCombinatorAlias14);
+impl_wrapper_combinator!(TstMydataCombinator14, TstMydataCombinatorAlias14);
 
-pub struct TstAnonMydataCombinator15(pub TstAnonMydataCombinatorAlias15);
-impl View for TstAnonMydataCombinator15 {
-    type V = SpecTstAnonMydataCombinatorAlias15;
+pub struct TstMydataCombinator15(pub TstMydataCombinatorAlias15);
+impl View for TstMydataCombinator15 {
+    type V = SpecTstMydataCombinatorAlias15;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator15, TstAnonMydataCombinatorAlias15);
+impl_wrapper_combinator!(TstMydataCombinator15, TstMydataCombinatorAlias15);
 
-pub struct TstAnonMydataCombinator16(pub TstAnonMydataCombinatorAlias16);
-impl View for TstAnonMydataCombinator16 {
-    type V = SpecTstAnonMydataCombinatorAlias16;
+pub struct TstMydataCombinator16(pub TstMydataCombinatorAlias16);
+impl View for TstMydataCombinator16 {
+    type V = SpecTstMydataCombinatorAlias16;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator16, TstAnonMydataCombinatorAlias16);
+impl_wrapper_combinator!(TstMydataCombinator16, TstMydataCombinatorAlias16);
 
-pub struct TstAnonMydataCombinator17(pub TstAnonMydataCombinatorAlias17);
-impl View for TstAnonMydataCombinator17 {
-    type V = SpecTstAnonMydataCombinatorAlias17;
+pub struct TstMydataCombinator17(pub TstMydataCombinatorAlias17);
+impl View for TstMydataCombinator17 {
+    type V = SpecTstMydataCombinatorAlias17;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator17, TstAnonMydataCombinatorAlias17);
+impl_wrapper_combinator!(TstMydataCombinator17, TstMydataCombinatorAlias17);
 
-pub struct TstAnonMydataCombinator18(pub TstAnonMydataCombinatorAlias18);
-impl View for TstAnonMydataCombinator18 {
-    type V = SpecTstAnonMydataCombinatorAlias18;
+pub struct TstMydataCombinator18(pub TstMydataCombinatorAlias18);
+impl View for TstMydataCombinator18 {
+    type V = SpecTstMydataCombinatorAlias18;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator18, TstAnonMydataCombinatorAlias18);
+impl_wrapper_combinator!(TstMydataCombinator18, TstMydataCombinatorAlias18);
 
-pub struct TstAnonMydataCombinator19(pub TstAnonMydataCombinatorAlias19);
-impl View for TstAnonMydataCombinator19 {
-    type V = SpecTstAnonMydataCombinatorAlias19;
+pub struct TstMydataCombinator19(pub TstMydataCombinatorAlias19);
+impl View for TstMydataCombinator19 {
+    type V = SpecTstMydataCombinatorAlias19;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator19, TstAnonMydataCombinatorAlias19);
+impl_wrapper_combinator!(TstMydataCombinator19, TstMydataCombinatorAlias19);
 
-pub struct TstAnonMydataCombinator20(pub TstAnonMydataCombinatorAlias20);
-impl View for TstAnonMydataCombinator20 {
-    type V = SpecTstAnonMydataCombinatorAlias20;
+pub struct TstMydataCombinator20(pub TstMydataCombinatorAlias20);
+impl View for TstMydataCombinator20 {
+    type V = SpecTstMydataCombinatorAlias20;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator20, TstAnonMydataCombinatorAlias20);
+impl_wrapper_combinator!(TstMydataCombinator20, TstMydataCombinatorAlias20);
 
-pub struct TstAnonMydataCombinator21(pub TstAnonMydataCombinatorAlias21);
-impl View for TstAnonMydataCombinator21 {
-    type V = SpecTstAnonMydataCombinatorAlias21;
+pub struct TstMydataCombinator21(pub TstMydataCombinatorAlias21);
+impl View for TstMydataCombinator21 {
+    type V = SpecTstMydataCombinatorAlias21;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator21, TstAnonMydataCombinatorAlias21);
+impl_wrapper_combinator!(TstMydataCombinator21, TstMydataCombinatorAlias21);
 
-pub struct TstAnonMydataCombinator22(pub TstAnonMydataCombinatorAlias22);
-impl View for TstAnonMydataCombinator22 {
-    type V = SpecTstAnonMydataCombinatorAlias22;
+pub struct TstMydataCombinator22(pub TstMydataCombinatorAlias22);
+impl View for TstMydataCombinator22 {
+    type V = SpecTstMydataCombinatorAlias22;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator22, TstAnonMydataCombinatorAlias22);
+impl_wrapper_combinator!(TstMydataCombinator22, TstMydataCombinatorAlias22);
 
-pub struct TstAnonMydataCombinator23(pub TstAnonMydataCombinatorAlias23);
-impl View for TstAnonMydataCombinator23 {
-    type V = SpecTstAnonMydataCombinatorAlias23;
+pub struct TstMydataCombinator23(pub TstMydataCombinatorAlias23);
+impl View for TstMydataCombinator23 {
+    type V = SpecTstMydataCombinatorAlias23;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator23, TstAnonMydataCombinatorAlias23);
+impl_wrapper_combinator!(TstMydataCombinator23, TstMydataCombinatorAlias23);
 
-pub struct TstAnonMydataCombinator24(pub TstAnonMydataCombinatorAlias24);
-impl View for TstAnonMydataCombinator24 {
-    type V = SpecTstAnonMydataCombinatorAlias24;
+pub struct TstMydataCombinator24(pub TstMydataCombinatorAlias24);
+impl View for TstMydataCombinator24 {
+    type V = SpecTstMydataCombinatorAlias24;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator24, TstAnonMydataCombinatorAlias24);
+impl_wrapper_combinator!(TstMydataCombinator24, TstMydataCombinatorAlias24);
 
-pub struct TstAnonMydataCombinator25(pub TstAnonMydataCombinatorAlias25);
-impl View for TstAnonMydataCombinator25 {
-    type V = SpecTstAnonMydataCombinatorAlias25;
+pub struct TstMydataCombinator25(pub TstMydataCombinatorAlias25);
+impl View for TstMydataCombinator25 {
+    type V = SpecTstMydataCombinatorAlias25;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator25, TstAnonMydataCombinatorAlias25);
+impl_wrapper_combinator!(TstMydataCombinator25, TstMydataCombinatorAlias25);
 
-pub struct TstAnonMydataCombinator26(pub TstAnonMydataCombinatorAlias26);
-impl View for TstAnonMydataCombinator26 {
-    type V = SpecTstAnonMydataCombinatorAlias26;
+pub struct TstMydataCombinator26(pub TstMydataCombinatorAlias26);
+impl View for TstMydataCombinator26 {
+    type V = SpecTstMydataCombinatorAlias26;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator26, TstAnonMydataCombinatorAlias26);
+impl_wrapper_combinator!(TstMydataCombinator26, TstMydataCombinatorAlias26);
 
-pub struct TstAnonMydataCombinator27(pub TstAnonMydataCombinatorAlias27);
-impl View for TstAnonMydataCombinator27 {
-    type V = SpecTstAnonMydataCombinatorAlias27;
+pub struct TstMydataCombinator27(pub TstMydataCombinatorAlias27);
+impl View for TstMydataCombinator27 {
+    type V = SpecTstMydataCombinatorAlias27;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator27, TstAnonMydataCombinatorAlias27);
+impl_wrapper_combinator!(TstMydataCombinator27, TstMydataCombinatorAlias27);
 
-pub struct TstAnonMydataCombinator28(pub TstAnonMydataCombinatorAlias28);
-impl View for TstAnonMydataCombinator28 {
-    type V = SpecTstAnonMydataCombinatorAlias28;
+pub struct TstMydataCombinator28(pub TstMydataCombinatorAlias28);
+impl View for TstMydataCombinator28 {
+    type V = SpecTstMydataCombinatorAlias28;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator28, TstAnonMydataCombinatorAlias28);
+impl_wrapper_combinator!(TstMydataCombinator28, TstMydataCombinatorAlias28);
 
-pub struct TstAnonMydataCombinator29(pub TstAnonMydataCombinatorAlias29);
-impl View for TstAnonMydataCombinator29 {
-    type V = SpecTstAnonMydataCombinatorAlias29;
+pub struct TstMydataCombinator29(pub TstMydataCombinatorAlias29);
+impl View for TstMydataCombinator29 {
+    type V = SpecTstMydataCombinatorAlias29;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator29, TstAnonMydataCombinatorAlias29);
+impl_wrapper_combinator!(TstMydataCombinator29, TstMydataCombinatorAlias29);
 
-pub struct TstAnonMydataCombinator30(pub TstAnonMydataCombinatorAlias30);
-impl View for TstAnonMydataCombinator30 {
-    type V = SpecTstAnonMydataCombinatorAlias30;
+pub struct TstMydataCombinator30(pub TstMydataCombinatorAlias30);
+impl View for TstMydataCombinator30 {
+    type V = SpecTstMydataCombinatorAlias30;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TstAnonMydataCombinator30, TstAnonMydataCombinatorAlias30);
+impl_wrapper_combinator!(TstMydataCombinator30, TstMydataCombinatorAlias30);
 
-pub struct TstAnonMydataCombinator(pub TstAnonMydataCombinatorAlias);
+pub struct TstMydataCombinator(pub TstMydataCombinatorAlias);
 
-impl View for TstAnonMydataCombinator {
-    type V = SpecTstAnonMydataCombinator;
-    open spec fn view(&self) -> Self::V { SpecTstAnonMydataCombinator(self.0@) }
+impl View for TstMydataCombinator {
+    type V = SpecTstMydataCombinator;
+    open spec fn view(&self) -> Self::V { SpecTstMydataCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstAnonMydataCombinator {
-    type Type = TstAnonMydata<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstMydataCombinator {
+    type Type = TstMydata<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -1041,84 +1041,84 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstAnonMydataCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type TstAnonMydataCombinatorAlias = Mapped<TstAnonMydataCombinator30, TstAnonMydataMapper>;
+pub type TstMydataCombinatorAlias = Mapped<TstMydataCombinator30, TstMydataMapper>;
 
 
-pub open spec fn spec_tst_anon_mydata(tag: u8) -> SpecTstAnonMydataCombinator {
-    SpecTstAnonMydataCombinator(Mapped { inner: Choice(Cond { cond: tag == TstTag::SPEC_C0, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C1, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C2, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C3, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C4, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C5, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C6, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C7, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C8, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C9, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C10, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C11, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C12, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C13, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C14, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C15, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C16, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C17, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C18, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C19, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C20, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C21, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C22, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C23, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C24, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C25, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C26, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C27, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C28, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C29, inner: spec_mydata() }, Cond { cond: tag == TstTag::SPEC_C30, inner: spec_mydata() })))))))))))))))))))))))))))))), mapper: TstAnonMydataMapper })
+pub open spec fn spec_tst_mydata(tag: u8) -> SpecTstMydataCombinator {
+    SpecTstMydataCombinator(Mapped { inner: Choice(Cond { cond: tag == TstTag::SPEC_C0, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C1, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C2, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C3, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C4, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C5, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C6, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C7, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C8, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C9, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C10, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C11, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C12, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C13, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C14, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C15, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C16, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C17, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C18, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C19, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C20, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C21, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C22, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C23, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C24, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C25, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C26, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C27, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C28, inner: spec_mydata() }, Choice(Cond { cond: tag == TstTag::SPEC_C29, inner: spec_mydata() }, Cond { cond: tag == TstTag::SPEC_C30, inner: spec_mydata() })))))))))))))))))))))))))))))), mapper: TstMydataMapper })
 }
 
-pub fn tst_anon_mydata<'a>(tag: u8) -> (o: TstAnonMydataCombinator)
+pub fn tst_mydata<'a>(tag: u8) -> (o: TstMydataCombinator)
     requires
         spec_tst_tag().wf(tag@),
 
-    ensures o@ == spec_tst_anon_mydata(tag@),
+    ensures o@ == spec_tst_mydata(tag@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = TstAnonMydataCombinator(Mapped { inner: TstAnonMydataCombinator30(Choice::new(Cond { cond: tag == TstTag::C0, inner: mydata() }, TstAnonMydataCombinator29(Choice::new(Cond { cond: tag == TstTag::C1, inner: mydata() }, TstAnonMydataCombinator28(Choice::new(Cond { cond: tag == TstTag::C2, inner: mydata() }, TstAnonMydataCombinator27(Choice::new(Cond { cond: tag == TstTag::C3, inner: mydata() }, TstAnonMydataCombinator26(Choice::new(Cond { cond: tag == TstTag::C4, inner: mydata() }, TstAnonMydataCombinator25(Choice::new(Cond { cond: tag == TstTag::C5, inner: mydata() }, TstAnonMydataCombinator24(Choice::new(Cond { cond: tag == TstTag::C6, inner: mydata() }, TstAnonMydataCombinator23(Choice::new(Cond { cond: tag == TstTag::C7, inner: mydata() }, TstAnonMydataCombinator22(Choice::new(Cond { cond: tag == TstTag::C8, inner: mydata() }, TstAnonMydataCombinator21(Choice::new(Cond { cond: tag == TstTag::C9, inner: mydata() }, TstAnonMydataCombinator20(Choice::new(Cond { cond: tag == TstTag::C10, inner: mydata() }, TstAnonMydataCombinator19(Choice::new(Cond { cond: tag == TstTag::C11, inner: mydata() }, TstAnonMydataCombinator18(Choice::new(Cond { cond: tag == TstTag::C12, inner: mydata() }, TstAnonMydataCombinator17(Choice::new(Cond { cond: tag == TstTag::C13, inner: mydata() }, TstAnonMydataCombinator16(Choice::new(Cond { cond: tag == TstTag::C14, inner: mydata() }, TstAnonMydataCombinator15(Choice::new(Cond { cond: tag == TstTag::C15, inner: mydata() }, TstAnonMydataCombinator14(Choice::new(Cond { cond: tag == TstTag::C16, inner: mydata() }, TstAnonMydataCombinator13(Choice::new(Cond { cond: tag == TstTag::C17, inner: mydata() }, TstAnonMydataCombinator12(Choice::new(Cond { cond: tag == TstTag::C18, inner: mydata() }, TstAnonMydataCombinator11(Choice::new(Cond { cond: tag == TstTag::C19, inner: mydata() }, TstAnonMydataCombinator10(Choice::new(Cond { cond: tag == TstTag::C20, inner: mydata() }, TstAnonMydataCombinator9(Choice::new(Cond { cond: tag == TstTag::C21, inner: mydata() }, TstAnonMydataCombinator8(Choice::new(Cond { cond: tag == TstTag::C22, inner: mydata() }, TstAnonMydataCombinator7(Choice::new(Cond { cond: tag == TstTag::C23, inner: mydata() }, TstAnonMydataCombinator6(Choice::new(Cond { cond: tag == TstTag::C24, inner: mydata() }, TstAnonMydataCombinator5(Choice::new(Cond { cond: tag == TstTag::C25, inner: mydata() }, TstAnonMydataCombinator4(Choice::new(Cond { cond: tag == TstTag::C26, inner: mydata() }, TstAnonMydataCombinator3(Choice::new(Cond { cond: tag == TstTag::C27, inner: mydata() }, TstAnonMydataCombinator2(Choice::new(Cond { cond: tag == TstTag::C28, inner: mydata() }, TstAnonMydataCombinator1(Choice::new(Cond { cond: tag == TstTag::C29, inner: mydata() }, Cond { cond: tag == TstTag::C30, inner: mydata() })))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: TstAnonMydataMapper });
+    let combinator = TstMydataCombinator(Mapped { inner: TstMydataCombinator30(Choice::new(Cond { cond: tag == TstTag::C0, inner: mydata() }, TstMydataCombinator29(Choice::new(Cond { cond: tag == TstTag::C1, inner: mydata() }, TstMydataCombinator28(Choice::new(Cond { cond: tag == TstTag::C2, inner: mydata() }, TstMydataCombinator27(Choice::new(Cond { cond: tag == TstTag::C3, inner: mydata() }, TstMydataCombinator26(Choice::new(Cond { cond: tag == TstTag::C4, inner: mydata() }, TstMydataCombinator25(Choice::new(Cond { cond: tag == TstTag::C5, inner: mydata() }, TstMydataCombinator24(Choice::new(Cond { cond: tag == TstTag::C6, inner: mydata() }, TstMydataCombinator23(Choice::new(Cond { cond: tag == TstTag::C7, inner: mydata() }, TstMydataCombinator22(Choice::new(Cond { cond: tag == TstTag::C8, inner: mydata() }, TstMydataCombinator21(Choice::new(Cond { cond: tag == TstTag::C9, inner: mydata() }, TstMydataCombinator20(Choice::new(Cond { cond: tag == TstTag::C10, inner: mydata() }, TstMydataCombinator19(Choice::new(Cond { cond: tag == TstTag::C11, inner: mydata() }, TstMydataCombinator18(Choice::new(Cond { cond: tag == TstTag::C12, inner: mydata() }, TstMydataCombinator17(Choice::new(Cond { cond: tag == TstTag::C13, inner: mydata() }, TstMydataCombinator16(Choice::new(Cond { cond: tag == TstTag::C14, inner: mydata() }, TstMydataCombinator15(Choice::new(Cond { cond: tag == TstTag::C15, inner: mydata() }, TstMydataCombinator14(Choice::new(Cond { cond: tag == TstTag::C16, inner: mydata() }, TstMydataCombinator13(Choice::new(Cond { cond: tag == TstTag::C17, inner: mydata() }, TstMydataCombinator12(Choice::new(Cond { cond: tag == TstTag::C18, inner: mydata() }, TstMydataCombinator11(Choice::new(Cond { cond: tag == TstTag::C19, inner: mydata() }, TstMydataCombinator10(Choice::new(Cond { cond: tag == TstTag::C20, inner: mydata() }, TstMydataCombinator9(Choice::new(Cond { cond: tag == TstTag::C21, inner: mydata() }, TstMydataCombinator8(Choice::new(Cond { cond: tag == TstTag::C22, inner: mydata() }, TstMydataCombinator7(Choice::new(Cond { cond: tag == TstTag::C23, inner: mydata() }, TstMydataCombinator6(Choice::new(Cond { cond: tag == TstTag::C24, inner: mydata() }, TstMydataCombinator5(Choice::new(Cond { cond: tag == TstTag::C25, inner: mydata() }, TstMydataCombinator4(Choice::new(Cond { cond: tag == TstTag::C26, inner: mydata() }, TstMydataCombinator3(Choice::new(Cond { cond: tag == TstTag::C27, inner: mydata() }, TstMydataCombinator2(Choice::new(Cond { cond: tag == TstTag::C28, inner: mydata() }, TstMydataCombinator1(Choice::new(Cond { cond: tag == TstTag::C29, inner: mydata() }, Cond { cond: tag == TstTag::C30, inner: mydata() })))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), mapper: TstMydataMapper });
     // assert({
-    //     &&& combinator@ == spec_tst_anon_mydata(tag@)
+    //     &&& combinator@ == spec_tst_mydata(tag@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_tst_anon_mydata<'a>(input: &'a [u8], tag: u8) -> (res: PResult<<TstAnonMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_tst_mydata<'a>(input: &'a [u8], tag: u8) -> (res: PResult<<TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_tst_tag().wf(tag@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_tst_anon_mydata(tag@).spec_parse(input@) == Some((n as int, v@)),
-        spec_tst_anon_mydata(tag@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_tst_mydata(tag@).spec_parse(input@) == Some((n as int, v@)),
+        spec_tst_mydata(tag@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_tst_anon_mydata(tag@).spec_parse(input@) is None,
-        spec_tst_anon_mydata(tag@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_tst_mydata(tag@).spec_parse(input@) is None,
+        spec_tst_mydata(tag@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = tst_anon_mydata( tag );
+    let combinator = tst_mydata( tag );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_tst_anon_mydata<'a>(v: <TstAnonMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_tst_mydata<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_tst_anon_mydata(tag@).wf(v@),
+        spec_tst_mydata(tag@).wf(v@),
         spec_tst_tag().wf(tag@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_tst_anon_mydata(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tst_anon_mydata(tag@).spec_serialize(v@))
+            &&& n == spec_tst_mydata(tag@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_tst_mydata(tag@).spec_serialize(v@))
         },
 {
-    let combinator = tst_anon_mydata( tag );
+    let combinator = tst_mydata( tag );
     combinator.serialize(v, data, pos)
 }
 
-pub fn tst_anon_mydata_len<'a>(v: <TstAnonMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
+pub fn tst_mydata_len<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
     requires
-        spec_tst_anon_mydata(tag@).wf(v@),
-        spec_tst_anon_mydata(tag@).spec_serialize(v@).len() <= usize::MAX,
+        spec_tst_mydata(tag@).wf(v@),
+        spec_tst_mydata(tag@).spec_serialize(v@).len() <= usize::MAX,
         spec_tst_tag().wf(tag@),
 
     ensures
-        serialize_len == spec_tst_anon_mydata(tag@).spec_serialize(v@).len(),
+        serialize_len == spec_tst_mydata(tag@).spec_serialize(v@).len(),
 {
-    let combinator = tst_anon_mydata( tag );
+    let combinator = tst_mydata( tag );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 
 pub struct SpecTst {
     pub tag: u8,
-    pub mydata: SpecTstAnonMydata,
+    pub mydata: SpecTstMydata,
 }
 
-pub type SpecTstInner = (u8, SpecTstAnonMydata);
+pub type SpecTstInner = (u8, SpecTstMydata);
 
 
 impl SpecFrom<SpecTst> for SpecTstInner {
@@ -1137,7 +1137,7 @@ impl SpecFrom<SpecTstInner> for SpecTst {
 
 pub struct Tst<'a> {
     pub tag: u8,
-    pub mydata: TstAnonMydata<'a>,
+    pub mydata: TstMydata<'a>,
 }
 
 impl View for Tst<'_> {
@@ -1150,9 +1150,9 @@ impl View for Tst<'_> {
         }
     }
 }
-pub type TstInner<'a> = (u8, TstAnonMydata<'a>);
+pub type TstInner<'a> = (u8, TstMydata<'a>);
 
-pub type TstInnerRef<'a> = (&'a u8, &'a TstAnonMydata<'a>);
+pub type TstInnerRef<'a> = (&'a u8, &'a TstMydata<'a>);
 impl<'a> From<&'a Tst<'a>> for TstInnerRef<'a> {
     fn ex_from(m: &'a Tst) -> TstInnerRef<'a> {
         (&m.tag, &m.mydata)
@@ -1220,7 +1220,7 @@ impl SecureSpecCombinator for SpecTstCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTstCombinatorAlias = Mapped<SpecPair<SpecTstTagCombinator, SpecTstAnonMydataCombinator>, TstMapper>;
+pub type SpecTstCombinatorAlias = Mapped<SpecPair<SpecTstTagCombinator, SpecTstMydataCombinator>, TstMapper>;
 
 pub struct TstCombinator(pub TstCombinatorAlias);
 
@@ -1240,7 +1240,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type TstCombinatorAlias = Mapped<Pair<TstTagCombinator, TstAnonMydataCombinator, TstCont0>, TstMapper>;
+pub type TstCombinatorAlias = Mapped<Pair<TstTagCombinator, TstMydataCombinator, TstCont0>, TstMapper>;
 
 
 pub open spec fn spec_tst() -> SpecTstCombinator {
@@ -1251,13 +1251,13 @@ pub open spec fn spec_tst() -> SpecTstCombinator {
     })
 }
 
-pub open spec fn spec_tst_cont0(deps: u8) -> SpecTstAnonMydataCombinator {
+pub open spec fn spec_tst_cont0(deps: u8) -> SpecTstMydataCombinator {
     let tag = deps;
-    spec_tst_anon_mydata(tag)
+    spec_tst_mydata(tag)
 }
 
 impl View for TstCont0 {
-    type V = spec_fn(u8) -> SpecTstAnonMydataCombinator;
+    type V = spec_fn(u8) -> SpecTstMydataCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: u8| {
@@ -1331,7 +1331,7 @@ type TstCont0Type<'a, 'b> = &'b u8;
 type TstCont0SType<'a, 'x> = &'x u8;
 type TstCont0Input<'a, 'b, 'x> = POrSType<TstCont0Type<'a, 'b>, TstCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<TstCont0Input<'a, 'b, 'x>> for TstCont0 {
-    type Output = TstAnonMydataCombinator;
+    type Output = TstMydataCombinator;
 
     open spec fn requires(&self, deps: TstCont0Input<'a, 'b, 'x>) -> bool {
         &&& (spec_tst_tag()).wf(deps@)
@@ -1347,12 +1347,12 @@ impl<'a, 'b, 'x> Continuation<TstCont0Input<'a, 'b, 'x>> for TstCont0 {
             POrSType::P(deps) => {
                 let tag = deps;
                 let tag = *tag;
-                tst_anon_mydata(tag)
+                tst_mydata(tag)
             }
             POrSType::S(deps) => {
                 let tag = deps;
                 let tag = *tag;
-                tst_anon_mydata(tag)
+                tst_mydata(tag)
             }
         }
     }

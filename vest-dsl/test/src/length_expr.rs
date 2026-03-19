@@ -2888,29 +2888,29 @@ pub fn multiply_len<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8], Vec<u
 }
 
 
-pub enum SpecChoiceArraysFoldedAnonBody {
+pub enum SpecChoiceArraysFoldedBody {
     Variant0(u8),
     Variant1(u16),
 }
 
-pub type SpecChoiceArraysFoldedAnonBodyInner = Either<u8, u16>;
+pub type SpecChoiceArraysFoldedBodyInner = Either<u8, u16>;
 
-impl SpecFrom<SpecChoiceArraysFoldedAnonBody> for SpecChoiceArraysFoldedAnonBodyInner {
-    open spec fn spec_from(m: SpecChoiceArraysFoldedAnonBody) -> SpecChoiceArraysFoldedAnonBodyInner {
+impl SpecFrom<SpecChoiceArraysFoldedBody> for SpecChoiceArraysFoldedBodyInner {
+    open spec fn spec_from(m: SpecChoiceArraysFoldedBody) -> SpecChoiceArraysFoldedBodyInner {
         match m {
-            SpecChoiceArraysFoldedAnonBody::Variant0(m) => Either::Left(m),
-            SpecChoiceArraysFoldedAnonBody::Variant1(m) => Either::Right(m),
+            SpecChoiceArraysFoldedBody::Variant0(m) => Either::Left(m),
+            SpecChoiceArraysFoldedBody::Variant1(m) => Either::Right(m),
         }
     }
 
 }
 
                 
-impl SpecFrom<SpecChoiceArraysFoldedAnonBodyInner> for SpecChoiceArraysFoldedAnonBody {
-    open spec fn spec_from(m: SpecChoiceArraysFoldedAnonBodyInner) -> SpecChoiceArraysFoldedAnonBody {
+impl SpecFrom<SpecChoiceArraysFoldedBodyInner> for SpecChoiceArraysFoldedBody {
+    open spec fn spec_from(m: SpecChoiceArraysFoldedBodyInner) -> SpecChoiceArraysFoldedBody {
         match m {
-            Either::Left(m) => SpecChoiceArraysFoldedAnonBody::Variant0(m),
-            Either::Right(m) => SpecChoiceArraysFoldedAnonBody::Variant1(m),
+            Either::Left(m) => SpecChoiceArraysFoldedBody::Variant0(m),
+            Either::Right(m) => SpecChoiceArraysFoldedBody::Variant1(m),
         }
     }
 
@@ -2919,60 +2919,60 @@ impl SpecFrom<SpecChoiceArraysFoldedAnonBodyInner> for SpecChoiceArraysFoldedAno
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ChoiceArraysFoldedAnonBody {
+pub enum ChoiceArraysFoldedBody {
     Variant0(u8),
     Variant1(u16),
 }
 
-pub type ChoiceArraysFoldedAnonBodyInner = Either<u8, u16>;
+pub type ChoiceArraysFoldedBodyInner = Either<u8, u16>;
 
-pub type ChoiceArraysFoldedAnonBodyInnerRef<'a> = Either<&'a u8, &'a u16>;
+pub type ChoiceArraysFoldedBodyInnerRef<'a> = Either<&'a u8, &'a u16>;
 
 
-impl View for ChoiceArraysFoldedAnonBody {
-    type V = SpecChoiceArraysFoldedAnonBody;
+impl View for ChoiceArraysFoldedBody {
+    type V = SpecChoiceArraysFoldedBody;
     open spec fn view(&self) -> Self::V {
         match self {
-            ChoiceArraysFoldedAnonBody::Variant0(m) => SpecChoiceArraysFoldedAnonBody::Variant0(m@),
-            ChoiceArraysFoldedAnonBody::Variant1(m) => SpecChoiceArraysFoldedAnonBody::Variant1(m@),
+            ChoiceArraysFoldedBody::Variant0(m) => SpecChoiceArraysFoldedBody::Variant0(m@),
+            ChoiceArraysFoldedBody::Variant1(m) => SpecChoiceArraysFoldedBody::Variant1(m@),
         }
     }
 }
 
 
-impl<'a> From<&'a ChoiceArraysFoldedAnonBody> for ChoiceArraysFoldedAnonBodyInnerRef<'a> {
-    fn ex_from(m: &'a ChoiceArraysFoldedAnonBody) -> ChoiceArraysFoldedAnonBodyInnerRef<'a> {
+impl<'a> From<&'a ChoiceArraysFoldedBody> for ChoiceArraysFoldedBodyInnerRef<'a> {
+    fn ex_from(m: &'a ChoiceArraysFoldedBody) -> ChoiceArraysFoldedBodyInnerRef<'a> {
         match m {
-            ChoiceArraysFoldedAnonBody::Variant0(m) => Either::Left(m),
-            ChoiceArraysFoldedAnonBody::Variant1(m) => Either::Right(m),
+            ChoiceArraysFoldedBody::Variant0(m) => Either::Left(m),
+            ChoiceArraysFoldedBody::Variant1(m) => Either::Right(m),
         }
     }
 
 }
 
-impl From<ChoiceArraysFoldedAnonBodyInner> for ChoiceArraysFoldedAnonBody {
-    fn ex_from(m: ChoiceArraysFoldedAnonBodyInner) -> ChoiceArraysFoldedAnonBody {
+impl From<ChoiceArraysFoldedBodyInner> for ChoiceArraysFoldedBody {
+    fn ex_from(m: ChoiceArraysFoldedBodyInner) -> ChoiceArraysFoldedBody {
         match m {
-            Either::Left(m) => ChoiceArraysFoldedAnonBody::Variant0(m),
-            Either::Right(m) => ChoiceArraysFoldedAnonBody::Variant1(m),
+            Either::Left(m) => ChoiceArraysFoldedBody::Variant0(m),
+            Either::Right(m) => ChoiceArraysFoldedBody::Variant1(m),
         }
     }
     
 }
 
 
-pub struct ChoiceArraysFoldedAnonBodyMapper;
-impl View for ChoiceArraysFoldedAnonBodyMapper {
+pub struct ChoiceArraysFoldedBodyMapper;
+impl View for ChoiceArraysFoldedBodyMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ChoiceArraysFoldedAnonBodyMapper {
-    type Src = SpecChoiceArraysFoldedAnonBodyInner;
-    type Dst = SpecChoiceArraysFoldedAnonBody;
+impl SpecIso for ChoiceArraysFoldedBodyMapper {
+    type Src = SpecChoiceArraysFoldedBodyInner;
+    type Dst = SpecChoiceArraysFoldedBody;
 }
-impl SpecIsoProof for ChoiceArraysFoldedAnonBodyMapper {
+impl SpecIsoProof for ChoiceArraysFoldedBodyMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -2980,17 +2980,17 @@ impl SpecIsoProof for ChoiceArraysFoldedAnonBodyMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso<'a> for ChoiceArraysFoldedAnonBodyMapper {
-    type Src = ChoiceArraysFoldedAnonBodyInner;
-    type Dst = ChoiceArraysFoldedAnonBody;
-    type RefSrc = ChoiceArraysFoldedAnonBodyInnerRef<'a>;
+impl<'a> Iso<'a> for ChoiceArraysFoldedBodyMapper {
+    type Src = ChoiceArraysFoldedBodyInner;
+    type Dst = ChoiceArraysFoldedBody;
+    type RefSrc = ChoiceArraysFoldedBodyInnerRef<'a>;
 }
 
-type SpecChoiceArraysFoldedAnonBodyCombinatorAlias1 = Choice<Cond<U8>, Cond<U16Le>>;
-pub struct SpecChoiceArraysFoldedAnonBodyCombinator(pub SpecChoiceArraysFoldedAnonBodyCombinatorAlias);
+type SpecChoiceArraysFoldedBodyCombinatorAlias1 = Choice<Cond<U8>, Cond<U16Le>>;
+pub struct SpecChoiceArraysFoldedBodyCombinator(pub SpecChoiceArraysFoldedBodyCombinatorAlias);
 
-impl SpecCombinator for SpecChoiceArraysFoldedAnonBodyCombinator {
-    type Type = SpecChoiceArraysFoldedAnonBody;
+impl SpecCombinator for SpecChoiceArraysFoldedBodyCombinator {
+    type Type = SpecChoiceArraysFoldedBody;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -3000,9 +3000,9 @@ impl SpecCombinator for SpecChoiceArraysFoldedAnonBodyCombinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecChoiceArraysFoldedAnonBodyCombinator {
+impl SecureSpecCombinator for SpecChoiceArraysFoldedBodyCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecChoiceArraysFoldedAnonBodyCombinatorAlias::is_prefix_secure() }
+    { SpecChoiceArraysFoldedBodyCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -3016,23 +3016,23 @@ impl SecureSpecCombinator for SpecChoiceArraysFoldedAnonBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecChoiceArraysFoldedAnonBodyCombinatorAlias = Mapped<SpecChoiceArraysFoldedAnonBodyCombinatorAlias1, ChoiceArraysFoldedAnonBodyMapper>;
-type ChoiceArraysFoldedAnonBodyCombinatorAlias1 = Choice<Cond<U8>, Cond<U16Le>>;
-pub struct ChoiceArraysFoldedAnonBodyCombinator1(pub ChoiceArraysFoldedAnonBodyCombinatorAlias1);
-impl View for ChoiceArraysFoldedAnonBodyCombinator1 {
-    type V = SpecChoiceArraysFoldedAnonBodyCombinatorAlias1;
+pub type SpecChoiceArraysFoldedBodyCombinatorAlias = Mapped<SpecChoiceArraysFoldedBodyCombinatorAlias1, ChoiceArraysFoldedBodyMapper>;
+type ChoiceArraysFoldedBodyCombinatorAlias1 = Choice<Cond<U8>, Cond<U16Le>>;
+pub struct ChoiceArraysFoldedBodyCombinator1(pub ChoiceArraysFoldedBodyCombinatorAlias1);
+impl View for ChoiceArraysFoldedBodyCombinator1 {
+    type V = SpecChoiceArraysFoldedBodyCombinatorAlias1;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(ChoiceArraysFoldedAnonBodyCombinator1, ChoiceArraysFoldedAnonBodyCombinatorAlias1);
+impl_wrapper_combinator!(ChoiceArraysFoldedBodyCombinator1, ChoiceArraysFoldedBodyCombinatorAlias1);
 
-pub struct ChoiceArraysFoldedAnonBodyCombinator(pub ChoiceArraysFoldedAnonBodyCombinatorAlias);
+pub struct ChoiceArraysFoldedBodyCombinator(pub ChoiceArraysFoldedBodyCombinatorAlias);
 
-impl View for ChoiceArraysFoldedAnonBodyCombinator {
-    type V = SpecChoiceArraysFoldedAnonBodyCombinator;
-    open spec fn view(&self) -> Self::V { SpecChoiceArraysFoldedAnonBodyCombinator(self.0@) }
+impl View for ChoiceArraysFoldedBodyCombinator {
+    type V = SpecChoiceArraysFoldedBodyCombinator;
+    open spec fn view(&self) -> Self::V { SpecChoiceArraysFoldedBodyCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedAnonBodyCombinator {
-    type Type = ChoiceArraysFoldedAnonBody;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedBodyCombinator {
+    type Type = ChoiceArraysFoldedBody;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -3043,79 +3043,79 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedAnonBodyCombina
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type ChoiceArraysFoldedAnonBodyCombinatorAlias = Mapped<ChoiceArraysFoldedAnonBodyCombinator1, ChoiceArraysFoldedAnonBodyMapper>;
+pub type ChoiceArraysFoldedBodyCombinatorAlias = Mapped<ChoiceArraysFoldedBodyCombinator1, ChoiceArraysFoldedBodyMapper>;
 
 
-pub open spec fn spec_choice_arrays_folded_anon_body(tag: SpecChoiceTag) -> SpecChoiceArraysFoldedAnonBodyCombinator {
-    SpecChoiceArraysFoldedAnonBodyCombinator(Mapped { inner: Choice(Cond { cond: tag == seq![0u8, 0u8], inner: U8 }, Cond { cond: tag == seq![1u8, 1u8], inner: U16Le }), mapper: ChoiceArraysFoldedAnonBodyMapper })
+pub open spec fn spec_choice_arrays_folded_body(tag: SpecChoiceTag) -> SpecChoiceArraysFoldedBodyCombinator {
+    SpecChoiceArraysFoldedBodyCombinator(Mapped { inner: Choice(Cond { cond: tag == seq![0u8, 0u8], inner: U8 }, Cond { cond: tag == seq![1u8, 1u8], inner: U16Le }), mapper: ChoiceArraysFoldedBodyMapper })
 }
 
-pub fn choice_arrays_folded_anon_body<'a>(tag: ChoiceTag) -> (o: ChoiceArraysFoldedAnonBodyCombinator)
+pub fn choice_arrays_folded_body<'a>(tag: ChoiceTag) -> (o: ChoiceArraysFoldedBodyCombinator)
 
-    ensures o@ == spec_choice_arrays_folded_anon_body(tag@),
+    ensures o@ == spec_choice_arrays_folded_body(tag@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = ChoiceArraysFoldedAnonBodyCombinator(Mapped { inner: ChoiceArraysFoldedAnonBodyCombinator1(Choice::new(Cond { cond: compare_slice(tag, [0u8, 0u8].as_slice()), inner: U8 }, Cond { cond: compare_slice(tag, [1u8, 1u8].as_slice()), inner: U16Le })), mapper: ChoiceArraysFoldedAnonBodyMapper });
+    let combinator = ChoiceArraysFoldedBodyCombinator(Mapped { inner: ChoiceArraysFoldedBodyCombinator1(Choice::new(Cond { cond: compare_slice(tag, [0u8, 0u8].as_slice()), inner: U8 }, Cond { cond: compare_slice(tag, [1u8, 1u8].as_slice()), inner: U16Le })), mapper: ChoiceArraysFoldedBodyMapper });
     // assert({
-    //     &&& combinator@ == spec_choice_arrays_folded_anon_body(tag@)
+    //     &&& combinator@ == spec_choice_arrays_folded_body(tag@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_choice_arrays_folded_anon_body<'a>(input: &'a [u8], tag: ChoiceTag) -> (res: PResult<<ChoiceArraysFoldedAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_choice_arrays_folded_body<'a>(input: &'a [u8], tag: ChoiceTag) -> (res: PResult<<ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
 
     ensures
-        res matches Ok((n, v)) ==> spec_choice_arrays_folded_anon_body(tag@).spec_parse(input@) == Some((n as int, v@)),
-        spec_choice_arrays_folded_anon_body(tag@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_choice_arrays_folded_body(tag@).spec_parse(input@) == Some((n as int, v@)),
+        spec_choice_arrays_folded_body(tag@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_choice_arrays_folded_anon_body(tag@).spec_parse(input@) is None,
-        spec_choice_arrays_folded_anon_body(tag@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_choice_arrays_folded_body(tag@).spec_parse(input@) is None,
+        spec_choice_arrays_folded_body(tag@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = choice_arrays_folded_anon_body( tag );
+    let combinator = choice_arrays_folded_body( tag );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_choice_arrays_folded_anon_body<'a>(v: <ChoiceArraysFoldedAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: ChoiceTag) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_choice_arrays_folded_body<'a>(v: <ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: ChoiceTag) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_choice_arrays_folded_anon_body(tag@).wf(v@),
+        spec_choice_arrays_folded_body(tag@).wf(v@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_choice_arrays_folded_anon_body(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded_anon_body(tag@).spec_serialize(v@))
+            &&& n == spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded_body(tag@).spec_serialize(v@))
         },
 {
-    let combinator = choice_arrays_folded_anon_body( tag );
+    let combinator = choice_arrays_folded_body( tag );
     combinator.serialize(v, data, pos)
 }
 
-pub fn choice_arrays_folded_anon_body_len<'a>(v: <ChoiceArraysFoldedAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: ChoiceTag) -> (serialize_len: usize)
+pub fn choice_arrays_folded_body_len<'a>(v: <ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: ChoiceTag) -> (serialize_len: usize)
     requires
-        spec_choice_arrays_folded_anon_body(tag@).wf(v@),
-        spec_choice_arrays_folded_anon_body(tag@).spec_serialize(v@).len() <= usize::MAX,
+        spec_choice_arrays_folded_body(tag@).wf(v@),
+        spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len() <= usize::MAX,
 
     ensures
-        serialize_len == spec_choice_arrays_folded_anon_body(tag@).spec_serialize(v@).len(),
+        serialize_len == spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len(),
 {
-    let combinator = choice_arrays_folded_anon_body( tag );
+    let combinator = choice_arrays_folded_body( tag );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 
 pub struct SpecChoiceArraysFolded {
     pub tag: SpecChoiceTag,
-    pub body: SpecChoiceArraysFoldedAnonBody,
+    pub body: SpecChoiceArraysFoldedBody,
 }
 
-pub type SpecChoiceArraysFoldedInner = (SpecChoiceTag, SpecChoiceArraysFoldedAnonBody);
+pub type SpecChoiceArraysFoldedInner = (SpecChoiceTag, SpecChoiceArraysFoldedBody);
 
 
 impl SpecFrom<SpecChoiceArraysFolded> for SpecChoiceArraysFoldedInner {
@@ -3134,7 +3134,7 @@ impl SpecFrom<SpecChoiceArraysFoldedInner> for SpecChoiceArraysFolded {
 
 pub struct ChoiceArraysFolded<'a> {
     pub tag: ChoiceTag<'a>,
-    pub body: ChoiceArraysFoldedAnonBody,
+    pub body: ChoiceArraysFoldedBody,
 }
 
 impl View for ChoiceArraysFolded<'_> {
@@ -3147,9 +3147,9 @@ impl View for ChoiceArraysFolded<'_> {
         }
     }
 }
-pub type ChoiceArraysFoldedInner<'a> = (ChoiceTag<'a>, ChoiceArraysFoldedAnonBody);
+pub type ChoiceArraysFoldedInner<'a> = (ChoiceTag<'a>, ChoiceArraysFoldedBody);
 
-pub type ChoiceArraysFoldedInnerRef<'a> = (&'a ChoiceTag<'a>, &'a ChoiceArraysFoldedAnonBody);
+pub type ChoiceArraysFoldedInnerRef<'a> = (&'a ChoiceTag<'a>, &'a ChoiceArraysFoldedBody);
 impl<'a> From<&'a ChoiceArraysFolded<'a>> for ChoiceArraysFoldedInnerRef<'a> {
     fn ex_from(m: &'a ChoiceArraysFolded) -> ChoiceArraysFoldedInnerRef<'a> {
         (&m.tag, &m.body)
@@ -3217,7 +3217,7 @@ impl SecureSpecCombinator for SpecChoiceArraysFoldedCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecChoiceArraysFoldedCombinatorAlias = Mapped<SpecPair<SpecChoiceTagCombinator, SpecChoiceArraysFoldedAnonBodyCombinator>, ChoiceArraysFoldedMapper>;
+pub type SpecChoiceArraysFoldedCombinatorAlias = Mapped<SpecPair<SpecChoiceTagCombinator, SpecChoiceArraysFoldedBodyCombinator>, ChoiceArraysFoldedMapper>;
 
 pub struct ChoiceArraysFoldedCombinator(pub ChoiceArraysFoldedCombinatorAlias);
 
@@ -3237,7 +3237,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type ChoiceArraysFoldedCombinatorAlias = Mapped<Pair<ChoiceTagCombinator, ChoiceArraysFoldedAnonBodyCombinator, ChoiceArraysFoldedCont0>, ChoiceArraysFoldedMapper>;
+pub type ChoiceArraysFoldedCombinatorAlias = Mapped<Pair<ChoiceTagCombinator, ChoiceArraysFoldedBodyCombinator, ChoiceArraysFoldedCont0>, ChoiceArraysFoldedMapper>;
 
 
 pub open spec fn spec_choice_arrays_folded() -> SpecChoiceArraysFoldedCombinator {
@@ -3248,13 +3248,13 @@ pub open spec fn spec_choice_arrays_folded() -> SpecChoiceArraysFoldedCombinator
     })
 }
 
-pub open spec fn spec_choice_arrays_folded_cont0(deps: SpecChoiceTag) -> SpecChoiceArraysFoldedAnonBodyCombinator {
+pub open spec fn spec_choice_arrays_folded_cont0(deps: SpecChoiceTag) -> SpecChoiceArraysFoldedBodyCombinator {
     let tag = deps;
-    spec_choice_arrays_folded_anon_body(tag)
+    spec_choice_arrays_folded_body(tag)
 }
 
 impl View for ChoiceArraysFoldedCont0 {
-    type V = spec_fn(SpecChoiceTag) -> SpecChoiceArraysFoldedAnonBodyCombinator;
+    type V = spec_fn(SpecChoiceTag) -> SpecChoiceArraysFoldedBodyCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: SpecChoiceTag| {
@@ -3328,7 +3328,7 @@ type ChoiceArraysFoldedCont0Type<'a, 'b> = &'b ChoiceTag<'a>;
 type ChoiceArraysFoldedCont0SType<'a, 'x> = &'x ChoiceTag<'a>;
 type ChoiceArraysFoldedCont0Input<'a, 'b, 'x> = POrSType<ChoiceArraysFoldedCont0Type<'a, 'b>, ChoiceArraysFoldedCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<ChoiceArraysFoldedCont0Input<'a, 'b, 'x>> for ChoiceArraysFoldedCont0 {
-    type Output = ChoiceArraysFoldedAnonBodyCombinator;
+    type Output = ChoiceArraysFoldedBodyCombinator;
 
     open spec fn requires(&self, deps: ChoiceArraysFoldedCont0Input<'a, 'b, 'x>) -> bool {
         &&& (spec_choice_tag()).wf(deps@)
@@ -3344,12 +3344,12 @@ impl<'a, 'b, 'x> Continuation<ChoiceArraysFoldedCont0Input<'a, 'b, 'x>> for Choi
             POrSType::P(deps) => {
                 let tag = deps;
                 let tag = *tag;
-                choice_arrays_folded_anon_body(tag)
+                choice_arrays_folded_body(tag)
             }
             POrSType::S(deps) => {
                 let tag = deps;
                 let tag = *tag;
-                choice_arrays_folded_anon_body(tag)
+                choice_arrays_folded_body(tag)
             }
         }
     }
