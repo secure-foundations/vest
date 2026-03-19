@@ -1,3 +1,4 @@
+use crate::ast;
 use itertools::Itertools;
 use std::{
     collections::{HashMap, HashSet},
@@ -177,13 +178,40 @@ pub struct SepByCombinator {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ArrayCombinator {
     pub combinator: Box<Combinator>,
-    pub len: LengthSpecifier,
+    pub len: LengthExpr,
 }
 
+/// Arithmetic operators for length expressions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ArithOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl From<ast::ArithOp> for ArithOp {
+    fn from(op: ast::ArithOp) -> Self {
+        match op {
+            ast::ArithOp::Add => ArithOp::Add,
+            ast::ArithOp::Sub => ArithOp::Sub,
+            ast::ArithOp::Mul => ArithOp::Mul,
+            ast::ArithOp::Div => ArithOp::Div,
+        }
+    }
+}
+
+/// Length expression for array sizes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum LengthSpecifier {
+pub enum LengthExpr {
     Const(usize),
     Dependent(String),
+    SizeOf(String),
+    BinOp {
+        op: ArithOp,
+        left: Box<LengthExpr>,
+        right: Box<LengthExpr>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -191,7 +219,7 @@ pub struct OptionCombinator(pub Box<Combinator>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BytesCombinator {
-    pub len: LengthSpecifier,
+    pub len: LengthExpr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -629,11 +657,21 @@ impl Display for ArrayCombinator {
     }
 }
 
-impl Display for LengthSpecifier {
+impl Display for LengthExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LengthSpecifier::Const(n) => write!(f, "{}", n),
-            LengthSpecifier::Dependent(s) => write!(f, "{}", s),
+            LengthExpr::Const(n) => write!(f, "{}", n),
+            LengthExpr::Dependent(s) => write!(f, "@{}", s),
+            LengthExpr::SizeOf(name) => write!(f, "|{}|", name),
+            LengthExpr::BinOp { op, left, right } => {
+                let op_str = match op {
+                    ArithOp::Add => "+",
+                    ArithOp::Sub => "-",
+                    ArithOp::Mul => "*",
+                    ArithOp::Div => "/",
+                };
+                write!(f, "({} {} {})", left, op_str, right)
+            }
         }
     }
 }
@@ -677,6 +715,7 @@ pub struct GlobalCtx {
     pub combinators: HashSet<CombinatorSig>,
     pub const_combinators: HashSet<ConstCombinatorSig>,
     pub enums: HashMap<String, EnumCombinator>,
+    pub static_sizes: HashMap<String, usize>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -1042,11 +1081,21 @@ pub mod lowering {
         }
     }
 
-    impl<'i> From<ast::LengthSpecifier<'i>> for ir::LengthSpecifier {
-        fn from(l: ast::LengthSpecifier<'i>) -> Self {
+    impl<'i> From<ast::LengthExpr<'i>> for ir::LengthExpr {
+        fn from(l: ast::LengthExpr<'i>) -> Self {
             match l {
-                ast::LengthSpecifier::Const(n) => ir::LengthSpecifier::Const(n),
-                ast::LengthSpecifier::Dependent(i) => ir::LengthSpecifier::Dependent(id(i)),
+                ast::LengthExpr::Const { value, .. } => ir::LengthExpr::Const(value),
+                ast::LengthExpr::Dependent(d) => ir::LengthExpr::Dependent(d.full_path()),
+                ast::LengthExpr::SizeOf { format_name, .. } => {
+                    ir::LengthExpr::SizeOf(format_name.name)
+                }
+                ast::LengthExpr::BinOp {
+                    op, left, right, ..
+                } => ir::LengthExpr::BinOp {
+                    op: op.into(),
+                    left: Box::new((*left).into()),
+                    right: Box::new((*right).into()),
+                },
             }
         }
     }
@@ -1209,6 +1258,7 @@ pub mod lowering {
                 combinators,
                 const_combinators,
                 enums,
+                static_sizes: src.static_sizes.clone(),
             }
         }
     }
