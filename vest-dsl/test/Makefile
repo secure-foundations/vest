@@ -1,26 +1,26 @@
-.PHONY: all vest bad verus
+.PHONY: all build-vest vest bad verus
 
 CARGO        := cargo
 ROOT_MANIFEST := ../Cargo.toml
 VEST_DSL     := ../target/debug/vest
 # selected .vest files in the src directory
-VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest
+VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/nested_access.vest ./src/ikev2.vest
 # all files in ./bad/
 BAD_VEST_FILES := $(wildcard ./bad/*.vest)
 
 all: vest bad verus
 
-$(VEST_DSL):
+build-vest:
 	$(CARGO) build --manifest-path $(ROOT_MANIFEST) -p vest
 
-vest: $(VEST_DSL)
+vest: build-vest
 	@for file in $(VEST_FILES); do \
 		echo "==================================="; \
 		echo "Processing $$file"; \
 		$(VEST_DSL) $$file; \
 	done
 
-bad: $(VEST_DSL)
+bad: build-vest
 	@for file in $(BAD_VEST_FILES); do \
 		echo "==================================="; \
 		echo "Expecting failure for $$file"; \

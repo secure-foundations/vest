@@ -195,7 +195,7 @@ pub open spec fn spec_opaque_u16() -> SpecOpaqueU16Combinator {
 
 pub open spec fn spec_opaque_u16_cont0(deps: u16) -> bytes::Variable {
     let l = deps;
-    bytes::Variable(l.spec_into())
+    bytes::Variable((usize::spec_from(l)) as usize)
 }
 
 impl View for OpaqueU16Cont0 {
@@ -275,7 +275,9 @@ type OpaqueU16Cont0Input<'a, 'b, 'x> = POrSType<OpaqueU16Cont0Type<'a, 'b>, Opaq
 impl<'a, 'b, 'x> Continuation<OpaqueU16Cont0Input<'a, 'b, 'x>> for OpaqueU16Cont0 {
     type Output = bytes::Variable;
 
-    open spec fn requires(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (Refined { inner: U16Le, predicate: Predicate17626095872143391426 }).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_opaque_u16_cont0(deps@)
@@ -284,13 +286,14 @@ impl<'a, 'b, 'x> Continuation<OpaqueU16Cont0Input<'a, 'b, 'x>> for OpaqueU16Cont
     fn apply(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let l = *deps;
-                bytes::Variable(l.ex_into())
+                let l = deps;
+                let l = *l;
+                bytes::Variable((usize::ex_from(l)) as usize)
             }
             POrSType::S(deps) => {
                 let l = deps;
                 let l = *l;
-                bytes::Variable(l.ex_into())
+                bytes::Variable((usize::ex_from(l)) as usize)
             }
         }
     }
@@ -354,7 +357,7 @@ pub type RepeatFixCombinatorAlias = RepeatN<U16Le>;
 
 
 pub open spec fn spec_repeat_fix() -> SpecRepeatFixCombinator {
-    SpecRepeatFixCombinator(RepeatN(U16Le, 32))
+    SpecRepeatFixCombinator(RepeatN(U16Le, (32) as usize))
 }
 
                 
@@ -363,7 +366,7 @@ pub fn repeat_fix<'a>() -> (o: RepeatFixCombinator)
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = RepeatFixCombinator(RepeatN(U16Le, 32));
+    let combinator = RepeatFixCombinator(RepeatN(U16Le, (32) as usize));
     // assert({
     //     &&& combinator@ == spec_repeat_fix()
     //     &&& combinator@.requires()
@@ -693,7 +696,7 @@ pub open spec fn spec_responder_id_list() -> SpecResponderIdListCombinator {
 
 pub open spec fn spec_responder_id_list_cont0(deps: u16) -> AndThen<bytes::Variable, Repeat<SpecResponderIdCombinator>> {
     let l = deps;
-    AndThen(bytes::Variable(l.spec_into()), Repeat(spec_responder_id()))
+    AndThen(bytes::Variable((usize::spec_from(l)) as usize), Repeat(spec_responder_id()))
 }
 
 impl View for ResponderIdListCont0 {
@@ -773,7 +776,9 @@ type ResponderIdListCont0Input<'a, 'b, 'x> = POrSType<ResponderIdListCont0Type<'
 impl<'a, 'b, 'x> Continuation<ResponderIdListCont0Input<'a, 'b, 'x>> for ResponderIdListCont0 {
     type Output = AndThen<bytes::Variable, Repeat<ResponderIdCombinator>>;
 
-    open spec fn requires(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (Refined { inner: U16Le, predicate: Predicate2984462868727922620 }).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_responder_id_list_cont0(deps@)
@@ -782,13 +787,14 @@ impl<'a, 'b, 'x> Continuation<ResponderIdListCont0Input<'a, 'b, 'x>> for Respond
     fn apply(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let l = *deps;
-                AndThen(bytes::Variable(l.ex_into()), Repeat::new(responder_id()))
+                let l = deps;
+                let l = *l;
+                AndThen(bytes::Variable((usize::ex_from(l)) as usize), Repeat::new(responder_id()))
             }
             POrSType::S(deps) => {
                 let l = deps;
                 let l = *l;
-                AndThen(bytes::Variable(l.ex_into()), Repeat::new(responder_id()))
+                AndThen(bytes::Variable((usize::ex_from(l)) as usize), Repeat::new(responder_id()))
             }
         }
     }
@@ -935,7 +941,7 @@ pub open spec fn spec_repeat_dyn() -> SpecRepeatDynCombinator {
 
 pub open spec fn spec_repeat_dyn_cont0(deps: VarInt) -> RepeatN<SpecResponderIdListCombinator> {
     let l = deps;
-    RepeatN(spec_responder_id_list(), l.spec_into())
+    RepeatN(spec_responder_id_list(), (usize::spec_from(l)) as usize)
 }
 
 impl View for RepeatDynCont0 {
@@ -1015,7 +1021,9 @@ type RepeatDynCont0Input<'a, 'b, 'x> = POrSType<RepeatDynCont0Type<'a, 'b>, Repe
 impl<'a, 'b, 'x> Continuation<RepeatDynCont0Input<'a, 'b, 'x>> for RepeatDynCont0 {
     type Output = RepeatN<ResponderIdListCombinator>;
 
-    open spec fn requires(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (BtcVarint).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_repeat_dyn_cont0(deps@)
@@ -1024,13 +1032,14 @@ impl<'a, 'b, 'x> Continuation<RepeatDynCont0Input<'a, 'b, 'x>> for RepeatDynCont
     fn apply(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let l = *deps;
-                RepeatN(responder_id_list(), l.ex_into())
+                let l = deps;
+                let l = *l;
+                RepeatN(responder_id_list(), (usize::ex_from(l)) as usize)
             }
             POrSType::S(deps) => {
                 let l = deps;
                 let l = *l;
-                RepeatN(responder_id_list(), l.ex_into())
+                RepeatN(responder_id_list(), (usize::ex_from(l)) as usize)
             }
         }
     }

@@ -198,6 +198,7 @@ pub open spec fn spec_msg5_content(i: VarInt) -> SpecMsg5ContentCombinator {
 }
 
 pub fn msg5_content<'a>(i: VarInt) -> (o: Msg5ContentCombinator)
+
     ensures o@ == spec_msg5_content(i@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -214,6 +215,7 @@ pub fn msg5_content<'a>(i: VarInt) -> (o: Msg5ContentCombinator)
 pub fn parse_msg5_content<'a>(input: &'a [u8], i: VarInt) -> (res: PResult<<Msg5ContentCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_msg5_content(i@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg5_content(i@).spec_parse(input@) matches Some((n, v))
@@ -229,6 +231,7 @@ pub fn serialize_msg5_content<'a>(v: <Msg5ContentCombinator as Combinator<'a, &'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg5_content(i@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -245,6 +248,7 @@ pub fn msg5_content_len<'a>(v: <Msg5ContentCombinator as Combinator<'a, &'a [u8]
     requires
         spec_msg5_content(i@).wf(v@),
         spec_msg5_content(i@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_msg5_content(i@).spec_serialize(v@).len(),
 {
@@ -652,11 +656,12 @@ pub open spec fn spec_msg1_payload(b: Seq<u8>) -> SpecMsg1PayloadCombinator {
 }
 
 pub fn msg1_payload<'a>(b: &'a [u8]) -> (o: Msg1PayloadCombinator)
+
     ensures o@ == spec_msg1_payload(b@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = Msg1PayloadCombinator(Mapped { inner: Msg1PayloadCombinator1(Choice::new(Cond { cond: compare_slice(b, [207, 33, 173, 116, 229, 154, 97, 17, 190, 29, 140, 2, 30, 101, 184, 145, 194, 162, 17, 22, 122, 187, 140, 94, 7, 158, 9, 226, 200, 168, 51, 156].as_slice()), inner: hello_retry_request() }, Cond { cond: !(compare_slice(b, [207, 33, 173, 116, 229, 154, 97, 17, 190, 29, 140, 2, 30, 101, 184, 145, 194, 162, 17, 22, 122, 187, 140, 94, 7, 158, 9, 226, 200, 168, 51, 156].as_slice())), inner: server_hello() })), mapper: Msg1PayloadMapper });
+    let combinator = Msg1PayloadCombinator(Mapped { inner: Msg1PayloadCombinator1(Choice::new(Cond { cond: compare_slice(b, [207u8, 33u8, 173u8, 116u8, 229u8, 154u8, 97u8, 17u8, 190u8, 29u8, 140u8, 2u8, 30u8, 101u8, 184u8, 145u8, 194u8, 162u8, 17u8, 22u8, 122u8, 187u8, 140u8, 94u8, 7u8, 158u8, 9u8, 226u8, 200u8, 168u8, 51u8, 156u8].as_slice()), inner: hello_retry_request() }, Cond { cond: !(compare_slice(b, [207u8, 33u8, 173u8, 116u8, 229u8, 154u8, 97u8, 17u8, 190u8, 29u8, 140u8, 2u8, 30u8, 101u8, 184u8, 145u8, 194u8, 162u8, 17u8, 22u8, 122u8, 187u8, 140u8, 94u8, 7u8, 158u8, 9u8, 226u8, 200u8, 168u8, 51u8, 156u8].as_slice())), inner: server_hello() })), mapper: Msg1PayloadMapper });
     // assert({
     //     &&& combinator@ == spec_msg1_payload(b@)
     //     &&& combinator@.requires()
@@ -668,6 +673,7 @@ pub fn msg1_payload<'a>(b: &'a [u8]) -> (o: Msg1PayloadCombinator)
 pub fn parse_msg1_payload<'a>(input: &'a [u8], b: &'a [u8]) -> (res: PResult<<Msg1PayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_msg1_payload(b@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg1_payload(b@).spec_parse(input@) matches Some((n, v))
@@ -683,6 +689,7 @@ pub fn serialize_msg1_payload<'a>(v: <Msg1PayloadCombinator as Combinator<'a, &'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg1_payload(b@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -699,6 +706,7 @@ pub fn msg1_payload_len<'a>(v: <Msg1PayloadCombinator as Combinator<'a, &'a [u8]
     requires
         spec_msg1_payload(b@).wf(v@),
         spec_msg1_payload(b@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_msg1_payload(b@).spec_serialize(v@).len(),
 {
@@ -870,6 +878,7 @@ pub open spec fn spec_msg4_content(i: u24) -> SpecMsg4ContentCombinator {
 }
 
 pub fn msg4_content<'a>(i: u24) -> (o: Msg4ContentCombinator)
+
     ensures o@ == spec_msg4_content(i@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -886,6 +895,7 @@ pub fn msg4_content<'a>(i: u24) -> (o: Msg4ContentCombinator)
 pub fn parse_msg4_content<'a>(input: &'a [u8], i: u24) -> (res: PResult<<Msg4ContentCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_msg4_content(i@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg4_content(i@).spec_parse(input@) matches Some((n, v))
@@ -901,6 +911,7 @@ pub fn serialize_msg4_content<'a>(v: <Msg4ContentCombinator as Combinator<'a, &'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg4_content(i@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -917,6 +928,7 @@ pub fn msg4_content_len<'a>(v: <Msg4ContentCombinator as Combinator<'a, &'a [u8]
     requires
         spec_msg4_content(i@).wf(v@),
         spec_msg4_content(i@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_msg4_content(i@).spec_serialize(v@).len(),
 {
@@ -1120,6 +1132,7 @@ pub open spec fn spec_msg3_content(i: u8) -> SpecMsg3ContentCombinator {
 }
 
 pub fn msg3_content<'a>(i: u8) -> (o: Msg3ContentCombinator)
+
     ensures o@ == spec_msg3_content(i@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -1136,6 +1149,7 @@ pub fn msg3_content<'a>(i: u8) -> (o: Msg3ContentCombinator)
 pub fn parse_msg3_content<'a>(input: &'a [u8], i: u8) -> (res: PResult<<Msg3ContentCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_msg3_content(i@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg3_content(i@).spec_parse(input@) matches Some((n, v))
@@ -1151,6 +1165,7 @@ pub fn serialize_msg3_content<'a>(v: <Msg3ContentCombinator as Combinator<'a, &'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg3_content(i@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -1167,6 +1182,7 @@ pub fn msg3_content_len<'a>(v: <Msg3ContentCombinator as Combinator<'a, &'a [u8]
     requires
         spec_msg3_content(i@).wf(v@),
         spec_msg3_content(i@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_msg3_content(i@).spec_serialize(v@).len(),
 {
@@ -1395,7 +1411,9 @@ type Msg3Cont0Input<'a, 'b, 'x> = POrSType<Msg3Cont0Type<'a, 'b>, Msg3Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg3Cont0Input<'a, 'b, 'x>> for Msg3Cont0 {
     type Output = Msg3ContentCombinator;
 
-    open spec fn requires(&self, deps: Msg3Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg3Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (U8).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg3Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg3_cont0(deps@)
@@ -1404,7 +1422,8 @@ impl<'a, 'b, 'x> Continuation<Msg3Cont0Input<'a, 'b, 'x>> for Msg3Cont0 {
     fn apply(&self, deps: Msg3Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let i = *deps;
+                let i = deps;
+                let i = *i;
                 msg3_content(i)
             }
             POrSType::S(deps) => {
@@ -1637,7 +1656,9 @@ type Msg5Cont0Input<'a, 'b, 'x> = POrSType<Msg5Cont0Type<'a, 'b>, Msg5Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg5Cont0Input<'a, 'b, 'x>> for Msg5Cont0 {
     type Output = Msg5ContentCombinator;
 
-    open spec fn requires(&self, deps: Msg5Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg5Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (BtcVarint).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg5Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg5_cont0(deps@)
@@ -1646,7 +1667,8 @@ impl<'a, 'b, 'x> Continuation<Msg5Cont0Input<'a, 'b, 'x>> for Msg5Cont0 {
     fn apply(&self, deps: Msg5Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let i = *deps;
+                let i = deps;
+                let i = *i;
                 msg5_content(i)
             }
             POrSType::S(deps) => {
@@ -1822,11 +1844,12 @@ pub open spec fn spec_msg2_content(b: Seq<u8>) -> SpecMsg2ContentCombinator {
 }
 
 pub fn msg2_content<'a>(b: &'a [u8]) -> (o: Msg2ContentCombinator)
+
     ensures o@ == spec_msg2_content(b@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = Msg2ContentCombinator(Mapped { inner: Msg2ContentCombinator1(Choice::new(Cond { cond: compare_slice(b, [22, 3, 1].as_slice()), inner: U16Le }, Cond { cond: !(compare_slice(b, [22, 3, 1].as_slice())), inner: U32Le })), mapper: Msg2ContentMapper });
+    let combinator = Msg2ContentCombinator(Mapped { inner: Msg2ContentCombinator1(Choice::new(Cond { cond: compare_slice(b, [22u8, 3u8, 1u8].as_slice()), inner: U16Le }, Cond { cond: !(compare_slice(b, [22u8, 3u8, 1u8].as_slice())), inner: U32Le })), mapper: Msg2ContentMapper });
     // assert({
     //     &&& combinator@ == spec_msg2_content(b@)
     //     &&& combinator@.requires()
@@ -1838,6 +1861,7 @@ pub fn msg2_content<'a>(b: &'a [u8]) -> (o: Msg2ContentCombinator)
 pub fn parse_msg2_content<'a>(input: &'a [u8], b: &'a [u8]) -> (res: PResult<<Msg2ContentCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_msg2_content(b@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg2_content(b@).spec_parse(input@) matches Some((n, v))
@@ -1853,6 +1877,7 @@ pub fn serialize_msg2_content<'a>(v: <Msg2ContentCombinator as Combinator<'a, &'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg2_content(b@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -1869,6 +1894,7 @@ pub fn msg2_content_len<'a>(v: <Msg2ContentCombinator as Combinator<'a, &'a [u8]
     requires
         spec_msg2_content(b@).wf(v@),
         spec_msg2_content(b@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_msg2_content(b@).spec_serialize(v@).len(),
 {
@@ -2097,7 +2123,9 @@ type Msg1Cont0Input<'a, 'b, 'x> = POrSType<Msg1Cont0Type<'a, 'b>, Msg1Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg1Cont0Input<'a, 'b, 'x>> for Msg1Cont0 {
     type Output = Msg1PayloadCombinator;
 
-    open spec fn requires(&self, deps: Msg1Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg1Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (bytes::Fixed::<32>).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg1Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg1_cont0(deps@)
@@ -2106,7 +2134,8 @@ impl<'a, 'b, 'x> Continuation<Msg1Cont0Input<'a, 'b, 'x>> for Msg1Cont0 {
     fn apply(&self, deps: Msg1Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let b = *deps;
+                let b = deps;
+                let b = *b;
                 msg1_payload(b)
             }
             POrSType::S(deps) => {
@@ -2339,7 +2368,9 @@ type Msg2Cont0Input<'a, 'b, 'x> = POrSType<Msg2Cont0Type<'a, 'b>, Msg2Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg2Cont0Input<'a, 'b, 'x>> for Msg2Cont0 {
     type Output = Msg2ContentCombinator;
 
-    open spec fn requires(&self, deps: Msg2Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg2Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (bytes::Fixed::<3>).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg2Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg2_cont0(deps@)
@@ -2348,7 +2379,8 @@ impl<'a, 'b, 'x> Continuation<Msg2Cont0Input<'a, 'b, 'x>> for Msg2Cont0 {
     fn apply(&self, deps: Msg2Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let b = *deps;
+                let b = deps;
+                let b = *b;
                 msg2_content(b)
             }
             POrSType::S(deps) => {
@@ -2581,7 +2613,9 @@ type Msg4Cont0Input<'a, 'b, 'x> = POrSType<Msg4Cont0Type<'a, 'b>, Msg4Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg4Cont0Input<'a, 'b, 'x>> for Msg4Cont0 {
     type Output = Msg4ContentCombinator;
 
-    open spec fn requires(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (U24Le).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg4Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg4_cont0(deps@)
@@ -2590,7 +2624,8 @@ impl<'a, 'b, 'x> Continuation<Msg4Cont0Input<'a, 'b, 'x>> for Msg4Cont0 {
     fn apply(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let i = *deps;
+                let i = deps;
+                let i = *i;
                 msg4_content(i)
             }
             POrSType::S(deps) => {

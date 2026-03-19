@@ -92,15 +92,16 @@ pub type Content0CombinatorAlias = bytes::Variable;
 
 
 pub open spec fn spec_content_0(num: u24) -> SpecContent0Combinator {
-    SpecContent0Combinator(bytes::Variable(num.spec_into()))
+    SpecContent0Combinator(bytes::Variable((usize::spec_from(num)) as usize))
 }
 
 pub fn content_0<'a>(num: u24) -> (o: Content0Combinator)
+
     ensures o@ == spec_content_0(num@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = Content0Combinator(bytes::Variable(num.ex_into()));
+    let combinator = Content0Combinator(bytes::Variable((usize::ex_from(num)) as usize));
     // assert({
     //     &&& combinator@ == spec_content_0(num@)
     //     &&& combinator@.requires()
@@ -112,6 +113,7 @@ pub fn content_0<'a>(num: u24) -> (o: Content0Combinator)
 pub fn parse_content_0<'a>(input: &'a [u8], num: u24) -> (res: PResult<<Content0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+
     ensures
         res matches Ok((n, v)) ==> spec_content_0(num@).spec_parse(input@) == Some((n as int, v@)),
         spec_content_0(num@).spec_parse(input@) matches Some((n, v))
@@ -127,6 +129,7 @@ pub fn serialize_content_0<'a>(v: <Content0Combinator as Combinator<'a, &'a [u8]
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_content_0(num@).wf(v@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -143,6 +146,7 @@ pub fn content_0_len<'a>(v: <Content0Combinator as Combinator<'a, &'a [u8], Vec<
     requires
         spec_content_0(num@).wf(v@),
         spec_content_0(num@).spec_serialize(v@).len() <= usize::MAX,
+
     ensures
         serialize_len == spec_content_0(num@).spec_serialize(v@).len(),
 {
@@ -465,62 +469,71 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MsgCF4Combinator {
 pub type MsgCF4CombinatorAlias = AndThen<bytes::Variable, Mapped<MsgCF4Combinator3, MsgCF4Mapper>>;
 
 
-pub open spec fn spec_msg_c_f4(f3: u24, f2: u8) -> SpecMsgCF4Combinator {
-    SpecMsgCF4Combinator(AndThen(bytes::Variable(f3.spec_into()), Mapped { inner: Choice(Cond { cond: f2 == ContentType::SPEC_C0, inner: spec_content_0(f3) }, Choice(Cond { cond: f2 == ContentType::SPEC_C1, inner: U16Be }, Choice(Cond { cond: f2 == ContentType::SPEC_C2, inner: U32Be }, Cond { cond: !(f2 == ContentType::SPEC_C0 || f2 == ContentType::SPEC_C1 || f2 == ContentType::SPEC_C2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
+pub open spec fn spec_msg_c_f4(f2: u8, f3: u24) -> SpecMsgCF4Combinator {
+    SpecMsgCF4Combinator(AndThen(bytes::Variable((usize::spec_from(f3)) as usize), Mapped { inner: Choice(Cond { cond: f2 == ContentType::SPEC_C0, inner: spec_content_0(f3) }, Choice(Cond { cond: f2 == ContentType::SPEC_C1, inner: U16Be }, Choice(Cond { cond: f2 == ContentType::SPEC_C2, inner: U32Be }, Cond { cond: !(f2 == ContentType::SPEC_C0 || f2 == ContentType::SPEC_C1 || f2 == ContentType::SPEC_C2), inner: bytes::Tail }))), mapper: MsgCF4Mapper }))
 }
 
-pub fn msg_c_f4<'a>(f3: u24, f2: u8) -> (o: MsgCF4Combinator)
-    ensures o@ == spec_msg_c_f4(f3@, f2@),
+pub fn msg_c_f4<'a>(f2: u8, f3: u24) -> (o: MsgCF4Combinator)
+    requires
+        spec_content_type().wf(f2@),
+
+    ensures o@ == spec_msg_c_f4(f2@, f3@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = MsgCF4Combinator(AndThen(bytes::Variable(f3.ex_into()), Mapped { inner: MsgCF4Combinator3(Choice::new(Cond { cond: f2 == ContentType::C0, inner: content_0(f3) }, MsgCF4Combinator2(Choice::new(Cond { cond: f2 == ContentType::C1, inner: U16Be }, MsgCF4Combinator1(Choice::new(Cond { cond: f2 == ContentType::C2, inner: U32Be }, Cond { cond: !(f2 == ContentType::C0 || f2 == ContentType::C1 || f2 == ContentType::C2), inner: bytes::Tail })))))), mapper: MsgCF4Mapper }));
+    let combinator = MsgCF4Combinator(AndThen(bytes::Variable((usize::ex_from(f3)) as usize), Mapped { inner: MsgCF4Combinator3(Choice::new(Cond { cond: f2 == ContentType::C0, inner: content_0(f3) }, MsgCF4Combinator2(Choice::new(Cond { cond: f2 == ContentType::C1, inner: U16Be }, MsgCF4Combinator1(Choice::new(Cond { cond: f2 == ContentType::C2, inner: U32Be }, Cond { cond: !(f2 == ContentType::C0 || f2 == ContentType::C1 || f2 == ContentType::C2), inner: bytes::Tail })))))), mapper: MsgCF4Mapper }));
     // assert({
-    //     &&& combinator@ == spec_msg_c_f4(f3@, f2@)
+    //     &&& combinator@ == spec_msg_c_f4(f2@, f3@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_msg_c_f4<'a>(input: &'a [u8], f3: u24, f2: u8) -> (res: PResult<<MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_msg_c_f4<'a>(input: &'a [u8], f2: u8, f3: u24) -> (res: PResult<<MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_content_type().wf(f2@),
+
     ensures
-        res matches Ok((n, v)) ==> spec_msg_c_f4(f3@, f2@).spec_parse(input@) == Some((n as int, v@)),
-        spec_msg_c_f4(f3@, f2@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_msg_c_f4(f2@, f3@).spec_parse(input@) == Some((n as int, v@)),
+        spec_msg_c_f4(f2@, f3@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_msg_c_f4(f3@, f2@).spec_parse(input@) is None,
-        spec_msg_c_f4(f3@, f2@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_msg_c_f4(f2@, f3@).spec_parse(input@) is None,
+        spec_msg_c_f4(f2@, f3@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = msg_c_f4( f3, f2 );
+    let combinator = msg_c_f4( f2, f3 );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_msg_c_f4<'a>(v: <MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, f3: u24, f2: u8) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_msg_c_f4<'a>(v: <MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, f2: u8, f3: u24) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_msg_c_f4(f3@, f2@).wf(v@),
+        spec_msg_c_f4(f2@, f3@).wf(v@),
+        spec_content_type().wf(f2@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_msg_c_f4(f3@, f2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_msg_c_f4(f3@, f2@).spec_serialize(v@))
+            &&& n == spec_msg_c_f4(f2@, f3@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_msg_c_f4(f2@, f3@).spec_serialize(v@))
         },
 {
-    let combinator = msg_c_f4( f3, f2 );
+    let combinator = msg_c_f4( f2, f3 );
     combinator.serialize(v, data, pos)
 }
 
-pub fn msg_c_f4_len<'a>(v: <MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, f3: u24, f2: u8) -> (serialize_len: usize)
+pub fn msg_c_f4_len<'a>(v: <MsgCF4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, f2: u8, f3: u24) -> (serialize_len: usize)
     requires
-        spec_msg_c_f4(f3@, f2@).wf(v@),
-        spec_msg_c_f4(f3@, f2@).spec_serialize(v@).len() <= usize::MAX,
+        spec_msg_c_f4(f2@, f3@).wf(v@),
+        spec_msg_c_f4(f2@, f3@).spec_serialize(v@).len() <= usize::MAX,
+        spec_content_type().wf(f2@),
+
     ensures
-        serialize_len == spec_msg_c_f4(f3@, f2@).spec_serialize(v@).len(),
+        serialize_len == spec_msg_c_f4(f2@, f3@).spec_serialize(v@).len(),
 {
-    let combinator = msg_c_f4( f3, f2 );
+    let combinator = msg_c_f4( f2, f3 );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -1314,7 +1327,7 @@ impl View for MsgCCont1 {
 
 pub open spec fn spec_msg_c_cont0(deps: (u8, u24)) -> SpecMsgCF4Combinator {
     let (f2, f3) = deps;
-    spec_msg_c_f4(f3, f2)
+    spec_msg_c_f4(f2, f3)
 }
 
 impl View for MsgCCont0 {
@@ -1394,7 +1407,9 @@ type MsgCCont1Input<'a, 'b, 'x> = POrSType<MsgCCont1Type<'a, 'b>, MsgCCont1SType
 impl<'a, 'b, 'x> Continuation<MsgCCont1Input<'a, 'b, 'x>> for MsgCCont1 {
     type Output = U24Be;
 
-    open spec fn requires(&self, deps: MsgCCont1Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MsgCCont1Input<'a, 'b, 'x>) -> bool {
+        &&& (spec_content_type()).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MsgCCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg_c_cont1(deps@)
@@ -1403,7 +1418,8 @@ impl<'a, 'b, 'x> Continuation<MsgCCont1Input<'a, 'b, 'x>> for MsgCCont1 {
     fn apply(&self, deps: MsgCCont1Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let f2 = *deps;
+                let f2 = deps;
+                let f2 = *f2;
                 U24Be
             }
             POrSType::S(deps) => {
@@ -1421,7 +1437,9 @@ type MsgCCont0Input<'a, 'b, 'x> = POrSType<MsgCCont0Type<'a, 'b>, MsgCCont0SType
 impl<'a, 'b, 'x> Continuation<MsgCCont0Input<'a, 'b, 'x>> for MsgCCont0 {
     type Output = MsgCF4Combinator;
 
-    open spec fn requires(&self, deps: MsgCCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MsgCCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (Pair::spec_new(spec_content_type(), |deps| spec_msg_c_cont1(deps))).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MsgCCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
         o@ == spec_msg_c_cont0(deps@)
@@ -1430,13 +1448,16 @@ impl<'a, 'b, 'x> Continuation<MsgCCont0Input<'a, 'b, 'x>> for MsgCCont0 {
     fn apply(&self, deps: MsgCCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let (f2, f3) = *deps;
-                msg_c_f4(f3, f2)
+                let (f2, f3) = deps;
+                let f2 = *f2;
+                let f3 = *f3;
+                msg_c_f4(f2, f3)
             }
             POrSType::S(deps) => {
                 let (f2, f3) = deps;
-                let (f2, f3) = (*f2, *f3);
-                msg_c_f4(f3, f2)
+                let f2 = *f2;
+                let f3 = *f3;
+                msg_c_f4(f2, f3)
             }
         }
     }
