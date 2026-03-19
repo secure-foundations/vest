@@ -280,7 +280,8 @@ impl<'a, 'b, 'x> Continuation<HeaderCont0Input<'a, 'b, 'x>> for HeaderCont0 {
         }
 
     open spec fn ensures(&self, deps: HeaderCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_header_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_header_cont0(deps@)
     }
 
     fn apply(&self, deps: HeaderCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -3334,7 +3335,8 @@ impl<'a, 'b, 'x> Continuation<ChoiceArraysFoldedCont0Input<'a, 'b, 'x>> for Choi
         }
 
     open spec fn ensures(&self, deps: ChoiceArraysFoldedCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_choice_arrays_folded_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_choice_arrays_folded_cont0(deps@)
     }
 
     fn apply(&self, deps: ChoiceArraysFoldedCont0Input<'a, 'b, 'x>) -> Self::Output {

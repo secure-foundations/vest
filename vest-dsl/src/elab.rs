@@ -127,10 +127,7 @@ fn expand_macros_in_combinator_inner<'ast>(
                     | StructField::Dependent { combinator, .. } => {
                         expand_macros_in_combinator(combinator, macro_defns);
                     }
-                    StructField::Const { .. } => {
-                        // TODO: skip const fields for now
-                    }
-                    _ => {}
+                    StructField::Const { .. } => {}
                 }
             }
         }
@@ -161,11 +158,9 @@ fn expand_macros_in_combinator_inner<'ast>(
                 }
             }
         },
-        CombinatorInner::Vec(combinator) => match combinator {
-            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                expand_macros_in_combinator(combinator, macro_defns);
-            }
-        },
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            expand_macros_in_combinator(combinator, macro_defns);
+        }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
             expand_macros_in_combinator(combinator, macro_defns);
         }
@@ -209,10 +204,7 @@ fn substitute_in_combinator_inner<'ast>(
                     | StructField::Dependent { combinator, .. } => {
                         substitute_in_combinator(combinator, param, arg.clone());
                     }
-                    StructField::Const { .. } => {
-                        // TODO: skip const fields for now
-                    }
-                    _ => {}
+                    StructField::Const { .. } => {}
                 }
             }
         }
@@ -247,11 +239,9 @@ fn substitute_in_combinator_inner<'ast>(
                 }
             }
         },
-        CombinatorInner::Vec(combinator) => match combinator {
-            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                substitute_in_combinator(combinator, param, arg.clone());
-            }
-        },
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            substitute_in_combinator(combinator, param, arg.clone());
+        }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
             substitute_in_combinator(combinator, param, arg.clone());
         }
@@ -276,14 +266,12 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
                 ..
             } => {
                 param_defns.iter().for_each(|param_defn| {
-                    if let ParamDefn::Dependent {
+                    let ParamDefn::Dependent {
                         name, combinator, ..
-                    } = param_defn
-                    {
-                        elab_ctx
-                            .dependencies
-                            .push((name.name.to_owned(), combinator.clone()));
-                    }
+                    } = param_defn;
+                    elab_ctx
+                        .dependencies
+                        .push((name.name.to_owned(), combinator.clone()));
                 });
                 expand_combinator(name.name.as_str(), combinator, &mut expanded, &mut elab_ctx);
             }
@@ -342,7 +330,6 @@ fn expand_combinator<'ast>(
                                             }),
                                         span: *span,
                                     },
-                                    _ => unreachable!(),
                                 })
                                 .collect();
                             let generated_name = name.to_owned() + "_" + label.name.as_str();
@@ -381,7 +368,6 @@ fn expand_combinator<'ast>(
                         // NOTE: don't expand dependent fields for now
                     }
                     StructField::Const { .. } => {}
-                    _ => {}
                 }
             }
         }
@@ -453,18 +439,11 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
         }
         CombinatorInner::Invocation(CombinatorInvocation { args, .. }) => {
             for arg in args {
-                if let Param::Dependent(name) = arg {
-                    params.insert(Param::Dependent(name.to_owned()));
-                }
+                let Param::Dependent(name) = arg;
+                params.insert(Param::Dependent(name.to_owned()));
             }
         }
-        CombinatorInner::Vec(VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator)) => {
-            params.extend(collect_params(combinator));
-        }
-        CombinatorInner::SepBy(SepByCombinator {
-            combinator: VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator),
-            ..
-        }) => {
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
             params.extend(collect_params(combinator));
         }
         CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
@@ -477,7 +456,7 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
                     | StructField::Dependent { combinator, .. } => {
                         params.extend(collect_params(combinator));
                     }
-                    _ => {}
+                    StructField::Const { .. } => {}
                 }
             }
         }
@@ -486,8 +465,7 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
         }
         CombinatorInner::Enum(..)
         | CombinatorInner::ConstraintInt(..)
-        | CombinatorInner::ConstraintEnum(..)
-        | CombinatorInner::Apply(..) => {}
+        | CombinatorInner::ConstraintEnum(..) => {}
 
         CombinatorInner::MacroInvocation { .. } => {
             unreachable!("macro invocation should be resolved by now")
@@ -541,7 +519,6 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                         collect_invocations(combinator, invocations);
                     }
                     StructField::Const { .. } => {}
-                    _ => {}
                 }
             }
         }
@@ -565,7 +542,7 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                 }
             }
         },
-        CombinatorInner::Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
             collect_invocations(combinator, invocations);
         }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
@@ -579,15 +556,12 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
         CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
             invocations.push(combinator.func.name.to_owned());
             for arg in &combinator.args {
-                if let Param::Dependent(name) = arg {
-                    let _ = name; // no invocations inside params
-                }
+                let Param::Dependent(name) = arg;
+                let _ = name; // no invocations inside params
             }
         }
         CombinatorInner::Bytes(..) => {}
         CombinatorInner::Tail(..) => {}
-        CombinatorInner::Apply(..) => {}
-        CombinatorInner::SepBy(..) => {}
         CombinatorInner::MacroInvocation { .. } => {}
     }
 }

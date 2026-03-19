@@ -62,13 +62,9 @@ impl<'ast> CombinatorSig<'ast> {
         let mut start = self.name.span.start();
         let mut end = body_span.end();
         for param in self.param_defns {
-            match param {
-                ParamDefn::Dependent { span, .. } => {
-                    start = start.min(span.start());
-                    end = end.max(span.end());
-                }
-                _ => {}
-            }
+            let ParamDefn::Dependent { span, .. } = param;
+            start = start.min(span.start());
+            end = end.max(span.end());
         }
         Span::new(input, start, end).expect("combinator signature span should be valid")
     }
@@ -230,7 +226,6 @@ impl<'ast> StaticSizeEnv<'ast> {
                         StructField::Const { combinator, .. } => {
                             self.const_combinator_size(combinator)
                         }
-                        StructField::Stream(..) => None,
                     }?;
                     acc.checked_add(field_size)
                 })
@@ -252,7 +247,7 @@ impl<'ast> StaticSizeEnv<'ast> {
             }
             Enum(enum_comb) => enum_static_size(enum_comb),
             Choice(ChoiceCombinator { choices, .. }) => self.choice_size(choices),
-            SepBy(..) | Vec(..) | Tail(..) | Option(..) => None,
+            Vec(..) | Tail(..) | Option(..) => None,
             Array(ArrayCombinator {
                 combinator, len, ..
             }) => {
@@ -261,7 +256,6 @@ impl<'ast> StaticSizeEnv<'ast> {
                 elem_size.checked_mul(len)
             }
             Bytes(BytesCombinator { len, .. }) => self.length_expr_size(len),
-            Apply(ApplyCombinator { combinator, .. }) => self.combinator_size(combinator),
             Invocation(CombinatorInvocation { func, .. }) => self.format_size(&func.name),
             MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
         }
@@ -1148,13 +1142,7 @@ fn check_combinator_inner<'ast>(
             global_ctx,
             source,
         ),
-        SepBy(SepByCombinator { combinator, sep }) => {
-            check_sep_by_combinator(combinator, sep, param_defns, local_ctx, global_ctx, source)
-        }
         Vec(VecCombinator::Vec(combinator)) => {
-            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
-        }
-        Vec(VecCombinator::Vec1(combinator)) => {
             check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
         }
         Array(ArrayCombinator {
@@ -1174,14 +1162,6 @@ fn check_combinator_inner<'ast>(
             check_bytes_combinator(len, span, param_defns, local_ctx, global_ctx, source)
         }
         Tail(TailCombinator { .. }) => Ok(()),
-        Apply(ApplyCombinator { stream, combinator }) => check_apply_combinator(
-            stream,
-            combinator,
-            param_defns,
-            local_ctx,
-            global_ctx,
-            source,
-        ),
         Option(OptionCombinator(combinator)) => {
             check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
         }
@@ -1264,7 +1244,6 @@ fn check_combinator_invocation<'ast>(
 
             for (arg, param_defn) in zip(args, combinator_sig.param_defns) {
                 match (arg, param_defn) {
-                    (Param::Stream(_), ParamDefn::Stream { .. }) => {}
                     (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
                         fn resolve_up_to_enums<'ast>(
                             comb: CombinatorInner<'ast>,
@@ -1324,11 +1303,9 @@ fn check_combinator_invocation<'ast>(
                             }
                         } else {
                             // 2. try to find `depend_id` in param_defns
-                            let param_defn =
-                                param_defns.iter().find(|param_defn| match param_defn {
-                                    ParamDefn::Dependent { name, .. } => name == depend_id,
-                                    _ => false,
-                                });
+                            let param_defn = param_defns
+                                .iter()
+                                .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == depend_id));
                             match param_defn {
                                 Some(ParamDefn::Dependent {
                                     combinator: combinator_,
@@ -1389,23 +1366,11 @@ fn check_combinator_invocation<'ast>(
                             }
                         }
                     }
-                    _ => return Err(VestError::TypeError),
                 }
             }
         }
     }
     Ok(())
-}
-
-fn check_apply_combinator<'ast>(
-    _stream: &Identifier<'ast>,
-    combinator: &Combinator<'ast>,
-    param_defns: &'ast [ParamDefn<'ast>],
-    local_ctx: &mut LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
 }
 
 fn check_length_expr<'ast>(
@@ -1502,10 +1467,9 @@ fn check_dependent_id_is_valid_length<'ast>(
         }
 
         // 2. try to find in param_defns
-        let param_defn = param_defns.iter().find(|param_defn| match param_defn {
-            ParamDefn::Dependent { name, .. } => name == &root_id,
-            _ => false,
-        });
+        let param_defn = param_defns
+            .iter()
+            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
 
         match param_defn {
             Some(ParamDefn::Dependent { combinator, .. }) => {
@@ -1534,10 +1498,9 @@ fn check_dependent_id_is_valid_length<'ast>(
     let root_combinator = if let Some(combinator) = local_ctx.dependent_fields.get(&root_id) {
         global_ctx.resolve(combinator)
     } else {
-        let param_defn = param_defns.iter().find(|param_defn| match param_defn {
-            ParamDefn::Dependent { name, .. } => name == &root_id,
-            _ => false,
-        });
+        let param_defn = param_defns
+            .iter()
+            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
         match param_defn {
             Some(ParamDefn::Dependent { combinator, .. }) => global_ctx.resolve_alias(combinator),
             _ => {
@@ -1768,22 +1731,6 @@ fn check_array_combinator<'ast>(
 ) -> Result<(), VestError> {
     check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
     check_bytes_combinator(len, span, param_defns, local_ctx, global_ctx, source)
-}
-
-fn check_sep_by_combinator<'ast>(
-    combinator: &VecCombinator<'ast>,
-    sep: &ConstCombinator<'ast>,
-    param_defns: &'ast [ParamDefn<'ast>],
-    local_ctx: &mut LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    match combinator {
-        VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
-        }
-    }
-    check_const_combinator(sep, local_ctx, global_ctx, source)
 }
 
 impl<'ast> Choices<'ast> {
@@ -2563,7 +2510,6 @@ fn check_struct_combinator<'ast>(
     }
     for field in struct_fields {
         match field {
-            StructField::Stream(_) => {}
             StructField::Dependent {
                 label,
                 combinator,

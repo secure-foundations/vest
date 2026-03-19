@@ -1338,7 +1338,8 @@ impl<'a, 'b, 'x> Continuation<TstCont0Input<'a, 'b, 'x>> for TstCont0 {
         }
 
     open spec fn ensures(&self, deps: TstCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_tst_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_tst_cont0(deps@)
     }
 
     fn apply(&self, deps: TstCont0Input<'a, 'b, 'x>) -> Self::Output {

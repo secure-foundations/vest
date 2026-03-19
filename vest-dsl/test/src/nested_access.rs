@@ -706,7 +706,8 @@ impl<'a, 'b, 'x> Continuation<PayloadWithHeaderCont0Input<'a, 'b, 'x>> for Paylo
         }
 
     open spec fn ensures(&self, deps: PayloadWithHeaderCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_payload_with_header_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_payload_with_header_cont0(deps@)
     }
 
     fn apply(&self, deps: PayloadWithHeaderCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -949,7 +950,8 @@ impl<'a, 'b, 'x> Continuation<DeepNestedCont0Input<'a, 'b, 'x>> for DeepNestedCo
         }
 
     open spec fn ensures(&self, deps: DeepNestedCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_deep_nested_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_deep_nested_cont0(deps@)
     }
 
     fn apply(&self, deps: DeepNestedCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -1204,7 +1206,8 @@ impl<'a, 'b, 'x> Continuation<CombinedExampleCont0Input<'a, 'b, 'x>> for Combine
         }
 
     open spec fn ensures(&self, deps: CombinedExampleCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_combined_example_cont0(self.total_len@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_combined_example_cont0(self.total_len@, deps@)
     }
 
     fn apply(&self, deps: CombinedExampleCont0Input<'a, 'b, 'x>) -> Self::Output {

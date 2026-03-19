@@ -1416,7 +1416,8 @@ impl<'a, 'b, 'x> Continuation<Msg3Cont0Input<'a, 'b, 'x>> for Msg3Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg3Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg3_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg3_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg3Cont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -1661,7 +1662,8 @@ impl<'a, 'b, 'x> Continuation<Msg5Cont0Input<'a, 'b, 'x>> for Msg5Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg5Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg5_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg5_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg5Cont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -2128,7 +2130,8 @@ impl<'a, 'b, 'x> Continuation<Msg1Cont0Input<'a, 'b, 'x>> for Msg1Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg1Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg1_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg1_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg1Cont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -2373,7 +2376,8 @@ impl<'a, 'b, 'x> Continuation<Msg2Cont0Input<'a, 'b, 'x>> for Msg2Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg2Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg2_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg2_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg2Cont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -2618,7 +2622,8 @@ impl<'a, 'b, 'x> Continuation<Msg4Cont0Input<'a, 'b, 'x>> for Msg4Cont0 {
         }
 
     open spec fn ensures(&self, deps: Msg4Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg4_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg4_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> Self::Output {

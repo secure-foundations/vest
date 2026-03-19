@@ -805,9 +805,6 @@ pub mod lowering {
                     const_combinator: const_combinator.into(),
                 },
                 ast::Definition::Endianess(e) => ir::Definition::Endianess(e.into()),
-                ast::Definition::SecCombinator { .. } => {
-                    unimplemented!("Secret format is not supported by VestDSL yet")
-                }
                 ast::Definition::MacroDefn { .. } => unreachable!(
                     "Macro definitions should have been expanded before lowering to IR"
                 ),
@@ -828,9 +825,6 @@ pub mod lowering {
     impl<'i> From<ast::ParamDefn<'i>> for ir::ParamDefn {
         fn from(p: ast::ParamDefn<'i>) -> Self {
             match p {
-                ast::ParamDefn::Stream { .. } => {
-                    unimplemented!("Stream transformations are not supported by VestDSL yet")
-                }
                 ast::ParamDefn::Dependent {
                     name, combinator, ..
                 } => ir::ParamDefn::Dependent {
@@ -844,7 +838,6 @@ pub mod lowering {
     impl<'i> From<ast::Param<'i>> for ir::Param {
         fn from(p: ast::Param<'i>) -> Self {
             match p {
-                ast::Param::Stream(i) => ir::Param::Stream(id(i)),
                 ast::Param::Dependent(i) => ir::Param::Dependent(id(i)),
             }
         }
@@ -871,12 +864,10 @@ pub mod lowering {
                 A::Wrap(x) => B::Wrap(x.into()),
                 A::Enum(x) => B::Enum(x.into()),
                 A::Choice(x) => B::Choice(x.into()),
-                A::SepBy(x) => B::SepBy(x.into()),
                 A::Vec(x) => B::Vec(x.into()),
                 A::Array(x) => B::Array(x.into()),
                 A::Bytes(x) => B::Bytes(x.into()),
                 A::Tail(_x) => B::Tail(ir::TailCombinator),
-                A::Apply(x) => B::Apply(x.into()),
                 A::Option(x) => B::Option(ir::OptionCombinator(Box::new((*x.0).clone().into()))),
                 A::Invocation(x) => B::Invocation(x.into()),
                 A::MacroInvocation { .. } => unreachable!(
@@ -961,9 +952,6 @@ pub mod lowering {
     impl<'i> From<ast::StructField<'i>> for ir::StructField {
         fn from(f: ast::StructField<'i>) -> Self {
             match f {
-                ast::StructField::Stream(..) => {
-                    unimplemented!("Stream transformations are not supported by VestDSL yet")
-                }
                 ast::StructField::Dependent {
                     label, combinator, ..
                 } => ir::StructField::Dependent {
@@ -1052,26 +1040,16 @@ pub mod lowering {
         }
     }
 
-    // ---------- Vec / SepBy ----------
+    // ---------- Vec ----------
     impl<'i> From<ast::VecCombinator<'i>> for ir::VecCombinator {
         fn from(v: ast::VecCombinator<'i>) -> Self {
             match v {
                 ast::VecCombinator::Vec(b) => ir::VecCombinator::Vec(Box::new((*b).into())),
-                ast::VecCombinator::Vec1(b) => ir::VecCombinator::Vec1(Box::new((*b).into())),
             }
         }
     }
 
-    impl<'i> From<ast::SepByCombinator<'i>> for ir::SepByCombinator {
-        fn from(s: ast::SepByCombinator<'i>) -> Self {
-            ir::SepByCombinator {
-                combinator: s.combinator.into(),
-                sep: s.sep.into(),
-            }
-        }
-    }
-
-    // ---------- Array / Bytes / Tail / Apply / Option ----------
+    // ---------- Array / Bytes / Tail / Option ----------
     impl<'i> From<ast::ArrayCombinator<'i>> for ir::ArrayCombinator {
         fn from(a: ast::ArrayCombinator<'i>) -> Self {
             ir::ArrayCombinator {
@@ -1109,15 +1087,6 @@ pub mod lowering {
     impl<'i> From<ast::TailCombinator<'i>> for ir::TailCombinator {
         fn from(_: ast::TailCombinator<'i>) -> Self {
             ir::TailCombinator
-        }
-    }
-
-    impl<'i> From<ast::ApplyCombinator<'i>> for ir::ApplyCombinator {
-        fn from(a: ast::ApplyCombinator<'i>) -> Self {
-            ir::ApplyCombinator {
-                stream: id(a.stream),
-                combinator: Box::new((*a.combinator).into()),
-            }
         }
     }
 

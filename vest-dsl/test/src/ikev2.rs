@@ -1823,7 +1823,8 @@ impl<'a, 'b, 'x> Continuation<TransformAttrTvCont0Input<'a, 'b, 'x>> for Transfo
         }
 
     open spec fn ensures(&self, deps: TransformAttrTvCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_transform_attr_tv_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_transform_attr_tv_cont0(deps@)
     }
 
     fn apply(&self, deps: TransformAttrTvCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -2106,7 +2107,8 @@ impl<'a, 'b, 'x> Continuation<TransformAttrTlvCont1Input<'a, 'b, 'x>> for Transf
         }
 
     open spec fn ensures(&self, deps: TransformAttrTlvCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_transform_attr_tlv_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_transform_attr_tlv_cont1(deps@)
     }
 
     fn apply(&self, deps: TransformAttrTlvCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -2136,7 +2138,8 @@ impl<'a, 'b, 'x> Continuation<TransformAttrTlvCont0Input<'a, 'b, 'x>> for Transf
         }
 
     open spec fn ensures(&self, deps: TransformAttrTlvCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_transform_attr_tlv_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_transform_attr_tlv_cont0(deps@)
     }
 
     fn apply(&self, deps: TransformAttrTlvCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -2711,7 +2714,8 @@ impl<'a, 'b, 'x> Continuation<TransformCont1Input<'a, 'b, 'x>> for TransformCont
         }
 
     open spec fn ensures(&self, deps: TransformCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_transform_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_transform_cont1(deps@)
     }
 
     fn apply(&self, deps: TransformCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -2741,7 +2745,8 @@ impl<'a, 'b, 'x> Continuation<TransformCont0Input<'a, 'b, 'x>> for TransformCont
         }
 
     open spec fn ensures(&self, deps: TransformCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_transform_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_transform_cont0(deps@)
     }
 
     fn apply(&self, deps: TransformCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -4005,7 +4010,8 @@ impl<'a, 'b, 'x> Continuation<ProposalCont3Input<'a, 'b, 'x>> for ProposalCont3 
         }
 
     open spec fn ensures(&self, deps: ProposalCont3Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_proposal_cont3(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_proposal_cont3(deps@)
     }
 
     fn apply(&self, deps: ProposalCont3Input<'a, 'b, 'x>) -> Self::Output {
@@ -4035,7 +4041,8 @@ impl<'a, 'b, 'x> Continuation<ProposalCont2Input<'a, 'b, 'x>> for ProposalCont2 
         }
 
     open spec fn ensures(&self, deps: ProposalCont2Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_proposal_cont2(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_proposal_cont2(deps@)
     }
 
     fn apply(&self, deps: ProposalCont2Input<'a, 'b, 'x>) -> Self::Output {
@@ -4067,7 +4074,8 @@ impl<'a, 'b, 'x> Continuation<ProposalCont1Input<'a, 'b, 'x>> for ProposalCont1 
         }
 
     open spec fn ensures(&self, deps: ProposalCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_proposal_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_proposal_cont1(deps@)
     }
 
     fn apply(&self, deps: ProposalCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -4101,7 +4109,8 @@ impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 
         }
 
     open spec fn ensures(&self, deps: ProposalCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_proposal_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_proposal_cont0(deps@)
     }
 
     fn apply(&self, deps: ProposalCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -5927,7 +5936,8 @@ impl<'a, 'b, 'x> Continuation<CfgAttributeCont1Input<'a, 'b, 'x>> for CfgAttribu
         }
 
     open spec fn ensures(&self, deps: CfgAttributeCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_cfg_attribute_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_cfg_attribute_cont1(deps@)
     }
 
     fn apply(&self, deps: CfgAttributeCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -5957,7 +5967,8 @@ impl<'a, 'b, 'x> Continuation<CfgAttributeCont0Input<'a, 'b, 'x>> for CfgAttribu
         }
 
     open spec fn ensures(&self, deps: CfgAttributeCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_cfg_attribute_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_cfg_attribute_cont0(deps@)
     }
 
     fn apply(&self, deps: CfgAttributeCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -6861,7 +6872,8 @@ impl<'a, 'b, 'x> Continuation<TsUnknownInnerCont0Input<'a, 'b, 'x>> for TsUnknow
         }
 
     open spec fn ensures(&self, deps: TsUnknownInnerCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ts_unknown_inner_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ts_unknown_inner_cont0(deps@)
     }
 
     fn apply(&self, deps: TsUnknownInnerCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -7349,7 +7361,8 @@ impl<'a, 'b, 'x> Continuation<TrafficSelectorCont0Input<'a, 'b, 'x>> for Traffic
         }
 
     open spec fn ensures(&self, deps: TrafficSelectorCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_traffic_selector_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_traffic_selector_cont0(deps@)
     }
 
     fn apply(&self, deps: TrafficSelectorCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -7604,7 +7617,8 @@ impl<'a, 'b, 'x> Continuation<Ikev2TsPayloadInnerCont0Input<'a, 'b, 'x>> for Ike
         }
 
     open spec fn ensures(&self, deps: Ikev2TsPayloadInnerCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ikev2_ts_payload_inner_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ikev2_ts_payload_inner_cont0(deps@)
     }
 
     fn apply(&self, deps: Ikev2TsPayloadInnerCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -8555,7 +8569,8 @@ impl<'a, 'b, 'x> Continuation<EapReqRespRestCont0Input<'a, 'b, 'x>> for EapReqRe
         }
 
     open spec fn ensures(&self, deps: EapReqRespRestCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_eap_req_resp_rest_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_eap_req_resp_rest_cont0(deps@)
     }
 
     fn apply(&self, deps: EapReqRespRestCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -9059,7 +9074,8 @@ impl<'a, 'b, 'x> Continuation<Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>> for Ik
         }
 
     open spec fn ensures(&self, deps: Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ikev2_eap_payload_inner_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ikev2_eap_payload_inner_cont0(deps@)
     }
 
     fn apply(&self, deps: Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -10290,7 +10306,8 @@ impl<'a, 'b, 'x> Continuation<EapPayloadBodyCont0Input<'a, 'b, 'x>> for EapPaylo
         }
 
     open spec fn ensures(&self, deps: EapPayloadBodyCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_eap_payload_body_cont0(self.payload_length@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_eap_payload_body_cont0(self.payload_length@, deps@)
     }
 
     fn apply(&self, deps: EapPayloadBodyCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -13658,7 +13675,8 @@ impl<'a, 'b, 'x> Continuation<Ikev2NotifyPayloadInnerCont1Input<'a, 'b, 'x>> for
         }
 
     open spec fn ensures(&self, deps: Ikev2NotifyPayloadInnerCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ikev2_notify_payload_inner_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ikev2_notify_payload_inner_cont1(deps@)
     }
 
     fn apply(&self, deps: Ikev2NotifyPayloadInnerCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -13688,7 +13706,8 @@ impl<'a, 'b, 'x> Continuation<Ikev2NotifyPayloadInnerCont0Input<'a, 'b, 'x>> for
         }
 
     open spec fn ensures(&self, deps: Ikev2NotifyPayloadInnerCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ikev2_notify_payload_inner_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ikev2_notify_payload_inner_cont0(deps@)
     }
 
     fn apply(&self, deps: Ikev2NotifyPayloadInnerCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -14082,7 +14101,8 @@ impl<'a, 'b, 'x> Continuation<EapMessageReqRespCont0Input<'a, 'b, 'x>> for EapMe
         }
 
     open spec fn ensures(&self, deps: EapMessageReqRespCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_eap_message_req_resp_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_eap_message_req_resp_cont0(deps@)
     }
 
     fn apply(&self, deps: EapMessageReqRespCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -14798,7 +14818,8 @@ impl<'a, 'b, 'x> Continuation<NotifyPayloadBodyCont1Input<'a, 'b, 'x>> for Notif
         }
 
     open spec fn ensures(&self, deps: NotifyPayloadBodyCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_notify_payload_body_cont1(self.payload_length@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_notify_payload_body_cont1(self.payload_length@, deps@)
     }
 
     fn apply(&self, deps: NotifyPayloadBodyCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -14834,7 +14855,8 @@ impl<'a, 'b, 'x> Continuation<NotifyPayloadBodyCont0Input<'a, 'b, 'x>> for Notif
         }
 
     open spec fn ensures(&self, deps: NotifyPayloadBodyCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_notify_payload_body_cont0(self.payload_length@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_notify_payload_body_cont0(self.payload_length@, deps@)
     }
 
     fn apply(&self, deps: NotifyPayloadBodyCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -15318,7 +15340,8 @@ impl<'a, 'b, 'x> Continuation<TsPayloadBodyCont0Input<'a, 'b, 'x>> for TsPayload
         }
 
     open spec fn ensures(&self, deps: TsPayloadBodyCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ts_payload_body_cont0(self.payload_length@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ts_payload_body_cont0(self.payload_length@, deps@)
     }
 
     fn apply(&self, deps: TsPayloadBodyCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -15925,71 +15948,71 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodySpisCombinator {
 pub type DeletePayloadBodySpisCombinatorAlias = Mapped<DeletePayloadBodySpisCombinator1, DeletePayloadBodySpisMapper>;
 
 
-pub open spec fn spec_delete_payload_body_spis(spi_size: SpecIpsecSpiSizeOrNone, num_spis: u16) -> SpecDeletePayloadBodySpisCombinator {
+pub open spec fn spec_delete_payload_body_spis(num_spis: u16, spi_size: SpecIpsecSpiSizeOrNone) -> SpecDeletePayloadBodySpisCombinator {
     SpecDeletePayloadBodySpisCombinator(Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: spec_delete_payload_spis_ipsec(num_spis) }), mapper: DeletePayloadBodySpisMapper })
 }
 
-pub fn delete_payload_body_spis<'a>(spi_size: IpsecSpiSizeOrNone, num_spis: u16) -> (o: DeletePayloadBodySpisCombinator)
+pub fn delete_payload_body_spis<'a>(num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: DeletePayloadBodySpisCombinator)
     requires
         spec_ipsec_spi_size_or_none().wf(spi_size@),
 
-    ensures o@ == spec_delete_payload_body_spis(spi_size@, num_spis@),
+    ensures o@ == spec_delete_payload_body_spis(num_spis@, spi_size@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = DeletePayloadBodySpisCombinator(Mapped { inner: DeletePayloadBodySpisCombinator1(Choice::new(Cond { cond: spi_size == 0, inner: delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: delete_payload_spis_ipsec(num_spis) })), mapper: DeletePayloadBodySpisMapper });
     // assert({
-    //     &&& combinator@ == spec_delete_payload_body_spis(spi_size@, num_spis@)
+    //     &&& combinator@ == spec_delete_payload_body_spis(num_spis@, spi_size@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_delete_payload_body_spis<'a>(input: &'a [u8], spi_size: IpsecSpiSizeOrNone, num_spis: u16) -> (res: PResult<<DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_delete_payload_body_spis<'a>(input: &'a [u8], num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (res: PResult<<DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_ipsec_spi_size_or_none().wf(spi_size@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_delete_payload_body_spis(spi_size@, num_spis@).spec_parse(input@) == Some((n as int, v@)),
-        spec_delete_payload_body_spis(spi_size@, num_spis@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_delete_payload_body_spis(spi_size@, num_spis@).spec_parse(input@) is None,
-        spec_delete_payload_body_spis(spi_size@, num_spis@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) is None,
+        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = delete_payload_body_spis( spi_size, num_spis );
+    let combinator = delete_payload_body_spis( num_spis, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_delete_payload_body_spis<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, spi_size: IpsecSpiSizeOrNone, num_spis: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_delete_payload_body_spis<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_delete_payload_body_spis(spi_size@, num_spis@).wf(v@),
+        spec_delete_payload_body_spis(num_spis@, spi_size@).wf(v@),
         spec_ipsec_spi_size_or_none().wf(spi_size@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_delete_payload_body_spis(spi_size@, num_spis@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_body_spis(spi_size@, num_spis@).spec_serialize(v@))
+            &&& n == spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@))
         },
 {
-    let combinator = delete_payload_body_spis( spi_size, num_spis );
+    let combinator = delete_payload_body_spis( num_spis, spi_size );
     combinator.serialize(v, data, pos)
 }
 
-pub fn delete_payload_body_spis_len<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, spi_size: IpsecSpiSizeOrNone, num_spis: u16) -> (serialize_len: usize)
+pub fn delete_payload_body_spis_len<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
     requires
-        spec_delete_payload_body_spis(spi_size@, num_spis@).wf(v@),
-        spec_delete_payload_body_spis(spi_size@, num_spis@).spec_serialize(v@).len() <= usize::MAX,
+        spec_delete_payload_body_spis(num_spis@, spi_size@).wf(v@),
+        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
         spec_ipsec_spi_size_or_none().wf(spi_size@),
 
     ensures
-        serialize_len == spec_delete_payload_body_spis(spi_size@, num_spis@).spec_serialize(v@).len(),
+        serialize_len == spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len(),
 {
-    let combinator = delete_payload_body_spis( spi_size, num_spis );
+    let combinator = delete_payload_body_spis( num_spis, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -16170,7 +16193,7 @@ impl View for DeletePayloadBodyCont1 {
 
 pub open spec fn spec_delete_payload_body_cont0(deps: ((u8, SpecIpsecSpiSizeOrNone), u16)) -> SpecDeletePayloadBodySpisCombinator {
     let ((protocol_id, spi_size), num_spis) = deps;
-    spec_delete_payload_body_spis(spi_size, num_spis)
+    spec_delete_payload_body_spis(num_spis, spi_size)
 }
 
 impl View for DeletePayloadBodyCont0 {
@@ -16255,7 +16278,8 @@ impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont2Input<'a, 'b, 'x>> for Delet
         }
 
     open spec fn ensures(&self, deps: DeletePayloadBodyCont2Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_delete_payload_body_cont2(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_delete_payload_body_cont2(deps@)
     }
 
     fn apply(&self, deps: DeletePayloadBodyCont2Input<'a, 'b, 'x>) -> Self::Output {
@@ -16285,7 +16309,8 @@ impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont1Input<'a, 'b, 'x>> for Delet
         }
 
     open spec fn ensures(&self, deps: DeletePayloadBodyCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_delete_payload_body_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_delete_payload_body_cont1(deps@)
     }
 
     fn apply(&self, deps: DeletePayloadBodyCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -16317,7 +16342,8 @@ impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont0Input<'a, 'b, 'x>> for Delet
         }
 
     open spec fn ensures(&self, deps: DeletePayloadBodyCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_delete_payload_body_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_delete_payload_body_cont0(deps@)
     }
 
     fn apply(&self, deps: DeletePayloadBodyCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -16327,14 +16353,14 @@ impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont0Input<'a, 'b, 'x>> for Delet
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_spis = *num_spis;
-                delete_payload_body_spis(spi_size, num_spis)
+                delete_payload_body_spis(num_spis, spi_size)
             }
             POrSType::S(deps) => {
                 let ((protocol_id, spi_size), num_spis) = deps;
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_spis = *num_spis;
-                delete_payload_body_spis(spi_size, num_spis)
+                delete_payload_body_spis(num_spis, spi_size)
             }
         }
     }
@@ -16566,7 +16592,8 @@ impl<'a, 'b, 'x> Continuation<IkeMessageCont0Input<'a, 'b, 'x>> for IkeMessageCo
         }
 
     open spec fn ensures(&self, deps: IkeMessageCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ike_message_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ike_message_cont0(deps@)
     }
 
     fn apply(&self, deps: IkeMessageCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -19092,7 +19119,8 @@ impl<'a, 'b, 'x> Continuation<Ikev2PayloadCont0Input<'a, 'b, 'x>> for Ikev2Paylo
         }
 
     open spec fn ensures(&self, deps: Ikev2PayloadCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_ikev2_payload_cont0(self.next_pt@, deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_ikev2_payload_cont0(self.next_pt@, deps@)
     }
 
     fn apply(&self, deps: Ikev2PayloadCont0Input<'a, 'b, 'x>) -> Self::Output {

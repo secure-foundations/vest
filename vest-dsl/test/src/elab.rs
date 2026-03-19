@@ -1412,7 +1412,8 @@ impl<'a, 'b, 'x> Continuation<MsgCCont1Input<'a, 'b, 'x>> for MsgCCont1 {
         }
 
     open spec fn ensures(&self, deps: MsgCCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg_c_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg_c_cont1(deps@)
     }
 
     fn apply(&self, deps: MsgCCont1Input<'a, 'b, 'x>) -> Self::Output {
@@ -1442,7 +1443,8 @@ impl<'a, 'b, 'x> Continuation<MsgCCont0Input<'a, 'b, 'x>> for MsgCCont0 {
         }
 
     open spec fn ensures(&self, deps: MsgCCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg_c_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg_c_cont0(deps@)
     }
 
     fn apply(&self, deps: MsgCCont0Input<'a, 'b, 'x>) -> Self::Output {

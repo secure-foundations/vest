@@ -280,7 +280,8 @@ impl<'a, 'b, 'x> Continuation<OpaqueU16Cont0Input<'a, 'b, 'x>> for OpaqueU16Cont
         }
 
     open spec fn ensures(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_opaque_u16_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_opaque_u16_cont0(deps@)
     }
 
     fn apply(&self, deps: OpaqueU16Cont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -781,7 +782,8 @@ impl<'a, 'b, 'x> Continuation<ResponderIdListCont0Input<'a, 'b, 'x>> for Respond
         }
 
     open spec fn ensures(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_responder_id_list_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_responder_id_list_cont0(deps@)
     }
 
     fn apply(&self, deps: ResponderIdListCont0Input<'a, 'b, 'x>) -> Self::Output {
@@ -1026,7 +1028,8 @@ impl<'a, 'b, 'x> Continuation<RepeatDynCont0Input<'a, 'b, 'x>> for RepeatDynCont
         }
 
     open spec fn ensures(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_repeat_dyn_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_repeat_dyn_cont0(deps@)
     }
 
     fn apply(&self, deps: RepeatDynCont0Input<'a, 'b, 'x>) -> Self::Output {
