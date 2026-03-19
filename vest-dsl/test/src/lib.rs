@@ -1,3 +1,4 @@
+pub mod anonymous_nested;
 pub mod codegen;
 pub mod elab;
 pub mod enum_constraints;

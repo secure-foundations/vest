@@ -3410,32 +3410,32 @@ pub fn proposal_body_spi8_len<'a>(v: <ProposalBodySpi8Combinator as Combinator<'
 }
 
 
-pub enum SpecProposalBody {
+pub enum SpecProposalAnonBodyAnonInner {
     Variant0(SpecProposalBodySpi0),
     Variant1(SpecProposalBodySpi4),
     Variant2(SpecProposalBodySpi8),
 }
 
-pub type SpecProposalBodyInner = Either<SpecProposalBodySpi0, Either<SpecProposalBodySpi4, SpecProposalBodySpi8>>;
+pub type SpecProposalAnonBodyAnonInnerInner = Either<SpecProposalBodySpi0, Either<SpecProposalBodySpi4, SpecProposalBodySpi8>>;
 
-impl SpecFrom<SpecProposalBody> for SpecProposalBodyInner {
-    open spec fn spec_from(m: SpecProposalBody) -> SpecProposalBodyInner {
+impl SpecFrom<SpecProposalAnonBodyAnonInner> for SpecProposalAnonBodyAnonInnerInner {
+    open spec fn spec_from(m: SpecProposalAnonBodyAnonInner) -> SpecProposalAnonBodyAnonInnerInner {
         match m {
-            SpecProposalBody::Variant0(m) => Either::Left(m),
-            SpecProposalBody::Variant1(m) => Either::Right(Either::Left(m)),
-            SpecProposalBody::Variant2(m) => Either::Right(Either::Right(m)),
+            SpecProposalAnonBodyAnonInner::Variant0(m) => Either::Left(m),
+            SpecProposalAnonBodyAnonInner::Variant1(m) => Either::Right(Either::Left(m)),
+            SpecProposalAnonBodyAnonInner::Variant2(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
                 
-impl SpecFrom<SpecProposalBodyInner> for SpecProposalBody {
-    open spec fn spec_from(m: SpecProposalBodyInner) -> SpecProposalBody {
+impl SpecFrom<SpecProposalAnonBodyAnonInnerInner> for SpecProposalAnonBodyAnonInner {
+    open spec fn spec_from(m: SpecProposalAnonBodyAnonInnerInner) -> SpecProposalAnonBodyAnonInner {
         match m {
-            Either::Left(m) => SpecProposalBody::Variant0(m),
-            Either::Right(Either::Left(m)) => SpecProposalBody::Variant1(m),
-            Either::Right(Either::Right(m)) => SpecProposalBody::Variant2(m),
+            Either::Left(m) => SpecProposalAnonBodyAnonInner::Variant0(m),
+            Either::Right(Either::Left(m)) => SpecProposalAnonBodyAnonInner::Variant1(m),
+            Either::Right(Either::Right(m)) => SpecProposalAnonBodyAnonInner::Variant2(m),
         }
     }
 
@@ -3444,64 +3444,64 @@ impl SpecFrom<SpecProposalBodyInner> for SpecProposalBody {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProposalBody<'a> {
+pub enum ProposalAnonBodyAnonInner<'a> {
     Variant0(ProposalBodySpi0<'a>),
     Variant1(ProposalBodySpi4<'a>),
     Variant2(ProposalBodySpi8<'a>),
 }
 
-pub type ProposalBodyInner<'a> = Either<ProposalBodySpi0<'a>, Either<ProposalBodySpi4<'a>, ProposalBodySpi8<'a>>>;
+pub type ProposalAnonBodyAnonInnerInner<'a> = Either<ProposalBodySpi0<'a>, Either<ProposalBodySpi4<'a>, ProposalBodySpi8<'a>>>;
 
-pub type ProposalBodyInnerRef<'a> = Either<&'a ProposalBodySpi0<'a>, Either<&'a ProposalBodySpi4<'a>, &'a ProposalBodySpi8<'a>>>;
+pub type ProposalAnonBodyAnonInnerInnerRef<'a> = Either<&'a ProposalBodySpi0<'a>, Either<&'a ProposalBodySpi4<'a>, &'a ProposalBodySpi8<'a>>>;
 
 
-impl<'a> View for ProposalBody<'a> {
-    type V = SpecProposalBody;
+impl<'a> View for ProposalAnonBodyAnonInner<'a> {
+    type V = SpecProposalAnonBodyAnonInner;
     open spec fn view(&self) -> Self::V {
         match self {
-            ProposalBody::Variant0(m) => SpecProposalBody::Variant0(m@),
-            ProposalBody::Variant1(m) => SpecProposalBody::Variant1(m@),
-            ProposalBody::Variant2(m) => SpecProposalBody::Variant2(m@),
+            ProposalAnonBodyAnonInner::Variant0(m) => SpecProposalAnonBodyAnonInner::Variant0(m@),
+            ProposalAnonBodyAnonInner::Variant1(m) => SpecProposalAnonBodyAnonInner::Variant1(m@),
+            ProposalAnonBodyAnonInner::Variant2(m) => SpecProposalAnonBodyAnonInner::Variant2(m@),
         }
     }
 }
 
 
-impl<'a> From<&'a ProposalBody<'a>> for ProposalBodyInnerRef<'a> {
-    fn ex_from(m: &'a ProposalBody<'a>) -> ProposalBodyInnerRef<'a> {
+impl<'a> From<&'a ProposalAnonBodyAnonInner<'a>> for ProposalAnonBodyAnonInnerInnerRef<'a> {
+    fn ex_from(m: &'a ProposalAnonBodyAnonInner<'a>) -> ProposalAnonBodyAnonInnerInnerRef<'a> {
         match m {
-            ProposalBody::Variant0(m) => Either::Left(m),
-            ProposalBody::Variant1(m) => Either::Right(Either::Left(m)),
-            ProposalBody::Variant2(m) => Either::Right(Either::Right(m)),
+            ProposalAnonBodyAnonInner::Variant0(m) => Either::Left(m),
+            ProposalAnonBodyAnonInner::Variant1(m) => Either::Right(Either::Left(m)),
+            ProposalAnonBodyAnonInner::Variant2(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
-impl<'a> From<ProposalBodyInner<'a>> for ProposalBody<'a> {
-    fn ex_from(m: ProposalBodyInner<'a>) -> ProposalBody<'a> {
+impl<'a> From<ProposalAnonBodyAnonInnerInner<'a>> for ProposalAnonBodyAnonInner<'a> {
+    fn ex_from(m: ProposalAnonBodyAnonInnerInner<'a>) -> ProposalAnonBodyAnonInner<'a> {
         match m {
-            Either::Left(m) => ProposalBody::Variant0(m),
-            Either::Right(Either::Left(m)) => ProposalBody::Variant1(m),
-            Either::Right(Either::Right(m)) => ProposalBody::Variant2(m),
+            Either::Left(m) => ProposalAnonBodyAnonInner::Variant0(m),
+            Either::Right(Either::Left(m)) => ProposalAnonBodyAnonInner::Variant1(m),
+            Either::Right(Either::Right(m)) => ProposalAnonBodyAnonInner::Variant2(m),
         }
     }
     
 }
 
 
-pub struct ProposalBodyMapper;
-impl View for ProposalBodyMapper {
+pub struct ProposalAnonBodyAnonInnerMapper;
+impl View for ProposalAnonBodyAnonInnerMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for ProposalBodyMapper {
-    type Src = SpecProposalBodyInner;
-    type Dst = SpecProposalBody;
+impl SpecIso for ProposalAnonBodyAnonInnerMapper {
+    type Src = SpecProposalAnonBodyAnonInnerInner;
+    type Dst = SpecProposalAnonBodyAnonInner;
 }
-impl SpecIsoProof for ProposalBodyMapper {
+impl SpecIsoProof for ProposalAnonBodyAnonInnerMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -3509,18 +3509,18 @@ impl SpecIsoProof for ProposalBodyMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso<'a> for ProposalBodyMapper {
-    type Src = ProposalBodyInner<'a>;
-    type Dst = ProposalBody<'a>;
-    type RefSrc = ProposalBodyInnerRef<'a>;
+impl<'a> Iso<'a> for ProposalAnonBodyAnonInnerMapper {
+    type Src = ProposalAnonBodyAnonInnerInner<'a>;
+    type Dst = ProposalAnonBodyAnonInner<'a>;
+    type RefSrc = ProposalAnonBodyAnonInnerInnerRef<'a>;
 }
 
-type SpecProposalBodyCombinatorAlias1 = Choice<Cond<SpecProposalBodySpi4Combinator>, Cond<SpecProposalBodySpi8Combinator>>;
-type SpecProposalBodyCombinatorAlias2 = Choice<Cond<SpecProposalBodySpi0Combinator>, SpecProposalBodyCombinatorAlias1>;
-pub struct SpecProposalBodyCombinator(pub SpecProposalBodyCombinatorAlias);
+type SpecProposalAnonBodyAnonInnerCombinatorAlias1 = Choice<Cond<SpecProposalBodySpi4Combinator>, Cond<SpecProposalBodySpi8Combinator>>;
+type SpecProposalAnonBodyAnonInnerCombinatorAlias2 = Choice<Cond<SpecProposalBodySpi0Combinator>, SpecProposalAnonBodyAnonInnerCombinatorAlias1>;
+pub struct SpecProposalAnonBodyAnonInnerCombinator(pub SpecProposalAnonBodyAnonInnerCombinatorAlias);
 
-impl SpecCombinator for SpecProposalBodyCombinator {
-    type Type = SpecProposalBody;
+impl SpecCombinator for SpecProposalAnonBodyAnonInnerCombinator {
+    type Type = SpecProposalAnonBodyAnonInner;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -3530,9 +3530,9 @@ impl SpecCombinator for SpecProposalBodyCombinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecProposalBodyCombinator {
+impl SecureSpecCombinator for SpecProposalAnonBodyAnonInnerCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecProposalBodyCombinatorAlias::is_prefix_secure() }
+    { SpecProposalAnonBodyAnonInnerCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -3546,31 +3546,31 @@ impl SecureSpecCombinator for SpecProposalBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecProposalBodyCombinatorAlias = AndThen<bytes::Variable, Mapped<SpecProposalBodyCombinatorAlias2, ProposalBodyMapper>>;
-type ProposalBodyCombinatorAlias1 = Choice<Cond<ProposalBodySpi4Combinator>, Cond<ProposalBodySpi8Combinator>>;
-type ProposalBodyCombinatorAlias2 = Choice<Cond<ProposalBodySpi0Combinator>, ProposalBodyCombinator1>;
-pub struct ProposalBodyCombinator1(pub ProposalBodyCombinatorAlias1);
-impl View for ProposalBodyCombinator1 {
-    type V = SpecProposalBodyCombinatorAlias1;
+pub type SpecProposalAnonBodyAnonInnerCombinatorAlias = Mapped<SpecProposalAnonBodyAnonInnerCombinatorAlias2, ProposalAnonBodyAnonInnerMapper>;
+type ProposalAnonBodyAnonInnerCombinatorAlias1 = Choice<Cond<ProposalBodySpi4Combinator>, Cond<ProposalBodySpi8Combinator>>;
+type ProposalAnonBodyAnonInnerCombinatorAlias2 = Choice<Cond<ProposalBodySpi0Combinator>, ProposalAnonBodyAnonInnerCombinator1>;
+pub struct ProposalAnonBodyAnonInnerCombinator1(pub ProposalAnonBodyAnonInnerCombinatorAlias1);
+impl View for ProposalAnonBodyAnonInnerCombinator1 {
+    type V = SpecProposalAnonBodyAnonInnerCombinatorAlias1;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(ProposalBodyCombinator1, ProposalBodyCombinatorAlias1);
+impl_wrapper_combinator!(ProposalAnonBodyAnonInnerCombinator1, ProposalAnonBodyAnonInnerCombinatorAlias1);
 
-pub struct ProposalBodyCombinator2(pub ProposalBodyCombinatorAlias2);
-impl View for ProposalBodyCombinator2 {
-    type V = SpecProposalBodyCombinatorAlias2;
+pub struct ProposalAnonBodyAnonInnerCombinator2(pub ProposalAnonBodyAnonInnerCombinatorAlias2);
+impl View for ProposalAnonBodyAnonInnerCombinator2 {
+    type V = SpecProposalAnonBodyAnonInnerCombinatorAlias2;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(ProposalBodyCombinator2, ProposalBodyCombinatorAlias2);
+impl_wrapper_combinator!(ProposalAnonBodyAnonInnerCombinator2, ProposalAnonBodyAnonInnerCombinatorAlias2);
 
-pub struct ProposalBodyCombinator(pub ProposalBodyCombinatorAlias);
+pub struct ProposalAnonBodyAnonInnerCombinator(pub ProposalAnonBodyAnonInnerCombinatorAlias);
 
-impl View for ProposalBodyCombinator {
-    type V = SpecProposalBodyCombinator;
-    open spec fn view(&self) -> Self::V { SpecProposalBodyCombinator(self.0@) }
+impl View for ProposalAnonBodyAnonInnerCombinator {
+    type V = SpecProposalAnonBodyAnonInnerCombinator;
+    open spec fn view(&self) -> Self::V { SpecProposalAnonBodyAnonInnerCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodyCombinator {
-    type Type = ProposalBody<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalAnonBodyAnonInnerCombinator {
+    type Type = ProposalAnonBodyAnonInner<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -3581,82 +3581,211 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type ProposalBodyCombinatorAlias = AndThen<bytes::Variable, Mapped<ProposalBodyCombinator2, ProposalBodyMapper>>;
+pub type ProposalAnonBodyAnonInnerCombinatorAlias = Mapped<ProposalAnonBodyAnonInnerCombinator2, ProposalAnonBodyAnonInnerMapper>;
 
 
-pub open spec fn spec_proposal_body(proposal_length: u16, spi_size: SpecProposalSpiSizeByte, num_transforms: u8) -> SpecProposalBodyCombinator {
-    SpecProposalBodyCombinator(AndThen(bytes::Variable(((usize::spec_from(proposal_length) - 8)) as usize), Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_proposal_body_spi0(num_transforms) }, Choice(Cond { cond: spi_size == 4, inner: spec_proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: spec_proposal_body_spi8(num_transforms) })), mapper: ProposalBodyMapper }))
+pub open spec fn spec_proposal_anon_body_anon_inner(num_transforms: u8, spi_size: SpecProposalSpiSizeByte) -> SpecProposalAnonBodyAnonInnerCombinator {
+    SpecProposalAnonBodyAnonInnerCombinator(Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_proposal_body_spi0(num_transforms) }, Choice(Cond { cond: spi_size == 4, inner: spec_proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: spec_proposal_body_spi8(num_transforms) })), mapper: ProposalAnonBodyAnonInnerMapper })
 }
 
-pub fn proposal_body<'a>(proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (o: ProposalBodyCombinator)
+pub fn proposal_anon_body_anon_inner<'a>(num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (o: ProposalAnonBodyAnonInnerCombinator)
     requires
-        ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        spec_proposal_spi_size_byte().wf(spi_size@),
         ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_spi_size_byte().wf(spi_size@),
 
-    ensures o@ == spec_proposal_body(proposal_length@, spi_size@, num_transforms@),
+    ensures o@ == spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = ProposalBodyCombinator(AndThen(bytes::Variable(((usize::ex_from(proposal_length) - 8)) as usize), Mapped { inner: ProposalBodyCombinator2(Choice::new(Cond { cond: spi_size == 0, inner: proposal_body_spi0(num_transforms) }, ProposalBodyCombinator1(Choice::new(Cond { cond: spi_size == 4, inner: proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: proposal_body_spi8(num_transforms) })))), mapper: ProposalBodyMapper }));
+    let combinator = ProposalAnonBodyAnonInnerCombinator(Mapped { inner: ProposalAnonBodyAnonInnerCombinator2(Choice::new(Cond { cond: spi_size == 0, inner: proposal_body_spi0(num_transforms) }, ProposalAnonBodyAnonInnerCombinator1(Choice::new(Cond { cond: spi_size == 4, inner: proposal_body_spi4(num_transforms) }, Cond { cond: spi_size == 8, inner: proposal_body_spi8(num_transforms) })))), mapper: ProposalAnonBodyAnonInnerMapper });
     // assert({
-    //     &&& combinator@ == spec_proposal_body(proposal_length@, spi_size@, num_transforms@)
+    //     &&& combinator@ == spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_proposal_body<'a>(input: &'a [u8], proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (res: PResult<<ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_proposal_anon_body_anon_inner<'a>(input: &'a [u8], num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (res: PResult<<ProposalAnonBodyAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
-        ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        spec_proposal_spi_size_byte().wf(spi_size@),
         ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_spi_size_byte().wf(spi_size@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) == Some((n as int, v@)),
-        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) is None,
-        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_parse(input@) is None,
+        spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
+    let combinator = proposal_anon_body_anon_inner( num_transforms, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_proposal_body<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_proposal_anon_body_anon_inner<'a>(v: <ProposalAnonBodyAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).wf(v@),
-        ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        spec_proposal_spi_size_byte().wf(spi_size@),
+        spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).wf(v@),
         ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_spi_size_byte().wf(spi_size@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@))
+            &&& n == spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_serialize(v@))
         },
 {
-    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
+    let combinator = proposal_anon_body_anon_inner( num_transforms, spi_size );
     combinator.serialize(v, data, pos)
 }
 
-pub fn proposal_body_len<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, proposal_length: u16, spi_size: ProposalSpiSizeByte, num_transforms: u8) -> (serialize_len: usize)
+pub fn proposal_anon_body_anon_inner_len<'a>(v: <ProposalAnonBodyAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8, spi_size: ProposalSpiSizeByte) -> (serialize_len: usize)
     requires
-        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).wf(v@),
-        spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len() <= usize::MAX,
-        ((proposal_length) >= 8 && (proposal_length) <= 65535),
-        spec_proposal_spi_size_byte().wf(spi_size@),
+        spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).wf(v@),
+        spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
         ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_spi_size_byte().wf(spi_size@),
 
     ensures
-        serialize_len == spec_proposal_body(proposal_length@, spi_size@, num_transforms@).spec_serialize(v@).len(),
+        serialize_len == spec_proposal_anon_body_anon_inner(num_transforms@, spi_size@).spec_serialize(v@).len(),
 {
-    let combinator = proposal_body( proposal_length, spi_size, num_transforms );
+    let combinator = proposal_anon_body_anon_inner( num_transforms, spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+pub type SpecProposalAnonBody = SpecProposalAnonBodyAnonInner;
+pub type ProposalAnonBody<'a> = ProposalAnonBodyAnonInner<'a>;
+pub type ProposalAnonBodyRef<'a> = &'a ProposalAnonBodyAnonInner<'a>;
+
+
+pub struct SpecProposalAnonBodyCombinator(pub SpecProposalAnonBodyCombinatorAlias);
+
+impl SpecCombinator for SpecProposalAnonBodyCombinator {
+    type Type = SpecProposalAnonBody;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecProposalAnonBodyCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecProposalAnonBodyCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecProposalAnonBodyCombinatorAlias = AndThen<bytes::Variable, SpecProposalAnonBodyAnonInnerCombinator>;
+
+pub struct ProposalAnonBodyCombinator(pub ProposalAnonBodyCombinatorAlias);
+
+impl View for ProposalAnonBodyCombinator {
+    type V = SpecProposalAnonBodyCombinator;
+    open spec fn view(&self) -> Self::V { SpecProposalAnonBodyCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalAnonBodyCombinator {
+    type Type = ProposalAnonBody<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type ProposalAnonBodyCombinatorAlias = AndThen<bytes::Variable, ProposalAnonBodyAnonInnerCombinator>;
+
+
+pub open spec fn spec_proposal_anon_body(num_transforms: u8, proposal_length: u16, spi_size: SpecProposalSpiSizeByte) -> SpecProposalAnonBodyCombinator {
+    SpecProposalAnonBodyCombinator(AndThen(bytes::Variable(((usize::spec_from(proposal_length) - 8)) as usize), spec_proposal_anon_body_anon_inner(num_transforms, spi_size)))
+}
+
+pub fn proposal_anon_body<'a>(num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (o: ProposalAnonBodyCombinator)
+    requires
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        ((proposal_length) >= 8 && (proposal_length) <= 65535),
+        spec_proposal_spi_size_byte().wf(spi_size@),
+
+    ensures o@ == spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = ProposalAnonBodyCombinator(AndThen(bytes::Variable(((usize::ex_from(proposal_length) - 8)) as usize), proposal_anon_body_anon_inner(num_transforms, spi_size)));
+    // assert({
+    //     &&& combinator@ == spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_proposal_anon_body<'a>(input: &'a [u8], num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (res: PResult<<ProposalAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        ((proposal_length) >= 8 && (proposal_length) <= 65535),
+        spec_proposal_spi_size_byte().wf(spi_size@),
+
+    ensures
+        res matches Ok((n, v)) ==> spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_parse(input@) is None,
+        spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = proposal_anon_body( num_transforms, proposal_length, spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_proposal_anon_body<'a>(v: <ProposalAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).wf(v@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        ((proposal_length) >= 8 && (proposal_length) <= 65535),
+        spec_proposal_spi_size_byte().wf(spi_size@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@))
+        },
+{
+    let combinator = proposal_anon_body( num_transforms, proposal_length, spi_size );
+    combinator.serialize(v, data, pos)
+}
+
+pub fn proposal_anon_body_len<'a>(v: <ProposalAnonBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (serialize_len: usize)
+    requires
+        spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).wf(v@),
+        spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        ((proposal_length) >= 8 && (proposal_length) <= 65535),
+        spec_proposal_spi_size_byte().wf(spi_size@),
+
+    ensures
+        serialize_len == spec_proposal_anon_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len(),
+{
+    let combinator = proposal_anon_body( num_transforms, proposal_length, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -3669,10 +3798,10 @@ pub struct SpecProposal {
     pub protocol_id: u8,
     pub spi_size: SpecProposalSpiSizeByte,
     pub num_transforms: u8,
-    pub body: SpecProposalBody,
+    pub body: SpecProposalAnonBody,
 }
 
-pub type SpecProposalInner = (((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8), SpecProposalBody);
+pub type SpecProposalInner = (((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8), SpecProposalAnonBody);
 
 
 impl SpecFrom<SpecProposal> for SpecProposalInner {
@@ -3697,7 +3826,7 @@ pub struct Proposal<'a> {
     pub protocol_id: u8,
     pub spi_size: ProposalSpiSizeByte,
     pub num_transforms: u8,
-    pub body: ProposalBody<'a>,
+    pub body: ProposalAnonBody<'a>,
 }
 
 impl View for Proposal<'_> {
@@ -3716,9 +3845,9 @@ impl View for Proposal<'_> {
         }
     }
 }
-pub type ProposalInner<'a> = (((((u8, (u8, u16)), (u8, u8)), ProposalSpiSizeByte), u8), ProposalBody<'a>);
+pub type ProposalInner<'a> = (((((u8, (u8, u16)), (u8, u8)), ProposalSpiSizeByte), u8), ProposalAnonBody<'a>);
 
-pub type ProposalInnerRef<'a> = (((((&'a u8, (&'a u8, &'a u16)), (&'a u8, &'a u8)), &'a ProposalSpiSizeByte), &'a u8), &'a ProposalBody<'a>);
+pub type ProposalInnerRef<'a> = (((((&'a u8, (&'a u8, &'a u16)), (&'a u8, &'a u8)), &'a ProposalSpiSizeByte), &'a u8), &'a ProposalAnonBody<'a>);
 impl<'a> From<&'a Proposal<'a>> for ProposalInnerRef<'a> {
     fn ex_from(m: &'a Proposal) -> ProposalInnerRef<'a> {
         (((((&m.last_or_more, (&m.reserved, &m.proposal_length)), (&m.proposal_num, &m.protocol_id)), &m.spi_size), &m.num_transforms), &m.body)
@@ -3787,7 +3916,7 @@ impl SecureSpecCombinator for SpecProposalCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecProposalCombinatorAlias = Mapped<SpecPair<SpecPair<SpecPair<SpecPair<(Refined<U8, Predicate7277979220772363767>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), (Refined<U8, Predicate2172399096230090262>, SpecIkeProtocolIdCombinator)>, SpecProposalSpiSizeByteCombinator>, Refined<U8, Predicate3651688686135228051>>, SpecProposalBodyCombinator>, ProposalMapper>;
+pub type SpecProposalCombinatorAlias = Mapped<SpecPair<SpecPair<SpecPair<SpecPair<(Refined<U8, Predicate7277979220772363767>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), (Refined<U8, Predicate2172399096230090262>, SpecIkeProtocolIdCombinator)>, SpecProposalSpiSizeByteCombinator>, Refined<U8, Predicate3651688686135228051>>, SpecProposalAnonBodyCombinator>, ProposalMapper>;
 pub struct Predicate7277979220772363767;
 impl View for Predicate7277979220772363767 {
     type V = Self;
@@ -3867,7 +3996,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type ProposalCombinatorAlias = Mapped<Pair<Pair<Pair<Pair<(Refined<U8, Predicate7277979220772363767>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), (Refined<U8, Predicate2172399096230090262>, IkeProtocolIdCombinator), ProposalCont3>, ProposalSpiSizeByteCombinator, ProposalCont2>, Refined<U8, Predicate3651688686135228051>, ProposalCont1>, ProposalBodyCombinator, ProposalCont0>, ProposalMapper>;
+pub type ProposalCombinatorAlias = Mapped<Pair<Pair<Pair<Pair<(Refined<U8, Predicate7277979220772363767>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), (Refined<U8, Predicate2172399096230090262>, IkeProtocolIdCombinator), ProposalCont3>, ProposalSpiSizeByteCombinator, ProposalCont2>, Refined<U8, Predicate3651688686135228051>, ProposalCont1>, ProposalAnonBodyCombinator, ProposalCont0>, ProposalMapper>;
 
 
 pub open spec fn spec_proposal() -> SpecProposalCombinator {
@@ -3923,13 +4052,13 @@ impl View for ProposalCont1 {
     }
 }
 
-pub open spec fn spec_proposal_cont0(deps: ((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)) -> SpecProposalBodyCombinator {
+pub open spec fn spec_proposal_cont0(deps: ((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)) -> SpecProposalAnonBodyCombinator {
     let ((((_, (_, proposal_length)), (_, protocol_id)), spi_size), num_transforms) = deps;
-    spec_proposal_body(proposal_length, spi_size, num_transforms)
+    spec_proposal_anon_body(num_transforms, proposal_length, spi_size)
 }
 
 impl View for ProposalCont0 {
-    type V = spec_fn(((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)) -> SpecProposalBodyCombinator;
+    type V = spec_fn(((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)) -> SpecProposalAnonBodyCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: ((((u8, (u8, u16)), (u8, u8)), SpecProposalSpiSizeByte), u8)| {
@@ -4102,7 +4231,7 @@ type ProposalCont0Type<'a, 'b> = &'b ((((u8, (u8, u16)), (u8, u8)), ProposalSpiS
 type ProposalCont0SType<'a, 'x> = ((((&'x u8, (&'x u8, &'x u16)), (&'x u8, &'x u8)), &'x ProposalSpiSizeByte), &'x u8);
 type ProposalCont0Input<'a, 'b, 'x> = POrSType<ProposalCont0Type<'a, 'b>, ProposalCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 {
-    type Output = ProposalBodyCombinator;
+    type Output = ProposalAnonBodyCombinator;
 
     open spec fn requires(&self, deps: ProposalCont0Input<'a, 'b, 'x>) -> bool {
         &&& (Pair::spec_new(Pair::spec_new(Pair::spec_new((Refined { inner: U8, predicate: Predicate7277979220772363767 }, (Refined { inner: U8, predicate: TagPred(PROPOSALRESERVED_CONST) }, Refined { inner: U16Be, predicate: Predicate18193225726552524852 })), |deps| spec_proposal_cont3(deps)), |deps| spec_proposal_cont2(deps)), |deps| spec_proposal_cont1(deps))).wf(deps@)
@@ -4121,7 +4250,7 @@ impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_transforms = *num_transforms;
-                proposal_body(proposal_length, spi_size, num_transforms)
+                proposal_anon_body(num_transforms, proposal_length, spi_size)
             }
             POrSType::S(deps) => {
                 let ((((_, (_, proposal_length)), (_, protocol_id)), spi_size), num_transforms) = deps;
@@ -4129,7 +4258,7 @@ impl<'a, 'b, 'x> Continuation<ProposalCont0Input<'a, 'b, 'x>> for ProposalCont0 
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_transforms = *num_transforms;
-                proposal_body(proposal_length, spi_size, num_transforms)
+                proposal_anon_body(num_transforms, proposal_length, spi_size)
             }
         }
     }
@@ -4805,6 +4934,471 @@ pub fn ikev2_sa_payload_inner_len<'a>(v: <Ikev2SaPayloadInnerCombinator as Combi
 }
 
                 
+pub type SpecDeletePayloadSpisNone = Seq<u8>;
+pub type DeletePayloadSpisNone<'a> = &'a [u8];
+pub type DeletePayloadSpisNoneRef<'a> = &'a &'a [u8];
+
+
+pub struct SpecDeletePayloadSpisNoneCombinator(pub SpecDeletePayloadSpisNoneCombinatorAlias);
+
+impl SpecCombinator for SpecDeletePayloadSpisNoneCombinator {
+    type Type = SpecDeletePayloadSpisNone;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecDeletePayloadSpisNoneCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecDeletePayloadSpisNoneCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecDeletePayloadSpisNoneCombinatorAlias = bytes::Fixed<0>;
+
+pub struct DeletePayloadSpisNoneCombinator(pub DeletePayloadSpisNoneCombinatorAlias);
+
+impl View for DeletePayloadSpisNoneCombinator {
+    type V = SpecDeletePayloadSpisNoneCombinator;
+    open spec fn view(&self) -> Self::V { SpecDeletePayloadSpisNoneCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisNoneCombinator {
+    type Type = DeletePayloadSpisNone<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type DeletePayloadSpisNoneCombinatorAlias = bytes::Fixed<0>;
+
+
+pub open spec fn spec_delete_payload_spis_none() -> SpecDeletePayloadSpisNoneCombinator {
+    SpecDeletePayloadSpisNoneCombinator(bytes::Fixed::<0>)
+}
+
+                
+pub fn delete_payload_spis_none<'a>() -> (o: DeletePayloadSpisNoneCombinator)
+    ensures o@ == spec_delete_payload_spis_none(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = DeletePayloadSpisNoneCombinator(bytes::Fixed::<0>);
+    // assert({
+    //     &&& combinator@ == spec_delete_payload_spis_none()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_delete_payload_spis_none<'a>(input: &'a [u8]) -> (res: PResult<<DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_delete_payload_spis_none().spec_parse(input@) == Some((n as int, v@)),
+        spec_delete_payload_spis_none().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_delete_payload_spis_none().spec_parse(input@) is None,
+        spec_delete_payload_spis_none().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = delete_payload_spis_none();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_delete_payload_spis_none<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_spis_none().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_delete_payload_spis_none().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_none().spec_serialize(v@))
+        },
+{
+    let combinator = delete_payload_spis_none();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn delete_payload_spis_none_len<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_delete_payload_spis_none().wf(v@),
+        spec_delete_payload_spis_none().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_delete_payload_spis_none().spec_serialize(v@).len(),
+{
+    let combinator = delete_payload_spis_none();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+pub type SpecDeletePayloadSpisIpsec = Seq<u32>;
+pub type DeletePayloadSpisIpsec = RepeatResult<u32>;
+pub type DeletePayloadSpisIpsecRef<'a> = &'a RepeatResult<u32>;
+
+
+pub struct SpecDeletePayloadSpisIpsecCombinator(pub SpecDeletePayloadSpisIpsecCombinatorAlias);
+
+impl SpecCombinator for SpecDeletePayloadSpisIpsecCombinator {
+    type Type = SpecDeletePayloadSpisIpsec;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecDeletePayloadSpisIpsecCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecDeletePayloadSpisIpsecCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecDeletePayloadSpisIpsecCombinatorAlias = RepeatN<U32Be>;
+
+pub struct DeletePayloadSpisIpsecCombinator(pub DeletePayloadSpisIpsecCombinatorAlias);
+
+impl View for DeletePayloadSpisIpsecCombinator {
+    type V = SpecDeletePayloadSpisIpsecCombinator;
+    open spec fn view(&self) -> Self::V { SpecDeletePayloadSpisIpsecCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisIpsecCombinator {
+    type Type = DeletePayloadSpisIpsec;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type DeletePayloadSpisIpsecCombinatorAlias = RepeatN<U32Be>;
+
+
+pub open spec fn spec_delete_payload_spis_ipsec(num_spis: u16) -> SpecDeletePayloadSpisIpsecCombinator {
+    SpecDeletePayloadSpisIpsecCombinator(RepeatN(U32Be, (usize::spec_from(num_spis)) as usize))
+}
+
+pub fn delete_payload_spis_ipsec<'a>(num_spis: u16) -> (o: DeletePayloadSpisIpsecCombinator)
+
+    ensures o@ == spec_delete_payload_spis_ipsec(num_spis@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = DeletePayloadSpisIpsecCombinator(RepeatN(U32Be, (usize::ex_from(num_spis)) as usize));
+    // assert({
+    //     &&& combinator@ == spec_delete_payload_spis_ipsec(num_spis@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_delete_payload_spis_ipsec<'a>(input: &'a [u8], num_spis: u16) -> (res: PResult<<DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+
+    ensures
+        res matches Ok((n, v)) ==> spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) == Some((n as int, v@)),
+        spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) is None,
+        spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = delete_payload_spis_ipsec( num_spis );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_delete_payload_spis_ipsec<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_spis_ipsec(num_spis@).wf(v@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@))
+        },
+{
+    let combinator = delete_payload_spis_ipsec( num_spis );
+    combinator.serialize(v, data, pos)
+}
+
+pub fn delete_payload_spis_ipsec_len<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16) -> (serialize_len: usize)
+    requires
+        spec_delete_payload_spis_ipsec(num_spis@).wf(v@),
+        spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len() <= usize::MAX,
+
+    ensures
+        serialize_len == spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len(),
+{
+    let combinator = delete_payload_spis_ipsec( num_spis );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+
+pub enum SpecDeletePayloadBodyAnonSpis {
+    Variant0(SpecDeletePayloadSpisNone),
+    Variant1(SpecDeletePayloadSpisIpsec),
+}
+
+pub type SpecDeletePayloadBodyAnonSpisInner = Either<SpecDeletePayloadSpisNone, SpecDeletePayloadSpisIpsec>;
+
+impl SpecFrom<SpecDeletePayloadBodyAnonSpis> for SpecDeletePayloadBodyAnonSpisInner {
+    open spec fn spec_from(m: SpecDeletePayloadBodyAnonSpis) -> SpecDeletePayloadBodyAnonSpisInner {
+        match m {
+            SpecDeletePayloadBodyAnonSpis::Variant0(m) => Either::Left(m),
+            SpecDeletePayloadBodyAnonSpis::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecDeletePayloadBodyAnonSpisInner> for SpecDeletePayloadBodyAnonSpis {
+    open spec fn spec_from(m: SpecDeletePayloadBodyAnonSpisInner) -> SpecDeletePayloadBodyAnonSpis {
+        match m {
+            Either::Left(m) => SpecDeletePayloadBodyAnonSpis::Variant0(m),
+            Either::Right(m) => SpecDeletePayloadBodyAnonSpis::Variant1(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeletePayloadBodyAnonSpis<'a> {
+    Variant0(DeletePayloadSpisNone<'a>),
+    Variant1(DeletePayloadSpisIpsec),
+}
+
+pub type DeletePayloadBodyAnonSpisInner<'a> = Either<DeletePayloadSpisNone<'a>, DeletePayloadSpisIpsec>;
+
+pub type DeletePayloadBodyAnonSpisInnerRef<'a> = Either<&'a DeletePayloadSpisNone<'a>, &'a DeletePayloadSpisIpsec>;
+
+
+impl<'a> View for DeletePayloadBodyAnonSpis<'a> {
+    type V = SpecDeletePayloadBodyAnonSpis;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            DeletePayloadBodyAnonSpis::Variant0(m) => SpecDeletePayloadBodyAnonSpis::Variant0(m@),
+            DeletePayloadBodyAnonSpis::Variant1(m) => SpecDeletePayloadBodyAnonSpis::Variant1(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a DeletePayloadBodyAnonSpis<'a>> for DeletePayloadBodyAnonSpisInnerRef<'a> {
+    fn ex_from(m: &'a DeletePayloadBodyAnonSpis<'a>) -> DeletePayloadBodyAnonSpisInnerRef<'a> {
+        match m {
+            DeletePayloadBodyAnonSpis::Variant0(m) => Either::Left(m),
+            DeletePayloadBodyAnonSpis::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+impl<'a> From<DeletePayloadBodyAnonSpisInner<'a>> for DeletePayloadBodyAnonSpis<'a> {
+    fn ex_from(m: DeletePayloadBodyAnonSpisInner<'a>) -> DeletePayloadBodyAnonSpis<'a> {
+        match m {
+            Either::Left(m) => DeletePayloadBodyAnonSpis::Variant0(m),
+            Either::Right(m) => DeletePayloadBodyAnonSpis::Variant1(m),
+        }
+    }
+    
+}
+
+
+pub struct DeletePayloadBodyAnonSpisMapper;
+impl View for DeletePayloadBodyAnonSpisMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for DeletePayloadBodyAnonSpisMapper {
+    type Src = SpecDeletePayloadBodyAnonSpisInner;
+    type Dst = SpecDeletePayloadBodyAnonSpis;
+}
+impl SpecIsoProof for DeletePayloadBodyAnonSpisMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for DeletePayloadBodyAnonSpisMapper {
+    type Src = DeletePayloadBodyAnonSpisInner<'a>;
+    type Dst = DeletePayloadBodyAnonSpis<'a>;
+    type RefSrc = DeletePayloadBodyAnonSpisInnerRef<'a>;
+}
+
+type SpecDeletePayloadBodyAnonSpisCombinatorAlias1 = Choice<Cond<SpecDeletePayloadSpisNoneCombinator>, Cond<SpecDeletePayloadSpisIpsecCombinator>>;
+pub struct SpecDeletePayloadBodyAnonSpisCombinator(pub SpecDeletePayloadBodyAnonSpisCombinatorAlias);
+
+impl SpecCombinator for SpecDeletePayloadBodyAnonSpisCombinator {
+    type Type = SpecDeletePayloadBodyAnonSpis;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecDeletePayloadBodyAnonSpisCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecDeletePayloadBodyAnonSpisCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecDeletePayloadBodyAnonSpisCombinatorAlias = Mapped<SpecDeletePayloadBodyAnonSpisCombinatorAlias1, DeletePayloadBodyAnonSpisMapper>;
+type DeletePayloadBodyAnonSpisCombinatorAlias1 = Choice<Cond<DeletePayloadSpisNoneCombinator>, Cond<DeletePayloadSpisIpsecCombinator>>;
+pub struct DeletePayloadBodyAnonSpisCombinator1(pub DeletePayloadBodyAnonSpisCombinatorAlias1);
+impl View for DeletePayloadBodyAnonSpisCombinator1 {
+    type V = SpecDeletePayloadBodyAnonSpisCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(DeletePayloadBodyAnonSpisCombinator1, DeletePayloadBodyAnonSpisCombinatorAlias1);
+
+pub struct DeletePayloadBodyAnonSpisCombinator(pub DeletePayloadBodyAnonSpisCombinatorAlias);
+
+impl View for DeletePayloadBodyAnonSpisCombinator {
+    type V = SpecDeletePayloadBodyAnonSpisCombinator;
+    open spec fn view(&self) -> Self::V { SpecDeletePayloadBodyAnonSpisCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodyAnonSpisCombinator {
+    type Type = DeletePayloadBodyAnonSpis<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type DeletePayloadBodyAnonSpisCombinatorAlias = Mapped<DeletePayloadBodyAnonSpisCombinator1, DeletePayloadBodyAnonSpisMapper>;
+
+
+pub open spec fn spec_delete_payload_body_anon_spis(num_spis: u16, spi_size: SpecIpsecSpiSizeOrNone) -> SpecDeletePayloadBodyAnonSpisCombinator {
+    SpecDeletePayloadBodyAnonSpisCombinator(Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: spec_delete_payload_spis_ipsec(num_spis) }), mapper: DeletePayloadBodyAnonSpisMapper })
+}
+
+pub fn delete_payload_body_anon_spis<'a>(num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: DeletePayloadBodyAnonSpisCombinator)
+    requires
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures o@ == spec_delete_payload_body_anon_spis(num_spis@, spi_size@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = DeletePayloadBodyAnonSpisCombinator(Mapped { inner: DeletePayloadBodyAnonSpisCombinator1(Choice::new(Cond { cond: spi_size == 0, inner: delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: delete_payload_spis_ipsec(num_spis) })), mapper: DeletePayloadBodyAnonSpisMapper });
+    // assert({
+    //     &&& combinator@ == spec_delete_payload_body_anon_spis(num_spis@, spi_size@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_delete_payload_body_anon_spis<'a>(input: &'a [u8], num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (res: PResult<<DeletePayloadBodyAnonSpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        res matches Ok((n, v)) ==> spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_parse(input@) is None,
+        spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = delete_payload_body_anon_spis( num_spis, spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_delete_payload_body_anon_spis<'a>(v: <DeletePayloadBodyAnonSpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_body_anon_spis(num_spis@, spi_size@).wf(v@),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_serialize(v@))
+        },
+{
+    let combinator = delete_payload_body_anon_spis( num_spis, spi_size );
+    combinator.serialize(v, data, pos)
+}
+
+pub fn delete_payload_body_anon_spis_len<'a>(v: <DeletePayloadBodyAnonSpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
+    requires
+        spec_delete_payload_body_anon_spis(num_spis@, spi_size@).wf(v@),
+        spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        serialize_len == spec_delete_payload_body_anon_spis(num_spis@, spi_size@).spec_serialize(v@).len(),
+{
+    let combinator = delete_payload_body_anon_spis( num_spis, spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
 
 pub struct SpecNoncePayloadBody {
     pub nonce_data: Seq<u8>,
@@ -5574,6 +6168,440 @@ pub fn notify_payload_body_spi0_len<'a>(v: <NotifyPayloadBodySpi0Combinator as C
 }
 
                 
+
+pub struct SpecNotifyPayloadBodySpi4 {
+    pub spi: Seq<u8>,
+    pub notification_data: Seq<u8>,
+}
+
+pub type SpecNotifyPayloadBodySpi4Inner = (Seq<u8>, Seq<u8>);
+
+
+impl SpecFrom<SpecNotifyPayloadBodySpi4> for SpecNotifyPayloadBodySpi4Inner {
+    open spec fn spec_from(m: SpecNotifyPayloadBodySpi4) -> SpecNotifyPayloadBodySpi4Inner {
+        (m.spi, m.notification_data)
+    }
+}
+
+impl SpecFrom<SpecNotifyPayloadBodySpi4Inner> for SpecNotifyPayloadBodySpi4 {
+    open spec fn spec_from(m: SpecNotifyPayloadBodySpi4Inner) -> SpecNotifyPayloadBodySpi4 {
+        let (spi, notification_data) = m;
+        SpecNotifyPayloadBodySpi4 { spi, notification_data }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct NotifyPayloadBodySpi4<'a> {
+    pub spi: &'a [u8],
+    pub notification_data: &'a [u8],
+}
+
+impl View for NotifyPayloadBodySpi4<'_> {
+    type V = SpecNotifyPayloadBodySpi4;
+
+    open spec fn view(&self) -> Self::V {
+        SpecNotifyPayloadBodySpi4 {
+            spi: self.spi@,
+            notification_data: self.notification_data@,
+        }
+    }
+}
+pub type NotifyPayloadBodySpi4Inner<'a> = (&'a [u8], &'a [u8]);
+
+pub type NotifyPayloadBodySpi4InnerRef<'a> = (&'a &'a [u8], &'a &'a [u8]);
+impl<'a> From<&'a NotifyPayloadBodySpi4<'a>> for NotifyPayloadBodySpi4InnerRef<'a> {
+    fn ex_from(m: &'a NotifyPayloadBodySpi4) -> NotifyPayloadBodySpi4InnerRef<'a> {
+        (&m.spi, &m.notification_data)
+    }
+}
+
+impl<'a> From<NotifyPayloadBodySpi4Inner<'a>> for NotifyPayloadBodySpi4<'a> {
+    fn ex_from(m: NotifyPayloadBodySpi4Inner) -> NotifyPayloadBodySpi4 {
+        let (spi, notification_data) = m;
+        NotifyPayloadBodySpi4 { spi, notification_data }
+    }
+}
+
+pub struct NotifyPayloadBodySpi4Mapper;
+impl View for NotifyPayloadBodySpi4Mapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for NotifyPayloadBodySpi4Mapper {
+    type Src = SpecNotifyPayloadBodySpi4Inner;
+    type Dst = SpecNotifyPayloadBodySpi4;
+}
+impl SpecIsoProof for NotifyPayloadBodySpi4Mapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for NotifyPayloadBodySpi4Mapper {
+    type Src = NotifyPayloadBodySpi4Inner<'a>;
+    type Dst = NotifyPayloadBodySpi4<'a>;
+    type RefSrc = NotifyPayloadBodySpi4InnerRef<'a>;
+}
+type SpecNotifyPayloadBodySpi4CombinatorAlias1 = (bytes::Fixed<4>, bytes::Tail);
+pub struct SpecNotifyPayloadBodySpi4Combinator(pub SpecNotifyPayloadBodySpi4CombinatorAlias);
+
+impl SpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
+    type Type = SpecNotifyPayloadBodySpi4;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecNotifyPayloadBodySpi4CombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecNotifyPayloadBodySpi4CombinatorAlias = Mapped<SpecNotifyPayloadBodySpi4CombinatorAlias1, NotifyPayloadBodySpi4Mapper>;
+type NotifyPayloadBodySpi4CombinatorAlias1 = (bytes::Fixed<4>, bytes::Tail);
+pub struct NotifyPayloadBodySpi4Combinator1(pub NotifyPayloadBodySpi4CombinatorAlias1);
+impl View for NotifyPayloadBodySpi4Combinator1 {
+    type V = SpecNotifyPayloadBodySpi4CombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(NotifyPayloadBodySpi4Combinator1, NotifyPayloadBodySpi4CombinatorAlias1);
+
+pub struct NotifyPayloadBodySpi4Combinator(pub NotifyPayloadBodySpi4CombinatorAlias);
+
+impl View for NotifyPayloadBodySpi4Combinator {
+    type V = SpecNotifyPayloadBodySpi4Combinator;
+    open spec fn view(&self) -> Self::V { SpecNotifyPayloadBodySpi4Combinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi4Combinator {
+    type Type = NotifyPayloadBodySpi4<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type NotifyPayloadBodySpi4CombinatorAlias = Mapped<NotifyPayloadBodySpi4Combinator1, NotifyPayloadBodySpi4Mapper>;
+
+
+pub open spec fn spec_notify_payload_body_spi4() -> SpecNotifyPayloadBodySpi4Combinator {
+    SpecNotifyPayloadBodySpi4Combinator(
+    Mapped {
+        inner: (bytes::Fixed::<4>, bytes::Tail),
+        mapper: NotifyPayloadBodySpi4Mapper,
+    })
+}
+
+                
+pub fn notify_payload_body_spi4<'a>() -> (o: NotifyPayloadBodySpi4Combinator)
+    ensures o@ == spec_notify_payload_body_spi4(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = NotifyPayloadBodySpi4Combinator(
+    Mapped {
+        inner: NotifyPayloadBodySpi4Combinator1((bytes::Fixed::<4>, bytes::Tail)),
+        mapper: NotifyPayloadBodySpi4Mapper,
+    });
+    // assert({
+    //     &&& combinator@ == spec_notify_payload_body_spi4()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_notify_payload_body_spi4<'a>(input: &'a [u8]) -> (res: PResult<<NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_notify_payload_body_spi4().spec_parse(input@) == Some((n as int, v@)),
+        spec_notify_payload_body_spi4().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_notify_payload_body_spi4().spec_parse(input@) is None,
+        spec_notify_payload_body_spi4().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = notify_payload_body_spi4();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_notify_payload_body_spi4<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body_spi4().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_notify_payload_body_spi4().spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_spi4().spec_serialize(v@))
+        },
+{
+    let combinator = notify_payload_body_spi4();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn notify_payload_body_spi4_len<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_notify_payload_body_spi4().wf(v@),
+        spec_notify_payload_body_spi4().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_notify_payload_body_spi4().spec_serialize(v@).len(),
+{
+    let combinator = notify_payload_body_spi4();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub enum SpecNotifyPayloadBodyAnonRestAnonInner {
+    Variant0(SpecNotifyPayloadBodySpi0),
+    Variant1(SpecNotifyPayloadBodySpi4),
+}
+
+pub type SpecNotifyPayloadBodyAnonRestAnonInnerInner = Either<SpecNotifyPayloadBodySpi0, SpecNotifyPayloadBodySpi4>;
+
+impl SpecFrom<SpecNotifyPayloadBodyAnonRestAnonInner> for SpecNotifyPayloadBodyAnonRestAnonInnerInner {
+    open spec fn spec_from(m: SpecNotifyPayloadBodyAnonRestAnonInner) -> SpecNotifyPayloadBodyAnonRestAnonInnerInner {
+        match m {
+            SpecNotifyPayloadBodyAnonRestAnonInner::Variant0(m) => Either::Left(m),
+            SpecNotifyPayloadBodyAnonRestAnonInner::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecNotifyPayloadBodyAnonRestAnonInnerInner> for SpecNotifyPayloadBodyAnonRestAnonInner {
+    open spec fn spec_from(m: SpecNotifyPayloadBodyAnonRestAnonInnerInner) -> SpecNotifyPayloadBodyAnonRestAnonInner {
+        match m {
+            Either::Left(m) => SpecNotifyPayloadBodyAnonRestAnonInner::Variant0(m),
+            Either::Right(m) => SpecNotifyPayloadBodyAnonRestAnonInner::Variant1(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NotifyPayloadBodyAnonRestAnonInner<'a> {
+    Variant0(NotifyPayloadBodySpi0<'a>),
+    Variant1(NotifyPayloadBodySpi4<'a>),
+}
+
+pub type NotifyPayloadBodyAnonRestAnonInnerInner<'a> = Either<NotifyPayloadBodySpi0<'a>, NotifyPayloadBodySpi4<'a>>;
+
+pub type NotifyPayloadBodyAnonRestAnonInnerInnerRef<'a> = Either<&'a NotifyPayloadBodySpi0<'a>, &'a NotifyPayloadBodySpi4<'a>>;
+
+
+impl<'a> View for NotifyPayloadBodyAnonRestAnonInner<'a> {
+    type V = SpecNotifyPayloadBodyAnonRestAnonInner;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            NotifyPayloadBodyAnonRestAnonInner::Variant0(m) => SpecNotifyPayloadBodyAnonRestAnonInner::Variant0(m@),
+            NotifyPayloadBodyAnonRestAnonInner::Variant1(m) => SpecNotifyPayloadBodyAnonRestAnonInner::Variant1(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a NotifyPayloadBodyAnonRestAnonInner<'a>> for NotifyPayloadBodyAnonRestAnonInnerInnerRef<'a> {
+    fn ex_from(m: &'a NotifyPayloadBodyAnonRestAnonInner<'a>) -> NotifyPayloadBodyAnonRestAnonInnerInnerRef<'a> {
+        match m {
+            NotifyPayloadBodyAnonRestAnonInner::Variant0(m) => Either::Left(m),
+            NotifyPayloadBodyAnonRestAnonInner::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+impl<'a> From<NotifyPayloadBodyAnonRestAnonInnerInner<'a>> for NotifyPayloadBodyAnonRestAnonInner<'a> {
+    fn ex_from(m: NotifyPayloadBodyAnonRestAnonInnerInner<'a>) -> NotifyPayloadBodyAnonRestAnonInner<'a> {
+        match m {
+            Either::Left(m) => NotifyPayloadBodyAnonRestAnonInner::Variant0(m),
+            Either::Right(m) => NotifyPayloadBodyAnonRestAnonInner::Variant1(m),
+        }
+    }
+    
+}
+
+
+pub struct NotifyPayloadBodyAnonRestAnonInnerMapper;
+impl View for NotifyPayloadBodyAnonRestAnonInnerMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for NotifyPayloadBodyAnonRestAnonInnerMapper {
+    type Src = SpecNotifyPayloadBodyAnonRestAnonInnerInner;
+    type Dst = SpecNotifyPayloadBodyAnonRestAnonInner;
+}
+impl SpecIsoProof for NotifyPayloadBodyAnonRestAnonInnerMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for NotifyPayloadBodyAnonRestAnonInnerMapper {
+    type Src = NotifyPayloadBodyAnonRestAnonInnerInner<'a>;
+    type Dst = NotifyPayloadBodyAnonRestAnonInner<'a>;
+    type RefSrc = NotifyPayloadBodyAnonRestAnonInnerInnerRef<'a>;
+}
+
+type SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1 = Choice<Cond<SpecNotifyPayloadBodySpi0Combinator>, Cond<SpecNotifyPayloadBodySpi4Combinator>>;
+pub struct SpecNotifyPayloadBodyAnonRestAnonInnerCombinator(pub SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias);
+
+impl SpecCombinator for SpecNotifyPayloadBodyAnonRestAnonInnerCombinator {
+    type Type = SpecNotifyPayloadBodyAnonRestAnonInner;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecNotifyPayloadBodyAnonRestAnonInnerCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias = Mapped<SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1, NotifyPayloadBodyAnonRestAnonInnerMapper>;
+type NotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1 = Choice<Cond<NotifyPayloadBodySpi0Combinator>, Cond<NotifyPayloadBodySpi4Combinator>>;
+pub struct NotifyPayloadBodyAnonRestAnonInnerCombinator1(pub NotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1);
+impl View for NotifyPayloadBodyAnonRestAnonInnerCombinator1 {
+    type V = SpecNotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(NotifyPayloadBodyAnonRestAnonInnerCombinator1, NotifyPayloadBodyAnonRestAnonInnerCombinatorAlias1);
+
+pub struct NotifyPayloadBodyAnonRestAnonInnerCombinator(pub NotifyPayloadBodyAnonRestAnonInnerCombinatorAlias);
+
+impl View for NotifyPayloadBodyAnonRestAnonInnerCombinator {
+    type V = SpecNotifyPayloadBodyAnonRestAnonInnerCombinator;
+    open spec fn view(&self) -> Self::V { SpecNotifyPayloadBodyAnonRestAnonInnerCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyAnonRestAnonInnerCombinator {
+    type Type = NotifyPayloadBodyAnonRestAnonInner<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type NotifyPayloadBodyAnonRestAnonInnerCombinatorAlias = Mapped<NotifyPayloadBodyAnonRestAnonInnerCombinator1, NotifyPayloadBodyAnonRestAnonInnerMapper>;
+
+
+pub open spec fn spec_notify_payload_body_anon_rest_anon_inner(spi_size: SpecIpsecSpiSizeOrNone) -> SpecNotifyPayloadBodyAnonRestAnonInnerCombinator {
+    SpecNotifyPayloadBodyAnonRestAnonInnerCombinator(Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_notify_payload_body_spi0() }, Cond { cond: spi_size == 4, inner: spec_notify_payload_body_spi4() }), mapper: NotifyPayloadBodyAnonRestAnonInnerMapper })
+}
+
+pub fn notify_payload_body_anon_rest_anon_inner<'a>(spi_size: IpsecSpiSizeOrNone) -> (o: NotifyPayloadBodyAnonRestAnonInnerCombinator)
+    requires
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures o@ == spec_notify_payload_body_anon_rest_anon_inner(spi_size@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = NotifyPayloadBodyAnonRestAnonInnerCombinator(Mapped { inner: NotifyPayloadBodyAnonRestAnonInnerCombinator1(Choice::new(Cond { cond: spi_size == 0, inner: notify_payload_body_spi0() }, Cond { cond: spi_size == 4, inner: notify_payload_body_spi4() })), mapper: NotifyPayloadBodyAnonRestAnonInnerMapper });
+    // assert({
+    //     &&& combinator@ == spec_notify_payload_body_anon_rest_anon_inner(spi_size@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_notify_payload_body_anon_rest_anon_inner<'a>(input: &'a [u8], spi_size: IpsecSpiSizeOrNone) -> (res: PResult<<NotifyPayloadBodyAnonRestAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        res matches Ok((n, v)) ==> spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_parse(input@) is None,
+        spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = notify_payload_body_anon_rest_anon_inner( spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_notify_payload_body_anon_rest_anon_inner<'a>(v: <NotifyPayloadBodyAnonRestAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, spi_size: IpsecSpiSizeOrNone) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body_anon_rest_anon_inner(spi_size@).wf(v@),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_serialize(v@))
+        },
+{
+    let combinator = notify_payload_body_anon_rest_anon_inner( spi_size );
+    combinator.serialize(v, data, pos)
+}
+
+pub fn notify_payload_body_anon_rest_anon_inner_len<'a>(v: <NotifyPayloadBodyAnonRestAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
+    requires
+        spec_notify_payload_body_anon_rest_anon_inner(spi_size@).wf(v@),
+        spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures
+        serialize_len == spec_notify_payload_body_anon_rest_anon_inner(spi_size@).spec_serialize(v@).len(),
+{
+    let combinator = notify_payload_body_anon_rest_anon_inner( spi_size );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
 pub type SpecCfgAttrTypeWord = u16;
 pub type CfgAttrTypeWord = u16;
 pub type CfgAttrTypeWordRef<'a> = &'a u16;
@@ -6893,32 +7921,32 @@ impl<'a, 'b, 'x> Continuation<TsUnknownInnerCont0Input<'a, 'b, 'x>> for TsUnknow
 }
                 
 
-pub enum SpecTrafficSelectorTsBody {
+pub enum SpecTrafficSelectorAnonTsBody {
     TS_IPV4_ADDR_RANGE(SpecTsIpv4SelectorBody),
     TS_IPV6_ADDR_RANGE(SpecTsIpv6SelectorBody),
     Unrecognized(SpecTsUnknownInner),
 }
 
-pub type SpecTrafficSelectorTsBodyInner = Either<SpecTsIpv4SelectorBody, Either<SpecTsIpv6SelectorBody, SpecTsUnknownInner>>;
+pub type SpecTrafficSelectorAnonTsBodyInner = Either<SpecTsIpv4SelectorBody, Either<SpecTsIpv6SelectorBody, SpecTsUnknownInner>>;
 
-impl SpecFrom<SpecTrafficSelectorTsBody> for SpecTrafficSelectorTsBodyInner {
-    open spec fn spec_from(m: SpecTrafficSelectorTsBody) -> SpecTrafficSelectorTsBodyInner {
+impl SpecFrom<SpecTrafficSelectorAnonTsBody> for SpecTrafficSelectorAnonTsBodyInner {
+    open spec fn spec_from(m: SpecTrafficSelectorAnonTsBody) -> SpecTrafficSelectorAnonTsBodyInner {
         match m {
-            SpecTrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m) => Either::Left(m),
-            SpecTrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m) => Either::Right(Either::Left(m)),
-            SpecTrafficSelectorTsBody::Unrecognized(m) => Either::Right(Either::Right(m)),
+            SpecTrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m) => Either::Left(m),
+            SpecTrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m) => Either::Right(Either::Left(m)),
+            SpecTrafficSelectorAnonTsBody::Unrecognized(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
                 
-impl SpecFrom<SpecTrafficSelectorTsBodyInner> for SpecTrafficSelectorTsBody {
-    open spec fn spec_from(m: SpecTrafficSelectorTsBodyInner) -> SpecTrafficSelectorTsBody {
+impl SpecFrom<SpecTrafficSelectorAnonTsBodyInner> for SpecTrafficSelectorAnonTsBody {
+    open spec fn spec_from(m: SpecTrafficSelectorAnonTsBodyInner) -> SpecTrafficSelectorAnonTsBody {
         match m {
-            Either::Left(m) => SpecTrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m),
-            Either::Right(Either::Left(m)) => SpecTrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m),
-            Either::Right(Either::Right(m)) => SpecTrafficSelectorTsBody::Unrecognized(m),
+            Either::Left(m) => SpecTrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m),
+            Either::Right(Either::Left(m)) => SpecTrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m),
+            Either::Right(Either::Right(m)) => SpecTrafficSelectorAnonTsBody::Unrecognized(m),
         }
     }
 
@@ -6927,64 +7955,64 @@ impl SpecFrom<SpecTrafficSelectorTsBodyInner> for SpecTrafficSelectorTsBody {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TrafficSelectorTsBody<'a> {
+pub enum TrafficSelectorAnonTsBody<'a> {
     TS_IPV4_ADDR_RANGE(TsIpv4SelectorBody<'a>),
     TS_IPV6_ADDR_RANGE(TsIpv6SelectorBody<'a>),
     Unrecognized(TsUnknownInner<'a>),
 }
 
-pub type TrafficSelectorTsBodyInner<'a> = Either<TsIpv4SelectorBody<'a>, Either<TsIpv6SelectorBody<'a>, TsUnknownInner<'a>>>;
+pub type TrafficSelectorAnonTsBodyInner<'a> = Either<TsIpv4SelectorBody<'a>, Either<TsIpv6SelectorBody<'a>, TsUnknownInner<'a>>>;
 
-pub type TrafficSelectorTsBodyInnerRef<'a> = Either<&'a TsIpv4SelectorBody<'a>, Either<&'a TsIpv6SelectorBody<'a>, &'a TsUnknownInner<'a>>>;
+pub type TrafficSelectorAnonTsBodyInnerRef<'a> = Either<&'a TsIpv4SelectorBody<'a>, Either<&'a TsIpv6SelectorBody<'a>, &'a TsUnknownInner<'a>>>;
 
 
-impl<'a> View for TrafficSelectorTsBody<'a> {
-    type V = SpecTrafficSelectorTsBody;
+impl<'a> View for TrafficSelectorAnonTsBody<'a> {
+    type V = SpecTrafficSelectorAnonTsBody;
     open spec fn view(&self) -> Self::V {
         match self {
-            TrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m) => SpecTrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m@),
-            TrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m) => SpecTrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m@),
-            TrafficSelectorTsBody::Unrecognized(m) => SpecTrafficSelectorTsBody::Unrecognized(m@),
+            TrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m) => SpecTrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m@),
+            TrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m) => SpecTrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m@),
+            TrafficSelectorAnonTsBody::Unrecognized(m) => SpecTrafficSelectorAnonTsBody::Unrecognized(m@),
         }
     }
 }
 
 
-impl<'a> From<&'a TrafficSelectorTsBody<'a>> for TrafficSelectorTsBodyInnerRef<'a> {
-    fn ex_from(m: &'a TrafficSelectorTsBody<'a>) -> TrafficSelectorTsBodyInnerRef<'a> {
+impl<'a> From<&'a TrafficSelectorAnonTsBody<'a>> for TrafficSelectorAnonTsBodyInnerRef<'a> {
+    fn ex_from(m: &'a TrafficSelectorAnonTsBody<'a>) -> TrafficSelectorAnonTsBodyInnerRef<'a> {
         match m {
-            TrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m) => Either::Left(m),
-            TrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m) => Either::Right(Either::Left(m)),
-            TrafficSelectorTsBody::Unrecognized(m) => Either::Right(Either::Right(m)),
+            TrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m) => Either::Left(m),
+            TrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m) => Either::Right(Either::Left(m)),
+            TrafficSelectorAnonTsBody::Unrecognized(m) => Either::Right(Either::Right(m)),
         }
     }
 
 }
 
-impl<'a> From<TrafficSelectorTsBodyInner<'a>> for TrafficSelectorTsBody<'a> {
-    fn ex_from(m: TrafficSelectorTsBodyInner<'a>) -> TrafficSelectorTsBody<'a> {
+impl<'a> From<TrafficSelectorAnonTsBodyInner<'a>> for TrafficSelectorAnonTsBody<'a> {
+    fn ex_from(m: TrafficSelectorAnonTsBodyInner<'a>) -> TrafficSelectorAnonTsBody<'a> {
         match m {
-            Either::Left(m) => TrafficSelectorTsBody::TS_IPV4_ADDR_RANGE(m),
-            Either::Right(Either::Left(m)) => TrafficSelectorTsBody::TS_IPV6_ADDR_RANGE(m),
-            Either::Right(Either::Right(m)) => TrafficSelectorTsBody::Unrecognized(m),
+            Either::Left(m) => TrafficSelectorAnonTsBody::TS_IPV4_ADDR_RANGE(m),
+            Either::Right(Either::Left(m)) => TrafficSelectorAnonTsBody::TS_IPV6_ADDR_RANGE(m),
+            Either::Right(Either::Right(m)) => TrafficSelectorAnonTsBody::Unrecognized(m),
         }
     }
     
 }
 
 
-pub struct TrafficSelectorTsBodyMapper;
-impl View for TrafficSelectorTsBodyMapper {
+pub struct TrafficSelectorAnonTsBodyMapper;
+impl View for TrafficSelectorAnonTsBodyMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for TrafficSelectorTsBodyMapper {
-    type Src = SpecTrafficSelectorTsBodyInner;
-    type Dst = SpecTrafficSelectorTsBody;
+impl SpecIso for TrafficSelectorAnonTsBodyMapper {
+    type Src = SpecTrafficSelectorAnonTsBodyInner;
+    type Dst = SpecTrafficSelectorAnonTsBody;
 }
-impl SpecIsoProof for TrafficSelectorTsBodyMapper {
+impl SpecIsoProof for TrafficSelectorAnonTsBodyMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -6992,18 +8020,18 @@ impl SpecIsoProof for TrafficSelectorTsBodyMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso<'a> for TrafficSelectorTsBodyMapper {
-    type Src = TrafficSelectorTsBodyInner<'a>;
-    type Dst = TrafficSelectorTsBody<'a>;
-    type RefSrc = TrafficSelectorTsBodyInnerRef<'a>;
+impl<'a> Iso<'a> for TrafficSelectorAnonTsBodyMapper {
+    type Src = TrafficSelectorAnonTsBodyInner<'a>;
+    type Dst = TrafficSelectorAnonTsBody<'a>;
+    type RefSrc = TrafficSelectorAnonTsBodyInnerRef<'a>;
 }
 
-type SpecTrafficSelectorTsBodyCombinatorAlias1 = Choice<Cond<SpecTsIpv6SelectorBodyCombinator>, Cond<SpecTsUnknownInnerCombinator>>;
-type SpecTrafficSelectorTsBodyCombinatorAlias2 = Choice<Cond<SpecTsIpv4SelectorBodyCombinator>, SpecTrafficSelectorTsBodyCombinatorAlias1>;
-pub struct SpecTrafficSelectorTsBodyCombinator(pub SpecTrafficSelectorTsBodyCombinatorAlias);
+type SpecTrafficSelectorAnonTsBodyCombinatorAlias1 = Choice<Cond<SpecTsIpv6SelectorBodyCombinator>, Cond<SpecTsUnknownInnerCombinator>>;
+type SpecTrafficSelectorAnonTsBodyCombinatorAlias2 = Choice<Cond<SpecTsIpv4SelectorBodyCombinator>, SpecTrafficSelectorAnonTsBodyCombinatorAlias1>;
+pub struct SpecTrafficSelectorAnonTsBodyCombinator(pub SpecTrafficSelectorAnonTsBodyCombinatorAlias);
 
-impl SpecCombinator for SpecTrafficSelectorTsBodyCombinator {
-    type Type = SpecTrafficSelectorTsBody;
+impl SpecCombinator for SpecTrafficSelectorAnonTsBodyCombinator {
+    type Type = SpecTrafficSelectorAnonTsBody;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -7013,9 +8041,9 @@ impl SpecCombinator for SpecTrafficSelectorTsBodyCombinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecTrafficSelectorTsBodyCombinator {
+impl SecureSpecCombinator for SpecTrafficSelectorAnonTsBodyCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecTrafficSelectorTsBodyCombinatorAlias::is_prefix_secure() }
+    { SpecTrafficSelectorAnonTsBodyCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -7029,31 +8057,31 @@ impl SecureSpecCombinator for SpecTrafficSelectorTsBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTrafficSelectorTsBodyCombinatorAlias = Mapped<SpecTrafficSelectorTsBodyCombinatorAlias2, TrafficSelectorTsBodyMapper>;
-type TrafficSelectorTsBodyCombinatorAlias1 = Choice<Cond<TsIpv6SelectorBodyCombinator>, Cond<TsUnknownInnerCombinator>>;
-type TrafficSelectorTsBodyCombinatorAlias2 = Choice<Cond<TsIpv4SelectorBodyCombinator>, TrafficSelectorTsBodyCombinator1>;
-pub struct TrafficSelectorTsBodyCombinator1(pub TrafficSelectorTsBodyCombinatorAlias1);
-impl View for TrafficSelectorTsBodyCombinator1 {
-    type V = SpecTrafficSelectorTsBodyCombinatorAlias1;
+pub type SpecTrafficSelectorAnonTsBodyCombinatorAlias = Mapped<SpecTrafficSelectorAnonTsBodyCombinatorAlias2, TrafficSelectorAnonTsBodyMapper>;
+type TrafficSelectorAnonTsBodyCombinatorAlias1 = Choice<Cond<TsIpv6SelectorBodyCombinator>, Cond<TsUnknownInnerCombinator>>;
+type TrafficSelectorAnonTsBodyCombinatorAlias2 = Choice<Cond<TsIpv4SelectorBodyCombinator>, TrafficSelectorAnonTsBodyCombinator1>;
+pub struct TrafficSelectorAnonTsBodyCombinator1(pub TrafficSelectorAnonTsBodyCombinatorAlias1);
+impl View for TrafficSelectorAnonTsBodyCombinator1 {
+    type V = SpecTrafficSelectorAnonTsBodyCombinatorAlias1;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TrafficSelectorTsBodyCombinator1, TrafficSelectorTsBodyCombinatorAlias1);
+impl_wrapper_combinator!(TrafficSelectorAnonTsBodyCombinator1, TrafficSelectorAnonTsBodyCombinatorAlias1);
 
-pub struct TrafficSelectorTsBodyCombinator2(pub TrafficSelectorTsBodyCombinatorAlias2);
-impl View for TrafficSelectorTsBodyCombinator2 {
-    type V = SpecTrafficSelectorTsBodyCombinatorAlias2;
+pub struct TrafficSelectorAnonTsBodyCombinator2(pub TrafficSelectorAnonTsBodyCombinatorAlias2);
+impl View for TrafficSelectorAnonTsBodyCombinator2 {
+    type V = SpecTrafficSelectorAnonTsBodyCombinatorAlias2;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(TrafficSelectorTsBodyCombinator2, TrafficSelectorTsBodyCombinatorAlias2);
+impl_wrapper_combinator!(TrafficSelectorAnonTsBodyCombinator2, TrafficSelectorAnonTsBodyCombinatorAlias2);
 
-pub struct TrafficSelectorTsBodyCombinator(pub TrafficSelectorTsBodyCombinatorAlias);
+pub struct TrafficSelectorAnonTsBodyCombinator(pub TrafficSelectorAnonTsBodyCombinatorAlias);
 
-impl View for TrafficSelectorTsBodyCombinator {
-    type V = SpecTrafficSelectorTsBodyCombinator;
-    open spec fn view(&self) -> Self::V { SpecTrafficSelectorTsBodyCombinator(self.0@) }
+impl View for TrafficSelectorAnonTsBodyCombinator {
+    type V = SpecTrafficSelectorAnonTsBodyCombinator;
+    open spec fn view(&self) -> Self::V { SpecTrafficSelectorAnonTsBodyCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorTsBodyCombinator {
-    type Type = TrafficSelectorTsBody<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorAnonTsBodyCombinator {
+    type Type = TrafficSelectorAnonTsBody<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -7064,84 +8092,84 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorTsBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type TrafficSelectorTsBodyCombinatorAlias = Mapped<TrafficSelectorTsBodyCombinator2, TrafficSelectorTsBodyMapper>;
+pub type TrafficSelectorAnonTsBodyCombinatorAlias = Mapped<TrafficSelectorAnonTsBodyCombinator2, TrafficSelectorAnonTsBodyMapper>;
 
 
-pub open spec fn spec_traffic_selector_ts_body(ts_type_byte: u8) -> SpecTrafficSelectorTsBodyCombinator {
-    SpecTrafficSelectorTsBodyCombinator(Mapped { inner: Choice(Cond { cond: ts_type_byte == TsType::SPEC_TS_IPV4_ADDR_RANGE, inner: spec_ts_ipv4_selector_body() }, Choice(Cond { cond: ts_type_byte == TsType::SPEC_TS_IPV6_ADDR_RANGE, inner: spec_ts_ipv6_selector_body() }, Cond { cond: !(ts_type_byte == TsType::SPEC_TS_IPV4_ADDR_RANGE || ts_type_byte == TsType::SPEC_TS_IPV6_ADDR_RANGE), inner: spec_ts_unknown_inner() })), mapper: TrafficSelectorTsBodyMapper })
+pub open spec fn spec_traffic_selector_anon_ts_body(ts_type_byte: u8) -> SpecTrafficSelectorAnonTsBodyCombinator {
+    SpecTrafficSelectorAnonTsBodyCombinator(Mapped { inner: Choice(Cond { cond: ts_type_byte == TsType::SPEC_TS_IPV4_ADDR_RANGE, inner: spec_ts_ipv4_selector_body() }, Choice(Cond { cond: ts_type_byte == TsType::SPEC_TS_IPV6_ADDR_RANGE, inner: spec_ts_ipv6_selector_body() }, Cond { cond: !(ts_type_byte == TsType::SPEC_TS_IPV4_ADDR_RANGE || ts_type_byte == TsType::SPEC_TS_IPV6_ADDR_RANGE), inner: spec_ts_unknown_inner() })), mapper: TrafficSelectorAnonTsBodyMapper })
 }
 
-pub fn traffic_selector_ts_body<'a>(ts_type_byte: u8) -> (o: TrafficSelectorTsBodyCombinator)
+pub fn traffic_selector_anon_ts_body<'a>(ts_type_byte: u8) -> (o: TrafficSelectorAnonTsBodyCombinator)
     requires
         spec_ts_type().wf(ts_type_byte@),
 
-    ensures o@ == spec_traffic_selector_ts_body(ts_type_byte@),
+    ensures o@ == spec_traffic_selector_anon_ts_body(ts_type_byte@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = TrafficSelectorTsBodyCombinator(Mapped { inner: TrafficSelectorTsBodyCombinator2(Choice::new(Cond { cond: ts_type_byte == TsType::TS_IPV4_ADDR_RANGE, inner: ts_ipv4_selector_body() }, TrafficSelectorTsBodyCombinator1(Choice::new(Cond { cond: ts_type_byte == TsType::TS_IPV6_ADDR_RANGE, inner: ts_ipv6_selector_body() }, Cond { cond: !(ts_type_byte == TsType::TS_IPV4_ADDR_RANGE || ts_type_byte == TsType::TS_IPV6_ADDR_RANGE), inner: ts_unknown_inner() })))), mapper: TrafficSelectorTsBodyMapper });
+    let combinator = TrafficSelectorAnonTsBodyCombinator(Mapped { inner: TrafficSelectorAnonTsBodyCombinator2(Choice::new(Cond { cond: ts_type_byte == TsType::TS_IPV4_ADDR_RANGE, inner: ts_ipv4_selector_body() }, TrafficSelectorAnonTsBodyCombinator1(Choice::new(Cond { cond: ts_type_byte == TsType::TS_IPV6_ADDR_RANGE, inner: ts_ipv6_selector_body() }, Cond { cond: !(ts_type_byte == TsType::TS_IPV4_ADDR_RANGE || ts_type_byte == TsType::TS_IPV6_ADDR_RANGE), inner: ts_unknown_inner() })))), mapper: TrafficSelectorAnonTsBodyMapper });
     // assert({
-    //     &&& combinator@ == spec_traffic_selector_ts_body(ts_type_byte@)
+    //     &&& combinator@ == spec_traffic_selector_anon_ts_body(ts_type_byte@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_traffic_selector_ts_body<'a>(input: &'a [u8], ts_type_byte: u8) -> (res: PResult<<TrafficSelectorTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_traffic_selector_anon_ts_body<'a>(input: &'a [u8], ts_type_byte: u8) -> (res: PResult<<TrafficSelectorAnonTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_ts_type().wf(ts_type_byte@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_traffic_selector_ts_body(ts_type_byte@).spec_parse(input@) == Some((n as int, v@)),
-        spec_traffic_selector_ts_body(ts_type_byte@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_parse(input@) == Some((n as int, v@)),
+        spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_traffic_selector_ts_body(ts_type_byte@).spec_parse(input@) is None,
-        spec_traffic_selector_ts_body(ts_type_byte@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_parse(input@) is None,
+        spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = traffic_selector_ts_body( ts_type_byte );
+    let combinator = traffic_selector_anon_ts_body( ts_type_byte );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_traffic_selector_ts_body<'a>(v: <TrafficSelectorTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ts_type_byte: u8) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_traffic_selector_anon_ts_body<'a>(v: <TrafficSelectorAnonTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ts_type_byte: u8) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_traffic_selector_ts_body(ts_type_byte@).wf(v@),
+        spec_traffic_selector_anon_ts_body(ts_type_byte@).wf(v@),
         spec_ts_type().wf(ts_type_byte@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@))
+            &&& n == spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_serialize(v@))
         },
 {
-    let combinator = traffic_selector_ts_body( ts_type_byte );
+    let combinator = traffic_selector_anon_ts_body( ts_type_byte );
     combinator.serialize(v, data, pos)
 }
 
-pub fn traffic_selector_ts_body_len<'a>(v: <TrafficSelectorTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ts_type_byte: u8) -> (serialize_len: usize)
+pub fn traffic_selector_anon_ts_body_len<'a>(v: <TrafficSelectorAnonTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ts_type_byte: u8) -> (serialize_len: usize)
     requires
-        spec_traffic_selector_ts_body(ts_type_byte@).wf(v@),
-        spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len() <= usize::MAX,
+        spec_traffic_selector_anon_ts_body(ts_type_byte@).wf(v@),
+        spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_serialize(v@).len() <= usize::MAX,
         spec_ts_type().wf(ts_type_byte@),
 
     ensures
-        serialize_len == spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len(),
+        serialize_len == spec_traffic_selector_anon_ts_body(ts_type_byte@).spec_serialize(v@).len(),
 {
-    let combinator = traffic_selector_ts_body( ts_type_byte );
+    let combinator = traffic_selector_anon_ts_body( ts_type_byte );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 
 pub struct SpecTrafficSelector {
     pub ts_type_byte: u8,
-    pub ts_body: SpecTrafficSelectorTsBody,
+    pub ts_body: SpecTrafficSelectorAnonTsBody,
 }
 
-pub type SpecTrafficSelectorInner = (u8, SpecTrafficSelectorTsBody);
+pub type SpecTrafficSelectorInner = (u8, SpecTrafficSelectorAnonTsBody);
 
 
 impl SpecFrom<SpecTrafficSelector> for SpecTrafficSelectorInner {
@@ -7160,7 +8188,7 @@ impl SpecFrom<SpecTrafficSelectorInner> for SpecTrafficSelector {
 
 pub struct TrafficSelector<'a> {
     pub ts_type_byte: u8,
-    pub ts_body: TrafficSelectorTsBody<'a>,
+    pub ts_body: TrafficSelectorAnonTsBody<'a>,
 }
 
 impl View for TrafficSelector<'_> {
@@ -7173,9 +8201,9 @@ impl View for TrafficSelector<'_> {
         }
     }
 }
-pub type TrafficSelectorInner<'a> = (u8, TrafficSelectorTsBody<'a>);
+pub type TrafficSelectorInner<'a> = (u8, TrafficSelectorAnonTsBody<'a>);
 
-pub type TrafficSelectorInnerRef<'a> = (&'a u8, &'a TrafficSelectorTsBody<'a>);
+pub type TrafficSelectorInnerRef<'a> = (&'a u8, &'a TrafficSelectorAnonTsBody<'a>);
 impl<'a> From<&'a TrafficSelector<'a>> for TrafficSelectorInnerRef<'a> {
     fn ex_from(m: &'a TrafficSelector) -> TrafficSelectorInnerRef<'a> {
         (&m.ts_type_byte, &m.ts_body)
@@ -7243,7 +8271,7 @@ impl SecureSpecCombinator for SpecTrafficSelectorCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecTrafficSelectorCombinatorAlias = Mapped<SpecPair<SpecTsTypeCombinator, SpecTrafficSelectorTsBodyCombinator>, TrafficSelectorMapper>;
+pub type SpecTrafficSelectorCombinatorAlias = Mapped<SpecPair<SpecTsTypeCombinator, SpecTrafficSelectorAnonTsBodyCombinator>, TrafficSelectorMapper>;
 
 pub struct TrafficSelectorCombinator(pub TrafficSelectorCombinatorAlias);
 
@@ -7263,7 +8291,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type TrafficSelectorCombinatorAlias = Mapped<Pair<TsTypeCombinator, TrafficSelectorTsBodyCombinator, TrafficSelectorCont0>, TrafficSelectorMapper>;
+pub type TrafficSelectorCombinatorAlias = Mapped<Pair<TsTypeCombinator, TrafficSelectorAnonTsBodyCombinator, TrafficSelectorCont0>, TrafficSelectorMapper>;
 
 
 pub open spec fn spec_traffic_selector() -> SpecTrafficSelectorCombinator {
@@ -7274,13 +8302,13 @@ pub open spec fn spec_traffic_selector() -> SpecTrafficSelectorCombinator {
     })
 }
 
-pub open spec fn spec_traffic_selector_cont0(deps: u8) -> SpecTrafficSelectorTsBodyCombinator {
+pub open spec fn spec_traffic_selector_cont0(deps: u8) -> SpecTrafficSelectorAnonTsBodyCombinator {
     let ts_type_byte = deps;
-    spec_traffic_selector_ts_body(ts_type_byte)
+    spec_traffic_selector_anon_ts_body(ts_type_byte)
 }
 
 impl View for TrafficSelectorCont0 {
-    type V = spec_fn(u8) -> SpecTrafficSelectorTsBodyCombinator;
+    type V = spec_fn(u8) -> SpecTrafficSelectorAnonTsBodyCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: u8| {
@@ -7354,7 +8382,7 @@ type TrafficSelectorCont0Type<'a, 'b> = &'b u8;
 type TrafficSelectorCont0SType<'a, 'x> = &'x u8;
 type TrafficSelectorCont0Input<'a, 'b, 'x> = POrSType<TrafficSelectorCont0Type<'a, 'b>, TrafficSelectorCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<TrafficSelectorCont0Input<'a, 'b, 'x>> for TrafficSelectorCont0 {
-    type Output = TrafficSelectorTsBodyCombinator;
+    type Output = TrafficSelectorAnonTsBodyCombinator;
 
     open spec fn requires(&self, deps: TrafficSelectorCont0Input<'a, 'b, 'x>) -> bool {
         &&& (spec_ts_type()).wf(deps@)
@@ -7370,12 +8398,12 @@ impl<'a, 'b, 'x> Continuation<TrafficSelectorCont0Input<'a, 'b, 'x>> for Traffic
             POrSType::P(deps) => {
                 let ts_type_byte = deps;
                 let ts_type_byte = *ts_type_byte;
-                traffic_selector_ts_body(ts_type_byte)
+                traffic_selector_anon_ts_body(ts_type_byte)
             }
             POrSType::S(deps) => {
                 let ts_type_byte = deps;
                 let ts_type_byte = *ts_type_byte;
-                traffic_selector_ts_body(ts_type_byte)
+                traffic_selector_anon_ts_body(ts_type_byte)
             }
         }
     }
@@ -8590,35 +9618,35 @@ impl<'a, 'b, 'x> Continuation<EapReqRespRestCont0Input<'a, 'b, 'x>> for EapReqRe
 }
                 
 
-pub enum SpecIkev2EapPayloadInnerEapRest {
+pub enum SpecIkev2EapPayloadInnerAnonEapRest {
     Success(SpecEapSuccessRest),
     Failure(SpecEapFailureRest),
     Request(SpecEapReqRespRest),
     Response(SpecEapReqRespRest),
 }
 
-pub type SpecIkev2EapPayloadInnerEapRestInner = Either<SpecEapSuccessRest, Either<SpecEapFailureRest, Either<SpecEapReqRespRest, SpecEapReqRespRest>>>;
+pub type SpecIkev2EapPayloadInnerAnonEapRestInner = Either<SpecEapSuccessRest, Either<SpecEapFailureRest, Either<SpecEapReqRespRest, SpecEapReqRespRest>>>;
 
-impl SpecFrom<SpecIkev2EapPayloadInnerEapRest> for SpecIkev2EapPayloadInnerEapRestInner {
-    open spec fn spec_from(m: SpecIkev2EapPayloadInnerEapRest) -> SpecIkev2EapPayloadInnerEapRestInner {
+impl SpecFrom<SpecIkev2EapPayloadInnerAnonEapRest> for SpecIkev2EapPayloadInnerAnonEapRestInner {
+    open spec fn spec_from(m: SpecIkev2EapPayloadInnerAnonEapRest) -> SpecIkev2EapPayloadInnerAnonEapRestInner {
         match m {
-            SpecIkev2EapPayloadInnerEapRest::Success(m) => Either::Left(m),
-            SpecIkev2EapPayloadInnerEapRest::Failure(m) => Either::Right(Either::Left(m)),
-            SpecIkev2EapPayloadInnerEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecIkev2EapPayloadInnerEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
+            SpecIkev2EapPayloadInnerAnonEapRest::Success(m) => Either::Left(m),
+            SpecIkev2EapPayloadInnerAnonEapRest::Failure(m) => Either::Right(Either::Left(m)),
+            SpecIkev2EapPayloadInnerAnonEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecIkev2EapPayloadInnerAnonEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
         }
     }
 
 }
 
                 
-impl SpecFrom<SpecIkev2EapPayloadInnerEapRestInner> for SpecIkev2EapPayloadInnerEapRest {
-    open spec fn spec_from(m: SpecIkev2EapPayloadInnerEapRestInner) -> SpecIkev2EapPayloadInnerEapRest {
+impl SpecFrom<SpecIkev2EapPayloadInnerAnonEapRestInner> for SpecIkev2EapPayloadInnerAnonEapRest {
+    open spec fn spec_from(m: SpecIkev2EapPayloadInnerAnonEapRestInner) -> SpecIkev2EapPayloadInnerAnonEapRest {
         match m {
-            Either::Left(m) => SpecIkev2EapPayloadInnerEapRest::Success(m),
-            Either::Right(Either::Left(m)) => SpecIkev2EapPayloadInnerEapRest::Failure(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecIkev2EapPayloadInnerEapRest::Request(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecIkev2EapPayloadInnerEapRest::Response(m),
+            Either::Left(m) => SpecIkev2EapPayloadInnerAnonEapRest::Success(m),
+            Either::Right(Either::Left(m)) => SpecIkev2EapPayloadInnerAnonEapRest::Failure(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecIkev2EapPayloadInnerAnonEapRest::Request(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecIkev2EapPayloadInnerAnonEapRest::Response(m),
         }
     }
 
@@ -8627,68 +9655,68 @@ impl SpecFrom<SpecIkev2EapPayloadInnerEapRestInner> for SpecIkev2EapPayloadInner
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Ikev2EapPayloadInnerEapRest<'a> {
+pub enum Ikev2EapPayloadInnerAnonEapRest<'a> {
     Success(EapSuccessRest),
     Failure(EapFailureRest),
     Request(EapReqRespRest<'a>),
     Response(EapReqRespRest<'a>),
 }
 
-pub type Ikev2EapPayloadInnerEapRestInner<'a> = Either<EapSuccessRest, Either<EapFailureRest, Either<EapReqRespRest<'a>, EapReqRespRest<'a>>>>;
+pub type Ikev2EapPayloadInnerAnonEapRestInner<'a> = Either<EapSuccessRest, Either<EapFailureRest, Either<EapReqRespRest<'a>, EapReqRespRest<'a>>>>;
 
-pub type Ikev2EapPayloadInnerEapRestInnerRef<'a> = Either<&'a EapSuccessRest, Either<&'a EapFailureRest, Either<&'a EapReqRespRest<'a>, &'a EapReqRespRest<'a>>>>;
+pub type Ikev2EapPayloadInnerAnonEapRestInnerRef<'a> = Either<&'a EapSuccessRest, Either<&'a EapFailureRest, Either<&'a EapReqRespRest<'a>, &'a EapReqRespRest<'a>>>>;
 
 
-impl<'a> View for Ikev2EapPayloadInnerEapRest<'a> {
-    type V = SpecIkev2EapPayloadInnerEapRest;
+impl<'a> View for Ikev2EapPayloadInnerAnonEapRest<'a> {
+    type V = SpecIkev2EapPayloadInnerAnonEapRest;
     open spec fn view(&self) -> Self::V {
         match self {
-            Ikev2EapPayloadInnerEapRest::Success(m) => SpecIkev2EapPayloadInnerEapRest::Success(m@),
-            Ikev2EapPayloadInnerEapRest::Failure(m) => SpecIkev2EapPayloadInnerEapRest::Failure(m@),
-            Ikev2EapPayloadInnerEapRest::Request(m) => SpecIkev2EapPayloadInnerEapRest::Request(m@),
-            Ikev2EapPayloadInnerEapRest::Response(m) => SpecIkev2EapPayloadInnerEapRest::Response(m@),
+            Ikev2EapPayloadInnerAnonEapRest::Success(m) => SpecIkev2EapPayloadInnerAnonEapRest::Success(m@),
+            Ikev2EapPayloadInnerAnonEapRest::Failure(m) => SpecIkev2EapPayloadInnerAnonEapRest::Failure(m@),
+            Ikev2EapPayloadInnerAnonEapRest::Request(m) => SpecIkev2EapPayloadInnerAnonEapRest::Request(m@),
+            Ikev2EapPayloadInnerAnonEapRest::Response(m) => SpecIkev2EapPayloadInnerAnonEapRest::Response(m@),
         }
     }
 }
 
 
-impl<'a> From<&'a Ikev2EapPayloadInnerEapRest<'a>> for Ikev2EapPayloadInnerEapRestInnerRef<'a> {
-    fn ex_from(m: &'a Ikev2EapPayloadInnerEapRest<'a>) -> Ikev2EapPayloadInnerEapRestInnerRef<'a> {
+impl<'a> From<&'a Ikev2EapPayloadInnerAnonEapRest<'a>> for Ikev2EapPayloadInnerAnonEapRestInnerRef<'a> {
+    fn ex_from(m: &'a Ikev2EapPayloadInnerAnonEapRest<'a>) -> Ikev2EapPayloadInnerAnonEapRestInnerRef<'a> {
         match m {
-            Ikev2EapPayloadInnerEapRest::Success(m) => Either::Left(m),
-            Ikev2EapPayloadInnerEapRest::Failure(m) => Either::Right(Either::Left(m)),
-            Ikev2EapPayloadInnerEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
-            Ikev2EapPayloadInnerEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
+            Ikev2EapPayloadInnerAnonEapRest::Success(m) => Either::Left(m),
+            Ikev2EapPayloadInnerAnonEapRest::Failure(m) => Either::Right(Either::Left(m)),
+            Ikev2EapPayloadInnerAnonEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
+            Ikev2EapPayloadInnerAnonEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
         }
     }
 
 }
 
-impl<'a> From<Ikev2EapPayloadInnerEapRestInner<'a>> for Ikev2EapPayloadInnerEapRest<'a> {
-    fn ex_from(m: Ikev2EapPayloadInnerEapRestInner<'a>) -> Ikev2EapPayloadInnerEapRest<'a> {
+impl<'a> From<Ikev2EapPayloadInnerAnonEapRestInner<'a>> for Ikev2EapPayloadInnerAnonEapRest<'a> {
+    fn ex_from(m: Ikev2EapPayloadInnerAnonEapRestInner<'a>) -> Ikev2EapPayloadInnerAnonEapRest<'a> {
         match m {
-            Either::Left(m) => Ikev2EapPayloadInnerEapRest::Success(m),
-            Either::Right(Either::Left(m)) => Ikev2EapPayloadInnerEapRest::Failure(m),
-            Either::Right(Either::Right(Either::Left(m))) => Ikev2EapPayloadInnerEapRest::Request(m),
-            Either::Right(Either::Right(Either::Right(m))) => Ikev2EapPayloadInnerEapRest::Response(m),
+            Either::Left(m) => Ikev2EapPayloadInnerAnonEapRest::Success(m),
+            Either::Right(Either::Left(m)) => Ikev2EapPayloadInnerAnonEapRest::Failure(m),
+            Either::Right(Either::Right(Either::Left(m))) => Ikev2EapPayloadInnerAnonEapRest::Request(m),
+            Either::Right(Either::Right(Either::Right(m))) => Ikev2EapPayloadInnerAnonEapRest::Response(m),
         }
     }
     
 }
 
 
-pub struct Ikev2EapPayloadInnerEapRestMapper;
-impl View for Ikev2EapPayloadInnerEapRestMapper {
+pub struct Ikev2EapPayloadInnerAnonEapRestMapper;
+impl View for Ikev2EapPayloadInnerAnonEapRestMapper {
     type V = Self;
     open spec fn view(&self) -> Self::V {
         *self
     }
 }
-impl SpecIso for Ikev2EapPayloadInnerEapRestMapper {
-    type Src = SpecIkev2EapPayloadInnerEapRestInner;
-    type Dst = SpecIkev2EapPayloadInnerEapRest;
+impl SpecIso for Ikev2EapPayloadInnerAnonEapRestMapper {
+    type Src = SpecIkev2EapPayloadInnerAnonEapRestInner;
+    type Dst = SpecIkev2EapPayloadInnerAnonEapRest;
 }
-impl SpecIsoProof for Ikev2EapPayloadInnerEapRestMapper {
+impl SpecIsoProof for Ikev2EapPayloadInnerAnonEapRestMapper {
     proof fn spec_iso(s: Self::Src) {
         assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
     }
@@ -8696,19 +9724,19 @@ impl SpecIsoProof for Ikev2EapPayloadInnerEapRestMapper {
         assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
     }
 }
-impl<'a> Iso<'a> for Ikev2EapPayloadInnerEapRestMapper {
-    type Src = Ikev2EapPayloadInnerEapRestInner<'a>;
-    type Dst = Ikev2EapPayloadInnerEapRest<'a>;
-    type RefSrc = Ikev2EapPayloadInnerEapRestInnerRef<'a>;
+impl<'a> Iso<'a> for Ikev2EapPayloadInnerAnonEapRestMapper {
+    type Src = Ikev2EapPayloadInnerAnonEapRestInner<'a>;
+    type Dst = Ikev2EapPayloadInnerAnonEapRest<'a>;
+    type RefSrc = Ikev2EapPayloadInnerAnonEapRestInnerRef<'a>;
 }
 
-type SpecIkev2EapPayloadInnerEapRestCombinatorAlias1 = Choice<Cond<SpecEapReqRespRestCombinator>, Cond<SpecEapReqRespRestCombinator>>;
-type SpecIkev2EapPayloadInnerEapRestCombinatorAlias2 = Choice<Cond<SpecEapFailureRestCombinator>, SpecIkev2EapPayloadInnerEapRestCombinatorAlias1>;
-type SpecIkev2EapPayloadInnerEapRestCombinatorAlias3 = Choice<Cond<SpecEapSuccessRestCombinator>, SpecIkev2EapPayloadInnerEapRestCombinatorAlias2>;
-pub struct SpecIkev2EapPayloadInnerEapRestCombinator(pub SpecIkev2EapPayloadInnerEapRestCombinatorAlias);
+type SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias1 = Choice<Cond<SpecEapReqRespRestCombinator>, Cond<SpecEapReqRespRestCombinator>>;
+type SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias2 = Choice<Cond<SpecEapFailureRestCombinator>, SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias1>;
+type SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias3 = Choice<Cond<SpecEapSuccessRestCombinator>, SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias2>;
+pub struct SpecIkev2EapPayloadInnerAnonEapRestCombinator(pub SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias);
 
-impl SpecCombinator for SpecIkev2EapPayloadInnerEapRestCombinator {
-    type Type = SpecIkev2EapPayloadInnerEapRest;
+impl SpecCombinator for SpecIkev2EapPayloadInnerAnonEapRestCombinator {
+    type Type = SpecIkev2EapPayloadInnerAnonEapRest;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -8718,9 +9746,9 @@ impl SpecCombinator for SpecIkev2EapPayloadInnerEapRestCombinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecIkev2EapPayloadInnerEapRestCombinator {
+impl SecureSpecCombinator for SpecIkev2EapPayloadInnerAnonEapRestCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecIkev2EapPayloadInnerEapRestCombinatorAlias::is_prefix_secure() }
+    { SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -8734,39 +9762,39 @@ impl SecureSpecCombinator for SpecIkev2EapPayloadInnerEapRestCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecIkev2EapPayloadInnerEapRestCombinatorAlias = Mapped<SpecIkev2EapPayloadInnerEapRestCombinatorAlias3, Ikev2EapPayloadInnerEapRestMapper>;
-type Ikev2EapPayloadInnerEapRestCombinatorAlias1 = Choice<Cond<EapReqRespRestCombinator>, Cond<EapReqRespRestCombinator>>;
-type Ikev2EapPayloadInnerEapRestCombinatorAlias2 = Choice<Cond<EapFailureRestCombinator>, Ikev2EapPayloadInnerEapRestCombinator1>;
-type Ikev2EapPayloadInnerEapRestCombinatorAlias3 = Choice<Cond<EapSuccessRestCombinator>, Ikev2EapPayloadInnerEapRestCombinator2>;
-pub struct Ikev2EapPayloadInnerEapRestCombinator1(pub Ikev2EapPayloadInnerEapRestCombinatorAlias1);
-impl View for Ikev2EapPayloadInnerEapRestCombinator1 {
-    type V = SpecIkev2EapPayloadInnerEapRestCombinatorAlias1;
+pub type SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias = Mapped<SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias3, Ikev2EapPayloadInnerAnonEapRestMapper>;
+type Ikev2EapPayloadInnerAnonEapRestCombinatorAlias1 = Choice<Cond<EapReqRespRestCombinator>, Cond<EapReqRespRestCombinator>>;
+type Ikev2EapPayloadInnerAnonEapRestCombinatorAlias2 = Choice<Cond<EapFailureRestCombinator>, Ikev2EapPayloadInnerAnonEapRestCombinator1>;
+type Ikev2EapPayloadInnerAnonEapRestCombinatorAlias3 = Choice<Cond<EapSuccessRestCombinator>, Ikev2EapPayloadInnerAnonEapRestCombinator2>;
+pub struct Ikev2EapPayloadInnerAnonEapRestCombinator1(pub Ikev2EapPayloadInnerAnonEapRestCombinatorAlias1);
+impl View for Ikev2EapPayloadInnerAnonEapRestCombinator1 {
+    type V = SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias1;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(Ikev2EapPayloadInnerEapRestCombinator1, Ikev2EapPayloadInnerEapRestCombinatorAlias1);
+impl_wrapper_combinator!(Ikev2EapPayloadInnerAnonEapRestCombinator1, Ikev2EapPayloadInnerAnonEapRestCombinatorAlias1);
 
-pub struct Ikev2EapPayloadInnerEapRestCombinator2(pub Ikev2EapPayloadInnerEapRestCombinatorAlias2);
-impl View for Ikev2EapPayloadInnerEapRestCombinator2 {
-    type V = SpecIkev2EapPayloadInnerEapRestCombinatorAlias2;
+pub struct Ikev2EapPayloadInnerAnonEapRestCombinator2(pub Ikev2EapPayloadInnerAnonEapRestCombinatorAlias2);
+impl View for Ikev2EapPayloadInnerAnonEapRestCombinator2 {
+    type V = SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias2;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(Ikev2EapPayloadInnerEapRestCombinator2, Ikev2EapPayloadInnerEapRestCombinatorAlias2);
+impl_wrapper_combinator!(Ikev2EapPayloadInnerAnonEapRestCombinator2, Ikev2EapPayloadInnerAnonEapRestCombinatorAlias2);
 
-pub struct Ikev2EapPayloadInnerEapRestCombinator3(pub Ikev2EapPayloadInnerEapRestCombinatorAlias3);
-impl View for Ikev2EapPayloadInnerEapRestCombinator3 {
-    type V = SpecIkev2EapPayloadInnerEapRestCombinatorAlias3;
+pub struct Ikev2EapPayloadInnerAnonEapRestCombinator3(pub Ikev2EapPayloadInnerAnonEapRestCombinatorAlias3);
+impl View for Ikev2EapPayloadInnerAnonEapRestCombinator3 {
+    type V = SpecIkev2EapPayloadInnerAnonEapRestCombinatorAlias3;
     open spec fn view(&self) -> Self::V { self.0@ }
 }
-impl_wrapper_combinator!(Ikev2EapPayloadInnerEapRestCombinator3, Ikev2EapPayloadInnerEapRestCombinatorAlias3);
+impl_wrapper_combinator!(Ikev2EapPayloadInnerAnonEapRestCombinator3, Ikev2EapPayloadInnerAnonEapRestCombinatorAlias3);
 
-pub struct Ikev2EapPayloadInnerEapRestCombinator(pub Ikev2EapPayloadInnerEapRestCombinatorAlias);
+pub struct Ikev2EapPayloadInnerAnonEapRestCombinator(pub Ikev2EapPayloadInnerAnonEapRestCombinatorAlias);
 
-impl View for Ikev2EapPayloadInnerEapRestCombinator {
-    type V = SpecIkev2EapPayloadInnerEapRestCombinator;
-    open spec fn view(&self) -> Self::V { SpecIkev2EapPayloadInnerEapRestCombinator(self.0@) }
+impl View for Ikev2EapPayloadInnerAnonEapRestCombinator {
+    type V = SpecIkev2EapPayloadInnerAnonEapRestCombinator;
+    open spec fn view(&self) -> Self::V { SpecIkev2EapPayloadInnerAnonEapRestCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerEapRestCombinator {
-    type Type = Ikev2EapPayloadInnerEapRest<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerAnonEapRestCombinator {
+    type Type = Ikev2EapPayloadInnerAnonEapRest<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -8777,84 +9805,84 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerEapRestCombin
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type Ikev2EapPayloadInnerEapRestCombinatorAlias = Mapped<Ikev2EapPayloadInnerEapRestCombinator3, Ikev2EapPayloadInnerEapRestMapper>;
+pub type Ikev2EapPayloadInnerAnonEapRestCombinatorAlias = Mapped<Ikev2EapPayloadInnerAnonEapRestCombinator3, Ikev2EapPayloadInnerAnonEapRestMapper>;
 
 
-pub open spec fn spec_ikev2_eap_payload_inner_eap_rest(code: u8) -> SpecIkev2EapPayloadInnerEapRestCombinator {
-    SpecIkev2EapPayloadInnerEapRestCombinator(Mapped { inner: Choice(Cond { cond: code == EapCode::SPEC_Success, inner: spec_eap_success_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Failure, inner: spec_eap_failure_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Request, inner: spec_eap_req_resp_rest() }, Cond { cond: code == EapCode::SPEC_Response, inner: spec_eap_req_resp_rest() }))), mapper: Ikev2EapPayloadInnerEapRestMapper })
+pub open spec fn spec_ikev2_eap_payload_inner_anon_eap_rest(code: u8) -> SpecIkev2EapPayloadInnerAnonEapRestCombinator {
+    SpecIkev2EapPayloadInnerAnonEapRestCombinator(Mapped { inner: Choice(Cond { cond: code == EapCode::SPEC_Success, inner: spec_eap_success_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Failure, inner: spec_eap_failure_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Request, inner: spec_eap_req_resp_rest() }, Cond { cond: code == EapCode::SPEC_Response, inner: spec_eap_req_resp_rest() }))), mapper: Ikev2EapPayloadInnerAnonEapRestMapper })
 }
 
-pub fn ikev2_eap_payload_inner_eap_rest<'a>(code: u8) -> (o: Ikev2EapPayloadInnerEapRestCombinator)
+pub fn ikev2_eap_payload_inner_anon_eap_rest<'a>(code: u8) -> (o: Ikev2EapPayloadInnerAnonEapRestCombinator)
     requires
         spec_eap_code().wf(code@),
 
-    ensures o@ == spec_ikev2_eap_payload_inner_eap_rest(code@),
+    ensures o@ == spec_ikev2_eap_payload_inner_anon_eap_rest(code@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = Ikev2EapPayloadInnerEapRestCombinator(Mapped { inner: Ikev2EapPayloadInnerEapRestCombinator3(Choice::new(Cond { cond: code == EapCode::Success, inner: eap_success_rest() }, Ikev2EapPayloadInnerEapRestCombinator2(Choice::new(Cond { cond: code == EapCode::Failure, inner: eap_failure_rest() }, Ikev2EapPayloadInnerEapRestCombinator1(Choice::new(Cond { cond: code == EapCode::Request, inner: eap_req_resp_rest() }, Cond { cond: code == EapCode::Response, inner: eap_req_resp_rest() })))))), mapper: Ikev2EapPayloadInnerEapRestMapper });
+    let combinator = Ikev2EapPayloadInnerAnonEapRestCombinator(Mapped { inner: Ikev2EapPayloadInnerAnonEapRestCombinator3(Choice::new(Cond { cond: code == EapCode::Success, inner: eap_success_rest() }, Ikev2EapPayloadInnerAnonEapRestCombinator2(Choice::new(Cond { cond: code == EapCode::Failure, inner: eap_failure_rest() }, Ikev2EapPayloadInnerAnonEapRestCombinator1(Choice::new(Cond { cond: code == EapCode::Request, inner: eap_req_resp_rest() }, Cond { cond: code == EapCode::Response, inner: eap_req_resp_rest() })))))), mapper: Ikev2EapPayloadInnerAnonEapRestMapper });
     // assert({
-    //     &&& combinator@ == spec_ikev2_eap_payload_inner_eap_rest(code@)
+    //     &&& combinator@ == spec_ikev2_eap_payload_inner_anon_eap_rest(code@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_ikev2_eap_payload_inner_eap_rest<'a>(input: &'a [u8], code: u8) -> (res: PResult<<Ikev2EapPayloadInnerEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_ikev2_eap_payload_inner_anon_eap_rest<'a>(input: &'a [u8], code: u8) -> (res: PResult<<Ikev2EapPayloadInnerAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_eap_code().wf(code@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_ikev2_eap_payload_inner_eap_rest(code@).spec_parse(input@) == Some((n as int, v@)),
-        spec_ikev2_eap_payload_inner_eap_rest(code@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_parse(input@) == Some((n as int, v@)),
+        spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_ikev2_eap_payload_inner_eap_rest(code@).spec_parse(input@) is None,
-        spec_ikev2_eap_payload_inner_eap_rest(code@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_parse(input@) is None,
+        spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = ikev2_eap_payload_inner_eap_rest( code );
+    let combinator = ikev2_eap_payload_inner_anon_eap_rest( code );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_ikev2_eap_payload_inner_eap_rest<'a>(v: <Ikev2EapPayloadInnerEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_ikev2_eap_payload_inner_anon_eap_rest<'a>(v: <Ikev2EapPayloadInnerAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_ikev2_eap_payload_inner_eap_rest(code@).wf(v@),
+        spec_ikev2_eap_payload_inner_anon_eap_rest(code@).wf(v@),
         spec_eap_code().wf(code@),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@))
+            &&& n == spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_serialize(v@))
         },
 {
-    let combinator = ikev2_eap_payload_inner_eap_rest( code );
+    let combinator = ikev2_eap_payload_inner_anon_eap_rest( code );
     combinator.serialize(v, data, pos)
 }
 
-pub fn ikev2_eap_payload_inner_eap_rest_len<'a>(v: <Ikev2EapPayloadInnerEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
+pub fn ikev2_eap_payload_inner_anon_eap_rest_len<'a>(v: <Ikev2EapPayloadInnerAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
     requires
-        spec_ikev2_eap_payload_inner_eap_rest(code@).wf(v@),
-        spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
+        spec_ikev2_eap_payload_inner_anon_eap_rest(code@).wf(v@),
+        spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
         spec_eap_code().wf(code@),
 
     ensures
-        serialize_len == spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len(),
+        serialize_len == spec_ikev2_eap_payload_inner_anon_eap_rest(code@).spec_serialize(v@).len(),
 {
-    let combinator = ikev2_eap_payload_inner_eap_rest( code );
+    let combinator = ikev2_eap_payload_inner_anon_eap_rest( code );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
 
 pub struct SpecIkev2EapPayloadInner {
     pub code: u8,
-    pub eap_rest: SpecIkev2EapPayloadInnerEapRest,
+    pub eap_rest: SpecIkev2EapPayloadInnerAnonEapRest,
 }
 
-pub type SpecIkev2EapPayloadInnerInner = (u8, SpecIkev2EapPayloadInnerEapRest);
+pub type SpecIkev2EapPayloadInnerInner = (u8, SpecIkev2EapPayloadInnerAnonEapRest);
 
 
 impl SpecFrom<SpecIkev2EapPayloadInner> for SpecIkev2EapPayloadInnerInner {
@@ -8873,7 +9901,7 @@ impl SpecFrom<SpecIkev2EapPayloadInnerInner> for SpecIkev2EapPayloadInner {
 
 pub struct Ikev2EapPayloadInner<'a> {
     pub code: u8,
-    pub eap_rest: Ikev2EapPayloadInnerEapRest<'a>,
+    pub eap_rest: Ikev2EapPayloadInnerAnonEapRest<'a>,
 }
 
 impl View for Ikev2EapPayloadInner<'_> {
@@ -8886,9 +9914,9 @@ impl View for Ikev2EapPayloadInner<'_> {
         }
     }
 }
-pub type Ikev2EapPayloadInnerInner<'a> = (u8, Ikev2EapPayloadInnerEapRest<'a>);
+pub type Ikev2EapPayloadInnerInner<'a> = (u8, Ikev2EapPayloadInnerAnonEapRest<'a>);
 
-pub type Ikev2EapPayloadInnerInnerRef<'a> = (&'a u8, &'a Ikev2EapPayloadInnerEapRest<'a>);
+pub type Ikev2EapPayloadInnerInnerRef<'a> = (&'a u8, &'a Ikev2EapPayloadInnerAnonEapRest<'a>);
 impl<'a> From<&'a Ikev2EapPayloadInner<'a>> for Ikev2EapPayloadInnerInnerRef<'a> {
     fn ex_from(m: &'a Ikev2EapPayloadInner) -> Ikev2EapPayloadInnerInnerRef<'a> {
         (&m.code, &m.eap_rest)
@@ -8956,7 +9984,7 @@ impl SecureSpecCombinator for SpecIkev2EapPayloadInnerCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecIkev2EapPayloadInnerCombinatorAlias = Mapped<SpecPair<SpecEapCodeCombinator, SpecIkev2EapPayloadInnerEapRestCombinator>, Ikev2EapPayloadInnerMapper>;
+pub type SpecIkev2EapPayloadInnerCombinatorAlias = Mapped<SpecPair<SpecEapCodeCombinator, SpecIkev2EapPayloadInnerAnonEapRestCombinator>, Ikev2EapPayloadInnerMapper>;
 
 pub struct Ikev2EapPayloadInnerCombinator(pub Ikev2EapPayloadInnerCombinatorAlias);
 
@@ -8976,7 +10004,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type Ikev2EapPayloadInnerCombinatorAlias = Mapped<Pair<EapCodeCombinator, Ikev2EapPayloadInnerEapRestCombinator, Ikev2EapPayloadInnerCont0>, Ikev2EapPayloadInnerMapper>;
+pub type Ikev2EapPayloadInnerCombinatorAlias = Mapped<Pair<EapCodeCombinator, Ikev2EapPayloadInnerAnonEapRestCombinator, Ikev2EapPayloadInnerCont0>, Ikev2EapPayloadInnerMapper>;
 
 
 pub open spec fn spec_ikev2_eap_payload_inner() -> SpecIkev2EapPayloadInnerCombinator {
@@ -8987,13 +10015,13 @@ pub open spec fn spec_ikev2_eap_payload_inner() -> SpecIkev2EapPayloadInnerCombi
     })
 }
 
-pub open spec fn spec_ikev2_eap_payload_inner_cont0(deps: u8) -> SpecIkev2EapPayloadInnerEapRestCombinator {
+pub open spec fn spec_ikev2_eap_payload_inner_cont0(deps: u8) -> SpecIkev2EapPayloadInnerAnonEapRestCombinator {
     let code = deps;
-    spec_ikev2_eap_payload_inner_eap_rest(code)
+    spec_ikev2_eap_payload_inner_anon_eap_rest(code)
 }
 
 impl View for Ikev2EapPayloadInnerCont0 {
-    type V = spec_fn(u8) -> SpecIkev2EapPayloadInnerEapRestCombinator;
+    type V = spec_fn(u8) -> SpecIkev2EapPayloadInnerAnonEapRestCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: u8| {
@@ -9067,7 +10095,7 @@ type Ikev2EapPayloadInnerCont0Type<'a, 'b> = &'b u8;
 type Ikev2EapPayloadInnerCont0SType<'a, 'x> = &'x u8;
 type Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x> = POrSType<Ikev2EapPayloadInnerCont0Type<'a, 'b>, Ikev2EapPayloadInnerCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>> for Ikev2EapPayloadInnerCont0 {
-    type Output = Ikev2EapPayloadInnerEapRestCombinator;
+    type Output = Ikev2EapPayloadInnerAnonEapRestCombinator;
 
     open spec fn requires(&self, deps: Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>) -> bool {
         &&& (spec_eap_code()).wf(deps@)
@@ -9083,12 +10111,12 @@ impl<'a, 'b, 'x> Continuation<Ikev2EapPayloadInnerCont0Input<'a, 'b, 'x>> for Ik
             POrSType::P(deps) => {
                 let code = deps;
                 let code = *code;
-                ikev2_eap_payload_inner_eap_rest(code)
+                ikev2_eap_payload_inner_anon_eap_rest(code)
             }
             POrSType::S(deps) => {
                 let code = deps;
                 let code = *code;
-                ikev2_eap_payload_inner_eap_rest(code)
+                ikev2_eap_payload_inner_anon_eap_rest(code)
             }
         }
     }
@@ -9447,265 +10475,6 @@ pub fn certreq_payload_body_len<'a>(v: <CertreqPayloadBodyCombinator as Combinat
         serialize_len == spec_certreq_payload_body(payload_length@).spec_serialize(v@).len(),
 {
     let combinator = certreq_payload_body( payload_length );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-
-pub enum SpecEapPayloadBodyEapRest {
-    Success(SpecEapSuccessRest),
-    Failure(SpecEapFailureRest),
-    Request(SpecEapReqRespRest),
-    Response(SpecEapReqRespRest),
-}
-
-pub type SpecEapPayloadBodyEapRestInner = Either<SpecEapSuccessRest, Either<SpecEapFailureRest, Either<SpecEapReqRespRest, SpecEapReqRespRest>>>;
-
-impl SpecFrom<SpecEapPayloadBodyEapRest> for SpecEapPayloadBodyEapRestInner {
-    open spec fn spec_from(m: SpecEapPayloadBodyEapRest) -> SpecEapPayloadBodyEapRestInner {
-        match m {
-            SpecEapPayloadBodyEapRest::Success(m) => Either::Left(m),
-            SpecEapPayloadBodyEapRest::Failure(m) => Either::Right(Either::Left(m)),
-            SpecEapPayloadBodyEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
-            SpecEapPayloadBodyEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecEapPayloadBodyEapRestInner> for SpecEapPayloadBodyEapRest {
-    open spec fn spec_from(m: SpecEapPayloadBodyEapRestInner) -> SpecEapPayloadBodyEapRest {
-        match m {
-            Either::Left(m) => SpecEapPayloadBodyEapRest::Success(m),
-            Either::Right(Either::Left(m)) => SpecEapPayloadBodyEapRest::Failure(m),
-            Either::Right(Either::Right(Either::Left(m))) => SpecEapPayloadBodyEapRest::Request(m),
-            Either::Right(Either::Right(Either::Right(m))) => SpecEapPayloadBodyEapRest::Response(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EapPayloadBodyEapRest<'a> {
-    Success(EapSuccessRest),
-    Failure(EapFailureRest),
-    Request(EapReqRespRest<'a>),
-    Response(EapReqRespRest<'a>),
-}
-
-pub type EapPayloadBodyEapRestInner<'a> = Either<EapSuccessRest, Either<EapFailureRest, Either<EapReqRespRest<'a>, EapReqRespRest<'a>>>>;
-
-pub type EapPayloadBodyEapRestInnerRef<'a> = Either<&'a EapSuccessRest, Either<&'a EapFailureRest, Either<&'a EapReqRespRest<'a>, &'a EapReqRespRest<'a>>>>;
-
-
-impl<'a> View for EapPayloadBodyEapRest<'a> {
-    type V = SpecEapPayloadBodyEapRest;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            EapPayloadBodyEapRest::Success(m) => SpecEapPayloadBodyEapRest::Success(m@),
-            EapPayloadBodyEapRest::Failure(m) => SpecEapPayloadBodyEapRest::Failure(m@),
-            EapPayloadBodyEapRest::Request(m) => SpecEapPayloadBodyEapRest::Request(m@),
-            EapPayloadBodyEapRest::Response(m) => SpecEapPayloadBodyEapRest::Response(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a EapPayloadBodyEapRest<'a>> for EapPayloadBodyEapRestInnerRef<'a> {
-    fn ex_from(m: &'a EapPayloadBodyEapRest<'a>) -> EapPayloadBodyEapRestInnerRef<'a> {
-        match m {
-            EapPayloadBodyEapRest::Success(m) => Either::Left(m),
-            EapPayloadBodyEapRest::Failure(m) => Either::Right(Either::Left(m)),
-            EapPayloadBodyEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
-            EapPayloadBodyEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
-        }
-    }
-
-}
-
-impl<'a> From<EapPayloadBodyEapRestInner<'a>> for EapPayloadBodyEapRest<'a> {
-    fn ex_from(m: EapPayloadBodyEapRestInner<'a>) -> EapPayloadBodyEapRest<'a> {
-        match m {
-            Either::Left(m) => EapPayloadBodyEapRest::Success(m),
-            Either::Right(Either::Left(m)) => EapPayloadBodyEapRest::Failure(m),
-            Either::Right(Either::Right(Either::Left(m))) => EapPayloadBodyEapRest::Request(m),
-            Either::Right(Either::Right(Either::Right(m))) => EapPayloadBodyEapRest::Response(m),
-        }
-    }
-    
-}
-
-
-pub struct EapPayloadBodyEapRestMapper;
-impl View for EapPayloadBodyEapRestMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for EapPayloadBodyEapRestMapper {
-    type Src = SpecEapPayloadBodyEapRestInner;
-    type Dst = SpecEapPayloadBodyEapRest;
-}
-impl SpecIsoProof for EapPayloadBodyEapRestMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for EapPayloadBodyEapRestMapper {
-    type Src = EapPayloadBodyEapRestInner<'a>;
-    type Dst = EapPayloadBodyEapRest<'a>;
-    type RefSrc = EapPayloadBodyEapRestInnerRef<'a>;
-}
-
-type SpecEapPayloadBodyEapRestCombinatorAlias1 = Choice<Cond<SpecEapReqRespRestCombinator>, Cond<SpecEapReqRespRestCombinator>>;
-type SpecEapPayloadBodyEapRestCombinatorAlias2 = Choice<Cond<SpecEapFailureRestCombinator>, SpecEapPayloadBodyEapRestCombinatorAlias1>;
-type SpecEapPayloadBodyEapRestCombinatorAlias3 = Choice<Cond<SpecEapSuccessRestCombinator>, SpecEapPayloadBodyEapRestCombinatorAlias2>;
-pub struct SpecEapPayloadBodyEapRestCombinator(pub SpecEapPayloadBodyEapRestCombinatorAlias);
-
-impl SpecCombinator for SpecEapPayloadBodyEapRestCombinator {
-    type Type = SpecEapPayloadBodyEapRest;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecEapPayloadBodyEapRestCombinator {
-    open spec fn is_prefix_secure() -> bool
-    { SpecEapPayloadBodyEapRestCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>)
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecEapPayloadBodyEapRestCombinatorAlias = Mapped<SpecEapPayloadBodyEapRestCombinatorAlias3, EapPayloadBodyEapRestMapper>;
-type EapPayloadBodyEapRestCombinatorAlias1 = Choice<Cond<EapReqRespRestCombinator>, Cond<EapReqRespRestCombinator>>;
-type EapPayloadBodyEapRestCombinatorAlias2 = Choice<Cond<EapFailureRestCombinator>, EapPayloadBodyEapRestCombinator1>;
-type EapPayloadBodyEapRestCombinatorAlias3 = Choice<Cond<EapSuccessRestCombinator>, EapPayloadBodyEapRestCombinator2>;
-pub struct EapPayloadBodyEapRestCombinator1(pub EapPayloadBodyEapRestCombinatorAlias1);
-impl View for EapPayloadBodyEapRestCombinator1 {
-    type V = SpecEapPayloadBodyEapRestCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(EapPayloadBodyEapRestCombinator1, EapPayloadBodyEapRestCombinatorAlias1);
-
-pub struct EapPayloadBodyEapRestCombinator2(pub EapPayloadBodyEapRestCombinatorAlias2);
-impl View for EapPayloadBodyEapRestCombinator2 {
-    type V = SpecEapPayloadBodyEapRestCombinatorAlias2;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(EapPayloadBodyEapRestCombinator2, EapPayloadBodyEapRestCombinatorAlias2);
-
-pub struct EapPayloadBodyEapRestCombinator3(pub EapPayloadBodyEapRestCombinatorAlias3);
-impl View for EapPayloadBodyEapRestCombinator3 {
-    type V = SpecEapPayloadBodyEapRestCombinatorAlias3;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(EapPayloadBodyEapRestCombinator3, EapPayloadBodyEapRestCombinatorAlias3);
-
-pub struct EapPayloadBodyEapRestCombinator(pub EapPayloadBodyEapRestCombinatorAlias);
-
-impl View for EapPayloadBodyEapRestCombinator {
-    type V = SpecEapPayloadBodyEapRestCombinator;
-    open spec fn view(&self) -> Self::V { SpecEapPayloadBodyEapRestCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapPayloadBodyEapRestCombinator {
-    type Type = EapPayloadBodyEapRest<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-pub type EapPayloadBodyEapRestCombinatorAlias = Mapped<EapPayloadBodyEapRestCombinator3, EapPayloadBodyEapRestMapper>;
-
-
-pub open spec fn spec_eap_payload_body_eap_rest(code: u8) -> SpecEapPayloadBodyEapRestCombinator {
-    SpecEapPayloadBodyEapRestCombinator(Mapped { inner: Choice(Cond { cond: code == EapCode::SPEC_Success, inner: spec_eap_success_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Failure, inner: spec_eap_failure_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Request, inner: spec_eap_req_resp_rest() }, Cond { cond: code == EapCode::SPEC_Response, inner: spec_eap_req_resp_rest() }))), mapper: EapPayloadBodyEapRestMapper })
-}
-
-pub fn eap_payload_body_eap_rest<'a>(code: u8) -> (o: EapPayloadBodyEapRestCombinator)
-    requires
-        spec_eap_code().wf(code@),
-
-    ensures o@ == spec_eap_payload_body_eap_rest(code@),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = EapPayloadBodyEapRestCombinator(Mapped { inner: EapPayloadBodyEapRestCombinator3(Choice::new(Cond { cond: code == EapCode::Success, inner: eap_success_rest() }, EapPayloadBodyEapRestCombinator2(Choice::new(Cond { cond: code == EapCode::Failure, inner: eap_failure_rest() }, EapPayloadBodyEapRestCombinator1(Choice::new(Cond { cond: code == EapCode::Request, inner: eap_req_resp_rest() }, Cond { cond: code == EapCode::Response, inner: eap_req_resp_rest() })))))), mapper: EapPayloadBodyEapRestMapper });
-    // assert({
-    //     &&& combinator@ == spec_eap_payload_body_eap_rest(code@)
-    //     &&& combinator@.requires()
-    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    // });
-    combinator
-}
-
-pub fn parse_eap_payload_body_eap_rest<'a>(input: &'a [u8], code: u8) -> (res: PResult<<EapPayloadBodyEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-        spec_eap_code().wf(code@),
-
-    ensures
-        res matches Ok((n, v)) ==> spec_eap_payload_body_eap_rest(code@).spec_parse(input@) == Some((n as int, v@)),
-        spec_eap_payload_body_eap_rest(code@).spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_eap_payload_body_eap_rest(code@).spec_parse(input@) is None,
-        spec_eap_payload_body_eap_rest(code@).spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = eap_payload_body_eap_rest( code );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_eap_payload_body_eap_rest<'a>(v: <EapPayloadBodyEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_eap_payload_body_eap_rest(code@).wf(v@),
-        spec_eap_code().wf(code@),
-
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_eap_payload_body_eap_rest(code@).spec_serialize(v@))
-        },
-{
-    let combinator = eap_payload_body_eap_rest( code );
-    combinator.serialize(v, data, pos)
-}
-
-pub fn eap_payload_body_eap_rest_len<'a>(v: <EapPayloadBodyEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
-    requires
-        spec_eap_payload_body_eap_rest(code@).wf(v@),
-        spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
-        spec_eap_code().wf(code@),
-
-    ensures
-        serialize_len == spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len(),
-{
-    let combinator = eap_payload_body_eap_rest( code );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -10069,12 +10838,271 @@ pub fn cp_payload_body_len<'a>(v: <CpPayloadBodyCombinator as Combinator<'a, &'a
 }
 
 
-pub struct SpecEapPayloadBody {
-    pub code: u8,
-    pub eap_rest: SpecEapPayloadBodyEapRest,
+pub enum SpecEapPayloadBodyAnonEapRest {
+    Success(SpecEapSuccessRest),
+    Failure(SpecEapFailureRest),
+    Request(SpecEapReqRespRest),
+    Response(SpecEapReqRespRest),
 }
 
-pub type SpecEapPayloadBodyInner = (u8, SpecEapPayloadBodyEapRest);
+pub type SpecEapPayloadBodyAnonEapRestInner = Either<SpecEapSuccessRest, Either<SpecEapFailureRest, Either<SpecEapReqRespRest, SpecEapReqRespRest>>>;
+
+impl SpecFrom<SpecEapPayloadBodyAnonEapRest> for SpecEapPayloadBodyAnonEapRestInner {
+    open spec fn spec_from(m: SpecEapPayloadBodyAnonEapRest) -> SpecEapPayloadBodyAnonEapRestInner {
+        match m {
+            SpecEapPayloadBodyAnonEapRest::Success(m) => Either::Left(m),
+            SpecEapPayloadBodyAnonEapRest::Failure(m) => Either::Right(Either::Left(m)),
+            SpecEapPayloadBodyAnonEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
+            SpecEapPayloadBodyAnonEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecEapPayloadBodyAnonEapRestInner> for SpecEapPayloadBodyAnonEapRest {
+    open spec fn spec_from(m: SpecEapPayloadBodyAnonEapRestInner) -> SpecEapPayloadBodyAnonEapRest {
+        match m {
+            Either::Left(m) => SpecEapPayloadBodyAnonEapRest::Success(m),
+            Either::Right(Either::Left(m)) => SpecEapPayloadBodyAnonEapRest::Failure(m),
+            Either::Right(Either::Right(Either::Left(m))) => SpecEapPayloadBodyAnonEapRest::Request(m),
+            Either::Right(Either::Right(Either::Right(m))) => SpecEapPayloadBodyAnonEapRest::Response(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EapPayloadBodyAnonEapRest<'a> {
+    Success(EapSuccessRest),
+    Failure(EapFailureRest),
+    Request(EapReqRespRest<'a>),
+    Response(EapReqRespRest<'a>),
+}
+
+pub type EapPayloadBodyAnonEapRestInner<'a> = Either<EapSuccessRest, Either<EapFailureRest, Either<EapReqRespRest<'a>, EapReqRespRest<'a>>>>;
+
+pub type EapPayloadBodyAnonEapRestInnerRef<'a> = Either<&'a EapSuccessRest, Either<&'a EapFailureRest, Either<&'a EapReqRespRest<'a>, &'a EapReqRespRest<'a>>>>;
+
+
+impl<'a> View for EapPayloadBodyAnonEapRest<'a> {
+    type V = SpecEapPayloadBodyAnonEapRest;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            EapPayloadBodyAnonEapRest::Success(m) => SpecEapPayloadBodyAnonEapRest::Success(m@),
+            EapPayloadBodyAnonEapRest::Failure(m) => SpecEapPayloadBodyAnonEapRest::Failure(m@),
+            EapPayloadBodyAnonEapRest::Request(m) => SpecEapPayloadBodyAnonEapRest::Request(m@),
+            EapPayloadBodyAnonEapRest::Response(m) => SpecEapPayloadBodyAnonEapRest::Response(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a EapPayloadBodyAnonEapRest<'a>> for EapPayloadBodyAnonEapRestInnerRef<'a> {
+    fn ex_from(m: &'a EapPayloadBodyAnonEapRest<'a>) -> EapPayloadBodyAnonEapRestInnerRef<'a> {
+        match m {
+            EapPayloadBodyAnonEapRest::Success(m) => Either::Left(m),
+            EapPayloadBodyAnonEapRest::Failure(m) => Either::Right(Either::Left(m)),
+            EapPayloadBodyAnonEapRest::Request(m) => Either::Right(Either::Right(Either::Left(m))),
+            EapPayloadBodyAnonEapRest::Response(m) => Either::Right(Either::Right(Either::Right(m))),
+        }
+    }
+
+}
+
+impl<'a> From<EapPayloadBodyAnonEapRestInner<'a>> for EapPayloadBodyAnonEapRest<'a> {
+    fn ex_from(m: EapPayloadBodyAnonEapRestInner<'a>) -> EapPayloadBodyAnonEapRest<'a> {
+        match m {
+            Either::Left(m) => EapPayloadBodyAnonEapRest::Success(m),
+            Either::Right(Either::Left(m)) => EapPayloadBodyAnonEapRest::Failure(m),
+            Either::Right(Either::Right(Either::Left(m))) => EapPayloadBodyAnonEapRest::Request(m),
+            Either::Right(Either::Right(Either::Right(m))) => EapPayloadBodyAnonEapRest::Response(m),
+        }
+    }
+    
+}
+
+
+pub struct EapPayloadBodyAnonEapRestMapper;
+impl View for EapPayloadBodyAnonEapRestMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for EapPayloadBodyAnonEapRestMapper {
+    type Src = SpecEapPayloadBodyAnonEapRestInner;
+    type Dst = SpecEapPayloadBodyAnonEapRest;
+}
+impl SpecIsoProof for EapPayloadBodyAnonEapRestMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for EapPayloadBodyAnonEapRestMapper {
+    type Src = EapPayloadBodyAnonEapRestInner<'a>;
+    type Dst = EapPayloadBodyAnonEapRest<'a>;
+    type RefSrc = EapPayloadBodyAnonEapRestInnerRef<'a>;
+}
+
+type SpecEapPayloadBodyAnonEapRestCombinatorAlias1 = Choice<Cond<SpecEapReqRespRestCombinator>, Cond<SpecEapReqRespRestCombinator>>;
+type SpecEapPayloadBodyAnonEapRestCombinatorAlias2 = Choice<Cond<SpecEapFailureRestCombinator>, SpecEapPayloadBodyAnonEapRestCombinatorAlias1>;
+type SpecEapPayloadBodyAnonEapRestCombinatorAlias3 = Choice<Cond<SpecEapSuccessRestCombinator>, SpecEapPayloadBodyAnonEapRestCombinatorAlias2>;
+pub struct SpecEapPayloadBodyAnonEapRestCombinator(pub SpecEapPayloadBodyAnonEapRestCombinatorAlias);
+
+impl SpecCombinator for SpecEapPayloadBodyAnonEapRestCombinator {
+    type Type = SpecEapPayloadBodyAnonEapRest;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecEapPayloadBodyAnonEapRestCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecEapPayloadBodyAnonEapRestCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecEapPayloadBodyAnonEapRestCombinatorAlias = Mapped<SpecEapPayloadBodyAnonEapRestCombinatorAlias3, EapPayloadBodyAnonEapRestMapper>;
+type EapPayloadBodyAnonEapRestCombinatorAlias1 = Choice<Cond<EapReqRespRestCombinator>, Cond<EapReqRespRestCombinator>>;
+type EapPayloadBodyAnonEapRestCombinatorAlias2 = Choice<Cond<EapFailureRestCombinator>, EapPayloadBodyAnonEapRestCombinator1>;
+type EapPayloadBodyAnonEapRestCombinatorAlias3 = Choice<Cond<EapSuccessRestCombinator>, EapPayloadBodyAnonEapRestCombinator2>;
+pub struct EapPayloadBodyAnonEapRestCombinator1(pub EapPayloadBodyAnonEapRestCombinatorAlias1);
+impl View for EapPayloadBodyAnonEapRestCombinator1 {
+    type V = SpecEapPayloadBodyAnonEapRestCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(EapPayloadBodyAnonEapRestCombinator1, EapPayloadBodyAnonEapRestCombinatorAlias1);
+
+pub struct EapPayloadBodyAnonEapRestCombinator2(pub EapPayloadBodyAnonEapRestCombinatorAlias2);
+impl View for EapPayloadBodyAnonEapRestCombinator2 {
+    type V = SpecEapPayloadBodyAnonEapRestCombinatorAlias2;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(EapPayloadBodyAnonEapRestCombinator2, EapPayloadBodyAnonEapRestCombinatorAlias2);
+
+pub struct EapPayloadBodyAnonEapRestCombinator3(pub EapPayloadBodyAnonEapRestCombinatorAlias3);
+impl View for EapPayloadBodyAnonEapRestCombinator3 {
+    type V = SpecEapPayloadBodyAnonEapRestCombinatorAlias3;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(EapPayloadBodyAnonEapRestCombinator3, EapPayloadBodyAnonEapRestCombinatorAlias3);
+
+pub struct EapPayloadBodyAnonEapRestCombinator(pub EapPayloadBodyAnonEapRestCombinatorAlias);
+
+impl View for EapPayloadBodyAnonEapRestCombinator {
+    type V = SpecEapPayloadBodyAnonEapRestCombinator;
+    open spec fn view(&self) -> Self::V { SpecEapPayloadBodyAnonEapRestCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapPayloadBodyAnonEapRestCombinator {
+    type Type = EapPayloadBodyAnonEapRest<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+}
+pub type EapPayloadBodyAnonEapRestCombinatorAlias = Mapped<EapPayloadBodyAnonEapRestCombinator3, EapPayloadBodyAnonEapRestMapper>;
+
+
+pub open spec fn spec_eap_payload_body_anon_eap_rest(code: u8) -> SpecEapPayloadBodyAnonEapRestCombinator {
+    SpecEapPayloadBodyAnonEapRestCombinator(Mapped { inner: Choice(Cond { cond: code == EapCode::SPEC_Success, inner: spec_eap_success_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Failure, inner: spec_eap_failure_rest() }, Choice(Cond { cond: code == EapCode::SPEC_Request, inner: spec_eap_req_resp_rest() }, Cond { cond: code == EapCode::SPEC_Response, inner: spec_eap_req_resp_rest() }))), mapper: EapPayloadBodyAnonEapRestMapper })
+}
+
+pub fn eap_payload_body_anon_eap_rest<'a>(code: u8) -> (o: EapPayloadBodyAnonEapRestCombinator)
+    requires
+        spec_eap_code().wf(code@),
+
+    ensures o@ == spec_eap_payload_body_anon_eap_rest(code@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = EapPayloadBodyAnonEapRestCombinator(Mapped { inner: EapPayloadBodyAnonEapRestCombinator3(Choice::new(Cond { cond: code == EapCode::Success, inner: eap_success_rest() }, EapPayloadBodyAnonEapRestCombinator2(Choice::new(Cond { cond: code == EapCode::Failure, inner: eap_failure_rest() }, EapPayloadBodyAnonEapRestCombinator1(Choice::new(Cond { cond: code == EapCode::Request, inner: eap_req_resp_rest() }, Cond { cond: code == EapCode::Response, inner: eap_req_resp_rest() })))))), mapper: EapPayloadBodyAnonEapRestMapper });
+    // assert({
+    //     &&& combinator@ == spec_eap_payload_body_anon_eap_rest(code@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_eap_payload_body_anon_eap_rest<'a>(input: &'a [u8], code: u8) -> (res: PResult<<EapPayloadBodyAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+        spec_eap_code().wf(code@),
+
+    ensures
+        res matches Ok((n, v)) ==> spec_eap_payload_body_anon_eap_rest(code@).spec_parse(input@) == Some((n as int, v@)),
+        spec_eap_payload_body_anon_eap_rest(code@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_eap_payload_body_anon_eap_rest(code@).spec_parse(input@) is None,
+        spec_eap_payload_body_anon_eap_rest(code@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = eap_payload_body_anon_eap_rest( code );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_eap_payload_body_anon_eap_rest<'a>(v: <EapPayloadBodyAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_payload_body_anon_eap_rest(code@).wf(v@),
+        spec_eap_code().wf(code@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& data@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& n == spec_eap_payload_body_anon_eap_rest(code@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_eap_payload_body_anon_eap_rest(code@).spec_serialize(v@))
+        },
+{
+    let combinator = eap_payload_body_anon_eap_rest( code );
+    combinator.serialize(v, data, pos)
+}
+
+pub fn eap_payload_body_anon_eap_rest_len<'a>(v: <EapPayloadBodyAnonEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
+    requires
+        spec_eap_payload_body_anon_eap_rest(code@).wf(v@),
+        spec_eap_payload_body_anon_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
+        spec_eap_code().wf(code@),
+
+    ensures
+        serialize_len == spec_eap_payload_body_anon_eap_rest(code@).spec_serialize(v@).len(),
+{
+    let combinator = eap_payload_body_anon_eap_rest( code );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+
+pub struct SpecEapPayloadBody {
+    pub code: u8,
+    pub eap_rest: SpecEapPayloadBodyAnonEapRest,
+}
+
+pub type SpecEapPayloadBodyInner = (u8, SpecEapPayloadBodyAnonEapRest);
 
 
 impl SpecFrom<SpecEapPayloadBody> for SpecEapPayloadBodyInner {
@@ -10093,7 +11121,7 @@ impl SpecFrom<SpecEapPayloadBodyInner> for SpecEapPayloadBody {
 
 pub struct EapPayloadBody<'a> {
     pub code: u8,
-    pub eap_rest: EapPayloadBodyEapRest<'a>,
+    pub eap_rest: EapPayloadBodyAnonEapRest<'a>,
 }
 
 impl View for EapPayloadBody<'_> {
@@ -10106,9 +11134,9 @@ impl View for EapPayloadBody<'_> {
         }
     }
 }
-pub type EapPayloadBodyInner<'a> = (u8, EapPayloadBodyEapRest<'a>);
+pub type EapPayloadBodyInner<'a> = (u8, EapPayloadBodyAnonEapRest<'a>);
 
-pub type EapPayloadBodyInnerRef<'a> = (&'a u8, &'a EapPayloadBodyEapRest<'a>);
+pub type EapPayloadBodyInnerRef<'a> = (&'a u8, &'a EapPayloadBodyAnonEapRest<'a>);
 impl<'a> From<&'a EapPayloadBody<'a>> for EapPayloadBodyInnerRef<'a> {
     fn ex_from(m: &'a EapPayloadBody) -> EapPayloadBodyInnerRef<'a> {
         (&m.code, &m.eap_rest)
@@ -10176,7 +11204,7 @@ impl SecureSpecCombinator for SpecEapPayloadBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecEapPayloadBodyCombinatorAlias = Mapped<SpecPair<SpecEapCodeCombinator, SpecEapPayloadBodyEapRestCombinator>, EapPayloadBodyMapper>;
+pub type SpecEapPayloadBodyCombinatorAlias = Mapped<SpecPair<SpecEapCodeCombinator, SpecEapPayloadBodyAnonEapRestCombinator>, EapPayloadBodyMapper>;
 
 pub struct EapPayloadBodyCombinator(pub EapPayloadBodyCombinatorAlias);
 
@@ -10196,7 +11224,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type EapPayloadBodyCombinatorAlias = Mapped<Pair<EapCodeCombinator, EapPayloadBodyEapRestCombinator, EapPayloadBodyCont0>, EapPayloadBodyMapper>;
+pub type EapPayloadBodyCombinatorAlias = Mapped<Pair<EapCodeCombinator, EapPayloadBodyAnonEapRestCombinator, EapPayloadBodyCont0>, EapPayloadBodyMapper>;
 
 
 pub open spec fn spec_eap_payload_body(payload_length: u16) -> SpecEapPayloadBodyCombinator {
@@ -10207,13 +11235,13 @@ pub open spec fn spec_eap_payload_body(payload_length: u16) -> SpecEapPayloadBod
     })
 }
 
-pub open spec fn spec_eap_payload_body_cont0(payload_length: u16, deps: u8) -> SpecEapPayloadBodyEapRestCombinator {
+pub open spec fn spec_eap_payload_body_cont0(payload_length: u16, deps: u8) -> SpecEapPayloadBodyAnonEapRestCombinator {
     let code = deps;
-    spec_eap_payload_body_eap_rest(code)
+    spec_eap_payload_body_anon_eap_rest(code)
 }
 
 impl View for EapPayloadBodyCont0 {
-    type V = spec_fn(u8) -> SpecEapPayloadBodyEapRestCombinator;
+    type V = spec_fn(u8) -> SpecEapPayloadBodyAnonEapRestCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: u8| {
@@ -10297,7 +11325,7 @@ type EapPayloadBodyCont0Type<'a, 'b> = &'b u8;
 type EapPayloadBodyCont0SType<'a, 'x> = &'x u8;
 type EapPayloadBodyCont0Input<'a, 'b, 'x> = POrSType<EapPayloadBodyCont0Type<'a, 'b>, EapPayloadBodyCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<EapPayloadBodyCont0Input<'a, 'b, 'x>> for EapPayloadBodyCont0 {
-    type Output = EapPayloadBodyEapRestCombinator;
+    type Output = EapPayloadBodyAnonEapRestCombinator;
 
     open spec fn requires(&self, deps: EapPayloadBodyCont0Input<'a, 'b, 'x>) -> bool {        let payload_length = self.payload_length@;
 
@@ -10316,13 +11344,13 @@ impl<'a, 'b, 'x> Continuation<EapPayloadBodyCont0Input<'a, 'b, 'x>> for EapPaylo
                 let code = deps;
                 let payload_length = self.payload_length;
                 let code = *code;
-                eap_payload_body_eap_rest(code)
+                eap_payload_body_anon_eap_rest(code)
             }
             POrSType::S(deps) => {
                 let code = deps;
                 let payload_length = self.payload_length;
                 let code = *code;
-                eap_payload_body_eap_rest(code)
+                eap_payload_body_anon_eap_rest(code)
             }
         }
     }
@@ -11679,124 +12707,6 @@ pub fn ike_header_len<'a>(v: <IkeHeaderCombinator as Combinator<'a, &'a [u8], Ve
         serialize_len == spec_ike_header().spec_serialize(v@).len(),
 {
     let combinator = ike_header();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-pub type SpecDeletePayloadSpisNone = Seq<u8>;
-pub type DeletePayloadSpisNone<'a> = &'a [u8];
-pub type DeletePayloadSpisNoneRef<'a> = &'a &'a [u8];
-
-
-pub struct SpecDeletePayloadSpisNoneCombinator(pub SpecDeletePayloadSpisNoneCombinatorAlias);
-
-impl SpecCombinator for SpecDeletePayloadSpisNoneCombinator {
-    type Type = SpecDeletePayloadSpisNone;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecDeletePayloadSpisNoneCombinator {
-    open spec fn is_prefix_secure() -> bool
-    { SpecDeletePayloadSpisNoneCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>)
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecDeletePayloadSpisNoneCombinatorAlias = bytes::Fixed<0>;
-
-pub struct DeletePayloadSpisNoneCombinator(pub DeletePayloadSpisNoneCombinatorAlias);
-
-impl View for DeletePayloadSpisNoneCombinator {
-    type V = SpecDeletePayloadSpisNoneCombinator;
-    open spec fn view(&self) -> Self::V { SpecDeletePayloadSpisNoneCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisNoneCombinator {
-    type Type = DeletePayloadSpisNone<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-pub type DeletePayloadSpisNoneCombinatorAlias = bytes::Fixed<0>;
-
-
-pub open spec fn spec_delete_payload_spis_none() -> SpecDeletePayloadSpisNoneCombinator {
-    SpecDeletePayloadSpisNoneCombinator(bytes::Fixed::<0>)
-}
-
-                
-pub fn delete_payload_spis_none<'a>() -> (o: DeletePayloadSpisNoneCombinator)
-    ensures o@ == spec_delete_payload_spis_none(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = DeletePayloadSpisNoneCombinator(bytes::Fixed::<0>);
-    // assert({
-    //     &&& combinator@ == spec_delete_payload_spis_none()
-    //     &&& combinator@.requires()
-    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    // });
-    combinator
-}
-
-pub fn parse_delete_payload_spis_none<'a>(input: &'a [u8]) -> (res: PResult<<DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_delete_payload_spis_none().spec_parse(input@) == Some((n as int, v@)),
-        spec_delete_payload_spis_none().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_delete_payload_spis_none().spec_parse(input@) is None,
-        spec_delete_payload_spis_none().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = delete_payload_spis_none();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_delete_payload_spis_none<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_delete_payload_spis_none().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_delete_payload_spis_none().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_none().spec_serialize(v@))
-        },
-{
-    let combinator = delete_payload_spis_none();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn delete_payload_spis_none_len<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_delete_payload_spis_none().wf(v@),
-        spec_delete_payload_spis_none().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_delete_payload_spis_none().spec_serialize(v@).len(),
-{
-    let combinator = delete_payload_spis_none();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -13728,126 +14638,6 @@ impl<'a, 'b, 'x> Continuation<Ikev2NotifyPayloadInnerCont0Input<'a, 'b, 'x>> for
     }
 }
                 
-pub type SpecDeletePayloadSpisIpsec = Seq<u32>;
-pub type DeletePayloadSpisIpsec = RepeatResult<u32>;
-pub type DeletePayloadSpisIpsecRef<'a> = &'a RepeatResult<u32>;
-
-
-pub struct SpecDeletePayloadSpisIpsecCombinator(pub SpecDeletePayloadSpisIpsecCombinatorAlias);
-
-impl SpecCombinator for SpecDeletePayloadSpisIpsecCombinator {
-    type Type = SpecDeletePayloadSpisIpsec;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecDeletePayloadSpisIpsecCombinator {
-    open spec fn is_prefix_secure() -> bool
-    { SpecDeletePayloadSpisIpsecCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>)
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecDeletePayloadSpisIpsecCombinatorAlias = RepeatN<U32Be>;
-
-pub struct DeletePayloadSpisIpsecCombinator(pub DeletePayloadSpisIpsecCombinatorAlias);
-
-impl View for DeletePayloadSpisIpsecCombinator {
-    type V = SpecDeletePayloadSpisIpsecCombinator;
-    open spec fn view(&self) -> Self::V { SpecDeletePayloadSpisIpsecCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisIpsecCombinator {
-    type Type = DeletePayloadSpisIpsec;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-pub type DeletePayloadSpisIpsecCombinatorAlias = RepeatN<U32Be>;
-
-
-pub open spec fn spec_delete_payload_spis_ipsec(num_spis: u16) -> SpecDeletePayloadSpisIpsecCombinator {
-    SpecDeletePayloadSpisIpsecCombinator(RepeatN(U32Be, (usize::spec_from(num_spis)) as usize))
-}
-
-pub fn delete_payload_spis_ipsec<'a>(num_spis: u16) -> (o: DeletePayloadSpisIpsecCombinator)
-
-    ensures o@ == spec_delete_payload_spis_ipsec(num_spis@),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = DeletePayloadSpisIpsecCombinator(RepeatN(U32Be, (usize::ex_from(num_spis)) as usize));
-    // assert({
-    //     &&& combinator@ == spec_delete_payload_spis_ipsec(num_spis@)
-    //     &&& combinator@.requires()
-    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    // });
-    combinator
-}
-
-pub fn parse_delete_payload_spis_ipsec<'a>(input: &'a [u8], num_spis: u16) -> (res: PResult<<DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-
-    ensures
-        res matches Ok((n, v)) ==> spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) == Some((n as int, v@)),
-        spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) is None,
-        spec_delete_payload_spis_ipsec(num_spis@).spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = delete_payload_spis_ipsec( num_spis );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_delete_payload_spis_ipsec<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_delete_payload_spis_ipsec(num_spis@).wf(v@),
-
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@))
-        },
-{
-    let combinator = delete_payload_spis_ipsec( num_spis );
-    combinator.serialize(v, data, pos)
-}
-
-pub fn delete_payload_spis_ipsec_len<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16) -> (serialize_len: usize)
-    requires
-        spec_delete_payload_spis_ipsec(num_spis@).wf(v@),
-        spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len() <= usize::MAX,
-
-    ensures
-        serialize_len == spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len(),
-{
-    let combinator = delete_payload_spis_ipsec( num_spis );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
 
 pub struct SpecEapMessageReqResp {
     pub code: u8,
@@ -14121,89 +14911,15 @@ impl<'a, 'b, 'x> Continuation<EapMessageReqRespCont0Input<'a, 'b, 'x>> for EapMe
     }
 }
                 
-
-pub struct SpecNotifyPayloadBodySpi4 {
-    pub spi: Seq<u8>,
-    pub notification_data: Seq<u8>,
-}
-
-pub type SpecNotifyPayloadBodySpi4Inner = (Seq<u8>, Seq<u8>);
+pub type SpecNotifyPayloadBodyAnonRest = SpecNotifyPayloadBodyAnonRestAnonInner;
+pub type NotifyPayloadBodyAnonRest<'a> = NotifyPayloadBodyAnonRestAnonInner<'a>;
+pub type NotifyPayloadBodyAnonRestRef<'a> = &'a NotifyPayloadBodyAnonRestAnonInner<'a>;
 
 
-impl SpecFrom<SpecNotifyPayloadBodySpi4> for SpecNotifyPayloadBodySpi4Inner {
-    open spec fn spec_from(m: SpecNotifyPayloadBodySpi4) -> SpecNotifyPayloadBodySpi4Inner {
-        (m.spi, m.notification_data)
-    }
-}
+pub struct SpecNotifyPayloadBodyAnonRestCombinator(pub SpecNotifyPayloadBodyAnonRestCombinatorAlias);
 
-impl SpecFrom<SpecNotifyPayloadBodySpi4Inner> for SpecNotifyPayloadBodySpi4 {
-    open spec fn spec_from(m: SpecNotifyPayloadBodySpi4Inner) -> SpecNotifyPayloadBodySpi4 {
-        let (spi, notification_data) = m;
-        SpecNotifyPayloadBodySpi4 { spi, notification_data }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct NotifyPayloadBodySpi4<'a> {
-    pub spi: &'a [u8],
-    pub notification_data: &'a [u8],
-}
-
-impl View for NotifyPayloadBodySpi4<'_> {
-    type V = SpecNotifyPayloadBodySpi4;
-
-    open spec fn view(&self) -> Self::V {
-        SpecNotifyPayloadBodySpi4 {
-            spi: self.spi@,
-            notification_data: self.notification_data@,
-        }
-    }
-}
-pub type NotifyPayloadBodySpi4Inner<'a> = (&'a [u8], &'a [u8]);
-
-pub type NotifyPayloadBodySpi4InnerRef<'a> = (&'a &'a [u8], &'a &'a [u8]);
-impl<'a> From<&'a NotifyPayloadBodySpi4<'a>> for NotifyPayloadBodySpi4InnerRef<'a> {
-    fn ex_from(m: &'a NotifyPayloadBodySpi4) -> NotifyPayloadBodySpi4InnerRef<'a> {
-        (&m.spi, &m.notification_data)
-    }
-}
-
-impl<'a> From<NotifyPayloadBodySpi4Inner<'a>> for NotifyPayloadBodySpi4<'a> {
-    fn ex_from(m: NotifyPayloadBodySpi4Inner) -> NotifyPayloadBodySpi4 {
-        let (spi, notification_data) = m;
-        NotifyPayloadBodySpi4 { spi, notification_data }
-    }
-}
-
-pub struct NotifyPayloadBodySpi4Mapper;
-impl View for NotifyPayloadBodySpi4Mapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for NotifyPayloadBodySpi4Mapper {
-    type Src = SpecNotifyPayloadBodySpi4Inner;
-    type Dst = SpecNotifyPayloadBodySpi4;
-}
-impl SpecIsoProof for NotifyPayloadBodySpi4Mapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for NotifyPayloadBodySpi4Mapper {
-    type Src = NotifyPayloadBodySpi4Inner<'a>;
-    type Dst = NotifyPayloadBodySpi4<'a>;
-    type RefSrc = NotifyPayloadBodySpi4InnerRef<'a>;
-}
-type SpecNotifyPayloadBodySpi4CombinatorAlias1 = (bytes::Fixed<4>, bytes::Tail);
-pub struct SpecNotifyPayloadBodySpi4Combinator(pub SpecNotifyPayloadBodySpi4CombinatorAlias);
-
-impl SpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
-    type Type = SpecNotifyPayloadBodySpi4;
+impl SpecCombinator for SpecNotifyPayloadBodyAnonRestCombinator {
+    type Type = SpecNotifyPayloadBodyAnonRest;
     open spec fn requires(&self) -> bool
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
@@ -14213,9 +14929,9 @@ impl SpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
     open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
-impl SecureSpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
+impl SecureSpecCombinator for SpecNotifyPayloadBodyAnonRestCombinator {
     open spec fn is_prefix_secure() -> bool
-    { SpecNotifyPayloadBodySpi4CombinatorAlias::is_prefix_secure() }
+    { SpecNotifyPayloadBodyAnonRestCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
     proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
@@ -14229,23 +14945,16 @@ impl SecureSpecCombinator for SpecNotifyPayloadBodySpi4Combinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecNotifyPayloadBodySpi4CombinatorAlias = Mapped<SpecNotifyPayloadBodySpi4CombinatorAlias1, NotifyPayloadBodySpi4Mapper>;
-type NotifyPayloadBodySpi4CombinatorAlias1 = (bytes::Fixed<4>, bytes::Tail);
-pub struct NotifyPayloadBodySpi4Combinator1(pub NotifyPayloadBodySpi4CombinatorAlias1);
-impl View for NotifyPayloadBodySpi4Combinator1 {
-    type V = SpecNotifyPayloadBodySpi4CombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(NotifyPayloadBodySpi4Combinator1, NotifyPayloadBodySpi4CombinatorAlias1);
+pub type SpecNotifyPayloadBodyAnonRestCombinatorAlias = AndThen<bytes::Variable, SpecNotifyPayloadBodyAnonRestAnonInnerCombinator>;
 
-pub struct NotifyPayloadBodySpi4Combinator(pub NotifyPayloadBodySpi4CombinatorAlias);
+pub struct NotifyPayloadBodyAnonRestCombinator(pub NotifyPayloadBodyAnonRestCombinatorAlias);
 
-impl View for NotifyPayloadBodySpi4Combinator {
-    type V = SpecNotifyPayloadBodySpi4Combinator;
-    open spec fn view(&self) -> Self::V { SpecNotifyPayloadBodySpi4Combinator(self.0@) }
+impl View for NotifyPayloadBodyAnonRestCombinator {
+    type V = SpecNotifyPayloadBodyAnonRestCombinator;
+    open spec fn view(&self) -> Self::V { SpecNotifyPayloadBodyAnonRestCombinator(self.0@) }
 }
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi4Combinator {
-    type Type = NotifyPayloadBodySpi4<'a>;
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyAnonRestCombinator {
+    type Type = NotifyPayloadBodyAnonRest<'a>;
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
@@ -14256,306 +14965,78 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi4Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type NotifyPayloadBodySpi4CombinatorAlias = Mapped<NotifyPayloadBodySpi4Combinator1, NotifyPayloadBodySpi4Mapper>;
+pub type NotifyPayloadBodyAnonRestCombinatorAlias = AndThen<bytes::Variable, NotifyPayloadBodyAnonRestAnonInnerCombinator>;
 
 
-pub open spec fn spec_notify_payload_body_spi4() -> SpecNotifyPayloadBodySpi4Combinator {
-    SpecNotifyPayloadBodySpi4Combinator(
-    Mapped {
-        inner: (bytes::Fixed::<4>, bytes::Tail),
-        mapper: NotifyPayloadBodySpi4Mapper,
-    })
+pub open spec fn spec_notify_payload_body_anon_rest(payload_length: u16, spi_size: SpecIpsecSpiSizeOrNone) -> SpecNotifyPayloadBodyAnonRestCombinator {
+    SpecNotifyPayloadBodyAnonRestCombinator(AndThen(bytes::Variable(((usize::spec_from(payload_length) - 8)) as usize), spec_notify_payload_body_anon_rest_anon_inner(spi_size)))
 }
 
-                
-pub fn notify_payload_body_spi4<'a>() -> (o: NotifyPayloadBodySpi4Combinator)
-    ensures o@ == spec_notify_payload_body_spi4(),
+pub fn notify_payload_body_anon_rest<'a>(payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (o: NotifyPayloadBodyAnonRestCombinator)
+    requires
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
+    ensures o@ == spec_notify_payload_body_anon_rest(payload_length@, spi_size@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = NotifyPayloadBodySpi4Combinator(
-    Mapped {
-        inner: NotifyPayloadBodySpi4Combinator1((bytes::Fixed::<4>, bytes::Tail)),
-        mapper: NotifyPayloadBodySpi4Mapper,
-    });
+    let combinator = NotifyPayloadBodyAnonRestCombinator(AndThen(bytes::Variable(((usize::ex_from(payload_length) - 8)) as usize), notify_payload_body_anon_rest_anon_inner(spi_size)));
     // assert({
-    //     &&& combinator@ == spec_notify_payload_body_spi4()
+    //     &&& combinator@ == spec_notify_payload_body_anon_rest(payload_length@, spi_size@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_notify_payload_body_spi4<'a>(input: &'a [u8]) -> (res: PResult<<NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_notify_payload_body_anon_rest<'a>(input: &'a [u8], payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (res: PResult<<NotifyPayloadBodyAnonRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+
     ensures
-        res matches Ok((n, v)) ==> spec_notify_payload_body_spi4().spec_parse(input@) == Some((n as int, v@)),
-        spec_notify_payload_body_spi4().spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
+        spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_notify_payload_body_spi4().spec_parse(input@) is None,
-        spec_notify_payload_body_spi4().spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_parse(input@) is None,
+        spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = notify_payload_body_spi4();
+    let combinator = notify_payload_body_anon_rest( payload_length, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_notify_payload_body_spi4<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_notify_payload_body_anon_rest<'a>(v: <NotifyPayloadBodyAnonRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_notify_payload_body_spi4().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_notify_payload_body_spi4().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_spi4().spec_serialize(v@))
-        },
-{
-    let combinator = notify_payload_body_spi4();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn notify_payload_body_spi4_len<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_notify_payload_body_spi4().wf(v@),
-        spec_notify_payload_body_spi4().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_notify_payload_body_spi4().spec_serialize(v@).len(),
-{
-    let combinator = notify_payload_body_spi4();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-
-pub enum SpecNotifyPayloadBodyRest {
-    Variant0(SpecNotifyPayloadBodySpi0),
-    Variant1(SpecNotifyPayloadBodySpi4),
-}
-
-pub type SpecNotifyPayloadBodyRestInner = Either<SpecNotifyPayloadBodySpi0, SpecNotifyPayloadBodySpi4>;
-
-impl SpecFrom<SpecNotifyPayloadBodyRest> for SpecNotifyPayloadBodyRestInner {
-    open spec fn spec_from(m: SpecNotifyPayloadBodyRest) -> SpecNotifyPayloadBodyRestInner {
-        match m {
-            SpecNotifyPayloadBodyRest::Variant0(m) => Either::Left(m),
-            SpecNotifyPayloadBodyRest::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecNotifyPayloadBodyRestInner> for SpecNotifyPayloadBodyRest {
-    open spec fn spec_from(m: SpecNotifyPayloadBodyRestInner) -> SpecNotifyPayloadBodyRest {
-        match m {
-            Either::Left(m) => SpecNotifyPayloadBodyRest::Variant0(m),
-            Either::Right(m) => SpecNotifyPayloadBodyRest::Variant1(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NotifyPayloadBodyRest<'a> {
-    Variant0(NotifyPayloadBodySpi0<'a>),
-    Variant1(NotifyPayloadBodySpi4<'a>),
-}
-
-pub type NotifyPayloadBodyRestInner<'a> = Either<NotifyPayloadBodySpi0<'a>, NotifyPayloadBodySpi4<'a>>;
-
-pub type NotifyPayloadBodyRestInnerRef<'a> = Either<&'a NotifyPayloadBodySpi0<'a>, &'a NotifyPayloadBodySpi4<'a>>;
-
-
-impl<'a> View for NotifyPayloadBodyRest<'a> {
-    type V = SpecNotifyPayloadBodyRest;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            NotifyPayloadBodyRest::Variant0(m) => SpecNotifyPayloadBodyRest::Variant0(m@),
-            NotifyPayloadBodyRest::Variant1(m) => SpecNotifyPayloadBodyRest::Variant1(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a NotifyPayloadBodyRest<'a>> for NotifyPayloadBodyRestInnerRef<'a> {
-    fn ex_from(m: &'a NotifyPayloadBodyRest<'a>) -> NotifyPayloadBodyRestInnerRef<'a> {
-        match m {
-            NotifyPayloadBodyRest::Variant0(m) => Either::Left(m),
-            NotifyPayloadBodyRest::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-impl<'a> From<NotifyPayloadBodyRestInner<'a>> for NotifyPayloadBodyRest<'a> {
-    fn ex_from(m: NotifyPayloadBodyRestInner<'a>) -> NotifyPayloadBodyRest<'a> {
-        match m {
-            Either::Left(m) => NotifyPayloadBodyRest::Variant0(m),
-            Either::Right(m) => NotifyPayloadBodyRest::Variant1(m),
-        }
-    }
-    
-}
-
-
-pub struct NotifyPayloadBodyRestMapper;
-impl View for NotifyPayloadBodyRestMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for NotifyPayloadBodyRestMapper {
-    type Src = SpecNotifyPayloadBodyRestInner;
-    type Dst = SpecNotifyPayloadBodyRest;
-}
-impl SpecIsoProof for NotifyPayloadBodyRestMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for NotifyPayloadBodyRestMapper {
-    type Src = NotifyPayloadBodyRestInner<'a>;
-    type Dst = NotifyPayloadBodyRest<'a>;
-    type RefSrc = NotifyPayloadBodyRestInnerRef<'a>;
-}
-
-type SpecNotifyPayloadBodyRestCombinatorAlias1 = Choice<Cond<SpecNotifyPayloadBodySpi0Combinator>, Cond<SpecNotifyPayloadBodySpi4Combinator>>;
-pub struct SpecNotifyPayloadBodyRestCombinator(pub SpecNotifyPayloadBodyRestCombinatorAlias);
-
-impl SpecCombinator for SpecNotifyPayloadBodyRestCombinator {
-    type Type = SpecNotifyPayloadBodyRest;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecNotifyPayloadBodyRestCombinator {
-    open spec fn is_prefix_secure() -> bool
-    { SpecNotifyPayloadBodyRestCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>)
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecNotifyPayloadBodyRestCombinatorAlias = AndThen<bytes::Variable, Mapped<SpecNotifyPayloadBodyRestCombinatorAlias1, NotifyPayloadBodyRestMapper>>;
-type NotifyPayloadBodyRestCombinatorAlias1 = Choice<Cond<NotifyPayloadBodySpi0Combinator>, Cond<NotifyPayloadBodySpi4Combinator>>;
-pub struct NotifyPayloadBodyRestCombinator1(pub NotifyPayloadBodyRestCombinatorAlias1);
-impl View for NotifyPayloadBodyRestCombinator1 {
-    type V = SpecNotifyPayloadBodyRestCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(NotifyPayloadBodyRestCombinator1, NotifyPayloadBodyRestCombinatorAlias1);
-
-pub struct NotifyPayloadBodyRestCombinator(pub NotifyPayloadBodyRestCombinatorAlias);
-
-impl View for NotifyPayloadBodyRestCombinator {
-    type V = SpecNotifyPayloadBodyRestCombinator;
-    open spec fn view(&self) -> Self::V { SpecNotifyPayloadBodyRestCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyRestCombinator {
-    type Type = NotifyPayloadBodyRest<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-pub type NotifyPayloadBodyRestCombinatorAlias = AndThen<bytes::Variable, Mapped<NotifyPayloadBodyRestCombinator1, NotifyPayloadBodyRestMapper>>;
-
-
-pub open spec fn spec_notify_payload_body_rest(spi_size: SpecIpsecSpiSizeOrNone, payload_length: u16) -> SpecNotifyPayloadBodyRestCombinator {
-    SpecNotifyPayloadBodyRestCombinator(AndThen(bytes::Variable(((usize::spec_from(payload_length) - 8)) as usize), Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_notify_payload_body_spi0() }, Cond { cond: spi_size == 4, inner: spec_notify_payload_body_spi4() }), mapper: NotifyPayloadBodyRestMapper }))
-}
-
-pub fn notify_payload_body_rest<'a>(spi_size: IpsecSpiSizeOrNone, payload_length: u16) -> (o: NotifyPayloadBodyRestCombinator)
-    requires
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
+        spec_notify_payload_body_anon_rest(payload_length@, spi_size@).wf(v@),
         ((payload_length) >= 8 && (payload_length) <= 65535),
-
-    ensures o@ == spec_notify_payload_body_rest(spi_size@, payload_length@),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = NotifyPayloadBodyRestCombinator(AndThen(bytes::Variable(((usize::ex_from(payload_length) - 8)) as usize), Mapped { inner: NotifyPayloadBodyRestCombinator1(Choice::new(Cond { cond: spi_size == 0, inner: notify_payload_body_spi0() }, Cond { cond: spi_size == 4, inner: notify_payload_body_spi4() })), mapper: NotifyPayloadBodyRestMapper }));
-    // assert({
-    //     &&& combinator@ == spec_notify_payload_body_rest(spi_size@, payload_length@)
-    //     &&& combinator@.requires()
-    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    // });
-    combinator
-}
-
-pub fn parse_notify_payload_body_rest<'a>(input: &'a [u8], spi_size: IpsecSpiSizeOrNone, payload_length: u16) -> (res: PResult<<NotifyPayloadBodyRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
         spec_ipsec_spi_size_or_none().wf(spi_size@),
-        ((payload_length) >= 8 && (payload_length) <= 65535),
-
-    ensures
-        res matches Ok((n, v)) ==> spec_notify_payload_body_rest(spi_size@, payload_length@).spec_parse(input@) == Some((n as int, v@)),
-        spec_notify_payload_body_rest(spi_size@, payload_length@).spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_notify_payload_body_rest(spi_size@, payload_length@).spec_parse(input@) is None,
-        spec_notify_payload_body_rest(spi_size@, payload_length@).spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = notify_payload_body_rest( spi_size, payload_length );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_notify_payload_body_rest<'a>(v: <NotifyPayloadBodyRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, spi_size: IpsecSpiSizeOrNone, payload_length: u16) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_notify_payload_body_rest(spi_size@, payload_length@).wf(v@),
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
-        ((payload_length) >= 8 && (payload_length) <= 65535),
 
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
             &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_notify_payload_body_rest(spi_size@, payload_length@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_rest(spi_size@, payload_length@).spec_serialize(v@))
+            &&& n == spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_serialize(v@).len()
+            &&& data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_serialize(v@))
         },
 {
-    let combinator = notify_payload_body_rest( spi_size, payload_length );
+    let combinator = notify_payload_body_anon_rest( payload_length, spi_size );
     combinator.serialize(v, data, pos)
 }
 
-pub fn notify_payload_body_rest_len<'a>(v: <NotifyPayloadBodyRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, spi_size: IpsecSpiSizeOrNone, payload_length: u16) -> (serialize_len: usize)
+pub fn notify_payload_body_anon_rest_len<'a>(v: <NotifyPayloadBodyAnonRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
     requires
-        spec_notify_payload_body_rest(spi_size@, payload_length@).wf(v@),
-        spec_notify_payload_body_rest(spi_size@, payload_length@).spec_serialize(v@).len() <= usize::MAX,
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
+        spec_notify_payload_body_anon_rest(payload_length@, spi_size@).wf(v@),
+        spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
         ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
 
     ensures
-        serialize_len == spec_notify_payload_body_rest(spi_size@, payload_length@).spec_serialize(v@).len(),
+        serialize_len == spec_notify_payload_body_anon_rest(payload_length@, spi_size@).spec_serialize(v@).len(),
 {
-    let combinator = notify_payload_body_rest( spi_size, payload_length );
+    let combinator = notify_payload_body_anon_rest( payload_length, spi_size );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -14564,10 +15045,10 @@ pub struct SpecNotifyPayloadBody {
     pub protocol_id: SpecNotifyProtocolId,
     pub spi_size: SpecIpsecSpiSizeOrNone,
     pub notify_msg_type: u16,
-    pub rest: SpecNotifyPayloadBodyRest,
+    pub rest: SpecNotifyPayloadBodyAnonRest,
 }
 
-pub type SpecNotifyPayloadBodyInner = ((SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone), (u16, SpecNotifyPayloadBodyRest));
+pub type SpecNotifyPayloadBodyInner = ((SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone), (u16, SpecNotifyPayloadBodyAnonRest));
 
 
 impl SpecFrom<SpecNotifyPayloadBody> for SpecNotifyPayloadBodyInner {
@@ -14588,7 +15069,7 @@ pub struct NotifyPayloadBody<'a> {
     pub protocol_id: NotifyProtocolId,
     pub spi_size: IpsecSpiSizeOrNone,
     pub notify_msg_type: u16,
-    pub rest: NotifyPayloadBodyRest<'a>,
+    pub rest: NotifyPayloadBodyAnonRest<'a>,
 }
 
 impl View for NotifyPayloadBody<'_> {
@@ -14603,9 +15084,9 @@ impl View for NotifyPayloadBody<'_> {
         }
     }
 }
-pub type NotifyPayloadBodyInner<'a> = ((NotifyProtocolId, IpsecSpiSizeOrNone), (u16, NotifyPayloadBodyRest<'a>));
+pub type NotifyPayloadBodyInner<'a> = ((NotifyProtocolId, IpsecSpiSizeOrNone), (u16, NotifyPayloadBodyAnonRest<'a>));
 
-pub type NotifyPayloadBodyInnerRef<'a> = ((&'a NotifyProtocolId, &'a IpsecSpiSizeOrNone), (&'a u16, &'a NotifyPayloadBodyRest<'a>));
+pub type NotifyPayloadBodyInnerRef<'a> = ((&'a NotifyProtocolId, &'a IpsecSpiSizeOrNone), (&'a u16, &'a NotifyPayloadBodyAnonRest<'a>));
 impl<'a> From<&'a NotifyPayloadBody<'a>> for NotifyPayloadBodyInnerRef<'a> {
     fn ex_from(m: &'a NotifyPayloadBody) -> NotifyPayloadBodyInnerRef<'a> {
         ((&m.protocol_id, &m.spi_size), (&m.notify_msg_type, &m.rest))
@@ -14673,7 +15154,7 @@ impl SecureSpecCombinator for SpecNotifyPayloadBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecNotifyPayloadBodyCombinatorAlias = Mapped<SpecPair<SpecPair<SpecNotifyProtocolIdCombinator, SpecIpsecSpiSizeOrNoneCombinator>, (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyRestCombinator)>, NotifyPayloadBodyMapper>;
+pub type SpecNotifyPayloadBodyCombinatorAlias = Mapped<SpecPair<SpecPair<SpecNotifyProtocolIdCombinator, SpecIpsecSpiSizeOrNoneCombinator>, (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyAnonRestCombinator)>, NotifyPayloadBodyMapper>;
 
 pub struct NotifyPayloadBodyCombinator(pub NotifyPayloadBodyCombinatorAlias);
 
@@ -14693,7 +15174,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type NotifyPayloadBodyCombinatorAlias = Mapped<Pair<Pair<NotifyProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, NotifyPayloadBodyCont1>, (NotifyMsgTypeCombinator, NotifyPayloadBodyRestCombinator), NotifyPayloadBodyCont0>, NotifyPayloadBodyMapper>;
+pub type NotifyPayloadBodyCombinatorAlias = Mapped<Pair<Pair<NotifyProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, NotifyPayloadBodyCont1>, (NotifyMsgTypeCombinator, NotifyPayloadBodyAnonRestCombinator), NotifyPayloadBodyCont0>, NotifyPayloadBodyMapper>;
 
 
 pub open spec fn spec_notify_payload_body(payload_length: u16) -> SpecNotifyPayloadBodyCombinator {
@@ -14719,13 +15200,13 @@ impl View for NotifyPayloadBodyCont1 {
     }
 }
 
-pub open spec fn spec_notify_payload_body_cont0(payload_length: u16, deps: (SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone)) -> (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyRestCombinator) {
+pub open spec fn spec_notify_payload_body_cont0(payload_length: u16, deps: (SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone)) -> (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyAnonRestCombinator) {
     let (protocol_id, spi_size) = deps;
-    (spec_notify_msg_type(), spec_notify_payload_body_rest(spi_size, payload_length))
+    (spec_notify_msg_type(), spec_notify_payload_body_anon_rest(payload_length, spi_size))
 }
 
 impl View for NotifyPayloadBodyCont0 {
-    type V = spec_fn((SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone)) -> (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyRestCombinator);
+    type V = spec_fn((SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone)) -> (SpecNotifyMsgTypeCombinator, SpecNotifyPayloadBodyAnonRestCombinator);
 
     open spec fn view(&self) -> Self::V {
         |deps: (SpecNotifyProtocolId, SpecIpsecSpiSizeOrNone)| {
@@ -14846,7 +15327,7 @@ type NotifyPayloadBodyCont0Type<'a, 'b> = &'b (NotifyProtocolId, IpsecSpiSizeOrN
 type NotifyPayloadBodyCont0SType<'a, 'x> = (&'x NotifyProtocolId, &'x IpsecSpiSizeOrNone);
 type NotifyPayloadBodyCont0Input<'a, 'b, 'x> = POrSType<NotifyPayloadBodyCont0Type<'a, 'b>, NotifyPayloadBodyCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<NotifyPayloadBodyCont0Input<'a, 'b, 'x>> for NotifyPayloadBodyCont0 {
-    type Output = (NotifyMsgTypeCombinator, NotifyPayloadBodyRestCombinator);
+    type Output = (NotifyMsgTypeCombinator, NotifyPayloadBodyAnonRestCombinator);
 
     open spec fn requires(&self, deps: NotifyPayloadBodyCont0Input<'a, 'b, 'x>) -> bool {        let payload_length = self.payload_length@;
 
@@ -14866,14 +15347,14 @@ impl<'a, 'b, 'x> Continuation<NotifyPayloadBodyCont0Input<'a, 'b, 'x>> for Notif
                 let payload_length = self.payload_length;
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
-                (notify_msg_type(), notify_payload_body_rest(spi_size, payload_length))
+                (notify_msg_type(), notify_payload_body_anon_rest(payload_length, spi_size))
             }
             POrSType::S(deps) => {
                 let (protocol_id, spi_size) = deps;
                 let payload_length = self.payload_length;
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
-                (notify_msg_type(), notify_payload_body_rest(spi_size, payload_length))
+                (notify_msg_type(), notify_payload_body_anon_rest(payload_length, spi_size))
             }
         }
     }
@@ -15790,241 +16271,14 @@ pub fn payload_critical_len<'a>(v: <PayloadCriticalCombinator as Combinator<'a, 
 
                 
 
-pub enum SpecDeletePayloadBodySpis {
-    Variant0(SpecDeletePayloadSpisNone),
-    Variant1(SpecDeletePayloadSpisIpsec),
-}
-
-pub type SpecDeletePayloadBodySpisInner = Either<SpecDeletePayloadSpisNone, SpecDeletePayloadSpisIpsec>;
-
-impl SpecFrom<SpecDeletePayloadBodySpis> for SpecDeletePayloadBodySpisInner {
-    open spec fn spec_from(m: SpecDeletePayloadBodySpis) -> SpecDeletePayloadBodySpisInner {
-        match m {
-            SpecDeletePayloadBodySpis::Variant0(m) => Either::Left(m),
-            SpecDeletePayloadBodySpis::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecDeletePayloadBodySpisInner> for SpecDeletePayloadBodySpis {
-    open spec fn spec_from(m: SpecDeletePayloadBodySpisInner) -> SpecDeletePayloadBodySpis {
-        match m {
-            Either::Left(m) => SpecDeletePayloadBodySpis::Variant0(m),
-            Either::Right(m) => SpecDeletePayloadBodySpis::Variant1(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DeletePayloadBodySpis<'a> {
-    Variant0(DeletePayloadSpisNone<'a>),
-    Variant1(DeletePayloadSpisIpsec),
-}
-
-pub type DeletePayloadBodySpisInner<'a> = Either<DeletePayloadSpisNone<'a>, DeletePayloadSpisIpsec>;
-
-pub type DeletePayloadBodySpisInnerRef<'a> = Either<&'a DeletePayloadSpisNone<'a>, &'a DeletePayloadSpisIpsec>;
-
-
-impl<'a> View for DeletePayloadBodySpis<'a> {
-    type V = SpecDeletePayloadBodySpis;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            DeletePayloadBodySpis::Variant0(m) => SpecDeletePayloadBodySpis::Variant0(m@),
-            DeletePayloadBodySpis::Variant1(m) => SpecDeletePayloadBodySpis::Variant1(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a DeletePayloadBodySpis<'a>> for DeletePayloadBodySpisInnerRef<'a> {
-    fn ex_from(m: &'a DeletePayloadBodySpis<'a>) -> DeletePayloadBodySpisInnerRef<'a> {
-        match m {
-            DeletePayloadBodySpis::Variant0(m) => Either::Left(m),
-            DeletePayloadBodySpis::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-impl<'a> From<DeletePayloadBodySpisInner<'a>> for DeletePayloadBodySpis<'a> {
-    fn ex_from(m: DeletePayloadBodySpisInner<'a>) -> DeletePayloadBodySpis<'a> {
-        match m {
-            Either::Left(m) => DeletePayloadBodySpis::Variant0(m),
-            Either::Right(m) => DeletePayloadBodySpis::Variant1(m),
-        }
-    }
-    
-}
-
-
-pub struct DeletePayloadBodySpisMapper;
-impl View for DeletePayloadBodySpisMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for DeletePayloadBodySpisMapper {
-    type Src = SpecDeletePayloadBodySpisInner;
-    type Dst = SpecDeletePayloadBodySpis;
-}
-impl SpecIsoProof for DeletePayloadBodySpisMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for DeletePayloadBodySpisMapper {
-    type Src = DeletePayloadBodySpisInner<'a>;
-    type Dst = DeletePayloadBodySpis<'a>;
-    type RefSrc = DeletePayloadBodySpisInnerRef<'a>;
-}
-
-type SpecDeletePayloadBodySpisCombinatorAlias1 = Choice<Cond<SpecDeletePayloadSpisNoneCombinator>, Cond<SpecDeletePayloadSpisIpsecCombinator>>;
-pub struct SpecDeletePayloadBodySpisCombinator(pub SpecDeletePayloadBodySpisCombinatorAlias);
-
-impl SpecCombinator for SpecDeletePayloadBodySpisCombinator {
-    type Type = SpecDeletePayloadBodySpis;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecDeletePayloadBodySpisCombinator {
-    open spec fn is_prefix_secure() -> bool
-    { SpecDeletePayloadBodySpisCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>)
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>)
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecDeletePayloadBodySpisCombinatorAlias = Mapped<SpecDeletePayloadBodySpisCombinatorAlias1, DeletePayloadBodySpisMapper>;
-type DeletePayloadBodySpisCombinatorAlias1 = Choice<Cond<DeletePayloadSpisNoneCombinator>, Cond<DeletePayloadSpisIpsecCombinator>>;
-pub struct DeletePayloadBodySpisCombinator1(pub DeletePayloadBodySpisCombinatorAlias1);
-impl View for DeletePayloadBodySpisCombinator1 {
-    type V = SpecDeletePayloadBodySpisCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(DeletePayloadBodySpisCombinator1, DeletePayloadBodySpisCombinatorAlias1);
-
-pub struct DeletePayloadBodySpisCombinator(pub DeletePayloadBodySpisCombinatorAlias);
-
-impl View for DeletePayloadBodySpisCombinator {
-    type V = SpecDeletePayloadBodySpisCombinator;
-    open spec fn view(&self) -> Self::V { SpecDeletePayloadBodySpisCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodySpisCombinator {
-    type Type = DeletePayloadBodySpis<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-pub type DeletePayloadBodySpisCombinatorAlias = Mapped<DeletePayloadBodySpisCombinator1, DeletePayloadBodySpisMapper>;
-
-
-pub open spec fn spec_delete_payload_body_spis(num_spis: u16, spi_size: SpecIpsecSpiSizeOrNone) -> SpecDeletePayloadBodySpisCombinator {
-    SpecDeletePayloadBodySpisCombinator(Mapped { inner: Choice(Cond { cond: spi_size == 0, inner: spec_delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: spec_delete_payload_spis_ipsec(num_spis) }), mapper: DeletePayloadBodySpisMapper })
-}
-
-pub fn delete_payload_body_spis<'a>(num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: DeletePayloadBodySpisCombinator)
-    requires
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
-
-    ensures o@ == spec_delete_payload_body_spis(num_spis@, spi_size@),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = DeletePayloadBodySpisCombinator(Mapped { inner: DeletePayloadBodySpisCombinator1(Choice::new(Cond { cond: spi_size == 0, inner: delete_payload_spis_none() }, Cond { cond: spi_size == 4, inner: delete_payload_spis_ipsec(num_spis) })), mapper: DeletePayloadBodySpisMapper });
-    // assert({
-    //     &&& combinator@ == spec_delete_payload_body_spis(num_spis@, spi_size@)
-    //     &&& combinator@.requires()
-    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    // });
-    combinator
-}
-
-pub fn parse_delete_payload_body_spis<'a>(input: &'a [u8], num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (res: PResult<<DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
-
-    ensures
-        res matches Ok((n, v)) ==> spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) == Some((n as int, v@)),
-        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) is None,
-        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = delete_payload_body_spis( num_spis, spi_size );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_delete_payload_body_spis<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_delete_payload_body_spis(num_spis@, spi_size@).wf(v@),
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
-
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@))
-        },
-{
-    let combinator = delete_payload_body_spis( num_spis, spi_size );
-    combinator.serialize(v, data, pos)
-}
-
-pub fn delete_payload_body_spis_len<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
-    requires
-        spec_delete_payload_body_spis(num_spis@, spi_size@).wf(v@),
-        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
-        spec_ipsec_spi_size_or_none().wf(spi_size@),
-
-    ensures
-        serialize_len == spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len(),
-{
-    let combinator = delete_payload_body_spis( num_spis, spi_size );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-
 pub struct SpecDeletePayloadBody {
     pub protocol_id: u8,
     pub spi_size: SpecIpsecSpiSizeOrNone,
     pub num_spis: u16,
-    pub spis: SpecDeletePayloadBodySpis,
+    pub spis: SpecDeletePayloadBodyAnonSpis,
 }
 
-pub type SpecDeletePayloadBodyInner = (((u8, SpecIpsecSpiSizeOrNone), u16), SpecDeletePayloadBodySpis);
+pub type SpecDeletePayloadBodyInner = (((u8, SpecIpsecSpiSizeOrNone), u16), SpecDeletePayloadBodyAnonSpis);
 
 
 impl SpecFrom<SpecDeletePayloadBody> for SpecDeletePayloadBodyInner {
@@ -16045,7 +16299,7 @@ pub struct DeletePayloadBody<'a> {
     pub protocol_id: u8,
     pub spi_size: IpsecSpiSizeOrNone,
     pub num_spis: u16,
-    pub spis: DeletePayloadBodySpis<'a>,
+    pub spis: DeletePayloadBodyAnonSpis<'a>,
 }
 
 impl View for DeletePayloadBody<'_> {
@@ -16060,9 +16314,9 @@ impl View for DeletePayloadBody<'_> {
         }
     }
 }
-pub type DeletePayloadBodyInner<'a> = (((u8, IpsecSpiSizeOrNone), u16), DeletePayloadBodySpis<'a>);
+pub type DeletePayloadBodyInner<'a> = (((u8, IpsecSpiSizeOrNone), u16), DeletePayloadBodyAnonSpis<'a>);
 
-pub type DeletePayloadBodyInnerRef<'a> = (((&'a u8, &'a IpsecSpiSizeOrNone), &'a u16), &'a DeletePayloadBodySpis<'a>);
+pub type DeletePayloadBodyInnerRef<'a> = (((&'a u8, &'a IpsecSpiSizeOrNone), &'a u16), &'a DeletePayloadBodyAnonSpis<'a>);
 impl<'a> From<&'a DeletePayloadBody<'a>> for DeletePayloadBodyInnerRef<'a> {
     fn ex_from(m: &'a DeletePayloadBody) -> DeletePayloadBodyInnerRef<'a> {
         (((&m.protocol_id, &m.spi_size), &m.num_spis), &m.spis)
@@ -16130,7 +16384,7 @@ impl SecureSpecCombinator for SpecDeletePayloadBodyCombinator {
     proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
-pub type SpecDeletePayloadBodyCombinatorAlias = Mapped<SpecPair<SpecPair<SpecPair<SpecIkeProtocolIdCombinator, SpecIpsecSpiSizeOrNoneCombinator>, U16Be>, SpecDeletePayloadBodySpisCombinator>, DeletePayloadBodyMapper>;
+pub type SpecDeletePayloadBodyCombinatorAlias = Mapped<SpecPair<SpecPair<SpecPair<SpecIkeProtocolIdCombinator, SpecIpsecSpiSizeOrNoneCombinator>, U16Be>, SpecDeletePayloadBodyAnonSpisCombinator>, DeletePayloadBodyMapper>;
 
 pub struct DeletePayloadBodyCombinator(pub DeletePayloadBodyCombinatorAlias);
 
@@ -16150,7 +16404,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-pub type DeletePayloadBodyCombinatorAlias = Mapped<Pair<Pair<Pair<IkeProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, DeletePayloadBodyCont2>, U16Be, DeletePayloadBodyCont1>, DeletePayloadBodySpisCombinator, DeletePayloadBodyCont0>, DeletePayloadBodyMapper>;
+pub type DeletePayloadBodyCombinatorAlias = Mapped<Pair<Pair<Pair<IkeProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, DeletePayloadBodyCont2>, U16Be, DeletePayloadBodyCont1>, DeletePayloadBodyAnonSpisCombinator, DeletePayloadBodyCont0>, DeletePayloadBodyMapper>;
 
 
 pub open spec fn spec_delete_payload_body() -> SpecDeletePayloadBodyCombinator {
@@ -16191,13 +16445,13 @@ impl View for DeletePayloadBodyCont1 {
     }
 }
 
-pub open spec fn spec_delete_payload_body_cont0(deps: ((u8, SpecIpsecSpiSizeOrNone), u16)) -> SpecDeletePayloadBodySpisCombinator {
+pub open spec fn spec_delete_payload_body_cont0(deps: ((u8, SpecIpsecSpiSizeOrNone), u16)) -> SpecDeletePayloadBodyAnonSpisCombinator {
     let ((protocol_id, spi_size), num_spis) = deps;
-    spec_delete_payload_body_spis(num_spis, spi_size)
+    spec_delete_payload_body_anon_spis(num_spis, spi_size)
 }
 
 impl View for DeletePayloadBodyCont0 {
-    type V = spec_fn(((u8, SpecIpsecSpiSizeOrNone), u16)) -> SpecDeletePayloadBodySpisCombinator;
+    type V = spec_fn(((u8, SpecIpsecSpiSizeOrNone), u16)) -> SpecDeletePayloadBodyAnonSpisCombinator;
 
     open spec fn view(&self) -> Self::V {
         |deps: ((u8, SpecIpsecSpiSizeOrNone), u16)| {
@@ -16335,7 +16589,7 @@ type DeletePayloadBodyCont0Type<'a, 'b> = &'b ((u8, IpsecSpiSizeOrNone), u16);
 type DeletePayloadBodyCont0SType<'a, 'x> = ((&'x u8, &'x IpsecSpiSizeOrNone), &'x u16);
 type DeletePayloadBodyCont0Input<'a, 'b, 'x> = POrSType<DeletePayloadBodyCont0Type<'a, 'b>, DeletePayloadBodyCont0SType<'a, 'x>>;
 impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont0Input<'a, 'b, 'x>> for DeletePayloadBodyCont0 {
-    type Output = DeletePayloadBodySpisCombinator;
+    type Output = DeletePayloadBodyAnonSpisCombinator;
 
     open spec fn requires(&self, deps: DeletePayloadBodyCont0Input<'a, 'b, 'x>) -> bool {
         &&& (Pair::spec_new(Pair::spec_new(spec_ike_protocol_id(), |deps| spec_delete_payload_body_cont2(deps)), |deps| spec_delete_payload_body_cont1(deps))).wf(deps@)
@@ -16353,14 +16607,14 @@ impl<'a, 'b, 'x> Continuation<DeletePayloadBodyCont0Input<'a, 'b, 'x>> for Delet
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_spis = *num_spis;
-                delete_payload_body_spis(num_spis, spi_size)
+                delete_payload_body_anon_spis(num_spis, spi_size)
             }
             POrSType::S(deps) => {
                 let ((protocol_id, spi_size), num_spis) = deps;
                 let protocol_id = *protocol_id;
                 let spi_size = *spi_size;
                 let num_spis = *num_spis;
-                delete_payload_body_spis(num_spis, spi_size)
+                delete_payload_body_anon_spis(num_spis, spi_size)
             }
         }
     }

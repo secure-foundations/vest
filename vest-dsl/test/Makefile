@@ -4,7 +4,7 @@ CARGO        := cargo
 ROOT_MANIFEST := ../Cargo.toml
 VEST_DSL     := ../target/debug/vest
 # selected .vest files in the src directory
-VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/nested_access.vest ./src/ikev2.vest
+VEST_FILES   := ./src/anonymous_nested.vest ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/nested_access.vest ./src/ikev2.vest
 # all files in ./bad/
 BAD_VEST_FILES := $(wildcard ./bad/*.vest)
 
