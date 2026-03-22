@@ -65,7 +65,7 @@ type MacroDefn<'ast> = (Vec<String>, Combinator<'ast>);
 /// Expand the macro invocations
 fn expand_macros(ast: &mut Vec<Definition>) {
     // collect the macro definitions
-    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder); 
+    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder);
     for defn in ast.iter() {
         if let Definition::MacroDefn { name, params, body } = defn {
             macro_defns.insert(name.name.clone(), (params.clone(), body.clone()));
@@ -127,10 +127,7 @@ fn expand_macros_in_combinator_inner<'ast>(
                     | StructField::Dependent { combinator, .. } => {
                         expand_macros_in_combinator(combinator, macro_defns);
                     }
-                    StructField::Const { .. } => {
-                        // TODO: skip const fields for now
-                    }
-                    _ => {}
+                    StructField::Const { .. } => {}
                 }
             }
         }
@@ -161,11 +158,9 @@ fn expand_macros_in_combinator_inner<'ast>(
                 }
             }
         },
-        CombinatorInner::Vec(combinator) => match combinator {
-            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                expand_macros_in_combinator(combinator, macro_defns);
-            }
-        },
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            expand_macros_in_combinator(combinator, macro_defns);
+        }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
             expand_macros_in_combinator(combinator, macro_defns);
         }
@@ -209,10 +204,7 @@ fn substitute_in_combinator_inner<'ast>(
                     | StructField::Dependent { combinator, .. } => {
                         substitute_in_combinator(combinator, param, arg.clone());
                     }
-                    StructField::Const { .. } => {
-                        // TODO: skip const fields for now
-                    }
-                    _ => {}
+                    StructField::Const { .. } => {}
                 }
             }
         }
@@ -247,11 +239,9 @@ fn substitute_in_combinator_inner<'ast>(
                 }
             }
         },
-        CombinatorInner::Vec(combinator) => match combinator {
-            VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator) => {
-                substitute_in_combinator(combinator, param, arg.clone());
-            }
-        },
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            substitute_in_combinator(combinator, param, arg.clone());
+        }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
             substitute_in_combinator(combinator, param, arg.clone());
         }
@@ -265,6 +255,15 @@ fn substitute_in_combinator_inner<'ast>(
 
 fn expand_definitions(ast: &mut Vec<Definition>) {
     let mut expanded = Vec::new();
+    let mut used_names: HashSet<String> = ast
+        .iter()
+        .filter_map(|defn| match defn {
+            Definition::Combinator { name, .. } | Definition::ConstCombinator { name, .. } => {
+                Some(name.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
     let mut elab_ctx = ElabCtx::new();
     for defn in ast.iter_mut() {
         elab_ctx.reset();
@@ -276,16 +275,20 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
                 ..
             } => {
                 param_defns.iter().for_each(|param_defn| {
-                    if let ParamDefn::Dependent {
+                    let ParamDefn::Dependent {
                         name, combinator, ..
-                    } = param_defn
-                    {
-                        elab_ctx
-                            .dependencies
-                            .push((name.name.to_owned(), combinator.clone()));
-                    }
+                    } = param_defn;
+                    elab_ctx
+                        .dependencies
+                        .push((name.name.to_owned(), combinator.clone()));
                 });
-                expand_combinator(name.name.as_str(), combinator, &mut expanded, &mut elab_ctx);
+                expand_combinator(
+                    name.name.as_str(),
+                    combinator,
+                    &mut expanded,
+                    &mut elab_ctx,
+                    &mut used_names,
+                );
             }
             Definition::ConstCombinator { .. } => {}
             _ => {}
@@ -294,138 +297,307 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
     ast.extend(expanded);
 }
 
-#[allow(clippy::single_match)]
-/// for now only expand struct fields containing choices
 fn expand_combinator<'ast>(
     name: &str,
     combinator: &mut Combinator<'ast>,
     expanded: &mut Vec<Definition<'ast>>,
     elab_ctx: &mut ElabCtx<'ast>,
+    used_names: &mut HashSet<String>,
 ) {
+    if let Some(and_then) = &mut combinator.and_then {
+        // Keep the direct continuation inside the current named helper so the
+        // public type for `bytes >>= { ... }` / `bytes >>= choose { ... }`
+        // remains attached to this definition.
+        expand_combinator(
+            &child_generated_name(name, "inner"),
+            and_then,
+            expanded,
+            elab_ctx,
+            used_names,
+        );
+    }
+
     match &mut combinator.inner {
         CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             for field in fields {
                 match field {
                     StructField::Ordinary {
-                        label,
-                        combinator,
-                        span,
+                        label, combinator, ..
                     } => {
-                        if matches!(&combinator.inner, CombinatorInner::Choice(_))
-                            || (matches!(
-                                &combinator.inner,
-                                CombinatorInner::Bytes(_) | CombinatorInner::Tail(_)
-                            ) && combinator.and_then.is_some()
-                                && matches!(
-                                    &combinator.and_then.as_ref().unwrap().inner,
-                                    CombinatorInner::Choice(_)
-                                ))
-                        {
-                            let params: HashSet<Param> = collect_params(combinator);
-                            let param_defns: Vec<ParamDefn> = params
-                                .iter()
-                                .map(|param| match param {
-                                    Param::Dependent(name) => ParamDefn::Dependent {
-                                        name: name.to_owned(),
-                                        combinator: elab_ctx
-                                            .dependencies
-                                            .iter()
-                                            .find_map(|(dep_name, dep_combinator)| {
-                                                if *dep_name == name.name {
-                                                    Some(dep_combinator.clone())
-                                                } else {
-                                                    None
-                                                }
-                                            })
-                                            .unwrap_or_else(|| {
-                                                panic!("Dependent combinator not found: {}", name)
-                                            }),
-                                        span: *span,
-                                    },
-                                    _ => unreachable!(),
-                                })
-                                .collect();
-                            let generated_name = name.to_owned() + "_" + label.name.as_str();
-                            let new_defn = Definition::Combinator {
-                                name: Identifier {
-                                    name: generated_name.clone(),
-                                    span: *span,
-                                },
-                                combinator: combinator.clone(),
-                                param_defns,
-                                span: span.clone(),
-                            };
-                            *combinator = Combinator {
-                                inner: CombinatorInner::Invocation(CombinatorInvocation {
-                                    func: Identifier {
-                                        name: generated_name,
-                                        span: *span,
-                                    },
-                                    args: params.into_iter().collect(),
-                                    span: *span,
-                                }),
-                                and_then: None,
-                                span: *span,
-                            };
-                            expanded.push(new_defn);
-                            // expand_definitions(expanded);
-                        }
+                        expand_child_combinator(
+                            &child_generated_name(name, &generated_segment(&label.name)),
+                            combinator,
+                            expanded,
+                            elab_ctx,
+                            used_names,
+                        );
                     }
                     StructField::Dependent {
                         label, combinator, ..
                     } => {
+                        expand_child_combinator(
+                            &child_generated_name(name, &generated_segment(&label.name)),
+                            combinator,
+                            expanded,
+                            elab_ctx,
+                            used_names,
+                        );
                         elab_ctx
                             .dependencies
                             .push((label.name.to_owned(), combinator.inner.clone()));
-                        // TODO: do we care `and_then` here?
-                        // NOTE: don't expand dependent fields for now
                     }
                     StructField::Const { .. } => {}
-                    _ => {}
                 }
             }
         }
-        // CombinatorInner::Choice(ChoiceCombinator { depend_id, choices }) =>
-        // CombinatorInner::Bytes(BytesCombinator { len }) =>
-        // CombinatorInner::Tail(TailCombinator) =>
-        // CombinatorInner::ConstraintInt(..) => {}
-        CombinatorInner::ConstraintEnum(..) => {}
-        // CombinatorInner::Wrap(..) => {}
-        // CombinatorInner::Enum(..) => {}
-        // CombinatorInner::SepBy(SepByCombinator { combinator, sep }) =>
-        // CombinatorInner::Vec(VecCombinator::Vec(combinator)) =>
-        // CombinatorInner::Vec(VecCombinator::Vec1(combinator)) =>
-        // CombinatorInner::Array(ArrayCombinator { combinator, len }) =>
-        // CombinatorInner::Apply(ApplyCombinator { stream, combinator }) =>
-        // CombinatorInner::Option(OptionCombinator(combinator)) =>
-        // CombinatorInner::Invocation(CombinatorInvocation { func, args }) =>
+        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
+            Choices::Enums(enums) => {
+                for (variant, combinator) in enums {
+                    expand_child_combinator(
+                        &child_generated_name(name, &generated_segment(&variant.name)),
+                        combinator,
+                        expanded,
+                        elab_ctx,
+                        used_names,
+                    );
+                }
+            }
+            Choices::Ints(ints) => {
+                for (idx, (_, combinator)) in ints.iter_mut().enumerate() {
+                    expand_child_combinator(
+                        &child_generated_name(name, &format!("choice{idx}")),
+                        combinator,
+                        expanded,
+                        elab_ctx,
+                        used_names,
+                    );
+                }
+            }
+            Choices::Arrays(arrays) => {
+                for (idx, (_, combinator)) in arrays.iter_mut().enumerate() {
+                    expand_child_combinator(
+                        &child_generated_name(name, &format!("choice{idx}")),
+                        combinator,
+                        expanded,
+                        elab_ctx,
+                        used_names,
+                    );
+                }
+            }
+        },
+        CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
+            expand_child_combinator(
+                &child_generated_name(name, "inner"),
+                combinator,
+                expanded,
+                elab_ctx,
+                used_names,
+            );
+        }
+        CombinatorInner::Vec(VecCombinator::Vec(combinator))
+        | CombinatorInner::Array(ArrayCombinator { combinator, .. })
+        | CombinatorInner::Option(OptionCombinator(combinator)) => {
+            expand_child_combinator(
+                &child_generated_name(name, "item"),
+                combinator,
+                expanded,
+                elab_ctx,
+                used_names,
+            );
+        }
         _ => {}
     }
 }
 
+fn expand_child_combinator<'ast>(
+    generated_base: &str,
+    combinator: &mut Combinator<'ast>,
+    expanded: &mut Vec<Definition<'ast>>,
+    elab_ctx: &mut ElabCtx<'ast>,
+    used_names: &mut HashSet<String>,
+) {
+    if contains_anonymous_format(combinator) {
+        *combinator =
+            lift_anonymous_combinator(generated_base, combinator, expanded, elab_ctx, used_names);
+    } else {
+        expand_combinator(generated_base, combinator, expanded, elab_ctx, used_names);
+    }
+}
+
+fn lift_anonymous_combinator<'ast>(
+    generated_base: &str,
+    combinator: &Combinator<'ast>,
+    expanded: &mut Vec<Definition<'ast>>,
+    elab_ctx: &ElabCtx<'ast>,
+    used_names: &mut HashSet<String>,
+) -> Combinator<'ast> {
+    let generated_name = fresh_generated_name(generated_base, used_names);
+    let mut lifted = combinator.clone();
+    let mut lifted_ctx = ElabCtx {
+        dependencies: elab_ctx.dependencies.clone(),
+    };
+    let params = sorted_params(&lifted);
+    let param_defns = build_param_defns(&params, &lifted_ctx.dependencies, lifted.span);
+
+    expand_combinator(
+        generated_name.as_str(),
+        &mut lifted,
+        expanded,
+        &mut lifted_ctx,
+        used_names,
+    );
+
+    expanded.push(Definition::Combinator {
+        name: Identifier {
+            name: generated_name.clone(),
+            span: combinator.span,
+        },
+        param_defns,
+        combinator: lifted,
+        span: combinator.span,
+    });
+
+    Combinator {
+        inner: CombinatorInner::Invocation(CombinatorInvocation {
+            func: Identifier {
+                name: generated_name,
+                span: combinator.span,
+            },
+            args: params,
+            span: combinator.span,
+        }),
+        and_then: None,
+        span: combinator.span,
+    }
+}
+
+fn build_param_defns<'ast>(
+    params: &[Param<'ast>],
+    dependencies: &[(String, CombinatorInner<'ast>)],
+    span: Span<'ast>,
+) -> Vec<ParamDefn<'ast>> {
+    params
+        .iter()
+        .map(|param| match param {
+            Param::Dependent(name) => ParamDefn::Dependent {
+                name: name.to_owned(),
+                combinator: dependencies
+                    .iter()
+                    .find_map(|(dep_name, dep_combinator)| {
+                        if *dep_name == name.name {
+                            Some(dep_combinator.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or_else(|| panic!("Dependent combinator not found: {}", name)),
+                span,
+            },
+        })
+        .collect()
+}
+
+fn sorted_params<'ast>(combinator: &Combinator<'ast>) -> Vec<Param<'ast>> {
+    let mut params: Vec<_> = collect_params(combinator).into_iter().collect();
+    params.sort_by(|lhs, rhs| match (lhs, rhs) {
+        (Param::Dependent(lhs), Param::Dependent(rhs)) => lhs.name.cmp(&rhs.name),
+    });
+    params
+}
+
+fn contains_anonymous_format(combinator: &Combinator) -> bool {
+    if let Some(and_then) = &combinator.and_then {
+        if contains_anonymous_format(and_then) {
+            return true;
+        }
+    }
+
+    match &combinator.inner {
+        CombinatorInner::Struct(..) | CombinatorInner::Choice(..) => true,
+        CombinatorInner::Wrap(WrapCombinator { combinator, .. })
+        | CombinatorInner::Vec(VecCombinator::Vec(combinator))
+        | CombinatorInner::Array(ArrayCombinator { combinator, .. })
+        | CombinatorInner::Option(OptionCombinator(combinator)) => {
+            contains_anonymous_format(combinator)
+        }
+        _ => false,
+    }
+}
+
+fn generated_segment(segment: &str) -> String {
+    let mut generated = String::new();
+    for ch in segment.chars() {
+        if ch.is_ascii_alphanumeric() {
+            generated.push(ch.to_ascii_lowercase());
+        } else {
+            generated.push('_');
+        }
+    }
+    if generated.is_empty() {
+        "anon".to_string()
+    } else {
+        generated
+    }
+}
+
+fn child_generated_name(parent: &str, segment: &str) -> String {
+    if segment == "inner" {
+        // `FooInner` is already reserved by codegen for the parent definition's
+        // tuple/choice carrier type, so lifted anonymous continuations need a
+        // distinct suffix here.
+        format!("{parent}_anon_{segment}")
+    } else {
+        format!("{parent}_{segment}")
+    }
+}
+
+fn fresh_generated_name(base: &str, used_names: &mut HashSet<String>) -> String {
+    if used_names.insert(base.to_string()) {
+        return base.to_string();
+    }
+
+    let mut idx = 0usize;
+    loop {
+        let candidate = format!("{base}_{idx}");
+        if used_names.insert(candidate.clone()) {
+            return candidate;
+        }
+        idx += 1;
+    }
+}
+
 fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
+    collect_params_with_bound(combinator, &HashSet::new())
+}
+
+fn collect_params_with_bound<'ast>(
+    combinator: &Combinator<'ast>,
+    bound: &HashSet<String>,
+) -> HashSet<Param<'ast>> {
     let mut params = HashSet::new();
     match &combinator.inner {
         CombinatorInner::Choice(ChoiceCombinator {
             depend_id, choices, ..
         }) => {
             if let Some(depend_id) = depend_id {
-                params.insert(Param::Dependent(depend_id.to_owned()));
+                if !bound.contains(&depend_id.name) {
+                    params.insert(Param::Dependent(depend_id.to_owned()));
+                }
             }
             match choices {
                 Choices::Enums(enums) => {
                     for (_, combinator) in enums {
-                        params.extend(collect_params(combinator));
+                        params.extend(collect_params_with_bound(combinator, bound));
                     }
                 }
                 Choices::Ints(ints) => {
                     for (_, combinator) in ints {
-                        params.extend(collect_params(combinator));
+                        params.extend(collect_params_with_bound(combinator, bound));
                     }
                 }
                 Choices::Arrays(arrays) => {
                     for (_, combinator) in arrays {
-                        params.extend(collect_params(combinator));
+                        params.extend(collect_params_with_bound(combinator, bound));
                     }
                 }
             }
@@ -433,61 +605,65 @@ fn collect_params<'ast>(combinator: &Combinator<'ast>) -> HashSet<Param<'ast>> {
         CombinatorInner::Array(ArrayCombinator {
             combinator, len, ..
         }) => {
-            if let LengthSpecifier::Dependent(name) = len {
-                params.insert(Param::Dependent(name.to_owned()));
+            for dep_id in len.collect_dependent_ids() {
+                let ident = dep_id.to_identifier();
+                if !bound.contains(&ident.name) {
+                    params.insert(Param::Dependent(ident));
+                }
             }
-            params.extend(collect_params(combinator));
+            params.extend(collect_params_with_bound(combinator, bound));
         }
         CombinatorInner::Bytes(BytesCombinator { len, .. }) => {
-            if let LengthSpecifier::Dependent(name) = len {
-                params.insert(Param::Dependent(name.to_owned()));
+            for dep_id in len.collect_dependent_ids() {
+                let ident = dep_id.to_identifier();
+                if !bound.contains(&ident.name) {
+                    params.insert(Param::Dependent(ident));
+                }
             }
             if let Some(and_then) = &combinator.and_then {
-                params.extend(collect_params(and_then));
+                params.extend(collect_params_with_bound(and_then, bound));
             }
         }
         CombinatorInner::Tail(..) => {
             if let Some(and_then) = &combinator.and_then {
-                params.extend(collect_params(and_then));
+                params.extend(collect_params_with_bound(and_then, bound));
             }
         }
         CombinatorInner::Invocation(CombinatorInvocation { args, .. }) => {
             for arg in args {
-                if let Param::Dependent(name) = arg {
+                let Param::Dependent(name) = arg;
+                if !bound.contains(&name.name) {
                     params.insert(Param::Dependent(name.to_owned()));
                 }
             }
         }
-        CombinatorInner::Vec(VecCombinator::Vec1(combinator) | VecCombinator::Vec(combinator)) => {
-            params.extend(collect_params(combinator));
-        }
-        CombinatorInner::SepBy(SepByCombinator {
-            combinator: VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator),
-            ..
-        }) => {
-            params.extend(collect_params(combinator));
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            params.extend(collect_params_with_bound(combinator, bound));
         }
         CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
-            params.extend(collect_params(combinator));
+            params.extend(collect_params_with_bound(combinator, bound));
         }
         CombinatorInner::Struct(StructCombinator { fields, .. }) => {
+            let mut locally_bound = bound.clone();
             for field in fields {
                 match field {
                     StructField::Ordinary { combinator, .. }
                     | StructField::Dependent { combinator, .. } => {
-                        params.extend(collect_params(combinator));
+                        params.extend(collect_params_with_bound(combinator, &locally_bound));
                     }
-                    _ => {}
+                    StructField::Const { .. } => {}
+                }
+                if let StructField::Dependent { label, .. } = field {
+                    locally_bound.insert(label.name.clone());
                 }
             }
         }
         CombinatorInner::Option(OptionCombinator(combinator)) => {
-            params.extend(collect_params(combinator));
+            params.extend(collect_params_with_bound(combinator, bound));
         }
         CombinatorInner::Enum(..)
         | CombinatorInner::ConstraintInt(..)
-        | CombinatorInner::ConstraintEnum(..)
-        | CombinatorInner::Apply(..) => {}
+        | CombinatorInner::ConstraintEnum(..) => {}
 
         CombinatorInner::MacroInvocation { .. } => {
             unreachable!("macro invocation should be resolved by now")
@@ -541,7 +717,6 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                         collect_invocations(combinator, invocations);
                     }
                     StructField::Const { .. } => {}
-                    _ => {}
                 }
             }
         }
@@ -565,7 +740,7 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                 }
             }
         },
-        CombinatorInner::Vec(VecCombinator::Vec(combinator) | VecCombinator::Vec1(combinator)) => {
+        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
             collect_invocations(combinator, invocations);
         }
         CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
@@ -579,56 +754,21 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
         CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
             invocations.push(combinator.func.name.to_owned());
             for arg in &combinator.args {
-                if let Param::Dependent(name) = arg {
-                    let _ = name; // no invocations inside params
-                }
+                let Param::Dependent(name) = arg;
+                let _ = name; // no invocations inside params
             }
         }
         CombinatorInner::Bytes(..) => {}
         CombinatorInner::Tail(..) => {}
-        CombinatorInner::Apply(..) => {}
-        CombinatorInner::SepBy(..) => {}
         CombinatorInner::MacroInvocation { .. } => {}
     }
 }
 
 fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> {
-    let mut invocations = Vec::new();
     match const_combinator {
-        ConstCombinator::ConstStruct(ConstStructCombinator(fields)) => {
-            for field in fields {
-                if let ConstCombinator::ConstCombinatorInvocation {
-                    name: invocation, ..
-                } = field
-                {
-                    invocations.push(invocation.name.to_owned());
-                }
-            }
-        }
-        ConstCombinator::ConstChoice(ConstChoiceCombinator(choices)) => {
-            for ConstChoice { combinator, .. } in choices {
-                if let ConstCombinator::ConstCombinatorInvocation {
-                    name: invocation, ..
-                } = combinator
-                {
-                    invocations.push(invocation.name.to_owned());
-                }
-            }
-        }
         ConstCombinator::ConstCombinatorInvocation {
             name: invocation, ..
-        } => {
-            invocations.push(invocation.name.to_owned());
-        }
-        ConstCombinator::Vec(combinator) => {
-            if let ConstCombinator::ConstCombinatorInvocation {
-                name: invocation, ..
-            } = combinator.as_ref()
-            {
-                invocations.push(invocation.name.to_owned());
-            }
-        }
-        _ => {}
+        } => vec![invocation.name.to_owned()],
+        _ => Vec::new(),
     }
-    invocations
 }

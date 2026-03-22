@@ -1,0 +1,7 @@
+// Invalid: folded static lengths still have to match array choice patterns
+tag = [u8; |u8| + |u8|]
+
+fmt(@tag: tag) = choose(@tag) {
+    [0; 1] => u8,
+    _ => u16,
+}

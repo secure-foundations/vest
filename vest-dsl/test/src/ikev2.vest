@@ -1,0 +1,1022 @@
+!BIG_ENDIAN
+
+// =============================================================================
+// IKEv2 Binary Format Specification [RFC 5996](https://datatracker.ietf.org/doc/html/rfc5996)
+//
+// Authored by Claude Sonnet 4.6
+//
+// =============================================================================
+//
+// KNOWN LIMITATIONS / RESOLVED FEATURES:
+//
+// [L1] LENGTH OFFSET ARITHMETIC — RESOLVED
+//      IKEv2 length fields measure the *total* structure size including the
+//      header.  The actual payload body is `total_length - header_size`.
+//      Vest now supports arithmetic on dependent fields:
+//      e.g.  [u8; @payload_length - 4]
+//
+// [L2] BIT-PACKED FIELDS
+//      Vest still does not expose bit-slice access on dependent values, but
+//      RFC-mandated fixed bit patterns can still be expressed either as closed
+//      enums over the whole byte or by integer refinements over the whole word.
+//
+// [L3] REPEATED SUBSTRUCTURES — RESOLVED
+//      Both count-bounded `[item; @count]` and length-bounded
+//      `[u8; @len] >>= Vec<item>` repetitions are available, so IKEv2 proposal
+//      lists, transform lists, traffic selectors, and config attributes can be
+//      modeled directly.
+//
+// [L4] ARITHMETIC ON MULTIPLE DEPENDENT FIELDS — RESOLVED
+//      Some body lengths depend on more than one previously-parsed field,
+//      e.g. notification_data = payload_length - 8 - spi_size.  Vest now
+//      supports multi-variable arithmetic expressions:
+//      e.g.  [u8; @payload_length - 8 - @spi_size]
+//            [u8; @num_spis * @spi_size]
+//
+// [L5] FIELD ACCESS ON NESTED STRUCTS — RESOLVED
+//      When a preceding field is itself a struct (e.g. the generic payload
+//      header), one can use @hdr.payload_length to drive a later length.
+//      Vest now supports dotted-field access on dependent bindings.
+//
+// =============================================================================
+
+
+// =============================================================================
+// §3.1  Exchange-type and payload-type enumerations
+// =============================================================================
+
+exchange_type = enum {
+    IKE_SA_INIT     = 34,
+    IKE_AUTH        = 35,
+    CREATE_CHILD_SA = 36,
+    INFORMATIONAL   = 37,
+    ...
+}
+
+// Next-payload type codes (§3.2 table)
+next_payload_type = enum {
+    NoNextPayload = 0,
+    SA            = 33,
+    KE            = 34,
+    IDi           = 35,
+    IDr           = 36,
+    CERT          = 37,
+    CERTREQ       = 38,
+    AUTH          = 39,
+    Nonce         = 40,
+    Notify        = 41,
+    Delete        = 42,
+    VendorID      = 43,
+    TSi           = 44,
+    TSr           = 45,
+    SK            = 46,
+    CP            = 47,
+    EAP           = 48,
+    ...
+}
+
+// IPsec protocol identifiers used in proposals, notify, and delete payloads
+ike_protocol_id = enum {
+    IKE = 1,
+    AH  = 2,
+    ESP = 3,
+    ...
+}
+
+// Transform types (§3.3.2)
+transform_type = enum {
+    ENCR  = 1,
+    PRF   = 2,
+    INTEG = 3,
+    DH    = 4,
+    ESN   = 5,
+    ...
+}
+
+// Encryption algorithm (Transform Type 1) IDs
+encr_id = enum {
+    ENCR_DES_IV64 = 1u16,
+    ENCR_DES      = 2,
+    ENCR_3DES     = 3,
+    ENCR_RC5      = 4,
+    ENCR_IDEA     = 5,
+    ENCR_CAST     = 6,
+    ENCR_BLOWFISH = 7,
+    ENCR_3IDEA    = 8,
+    ENCR_DES_IV32 = 9,
+    ENCR_NULL     = 11,
+    ENCR_AES_CBC  = 12,
+    ENCR_AES_CTR  = 13,
+    ...
+}
+
+// PRF algorithm (Transform Type 2) IDs
+prf_id = enum {
+    PRF_HMAC_MD5   = 1u16,
+    PRF_HMAC_SHA1  = 2,
+    PRF_HMAC_TIGER = 3,
+    ...
+}
+
+// Integrity algorithm (Transform Type 3) IDs
+integ_id = enum {
+    INTEG_NONE           = 0u16,
+    AUTH_HMAC_MD5_96     = 1,
+    AUTH_HMAC_SHA1_96    = 2,
+    AUTH_DES_MAC         = 3,
+    AUTH_KPDK_MD5        = 4,
+    AUTH_AES_XCBC_96     = 5,
+    ...
+}
+
+// Diffie-Hellman group (Transform Type 4) IDs
+dh_id = enum {
+    DH_NONE      = 0u16,
+    MODP_768     = 1,
+    MODP_1024    = 2,
+    MODP_1536    = 5,
+    MODP_2048    = 14,
+    MODP_3072    = 15,
+    MODP_4096    = 16,
+    MODP_6144    = 17,
+    MODP_8192    = 18,
+    ...
+}
+
+// Extended Sequence Numbers (Transform Type 5) IDs
+esn_id = enum {
+    NoESN = 0u16,
+    ESN   = 1,
+    ...
+}
+
+// Identification payload ID types (§3.5)
+id_type = enum {
+    ID_IPV4_ADDR    = 1,
+    ID_FQDN         = 2,
+    ID_RFC822_ADDR  = 3,
+    ID_IPV6_ADDR    = 5,
+    ID_DER_ASN1_DN  = 9,
+    ID_DER_ASN1_GN  = 10,
+    ID_KEY_ID       = 11,
+    ...
+}
+
+// Certificate encoding types (§3.6)
+cert_encoding = enum {
+    PKCS7WrappedX509  = 1,
+    PGPCert           = 2,
+    DNSSignedKey      = 3,
+    X509CertSig       = 4,
+    KerberosToken     = 6,
+    CRL               = 7,
+    ARL               = 8,
+    SPKICert          = 9,
+    X509CertAttr      = 10,
+    RawRSAKey         = 11,
+    HashAndURLX509    = 12,
+    HashAndURLBundle  = 13,
+    ...
+}
+
+// Authentication methods (§3.8)
+auth_method = enum {
+    RSADigitalSignature  = 1,
+    SharedKeyMIC         = 2,
+    DSSDigitalSignature  = 3,
+    ...
+}
+
+// Notify message types (§3.10.1)
+// Error types: 0–16383; Status types: 16384–
+notify_msg_type = enum {
+    UNSUPPORTED_CRITICAL_PAYLOAD  = 1u16,
+    INVALID_IKE_SPI               = 4,
+    INVALID_MAJOR_VERSION         = 5,
+    INVALID_SYNTAX                = 7,
+    INVALID_MESSAGE_ID            = 9,
+    INVALID_SPI                   = 11,
+    NO_PROPOSAL_CHOSEN            = 14,
+    INVALID_KE_PAYLOAD            = 17,
+    AUTHENTICATION_FAILED         = 24,
+    SINGLE_PAIR_REQUIRED          = 34,
+    NO_ADDITIONAL_SAS             = 35,
+    INTERNAL_ADDRESS_FAILURE      = 36,
+    FAILED_CP_REQUIRED            = 37,
+    TS_UNACCEPTABLE               = 38,
+    INVALID_SELECTORS             = 39,
+    TEMPORARY_FAILURE             = 43,
+    CHILD_SA_NOT_FOUND            = 44,
+    INITIAL_CONTACT               = 16384,
+    SET_WINDOW_SIZE               = 16385,
+    ADDITIONAL_TS_POSSIBLE        = 16386,
+    IPCOMP_SUPPORTED              = 16387,
+    NAT_DETECTION_SOURCE_IP       = 16388,
+    NAT_DETECTION_DESTINATION_IP  = 16389,
+    COOKIE                        = 16390,
+    USE_TRANSPORT_MODE            = 16391,
+    HTTP_CERT_LOOKUP_SUPPORTED    = 16392,
+    REKEY_SA                      = 16393,
+    ESP_TFC_PADDING_NOT_SUPPORTED = 16394,
+    NON_FIRST_FRAGMENTS_ALSO      = 16395,
+    ...
+}
+
+// Configuration payload CFG types (§3.15)
+cfg_type = enum {
+    CFG_REQUEST = 1,
+    CFG_REPLY   = 2,
+    CFG_SET     = 3,
+    CFG_ACK     = 4,
+    ...
+}
+
+// Traffic Selector types (§3.13.1)
+ts_type = enum {
+    TS_IPV4_ADDR_RANGE = 7,
+    TS_IPV6_ADDR_RANGE = 8,
+    ...
+}
+
+// RFC 5996 §3.1: Major version MUST be 2; receivers ignore the minor version.
+ike_version_byte = u8 | {0x20..0x2f}
+
+// RFC 5996 §3.1: V and X bits MUST be clear when sending.
+ike_flags = enum {
+    ResponderRequest = 0x00u8,
+    InitiatorRequest = 0x08,
+    ResponderResponse = 0x20,
+    InitiatorResponse = 0x28,
+}
+
+// RFC 5996 §3.2: bit 7 is Critical, bits 6..0 are RESERVED and must be zero.
+payload_critical = enum {
+    NonCritical = 0x00u8,
+    Critical = 0x80,
+}
+
+// Notify uses Protocol ID 0 when no SPI is present, otherwise AH(2) or ESP(3).
+notify_protocol_id = enum {
+    NotifyNoSpi = 0u8,
+    NotifyAH = 2,
+    NotifyESP = 3,
+}
+
+// RFC 5996 §3.15.1: the high bit is reserved and must be zero.
+cfg_attr_type_word = u16 | {0..0x7fff}
+
+// SPI sizes used in RFC 5996 payloads.
+proposal_spi_size_byte = u8 | {0, 4, 8}
+ipsec_spi_size_or_none = u8 | {0, 4}
+
+transform_id_value(@kind: transform_type) = choose(@kind) {
+    ENCR => encr_id,
+    PRF => prf_id,
+    INTEG => integ_id,
+    DH => dh_id,
+    ESN => esn_id,
+    _ => u16,
+}
+
+// =============================================================================
+// §3.1  IKE Header
+//
+// Wire layout (28 bytes fixed):
+//   0                   1                   2                   3
+//   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  |                    IKE SA Initiator's SPI                     |
+//  |                                                               |
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  |                    IKE SA Responder's SPI                     |
+//  |                                                               |
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  |  Next Payload | MjVer | MnVer | Exchange Type |     Flags     |
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  |                          Message ID                           |
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  |                            Length                             |
+//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// [L1] `length` = total bytes of entire IKE message (header + all payloads).
+//      The payload region is therefore `length - |ike_header|` bytes.
+//
+// [L2] `version` packs MajVer (bits 7-4) and MinVer (bits 3-0) into one byte.
+//      `flags` packs R (bit 5), V (bit 4), I (bit 3) plus three reserved bits.
+//      We constrain the full octet to the RFC-allowed sender-side values.
+// =============================================================================
+
+ike_header = {
+    initiator_spi: [u8; 8],
+    responder_spi: [u8; 8],
+    next_payload:  next_payload_type,
+    version:       ike_version_byte,
+    exchange_type: exchange_type,
+    flags:         ike_flags,
+    message_id:    u32,
+    @length:       u32 | {28..0xffffffff},
+}
+
+// Full IKE message: fixed header followed by all payload bytes.
+// Now using nested field access and arithmetic!
+ike_message = {
+    @header:  ike_header,
+    payloads: [u8; @header.length - |ike_header|],
+}
+
+
+// =============================================================================
+// §3.2  Generic Payload Header
+//
+// Every IKE payload begins with this 4-byte header.
+//
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Next Payload  |C|  RESERVED   |         Payload Length        |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// `payload_length` includes these 4 header bytes.
+// Body length = payload_length - |generic_payload_header|.
+//
+// [L1] Body slicing requires arithmetic on @payload_length.
+// [L2] Bit 7 of `critical_reserved` is the Critical flag; bits 6-0 are
+//      RESERVED and therefore constrained to zero.
+// =============================================================================
+
+generic_payload_header = {
+    next_payload:        next_payload_type,
+    critical_reserved:   payload_critical,
+    @payload_length:     u16 | {4..0xffff},
+}
+
+
+// =============================================================================
+// §3.3.5  Transform Attribute
+//
+// The AF (Attribute Format) bit governs whether the TLV or TV encoding is
+// used.  AF=1 → TV (2-byte value follows immediately); AF=0 → TLV (2-byte
+// length then variable value).
+//
+//   TV:  | 1 | Attr-Type (15 bits) | Value (2 bytes) |
+//   TLV: | 0 | Attr-Type (15 bits) | Length (2 bytes) | Value (var) |
+//
+// [L2] The AF bit is bit 15 of the first 16-bit word.  We branch on the whole
+//      word/range rather than on the individual bit, which is enough to
+//      distinguish TV vs TLV encodings.
+//
+// Fully-specified TV form for the only currently-defined attribute
+// (Key Length, type = 14):
+// =============================================================================
+
+// Key Length attribute in TV format (AF=1, type=14, value=key-length-in-bits)
+transform_attr_key_length = {
+    // Wire: 0x800E (AF=1, type=14)
+    const attr_type_and_af: u16 = 0x800e,
+    key_length_bits: u16,
+}
+
+transform_attr_tv = {
+    @type_and_af: u16 | {0x8000..0x800d, 0x800f..0xffff},
+    value:        u16,
+}
+
+transform_attr_tlv = {
+    @type_and_af: u16 | {0..0x7fff},
+    @length:      u16,
+    value:        [u8; @length],
+}
+
+transform_attr = choose {
+    KeyLength(transform_attr_key_length),
+    TV(transform_attr_tv),
+    TLV(transform_attr_tlv),
+}
+
+
+// =============================================================================
+// §3.3.2  Transform Substructure
+//
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | 0 (last) or 3 |   RESERVED    |        Transform Length       |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |Transform Type |   RESERVED    |          Transform ID         |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                      Transform Attributes                     ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// `transform_length` includes the 8-byte fixed header.
+// Attributes region = transform_length - 8.
+//
+// The remaining attribute region is exactly @transform_length - 8 bytes.
+// =============================================================================
+
+// `last_or_more` = 0 if this is the last transform, 3 if more follow.
+transform = {
+    last_or_more:       u8 | {0, 3},
+    const reserved:     u8 = 0,
+    @transform_length:  u16 | {8..0xffff},
+    @transform_type:    transform_type,
+    const reserved2:    u8 = 0,
+    transform_id:       transform_id_value(@transform_type),
+    attrs:              [u8; @transform_length - 8] >>= Vec<transform_attr>,
+}
+
+
+// =============================================================================
+// §3.3.1  Proposal Substructure
+//
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | 0 (last) or 2 |   RESERVED    |         Proposal Length       |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Proposal Num  |  Protocol ID  |    SPI Size   |Num Transforms |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                        SPI (variable)                         ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                        <Transforms>                           ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// `proposal_length` = 8 (fixed header) + spi_size + sum(transform lengths).
+// We first slice the entire variable part (`proposal_length - 8`) and then
+// dispatch on `spi_size` inside that framed region. This keeps the spec exact
+// without generating arithmetic over dependent SPI lengths in exec code.
+//
+// The transform sequence is both count-bounded and length-bounded.
+// =============================================================================
+
+proposal_body_spi0(@num_transforms: u8 | {1..0xff}) = {
+    spi:        [u8; 0],
+    transforms: Tail >>= [transform; @num_transforms],
+}
+
+proposal_body_spi4(@num_transforms: u8 | {1..0xff}) = {
+    spi:        [u8; 4],
+    transforms: Tail >>= [transform; @num_transforms],
+}
+
+proposal_body_spi8(@num_transforms: u8 | {1..0xff}) = {
+    spi:        [u8; 8],
+    transforms: Tail >>= [transform; @num_transforms],
+}
+
+proposal = {
+    last_or_more:       u8 | {0, 2},
+    const reserved:     u8 = 0,
+    @proposal_length:   u16 | {8..0xffff},
+    proposal_num:       u8 | {1..},
+    @protocol_id:       ike_protocol_id,
+    @spi_size:          proposal_spi_size_byte,
+    @num_transforms:    u8 | {1..0xff},
+    body:               [u8; @proposal_length - 8] >>= choose(@spi_size) {
+        0 => proposal_body_spi0(@num_transforms),
+        4 => proposal_body_spi4(@num_transforms),
+        8 => proposal_body_spi8(@num_transforms),
+    },
+}
+
+
+// =============================================================================
+// §3.3  Security Association (SA) Payload
+//
+// Generic Payload Header + variable list of Proposal substructures.
+// The proposal list runs to the end of the payload.
+// =============================================================================
+
+sa_payload_body(@payload_length: u16 | {4..0xffff}) = {
+    proposals: [u8; @payload_length - |generic_payload_header|] >>= Vec<proposal>,
+}
+
+
+// =============================================================================
+// §3.4  Key Exchange (KE) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |   Diffie-Hellman Group Num    |           RESERVED            |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                       Key Exchange Data                       ~
+//
+// ke_data length = payload_length - 4 (header) - 4 (dh_group + reserved) = payload_length - 8.
+// =============================================================================
+
+ke_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    dh_group_num: dh_id,
+    const reserved: u16 = 0,
+    ke_data:      [u8; @payload_length - 8],
+}
+
+
+// =============================================================================
+// §3.5  Identification Payloads (IDi / IDr)
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |   ID Type     |                 RESERVED                      |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                   Identification Data                         ~
+//
+// id_data length = payload_length - 8.
+// =============================================================================
+
+id_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    id_type:  id_type,
+    const reserved: [u8; 3] = [0; 3],
+    id_data:  [u8; @payload_length - 8],
+}
+
+
+// =============================================================================
+// §3.6  Certificate (CERT) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Cert Encoding |                                               |
+//   +-+-+-+-+-+-+-+-+          Certificate Data                     ~
+//
+// cert_data length = payload_length - 5.
+// =============================================================================
+
+cert_payload_body(@payload_length: u16 | {5..0xffff}) = {
+    cert_encoding: cert_encoding,
+    cert_data:     [u8; @payload_length - 5],
+}
+
+
+// =============================================================================
+// §3.7  Certificate Request (CERTREQ) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Cert Encoding |                                               |
+//   +-+-+-+-+-+-+-+-+       Certification Authority                 ~
+//
+// ca_data length = payload_length - 5.
+// =============================================================================
+
+certreq_payload_body(@payload_length: u16 | {5..0xffff}) = {
+    cert_encoding:  cert_encoding,
+    ca_data:        [u8; @payload_length - 5],
+}
+
+
+// =============================================================================
+// §3.8  Authentication (AUTH) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Auth Method   |                RESERVED                       |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                      Authentication Data                      ~
+//
+// auth_data length = payload_length - 8.
+// =============================================================================
+
+auth_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    auth_method: auth_method,
+    const reserved: [u8; 3] = [0; 3],
+    auth_data:   [u8; @payload_length - 8],
+}
+
+
+// =============================================================================
+// §3.9  Nonce (Ni / Nr) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   ~                         Nonce Data                            ~
+//
+// nonce_data length = payload_length - |generic_payload_header|, constrained to 16..256 bytes.
+// =============================================================================
+
+nonce_payload_body(@payload_length: u16 | {20..260}) = {
+    nonce_data: [u8; @payload_length - |generic_payload_header|],
+}
+
+
+// =============================================================================
+// §3.10  Notify (N) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |  Protocol ID  |   SPI Size    |      Notify Message Type      |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                Security Parameter Index (SPI)                 ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                       Notification Data                       ~
+//
+// The variable part after the 4-byte Notify payload header is framed as
+// `payload_length - 8`, then interpreted according to `spi_size`.
+// =============================================================================
+
+notify_payload_body_spi0 = {
+    spi:               [u8; 0],
+    notification_data: Tail,
+}
+
+notify_payload_body_spi4 = {
+    spi:               [u8; 4],
+    notification_data: Tail,
+}
+
+notify_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    @protocol_id:       notify_protocol_id,
+    @spi_size:          ipsec_spi_size_or_none,
+    notify_msg_type:    notify_msg_type,
+    rest:               [u8; @payload_length - 8] >>= choose(@spi_size) {
+        0 => notify_payload_body_spi0,
+        4 => notify_payload_body_spi4,
+    },
+}
+
+
+// =============================================================================
+// §3.11  Delete (D) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Protocol ID   |   SPI Size    |          Num of SPIs          |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~               Security Parameter Index(es) (SPI)              ~
+//
+// The SPI list is determined by `spi_size`: either empty or a counted list of
+// 4-byte IPsec SPIs. The enclosing payload framing enforces exact consumption.
+// =============================================================================
+
+delete_payload_spis_none = [u8; 0]
+
+delete_payload_spis_ipsec(@num_spis: u16) = [u32; @num_spis]
+
+delete_payload_body = {
+    @protocol_id: ike_protocol_id,
+    @spi_size:    ipsec_spi_size_or_none,
+    @num_spis:    u16,
+    spis:         choose(@spi_size) {
+        0 => delete_payload_spis_none,
+        4 => delete_payload_spis_ipsec(@num_spis),
+    },
+}
+
+
+// =============================================================================
+// §3.12  Vendor ID (V) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   ~                         Vendor ID                             ~
+//
+// vendor_id length = payload_length - |generic_payload_header|.
+// =============================================================================
+
+vendor_id_payload_body(@payload_length: u16 | {4..0xffff}) = {
+    vendor_id: [u8; @payload_length - |generic_payload_header|],
+}
+
+
+// =============================================================================
+// §3.13.1  Traffic Selector (individual TS item)
+//
+// TS Type 7 (TS_IPV4_ADDR_RANGE): fixed 16-byte structure
+// TS Type 8 (TS_IPV6_ADDR_RANGE): fixed 40-byte structure
+//
+// `selector_length` includes the 4-byte TS sub-header.
+//
+// Note: the selector_length field is redundant for TS types 7 and 8 (whose
+// sizes are statically known) but is parsed for forward compatibility.
+//
+// Unknown TS types still carry an explicit selector_length field, so their
+// remaining body can still be sliced precisely.
+// =============================================================================
+
+// IPv4 Traffic Selector (TS Type 7, Selector Length = 16)
+ts_ipv4 = {
+    const ts_type:         u8  = 7,
+    ip_protocol_id:        u8,
+    const selector_length: u16 = 16,
+    start_port:            u16,
+    end_port:              u16,
+    start_address:         [u8; 4],
+    end_address:           [u8; 4],
+}
+
+// IPv6 Traffic Selector (TS Type 8, Selector Length = 40)
+ts_ipv6 = {
+    const ts_type:         u8  = 8,
+    ip_protocol_id:        u8,
+    const selector_length: u16 = 40,
+    start_port:            u16,
+    end_port:              u16,
+    start_address:         [u8; 16],
+    end_address:           [u8; 16],
+}
+
+ts_unknown_inner = {
+    ip_protocol_id:        u8,
+    @selector_length:      u16 | {4..0xffff},
+    selector_data:         [u8; @selector_length - 4],
+}
+
+// Dispatch on TS type; unknown types still use selector_length for framing.
+traffic_selector = {
+    @ts_type_byte: ts_type,
+    ts_body: choose(@ts_type_byte) {
+        TS_IPV4_ADDR_RANGE => ts_ipv4_selector_body,
+        TS_IPV6_ADDR_RANGE => ts_ipv6_selector_body,
+        _ => ts_unknown_inner,
+    },
+}
+
+// Inner bodies (ts_type byte already consumed by the dispatcher above)
+ts_ipv4_selector_body = {
+    ip_protocol_id:        u8,
+    const selector_length: u16 = 16,
+    start_port:            u16,
+    end_port:              u16,
+    start_address:         [u8; 4],
+    end_address:           [u8; 4],
+}
+
+ts_ipv6_selector_body = {
+    ip_protocol_id:        u8,
+    const selector_length: u16 = 40,
+    start_port:            u16,
+    end_port:              u16,
+    start_address:         [u8; 16],
+    end_address:           [u8; 16],
+}
+
+
+// =============================================================================
+// §3.13  Traffic Selector (TS) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   | Number of TSs |                 RESERVED                      |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                       <Traffic Selectors>                     ~
+//
+// The Traffic Selector list runs to the end of the payload.
+// =============================================================================
+
+ts_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    @num_ts:   u8 | {1..0xff},
+    const reserved: [u8; 3] = [0; 3],
+    selectors: [u8; @payload_length - 8] >>= [traffic_selector; @num_ts],
+}
+
+
+// =============================================================================
+// §3.14  Encrypted and Authenticated (SK) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                    Initialization Vector                      |
+//   |         (length is block size of the negotiated cipher)       |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                  Encrypted IKE Payloads                       ~
+//   ~                  Padding (0–255 bytes)                        ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |  Pad Length   |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                  Integrity Checksum Data                      ~
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// The IV length equals the cipher block size (negotiated out-of-band).
+// The integrity checksum length is determined by the negotiated integrity alg.
+// Both are dynamic quantities not representable with current Vest primitives.
+//
+// [L1] All sub-regions (IV, ciphertext, padding, ICV) require arithmetic.
+// =============================================================================
+
+// Approximation: treat the entire encrypted body as an opaque byte tail.
+// A real decryption pass would re-parse the plaintext using the payload
+// formats defined in this file.
+sk_payload_body(@payload_length: u16 | {4..0xffff}) = {
+    // IV || EncryptedPayloads || Padding || PadLength || ICV
+    encrypted_body: [u8; @payload_length - |generic_payload_header|],
+}
+
+
+// =============================================================================
+// §3.15  Configuration (CP) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |   CFG Type    |                    RESERVED                   |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                   Configuration Attributes                    ~
+//
+// The attributes region is exactly payload_length - 8 bytes.
+// =============================================================================
+
+cp_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    cfg_type: cfg_type,
+    const reserved: [u8; 3] = [0; 3],
+    attributes: [u8; @payload_length - 8] >>= Vec<cfg_attribute>,
+}
+
+
+// =============================================================================
+// §3.15.1  Configuration Attribute
+//
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |R|         Attribute Type      |            Length             |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   ~                             Value                             ~
+//
+// `length` is the byte length of `value` (does NOT include the 4-byte header).
+//
+// [L2] Bit 15 of the first word is the Reserved (R) bit; it is constrained to 0.
+// =============================================================================
+
+cfg_attribute = {
+    @r_and_attr_type: cfg_attr_type_word,
+    @length:          u16,
+    value:            [u8; @length],
+}
+
+
+// =============================================================================
+// §3.16  Extensible Authentication Protocol (EAP) Payload
+//
+//   Generic Payload Header (4 bytes)
+//   ~                       EAP Message                             ~
+//
+// The EAP message itself has the following layout (RFC 3748):
+//
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |     Code      | Identifier    |           Length              |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |     Type      |  Type_Data ...
+//   +-+-+-+-+-+-+-+-+-
+//
+// EAP `length` covers Code+Identifier+Length+Type+Type_Data.
+// The IKEv2 Payload Length = EAP length + 4 (generic header).
+// Per RFC 5996 §3.16: EAP length = IKEv2 Payload Length - 4.
+//
+// Request/Response type_data length is eap_length - 5.
+// =============================================================================
+
+eap_code = enum {
+    Request  = 1,
+    Response = 2,
+    Success  = 3,
+    Failure  = 4,
+    ...
+}
+
+// EAP message body inside the IKEv2 EAP payload.
+// For Success (3) and Failure (4), the message is exactly 4 bytes and
+// Type / Type_Data are absent.
+eap_message_success_failure = {
+    code:       eap_code | {Success, Failure},
+    identifier: u8,
+    const eap_length: u16 = 4,
+}
+
+// EAP Request or Response: Type and variable Type_Data follow.
+eap_message_req_resp = {
+    code:       eap_code | {Request, Response},
+    identifier: u8,
+    @eap_length: u16 | {5..0xffff},
+    eap_type:   u8,
+    type_data:  [u8; @eap_length - 5],
+}
+
+// EAP payload body dispatcher
+eap_payload_body(@payload_length: u16 | {8..0xffff}) = {
+    @code: eap_code,
+    eap_rest: choose(@code) {
+        Success  => eap_success_rest,
+        Failure  => eap_failure_rest,
+        Request  => eap_req_resp_rest,
+        Response => eap_req_resp_rest,
+    },
+}
+
+// Remaining bytes after reading `code` for Success/Failure (3 more bytes)
+eap_success_rest = {
+    identifier: u8,
+    const eap_length: u16 = 4,
+}
+
+// Remaining bytes after reading `code` for Failure (same layout as success)
+eap_failure_rest = {
+    identifier: u8,
+    const eap_length: u16 = 4,
+}
+
+// Remaining bytes after reading `code` for Request/Response
+eap_req_resp_rest = {
+    identifier:  u8,
+    @eap_length: u16 | {5..0xffff},
+    eap_type:    u8,
+    type_data:   [u8; @eap_length - 5],
+}
+
+
+// =============================================================================
+// Putting it all together: a dispatched IKEv2 payload
+//
+// Each concrete payload is framed by a generic_payload_header followed by a
+// body whose byte length is (header.payload_length - |generic_payload_header|).
+// We dispatch on the *previous* payload's next_payload field (the chaining
+// mechanism from §3.2), and use the parsed header length to frame the body.
+// =============================================================================
+
+ikev2_sa_payload_inner = {
+    proposals: Tail >>= Vec<proposal>,
+}
+
+ikev2_ke_payload_inner = {
+    dh_group_num: dh_id,
+    const reserved: u16 = 0,
+    ke_data: Tail,
+}
+
+ikev2_id_payload_inner = {
+    id_type: id_type,
+    const reserved: [u8; 3] = [0; 3],
+    id_data: Tail,
+}
+
+ikev2_cert_payload_inner = {
+    cert_encoding: cert_encoding,
+    cert_data: Tail,
+}
+
+ikev2_certreq_payload_inner = {
+    cert_encoding: cert_encoding,
+    ca_data: Tail,
+}
+
+ikev2_auth_payload_inner = {
+    auth_method: auth_method,
+    const reserved: [u8; 3] = [0; 3],
+    auth_data: Tail,
+}
+
+ikev2_nonce_payload_inner = {
+    nonce_data: Tail,
+}
+
+ikev2_notify_payload_inner = {
+    @protocol_id:       notify_protocol_id,
+    @spi_size:          ipsec_spi_size_or_none,
+    notify_msg_type:    notify_msg_type,
+    spi:                [u8; @spi_size],
+    notification_data:  Tail,
+}
+
+ikev2_vendor_id_payload_inner = {
+    vendor_id: Tail,
+}
+
+ikev2_ts_payload_inner = {
+    @num_ts:   u8 | {1..0xff},
+    const reserved: [u8; 3] = [0; 3],
+    selectors: Tail >>= [traffic_selector; @num_ts],
+}
+
+ikev2_sk_payload_inner = {
+    encrypted_body: Tail,
+}
+
+ikev2_cp_payload_inner = {
+    cfg_type: cfg_type,
+    const reserved: [u8; 3] = [0; 3],
+    attributes: Tail >>= Vec<cfg_attribute>,
+}
+
+ikev2_eap_payload_inner = {
+    @code: eap_code,
+    eap_rest: choose(@code) {
+        Success  => eap_success_rest,
+        Failure  => eap_failure_rest,
+        Request  => eap_req_resp_rest,
+        Response => eap_req_resp_rest,
+    },
+}
+
+ikev2_payload_body(@next_pt: next_payload_type) = choose(@next_pt) {
+    SA => ikev2_sa_payload_inner,
+    KE => ikev2_ke_payload_inner,
+    IDi => ikev2_id_payload_inner,
+    IDr => ikev2_id_payload_inner,
+    CERT => ikev2_cert_payload_inner,
+    CERTREQ => ikev2_certreq_payload_inner,
+    AUTH => ikev2_auth_payload_inner,
+    Nonce => ikev2_nonce_payload_inner,
+    Notify => ikev2_notify_payload_inner,
+    Delete => delete_payload_body,
+    VendorID => ikev2_vendor_id_payload_inner,
+    TSi => ikev2_ts_payload_inner,
+    TSr => ikev2_ts_payload_inner,
+    SK => ikev2_sk_payload_inner,
+    CP => ikev2_cp_payload_inner,
+    EAP => ikev2_eap_payload_inner,
+    _ => Tail,
+}
+
+// A single generic payload dispatched by next_payload_type.
+// `next_pt` is the type code carried in the *preceding* payload's header
+// (or in the IKE header for the first payload in a message).
+ikev2_payload(@next_pt: next_payload_type) = {
+    @hdr: generic_payload_header,
+    body: [u8; @hdr.payload_length - |generic_payload_header|] >>= ikev2_payload_body(@next_pt),
+}
