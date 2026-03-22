@@ -137,7 +137,7 @@ jobs:
 
       - name: vest - cargo verus build
         working-directory: ./vest
-        run: cargo verus build -- --expand-errors
+        run: cargo verus build -- --expand-errors --rlimit 800000
 
       - name: vest - cargo build --release
         working-directory: ./vest
@@ -153,13 +153,13 @@ jobs:
 
       - name: vest-examples - cargo verus verify
         working-directory: ./vest-examples
-        run: cargo verus verify --workspace --exclude tls_dsl -- --expand-errors
+        run: cargo verus verify --workspace --exclude tls_dsl -- --expand-errors --rlimit 800000
 
       - name: vest-examples - cargo verus verify tls_dsl
         id: verus_tls_dsl
         continue-on-error: true
         working-directory: ./vest-examples
-        run: cargo verus verify --package tls_dsl -- --expand-errors
+        run: cargo verus verify --package tls_dsl -- --expand-errors --rlimit 800000
 
       - name: Warn on tls_dsl failure
         if: always() && steps.verus_tls_dsl.outcome == 'failure'
