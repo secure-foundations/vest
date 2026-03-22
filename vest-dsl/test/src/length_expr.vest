@@ -1,0 +1,76 @@
+header = {
+    @len: u16 | { 3..0xffff },
+    flags: u8,
+}
+
+primitive_sizes = {
+    byte: [u8; |u8|],
+    word: [u8; |u16|],
+}
+
+named_size = {
+    bytes: [u8; |header|],
+}
+
+header_alias = header
+
+alias_size = {
+    bytes: [u8; |header_alias|],
+}
+
+header_bytes = [u8; |header|] >>= header
+
+reinterpret_size = {
+    bytes: [u8; |header_bytes|],
+}
+
+fixed_choice(@tag: u8) = choose(@tag) {
+    0 => u16,
+    _ => u16,
+}
+
+choice_format_size = {
+    bytes: [u8; |fixed_choice|],
+}
+
+choice_tag = [u8; |u8| + |u8|]
+
+choice_arrays_folded = {
+    @tag: choice_tag,
+    body: choose(@tag) {
+        [0; 2] => u8,
+        [1; 2] => u16,
+    },
+}
+
+size_arith = {
+    bytes: [u8; |header| + |u8|],
+}
+
+simple_sub(@len: u16 | { 4..0xffff }) = {
+    data: [u8; @len - |header| - |u8|],
+}
+
+multi_arith(@total: u32 | { 263..0xffffffff }, @hdr_len: u8 | { 0..255 }) = {
+    body: [u8; @total - @hdr_len - 8],
+}
+
+multiply(@count: u16, @size: u8 | { 1 }) = {
+    items: [u8; @count * @size],
+}
+
+divide(@total: u32) = {
+    chunks: [u8; @total / 4],
+}
+
+paren_expr(@a: u16 | { 255..0xffff }, @b: u8 | { 0..255 }, @c: u8 | { 1 }) = {
+    data: [u8; (@a - @b) * @c],
+}
+
+mixed_const(@len: u16 | { 4..0xffff }) = {
+    data: [u8; @len - 4 + 2],
+}
+
+payload_with_header(@hdr: header) = {
+    data: [u8; @hdr.len - |header|],
+}
