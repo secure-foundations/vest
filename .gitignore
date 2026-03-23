@@ -27,3 +27,6 @@ Cargo.lock
 
 # patches
 *.diff
+
+# Mac OS
+.DS_Store
