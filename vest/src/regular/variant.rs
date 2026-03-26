@@ -257,7 +257,7 @@ macro_rules! enum_combinator {
     };
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Either<A, B> {
     Left(A),
     Right(B),
