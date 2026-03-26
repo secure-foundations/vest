@@ -19,7 +19,7 @@ pub enum Definition {
     Endianess(Endianess),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Endianess {
     Little,
     Big,

@@ -1,0 +1,16 @@
+Packet = {
+    header: Header,
+    @payload_len: u16,
+    payload: [u8; @payload_len] >>= Vec<Record>,
+}
+
+Header = {
+    const magic: u16 = 0xCAFE,
+    version: u8,
+    flags: u8,
+}
+
+Record = {
+    id: u32,
+    value: u32,
+}

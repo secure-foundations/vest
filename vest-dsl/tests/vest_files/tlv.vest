@@ -1,0 +1,35 @@
+msg1 = [u8; 32]
+
+Header = {
+    const magic: u16 = 0xCAFE,
+    version: u8,
+    flags: u8,
+}
+
+Record = {
+    id: u32,
+    value: u32,
+}
+
+RefinedPacket = {
+    header: Header,
+    @payload_len: u16 | 8..10000,
+    payload: [u8; @payload_len] >>= Vec<Record>,
+}
+
+msg2 = RefinedPacket
+msg3 = {
+  x: u16,
+  y: u16,
+}
+
+msg = {
+  @tag: u8,
+  @len: u16 | 0..8000,
+  val: [u8; @len] >>=
+    choose (@tag) {
+      1 => msg1,
+      2 => msg2,
+      3 => msg3,
+  },
+}
