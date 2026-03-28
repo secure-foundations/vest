@@ -520,15 +520,278 @@ pub fn msg2_len(v: <Msg2Combinator as Combinator<[u8], Vec<u8>>>::SType<'_>) -> 
     let combinator = msg2();
     combinator.length(v)
 }
+pub enum MsgValDispatchCase0 {
+    V1(Msg1Combinator),
+    V2(Msg2Combinator),
+    V3(Msg3Combinator),
+}
+impl Combinator<[u8], Vec<u8>> for MsgValDispatchCase0
+where
+    Msg1Combinator: Combinator<[u8], Vec<u8>>,
+    Msg2Combinator: Combinator<[u8], Vec<u8>>,
+    Msg3Combinator: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        >,
+    >
+    where
+        [u8]: 'p;
+    type SType<'s> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        >,
+    >
+    where
+        [u8]: 's;
+    type GType = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::GType,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        >,
+    >;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.length(v0),
+            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.length(v1)
+            }
+            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.length(v2)
+            }
+            _ => panic!("dispatch branch combinator does not match value"),
+        }
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        match self {
+            MsgValDispatchCase0::V1(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgValDispatchCase0::V2(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgValDispatchCase0::V3(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+        }
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => {
+                inner.serialize(v0, data, pos)
+            }
+            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.serialize(v1, data, pos)
+            }
+            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.serialize(v2, data, pos)
+            }
+            _ => {
+                Err(
+                    SerializeError::Other(
+                        "dispatch branch combinator does not match value".into(),
+                    ),
+                )
+            }
+        }
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        match self {
+            MsgValDispatchCase0::V1(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgValDispatchCase0::V2(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgValDispatchCase0::V3(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+        }
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.well_formed(v0),
+            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.well_formed(v1)
+            }
+            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.well_formed(v2)
+            }
+            _ => false,
+        }
+    }
+}
+pub enum MsgValDispatchCaseGen0<'g> {
+    V1(Msg1Combinator),
+    V2(Msg2Combinator),
+    V3(Msg3Combinator),
+    __Phantom(std::marker::PhantomData<&'g ()>),
+}
+impl<'g> Combinator<[u8], Vec<u8>> for MsgValDispatchCaseGen0<'g>
+where
+    Msg1Combinator: Combinator<[u8], Vec<u8>>,
+    Msg2Combinator: Combinator<[u8], Vec<u8>>,
+    Msg3Combinator: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        >,
+    >
+    where
+        [u8]: 'p;
+    type SType<'s> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        >,
+    >
+    where
+        [u8]: 's;
+    type GType = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::GType,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        >,
+    >;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCaseGen0::V1(inner), Either::Left(v0)) => inner.length(v0),
+            (MsgValDispatchCaseGen0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.length(v1)
+            }
+            (MsgValDispatchCaseGen0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.length(v2)
+            }
+            _ => panic!("dispatch branch combinator does not match value"),
+        }
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        match self {
+            MsgValDispatchCaseGen0::V1(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgValDispatchCaseGen0::V2(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgValDispatchCaseGen0::V3(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+            MsgValDispatchCaseGen0::__Phantom(_) => {
+                unreachable!("phantom dispatch variant")
+            }
+        }
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCaseGen0::V1(inner), Either::Left(v0)) => {
+                inner.serialize(v0, data, pos)
+            }
+            (MsgValDispatchCaseGen0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.serialize(v1, data, pos)
+            }
+            (MsgValDispatchCaseGen0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.serialize(v2, data, pos)
+            }
+            _ => {
+                Err(
+                    SerializeError::Other(
+                        "dispatch branch combinator does not match value".into(),
+                    ),
+                )
+            }
+        }
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        match self {
+            MsgValDispatchCaseGen0::V1(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgValDispatchCaseGen0::V2(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgValDispatchCaseGen0::V3(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+            MsgValDispatchCaseGen0::__Phantom(_) => {
+                unreachable!("phantom dispatch variant")
+            }
+        }
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgValDispatchCaseGen0::V1(inner), Either::Left(v0)) => {
+                inner.well_formed(v0)
+            }
+            (MsgValDispatchCaseGen0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.well_formed(v1)
+            }
+            (MsgValDispatchCaseGen0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.well_formed(v2)
+            }
+            _ => false,
+        }
+    }
+}
 pub type MsgValCombinatorAlias = modifier::FixedLen<
     'static,
-    variant::Choice<
-        modifier::CondEq<'static, u8, Msg1Combinator>,
-        variant::Choice<
-            modifier::CondEq<'static, u8, Msg2Combinator>,
-            modifier::CondEq<'static, u8, Msg3Combinator>,
-        >,
-    >,
+    variant::Dispatch<'static, u8, MsgValDispatchCase0, 3>,
 >;
 pub struct MsgValCombinator(pub MsgValCombinatorAlias);
 impl Combinator<[u8], Vec<u8>> for MsgValCombinator
@@ -582,24 +845,13 @@ pub fn msg_val(len: u16, tag: u8) -> MsgValCombinator {
     MsgValCombinator(
         modifier::FixedLen(
             modifier::Length::from_value(len as usize),
-            variant::Choice::new(
-                modifier::CondEq {
-                    lhs: modifier::RuntimeValue::from_value(tag),
-                    rhs: 1,
-                    inner: msg1(),
-                },
-                variant::Choice::new(
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(tag),
-                        rhs: 2,
-                        inner: msg2(),
-                    },
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(tag),
-                        rhs: 3,
-                        inner: msg3(),
-                    },
-                ),
+            variant::Dispatch::new(
+                modifier::RuntimeValue::from_value(tag),
+                [
+                    (1, MsgValDispatchCase0::V1(msg1())),
+                    (2, MsgValDispatchCase0::V2(msg2())),
+                    (3, MsgValDispatchCase0::V3(msg3())),
+                ],
             ),
         ),
     )
@@ -633,6 +885,275 @@ pub fn msg_val_len(
     let combinator = msg_val(len, tag);
     combinator.length(v)
 }
+pub enum MsgDispatchCase1_0_0 {
+    V1(Msg1Combinator),
+    V2(Msg2Combinator),
+    V3(Msg3Combinator),
+}
+impl Combinator<[u8], Vec<u8>> for MsgDispatchCase1_0_0
+where
+    Msg1Combinator: Combinator<[u8], Vec<u8>>,
+    Msg2Combinator: Combinator<[u8], Vec<u8>>,
+    Msg3Combinator: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        >,
+    >
+    where
+        [u8]: 'p;
+    type SType<'s> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        >,
+    >
+    where
+        [u8]: 's;
+    type GType = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::GType,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        >,
+    >;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCase1_0_0::V1(inner), Either::Left(v0)) => inner.length(v0),
+            (MsgDispatchCase1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.length(v1)
+            }
+            (MsgDispatchCase1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.length(v2)
+            }
+            _ => panic!("dispatch branch combinator does not match value"),
+        }
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        match self {
+            MsgDispatchCase1_0_0::V1(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgDispatchCase1_0_0::V2(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgDispatchCase1_0_0::V3(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+        }
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCase1_0_0::V1(inner), Either::Left(v0)) => {
+                inner.serialize(v0, data, pos)
+            }
+            (MsgDispatchCase1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.serialize(v1, data, pos)
+            }
+            (MsgDispatchCase1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.serialize(v2, data, pos)
+            }
+            _ => {
+                Err(
+                    SerializeError::Other(
+                        "dispatch branch combinator does not match value".into(),
+                    ),
+                )
+            }
+        }
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        match self {
+            MsgDispatchCase1_0_0::V1(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgDispatchCase1_0_0::V2(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgDispatchCase1_0_0::V3(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+        }
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCase1_0_0::V1(inner), Either::Left(v0)) => inner.well_formed(v0),
+            (MsgDispatchCase1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.well_formed(v1)
+            }
+            (MsgDispatchCase1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.well_formed(v2)
+            }
+            _ => false,
+        }
+    }
+}
+pub enum MsgDispatchCaseGen1_0_0<'g> {
+    V1(Msg1Combinator),
+    V2(Msg2Combinator),
+    V3(Msg3Combinator),
+    __Phantom(std::marker::PhantomData<&'g ()>),
+}
+impl<'g> Combinator<[u8], Vec<u8>> for MsgDispatchCaseGen1_0_0<'g>
+where
+    Msg1Combinator: Combinator<[u8], Vec<u8>>,
+    Msg2Combinator: Combinator<[u8], Vec<u8>>,
+    Msg3Combinator: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::Type<'p>,
+        >,
+    >
+    where
+        [u8]: 'p;
+    type SType<'s> = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::SType<'s>,
+        >,
+    >
+    where
+        [u8]: 's;
+    type GType = Either<
+        <Msg1Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        Either<
+            <Msg2Combinator as Combinator<[u8], Vec<u8>>>::GType,
+            <Msg3Combinator as Combinator<[u8], Vec<u8>>>::GType,
+        >,
+    >;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCaseGen1_0_0::V1(inner), Either::Left(v0)) => inner.length(v0),
+            (MsgDispatchCaseGen1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.length(v1)
+            }
+            (MsgDispatchCaseGen1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.length(v2)
+            }
+            _ => panic!("dispatch branch combinator does not match value"),
+        }
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        match self {
+            MsgDispatchCaseGen1_0_0::V1(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgDispatchCaseGen1_0_0::V2(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgDispatchCaseGen1_0_0::V3(inner) => {
+                let (n, v) = inner.parse(s)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+            MsgDispatchCaseGen1_0_0::__Phantom(_) => {
+                unreachable!("phantom dispatch variant")
+            }
+        }
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCaseGen1_0_0::V1(inner), Either::Left(v0)) => {
+                inner.serialize(v0, data, pos)
+            }
+            (MsgDispatchCaseGen1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.serialize(v1, data, pos)
+            }
+            (MsgDispatchCaseGen1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.serialize(v2, data, pos)
+            }
+            _ => {
+                Err(
+                    SerializeError::Other(
+                        "dispatch branch combinator does not match value".into(),
+                    ),
+                )
+            }
+        }
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        match self {
+            MsgDispatchCaseGen1_0_0::V1(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Left(v)))
+            }
+            MsgDispatchCaseGen1_0_0::V2(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Left(v))))
+            }
+            MsgDispatchCaseGen1_0_0::V3(inner) => {
+                let (n, v) = inner.generate(g)?;
+                Ok((n, Either::Right(Either::Right(v))))
+            }
+            MsgDispatchCaseGen1_0_0::__Phantom(_) => {
+                unreachable!("phantom dispatch variant")
+            }
+        }
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        match (self, v) {
+            (MsgDispatchCaseGen1_0_0::V1(inner), Either::Left(v0)) => {
+                inner.well_formed(v0)
+            }
+            (MsgDispatchCaseGen1_0_0::V2(inner), Either::Right(Either::Left(v1))) => {
+                inner.well_formed(v1)
+            }
+            (MsgDispatchCaseGen1_0_0::V3(inner), Either::Right(Either::Right(v2))) => {
+                inner.well_formed(v2)
+            }
+            _ => false,
+        }
+    }
+}
 #[derive(Clone, Copy)]
 pub struct MsgDep {}
 impl sequence::DepCombinator<
@@ -644,34 +1165,16 @@ where
     (U8, modifier::Refined<U16Le, fn(u16) -> bool>): Combinator<[u8], Vec<u8>>,
     modifier::FixedLen<
         'static,
-        variant::Choice<
-            modifier::CondEq<'static, u8, Msg1Combinator>,
-            variant::Choice<
-                modifier::CondEq<'static, u8, Msg2Combinator>,
-                modifier::CondEq<'static, u8, Msg3Combinator>,
-            >,
-        >,
+        variant::Dispatch<'static, u8, MsgDispatchCase1_0_0, 3>,
     >: Combinator<[u8], Vec<u8>>,
 {
     type Out = modifier::FixedLen<
         'static,
-        variant::Choice<
-            modifier::CondEq<'static, u8, Msg1Combinator>,
-            variant::Choice<
-                modifier::CondEq<'static, u8, Msg2Combinator>,
-                modifier::CondEq<'static, u8, Msg3Combinator>,
-            >,
-        >,
+        variant::Dispatch<'static, u8, MsgDispatchCase1_0_0, 3>,
     >;
     type OutGen<'g> = modifier::FixedLen<
         'g,
-        variant::Choice<
-            modifier::CondEq<'g, u8, Msg1Combinator>,
-            variant::Choice<
-                modifier::CondEq<'g, u8, Msg2Combinator>,
-                modifier::CondEq<'g, u8, Msg3Combinator>,
-            >,
-        >,
+        variant::Dispatch<'g, u8, MsgDispatchCaseGen1_0_0<'g>, 3>,
     >;
     fn dep_snd<'s>(
         &self,
@@ -684,24 +1187,13 @@ where
         let len = fst.1;
         modifier::FixedLen(
             modifier::Length::from_value(len as usize),
-            variant::Choice::new(
-                modifier::CondEq {
-                    lhs: modifier::RuntimeValue::from_value(tag),
-                    rhs: 1,
-                    inner: msg1(),
-                },
-                variant::Choice::new(
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(tag),
-                        rhs: 2,
-                        inner: msg2(),
-                    },
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(tag),
-                        rhs: 3,
-                        inner: msg3(),
-                    },
-                ),
+            variant::Dispatch::new(
+                modifier::RuntimeValue::from_value(tag),
+                [
+                    (1, MsgDispatchCase1_0_0::V1(msg1())),
+                    (2, MsgDispatchCase1_0_0::V2(msg2())),
+                    (3, MsgDispatchCase1_0_0::V3(msg3())),
+                ],
             ),
         )
     }
@@ -716,24 +1208,13 @@ where
         let len = &mut fst.1;
         modifier::FixedLen(
             modifier::Length::from_u16_mut(len),
-            variant::Choice::new(
-                modifier::CondEq {
-                    lhs: modifier::RuntimeValue::from_value(*tag),
-                    rhs: 1,
-                    inner: msg1(),
-                },
-                variant::Choice::new(
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(*tag),
-                        rhs: 2,
-                        inner: msg2(),
-                    },
-                    modifier::CondEq {
-                        lhs: modifier::RuntimeValue::from_value(*tag),
-                        rhs: 3,
-                        inner: msg3(),
-                    },
-                ),
+            variant::Dispatch::new(
+                modifier::RuntimeValue::from_mut(tag),
+                [
+                    (1, MsgDispatchCaseGen1_0_0::V1(msg1())),
+                    (2, MsgDispatchCaseGen1_0_0::V2(msg2())),
+                    (3, MsgDispatchCaseGen1_0_0::V3(msg3())),
+                ],
             ),
         )
     }

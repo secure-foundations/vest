@@ -8,6 +8,8 @@
 mod emitted;
 
 use emitted::combined;
+use emitted::tlv;
+use vest_lib::regular::variant::Either;
 use vest_lib::properties::{Combinator, GenSt};
 
 // Type aliases for combined.vest
@@ -56,5 +58,27 @@ fn combined_generate_serialize_parse_roundtrip() {
         assert_eq!(parsed.0, value.0);
         assert_eq!(parsed.1 .0, value.1 .0);
         assert_eq!(parsed.1 .1, value.1 .1.as_slice());
+    }
+}
+
+#[test]
+fn tlv_dispatch_branches_parse() {
+    let tag1_payload = [0xAB; 32];
+    let (_, parsed1) = tlv::parse_msg_val(&tag1_payload, 32, 1).expect("parse msg1 payload");
+    match parsed1 {
+        Either::Left(bytes) => assert_eq!(bytes, &tag1_payload),
+        _ => panic!("expected msg1 branch"),
+    }
+
+    let mut tag3_payload = Vec::new();
+    tag3_payload.extend_from_slice(&0x1234u16.to_le_bytes());
+    tag3_payload.extend_from_slice(&0x5678u16.to_le_bytes());
+    let (_, parsed3) = tlv::parse_msg_val(&tag3_payload, 4, 3).expect("parse msg3 payload");
+    match parsed3 {
+        Either::Right(Either::Right((x, y))) => {
+            assert_eq!(x, 0x1234);
+            assert_eq!(y, 0x5678);
+        }
+        _ => panic!("expected msg3 branch"),
     }
 }
