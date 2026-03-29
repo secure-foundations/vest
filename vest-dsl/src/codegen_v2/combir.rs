@@ -75,7 +75,8 @@ pub enum CombIR {
 
     // ===== Sequencing =====
     /// Tuple combinator `(A, B)` or `(A, (B, C))` for independent fields.
-    Tuple(Vec<CombIR>),
+    /// Each element has an optional field name for nominal type generation.
+    Tuple(Vec<(Option<String>, CombIR)>),
     /// `sequence::Pair` - dependent pair where second depends on first.
     Pair {
         fst: Box<CombIR>,
@@ -179,6 +180,17 @@ impl DepCombIR {
     }
 }
 
+/// A const definition for a constant field in a struct.
+#[derive(Debug, Clone)]
+pub struct ConstDef {
+    /// The name of the constant (e.g., "HEADER_MAGIC_CONST").
+    pub name: String,
+    /// The Rust type of the constant (e.g., "u16").
+    pub ty: String,
+    /// The value of the constant (e.g., 51966).
+    pub value: i128,
+}
+
 /// A top-level combinator definition.
 #[derive(Debug, Clone)]
 pub struct CombDef {
@@ -190,6 +202,8 @@ pub struct CombDef {
     pub body: CombIR,
     /// Whether this is a const combinator (unit type).
     pub is_const: bool,
+    /// Const definitions for const fields in this struct.
+    pub const_defs: Vec<ConstDef>,
 }
 
 /// Parameter definition for parameterized combinators.

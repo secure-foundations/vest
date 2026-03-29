@@ -3,6 +3,7 @@
 mod combir;
 mod format;
 mod lower;
+pub mod nominal;
 mod output;
 
 use std::error::Error;
