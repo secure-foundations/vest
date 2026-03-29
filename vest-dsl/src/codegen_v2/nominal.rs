@@ -56,6 +56,11 @@ pub struct NominalTypeGen<'a> {
     pub mapper_items: Vec<TokenStream>,
 }
 
+pub struct NominalSections {
+    pub type_items: TokenStream,
+    pub support_items: TokenStream,
+}
+
 enum TopLevelNominalKind {
     Struct {
         needs_lifetime: bool,
@@ -80,16 +85,32 @@ impl<'a> NominalTypeGen<'a> {
 
     /// Generate all nominal types for this definition.
     pub fn generate(&mut self) -> TokenStream {
+        let sections = self.generate_sections();
+        let type_items = sections.type_items;
+        let support_items = sections.support_items;
+
+        quote! {
+            #type_items
+            #support_items
+        }
+    }
+
+    /// Generate nominal types and return them split into type and support sections.
+    pub fn generate_sections(&mut self) -> NominalSections {
         self.generate_for_comb(&self.def.body.clone(), &self.def.name);
 
         let type_items = &self.type_items;
         let from_impls = &self.from_impls;
         let mapper_items = &self.mapper_items;
 
-        quote! {
-            #(#type_items)*
-            #(#from_impls)*
-            #(#mapper_items)*
+        NominalSections {
+            type_items: quote! {
+                #(#type_items)*
+            },
+            support_items: quote! {
+                #(#from_impls)*
+                #(#mapper_items)*
+            },
         }
     }
 
@@ -481,8 +502,12 @@ impl<'a> NominalTypeGen<'a> {
     fn nominal_tag_value_tokens(&self, value: &TagValue) -> Option<TokenStream> {
         match value {
             TagValue::Int(v) => {
-                let lit = Literal::i128_unsuffixed(*v);
-                Some(quote! { #lit })
+                if let Some(const_ident) = self.const_ident_for_int(*v) {
+                    Some(quote! { #const_ident })
+                } else {
+                    let lit = Literal::i128_unsuffixed(*v);
+                    Some(quote! { #lit })
+                }
             }
             TagValue::Enum { ty, variant } => {
                 let ty_ident = format_ident!("{}", snake_to_upper_camel(ty));
@@ -490,6 +515,21 @@ impl<'a> NominalTypeGen<'a> {
                 Some(quote! { #ty_ident::#variant_ident })
             }
             TagValue::Bytes(_) | TagValue::Wildcard => None,
+        }
+    }
+
+    fn const_ident_for_int(&self, value: i128) -> Option<Ident> {
+        let mut matches = self
+            .def
+            .const_defs
+            .iter()
+            .filter(|const_def| const_def.value == value)
+            .map(|const_def| format_ident!("{}", const_def.name));
+        let first = matches.next()?;
+        if matches.next().is_some() {
+            None
+        } else {
+            Some(first)
         }
     }
 

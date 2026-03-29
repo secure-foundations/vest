@@ -18,259 +18,6 @@ use vest_lib::regular::fail::Fail;
 use vest_lib::regular::end::End;
 use vest_lib::regular::uints::*;
 use vest_lib::buf_traits::{VestInput, VestOutput};
-pub const HEADERMAGIC_CONST: u16 = 51966;
-///Type alias for Header combinator
-pub type HeaderCombinatorAlias = Mapped<(Tag<U16Le, u16>, (U8, U8)), HeaderMapper>;
-///Wrapper struct for Header combinator
-pub struct HeaderCombinator<C = HeaderCombinatorAlias>(pub C);
-impl<C> Combinator<[u8], Vec<u8>> for HeaderCombinator<C>
-where
-    C: Combinator<[u8], Vec<u8>>,
-{
-    type Type<'p> = <C as Combinator<[u8], Vec<u8>>>::Type<'p> where [u8]: 'p;
-    type SType<'s> = <C as Combinator<[u8], Vec<u8>>>::SType<'s> where [u8]: 's;
-    type GType = <C as Combinator<[u8], Vec<u8>>>::GType;
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::length(&self.0, v)
-    }
-    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
-    where
-        [u8]: 'p,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::parse(&self.0, s)
-    }
-    fn serialize<'s>(
-        &self,
-        v: Self::SType<'s>,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError>
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
-    }
-    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        <C as Combinator<[u8], Vec<u8>>>::generate(&mut self.0, g)
-    }
-    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::well_formed(&self.0, v)
-    }
-}
-
-///Constructor for Header combinator
-pub fn Header() -> HeaderCombinator {
-    HeaderCombinator(Mapped::new((Tag::new(U16Le, 51966), (U8, U8)), HeaderMapper))
-}
-
-fn Header_gen() -> HeaderCombinator {
-    HeaderCombinator(Mapped::new((Tag::new(U16Le, 51966), (U8, U8)), HeaderMapper))
-}
-
-///Parse function for Header combinator
-pub fn parse_Header<'p>(input: &'p [u8]) -> Result<(usize, Header), ParseError> {
-    let combinator = Header();
-    <_ as Combinator<[u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-///Serialize function for Header combinator
-pub fn serialize_Header<'s>(
-    v: Header,
-    data: &mut Vec<u8>,
-    pos: usize,
-) -> Result<usize, SerializeError> {
-    let combinator = Header();
-    <_ as Combinator<[u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-///Length function for Header combinator
-pub fn Header_len<'s>(v: Header) -> usize {
-    let combinator = Header();
-    <_ as Combinator<[u8], Vec<u8>>>::length(&combinator, v)
-}
-
-///Type alias for Record combinator
-pub type RecordCombinatorAlias = Mapped<(U32Le, U32Le), RecordMapper>;
-///Wrapper struct for Record combinator
-pub struct RecordCombinator<C = RecordCombinatorAlias>(pub C);
-impl<C> Combinator<[u8], Vec<u8>> for RecordCombinator<C>
-where
-    C: Combinator<[u8], Vec<u8>>,
-{
-    type Type<'p> = <C as Combinator<[u8], Vec<u8>>>::Type<'p> where [u8]: 'p;
-    type SType<'s> = <C as Combinator<[u8], Vec<u8>>>::SType<'s> where [u8]: 's;
-    type GType = <C as Combinator<[u8], Vec<u8>>>::GType;
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::length(&self.0, v)
-    }
-    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
-    where
-        [u8]: 'p,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::parse(&self.0, s)
-    }
-    fn serialize<'s>(
-        &self,
-        v: Self::SType<'s>,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError>
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
-    }
-    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        <C as Combinator<[u8], Vec<u8>>>::generate(&mut self.0, g)
-    }
-    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::well_formed(&self.0, v)
-    }
-}
-
-///Constructor for Record combinator
-pub fn Record() -> RecordCombinator {
-    RecordCombinator(Mapped::new((U32Le, U32Le), RecordMapper))
-}
-
-fn Record_gen() -> RecordCombinator {
-    RecordCombinator(Mapped::new((U32Le, U32Le), RecordMapper))
-}
-
-///Parse function for Record combinator
-pub fn parse_Record<'p>(input: &'p [u8]) -> Result<(usize, Record), ParseError> {
-    let combinator = Record();
-    <_ as Combinator<[u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-///Serialize function for Record combinator
-pub fn serialize_Record<'s>(
-    v: Record,
-    data: &mut Vec<u8>,
-    pos: usize,
-) -> Result<usize, SerializeError> {
-    let combinator = Record();
-    <_ as Combinator<[u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-///Length function for Record combinator
-pub fn Record_len<'s>(v: Record) -> usize {
-    let combinator = Record();
-    <_ as Combinator<[u8], Vec<u8>>>::length(&combinator, v)
-}
-
-#[derive(Clone, Copy)]
-pub struct PacketDep1 {}
-impl DepCombinator<U16Le, [u8], Vec<u8>> for PacketDep1 {
-    type Out = FixedLen<'static, Repeat<RecordCombinator>>;
-    type OutGen<'g> = FixedLen<'g, Repeat<RecordCombinator>>;
-    fn dep_snd<'s>(&self, fst: u16) -> Self::Out {
-        let fst: u16 = fst;
-        let payload_len = fst;
-        FixedLen(Length::from_value(payload_len as usize), Repeat::new(Record()))
-    }
-    fn dep_snd_gen<'g>(&self, fst: &'g mut u16) -> Self::OutGen<'g> {
-        let fst: &'g mut u16 = fst;
-        let payload_len = fst;
-        FixedLen(Length::from_u16_mut(payload_len), Repeat::new(Record()))
-    }
-}
-
-///Type alias for Packet combinator
-pub type PacketCombinatorAlias = Mapped<
-    (HeaderCombinator, Pair<U16Le, PacketDep1>),
-    PacketMapper,
->;
-///Wrapper struct for Packet combinator
-pub struct PacketCombinator<C = PacketCombinatorAlias>(pub C);
-impl<C> Combinator<[u8], Vec<u8>> for PacketCombinator<C>
-where
-    C: Combinator<[u8], Vec<u8>>,
-{
-    type Type<'p> = <C as Combinator<[u8], Vec<u8>>>::Type<'p> where [u8]: 'p;
-    type SType<'s> = <C as Combinator<[u8], Vec<u8>>>::SType<'s> where [u8]: 's;
-    type GType = <C as Combinator<[u8], Vec<u8>>>::GType;
-    fn length<'s>(&self, v: Self::SType<'s>) -> usize
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::length(&self.0, v)
-    }
-    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
-    where
-        [u8]: 'p,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::parse(&self.0, s)
-    }
-    fn serialize<'s>(
-        &self,
-        v: Self::SType<'s>,
-        data: &mut Vec<u8>,
-        pos: usize,
-    ) -> Result<usize, SerializeError>
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
-    }
-    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
-        <C as Combinator<[u8], Vec<u8>>>::generate(&mut self.0, g)
-    }
-    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
-    where
-        [u8]: 's,
-    {
-        <C as Combinator<[u8], Vec<u8>>>::well_formed(&self.0, v)
-    }
-}
-
-///Constructor for Packet combinator
-pub fn Packet() -> PacketCombinator {
-    PacketCombinator(
-        Mapped::new((Header(), Pair::new(U16Le, PacketDep1 {})), PacketMapper),
-    )
-}
-
-fn Packet_gen() -> PacketCombinator {
-    PacketCombinator(
-        Mapped::new((Header(), Pair::new(U16Le, PacketDep1 {})), PacketMapper),
-    )
-}
-
-///Parse function for Packet combinator
-pub fn parse_Packet<'p>(input: &'p [u8]) -> Result<(usize, Packet), ParseError> {
-    let combinator = Packet();
-    <_ as Combinator<[u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-///Serialize function for Packet combinator
-pub fn serialize_Packet<'s>(
-    v: &'s Packet,
-    data: &mut Vec<u8>,
-    pos: usize,
-) -> Result<usize, SerializeError> {
-    let combinator = Packet();
-    <_ as Combinator<[u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-///Length function for Packet combinator
-pub fn Packet_len<'s>(v: &'s Packet) -> usize {
-    let combinator = Packet();
-    <_ as Combinator<[u8], Vec<u8>>>::length(&combinator, v)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
     pub magic: u16,
@@ -278,10 +25,23 @@ pub struct Header {
     pub flags: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Record {
+    pub id: u32,
+    pub value: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Packet {
+    pub header: Header,
+    pub field1: u16,
+    pub payload: Vec<Record>,
+}
+
 impl From<((), (u8, u8))> for Header {
     fn from(src: ((), (u8, u8))) -> Self {
         Self {
-            magic: 51966,
+            magic: HEADERMAGIC_CONST,
             version: src.1.0,
             flags: src.1.1,
         }
@@ -304,12 +64,6 @@ impl Mapper for HeaderMapper {
     type DstOwned = Header;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Record {
-    pub id: u32,
-    pub value: u32,
-}
-
 impl From<(u32, u32)> for Record {
     fn from(src: (u32, u32)) -> Self {
         Self { id: src.0, value: src.1 }
@@ -330,13 +84,6 @@ impl Mapper for RecordMapper {
     type DstBorrow<'s> = Record;
     type SrcOwned = (u32, u32);
     type DstOwned = Record;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Packet {
-    pub header: Header,
-    pub field1: u16,
-    pub payload: Vec<Record>,
 }
 
 impl From<(Header, (u16, Vec<Record>))> for Packet {
@@ -363,4 +110,358 @@ impl Mapper for PacketMapper {
     type DstBorrow<'s> = &'s Packet;
     type SrcOwned = (Header, (u16, Vec<Record>));
     type DstOwned = Packet;
+}
+
+pub trait CombinatorParam<'a, T: Copy> {
+    fn into_runtime_value(self) -> RuntimeValue<'a, T>;
+    fn into_length(self) -> Length<'a>;
+}
+
+impl CombinatorParam<'static, u8> for u8 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u8> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u16> for u16 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u16> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u24> for u24 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u24> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self.as_u32() as usize)
+    }
+}
+
+impl CombinatorParam<'static, u32> for u32 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u32> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u64> for u64 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u64> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u8> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u8_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u16> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u16_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u24> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_value(self.as_u32() as usize)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u32> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u32_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u64> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u64_mut(self)
+    }
+}
+
+pub const HEADERMAGIC_CONST: u16 = 51966;
+///Type alias for Header combinator
+pub type HeaderCombinatorAlias = Mapped<(Tag<U16Le, u16>, (U8, U8)), HeaderMapper>;
+///Wrapper struct for Header combinator
+pub struct HeaderCombinator<C = HeaderCombinatorAlias>(pub C);
+///Type alias for Record combinator
+pub type RecordCombinatorAlias = Mapped<(U32Le, U32Le), RecordMapper>;
+///Wrapper struct for Record combinator
+pub struct RecordCombinator<C = RecordCombinatorAlias>(pub C);
+///Type alias for Packet combinator
+pub type PacketCombinatorAlias = Mapped<
+    (HeaderCombinator, Pair<U16Le, PacketDep1>),
+    PacketMapper,
+>;
+///Wrapper struct for Packet combinator
+pub struct PacketCombinator<C = PacketCombinatorAlias>(pub C);
+///Constructor for Header combinator
+pub fn Header() -> HeaderCombinator {
+    HeaderCombinator(
+        Mapped::new((Tag::new(U16Le, HEADERMAGIC_CONST), (U8, U8)), HeaderMapper),
+    )
+}
+
+///Constructor for Record combinator
+pub fn Record() -> RecordCombinator {
+    RecordCombinator(Mapped::new((U32Le, U32Le), RecordMapper))
+}
+
+///Constructor for Packet combinator
+pub fn Packet() -> PacketCombinator {
+    PacketCombinator(
+        Mapped::new((Header(), Pair::new(U16Le, PacketDep1 {})), PacketMapper),
+    )
+}
+
+#[derive(Clone, Copy)]
+pub struct PacketDep1 {}
+impl DepCombinator<U16Le, [u8], Vec<u8>> for PacketDep1 {
+    type Out = FixedLen<'static, Repeat<RecordCombinator>>;
+    type OutGen<'g> = FixedLen<'g, Repeat<RecordCombinator>>;
+    fn dep_snd<'s>(&self, fst: u16) -> Self::Out {
+        let fst: u16 = fst;
+        let payload_len = fst;
+        FixedLen(Length::from_value(payload_len as usize), Repeat::new(Record()))
+    }
+    fn dep_snd_gen<'g>(&self, fst: &'g mut u16) -> Self::OutGen<'g> {
+        let fst: &'g mut u16 = fst;
+        let payload_len = fst;
+        FixedLen(Length::from_u16_mut(payload_len), Repeat::new(Record()))
+    }
+}
+
+///Parse function for Header combinator
+pub fn parse_Header<'p>(input: &'p [u8]) -> Result<(usize, Header), ParseError> {
+    let combinator = Header();
+    combinator.parse(input)
+}
+
+///Serialize function for Header combinator
+pub fn serialize_Header<'s>(
+    v: Header,
+    data: &mut Vec<u8>,
+    pos: usize,
+) -> Result<usize, SerializeError> {
+    let combinator = Header();
+    combinator.serialize(v, data, pos)
+}
+
+///Length function for Header combinator
+pub fn Header_len<'s>(v: Header) -> usize {
+    let combinator = Header();
+    combinator.length(v)
+}
+
+///Generate function for Header combinator
+pub fn generate_Header(g: &mut GenSt) -> GResult<Header, GenerateError> {
+    let mut combinator = Header();
+    combinator.generate(g)
+}
+
+///Parse function for Record combinator
+pub fn parse_Record<'p>(input: &'p [u8]) -> Result<(usize, Record), ParseError> {
+    let combinator = Record();
+    combinator.parse(input)
+}
+
+///Serialize function for Record combinator
+pub fn serialize_Record<'s>(
+    v: Record,
+    data: &mut Vec<u8>,
+    pos: usize,
+) -> Result<usize, SerializeError> {
+    let combinator = Record();
+    combinator.serialize(v, data, pos)
+}
+
+///Length function for Record combinator
+pub fn Record_len<'s>(v: Record) -> usize {
+    let combinator = Record();
+    combinator.length(v)
+}
+
+///Generate function for Record combinator
+pub fn generate_Record(g: &mut GenSt) -> GResult<Record, GenerateError> {
+    let mut combinator = Record();
+    combinator.generate(g)
+}
+
+///Parse function for Packet combinator
+pub fn parse_Packet<'p>(input: &'p [u8]) -> Result<(usize, Packet), ParseError> {
+    let combinator = Packet();
+    combinator.parse(input)
+}
+
+///Serialize function for Packet combinator
+pub fn serialize_Packet<'s>(
+    v: &'s Packet,
+    data: &mut Vec<u8>,
+    pos: usize,
+) -> Result<usize, SerializeError> {
+    let combinator = Packet();
+    combinator.serialize(v, data, pos)
+}
+
+///Length function for Packet combinator
+pub fn Packet_len<'s>(v: &'s Packet) -> usize {
+    let combinator = Packet();
+    combinator.length(v)
+}
+
+///Generate function for Packet combinator
+pub fn generate_Packet(g: &mut GenSt) -> GResult<Packet, GenerateError> {
+    let mut combinator = Packet();
+    combinator.generate(g)
+}
+
+impl<C> Combinator<[u8], Vec<u8>> for HeaderCombinator<C>
+where
+    C: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = C::Type<'p>;
+    type SType<'s> = C::SType<'s>;
+    type GType = C::GType;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        self.0.length(v)
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        self.0.parse(s)
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        self.0.serialize(v, data, pos)
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        self.0.generate(g)
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        self.0.well_formed(v)
+    }
+}
+
+impl<C> Combinator<[u8], Vec<u8>> for RecordCombinator<C>
+where
+    C: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = C::Type<'p>;
+    type SType<'s> = C::SType<'s>;
+    type GType = C::GType;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        self.0.length(v)
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        self.0.parse(s)
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        self.0.serialize(v, data, pos)
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        self.0.generate(g)
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        self.0.well_formed(v)
+    }
+}
+
+impl<C> Combinator<[u8], Vec<u8>> for PacketCombinator<C>
+where
+    C: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = C::Type<'p>;
+    type SType<'s> = C::SType<'s>;
+    type GType = C::GType;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        self.0.length(v)
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        self.0.parse(s)
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        self.0.serialize(v, data, pos)
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        self.0.generate(g)
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        self.0.well_formed(v)
+    }
 }
