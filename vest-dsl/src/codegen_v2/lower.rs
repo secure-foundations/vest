@@ -8,8 +8,8 @@ use crate::vestir::{
 };
 
 use super::combir::{
-    CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, IntConstraintIR, LenExpr,
-    ParamDef, PredicateIR, TagRef, TagValue,
+    CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, IntConstraintIR, LenExpr, ParamDef,
+    PredicateIR, TagRef, TagValue,
 };
 
 /// Lower a list of VestIR definitions to CombIR definitions.
@@ -286,31 +286,31 @@ fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
         return CombIR::Success;
     }
 
-    let split_idx = fields
+    let first_dep_idx = fields
         .iter()
         .position(|f| matches!(f, StructField::Dependent { .. }))
         .unwrap_or(0);
 
-    if split_idx >= fields.len() - 1 {
+    if first_dep_idx >= fields.len() - 1 {
         return lower_struct_simple(fields, ctx);
     }
 
-    if split_idx > 0 {
-        let prefix = lower_struct_fields_preserve_labels(&fields[..split_idx], ctx);
-        let suffix = lower_struct(&StructCombinator(fields[split_idx..].to_vec()), ctx);
+    if first_dep_idx > 0 {
+        let prefix = lower_struct_fields_preserve_labels(&fields[..first_dep_idx], ctx);
+        let suffix = lower_struct(&StructCombinator(fields[first_dep_idx..].to_vec()), ctx);
         return concat_sequence(prefix, suffix);
     }
 
-    let dep_count = fields
+    let leading_dep_count = fields
         .iter()
         .take_while(|field| matches!(field, StructField::Dependent { .. }))
         .count();
 
-    if dep_count >= fields.len() {
+    if leading_dep_count >= fields.len() {
         return lower_struct_simple(fields, ctx);
     }
 
-    let dep_names: Vec<String> = fields[..dep_count]
+    let dep_names: Vec<String> = fields[..leading_dep_count]
         .iter()
         .filter_map(|field| match field {
             StructField::Dependent { label, .. } => Some(label.clone()),
@@ -318,12 +318,12 @@ fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
         })
         .collect();
 
-    let fst = if dep_count == 1 {
+    let fst = if leading_dep_count == 1 {
         lower_struct_field(&fields[0], ctx)
     } else {
-        lower_struct_simple(&fields[..dep_count], ctx)
+        lower_struct_simple(&fields[..leading_dep_count], ctx)
     };
-    let snd_fields = &fields[dep_count..];
+    let snd_fields = &fields[leading_dep_count..];
     let snd_comb = if snd_fields.len() == 1 {
         lower_struct_fields_preserve_labels(snd_fields, ctx)
     } else {
@@ -444,59 +444,64 @@ fn lower_choice(c: &ChoiceCombinator, ctx: &CodegenCtx) -> CombIR {
     }
 
     match &c.choices {
-        Choices::Enums(choices) => CombIR::Choice(
-            choices
-                .iter()
-                .map(|(_, comb)| lower_combinator(comb, ctx))
-                .collect(),
-        ),
-        Choices::Ints(choices) => CombIR::Choice(
-            choices
-                .iter()
-                .map(|(_, comb)| lower_combinator(comb, ctx))
-                .collect(),
-        ),
-        Choices::Arrays(choices) => CombIR::Choice(
-            choices
-                .iter()
-                .map(|(_, comb)| lower_combinator(comb, ctx))
-                .collect(),
-        ),
+        Choices::Enums(choices) => lower_choice_combinators(choices, ctx),
+        Choices::Ints(choices) => lower_choice_combinators(choices, ctx),
+        Choices::Arrays(choices) => lower_choice_combinators(choices, ctx),
     }
+}
+
+fn lower_choice_combinators<T>(choices: &[(T, Combinator)], ctx: &CodegenCtx) -> CombIR {
+    CombIR::Choice(
+        choices
+            .iter()
+            .map(|(_, comb)| lower_combinator(comb, ctx))
+            .collect(),
+    )
 }
 
 fn lower_choice_with_tag(depend_id: &str, choices: &Choices, ctx: &CodegenCtx) -> Option<CombIR> {
     let tag = TagRef::Field(depend_id.to_string());
 
     let branches = match choices {
-        Choices::Ints(choices) => choices
-            .iter()
-            .map(|(tag, comb)| {
-                let value = match tag {
-                    Some(ConstraintElem::Single(v)) => TagValue::Int(*v),
-                    Some(ConstraintElem::Range { .. }) | None => return None,
-                };
-                Some((value, lower_combinator(comb, ctx)))
-            })
-            .collect::<Option<Vec<_>>>(),
-        Choices::Arrays(choices) => choices
-            .iter()
-            .map(|(tag, comb)| {
-                let value = match tag {
-                    ConstArray::Char(bytes) => TagValue::Bytes(bytes.clone()),
-                    ConstArray::Int(ints) => {
-                        TagValue::Bytes(ints.iter().map(|&i| i as u8).collect())
-                    }
-                    ConstArray::Repeat(v, count) => TagValue::Bytes(vec![*v as u8; *count]),
-                    ConstArray::Wildcard => return None,
-                };
-                Some((value, lower_combinator(comb, ctx)))
-            })
-            .collect::<Option<Vec<_>>>(),
+        Choices::Ints(choices) => lower_tagged_choices(choices, ctx, choice_int_tag_value),
+        Choices::Arrays(choices) => lower_tagged_choices(choices, ctx, choice_array_tag_value),
         Choices::Enums(_) => None,
     }?;
 
     Some(CombIR::Dispatch { tag, branches })
+}
+
+fn lower_tagged_choices<T, F>(
+    choices: &[(T, Combinator)],
+    ctx: &CodegenCtx,
+    tag_of: F,
+) -> Option<Vec<(TagValue, CombIR)>>
+where
+    F: Fn(&T) -> Option<TagValue>,
+{
+    choices
+        .iter()
+        .map(|(tag, comb)| {
+            let tag = tag_of(tag)?;
+            Some((tag, lower_combinator(comb, ctx)))
+        })
+        .collect()
+}
+
+fn choice_int_tag_value(tag: &Option<ConstraintElem>) -> Option<TagValue> {
+    match tag {
+        Some(ConstraintElem::Single(v)) => Some(TagValue::Int(*v)),
+        Some(ConstraintElem::Range { .. }) | None => None,
+    }
+}
+
+fn choice_array_tag_value(tag: &ConstArray) -> Option<TagValue> {
+    match tag {
+        ConstArray::Char(bytes) => Some(TagValue::Bytes(bytes.clone())),
+        ConstArray::Int(ints) => Some(TagValue::Bytes(ints.iter().map(|&i| i as u8).collect())),
+        ConstArray::Repeat(v, count) => Some(TagValue::Bytes(vec![*v as u8; *count])),
+        ConstArray::Wildcard => None,
+    }
 }
 
 /// Lower a vec combinator.
@@ -542,13 +547,7 @@ fn lower_invocation(i: &CombinatorInvocation, _ctx: &CodegenCtx) -> CombIR {
 fn lower_const_combinator(c: &ConstCombinator, ctx: &CodegenCtx) -> CombIR {
     match c {
         ConstCombinator::ConstBytes(cb) => {
-            // Constant bytes are tags
-            let bytes = match &cb.values {
-                ConstArray::Char(b) => b.clone(),
-                ConstArray::Int(ints) => ints.iter().map(|&i| i as u8).collect(),
-                ConstArray::Repeat(val, count) => vec![*val as u8; *count],
-                ConstArray::Wildcard => Vec::new(),
-            };
+            let bytes = const_array_bytes(&cb.values);
             CombIR::Tag {
                 inner: Box::new(CombIR::Fixed { len: cb.len }),
                 value: TagValue::Bytes(bytes),
@@ -575,5 +574,14 @@ fn lower_const_combinator(c: &ConstCombinator, ctx: &CodegenCtx) -> CombIR {
             name: name.clone(),
             args: Vec::new(),
         },
+    }
+}
+
+fn const_array_bytes(values: &ConstArray) -> Vec<u8> {
+    match values {
+        ConstArray::Char(bytes) => bytes.clone(),
+        ConstArray::Int(ints) => ints.iter().map(|&i| i as u8).collect(),
+        ConstArray::Repeat(val, count) => vec![*val as u8; *count],
+        ConstArray::Wildcard => Vec::new(),
     }
 }

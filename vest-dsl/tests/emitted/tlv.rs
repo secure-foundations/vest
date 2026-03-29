@@ -2,22 +2,22 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(non_camel_case_types)]
-use vest_lib::properties::*;
-use vest_lib::errors::*;
-use vest_lib::regular::*;
-use vest_lib::regular::sequence::{Pair, Preceded, Terminated, DepCombinator};
-use vest_lib::regular::variant::{Either, Dispatch, Opt, OptThen, Choice};
-use vest_lib::regular::repetition::{Repeat, RepeatN};
-use vest_lib::regular::modifier::{
-    Refined, Mapped, FixedLen, Length, RuntimeValue, AndThen, CondEq, Mapper,
-};
-use vest_lib::regular::tag::Tag;
-use vest_lib::regular::bytes::{Fixed, Variable, Tail};
-use vest_lib::regular::success::Success;
-use vest_lib::regular::fail::Fail;
-use vest_lib::regular::end::End;
-use vest_lib::regular::uints::*;
 use vest_lib::buf_traits::{VestInput, VestOutput};
+use vest_lib::errors::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes::{Fixed, Tail, Variable};
+use vest_lib::regular::end::End;
+use vest_lib::regular::fail::Fail;
+use vest_lib::regular::modifier::{
+    AndThen, CondEq, FixedLen, Length, Mapped, Mapper, Refined, RuntimeValue,
+};
+use vest_lib::regular::repetition::{Repeat, RepeatN};
+use vest_lib::regular::sequence::{DepCombinator, Pair, Preceded, Terminated};
+use vest_lib::regular::success::Success;
+use vest_lib::regular::tag::Tag;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::{Choice, Dispatch, Either, Opt, OptThen};
+use vest_lib::regular::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
     pub magic: u16,
@@ -79,8 +79,8 @@ impl From<((), (u8, u8))> for Header {
     fn from(src: ((), (u8, u8))) -> Self {
         Self {
             magic: HEADERMAGIC_CONST,
-            version: src.1.0,
-            flags: src.1.1,
+            version: src.1 .0,
+            flags: src.1 .1,
         }
     }
 }
@@ -103,7 +103,10 @@ impl Mapper for HeaderMapper {
 
 impl From<(u32, u32)> for Record {
     fn from(src: (u32, u32)) -> Self {
-        Self { id: src.0, value: src.1 }
+        Self {
+            id: src.0,
+            value: src.1,
+        }
     }
 }
 
@@ -127,8 +130,8 @@ impl From<(Header, (u16, Vec<Record>))> for RefinedPacket {
     fn from(src: (Header, (u16, Vec<Record>))) -> Self {
         Self {
             header: src.0,
-            field1: src.1.0,
-            payload: src.1.1,
+            field1: src.1 .0,
+            payload: src.1 .1,
         }
     }
 }
@@ -214,8 +217,8 @@ impl Mapper for MsgValMapper {
 impl<'a> From<((u8, u16), MsgVal<'a>)> for Msg<'a> {
     fn from(src: ((u8, u16), MsgVal<'a>)) -> Self {
         Self {
-            tag: src.0.0,
-            len: src.0.1,
+            tag: src.0 .0,
+            len: src.0 .1,
             val: src.1,
         }
     }
@@ -230,8 +233,8 @@ impl<'s, 'a: 's> From<&'s Msg<'a>> for ((u8, u16), &'s MsgVal<'s>) {
 impl From<((u8, u16), MsgValOwned)> for MsgOwned {
     fn from(src: ((u8, u16), MsgValOwned)) -> Self {
         Self {
-            tag: src.0.0,
-            len: src.0.1,
+            tag: src.0 .0,
+            len: src.0 .1,
             val: src.1,
         }
     }
@@ -353,7 +356,10 @@ pub type RecordCombinatorAlias = Mapped<(U32Le, U32Le), RecordMapper>;
 pub struct RecordCombinator<C = RecordCombinatorAlias>(pub C);
 ///Type alias for RefinedPacket combinator
 pub type RefinedPacketCombinatorAlias = Mapped<
-    (HeaderCombinator, Pair<Refined<U16Le, fn(u16) -> bool>, RefinedPacketDep1>),
+    (
+        HeaderCombinator,
+        Pair<Refined<U16Le, fn(u16) -> bool>, RefinedPacketDep1>,
+    ),
     RefinedPacketMapper,
 >;
 ///Wrapper struct for RefinedPacket combinator
@@ -371,24 +377,21 @@ pub type Msg2CombinatorAlias = RefinedPacketCombinator;
 ///Wrapper struct for msg2 combinator
 pub struct Msg2Combinator<C = Msg2CombinatorAlias>(pub C);
 ///Type alias for msg_val combinator
-pub type MsgValCombinatorAlias<'x> = Mapped<
-    FixedLen<'x, Dispatch<'x, u8, MsgValDispatchCase0, 3>>,
-    MsgValMapper,
->;
+pub type MsgValCombinatorAlias<'x> =
+    Mapped<FixedLen<'x, Dispatch<'x, u8, MsgValDispatchCase0, 3>>, MsgValMapper>;
 ///Wrapper struct for msg_val combinator
 pub struct MsgValCombinator<C = MsgValCombinatorAlias<'static>>(pub C);
 ///Type alias for msg combinator
-pub type MsgCombinatorAlias = Mapped<
-    Pair<(U8, Refined<U16Le, fn(u16) -> bool>), MsgDep>,
-    MsgMapper,
->;
+pub type MsgCombinatorAlias =
+    Mapped<Pair<(U8, Refined<U16Le, fn(u16) -> bool>), MsgDep>, MsgMapper>;
 ///Wrapper struct for msg combinator
 pub struct MsgCombinator<C = MsgCombinatorAlias>(pub C);
 ///Constructor for Header combinator
 pub fn Header() -> HeaderCombinator {
-    HeaderCombinator(
-        Mapped::new((Tag::new(U16Le, HEADERMAGIC_CONST), (U8, U8)), HeaderMapper),
-    )
+    HeaderCombinator(Mapped::new(
+        (Tag::new(U16Le, HEADERMAGIC_CONST), (U8, U8)),
+        HeaderMapper,
+    ))
 }
 
 ///Constructor for Record combinator
@@ -398,21 +401,19 @@ pub fn Record() -> RecordCombinator {
 
 ///Constructor for RefinedPacket combinator
 pub fn RefinedPacket() -> RefinedPacketCombinator {
-    RefinedPacketCombinator(
-        Mapped::new(
-            (
-                Header(),
-                Pair::new(
-                    Refined {
-                        inner: U16Le,
-                        predicate: |v: u16| v as i128 >= 8 && v as i128 <= 10000,
-                    },
-                    RefinedPacketDep1 {},
-                ),
+    RefinedPacketCombinator(Mapped::new(
+        (
+            Header(),
+            Pair::new(
+                Refined {
+                    inner: U16Le,
+                    predicate: |v: u16| v as i128 >= 8 && v as i128 <= 10000,
+                },
+                RefinedPacketDep1 {},
             ),
-            RefinedPacketMapper,
         ),
-    )
+        RefinedPacketMapper,
+    ))
 }
 
 ///Constructor for msg3 combinator
@@ -439,53 +440,51 @@ where
     LenArg: CombinatorParam<'a, u16>,
     TagArg: CombinatorParam<'a, u8>,
 {
-    MsgValCombinator(
-        Mapped::new(
-            FixedLen(
-                len.into_length(),
-                Dispatch::new(
-                    tag.into_runtime_value(),
-                    [
-                        (1, MsgValDispatchCase0::V1(msg1())),
-                        (2, MsgValDispatchCase0::V2(msg2())),
-                        (3, MsgValDispatchCase0::V3(msg3())),
-                    ],
-                ),
+    MsgValCombinator(Mapped::new(
+        FixedLen(
+            len.into_length(),
+            Dispatch::new(
+                tag.into_runtime_value(),
+                [
+                    (1, MsgValDispatchCase0::V1(msg1())),
+                    (2, MsgValDispatchCase0::V2(msg2())),
+                    (3, MsgValDispatchCase0::V3(msg3())),
+                ],
             ),
-            MsgValMapper,
         ),
-    )
+        MsgValMapper,
+    ))
 }
 
 ///Constructor for msg combinator
 pub fn msg() -> MsgCombinator {
-    MsgCombinator(
-        Mapped::new(
-            Pair::new(
-                (
-                    U8,
-                    Refined {
-                        inner: U16Le,
-                        predicate: |v: u16| v as i128 >= 0 && v as i128 <= 8000,
-                    },
-                ),
-                MsgDep {},
+    MsgCombinator(Mapped::new(
+        Pair::new(
+            (
+                U8,
+                Refined {
+                    inner: U16Le,
+                    predicate: |v: u16| v as i128 >= 0 && v as i128 <= 8000,
+                },
             ),
-            MsgMapper,
+            MsgDep {},
         ),
-    )
+        MsgMapper,
+    ))
 }
 
 #[derive(Clone, Copy)]
 pub struct RefinedPacketDep1 {}
-impl DepCombinator<Refined<U16Le, fn(u16) -> bool>, [u8], Vec<u8>>
-for RefinedPacketDep1 {
+impl DepCombinator<Refined<U16Le, fn(u16) -> bool>, [u8], Vec<u8>> for RefinedPacketDep1 {
     type Out = FixedLen<'static, Repeat<RecordCombinator>>;
     type OutGen<'g> = FixedLen<'g, Repeat<RecordCombinator>>;
     fn dep_snd<'s>(&self, fst: u16) -> Self::Out {
         let fst: u16 = fst;
         let payload_len = fst;
-        FixedLen(Length::from_value(payload_len as usize), Repeat::new(Record()))
+        FixedLen(
+            Length::from_value(payload_len as usize),
+            Repeat::new(Record()),
+        )
     }
     fn dep_snd_gen<'g>(&self, fst: &'g mut u16) -> Self::OutGen<'g> {
         let fst: &'g mut u16 = fst;
@@ -494,11 +493,7 @@ for RefinedPacketDep1 {
     }
 }
 
-pub enum MsgValDispatchCase0<
-    C0 = Msg1Combinator,
-    C1 = Msg2Combinator,
-    C2 = Msg3Combinator,
-> {
+pub enum MsgValDispatchCase0<C0 = Msg1Combinator, C1 = Msg2Combinator, C2 = Msg3Combinator> {
     V1(C0),
     V2(C1),
     V3(C2),
@@ -506,27 +501,10 @@ pub enum MsgValDispatchCase0<
 
 impl<C0, C1, C2> Combinator<[u8], Vec<u8>> for MsgValDispatchCase0<C0, C1, C2>
 where
-    for<'p, 's> C0: Combinator<
-        [u8],
-        Vec<u8>,
-        Type<'p> = Msg1<'p>,
-        SType<'s> = Msg1<'s>,
-        GType = Msg1Owned,
-    >,
-    for<'p, 's> C1: Combinator<
-        [u8],
-        Vec<u8>,
-        Type<'p> = Msg2,
-        SType<'s> = &'s Msg2,
-        GType = Msg2,
-    >,
-    for<'p, 's> C2: Combinator<
-        [u8],
-        Vec<u8>,
-        Type<'p> = Msg3,
-        SType<'s> = Msg3,
-        GType = Msg3,
-    >,
+    for<'p, 's> C0:
+        Combinator<[u8], Vec<u8>, Type<'p> = Msg1<'p>, SType<'s> = Msg1<'s>, GType = Msg1Owned>,
+    for<'p, 's> C1: Combinator<[u8], Vec<u8>, Type<'p> = Msg2, SType<'s> = &'s Msg2, GType = Msg2>,
+    for<'p, 's> C2: Combinator<[u8], Vec<u8>, Type<'p> = Msg3, SType<'s> = Msg3, GType = Msg3>,
 {
     type Type<'p> = Either<Msg1<'p>, Either<Msg2, Msg3>>;
     type SType<'s> = Either<Msg1<'s>, Either<&'s Msg2, Msg3>>;
@@ -537,12 +515,8 @@ where
     {
         match (self, v) {
             (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.length(v0),
-            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
-                inner.length(v1)
-            }
-            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
-                inner.length(v2)
-            }
+            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => inner.length(v1),
+            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => inner.length(v2),
             _ => panic!("dispatch branch combinator does not match value"),
         }
     }
@@ -575,22 +549,16 @@ where
         [u8]: 's,
     {
         match (self, v) {
-            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => {
-                inner.serialize(v0, data, pos)
-            }
+            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.serialize(v0, data, pos),
             (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
                 inner.serialize(v1, data, pos)
             }
             (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
                 inner.serialize(v2, data, pos)
             }
-            _ => {
-                Err(
-                    SerializeError::Other(
-                        "dispatch branch combinator does not match value".into(),
-                    ),
-                )
-            }
+            _ => Err(SerializeError::Other(
+                "dispatch branch combinator does not match value".into(),
+            )),
         }
     }
     fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
@@ -700,9 +668,7 @@ pub fn generate_Record(g: &mut GenSt) -> GResult<Record, GenerateError> {
 }
 
 ///Parse function for RefinedPacket combinator
-pub fn parse_RefinedPacket<'p>(
-    input: &'p [u8],
-) -> Result<(usize, RefinedPacket), ParseError> {
+pub fn parse_RefinedPacket<'p>(input: &'p [u8]) -> Result<(usize, RefinedPacket), ParseError> {
     let combinator = RefinedPacket();
     combinator.parse(input)
 }

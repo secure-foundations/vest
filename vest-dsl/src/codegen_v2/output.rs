@@ -15,7 +15,8 @@ use super::combir::{
 use super::format::{format_rust_code, FormatError};
 use super::nominal::{
     concrete_borrow_type_tokens, concrete_owned_type_tokens, concrete_parse_type_tokens,
-    public_borrow_type_tokens, public_owned_type_tokens, public_parse_type_tokens, NominalTypeGen,
+    public_borrow_type_tokens, public_owned_type_tokens, public_parse_type_tokens,
+    snake_to_upper_camel, NominalTypeGen,
 };
 
 /// Context for token generation.
@@ -2335,35 +2336,6 @@ fn capture_names(
         .collect()
 }
 
-#[allow(dead_code)]
-fn tuple_component_access(total: usize, index: usize) -> TokenStream {
-    if total == 0 {
-        todo!("Tuple component access for empty tuples is not specified");
-    }
-    if index >= total {
-        todo!(
-            "Tuple component access bounds handling is incomplete: index {} for total {}",
-            index,
-            total
-        );
-    }
-    if total <= 1 {
-        quote! { fst }
-    } else if index == 0 {
-        quote! { fst.0 }
-    } else {
-        let mut access = quote! { fst.1 };
-        for _ in 1..index {
-            access = quote! { #access.1 };
-        }
-        if index < total - 1 {
-            quote! { #access.0 }
-        } else {
-            access
-        }
-    }
-}
-
 /// Builds a right-associative nested tuple pattern from a list of identifiers.
 /// For 2 elements: `(a, b)`
 /// For 3 elements: `(a, (b, c))`
@@ -2476,75 +2448,48 @@ fn constraint_elem_to_check(elem: &ConstraintElem, var: TokenStream) -> TokenStr
     }
 }
 
-fn build_nested_pair_type(types: &[TokenStream]) -> TokenStream {
-    if types.len() == 1 {
-        types[0].clone()
-    } else if types.len() == 2 {
-        let first = &types[0];
-        let second = &types[1];
-        quote! { (#first, #second) }
-    } else {
-        let first = &types[0];
-        let rest = build_nested_pair_type(&types[1..]);
-        quote! { (#first, #rest) }
+fn build_right_nested_tokens<F>(
+    items: &[TokenStream],
+    empty: Option<TokenStream>,
+    wrap: &F,
+) -> TokenStream
+where
+    F: Fn(&TokenStream, TokenStream) -> TokenStream,
+{
+    match items {
+        [] => empty.expect("right-nested token builder was given an empty sequence"),
+        [single] => single.clone(),
+        [first, rest @ ..] => wrap(first, build_right_nested_tokens(rest, empty.clone(), wrap)),
     }
+}
+
+fn build_nested_pair_type(types: &[TokenStream]) -> TokenStream {
+    build_right_nested_tokens(types, None, &|first, rest| quote! { (#first, #rest) })
 }
 
 fn build_nested_pair_expr(exprs: &[TokenStream]) -> TokenStream {
-    if exprs.len() == 1 {
-        exprs[0].clone()
-    } else if exprs.len() == 2 {
-        let first = &exprs[0];
-        let second = &exprs[1];
-        quote! { (#first, #second) }
-    } else {
-        let first = &exprs[0];
-        let rest = build_nested_pair_expr(&exprs[1..]);
-        quote! { (#first, #rest) }
-    }
+    build_right_nested_tokens(exprs, None, &|first, rest| quote! { (#first, #rest) })
 }
 
 fn build_nested_choice_type(types: &[TokenStream]) -> TokenStream {
-    if types.len() == 1 {
-        types[0].clone()
-    } else if types.len() == 2 {
-        let first = &types[0];
-        let second = &types[1];
-        quote! { Choice<#first, #second> }
-    } else {
-        let first = &types[0];
-        let rest = build_nested_choice_type(&types[1..]);
-        quote! { Choice<#first, #rest> }
-    }
+    build_right_nested_tokens(types, None, &|first, rest| quote! { Choice<#first, #rest> })
 }
 
 fn build_nested_choice_expr(exprs: &[TokenStream]) -> TokenStream {
-    if exprs.len() == 1 {
-        exprs[0].clone()
-    } else if exprs.len() == 2 {
-        let first = &exprs[0];
-        let second = &exprs[1];
-        quote! { Choice::new(#first, #second) }
-    } else {
-        let first = &exprs[0];
-        let rest = build_nested_choice_expr(&exprs[1..]);
-        quote! { Choice::new(#first, #rest) }
-    }
+    build_right_nested_tokens(
+        exprs,
+        None,
+        &|first, rest| quote! { Choice::new(#first, #rest) },
+    )
 }
 
 fn build_nested_either_type(types: &[TokenStream]) -> TokenStream {
-    if types.is_empty() {
-        quote! { () }
-    } else if types.len() == 1 {
-        types[0].clone()
-    } else {
-        let first = &types[0];
-        let rest = build_nested_either_type(&types[1..]);
+    build_right_nested_tokens(types, Some(quote! { () }), &|first, rest| {
         quote! { Either<#first, #rest> }
-    }
+    })
 }
 
-fn either_wrap_expr(value: TokenStream, index: usize, total: usize) -> TokenStream {
+fn wrap_right_nested_either(value: TokenStream, index: usize, total: usize) -> TokenStream {
     if total == 0 {
         todo!("Either wrapping for zero dispatch branches is not specified");
     }
@@ -2554,24 +2499,17 @@ fn either_wrap_expr(value: TokenStream, index: usize, total: usize) -> TokenStre
     if index == 0 {
         quote! { Either::Left(#value) }
     } else {
-        let nested = either_wrap_expr(value, index - 1, total - 1);
+        let nested = wrap_right_nested_either(value, index - 1, total - 1);
         quote! { Either::Right(#nested) }
     }
 }
 
+fn either_wrap_expr(value: TokenStream, index: usize, total: usize) -> TokenStream {
+    wrap_right_nested_either(value, index, total)
+}
+
 fn either_value_pattern(value: &Ident, index: usize, total: usize) -> TokenStream {
-    if total == 0 {
-        todo!("Either pattern for zero dispatch branches is not specified");
-    }
-    if total == 1 {
-        return quote! { #value };
-    }
-    if index == 0 {
-        quote! { Either::Left(#value) }
-    } else {
-        let nested = either_value_pattern(value, index - 1, total - 1);
-        quote! { Either::Right(#nested) }
-    }
+    wrap_right_nested_either(quote! { #value }, index, total)
 }
 
 fn dispatch_variant_ident(index: usize) -> Ident {
@@ -2675,16 +2613,4 @@ fn helper_key(path: &[usize]) -> String {
             .collect::<Vec<_>>()
             .join("_")
     }
-}
-
-fn snake_to_upper_camel(s: &str) -> String {
-    s.split('_')
-        .map(|word| {
-            let mut chars = word.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-            }
-        })
-        .collect()
 }

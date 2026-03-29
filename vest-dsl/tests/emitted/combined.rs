@@ -2,22 +2,22 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(non_camel_case_types)]
-use vest_lib::properties::*;
-use vest_lib::errors::*;
-use vest_lib::regular::*;
-use vest_lib::regular::sequence::{Pair, Preceded, Terminated, DepCombinator};
-use vest_lib::regular::variant::{Either, Dispatch, Opt, OptThen, Choice};
-use vest_lib::regular::repetition::{Repeat, RepeatN};
-use vest_lib::regular::modifier::{
-    Refined, Mapped, FixedLen, Length, RuntimeValue, AndThen, CondEq, Mapper,
-};
-use vest_lib::regular::tag::Tag;
-use vest_lib::regular::bytes::{Fixed, Variable, Tail};
-use vest_lib::regular::success::Success;
-use vest_lib::regular::fail::Fail;
-use vest_lib::regular::end::End;
-use vest_lib::regular::uints::*;
 use vest_lib::buf_traits::{VestInput, VestOutput};
+use vest_lib::errors::*;
+use vest_lib::properties::*;
+use vest_lib::regular::bytes::{Fixed, Tail, Variable};
+use vest_lib::regular::end::End;
+use vest_lib::regular::fail::Fail;
+use vest_lib::regular::modifier::{
+    AndThen, CondEq, FixedLen, Length, Mapped, Mapper, Refined, RuntimeValue,
+};
+use vest_lib::regular::repetition::{Repeat, RepeatN};
+use vest_lib::regular::sequence::{DepCombinator, Pair, Preceded, Terminated};
+use vest_lib::regular::success::Success;
+use vest_lib::regular::tag::Tag;
+use vest_lib::regular::uints::*;
+use vest_lib::regular::variant::{Choice, Dispatch, Either, Opt, OptThen};
+use vest_lib::regular::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
     pub magic: u16,
@@ -42,8 +42,8 @@ impl From<((), (u8, u8))> for Header {
     fn from(src: ((), (u8, u8))) -> Self {
         Self {
             magic: HEADERMAGIC_CONST,
-            version: src.1.0,
-            flags: src.1.1,
+            version: src.1 .0,
+            flags: src.1 .1,
         }
     }
 }
@@ -66,7 +66,10 @@ impl Mapper for HeaderMapper {
 
 impl From<(u32, u32)> for Record {
     fn from(src: (u32, u32)) -> Self {
-        Self { id: src.0, value: src.1 }
+        Self {
+            id: src.0,
+            value: src.1,
+        }
     }
 }
 
@@ -90,8 +93,8 @@ impl From<(Header, (u16, Vec<Record>))> for Packet {
     fn from(src: (Header, (u16, Vec<Record>))) -> Self {
         Self {
             header: src.0,
-            field1: src.1.0,
-            payload: src.1.1,
+            field1: src.1 .0,
+            payload: src.1 .1,
         }
     }
 }
@@ -217,17 +220,15 @@ pub type RecordCombinatorAlias = Mapped<(U32Le, U32Le), RecordMapper>;
 ///Wrapper struct for Record combinator
 pub struct RecordCombinator<C = RecordCombinatorAlias>(pub C);
 ///Type alias for Packet combinator
-pub type PacketCombinatorAlias = Mapped<
-    (HeaderCombinator, Pair<U16Le, PacketDep1>),
-    PacketMapper,
->;
+pub type PacketCombinatorAlias = Mapped<(HeaderCombinator, Pair<U16Le, PacketDep1>), PacketMapper>;
 ///Wrapper struct for Packet combinator
 pub struct PacketCombinator<C = PacketCombinatorAlias>(pub C);
 ///Constructor for Header combinator
 pub fn Header() -> HeaderCombinator {
-    HeaderCombinator(
-        Mapped::new((Tag::new(U16Le, HEADERMAGIC_CONST), (U8, U8)), HeaderMapper),
-    )
+    HeaderCombinator(Mapped::new(
+        (Tag::new(U16Le, HEADERMAGIC_CONST), (U8, U8)),
+        HeaderMapper,
+    ))
 }
 
 ///Constructor for Record combinator
@@ -237,9 +238,10 @@ pub fn Record() -> RecordCombinator {
 
 ///Constructor for Packet combinator
 pub fn Packet() -> PacketCombinator {
-    PacketCombinator(
-        Mapped::new((Header(), Pair::new(U16Le, PacketDep1 {})), PacketMapper),
-    )
+    PacketCombinator(Mapped::new(
+        (Header(), Pair::new(U16Le, PacketDep1 {})),
+        PacketMapper,
+    ))
 }
 
 #[derive(Clone, Copy)]
@@ -250,7 +252,10 @@ impl DepCombinator<U16Le, [u8], Vec<u8>> for PacketDep1 {
     fn dep_snd<'s>(&self, fst: u16) -> Self::Out {
         let fst: u16 = fst;
         let payload_len = fst;
-        FixedLen(Length::from_value(payload_len as usize), Repeat::new(Record()))
+        FixedLen(
+            Length::from_value(payload_len as usize),
+            Repeat::new(Record()),
+        )
     }
     fn dep_snd_gen<'g>(&self, fst: &'g mut u16) -> Self::OutGen<'g> {
         let fst: &'g mut u16 = fst;
