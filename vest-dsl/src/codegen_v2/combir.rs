@@ -4,6 +4,9 @@
 
 use std::collections::HashMap;
 
+use proc_macro2::{Literal, TokenStream};
+use quote::{format_ident, quote};
+
 pub use crate::vestir::ArithOp;
 pub use crate::vestir::Endianess as Endian;
 pub use crate::vestir::IntConstraint as IntConstraintIR;
@@ -239,5 +242,98 @@ impl From<&crate::type_check::GlobalCtx<'_>> for CodegenCtx {
             endian: Endian::Little,
             static_sizes: ctx.static_sizes.clone(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LifetimeCheckMode {
+    Full,
+    LegacyDispatch,
+}
+
+pub fn comb_needs_lifetime(
+    comb: &CombIR,
+    def_map: &HashMap<String, &CombDef>,
+    mode: LifetimeCheckMode,
+) -> bool {
+    match comb {
+        CombIR::Variable { .. } | CombIR::Tail | CombIR::Fixed { .. } => true,
+        CombIR::Tuple(elems) => elems
+            .iter()
+            .any(|(_, elem)| comb_needs_lifetime(elem, def_map, mode)),
+        CombIR::Choice(elems) => elems
+            .iter()
+            .any(|elem| comb_needs_lifetime(elem, def_map, mode)),
+        CombIR::Pair { fst, snd } => {
+            comb_needs_lifetime(fst, def_map, mode) || comb_needs_lifetime(&snd.comb, def_map, mode)
+        }
+        CombIR::Preceded { inner, .. } | CombIR::Terminated { inner, .. } => match mode {
+            LifetimeCheckMode::Full => comb_needs_lifetime(inner, def_map, mode),
+            LifetimeCheckMode::LegacyDispatch => false,
+        },
+        CombIR::Opt(inner)
+        | CombIR::Repeat(inner)
+        | CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::AndThen { inner, .. }
+        | CombIR::FixedLen { inner, .. }
+        | CombIR::Tag { inner, .. } => comb_needs_lifetime(inner, def_map, mode),
+        CombIR::CondEq { inner, .. } => match mode {
+            LifetimeCheckMode::Full => comb_needs_lifetime(inner, def_map, mode),
+            LifetimeCheckMode::LegacyDispatch => false,
+        },
+        CombIR::OptThen { fst, snd } => match mode {
+            LifetimeCheckMode::Full => {
+                comb_needs_lifetime(fst, def_map, mode) || comb_needs_lifetime(snd, def_map, mode)
+            }
+            LifetimeCheckMode::LegacyDispatch => false,
+        },
+        CombIR::RepeatN { inner, .. } => comb_needs_lifetime(inner, def_map, mode),
+        CombIR::Dispatch { branches, .. } => branches
+            .iter()
+            .any(|(_, branch)| comb_needs_lifetime(branch, def_map, mode)),
+        CombIR::Named { name, .. } => def_map
+            .get(name)
+            .map(|def| comb_needs_lifetime(&def.body, def_map, mode))
+            .unwrap_or(false),
+        CombIR::U8
+        | CombIR::U16(_)
+        | CombIR::U24(_)
+        | CombIR::U32(_)
+        | CombIR::U64(_)
+        | CombIR::End
+        | CombIR::Success
+        | CombIR::Fail(_) => false,
+    }
+}
+
+pub fn comb_uint_type_tokens(comb: &CombIR) -> Option<TokenStream> {
+    match comb {
+        CombIR::U8 => Some(quote! { u8 }),
+        CombIR::U16(_) => Some(quote! { u16 }),
+        CombIR::U24(_) => Some(quote! { u24 }),
+        CombIR::U32(_) => Some(quote! { u32 }),
+        CombIR::U64(_) => Some(quote! { u64 }),
+        _ => None,
+    }
+}
+
+pub fn comb_uint_or_i128_type_tokens(comb: &CombIR) -> TokenStream {
+    comb_uint_type_tokens(comb).unwrap_or_else(|| quote! { i128 })
+}
+
+pub fn tag_literal_type_tokens(tag_value: &TagValue) -> TokenStream {
+    match tag_value {
+        TagValue::Int(_) => quote! { i128 },
+        TagValue::Enum { ty, .. } => {
+            let ty_ident =
+                format_ident!("{}", crate::codegen_v2::nominal::snake_to_upper_camel(ty));
+            quote! { #ty_ident }
+        }
+        TagValue::Bytes(bytes) => {
+            let n = Literal::usize_unsuffixed(bytes.len());
+            quote! { [u8; #n] }
+        }
+        TagValue::Wildcard => quote! { i128 },
     }
 }

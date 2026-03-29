@@ -1,5 +1,6 @@
 //! Token-based code generator for vest-dsl.
 
+mod builders;
 mod combir;
 mod format;
 mod lower;

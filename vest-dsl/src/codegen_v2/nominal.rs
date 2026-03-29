@@ -15,7 +15,14 @@ use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote};
 use std::collections::HashMap;
 
-use super::combir::{CombDef, CombIR, DepCombIR, TagValue};
+use super::builders::{
+    build_nested_either_type as build_nested_either_type_from_tokens, build_nested_pair_expr,
+    build_nested_pair_type as build_nested_pair_type_from_tokens, wrap_right_nested_either,
+};
+use super::combir::{
+    comb_needs_lifetime as shared_comb_needs_lifetime, comb_uint_type_tokens, CombDef, CombIR,
+    DepCombIR, LifetimeCheckMode, TagValue,
+};
 
 /// Field information extracted from combinator structure.
 #[derive(Debug, Clone)]
@@ -67,6 +74,12 @@ enum TopLevelNominalKind {
         needs_lifetime: bool,
     },
     Alias,
+}
+
+struct EitherTypeSet {
+    parse: TokenStream,
+    borrow: TokenStream,
+    owned: TokenStream,
 }
 
 impl<'a> NominalTypeGen<'a> {
@@ -354,40 +367,7 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn comb_needs_lifetime(&self, comb: &CombIR) -> bool {
-        match comb {
-            CombIR::Variable { .. } | CombIR::Tail | CombIR::Fixed { .. } => true,
-            CombIR::Tuple(elems) => elems.iter().any(|(_, elem)| self.comb_needs_lifetime(elem)),
-            CombIR::Choice(elems) => elems.iter().any(|elem| self.comb_needs_lifetime(elem)),
-            CombIR::Pair { fst, snd } => {
-                self.comb_needs_lifetime(fst) || self.comb_needs_lifetime(&snd.comb)
-            }
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Opt(inner)
-            | CombIR::Repeat(inner)
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. }
-            | CombIR::Tag { inner, .. } => self.comb_needs_lifetime(inner),
-            CombIR::OptThen { fst, snd } => {
-                self.comb_needs_lifetime(fst) || self.comb_needs_lifetime(snd)
-            }
-            CombIR::RepeatN { inner, .. } => self.comb_needs_lifetime(inner),
-            CombIR::Dispatch { branches, .. } => branches
-                .iter()
-                .any(|(_, comb)| self.comb_needs_lifetime(comb)),
-            CombIR::Named { name, .. } => self.def_needs_lifetime(name),
-            CombIR::U8
-            | CombIR::U16(_)
-            | CombIR::U24(_)
-            | CombIR::U32(_)
-            | CombIR::U64(_)
-            | CombIR::End
-            | CombIR::Success
-            | CombIR::Fail(_) => false,
-        }
+        shared_comb_needs_lifetime(comb, self.defs, LifetimeCheckMode::Full)
     }
 
     fn nominal_type_tokens(&self, comb: &CombIR, owned: bool) -> TokenStream {
@@ -988,19 +968,18 @@ impl<'a> NominalTypeGen<'a> {
         let tuple_type_borrow = self.borrow_type_tokens(comb);
         let tuple_type_owned = self.owned_type_tokens(comb);
         let tuple_exprs = self.collect_field_exprs(comb, quote! { src });
+        let field_assigns: Vec<TokenStream> = field_names
+            .iter()
+            .zip(fields.iter())
+            .zip(tuple_exprs.iter())
+            .map(|((fname, field), expr)| {
+                let value = self.field_from_expr(expr.clone(), &field.comb);
+                quote! { #fname: #value }
+            })
+            .collect();
 
         // From<tuple> for Struct (forward conversion for parsing)
         let from_tuple = if needs_lifetime {
-            let field_assigns: Vec<TokenStream> = field_names
-                .iter()
-                .zip(fields.iter())
-                .zip(tuple_exprs.iter())
-                .map(|((fname, field), expr)| {
-                    let value = self.field_from_expr(expr.clone(), &field.comb);
-                    quote! { #fname: #value }
-                })
-                .collect();
-
             quote! {
                 impl<'a> From<#tuple_type> for #type_name<'a> {
                     fn from(src: #tuple_type) -> Self {
@@ -1009,16 +988,6 @@ impl<'a> NominalTypeGen<'a> {
                 }
             }
         } else {
-            let field_assigns: Vec<TokenStream> = field_names
-                .iter()
-                .zip(fields.iter())
-                .zip(tuple_exprs.iter())
-                .map(|((fname, field), expr)| {
-                    let value = self.field_from_expr(expr.clone(), &field.comb);
-                    quote! { #fname: #value }
-                })
-                .collect();
-
             quote! {
                 impl From<#tuple_type> for #type_name {
                     fn from(src: #tuple_type) -> Self {
@@ -1170,6 +1139,31 @@ impl<'a> NominalTypeGen<'a> {
         self.mapper_items.push(mapper_impl);
     }
 
+    fn enum_variant_defs(&self, variants: &[VariantInfo], owned: bool) -> Vec<TokenStream> {
+        variants
+            .iter()
+            .map(|variant| {
+                let vname = format_ident!("{}", variant.name);
+                let vtype = self.nominal_type_tokens(&variant.comb, owned);
+                quote! { #vname(#vtype) }
+            })
+            .collect()
+    }
+
+    fn enum_either_types(&self, variants: &[VariantInfo], parse_lt: TokenStream) -> EitherTypeSet {
+        EitherTypeSet {
+            parse: build_nested_variant_type_with(variants, |variant| {
+                self.parse_type_tokens_with_lt(&variant.comb, parse_lt.clone())
+            }),
+            borrow: build_nested_variant_type_with(variants, |variant| {
+                self.borrow_type_tokens(&variant.comb)
+            }),
+            owned: build_nested_variant_type_with(variants, |variant| {
+                self.owned_type_tokens(&variant.comb)
+            }),
+        }
+    }
+
     /// Generate an enum type for dispatch variants.
     fn generate_enum_type(&mut self, name: &str, variants: &[VariantInfo]) {
         let type_name = format_ident!("{}", snake_to_upper_camel(name));
@@ -1178,24 +1172,8 @@ impl<'a> NominalTypeGen<'a> {
         // Check if we need lifetime
         let needs_lifetime = variants.iter().any(|v| self.comb_needs_lifetime(&v.comb));
 
-        // Generate variant definitions
-        let variant_defs: Vec<TokenStream> = variants
-            .iter()
-            .map(|v| {
-                let vname = format_ident!("{}", v.name);
-                let vtype = self.nominal_type_tokens(&v.comb, false);
-                quote! { #vname(#vtype) }
-            })
-            .collect();
-
-        let variant_defs_owned: Vec<TokenStream> = variants
-            .iter()
-            .map(|v| {
-                let vname = format_ident!("{}", v.name);
-                let vtype = self.nominal_type_tokens(&v.comb, true);
-                quote! { #vname(#vtype) }
-            })
-            .collect();
+        let variant_defs = self.enum_variant_defs(variants, false);
+        let variant_defs_owned = self.enum_variant_defs(variants, true);
 
         // Borrowed enum
         let enum_def = if needs_lifetime {
@@ -1246,16 +1224,10 @@ impl<'a> NominalTypeGen<'a> {
         let type_name = format_ident!("{}", snake_to_upper_camel(name));
         let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
 
-        // Build nested Either type
-        let either_type = build_nested_variant_type_with(variants, |variant| {
-            self.parse_type_tokens_with_lt(&variant.comb, quote! { 'a })
-        });
-        let either_type_borrow = build_nested_variant_type_with(variants, |variant| {
-            self.borrow_type_tokens(&variant.comb)
-        });
-        let either_type_owned = build_nested_variant_type_with(variants, |variant| {
-            self.owned_type_tokens(&variant.comb)
-        });
+        let either_types = self.enum_either_types(variants, quote! { 'a });
+        let either_type = &either_types.parse;
+        let either_type_borrow = &either_types.borrow;
+        let either_type_owned = &either_types.owned;
 
         // Generate From<Either<...>> for Enum
         let from_either_arms: Vec<TokenStream> = variants
@@ -1263,7 +1235,7 @@ impl<'a> NominalTypeGen<'a> {
             .enumerate()
             .map(|(idx, v)| {
                 let vname = format_ident!("{}", v.name);
-                let pattern = either_pattern(idx, variants.len());
+                let pattern = wrap_right_nested_either(quote! { v }, idx, variants.len());
                 let value = self.field_from_expr(quote! { v }, &v.comb);
                 quote! { #pattern => #type_name::#vname(#value) }
             })
@@ -1297,10 +1269,10 @@ impl<'a> NominalTypeGen<'a> {
             .enumerate()
             .map(|(idx, v)| {
                 let vname = format_ident!("{}", v.name);
-                let wrap = either_wrap_expr(
+                let wrap = wrap_right_nested_either(
+                    self.variant_borrow_expr(&format_ident!("v"), &v.comb),
                     idx,
                     variants.len(),
-                    self.variant_borrow_expr(&format_ident!("v"), &v.comb),
                 );
                 quote! { #type_name::#vname(v) => #wrap }
             })
@@ -1338,7 +1310,7 @@ impl<'a> NominalTypeGen<'a> {
                 .enumerate()
                 .map(|(idx, v)| {
                     let vname = format_ident!("{}", v.name);
-                    let pattern = either_pattern(idx, variants.len());
+                    let pattern = wrap_right_nested_either(quote! { v }, idx, variants.len());
                     let value = self.field_from_expr(quote! { v }, &v.comb);
                     quote! { #pattern => #owned_name::#vname(#value) }
                 })
@@ -1362,15 +1334,10 @@ impl<'a> NominalTypeGen<'a> {
         let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
         let mapper_name = format_ident!("{}Mapper", snake_to_upper_camel(name));
 
-        let either_type = build_nested_variant_type_with(variants, |variant| {
-            self.parse_type_tokens_with_lt(&variant.comb, quote! { 'p })
-        });
-        let either_type_borrow = build_nested_variant_type_with(variants, |variant| {
-            self.borrow_type_tokens(&variant.comb)
-        });
-        let either_type_owned = build_nested_variant_type_with(variants, |variant| {
-            self.owned_type_tokens(&variant.comb)
-        });
+        let either_types = self.enum_either_types(variants, quote! { 'p });
+        let either_type = &either_types.parse;
+        let either_type_borrow = &either_types.borrow;
+        let either_type_owned = &either_types.owned;
 
         let mapper_impl = if needs_lifetime {
             quote! {
@@ -1509,30 +1476,6 @@ pub(crate) fn snake_to_upper_camel(s: &str) -> String {
         .collect()
 }
 
-fn build_nested_pair_type_from_tokens(types: &[TokenStream]) -> TokenStream {
-    if types.is_empty() {
-        quote! { () }
-    } else if types.len() == 1 {
-        types[0].clone()
-    } else {
-        let first = &types[0];
-        let rest = build_nested_pair_type_from_tokens(&types[1..]);
-        quote! { (#first, #rest) }
-    }
-}
-
-fn build_nested_pair_expr(exprs: &[TokenStream]) -> TokenStream {
-    if exprs.is_empty() {
-        quote! { () }
-    } else if exprs.len() == 1 {
-        exprs[0].clone()
-    } else {
-        let first = &exprs[0];
-        let rest = build_nested_pair_expr(&exprs[1..]);
-        quote! { (#first, #rest) }
-    }
-}
-
 fn tuple_field_access(base: &TokenStream, total: usize, index: usize) -> TokenStream {
     if total <= 1 {
         return base.clone();
@@ -1565,59 +1508,6 @@ where
 
     let types: Vec<TokenStream> = variants.iter().map(&mut f).collect();
     build_nested_either_type_from_tokens(&types)
-}
-
-/// Generate Either pattern for matching nth variant.
-fn either_pattern(idx: usize, total: usize) -> TokenStream {
-    if total == 1 {
-        return quote! { v };
-    }
-
-    // For index 0: Either::Left(v)
-    // For index 1 with 2 total: Either::Right(v)
-    // For index 1 with 3 total: Either::Right(Either::Left(v))
-    // For index 2 with 3 total: Either::Right(Either::Right(v))
-
-    if idx == 0 {
-        quote! { Either::Left(v) }
-    } else if idx == total - 1 {
-        // Last element: nested Rights then the value
-        let mut pattern = quote! { v };
-        for _ in 0..idx {
-            pattern = quote! { Either::Right(#pattern) };
-        }
-        pattern
-    } else {
-        // Middle element: Rights then Left
-        let mut pattern = quote! { Either::Left(v) };
-        for _ in 0..idx {
-            pattern = quote! { Either::Right(#pattern) };
-        }
-        pattern
-    }
-}
-
-/// Generate Either wrapper expression for nth variant.
-fn either_wrap_expr(idx: usize, total: usize, expr: TokenStream) -> TokenStream {
-    if total == 1 {
-        return expr;
-    }
-
-    if idx == 0 {
-        quote! { Either::Left(#expr) }
-    } else if idx == total - 1 {
-        let mut wrap = expr;
-        for _ in 0..idx {
-            wrap = quote! { Either::Right(#wrap) };
-        }
-        wrap
-    } else {
-        let mut wrap = quote! { Either::Left(#expr) };
-        for _ in 0..idx {
-            wrap = quote! { Either::Right(#wrap) };
-        }
-        wrap
-    }
 }
 
 // ===== Dispatch Value Enum Generation =====
@@ -1731,11 +1621,9 @@ fn dispatch_value_type_tokens(
 ) -> TokenStream {
     match comb {
         // Primitive integers - no lifetime needed
-        CombIR::U8 => quote! { u8 },
-        CombIR::U16(_) => quote! { u16 },
-        CombIR::U24(_) => quote! { u24 },
-        CombIR::U32(_) => quote! { u32 },
-        CombIR::U64(_) => quote! { u64 },
+        _ if comb_uint_type_tokens(comb).is_some() => {
+            comb_uint_type_tokens(comb).expect("integer helper guaranteed Some in guard")
+        }
 
         // Fixed-length bytes
         CombIR::Fixed { .. } => {
@@ -1841,56 +1729,7 @@ fn dispatch_value_type_tokens(
 
 /// Check if a combinator needs a lifetime parameter (for dispatch value enum generation).
 fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -> bool {
-    match comb {
-        // Byte types always need lifetime (they borrow from input)
-        CombIR::Variable { .. } | CombIR::Tail | CombIR::Fixed { .. } => true,
-
-        // Recurse into container types
-        CombIR::Tuple(elems) => elems
-            .iter()
-            .any(|(_, elem)| comb_needs_lifetime(elem, def_map)),
-        CombIR::Pair { fst, snd } => {
-            comb_needs_lifetime(fst, def_map) || comb_needs_lifetime(&snd.comb, def_map)
-        }
-        CombIR::Opt(inner) | CombIR::Repeat(inner) | CombIR::RepeatN { inner, .. } => {
-            comb_needs_lifetime(inner, def_map)
-        }
-        CombIR::Refined { inner, .. }
-        | CombIR::Mapped { inner, .. }
-        | CombIR::FixedLen { inner, .. }
-        | CombIR::AndThen { inner, .. }
-        | CombIR::Tag { inner, .. } => comb_needs_lifetime(inner, def_map),
-        CombIR::Dispatch { branches, .. } => branches
-            .iter()
-            .any(|(_, c)| comb_needs_lifetime(c, def_map)),
-        CombIR::Choice(choices) => choices.iter().any(|c| comb_needs_lifetime(c, def_map)),
-
-        // Named references - look up the definition
-        CombIR::Named { name, .. } => def_map
-            .get(name)
-            .map(|def| comb_needs_lifetime(&def.body, def_map))
-            .unwrap_or(false),
-
-        // Primitives don't need lifetime
-        _ => false,
-    }
-}
-
-/// Build nested Either type from a list of type tokens.
-fn build_nested_either_type_from_tokens(types: &[TokenStream]) -> TokenStream {
-    if types.is_empty() {
-        return quote! { () };
-    }
-    if types.len() == 1 {
-        return types[0].clone();
-    }
-
-    // Build right-nested Either: Either<A, Either<B, Either<C, D>>>
-    let mut result = types.last().unwrap().clone();
-    for ty in types.iter().rev().skip(1) {
-        result = quote! { Either<#ty, #result> };
-    }
-    result
+    shared_comb_needs_lifetime(comb, def_map, LifetimeCheckMode::LegacyDispatch)
 }
 
 /// Extract case names and combinators from dispatch branches.
