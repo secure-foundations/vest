@@ -9,8 +9,7 @@ use super::builders::build_right_nested_tokens;
 use super::combir::{
     comb_needs_lifetime as shared_comb_needs_lifetime, comb_uint_or_i128_type_tokens,
     comb_uint_type_tokens, tag_literal_type_tokens, ArithOp, CodegenCtx, CombDef, CombIR, ConstDef,
-    DepCombIR, Endian, IntConstraintIR, LenExpr, LifetimeCheckMode, ParamRef, PredicateIR, TagRef,
-    TagValue,
+    DepCombIR, Endian, IntConstraintIR, LenExpr, ParamRef, PredicateIR, TagRef, TagValue,
 };
 use super::format::{format_rust_code, FormatError};
 use super::nominal::{
@@ -990,20 +989,6 @@ impl<'a> DefEmitter<'a> {
                 quote! { Terminated(#inner_tokens, #suffix_tokens) }
             }
 
-            CombIR::Choice(choices) => {
-                if choices.is_empty() {
-                    quote! { Fail("empty choice".into()) }
-                } else {
-                    let choice_tokens: Vec<TokenStream> = choices
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, choice)| {
-                            self.comb_expr_tokens_mode(choice, env, &child_path(path, idx), mode)
-                        })
-                        .collect();
-                    build_nested_choice_expr(&choice_tokens)
-                }
-            }
             CombIR::Dispatch { tag, branches } => {
                 self.ensure_dispatch_case_helper(path, branches, env);
                 let tag_tokens = self.tag_ref_tokens(tag, env, mode);
@@ -1025,11 +1010,6 @@ impl<'a> DefEmitter<'a> {
                 let inner_tokens =
                     self.comb_expr_tokens_mode(inner, env, &child_path(path, 0), mode);
                 quote! { Opt::new(#inner_tokens) }
-            }
-            CombIR::OptThen { fst, snd } => {
-                let fst_tokens = self.comb_expr_tokens_mode(fst, env, &child_path(path, 0), mode);
-                let snd_tokens = self.comb_expr_tokens_mode(snd, env, &child_path(path, 1), mode);
-                quote! { OptThen::new(#fst_tokens, #snd_tokens) }
             }
 
             CombIR::RepeatN { inner, count } => {
@@ -1076,13 +1056,6 @@ impl<'a> DefEmitter<'a> {
                         #inner_tokens,
                     )
                 }
-            }
-            CombIR::CondEq { lhs, rhs, inner } => {
-                let lhs_tokens = self.cond_tag_ref_tokens(lhs, env, mode);
-                let rhs_tokens = self.tag_value_tokens(rhs);
-                let inner_tokens =
-                    self.comb_expr_tokens_mode(inner, env, &child_path(path, 0), mode);
-                quote! { CondEq { lhs: #lhs_tokens, rhs: #rhs_tokens, inner: #inner_tokens } }
             }
 
             CombIR::Tag { inner, value } => {
@@ -1221,34 +1194,6 @@ impl<'a> DefEmitter<'a> {
                 quote! { Terminated<#inner_type, #suffix_type> }
             }
 
-            CombIR::Choice(choices) => {
-                if choices.is_empty() {
-                    quote! { Fail }
-                } else if choices.len() == 1 {
-                    self.comb_type_tokens_with_lt_inner(
-                        &choices[0],
-                        env,
-                        &child_path(path, 0),
-                        runtime_lt,
-                        use_dispatch_defaults,
-                    )
-                } else {
-                    let choice_types: Vec<TokenStream> = choices
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, choice)| {
-                            self.comb_type_tokens_with_lt_inner(
-                                choice,
-                                env,
-                                &child_path(path, idx),
-                                runtime_lt.clone(),
-                                use_dispatch_defaults,
-                            )
-                        })
-                        .collect();
-                    build_nested_choice_type(&choice_types)
-                }
-            }
             CombIR::Dispatch { branches, tag } => {
                 if branches.is_empty() {
                     quote! { Fail }
@@ -1286,23 +1231,6 @@ impl<'a> DefEmitter<'a> {
                     use_dispatch_defaults,
                 );
                 quote! { Opt<#inner_type> }
-            }
-            CombIR::OptThen { fst, snd } => {
-                let fst_type = self.comb_type_tokens_with_lt_inner(
-                    fst,
-                    env,
-                    &child_path(path, 0),
-                    runtime_lt.clone(),
-                    use_dispatch_defaults,
-                );
-                let snd_type = self.comb_type_tokens_with_lt_inner(
-                    snd,
-                    env,
-                    &child_path(path, 1),
-                    runtime_lt,
-                    use_dispatch_defaults,
-                );
-                quote! { OptThen<#fst_type, #snd_type> }
             }
 
             CombIR::RepeatN { inner, .. } => {
@@ -1382,17 +1310,6 @@ impl<'a> DefEmitter<'a> {
                 );
                 let fixed_len_lt = runtime_lt.unwrap_or_else(|| quote! { 'static });
                 quote! { FixedLen<#fixed_len_lt, #inner_type> }
-            }
-            CombIR::CondEq { inner, .. } => {
-                let inner_type = self.comb_type_tokens_with_lt_inner(
-                    inner,
-                    env,
-                    &child_path(path, 0),
-                    runtime_lt.clone(),
-                    use_dispatch_defaults,
-                );
-                let cond_lt = runtime_lt.unwrap_or_else(|| quote! { 'static });
-                quote! { CondEq<#cond_lt, u8, #inner_type> }
             }
 
             CombIR::Tag { inner, value } => {
@@ -1625,7 +1542,7 @@ impl<'a> DefEmitter<'a> {
         let type_name = format_ident!("{}", snake_to_upper_camel(&self.def.name));
         let owned_name = format_ident!("{}Owned", snake_to_upper_camel(&self.def.name));
         let generate_enum_name =
-            if shared_comb_needs_lifetime(&self.def.body, self.defs, LifetimeCheckMode::Full) {
+            if shared_comb_needs_lifetime(&self.def.body, self.defs) {
                 owned_name
             } else {
                 type_name.clone()
@@ -1940,54 +1857,24 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn tag_ref_tokens(&self, tag: &TagRef, env: &ValueEnv, mode: EmitMode) -> TokenStream {
-        match tag {
-            TagRef::Field(name) => {
-                if let Some(binding) = env.get(name) {
-                    match mode {
-                        EmitMode::Unified if binding.is_generic_int_param => {
-                            let ident = &binding.ident;
-                            quote! { #ident.into_runtime_value() }
-                        }
-                        EmitMode::Generate if binding.is_mut_ref => {
-                            let ident = &binding.ident;
-                            quote! { RuntimeValue::from_mut(#ident) }
-                        }
-                        _ => {
-                            let value = self.binding_read_tokens(binding);
-                            quote! { RuntimeValue::from_value(#value) }
-                        }
-                    }
-                } else {
-                    let ident = format_ident!("{}", name);
-                    quote! { RuntimeValue::from_value(#ident) }
+        if let Some(binding) = env.get(tag) {
+            match mode {
+                EmitMode::Unified if binding.is_generic_int_param => {
+                    let ident = &binding.ident;
+                    quote! { #ident.into_runtime_value() }
                 }
-            }
-            TagRef::Value(value) => {
-                let value = self.tag_value_tokens(value);
-                quote! { RuntimeValue::from_value(#value) }
-            }
-        }
-    }
-
-    fn cond_tag_ref_tokens(&self, tag: &TagRef, env: &ValueEnv, mode: EmitMode) -> TokenStream {
-        if mode != EmitMode::Generate && mode != EmitMode::Unified {
-            return self.tag_ref_tokens(tag, env, mode);
-        }
-
-        match tag {
-            TagRef::Field(name) => {
-                if let Some(binding) = env.get(name) {
+                EmitMode::Generate if binding.is_mut_ref => {
+                    let ident = &binding.ident;
+                    quote! { RuntimeValue::from_mut(#ident) }
+                }
+                _ => {
                     let value = self.binding_read_tokens(binding);
                     quote! { RuntimeValue::from_value(#value) }
-                } else {
-                    let ident = format_ident!("{}", name);
-                    quote! { RuntimeValue::from_value(#ident) }
                 }
             }
-            TagRef::Value(value) => {
-                let value = self.tag_value_tokens(value);
-                quote! { RuntimeValue::from_value(#value) }
-            }
+        } else {
+            let ident = format_ident!("{}", tag);
+            quote! { RuntimeValue::from_value(#ident) }
         }
     }
 
@@ -2089,11 +1976,8 @@ impl<'a> DefEmitter<'a> {
                 self.param_needs_generate_ref_inner(inner, name, seen)
                     || self.param_needs_generate_ref_inner(suffix, name, seen)
             }
-            CombIR::Choice(choices) => choices
-                .iter()
-                .any(|choice| self.param_needs_generate_ref_inner(choice, name, seen)),
             CombIR::Dispatch { tag, branches } => {
-                matches!(tag, TagRef::Field(field) if field == name)
+                tag == name
                     || branches
                         .iter()
                         .any(|(_, branch)| self.param_needs_generate_ref_inner(branch, name, seen))
@@ -2104,12 +1988,7 @@ impl<'a> DefEmitter<'a> {
             | CombIR::Mapped { inner, .. }
             | CombIR::Enum { inner, .. }
             | CombIR::AndThen { inner, .. }
-            | CombIR::CondEq { inner, .. }
             | CombIR::Tag { inner, .. } => self.param_needs_generate_ref_inner(inner, name, seen),
-            CombIR::OptThen { fst, snd } => {
-                self.param_needs_generate_ref_inner(fst, name, seen)
-                    || self.param_needs_generate_ref_inner(snd, name, seen)
-            }
             CombIR::RepeatN { inner, .. } => self.param_needs_generate_ref_inner(inner, name, seen),
             CombIR::FixedLen { len, inner } => {
                 len_uses_dependent_name(len, name)
@@ -2175,9 +2054,6 @@ impl<'a> DefEmitter<'a> {
                 self.param_needs_length_param_inner(inner, name, seen)
                     || self.param_needs_length_param_inner(suffix, name, seen)
             }
-            CombIR::Choice(choices) => choices
-                .iter()
-                .any(|choice| self.param_needs_length_param_inner(choice, name, seen)),
             CombIR::Dispatch { branches, .. } => branches
                 .iter()
                 .any(|(_, branch)| self.param_needs_length_param_inner(branch, name, seen)),
@@ -2187,12 +2063,7 @@ impl<'a> DefEmitter<'a> {
             | CombIR::Mapped { inner, .. }
             | CombIR::Enum { inner, .. }
             | CombIR::AndThen { inner, .. }
-            | CombIR::CondEq { inner, .. }
             | CombIR::Tag { inner, .. } => self.param_needs_length_param_inner(inner, name, seen),
-            CombIR::OptThen { fst, snd } => {
-                self.param_needs_length_param_inner(fst, name, seen)
-                    || self.param_needs_length_param_inner(snd, name, seen)
-            }
             CombIR::RepeatN { inner, count } => {
                 len_uses_dependent_name(count, name)
                     || self.param_needs_length_param_inner(inner, name, seen)
@@ -2266,9 +2137,7 @@ impl<'a> DefEmitter<'a> {
             | CombIR::Mapped { inner, .. }
             | CombIR::Enum { inner, .. }
             | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.value_type_of_comb_inner(inner, seen),
-            CombIR::Choice(_) => todo!("Choice value types are not supported; use Dispatch"),
+            | CombIR::FixedLen { inner, .. } => self.value_type_of_comb_inner(inner, seen),
             CombIR::Dispatch { branches, .. } => {
                 if let Some((_, comb)) = branches.first() {
                     self.value_type_of_comb_inner(comb, seen)
@@ -2279,10 +2148,6 @@ impl<'a> DefEmitter<'a> {
             CombIR::Opt(inner) => {
                 ValueType::Option(Box::new(self.value_type_of_comb_inner(inner, seen)))
             }
-            CombIR::OptThen { fst, snd } => ValueType::Tuple(vec![
-                ValueType::Option(Box::new(self.value_type_of_comb_inner(fst, seen))),
-                self.value_type_of_comb_inner(snd, seen),
-            ]),
             CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
                 ValueType::Slice(Box::new(self.value_type_of_comb_inner(inner, seen)))
             }
@@ -2352,11 +2217,6 @@ fn collect_used_names(comb: &CombIR, names: &mut BTreeSet<String>) {
                 collect_used_names(elem, names);
             }
         }
-        CombIR::Choice(elems) => {
-            for elem in elems {
-                collect_used_names(elem, names);
-            }
-        }
         CombIR::Pair { fst, snd } => {
             collect_used_names(fst, names);
             collect_used_names(&snd.comb, names);
@@ -2382,14 +2242,6 @@ fn collect_used_names(comb: &CombIR, names: &mut BTreeSet<String>) {
         | CombIR::Enum { inner, .. }
         | CombIR::AndThen { inner, .. }
         | CombIR::Tag { inner, .. } => collect_used_names(inner, names),
-        CombIR::OptThen { fst, snd } => {
-            collect_used_names(fst, names);
-            collect_used_names(snd, names);
-        }
-        CombIR::CondEq { lhs, inner, .. } => {
-            collect_tag_ref_names(lhs, names);
-            collect_used_names(inner, names);
-        }
         CombIR::Named { args, .. } => {
             for arg in args {
                 match arg {
@@ -2426,9 +2278,7 @@ fn collect_len_names(len: &LenExpr, names: &mut BTreeSet<String>) {
 }
 
 fn collect_tag_ref_names(tag: &TagRef, names: &mut BTreeSet<String>) {
-    if let TagRef::Field(name) = tag {
-        names.insert(name.clone());
-    }
+    names.insert(tag.clone());
 }
 
 fn capture_names(
@@ -2473,25 +2323,12 @@ fn binding_value_tokens(binding: &Binding) -> TokenStream {
 }
 
 fn predicate_to_tokens(pred: &PredicateIR, inner: Option<&CombIR>) -> TokenStream {
-    match pred {
-        PredicateIR::IntConstraint(constraint) => {
-            let arg_ty = refined_pred_arg_type(inner);
-            let var_expr = refined_pred_value_as_i128(inner);
-            let check = int_constraint_to_check(constraint, var_expr);
-            quote! { |v: #arg_ty| #check }
-        }
-        PredicateIR::Custom(name) => {
-            let ident = format_ident!("{}", name);
-            quote! { #ident }
-        }
-    }
-}
-
-fn refined_pred_arg_type(inner: Option<&CombIR>) -> TokenStream {
-    match inner {
-        Some(inner) => comb_uint_or_i128_type_tokens(inner),
-        _ => quote! { i128 },
-    }
+    let arg_ty = inner
+        .map(comb_uint_or_i128_type_tokens)
+        .unwrap_or_else(|| quote! { i128 });
+    let var_expr = refined_pred_value_as_i128(inner);
+    let check = int_constraint_to_check(pred, var_expr);
+    quote! { |v: #arg_ty| #check }
 }
 
 fn refined_pred_value_as_i128(inner: Option<&CombIR>) -> TokenStream {
@@ -2547,18 +2384,6 @@ fn constraint_elem_to_check(elem: &ConstraintElem, var: TokenStream) -> TokenStr
     }
 }
 
-fn build_nested_choice_type(types: &[TokenStream]) -> TokenStream {
-    build_right_nested_tokens(types, None, &|first, rest| quote! { Choice<#first, #rest> })
-}
-
-fn build_nested_choice_expr(exprs: &[TokenStream]) -> TokenStream {
-    build_right_nested_tokens(
-        exprs,
-        None,
-        &|first, rest| quote! { Choice::new(#first, #rest) },
-    )
-}
-
 fn build_nested_pair_type(types: &[TokenStream]) -> TokenStream {
     build_right_nested_tokens(types, None, &|first, rest| quote! { (#first, #rest) })
 }
@@ -2575,10 +2400,6 @@ fn dispatch_helper_key(path: &[usize]) -> String {
     format!("dispatch_{}", helper_key(path))
 }
 
-fn dispatch_tag_type_tokens(tag_value: &TagValue) -> TokenStream {
-    tag_literal_type_tokens(tag_value)
-}
-
 fn len_uses_dependent_name(len: &LenExpr, name: &str) -> bool {
     match len {
         LenExpr::Const(_) | LenExpr::SizeOf(_) => false,
@@ -2590,26 +2411,21 @@ fn len_uses_dependent_name(len: &LenExpr, name: &str) -> bool {
 }
 
 fn dispatch_tag_type_tokens_for_ref(tag_ref: &TagRef, env: &ValueEnv) -> TokenStream {
-    match tag_ref {
-        TagRef::Field(name) => {
-            if let Some(binding) = env.get(name) {
-                match binding.ty {
-                    ValueType::U8 => comb_uint_type_tokens(&CombIR::U8).unwrap(),
-                    ValueType::U16 => comb_uint_type_tokens(&CombIR::U16(Endian::Little)).unwrap(),
-                    ValueType::U24 => comb_uint_type_tokens(&CombIR::U24(Endian::Little)).unwrap(),
-                    ValueType::U32 => comb_uint_type_tokens(&CombIR::U32(Endian::Little)).unwrap(),
-                    ValueType::U64 => comb_uint_type_tokens(&CombIR::U64(Endian::Little)).unwrap(),
-                    ValueType::Named(ref name) => {
-                        let ident = format_ident!("{}", snake_to_upper_camel(name));
-                        quote! { #ident }
-                    }
-                    _ => quote! { i128 },
-                }
-            } else {
-                quote! { i128 }
+    if let Some(binding) = env.get(tag_ref) {
+        match binding.ty {
+            ValueType::U8 => comb_uint_type_tokens(&CombIR::U8).unwrap(),
+            ValueType::U16 => comb_uint_type_tokens(&CombIR::U16(Endian::Little)).unwrap(),
+            ValueType::U24 => comb_uint_type_tokens(&CombIR::U24(Endian::Little)).unwrap(),
+            ValueType::U32 => comb_uint_type_tokens(&CombIR::U32(Endian::Little)).unwrap(),
+            ValueType::U64 => comb_uint_type_tokens(&CombIR::U64(Endian::Little)).unwrap(),
+            ValueType::Named(ref name) => {
+                let ident = format_ident!("{}", snake_to_upper_camel(name));
+                quote! { #ident }
             }
+            _ => quote! { i128 },
         }
-        TagRef::Value(value) => dispatch_tag_type_tokens(value),
+    } else {
+        quote! { i128 }
     }
 }
 

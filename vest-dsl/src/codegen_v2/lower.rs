@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::vestir::{
     self, ArrayCombinator, BytesCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInner,
     CombinatorInvocation, ConstArray, ConstCombinator, ConstraintElem, ConstraintEnumCombinator,
@@ -8,11 +6,9 @@ use crate::vestir::{
 };
 
 use super::combir::{
-    CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, IntConstraintIR, LenExpr, ParamDef,
-    PredicateIR, TagRef, TagValue,
+    CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, EnumBindings, IntConstraintIR,
+    LenExpr, ParamDef, TagValue,
 };
-
-type EnumEnv = HashMap<String, String>;
 
 pub fn lower_definitions(defs: &[Definition], ctx: &mut CodegenCtx) -> Vec<CombDef> {
     for def in defs {
@@ -37,7 +33,7 @@ fn lower_definition(def: &Definition, ctx: &CodegenCtx) -> Option<CombDef> {
         } => Some(CombDef {
             name: name.to_string(),
             params: lower_param_defns(param_defns, ctx),
-            body: lower_combinator_in_env(combinator, ctx, &enum_env_from_params(param_defns, ctx)),
+            body: lower_combinator_in_env(combinator, ctx, &enum_bindings_from_params(param_defns, ctx)),
             is_const: false,
             const_defs: extract_const_defs(name, combinator),
         }),
@@ -109,18 +105,22 @@ fn lower_param_defns(params: &[ParamDefn], ctx: &CodegenCtx) -> Vec<ParamDef> {
         .filter_map(|p| match p {
             ParamDefn::Dependent { name, combinator } => Some(ParamDef {
                 name: name.clone(),
-                ty: lower_combinator_inner_in_env(combinator, ctx, &EnumEnv::new()),
+                ty: lower_combinator_inner_in_env(combinator, ctx, &EnumBindings::new()),
             }),
         })
         .collect()
 }
 
-fn lower_combinator_in_env(comb: &Combinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    let inner = lower_combinator_inner_in_env(&comb.inner, ctx, enum_env);
+fn lower_combinator_in_env(
+    comb: &Combinator,
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
+    let inner = lower_combinator_inner_in_env(&comb.inner, ctx, enum_bindings);
 
     match &comb.and_then {
         Some(next) => {
-            let next_ir = lower_combinator_in_env(next, ctx, enum_env);
+            let next_ir = lower_combinator_in_env(next, ctx, enum_bindings);
             match inner {
                 CombIR::Fixed { len } => CombIR::FixedLen {
                     len: LenExpr::Const(len),
@@ -143,20 +143,20 @@ fn lower_combinator_in_env(comb: &Combinator, ctx: &CodegenCtx, enum_env: &EnumE
 fn lower_combinator_inner_in_env(
     inner: &CombinatorInner,
     ctx: &CodegenCtx,
-    enum_env: &EnumEnv,
+    enum_bindings: &EnumBindings,
 ) -> CombIR {
     match inner {
         CombinatorInner::ConstraintInt(c) => lower_constraint_int(c, ctx),
         CombinatorInner::ConstraintEnum(c) => lower_constraint_enum(c, ctx),
-        CombinatorInner::Struct(s) => lower_struct_in_env(s, ctx, enum_env),
-        CombinatorInner::Wrap(w) => lower_wrap_in_env(w, ctx, enum_env),
+        CombinatorInner::Struct(s) => lower_struct_in_env(s, ctx, enum_bindings),
+        CombinatorInner::Wrap(w) => lower_wrap_in_env(w, ctx, enum_bindings),
         CombinatorInner::Enum(e) => lower_enum(e, ctx),
-        CombinatorInner::Choice(c) => lower_choice_in_env(c, ctx, enum_env),
-        CombinatorInner::Vec(v) => lower_vec_in_env(v, ctx, enum_env),
-        CombinatorInner::Array(a) => lower_array_in_env(a, ctx, enum_env),
+        CombinatorInner::Choice(c) => lower_choice_in_env(c, ctx, enum_bindings),
+        CombinatorInner::Vec(v) => lower_vec_in_env(v, ctx, enum_bindings),
+        CombinatorInner::Array(a) => lower_array_in_env(a, ctx, enum_bindings),
         CombinatorInner::Bytes(b) => lower_bytes(b, ctx),
         CombinatorInner::Tail(_) => CombIR::Tail,
-        CombinatorInner::Option(o) => lower_option_in_env(o, ctx, enum_env),
+        CombinatorInner::Option(o) => lower_option_in_env(o, ctx, enum_bindings),
         CombinatorInner::Invocation(i) => lower_invocation(i, ctx),
     }
 }
@@ -186,7 +186,7 @@ fn lower_constraint_int(comb: &ConstraintIntCombinator, ctx: &CodegenCtx) -> Com
     match &comb.constraint {
         Some(constraint) => CombIR::Refined {
             inner: Box::new(inner),
-            predicate: PredicateIR::IntConstraint(constraint.clone()),
+            predicate: constraint.clone(),
         },
         None => inner,
     }
@@ -197,7 +197,11 @@ fn lower_constraint_enum(comb: &ConstraintEnumCombinator, ctx: &CodegenCtx) -> C
     todo!("Enum constraint lowering is not implemented")
 }
 
-fn lower_struct_in_env(s: &StructCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
+fn lower_struct_in_env(
+    s: &StructCombinator,
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
     let fields = &s.0;
 
     if fields.is_empty() {
@@ -209,14 +213,18 @@ fn lower_struct_in_env(s: &StructCombinator, ctx: &CodegenCtx, enum_env: &EnumEn
         .any(|f| matches!(f, StructField::Dependent { .. }));
 
     if has_dependent {
-        lower_struct_dependent(fields, ctx, enum_env)
+        lower_struct_dependent(fields, ctx, enum_bindings)
     } else {
-        lower_struct_simple(fields, ctx, enum_env)
+        lower_struct_simple(fields, ctx, enum_bindings)
     }
 }
 
-fn lower_struct_simple(fields: &[StructField], ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    let combs = lower_struct_fields_preserve_labels(fields, ctx, enum_env);
+fn lower_struct_simple(
+    fields: &[StructField],
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
+    let combs = lower_struct_fields_preserve_labels(fields, ctx, enum_bindings);
     match combs {
         CombIR::Tuple(mut elems) if elems.len() == 1 => elems.pop().unwrap().1,
         other => other,
@@ -226,22 +234,26 @@ fn lower_struct_simple(fields: &[StructField], ctx: &CodegenCtx, enum_env: &Enum
 fn lower_struct_fields_preserve_labels(
     fields: &[StructField],
     ctx: &CodegenCtx,
-    enum_env: &EnumEnv,
+    enum_bindings: &EnumBindings,
 ) -> CombIR {
     CombIR::Tuple(
         fields
             .iter()
             .map(|field| {
                 (
-                    Some(struct_field_label(field)),
-                    lower_struct_field_in_env(field, ctx, enum_env),
+                    struct_field_label(field),
+                    lower_struct_field_in_env(field, ctx, enum_bindings),
                 )
             })
             .collect(),
     )
 }
 
-fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
+fn lower_struct_dependent(
+    fields: &[StructField],
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
     if fields.is_empty() {
         return CombIR::Success;
     }
@@ -252,15 +264,16 @@ fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx, enum_env: &E
         .unwrap_or(0);
 
     if first_dep_idx >= fields.len() - 1 {
-        return lower_struct_simple(fields, ctx, enum_env);
+        return lower_struct_simple(fields, ctx, enum_bindings);
     }
 
     if first_dep_idx > 0 {
-        let prefix = lower_struct_fields_preserve_labels(&fields[..first_dep_idx], ctx, enum_env);
+        let prefix =
+            lower_struct_fields_preserve_labels(&fields[..first_dep_idx], ctx, enum_bindings);
         let suffix = lower_struct_in_env(
             &StructCombinator(fields[first_dep_idx..].to_vec()),
             ctx,
-            enum_env,
+            enum_bindings,
         );
         return concat_sequence(prefix, suffix);
     }
@@ -271,7 +284,7 @@ fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx, enum_env: &E
         .count();
 
     if leading_dep_count >= fields.len() {
-        return lower_struct_simple(fields, ctx, enum_env);
+        return lower_struct_simple(fields, ctx, enum_bindings);
     }
 
     let dep_names: Vec<String> = fields[..leading_dep_count]
@@ -282,23 +295,23 @@ fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx, enum_env: &E
         })
         .collect();
 
-    let mut snd_enum_env = enum_env.clone();
+    let mut snd_enum_bindings = enum_bindings.clone();
     for field in &fields[..leading_dep_count] {
         if let Some((field_name, enum_name)) = field_enum_binding(field, ctx) {
-            snd_enum_env.insert(field_name, enum_name);
+            snd_enum_bindings.insert(field_name, enum_name);
         }
     }
 
     let fst = if leading_dep_count == 1 {
-        lower_struct_field_in_env(&fields[0], ctx, enum_env)
+        lower_struct_field_in_env(&fields[0], ctx, enum_bindings)
     } else {
-        lower_struct_simple(&fields[..leading_dep_count], ctx, enum_env)
+        lower_struct_simple(&fields[..leading_dep_count], ctx, enum_bindings)
     };
     let snd_fields = &fields[leading_dep_count..];
     let snd_comb = if snd_fields.len() == 1 {
-        lower_struct_fields_preserve_labels(snd_fields, ctx, &snd_enum_env)
+        lower_struct_fields_preserve_labels(snd_fields, ctx, &snd_enum_bindings)
     } else {
-        lower_struct_in_env(&StructCombinator(snd_fields.to_vec()), ctx, &snd_enum_env)
+        lower_struct_in_env(&StructCombinator(snd_fields.to_vec()), ctx, &snd_enum_bindings)
     };
 
     let snd = if dep_names.is_empty() {
@@ -317,24 +330,28 @@ fn concat_sequence(prefix: CombIR, suffix: CombIR) -> CombIR {
     match prefix {
         CombIR::Success => suffix,
         CombIR::Tuple(mut elems) => {
-            elems.push((None, suffix));
+            elems.push((String::new(), suffix));
             CombIR::Tuple(elems)
         }
-        other => CombIR::Tuple(vec![(None, other), (None, suffix)]),
+        other => CombIR::Tuple(vec![(String::new(), other), (String::new(), suffix)]),
     }
 }
 
-fn lower_struct_field_in_env(field: &StructField, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
+fn lower_struct_field_in_env(
+    field: &StructField,
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
     match field {
         StructField::Ordinary { combinator, .. } | StructField::Dependent { combinator, .. } => {
-            lower_combinator_in_env(combinator, ctx, enum_env)
+            lower_combinator_in_env(combinator, ctx, enum_bindings)
         }
         StructField::Const { combinator, .. } => lower_const_combinator(combinator, ctx),
     }
 }
 
-fn lower_wrap_in_env(w: &WrapCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    let inner = lower_combinator_in_env(&w.combinator, ctx, enum_env);
+fn lower_wrap_in_env(w: &WrapCombinator, ctx: &CodegenCtx, enum_bindings: &EnumBindings) -> CombIR {
+    let inner = lower_combinator_in_env(&w.combinator, ctx, enum_bindings);
 
     let with_prior = if let Some(prior) = lower_const_sequence(&w.prior, ctx) {
         CombIR::Preceded {
@@ -360,9 +377,9 @@ fn lower_const_sequence(consts: &[ConstCombinator], ctx: &CodegenCtx) -> Option<
         return None;
     }
 
-    let mut combs: Vec<(Option<String>, CombIR)> = consts
+    let mut combs: Vec<(String, CombIR)> = consts
         .iter()
-        .map(|c| (None, lower_const_combinator(c, ctx)))
+        .map(|c| (String::new(), lower_const_combinator(c, ctx)))
         .collect();
     Some(if combs.len() == 1 {
         combs
@@ -392,7 +409,7 @@ fn field_enum_binding(field: &StructField, ctx: &CodegenCtx) -> Option<(String, 
     enum_binding_for_inner(label, &combinator.inner, ctx)
 }
 
-fn enum_env_from_params(params: &[ParamDefn], ctx: &CodegenCtx) -> EnumEnv {
+fn enum_bindings_from_params(params: &[ParamDefn], ctx: &CodegenCtx) -> EnumBindings {
     params
         .iter()
         .filter_map(|param| match param {
@@ -409,7 +426,7 @@ fn enum_binding_for_inner(
     ctx: &CodegenCtx,
 ) -> Option<(String, String)> {
     match combinator {
-        CombinatorInner::Invocation(invocation) if ctx.enum_names.contains(&invocation.func) => {
+        CombinatorInner::Invocation(invocation) if ctx.is_enum_type(&invocation.func) => {
             Some((name, invocation.func.clone()))
         }
         CombinatorInner::ConstraintEnum(constraint) => {
@@ -433,7 +450,7 @@ fn lower_enum(e: &EnumCombinator, ctx: &CodegenCtx) -> CombIR {
                 CombIR::Enum {
                     inner: Box::new(CombIR::Refined {
                         inner: Box::new(inner),
-                        predicate: PredicateIR::IntConstraint(IntConstraintIR::Set(valid_values)),
+                        predicate: IntConstraintIR::Set(valid_values),
                     }),
                     variants: enums
                         .iter()
@@ -448,50 +465,36 @@ fn lower_enum(e: &EnumCombinator, ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-fn lower_choice_in_env(c: &ChoiceCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    if let Some(depend_id) = &c.depend_id {
-        if let Some(choice) = lower_choice_with_tag(depend_id, &c.choices, ctx, enum_env) {
-            return choice;
-        }
-    }
-
-    match &c.choices {
-        Choices::Enums(choices) => lower_choice_combinators(choices, ctx, enum_env),
-        Choices::Ints(choices) => lower_choice_combinators(choices, ctx, enum_env),
-        Choices::Arrays(choices) => lower_choice_combinators(choices, ctx, enum_env),
-    }
-}
-
-fn lower_choice_combinators<T>(
-    choices: &[(T, Combinator)],
+fn lower_choice_in_env(
+    c: &ChoiceCombinator,
     ctx: &CodegenCtx,
-    enum_env: &EnumEnv,
+    enum_bindings: &EnumBindings,
 ) -> CombIR {
-    CombIR::Choice(
-        choices
-            .iter()
-            .map(|(_, comb)| lower_combinator_in_env(comb, ctx, enum_env))
-            .collect(),
-    )
+    let depend_id = c
+        .depend_id
+        .as_deref()
+        .expect("codegen_v2 only supports choose(@tag) lowering");
+    lower_choice_with_tag(depend_id, &c.choices, ctx, enum_bindings)
+        .expect("codegen_v2 only supports dispatch-compatible choose branches")
 }
 
 fn lower_choice_with_tag(
     depend_id: &str,
     choices: &Choices,
     ctx: &CodegenCtx,
-    enum_env: &EnumEnv,
+    enum_bindings: &EnumBindings,
 ) -> Option<CombIR> {
-    let tag = TagRef::Field(depend_id.to_string());
+    let tag = depend_id.to_string();
 
     let branches = match choices {
         Choices::Ints(choices) => {
-            lower_tagged_choices(choices, ctx, enum_env, choice_int_tag_value)
+            lower_tagged_choices(choices, ctx, enum_bindings, choice_int_tag_value)
         }
         Choices::Arrays(choices) => {
-            lower_tagged_choices(choices, ctx, enum_env, choice_array_tag_value)
+            lower_tagged_choices(choices, ctx, enum_bindings, choice_array_tag_value)
         }
         Choices::Enums(choices) => {
-            let enum_ty = enum_env.get(depend_id)?;
+            let enum_ty = enum_bindings.get(depend_id)?;
             choices
                 .iter()
                 .map(|(variant, comb)| {
@@ -504,7 +507,7 @@ fn lower_choice_with_tag(
                                 variant: variant.clone(),
                             }
                         },
-                        lower_combinator_in_env(comb, ctx, enum_env),
+                        lower_combinator_in_env(comb, ctx, enum_bindings),
                     ))
                 })
                 .collect()
@@ -517,7 +520,7 @@ fn lower_choice_with_tag(
 fn lower_tagged_choices<T, F>(
     choices: &[(T, Combinator)],
     ctx: &CodegenCtx,
-    enum_env: &EnumEnv,
+    enum_bindings: &EnumBindings,
     tag_of: F,
 ) -> Option<Vec<(TagValue, CombIR)>>
 where
@@ -527,7 +530,7 @@ where
         .iter()
         .map(|(tag, comb)| {
             let tag = tag_of(tag)?;
-            Some((tag, lower_combinator_in_env(comb, ctx, enum_env)))
+            Some((tag, lower_combinator_in_env(comb, ctx, enum_bindings)))
         })
         .collect()
 }
@@ -543,16 +546,16 @@ fn choice_array_tag_value(tag: &ConstArray) -> Option<TagValue> {
     const_array_to_bytes(tag).map(TagValue::Bytes)
 }
 
-fn lower_vec_in_env(v: &VecCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
+fn lower_vec_in_env(v: &VecCombinator, ctx: &CodegenCtx, enum_bindings: &EnumBindings) -> CombIR {
     match v {
         VecCombinator::Vec(inner) => {
-            CombIR::Repeat(Box::new(lower_combinator_in_env(inner, ctx, enum_env)))
+            CombIR::Repeat(Box::new(lower_combinator_in_env(inner, ctx, enum_bindings)))
         }
     }
 }
 
-fn lower_array_in_env(a: &ArrayCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    let inner = lower_combinator_in_env(&a.combinator, ctx, enum_env);
+fn lower_array_in_env(a: &ArrayCombinator, ctx: &CodegenCtx, enum_bindings: &EnumBindings) -> CombIR {
+    let inner = lower_combinator_in_env(&a.combinator, ctx, enum_bindings);
     let count = a.len.clone();
 
     CombIR::RepeatN {
@@ -568,8 +571,12 @@ fn lower_bytes(b: &BytesCombinator, _ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-fn lower_option_in_env(o: &OptionCombinator, ctx: &CodegenCtx, enum_env: &EnumEnv) -> CombIR {
-    CombIR::Opt(Box::new(lower_combinator_in_env(&o.0, ctx, enum_env)))
+fn lower_option_in_env(
+    o: &OptionCombinator,
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
+    CombIR::Opt(Box::new(lower_combinator_in_env(&o.0, ctx, enum_bindings)))
 }
 
 fn lower_invocation(i: &CombinatorInvocation, _ctx: &CodegenCtx) -> CombIR {

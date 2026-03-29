@@ -13,14 +13,8 @@ pub use crate::vestir::IntConstraint as IntConstraintIR;
 pub use crate::vestir::LengthExpr as LenExpr;
 pub use crate::vestir::Param as ParamRef;
 
-/// A reference to a tag value (for dispatch/choice).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TagRef {
-    /// Reference to a field in the current struct.
-    Field(String),
-    /// A direct value (for static dispatch).
-    Value(TagValue),
-}
+/// A reference to a tag field in the current struct.
+pub type TagRef = String;
 
 /// Tag values for dispatch branches.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,13 +30,7 @@ pub enum TagValue {
 }
 
 /// Predicate IR for refined combinators.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PredicateIR {
-    /// Integer constraint expression.
-    IntConstraint(IntConstraintIR),
-    /// Custom predicate function name.
-    Custom(String),
-}
+pub type PredicateIR = IntConstraintIR;
 
 /// Mapper IR for mapped combinators.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,8 +66,8 @@ pub enum CombIR {
 
     // ===== Sequencing =====
     /// Tuple combinator `(A, B)` or `(A, (B, C))` for independent fields.
-    /// Each element has an optional field name for nominal type generation.
-    Tuple(Vec<(Option<String>, CombIR)>),
+    /// An empty field name denotes an internal anonymous tuple element.
+    Tuple(Vec<(String, CombIR)>),
     /// `sequence::Pair` - dependent pair where second depends on first.
     Pair {
         fst: Box<CombIR>,
@@ -97,8 +85,6 @@ pub enum CombIR {
     },
 
     // ===== Variants/Choice =====
-    /// `variant::Choice` for unsupported non-dispatch sum types.
-    Choice(Vec<CombIR>),
     /// `variant::Dispatch` - select branch based on tag.
     Dispatch {
         tag: TagRef,
@@ -106,8 +92,6 @@ pub enum CombIR {
     },
     /// `variant::Opt` - optional combinator.
     Opt(Box<CombIR>),
-    /// `variant::OptThen` - optional prefix with required tail.
-    OptThen { fst: Box<CombIR>, snd: Box<CombIR> },
 
     // ===== Repetition =====
     /// `repetition::RepeatN` - repeat N times.
@@ -133,12 +117,6 @@ pub enum CombIR {
     },
     /// `modifier::FixedLen` - enforce exact byte count.
     FixedLen { len: LenExpr, inner: Box<CombIR> },
-    /// `modifier::CondEq` - conditional on equality.
-    CondEq {
-        lhs: TagRef,
-        rhs: TagValue,
-        inner: Box<CombIR>,
-    },
     /// Exhaustive enum lowered to a validated integer plus a nominal mapper.
     Enum {
         inner: Box<CombIR>,
@@ -223,6 +201,8 @@ pub struct ParamDef {
     pub ty: CombIR,
 }
 
+pub type EnumBindings = HashMap<String, String>;
+
 /// Context for code generation.
 #[derive(Debug, Clone)]
 pub struct CodegenCtx {
@@ -231,7 +211,7 @@ pub struct CodegenCtx {
     /// Map of format names to their static sizes (if known).
     pub static_sizes: HashMap<String, usize>,
     /// Top-level exhaustive enum definitions.
-    pub enum_names: HashSet<String>,
+    pub enum_types: HashSet<String>,
 }
 
 impl Default for CodegenCtx {
@@ -239,7 +219,7 @@ impl Default for CodegenCtx {
         Self {
             endian: Endian::Little,
             static_sizes: HashMap::new(),
-            enum_names: HashSet::new(),
+            enum_types: HashSet::new(),
         }
     }
 }
@@ -249,37 +229,29 @@ impl From<&crate::type_check::GlobalCtx<'_>> for CodegenCtx {
         Self {
             endian: Endian::Little,
             static_sizes: ctx.static_sizes.clone(),
-            enum_names: ctx.enums.keys().map(|name| (*name).to_string()).collect(),
+            enum_types: ctx.enums.keys().map(|name| (*name).to_string()).collect(),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifetimeCheckMode {
-    Full,
-    LegacyDispatch,
+impl CodegenCtx {
+    pub fn is_enum_type(&self, name: &str) -> bool {
+        self.enum_types.contains(name)
+    }
 }
 
-pub fn comb_needs_lifetime(
-    comb: &CombIR,
-    def_map: &HashMap<String, &CombDef>,
-    mode: LifetimeCheckMode,
-) -> bool {
+pub fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -> bool {
     match comb {
         CombIR::Variable { .. } | CombIR::Tail | CombIR::Fixed { .. } => true,
         CombIR::Tuple(elems) => elems
             .iter()
-            .any(|(_, elem)| comb_needs_lifetime(elem, def_map, mode)),
-        CombIR::Choice(elems) => elems
-            .iter()
-            .any(|elem| comb_needs_lifetime(elem, def_map, mode)),
+            .any(|(_, elem)| comb_needs_lifetime(elem, def_map)),
         CombIR::Pair { fst, snd } => {
-            comb_needs_lifetime(fst, def_map, mode) || comb_needs_lifetime(&snd.comb, def_map, mode)
+            comb_needs_lifetime(fst, def_map) || comb_needs_lifetime(&snd.comb, def_map)
         }
-        CombIR::Preceded { inner, .. } | CombIR::Terminated { inner, .. } => match mode {
-            LifetimeCheckMode::Full => comb_needs_lifetime(inner, def_map, mode),
-            LifetimeCheckMode::LegacyDispatch => false,
-        },
+        CombIR::Preceded { inner, .. } | CombIR::Terminated { inner, .. } => {
+            comb_needs_lifetime(inner, def_map)
+        }
         CombIR::Opt(inner)
         | CombIR::Repeat(inner)
         | CombIR::Refined { inner, .. }
@@ -287,24 +259,14 @@ pub fn comb_needs_lifetime(
         | CombIR::AndThen { inner, .. }
         | CombIR::FixedLen { inner, .. }
         | CombIR::Enum { inner, .. }
-        | CombIR::Tag { inner, .. } => comb_needs_lifetime(inner, def_map, mode),
-        CombIR::CondEq { inner, .. } => match mode {
-            LifetimeCheckMode::Full => comb_needs_lifetime(inner, def_map, mode),
-            LifetimeCheckMode::LegacyDispatch => false,
-        },
-        CombIR::OptThen { fst, snd } => match mode {
-            LifetimeCheckMode::Full => {
-                comb_needs_lifetime(fst, def_map, mode) || comb_needs_lifetime(snd, def_map, mode)
-            }
-            LifetimeCheckMode::LegacyDispatch => false,
-        },
-        CombIR::RepeatN { inner, .. } => comb_needs_lifetime(inner, def_map, mode),
+        | CombIR::Tag { inner, .. } => comb_needs_lifetime(inner, def_map),
+        CombIR::RepeatN { inner, .. } => comb_needs_lifetime(inner, def_map),
         CombIR::Dispatch { branches, .. } => branches
             .iter()
-            .any(|(_, branch)| comb_needs_lifetime(branch, def_map, mode)),
+            .any(|(_, branch)| comb_needs_lifetime(branch, def_map)),
         CombIR::Named { name, .. } => def_map
             .get(name)
-            .map(|def| comb_needs_lifetime(&def.body, def_map, mode))
+            .map(|def| comb_needs_lifetime(&def.body, def_map))
             .unwrap_or(false),
         CombIR::U8
         | CombIR::U16(_)

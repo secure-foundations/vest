@@ -6,14 +6,12 @@ use super::builders::{
     build_nested_pair_expr, build_nested_pair_type as build_nested_pair_type_from_tokens,
 };
 use super::combir::{
-    comb_needs_lifetime as shared_comb_needs_lifetime, CombDef, CombIR, DepCombIR,
-    LifetimeCheckMode, TagValue,
+    comb_needs_lifetime as shared_comb_needs_lifetime, CombDef, CombIR, DepCombIR, TagValue,
 };
 
 #[derive(Debug, Clone)]
 pub struct FieldInfo {
     pub name: String,
-    pub is_dependent: bool,
     pub comb: CombIR,
 }
 
@@ -73,8 +71,7 @@ fn transparent_inner(comb: &CombIR) -> Option<&CombIR> {
         | CombIR::Refined { inner, .. }
         | CombIR::Mapped { inner, .. }
         | CombIR::AndThen { inner, .. }
-        | CombIR::FixedLen { inner, .. }
-        | CombIR::CondEq { inner, .. } => Some(inner),
+        | CombIR::FixedLen { inner, .. } => Some(inner),
         _ => None,
     }
 }
@@ -235,23 +232,19 @@ impl<'a> NominalTypeGen<'a> {
             CombIR::Tuple(elems) => {
                 for (i, (opt_name, elem)) in elems.iter().enumerate() {
                     let is_dep = i < dep_names.len();
-                    if !is_dep
-                        && opt_name.is_none()
-                        && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. })
-                    {
+                    if !is_dep && opt_name.is_empty() && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. }) {
                         self.extract_fields_recursive(elem, fields, &[]);
                         continue;
                     }
                     let name = if is_dep {
                         dep_names[i].clone()
-                    } else if let Some(stored_name) = opt_name {
-                        stored_name.clone()
+                    } else if !opt_name.is_empty() {
+                        opt_name.clone()
                     } else {
                         format!("field{}", fields.len())
                     };
                     fields.push(FieldInfo {
                         name,
-                        is_dependent: is_dep,
                         comb: elem.clone(),
                     });
                 }
@@ -268,7 +261,6 @@ impl<'a> NominalTypeGen<'a> {
                 };
                 fields.push(FieldInfo {
                     name,
-                    is_dependent: !dep_names.is_empty(),
                     comb: comb.clone(),
                 });
             }
@@ -325,9 +317,6 @@ impl<'a> NominalTypeGen<'a> {
                         .all(|(_, elem)| self.comb_borrow_by_value(elem))
             }
             CombIR::Opt(inner) => self.comb_borrow_by_value(inner),
-            CombIR::OptThen { fst, snd } => {
-                self.comb_borrow_by_value(fst) && self.comb_borrow_by_value(snd)
-            }
             CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
                 self.comb_borrow_by_value(inner)
             }
@@ -336,14 +325,13 @@ impl<'a> NominalTypeGen<'a> {
             | CombIR::Refined { .. }
             | CombIR::Mapped { .. }
             | CombIR::AndThen { .. }
-            | CombIR::FixedLen { .. }
-            | CombIR::CondEq { .. } => {
+            | CombIR::FixedLen { .. } => {
                 self.comb_borrow_by_value(transparent_inner(comb).expect("transparent wrapper"))
             }
             CombIR::Tag { inner, .. } => self.comb_borrow_by_value(inner),
             CombIR::Enum { .. } => true,
             CombIR::Named { name, .. } => self.def_borrow_by_value(name),
-            CombIR::Pair { .. } | CombIR::Dispatch { .. } | CombIR::Choice(_) => false,
+            CombIR::Pair { .. } | CombIR::Dispatch { .. } => false,
         }
     }
 
@@ -370,7 +358,7 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn comb_needs_lifetime(&self, comb: &CombIR) -> bool {
-        shared_comb_needs_lifetime(comb, self.defs, LifetimeCheckMode::Full)
+        shared_comb_needs_lifetime(comb, self.defs)
     }
 
     fn nominal_type_tokens(&self, comb: &CombIR, owned: bool) -> TokenStream {
@@ -461,11 +449,6 @@ impl<'a> NominalTypeGen<'a> {
                 let inner_ty = self.type_tokens_with_flavor(inner, flavor);
                 quote! { Option<#inner_ty> }
             }
-            CombIR::OptThen { fst, snd } => {
-                let fst_ty = self.type_tokens_with_flavor(fst, flavor);
-                let snd_ty = self.type_tokens_with_flavor(snd, flavor);
-                quote! { (Option<#fst_ty>, #snd_ty) }
-            }
             CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
                 let inner_ty = self.type_tokens_with_flavor(inner, flavor);
                 match flavor {
@@ -473,7 +456,6 @@ impl<'a> NominalTypeGen<'a> {
                     _ => quote! { Vec<#inner_ty> },
                 }
             }
-            CombIR::Choice(_) => todo!("Choice nominal types are not supported; use Dispatch"),
             CombIR::Dispatch { .. } => self.dispatch_type_tokens_for_flavor(flavor),
             CombIR::Enum { inner, .. } => self.type_tokens_with_flavor(inner, flavor),
             CombIR::Named { name, .. } => self.named_type_tokens_for_flavor(name, flavor),
@@ -482,8 +464,7 @@ impl<'a> NominalTypeGen<'a> {
             | CombIR::Refined { .. }
             | CombIR::Mapped { .. }
             | CombIR::AndThen { .. }
-            | CombIR::FixedLen { .. }
-            | CombIR::CondEq { .. } => self.type_tokens_with_flavor(
+            | CombIR::FixedLen { .. } => self.type_tokens_with_flavor(
                 transparent_inner(comb).expect("transparent wrapper"),
                 flavor,
             ),
@@ -494,7 +475,7 @@ impl<'a> NominalTypeGen<'a> {
 
     fn tuple_type_tokens(
         &self,
-        elems: &[(Option<String>, CombIR)],
+        elems: &[(String, CombIR)],
         flavor: &TypeFlavor,
     ) -> TokenStream {
         match elems {
@@ -599,10 +580,7 @@ impl<'a> NominalTypeGen<'a> {
                 for (idx, (opt_name, elem)) in elems.iter().enumerate() {
                     let child_access = tuple_field_access(&access, elems.len(), idx);
                     let is_dep = idx < dep_names.len();
-                    if !is_dep
-                        && opt_name.is_none()
-                        && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. })
-                    {
+                    if !is_dep && opt_name.is_empty() && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. }) {
                         self.collect_field_exprs_inner(elem, child_access, &[], exprs);
                     } else {
                         exprs.push(child_access);
@@ -652,10 +630,7 @@ impl<'a> NominalTypeGen<'a> {
                     .enumerate()
                     .map(|(idx, (opt_name, elem))| {
                         let is_dep = idx < dep_names.len();
-                        if !is_dep
-                            && opt_name.is_none()
-                            && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. })
-                        {
+                        if !is_dep && opt_name.is_empty() && matches!(elem, CombIR::Tuple(_) | CombIR::Pair { .. }) {
                             self.build_raw_expr_from_fields_inner(elem, field_exprs, next, &[])
                         } else {
                             let expr = field_exprs[*next].clone();
