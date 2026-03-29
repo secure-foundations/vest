@@ -1,6 +1,3 @@
-//! This module combines all the generated pieces (types, combinators, wrappers)
-//! into a complete Rust module.
-
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use proc_macro2::{Ident, Literal, TokenStream};
@@ -23,33 +20,22 @@ use super::nominal::{
     snake_to_upper_camel, NominalTypeGen,
 };
 
-/// Context for token generation.
 pub struct TokenCtx<'a> {
-    /// Reference to the codegen context.
     pub ctx: &'a CodegenCtx,
 }
 
-impl<'a> TokenCtx<'a> {
-    pub fn new(ctx: &'a CodegenCtx) -> Self {
-        Self { ctx }
-    }
-}
-
-/// Generate a complete Rust module from combinator definitions.
 pub fn generate_module(defs: &[CombDef], ctx: &CodegenCtx) -> Result<String, FormatError> {
-    let token_ctx = TokenCtx::new(ctx);
+    let token_ctx = TokenCtx { ctx };
     let tokens = generate_module_tokens(defs, &token_ctx);
     format_rust_code(tokens)
 }
 
-/// Generate module tokens (before formatting).
 pub fn generate_module_tokens(defs: &[CombDef], ctx: &TokenCtx) -> TokenStream {
     let imports = generate_imports();
     let def_map: HashMap<String, &CombDef> =
         defs.iter().map(|def| (def.name.clone(), def)).collect();
     let constructor_param_helpers = generate_constructor_param_helpers();
 
-    // Generate const definitions for all defs
     let const_defs = generate_const_definitions(defs);
 
     let mut type_items = TokenStream::new();
@@ -66,7 +52,6 @@ pub fn generate_module_tokens(defs: &[CombDef], ctx: &TokenCtx) -> TokenStream {
         wrapper_impls.extend(bundle.wrapper_impls);
     }
 
-    // Generate nominal types (structs, enums) first, then From impls and Mappers.
     let mut nominal_type_items = TokenStream::new();
     let mut nominal_support_items = TokenStream::new();
     for def in defs {
@@ -98,7 +83,6 @@ pub fn generate_module_tokens(defs: &[CombDef], ctx: &TokenCtx) -> TokenStream {
     }
 }
 
-/// Generate const definitions for all combinators.
 fn generate_const_definitions(defs: &[CombDef]) -> TokenStream {
     let mut tokens = TokenStream::new();
     for def in defs {
@@ -109,7 +93,6 @@ fn generate_const_definitions(defs: &[CombDef]) -> TokenStream {
     tokens
 }
 
-/// Generate a single const definition.
 fn generate_const_definition(const_def: &ConstDef) -> TokenStream {
     let name = format_ident!("{}", const_def.name);
     let ty: TokenStream = const_def.ty.parse().expect("valid type");
@@ -119,7 +102,6 @@ fn generate_const_definition(const_def: &ConstDef) -> TokenStream {
     }
 }
 
-/// Generate import statements.
 fn generate_imports() -> TokenStream {
     quote! {
         #![allow(unused_imports)]
@@ -145,61 +127,91 @@ fn generate_imports() -> TokenStream {
 }
 
 fn generate_constructor_param_helpers() -> TokenStream {
+    let plain_specs = [
+        (
+            quote! { u8 },
+            quote! { RuntimeValue::from_value(self) },
+            quote! { Length::from_value(self as usize) },
+        ),
+        (
+            quote! { u16 },
+            quote! { RuntimeValue::from_value(self) },
+            quote! { Length::from_value(self as usize) },
+        ),
+        (
+            quote! { u24 },
+            quote! { RuntimeValue::from_value(self) },
+            quote! { Length::from_value(self.as_u32() as usize) },
+        ),
+        (
+            quote! { u32 },
+            quote! { RuntimeValue::from_value(self) },
+            quote! { Length::from_value(self as usize) },
+        ),
+        (
+            quote! { u64 },
+            quote! { RuntimeValue::from_value(self) },
+            quote! { Length::from_value(self as usize) },
+        ),
+    ];
+    let ref_specs = [
+        (
+            quote! { u8 },
+            quote! { RuntimeValue::from_mut(self) },
+            quote! { Length::from_u8_mut(self) },
+        ),
+        (
+            quote! { u16 },
+            quote! { RuntimeValue::from_mut(self) },
+            quote! { Length::from_u16_mut(self) },
+        ),
+        (
+            quote! { u24 },
+            quote! { RuntimeValue::from_mut(self) },
+            quote! { Length::from_value(self.as_u32() as usize) },
+        ),
+        (
+            quote! { u32 },
+            quote! { RuntimeValue::from_mut(self) },
+            quote! { Length::from_u32_mut(self) },
+        ),
+        (
+            quote! { u64 },
+            quote! { RuntimeValue::from_mut(self) },
+            quote! { Length::from_u64_mut(self) },
+        ),
+    ];
+    let plain_impls: Vec<_> = plain_specs
+        .into_iter()
+        .map(|(ty, runtime_value, length)| {
+            quote! {
+                impl CombinatorParam<'static, #ty> for #ty {
+                    fn into_runtime_value(self) -> RuntimeValue<'static, #ty> { #runtime_value }
+                    fn into_length(self) -> Length<'static> { #length }
+                }
+            }
+        })
+        .collect();
+    let ref_impls: Vec<_> = ref_specs
+        .into_iter()
+        .map(|(ty, runtime_value, length)| {
+            quote! {
+                impl<'a> CombinatorParam<'a, #ty> for &'a mut #ty {
+                    fn into_runtime_value(self) -> RuntimeValue<'a, #ty> { #runtime_value }
+                    fn into_length(self) -> Length<'a> { #length }
+                }
+            }
+        })
+        .collect();
+
     quote! {
         pub trait CombinatorParam<'a, T: Copy> {
             fn into_runtime_value(self) -> RuntimeValue<'a, T>;
             fn into_length(self) -> Length<'a>;
         }
 
-        impl CombinatorParam<'static, u8> for u8 {
-            fn into_runtime_value(self) -> RuntimeValue<'static, u8> { RuntimeValue::from_value(self) }
-            fn into_length(self) -> Length<'static> { Length::from_value(self as usize) }
-        }
-
-        impl CombinatorParam<'static, u16> for u16 {
-            fn into_runtime_value(self) -> RuntimeValue<'static, u16> { RuntimeValue::from_value(self) }
-            fn into_length(self) -> Length<'static> { Length::from_value(self as usize) }
-        }
-
-        impl CombinatorParam<'static, u24> for u24 {
-            fn into_runtime_value(self) -> RuntimeValue<'static, u24> { RuntimeValue::from_value(self) }
-            fn into_length(self) -> Length<'static> { Length::from_value(self.as_u32() as usize) }
-        }
-
-        impl CombinatorParam<'static, u32> for u32 {
-            fn into_runtime_value(self) -> RuntimeValue<'static, u32> { RuntimeValue::from_value(self) }
-            fn into_length(self) -> Length<'static> { Length::from_value(self as usize) }
-        }
-
-        impl CombinatorParam<'static, u64> for u64 {
-            fn into_runtime_value(self) -> RuntimeValue<'static, u64> { RuntimeValue::from_value(self) }
-            fn into_length(self) -> Length<'static> { Length::from_value(self as usize) }
-        }
-
-        impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
-            fn into_runtime_value(self) -> RuntimeValue<'a, u8> { RuntimeValue::from_mut(self) }
-            fn into_length(self) -> Length<'a> { Length::from_u8_mut(self) }
-        }
-
-        impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
-            fn into_runtime_value(self) -> RuntimeValue<'a, u16> { RuntimeValue::from_mut(self) }
-            fn into_length(self) -> Length<'a> { Length::from_u16_mut(self) }
-        }
-
-        impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
-            fn into_runtime_value(self) -> RuntimeValue<'a, u24> { RuntimeValue::from_mut(self) }
-            fn into_length(self) -> Length<'a> { Length::from_value(self.as_u32() as usize) }
-        }
-
-        impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
-            fn into_runtime_value(self) -> RuntimeValue<'a, u32> { RuntimeValue::from_mut(self) }
-            fn into_length(self) -> Length<'a> { Length::from_u32_mut(self) }
-        }
-
-        impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
-            fn into_runtime_value(self) -> RuntimeValue<'a, u64> { RuntimeValue::from_mut(self) }
-            fn into_length(self) -> Length<'a> { Length::from_u64_mut(self) }
-        }
+        #(#plain_impls)*
+        #(#ref_impls)*
     }
 }
 
@@ -209,11 +221,12 @@ fn generate_definition_bundle<'a>(
     ctx: &'a TokenCtx<'a>,
 ) -> DefinitionBundle {
     let mut emitter = DefEmitter::new(def, defs, ctx);
-    let env = emitter.top_level_env();
-    let ctor_env = emitter.top_level_ctor_env();
+    let env = emitter.top_level_env(false);
+    let ctor_env = emitter.top_level_env(true);
     let body_expr_raw =
         emitter.top_level_body_expr_tokens_mode(&def.body, &ctor_env, EmitMode::Unified);
-    let body_type_raw = emitter.top_level_body_type_tokens(&def.body, &env);
+    let body_type_raw =
+        emitter.top_level_body_type_tokens_mode_with_options(&def.body, &env, None, false);
     let (body_expr, body_type) = emitter.wrap_top_level_mapper_tokens(body_expr_raw, body_type_raw);
     let body_type_gen = emitter.top_level_generate_alias_body_type_tokens();
     let type_item = emitter.type_item(body_type, body_type_gen);
@@ -223,7 +236,10 @@ fn generate_definition_bundle<'a>(
     let length_fn = emitter.length_fn();
     let generate_fn = emitter.generate_fn();
     let wrapper_impl = emitter.wrapper_impl_item();
-    let helper_items = emitter.helper_items();
+    let helper_items = {
+        let helpers = &emitter.helpers;
+        quote! { #(#helpers)* }
+    };
 
     DefinitionBundle {
         type_items: type_item,
@@ -247,6 +263,15 @@ struct DefinitionBundle {
     helper_items: TokenStream,
     public_items: TokenStream,
     wrapper_impls: TokenStream,
+}
+
+struct DispatchBranchSpec {
+    param: Ident,
+    variant: Ident,
+    default_type: TokenStream,
+    parse_type: TokenStream,
+    borrow_type: TokenStream,
+    owned_type: TokenStream,
 }
 
 #[derive(Clone)]
@@ -334,18 +359,55 @@ impl ValueType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum PublicFnKind {
-    Parse,
-    Serialize,
-    Length,
-    Generate,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
 enum EmitMode {
     Parse,
     Generate,
     Unified,
+}
+
+fn emit_function_item(
+    doc: String,
+    name: Ident,
+    generics: Option<TokenStream>,
+    params: Vec<TokenStream>,
+    ret: TokenStream,
+    body: TokenStream,
+) -> TokenStream {
+    match generics {
+        Some(generics) => quote! {
+            #[doc = #doc]
+            pub fn #name #generics (#(#params),*) -> #ret {
+                #body
+            }
+        },
+        None => quote! {
+            #[doc = #doc]
+            pub fn #name(#(#params),*) -> #ret {
+                #body
+            }
+        },
+    }
+}
+
+fn call_tokens(fn_name: &Ident, args: &[TokenStream]) -> TokenStream {
+    if args.is_empty() {
+        quote! { #fn_name() }
+    } else {
+        quote! { #fn_name(#(#args),*) }
+    }
+}
+
+fn scoped_helper_ident(prefix: &str, path: &[usize]) -> Ident {
+    if path.is_empty() {
+        format_ident!("{}", prefix)
+    } else {
+        let suffix = path
+            .iter()
+            .map(usize::to_string)
+            .collect::<Vec<_>>()
+            .join("_");
+        format_ident!("{}{}", prefix, suffix)
+    }
 }
 
 struct DefEmitter<'a> {
@@ -388,15 +450,7 @@ impl<'a> DefEmitter<'a> {
         emitter
     }
 
-    fn top_level_env(&self) -> ValueEnv {
-        self.build_top_level_env(false)
-    }
-
-    fn top_level_ctor_env(&self) -> ValueEnv {
-        self.build_top_level_env(true)
-    }
-
-    fn build_top_level_env(&self, ctor_mode: bool) -> ValueEnv {
+    fn top_level_env(&self, ctor_mode: bool) -> ValueEnv {
         self.param_specs
             .iter()
             .map(|param| {
@@ -413,45 +467,12 @@ impl<'a> DefEmitter<'a> {
             .collect()
     }
 
-    fn public_parse_type_tokens(&self, lt: TokenStream) -> TokenStream {
-        public_parse_type_tokens(self.def, self.defs, lt)
-    }
-
-    fn public_borrow_type_tokens(&self) -> TokenStream {
-        public_borrow_type_tokens(self.def, self.defs)
-    }
-
-    fn public_owned_type_tokens(&self) -> TokenStream {
-        public_owned_type_tokens(self.def, self.defs)
-    }
-
-    fn concrete_parse_type_tokens(&self, comb: &CombIR, lt: TokenStream) -> TokenStream {
-        concrete_parse_type_tokens(self.def, self.defs, comb, lt)
-    }
-
-    fn concrete_borrow_type_tokens(&self, comb: &CombIR) -> TokenStream {
-        concrete_borrow_type_tokens(self.def, self.defs, comb)
-    }
-
-    fn concrete_owned_type_tokens(&self, comb: &CombIR) -> TokenStream {
-        concrete_owned_type_tokens(self.def, self.defs, comb)
-    }
-
-    fn helper_items(&self) -> TokenStream {
-        let helpers = &self.helpers;
-        quote! { #(#helpers)* }
-    }
-
-    fn needs_runtime_ref(&self) -> bool {
-        self.needs_runtime_ref
-    }
-
     fn top_level_generate_alias_body_type_tokens(&self) -> Option<TokenStream> {
-        if !self.needs_runtime_ref() {
+        if !self.needs_runtime_ref {
             return None;
         }
 
-        let env = self.top_level_env();
+        let env = self.top_level_env(false);
         let body_type_raw = self.top_level_body_type_tokens_mode_with_options(
             &self.def.body,
             &env,
@@ -582,7 +603,7 @@ impl<'a> DefEmitter<'a> {
 
     fn constructor_return_type(&self) -> TokenStream {
         let combinator_type = format_ident!("{}Combinator", snake_to_upper_camel(&self.def.name));
-        if self.needs_runtime_ref() {
+        if self.needs_runtime_ref {
             let alias_name =
                 format_ident!("{}CombinatorAlias", snake_to_upper_camel(&self.def.name));
             quote! { #combinator_type<#alias_name<'a>> }
@@ -605,7 +626,7 @@ impl<'a> DefEmitter<'a> {
                     #ctor_name(#body_expr)
                 }
             }
-        } else if self.needs_runtime_ref() {
+        } else if self.needs_runtime_ref {
             let generic_args = self.constructor_param_generic_idents();
             let where_bounds = self.constructor_where_bounds(quote! { 'a });
             quote! {
@@ -628,131 +649,97 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn parse_fn(&self) -> TokenStream {
-        let fn_name = format_ident!(
-            "{}_{}",
-            self.public_fn_prefix(PublicFnKind::Parse),
-            self.def.name
-        );
+        let fn_name = format_ident!("parse_{}", self.def.name);
         let params = self.param_list_tokens();
         let parse_doc = format!("Parse function for {} combinator", self.def.name);
         let combinator_ctor = self.public_ctor_call_tokens();
-        let parse_type = self.public_parse_type_tokens(quote! { 'p });
+        let parse_type = public_parse_type_tokens(self.def, self.defs, quote! { 'p });
 
-        if params.is_empty() {
+        emit_function_item(
+            parse_doc,
+            fn_name,
+            Some(quote! { <'p> }),
+            std::iter::once(quote! { input: &'p [u8] })
+                .chain(params)
+                .collect(),
+            quote! { Result<(usize, #parse_type), ParseError> },
             quote! {
-                #[doc = #parse_doc]
-                pub fn #fn_name<'p>(input: &'p [u8]) -> Result<(usize, #parse_type), ParseError> {
-                    let combinator = #combinator_ctor;
-                    combinator.parse(input)
-                }
-            }
-        } else {
-            quote! {
-                #[doc = #parse_doc]
-                pub fn #fn_name<'p>(input: &'p [u8], #(#params),*) -> Result<(usize, #parse_type), ParseError> {
-                    let combinator = #combinator_ctor;
-                    combinator.parse(input)
-                }
-            }
-        }
+                let combinator = #combinator_ctor;
+                combinator.parse(input)
+            },
+        )
     }
 
     fn serialize_fn(&self) -> TokenStream {
-        let fn_name = format_ident!(
-            "{}_{}",
-            self.public_fn_prefix(PublicFnKind::Serialize),
-            self.def.name
-        );
-        let borrow_type = self.public_borrow_type_tokens();
+        let fn_name = format_ident!("serialize_{}", self.def.name);
+        let borrow_type = public_borrow_type_tokens(self.def, self.defs);
         let params = self.param_list_tokens();
         let serialize_doc = format!("Serialize function for {} combinator", self.def.name);
         let combinator_ctor = self.public_ctor_call_tokens();
 
-        if params.is_empty() {
+        emit_function_item(
+            serialize_doc,
+            fn_name,
+            Some(quote! { <'s> }),
+            vec![
+                quote! { v: #borrow_type },
+                quote! { data: &mut Vec<u8> },
+                quote! { pos: usize },
+            ]
+            .into_iter()
+            .chain(params)
+            .collect(),
+            quote! { Result<usize, SerializeError> },
             quote! {
-                #[doc = #serialize_doc]
-                pub fn #fn_name<'s>(v: #borrow_type, data: &mut Vec<u8>, pos: usize) -> Result<usize, SerializeError> {
-                    let combinator = #combinator_ctor;
-                    combinator.serialize(v, data, pos)
-                }
-            }
-        } else {
-            quote! {
-                #[doc = #serialize_doc]
-                pub fn #fn_name<'s>(v: #borrow_type, data: &mut Vec<u8>, pos: usize, #(#params),*) -> Result<usize, SerializeError> {
-                    let combinator = #combinator_ctor;
-                    combinator.serialize(v, data, pos)
-                }
-            }
-        }
+                let combinator = #combinator_ctor;
+                combinator.serialize(v, data, pos)
+            },
+        )
     }
 
     fn length_fn(&self) -> TokenStream {
-        let fn_name = format_ident!(
-            "{}{}",
-            self.def.name,
-            self.public_fn_suffix(PublicFnKind::Length)
-        );
-        let borrow_type = self.public_borrow_type_tokens();
+        let fn_name = format_ident!("{}_len", self.def.name);
+        let borrow_type = public_borrow_type_tokens(self.def, self.defs);
         let params = self.param_list_tokens();
         let length_doc = format!("Length function for {} combinator", self.def.name);
         let combinator_ctor = self.public_ctor_call_tokens();
 
-        if params.is_empty() {
+        emit_function_item(
+            length_doc,
+            fn_name,
+            Some(quote! { <'s> }),
+            std::iter::once(quote! { v: #borrow_type })
+                .chain(params)
+                .collect(),
+            quote! { usize },
             quote! {
-                #[doc = #length_doc]
-                pub fn #fn_name<'s>(v: #borrow_type) -> usize {
-                    let combinator = #combinator_ctor;
-                    combinator.length(v)
-                }
-            }
-        } else {
-            quote! {
-                #[doc = #length_doc]
-                pub fn #fn_name<'s>(v: #borrow_type, #(#params),*) -> usize {
-                    let combinator = #combinator_ctor;
-                    combinator.length(v)
-                }
-            }
-        }
+                let combinator = #combinator_ctor;
+                combinator.length(v)
+            },
+        )
     }
 
     fn generate_fn(&self) -> TokenStream {
-        let fn_name = format_ident!(
-            "{}_{}",
-            self.public_fn_prefix(PublicFnKind::Generate),
-            self.def.name
-        );
-        let owned_type = self.public_owned_type_tokens();
+        let fn_name = format_ident!("generate_{}", self.def.name);
+        let owned_type = public_owned_type_tokens(self.def, self.defs);
         let params = self.generate_param_list_tokens();
         let generate_doc = format!("Generate function for {} combinator", self.def.name);
         let combinator_ctor = self.public_ctor_call_tokens();
+        let generics = (self.needs_runtime_ref && !params.is_empty()).then(|| quote! { <'g> });
 
-        if params.is_empty() {
+        emit_function_item(
+            generate_doc,
+            fn_name,
+            generics,
+            std::iter::once(quote! { g: &mut GenSt })
+                .chain(params)
+                .collect(),
+            quote! { GResult<#owned_type, GenerateError> },
             quote! {
-                #[doc = #generate_doc]
-                pub fn #fn_name(g: &mut GenSt) -> GResult<#owned_type, GenerateError> {
-                    let mut combinator = #combinator_ctor;
-                    combinator.generate(g)
-                }
-            }
-        } else if self.needs_runtime_ref() {
-            quote! {
-                #[doc = #generate_doc]
-                pub fn #fn_name<'g>(g: &mut GenSt, #(#params),*) -> GResult<#owned_type, GenerateError> {
-                    let mut combinator = #combinator_ctor;
-                    combinator.generate(g)
-                }
-            }
-        } else {
-            quote! {
-                #[doc = #generate_doc]
-                pub fn #fn_name(g: &mut GenSt, #(#params),*) -> GResult<#owned_type, GenerateError> {
-                    let mut combinator = #combinator_ctor;
-                    combinator.generate(g)
-                }
-            }
-        }
+                let mut combinator = #combinator_ctor;
+                combinator.generate(g)
+            },
+        )
     }
 
     fn param_list_tokens(&self) -> Vec<TokenStream> {
@@ -785,38 +772,14 @@ impl<'a> DefEmitter<'a> {
             .collect()
     }
 
-    fn call_ctor_tokens(&self, fn_name: &Ident, args: &[Ident]) -> TokenStream {
-        if args.is_empty() {
-            quote! { #fn_name() }
-        } else {
-            quote! { #fn_name(#(#args),*) }
-        }
-    }
-
     fn public_ctor_call_tokens(&self) -> TokenStream {
         let combinator_fn = format_ident!("{}", self.def.name);
-        let arg_names = self.param_idents();
-        self.call_ctor_tokens(&combinator_fn, &arg_names)
-    }
-
-    fn public_fn_prefix(&self, kind: PublicFnKind) -> &'static str {
-        match kind {
-            PublicFnKind::Parse => "parse",
-            PublicFnKind::Serialize => "serialize",
-            PublicFnKind::Generate => "generate",
-            PublicFnKind::Length => "",
-        }
-    }
-
-    fn public_fn_suffix(&self, kind: PublicFnKind) -> &'static str {
-        match kind {
-            PublicFnKind::Length => "_len",
-            _ => "",
-        }
-    }
-
-    fn top_level_body_type_tokens(&self, comb: &CombIR, env: &ValueEnv) -> TokenStream {
-        self.top_level_body_type_tokens_mode_with_options(comb, env, None, false)
+        let arg_names: Vec<_> = self
+            .param_idents()
+            .into_iter()
+            .map(|ident| quote! { #ident })
+            .collect();
+        call_tokens(&combinator_fn, &arg_names)
     }
 
     fn top_level_body_type_tokens_mode_with_options(
@@ -912,7 +875,7 @@ impl<'a> DefEmitter<'a> {
         }
 
         let emitter = DefEmitter::new(def, self.defs, self.ctx);
-        if emitter.needs_runtime_ref() {
+        if emitter.needs_runtime_ref {
             let alias_name = format_ident!("{}CombinatorAlias", snake_to_upper_camel(&def.name));
             let runtime_lt = runtime_lt.expect("checked above");
             quote! { #type_name<#alias_name<#runtime_lt>> }
@@ -955,11 +918,7 @@ impl<'a> DefEmitter<'a> {
                 }
             })
             .collect();
-        if arg_tokens.is_empty() {
-            quote! { #fn_name() }
-        } else {
-            quote! { #fn_name(#(#arg_tokens),*) }
-        }
+        call_tokens(&fn_name, &arg_tokens)
     }
 
     fn named_or_external_ctor_call_tokens(
@@ -977,11 +936,7 @@ impl<'a> DefEmitter<'a> {
                 .iter()
                 .map(|arg| self.param_ref_tokens(arg, env))
                 .collect();
-            if arg_tokens.is_empty() {
-                quote! { #fn_name() }
-            } else {
-                quote! { #fn_name(#(#arg_tokens),*) }
-            }
+            call_tokens(&fn_name, &arg_tokens)
         }
     }
 
@@ -1483,17 +1438,8 @@ impl<'a> DefEmitter<'a> {
     ) -> TokenStream {
         self.ensure_pair_helper(path, fst, snd, outer_env);
         let helper = self.helper_ident(path);
-        let used_names = used_names_in_comb(&snd.comb);
-        let capture_names = capture_names(&used_names, outer_env, &snd.dep_names);
-
-        let field_inits: Vec<TokenStream> = capture_names
-            .iter()
-            .map(|name| {
-                let binding = &outer_env[name];
-                let ident = &binding.ident;
-                quote! { #ident: #ident }
-            })
-            .collect();
+        let capture_names = self.capture_names_for(&snd.comb, outer_env, &snd.dep_names);
+        let field_inits = self.capture_field_inits(&capture_names, outer_env);
 
         quote! { #helper { #(#field_inits,)* } }
     }
@@ -1512,42 +1458,14 @@ impl<'a> DefEmitter<'a> {
 
         let helper = self.helper_ident(path);
         let fst_type = self.comb_type_tokens_with_lt(fst, outer_env, &child_path(path, 0), false);
-        let fst_stype = self.concrete_borrow_type_tokens(fst);
-        let fst_gtype = self.concrete_owned_type_tokens(fst);
+        let fst_stype = concrete_borrow_type_tokens(self.def, self.defs, fst);
+        let fst_gtype = concrete_owned_type_tokens(self.def, self.defs, fst);
 
-        let used_names = used_names_in_comb(&snd.comb);
-        let capture_names = capture_names(&used_names, outer_env, &snd.dep_names);
+        let capture_names = self.capture_names_for(&snd.comb, outer_env, &snd.dep_names);
+        let field_defs = self.capture_field_defs(&capture_names, outer_env);
+        let capture_lets = self.capture_lets(&capture_names);
 
-        let field_defs: Vec<TokenStream> = capture_names
-            .iter()
-            .map(|name| {
-                let ident = format_ident!("{}", name);
-                let ty = outer_env[name].ty.to_tokens();
-                quote! { #ident: #ty }
-            })
-            .collect();
-
-        let capture_lets: Vec<TokenStream> = capture_names
-            .iter()
-            .map(|name| {
-                let ident = format_ident!("{}", name);
-                quote! { let #ident = self.#ident; }
-            })
-            .collect();
-
-        let mut inner_env = ValueEnv::new();
-        for name in &capture_names {
-            let ident = format_ident!("{}", name);
-            inner_env.insert(
-                name.clone(),
-                Binding {
-                    ident,
-                    ty: outer_env[name].ty.clone(),
-                    is_mut_ref: false,
-                    is_generic_int_param: false,
-                },
-            );
-        }
+        let mut inner_env = self.capture_env(&capture_names, outer_env);
 
         let mut inner_env_gen = inner_env.clone();
         let dep_parse_lets =
@@ -1600,6 +1518,64 @@ impl<'a> DefEmitter<'a> {
         self.helpers.push(helper_item);
     }
 
+    fn capture_names_for(
+        &self,
+        comb: &CombIR,
+        env: &ValueEnv,
+        current_deps: &[String],
+    ) -> Vec<String> {
+        capture_names(&used_names_in_comb(comb), env, current_deps)
+    }
+
+    fn capture_field_defs(&self, names: &[String], env: &ValueEnv) -> Vec<TokenStream> {
+        names
+            .iter()
+            .map(|name| {
+                let ident = format_ident!("{}", name);
+                let ty = env[name].ty.to_tokens();
+                quote! { #ident: #ty }
+            })
+            .collect()
+    }
+
+    fn capture_field_inits(&self, names: &[String], env: &ValueEnv) -> Vec<TokenStream> {
+        names
+            .iter()
+            .map(|name| {
+                let ident = &env[name].ident;
+                quote! { #ident: #ident }
+            })
+            .collect()
+    }
+
+    fn capture_lets(&self, names: &[String]) -> Vec<TokenStream> {
+        names
+            .iter()
+            .map(|name| {
+                let ident = format_ident!("{}", name);
+                quote! { let #ident = self.#ident; }
+            })
+            .collect()
+    }
+
+    fn capture_env(&self, names: &[String], outer_env: &ValueEnv) -> ValueEnv {
+        names
+            .iter()
+            .map(|name| {
+                let binding = &outer_env[name];
+                (
+                    name.clone(),
+                    Binding {
+                        ident: format_ident!("{}", name),
+                        ty: binding.ty.clone(),
+                        is_mut_ref: false,
+                        is_generic_int_param: false,
+                    },
+                )
+            })
+            .collect()
+    }
+
     fn ensure_dispatch_case_helper(
         &mut self,
         path: &[usize],
@@ -1612,33 +1588,29 @@ impl<'a> DefEmitter<'a> {
         }
 
         let helper = self.dispatch_helper_ident(path);
-        let default_branch_types: Vec<TokenStream> = branches
+        let branch_specs = self.dispatch_branch_specs(path, branches, env);
+        let branch_params: Vec<_> = branch_specs.iter().map(|spec| spec.param.clone()).collect();
+        let default_branch_types: Vec<_> = branch_specs
             .iter()
-            .enumerate()
-            .map(|(idx, (_, comb))| {
-                self.comb_type_tokens_with_lt(comb, env, &child_path(path, idx), false)
-            })
-            .collect();
-        let branch_params: Vec<Ident> = (0..branches.len())
-            .map(|idx| format_ident!("C{}", idx))
+            .map(|spec| spec.default_type.clone())
             .collect();
 
-        let variant_defs: Vec<TokenStream> = branch_params
+        let variant_defs: Vec<_> = branch_specs
             .iter()
-            .enumerate()
-            .map(|(idx, ty)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|spec| {
+                let variant = &spec.variant;
+                let ty = &spec.param;
                 quote! { #variant(#ty) }
             })
             .collect();
 
-        let where_bounds: Vec<TokenStream> = branch_params
+        let where_bounds: Vec<_> = branch_specs
             .iter()
-            .zip(branches.iter())
-            .map(|(ty, (_, comb))| {
-                let parse_ty = self.concrete_parse_type_tokens(comb, quote! { 'p });
-                let borrow_ty = self.concrete_borrow_type_tokens(comb);
-                let owned_ty = self.concrete_owned_type_tokens(comb);
+            .map(|spec| {
+                let ty = &spec.param;
+                let parse_ty = &spec.parse_type;
+                let borrow_ty = &spec.borrow_type;
+                let owned_ty = &spec.owned_type;
                 quote! {
                     for<'p, 's> #ty: Combinator<
                         [u8],
@@ -1652,29 +1624,29 @@ impl<'a> DefEmitter<'a> {
             .collect();
 
         let parse_type = build_nested_either_type(
-            &branches
+            &branch_specs
                 .iter()
-                .map(|(_, comb)| self.concrete_parse_type_tokens(comb, quote! { 'p }))
+                .map(|spec| spec.parse_type.clone())
                 .collect::<Vec<_>>(),
         );
         let serialize_type = build_nested_either_type(
-            &branches
+            &branch_specs
                 .iter()
-                .map(|(_, comb)| self.concrete_borrow_type_tokens(comb))
+                .map(|spec| spec.borrow_type.clone())
                 .collect::<Vec<_>>(),
         );
         let generate_type = build_nested_either_type(
-            &branches
+            &branch_specs
                 .iter()
-                .map(|(_, comb)| self.concrete_owned_type_tokens(comb))
+                .map(|spec| spec.owned_type.clone())
                 .collect::<Vec<_>>(),
         );
 
-        let parse_arms: Vec<TokenStream> = branch_params
+        let parse_arms: Vec<_> = branch_specs
             .iter()
             .enumerate()
-            .map(|(idx, _)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|(idx, spec)| {
+                let variant = &spec.variant;
                 let wrapped = either_wrap_expr(quote! { v }, idx, branch_params.len());
                 quote! {
                     #helper::#variant(inner) => {
@@ -1685,11 +1657,11 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        let generate_arms: Vec<TokenStream> = branch_params
+        let generate_arms: Vec<_> = branch_specs
             .iter()
             .enumerate()
-            .map(|(idx, _)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|(idx, spec)| {
+                let variant = &spec.variant;
                 let wrapped = either_wrap_expr(quote! { v }, idx, branch_params.len());
                 quote! {
                     #helper::#variant(inner) => {
@@ -1700,11 +1672,11 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        let length_arms: Vec<TokenStream> = branch_params
+        let length_arms: Vec<_> = branch_specs
             .iter()
             .enumerate()
-            .map(|(idx, _)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|(idx, spec)| {
+                let variant = &spec.variant;
                 let value = format_ident!("v{}", idx);
                 let value_pat = either_value_pattern(&value, idx, branch_params.len());
                 quote! {
@@ -1714,11 +1686,11 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        let serialize_arms: Vec<TokenStream> = branch_params
+        let serialize_arms: Vec<_> = branch_specs
             .iter()
             .enumerate()
-            .map(|(idx, _)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|(idx, spec)| {
+                let variant = &spec.variant;
                 let value = format_ident!("v{}", idx);
                 let value_pat = either_value_pattern(&value, idx, branch_params.len());
                 quote! {
@@ -1728,11 +1700,11 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        let wf_arms: Vec<TokenStream> = branch_params
+        let wf_arms: Vec<_> = branch_specs
             .iter()
             .enumerate()
-            .map(|(idx, _)| {
-                let variant = dispatch_variant_ident(idx);
+            .map(|(idx, spec)| {
+                let variant = &spec.variant;
                 let value = format_ident!("v{}", idx);
                 let value_pat = either_value_pattern(&value, idx, branch_params.len());
                 quote! {
@@ -1793,18 +1765,36 @@ impl<'a> DefEmitter<'a> {
         self.helpers.push(helper_item);
     }
 
+    fn dispatch_branch_specs(
+        &self,
+        path: &[usize],
+        branches: &[(TagValue, CombIR)],
+        env: &ValueEnv,
+    ) -> Vec<DispatchBranchSpec> {
+        branches
+            .iter()
+            .enumerate()
+            .map(|(idx, (_, comb))| DispatchBranchSpec {
+                param: format_ident!("C{}", idx),
+                variant: dispatch_variant_ident(idx),
+                default_type: self.comb_type_tokens_with_lt(
+                    comb,
+                    env,
+                    &child_path(path, idx),
+                    false,
+                ),
+                parse_type: concrete_parse_type_tokens(self.def, self.defs, comb, quote! { 'p }),
+                borrow_type: concrete_borrow_type_tokens(self.def, self.defs, comb),
+                owned_type: concrete_owned_type_tokens(self.def, self.defs, comb),
+            })
+            .collect()
+    }
+
     fn dispatch_helper_ident(&self, path: &[usize]) -> Ident {
-        let base = format!("{}DispatchCase", snake_to_upper_camel(&self.def.name));
-        if path.is_empty() {
-            format_ident!("{}", base)
-        } else {
-            let suffix = path
-                .iter()
-                .map(usize::to_string)
-                .collect::<Vec<_>>()
-                .join("_");
-            format_ident!("{}{}", base, suffix)
-        }
+        scoped_helper_ident(
+            &format!("{}DispatchCase", snake_to_upper_camel(&self.def.name)),
+            path,
+        )
     }
 
     fn dep_binding_lets(
@@ -1835,7 +1825,6 @@ impl<'a> DefEmitter<'a> {
             _ => vec![self.last_bound_type(fst)],
         };
 
-        // Build identifiers and register them in the environment
         let idents: Vec<_> = dep_names
             .iter()
             .enumerate()
@@ -1858,14 +1847,11 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        // For single binding, just use the fst directly
         if dep_names.len() == 1 {
             let ident = &idents[0];
             return vec![quote! { let #ident = fst; }];
         }
 
-        // For multiple bindings, use pattern destructuring to avoid field access
-        // on generic associated types. Build a right-associative nested pattern.
         let pattern = build_nested_tuple_pattern(&idents);
         vec![quote! { let #pattern = fst; }]
     }
@@ -2237,17 +2223,10 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn helper_ident(&self, path: &[usize]) -> Ident {
-        let base = format!("{}Dep", snake_to_upper_camel(&self.def.name));
-        if path.is_empty() {
-            format_ident!("{}", base)
-        } else {
-            let suffix = path
-                .iter()
-                .map(usize::to_string)
-                .collect::<Vec<_>>()
-                .join("_");
-            format_ident!("{}{}", base, suffix)
-        }
+        scoped_helper_ident(
+            &format!("{}Dep", snake_to_upper_camel(&self.def.name)),
+            path,
+        )
     }
 
     fn last_bound_type(&self, comb: &CombIR) -> ValueType {
@@ -2385,10 +2364,6 @@ fn capture_names(
         .collect()
 }
 
-/// Builds a right-associative nested tuple pattern from a list of identifiers.
-/// For 2 elements: `(a, b)`
-/// For 3 elements: `(a, (b, c))`
-/// For 4 elements: `(a, (b, (c, d)))`
 fn build_nested_tuple_pattern(idents: &[syn::Ident]) -> TokenStream {
     match idents.len() {
         0 => panic!("Cannot build tuple pattern from empty identifiers"),

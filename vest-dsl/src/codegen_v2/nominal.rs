@@ -1,16 +1,3 @@
-//! Nominal type generation for vest combinators.
-//!
-//! This module generates nominal Rust types from combinator definitions:
-//!
-//! - **Nominal struct types** for vest struct formats (e.g., `struct Foo { ... }`)
-//! - **Nominal enum types** for vest choice/dispatch formats (e.g., `enum Bar { ... }`)
-//! - **Owned variants** for generated data that needs ownership
-//! - **`From` impls** for struct <-> tuple conversions
-//! - **`Mapper` structs** for use with the `Mapped` combinator
-//!
-//! The generated nominal types provide a more ergonomic API compared to raw
-//! tuple/nested types from the combinator structure.
-
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote};
 use std::collections::HashMap;
@@ -24,39 +11,25 @@ use super::combir::{
     DepCombIR, LifetimeCheckMode, TagValue,
 };
 
-/// Field information extracted from combinator structure.
 #[derive(Debug, Clone)]
 pub struct FieldInfo {
-    /// Field name (from struct definition or generated).
     pub name: String,
-    /// Whether this is a dependent field (prefixed with @).
     pub is_dependent: bool,
-    /// The field's combinator type.
     pub comb: CombIR,
 }
 
-/// Variant information for enum types.
 #[derive(Debug, Clone)]
 pub struct VariantInfo {
-    /// Variant name.
     pub name: String,
-    /// Tag value for dispatch.
     pub tag: TagValue,
-    /// Inner combinator for this variant.
     pub comb: CombIR,
 }
 
-/// Context for generating nominal types from combinator definitions.
 pub struct NominalTypeGen<'a> {
-    /// The combinator definition being processed.
     pub def: &'a CombDef,
-    /// Map of all definitions for reference lookups.
     pub defs: &'a HashMap<String, &'a CombDef>,
-    /// Generated type items (accumulated).
     pub type_items: Vec<TokenStream>,
-    /// Generated From impls (accumulated).
     pub from_impls: Vec<TokenStream>,
-    /// Generated Mapper structs (accumulated).
     pub mapper_items: Vec<TokenStream>,
 }
 
@@ -89,6 +62,60 @@ enum TypeFlavor {
     Borrow,
 }
 
+fn nominal_wrapper_inner(comb: &CombIR) -> Option<&CombIR> {
+    match comb {
+        CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::FixedLen { inner, .. }
+        | CombIR::AndThen { inner, .. } => Some(inner),
+        _ => None,
+    }
+}
+
+fn transparent_inner(comb: &CombIR) -> Option<&CombIR> {
+    match comb {
+        CombIR::Preceded { inner, .. }
+        | CombIR::Terminated { inner, .. }
+        | CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::AndThen { inner, .. }
+        | CombIR::FixedLen { inner, .. }
+        | CombIR::CondEq { inner, .. } => Some(inner),
+        _ => None,
+    }
+}
+
+fn borrowed_derives(copy: bool) -> TokenStream {
+    if copy {
+        quote! { #[derive(Debug, Clone, Copy, PartialEq, Eq)] }
+    } else {
+        quote! { #[derive(Debug, Clone, PartialEq, Eq)] }
+    }
+}
+
+fn emit_mapper_item(
+    mapper_name: &Ident,
+    src: TokenStream,
+    dst: TokenStream,
+    src_borrow: TokenStream,
+    dst_borrow: TokenStream,
+    src_owned: TokenStream,
+    dst_owned: TokenStream,
+) -> TokenStream {
+    quote! {
+        pub struct #mapper_name;
+
+        impl Mapper for #mapper_name {
+            type Src<'p> = #src;
+            type Dst<'p> = #dst;
+            type SrcBorrow<'s> = #src_borrow;
+            type DstBorrow<'s> = #dst_borrow;
+            type SrcOwned = #src_owned;
+            type DstOwned = #dst_owned;
+        }
+    }
+}
+
 impl<'a> NominalTypeGen<'a> {
     pub fn new(def: &'a CombDef, defs: &'a HashMap<String, &'a CombDef>) -> Self {
         Self {
@@ -100,7 +127,6 @@ impl<'a> NominalTypeGen<'a> {
         }
     }
 
-    /// Generate all nominal types for this definition.
     pub fn generate(&mut self) -> TokenStream {
         let sections = self.generate_sections();
         let type_items = sections.type_items;
@@ -112,7 +138,6 @@ impl<'a> NominalTypeGen<'a> {
         }
     }
 
-    /// Generate nominal types and return them split into type and support sections.
     pub fn generate_sections(&mut self) -> NominalSections {
         self.generate_for_comb(&self.def.body.clone(), &self.def.name);
 
@@ -154,10 +179,8 @@ impl<'a> NominalTypeGen<'a> {
         }
     }
 
-    /// Generate nominal types for a combinator.
     fn generate_for_comb(&mut self, comb: &CombIR, name: &str) {
         match comb {
-            // Struct-like: Tuple or Pair with named fields
             CombIR::Tuple(elems) if !elems.is_empty() => {
                 let mut fields = Vec::new();
                 self.extract_fields_recursive(comb, &mut fields, &[]);
@@ -165,7 +188,6 @@ impl<'a> NominalTypeGen<'a> {
             }
 
             CombIR::Pair { fst, snd } => {
-                // Dependent pair - extract field info from structure
                 let fields = self.extract_pair_fields(fst, snd);
                 if !fields.is_empty() {
                     self.generate_struct_type(name, comb, &fields);
@@ -173,12 +195,11 @@ impl<'a> NominalTypeGen<'a> {
             }
 
             CombIR::Dispatch { tag: _, branches } => {
-                // Dispatch/choice - generate enum type
                 let variants: Vec<VariantInfo> = branches
                     .iter()
                     .enumerate()
                     .map(|(i, (tag, c))| VariantInfo {
-                        name: self.variant_name_from_tag(tag, i),
+                        name: variant_name_from_tag(tag, i),
                         tag: tag.clone(),
                         comb: c.clone(),
                     })
@@ -186,37 +207,25 @@ impl<'a> NominalTypeGen<'a> {
                 self.generate_enum_type(name, &variants);
             }
 
-            // Named reference - emit a nominal alias for this definition.
             CombIR::Named { .. } => self.generate_alias_type(name, comb),
 
-            // Modifiers - generate for inner
-            CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::AndThen { inner, .. } => {
+            _ if nominal_wrapper_inner(comb).is_some() => {
+                let inner = nominal_wrapper_inner(comb).expect("checked above");
                 self.generate_for_comb(inner, name);
             }
 
-            // Primitive and wrapper aliases still need a nominal name so other generated
-            // types can reference them.
             _ => self.generate_alias_type(name, comb),
         }
     }
 
-    /// Extract field information from a Pair structure.
     fn extract_pair_fields(&self, fst: &CombIR, snd: &DepCombIR) -> Vec<FieldInfo> {
         let mut fields = Vec::new();
-
-        // Extract fields from first component
         self.extract_fields_recursive(fst, &mut fields, &snd.dep_names);
-
-        // Extract fields from second component
         self.extract_fields_recursive(&snd.comb, &mut fields, &[]);
 
         fields
     }
 
-    /// Recursively extract fields from combinator structure.
     fn extract_fields_recursive(
         &self,
         comb: &CombIR,
@@ -226,7 +235,6 @@ impl<'a> NominalTypeGen<'a> {
         match comb {
             CombIR::Tuple(elems) => {
                 for (i, (opt_name, elem)) in elems.iter().enumerate() {
-                    // Check if this position corresponds to a dependent name
                     let is_dep = i < dep_names.len();
                     if !is_dep
                         && opt_name.is_none()
@@ -253,7 +261,6 @@ impl<'a> NominalTypeGen<'a> {
                 self.extract_fields_recursive(fst, fields, dep_names);
                 self.extract_fields_recursive(&snd.comb, fields, &[]);
             }
-            // For other types, add as single field
             _ => {
                 let name = if !dep_names.is_empty() {
                     dep_names[0].clone()
@@ -267,12 +274,6 @@ impl<'a> NominalTypeGen<'a> {
                 });
             }
         }
-    }
-
-    /// Generate a variant name from a tag value and its index in the branch list.
-    /// For integer tags, we use 0-indexed "Variant{i}" names for consistency with old codegen.
-    fn variant_name_from_tag(&self, tag: &TagValue, index: usize) -> String {
-        variant_name_from_tag(tag, index)
     }
 
     fn generate_alias_type(&mut self, name: &str, comb: &CombIR) {
@@ -331,14 +332,16 @@ impl<'a> NominalTypeGen<'a> {
             CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
                 self.comb_borrow_by_value(inner)
             }
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. }
-            | CombIR::Tag { inner, .. } => self.comb_borrow_by_value(inner),
+            CombIR::Preceded { .. }
+            | CombIR::Terminated { .. }
+            | CombIR::Refined { .. }
+            | CombIR::Mapped { .. }
+            | CombIR::AndThen { .. }
+            | CombIR::FixedLen { .. }
+            | CombIR::CondEq { .. } => {
+                self.comb_borrow_by_value(transparent_inner(comb).expect("transparent wrapper"))
+            }
+            CombIR::Tag { inner, .. } => self.comb_borrow_by_value(inner),
             CombIR::Named { name, .. } => self.def_borrow_by_value(name),
             CombIR::Pair { .. } | CombIR::Dispatch { .. } | CombIR::Choice(_) => false,
         }
@@ -435,6 +438,10 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn type_tokens_with_flavor(&self, comb: &CombIR, flavor: &TypeFlavor) -> TokenStream {
+        if let Some(inner) = transparent_inner(comb) {
+            return self.type_tokens_with_flavor(inner, flavor);
+        }
+
         match comb {
             CombIR::U8 => quote! { u8 },
             CombIR::U16(_) => quote! { u16 },
@@ -479,13 +486,16 @@ impl<'a> NominalTypeGen<'a> {
                     .collect::<Vec<_>>(),
             ),
             CombIR::Named { name, .. } => self.named_type_tokens_for_flavor(name, flavor),
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.type_tokens_with_flavor(inner, flavor),
+            CombIR::Preceded { .. }
+            | CombIR::Terminated { .. }
+            | CombIR::Refined { .. }
+            | CombIR::Mapped { .. }
+            | CombIR::AndThen { .. }
+            | CombIR::FixedLen { .. }
+            | CombIR::CondEq { .. } => self.type_tokens_with_flavor(
+                transparent_inner(comb).expect("transparent wrapper"),
+                flavor,
+            ),
             CombIR::Tag { inner, value } => self.tag_type_tokens_for_flavor(inner, value, flavor),
             CombIR::End | CombIR::Success | CombIR::Fail(_) => quote! { () },
         }
@@ -641,6 +651,10 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn field_borrow_expr(&self, access: TokenStream, comb: &CombIR) -> TokenStream {
+        if let Some(inner) = transparent_inner(comb) {
+            return self.field_borrow_expr(access, inner);
+        }
+
         match comb {
             CombIR::Tag { .. } => quote! { () },
             CombIR::Tuple(elems) => {
@@ -665,35 +679,29 @@ impl<'a> NominalTypeGen<'a> {
                     quote! { &#access }
                 }
             }
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.field_borrow_expr(access, inner),
             _ => access,
         }
     }
 
     fn field_from_expr(&self, expr: TokenStream, comb: &CombIR) -> TokenStream {
+        if let Some(inner) = transparent_inner(comb) {
+            return self.field_from_expr(expr, inner);
+        }
+
         match comb {
             CombIR::Tag { value, .. } => self
                 .nominal_tag_value_tokens(value)
                 .unwrap_or_else(|| quote! { () }),
             CombIR::Named { .. } => expr,
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.field_from_expr(expr, inner),
             _ => expr,
         }
     }
 
     fn variant_borrow_expr(&self, binding: &Ident, comb: &CombIR) -> TokenStream {
+        if let Some(inner) = transparent_inner(comb) {
+            return self.variant_borrow_expr(binding, inner);
+        }
+
         match comb {
             CombIR::Tag { .. } => quote! { () },
             CombIR::Named { name, .. } if self.defs.contains_key(name) => {
@@ -703,24 +711,15 @@ impl<'a> NominalTypeGen<'a> {
                     quote! { #binding }
                 }
             }
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.variant_borrow_expr(binding, inner),
             _ => quote! { *#binding },
         }
     }
 
-    /// Generate a struct type and its conversions.
     fn generate_struct_type(&mut self, name: &str, comb: &CombIR, fields: &[FieldInfo]) {
         let type_name = format_ident!("{}", snake_to_upper_camel(name));
         let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
         let borrow_by_value = self.comb_borrow_by_value(comb);
 
-        // Generate field definitions
         let field_defs: Vec<TokenStream> = fields
             .iter()
             .map(|f| {
@@ -739,16 +738,10 @@ impl<'a> NominalTypeGen<'a> {
             })
             .collect();
 
-        // Check if we need lifetime (if any field contains a byte slice)
         let needs_lifetime = fields.iter().any(|f| self.comb_needs_lifetime(&f.comb));
 
-        // Borrowed struct
+        let derives = borrowed_derives(borrow_by_value);
         let struct_def = if needs_lifetime {
-            let derives = if borrow_by_value {
-                quote! { #[derive(Debug, Clone, Copy, PartialEq, Eq)] }
-            } else {
-                quote! { #[derive(Debug, Clone, PartialEq, Eq)] }
-            };
             quote! {
                 #derives
                 pub struct #type_name<'a> {
@@ -756,11 +749,6 @@ impl<'a> NominalTypeGen<'a> {
                 }
             }
         } else {
-            let derives = if borrow_by_value {
-                quote! { #[derive(Debug, Clone, Copy, PartialEq, Eq)] }
-            } else {
-                quote! { #[derive(Debug, Clone, PartialEq, Eq)] }
-            };
             quote! {
                 #derives
                 pub struct #type_name {
@@ -769,7 +757,6 @@ impl<'a> NominalTypeGen<'a> {
             }
         };
 
-        // Owned struct (for generation)
         let owned_struct_def = if needs_lifetime {
             quote! {
                 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -778,7 +765,6 @@ impl<'a> NominalTypeGen<'a> {
                 }
             }
         } else {
-            // If no lifetime needed, owned type is same as borrowed
             quote! {}
         };
 
@@ -787,14 +773,10 @@ impl<'a> NominalTypeGen<'a> {
             self.type_items.push(owned_struct_def);
         }
 
-        // Generate From impls
         self.generate_struct_from_impls(name, comb, fields, needs_lifetime, borrow_by_value);
-
-        // Generate Mapper
         self.generate_struct_mapper(name, comb, needs_lifetime, borrow_by_value);
     }
 
-    /// Generate From implementations for struct <-> tuple conversion.
     fn generate_struct_from_impls(
         &mut self,
         name: &str,
@@ -814,7 +796,6 @@ impl<'a> NominalTypeGen<'a> {
         let tuple_exprs = self.collect_field_exprs(comb, quote! { src });
         let field_assigns = self.build_field_assigns(&field_names, fields, &tuple_exprs);
 
-        // From<tuple> for Struct (forward conversion for parsing)
         let from_tuple = if needs_lifetime {
             quote! {
                 impl<'a> From<#tuple_type> for #type_name<'a> {
@@ -833,7 +814,6 @@ impl<'a> NominalTypeGen<'a> {
             }
         };
 
-        // From<&Struct> for tuple (backward conversion for serialization)
         let field_exprs: Vec<TokenStream> = fields
             .iter()
             .zip(field_names.iter())
@@ -851,7 +831,6 @@ impl<'a> NominalTypeGen<'a> {
         self.from_impls.push(from_tuple);
         self.from_impls.push(from_struct);
 
-        // Owned conversions
         if needs_lifetime {
             let field_assigns_owned = self.build_field_assigns(&field_names, fields, &tuple_exprs);
 
@@ -923,7 +902,6 @@ impl<'a> NominalTypeGen<'a> {
         }
     }
 
-    /// Generate a Mapper struct for the type.
     fn generate_struct_mapper(
         &mut self,
         name: &str,
@@ -945,36 +923,30 @@ impl<'a> NominalTypeGen<'a> {
             } else {
                 quote! { &'s #type_name<'s> }
             };
-            quote! {
-                pub struct #mapper_name;
-
-                impl Mapper for #mapper_name {
-                    type Src<'p> = #tuple_type;
-                    type Dst<'p> = #type_name<'p>;
-                    type SrcBorrow<'s> = #tuple_type_borrow;
-                    type DstBorrow<'s> = #dst_borrow;
-                    type SrcOwned = #tuple_type_owned;
-                    type DstOwned = #owned_name;
-                }
-            }
+            emit_mapper_item(
+                &mapper_name,
+                tuple_type,
+                quote! { #type_name<'p> },
+                tuple_type_borrow,
+                dst_borrow,
+                tuple_type_owned,
+                quote! { #owned_name },
+            )
         } else {
             let dst_borrow = if borrow_by_value {
                 quote! { #type_name }
             } else {
                 quote! { &'s #type_name }
             };
-            quote! {
-                pub struct #mapper_name;
-
-                impl Mapper for #mapper_name {
-                    type Src<'p> = #tuple_type;
-                    type Dst<'p> = #type_name;
-                    type SrcBorrow<'s> = #tuple_type_borrow;
-                    type DstBorrow<'s> = #dst_borrow;
-                    type SrcOwned = #tuple_type_owned;
-                    type DstOwned = #type_name;
-                }
-            }
+            emit_mapper_item(
+                &mapper_name,
+                tuple_type,
+                quote! { #type_name },
+                tuple_type_borrow,
+                dst_borrow,
+                tuple_type_owned,
+                quote! { #type_name },
+            )
         };
 
         self.mapper_items.push(mapper_impl);
@@ -1005,18 +977,15 @@ impl<'a> NominalTypeGen<'a> {
         }
     }
 
-    /// Generate an enum type for dispatch variants.
     fn generate_enum_type(&mut self, name: &str, variants: &[VariantInfo]) {
         let type_name = format_ident!("{}", snake_to_upper_camel(name));
         let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
 
-        // Check if we need lifetime
         let needs_lifetime = variants.iter().any(|v| self.comb_needs_lifetime(&v.comb));
 
         let variant_defs = self.enum_variant_defs(variants, false);
         let variant_defs_owned = self.enum_variant_defs(variants, true);
 
-        // Borrowed enum
         let enum_def = if needs_lifetime {
             quote! {
                 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1033,7 +1002,6 @@ impl<'a> NominalTypeGen<'a> {
             }
         };
 
-        // Owned enum
         let owned_enum_def = if needs_lifetime {
             quote! {
                 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1050,12 +1018,10 @@ impl<'a> NominalTypeGen<'a> {
             self.type_items.push(owned_enum_def);
         }
 
-        // Generate From impls for enum
         self.generate_enum_from_impls(name, variants, needs_lifetime);
         self.generate_enum_mapper(name, variants, needs_lifetime);
     }
 
-    /// Generate From implementations for enum <-> Either conversion.
     fn generate_enum_from_impls(
         &mut self,
         name: &str,
@@ -1070,7 +1036,6 @@ impl<'a> NominalTypeGen<'a> {
         let either_type_borrow = &either_types.borrow;
         let either_type_owned = &either_types.owned;
 
-        // Generate From<Either<...>> for Enum
         let from_either_arms: Vec<TokenStream> = variants
             .iter()
             .enumerate()
@@ -1104,7 +1069,6 @@ impl<'a> NominalTypeGen<'a> {
             }
         };
 
-        // Generate From<&Enum> for Either
         let to_either_arms: Vec<TokenStream> = variants
             .iter()
             .enumerate()
@@ -1144,7 +1108,6 @@ impl<'a> NominalTypeGen<'a> {
         self.from_impls.push(from_either);
         self.from_impls.push(to_either);
 
-        // Owned conversion
         if needs_lifetime {
             let from_either_arms_owned: Vec<TokenStream> = variants
                 .iter()
@@ -1181,31 +1144,25 @@ impl<'a> NominalTypeGen<'a> {
         let either_type_owned = &either_types.owned;
 
         let mapper_impl = if needs_lifetime {
-            quote! {
-                pub struct #mapper_name;
-
-                impl Mapper for #mapper_name {
-                    type Src<'p> = #either_type;
-                    type Dst<'p> = #type_name<'p>;
-                    type SrcBorrow<'s> = #either_type_borrow;
-                    type DstBorrow<'s> = &'s #type_name<'s>;
-                    type SrcOwned = #either_type_owned;
-                    type DstOwned = #owned_name;
-                }
-            }
+            emit_mapper_item(
+                &mapper_name,
+                either_type.clone(),
+                quote! { #type_name<'p> },
+                either_type_borrow.clone(),
+                quote! { &'s #type_name<'s> },
+                either_type_owned.clone(),
+                quote! { #owned_name },
+            )
         } else {
-            quote! {
-                pub struct #mapper_name;
-
-                impl Mapper for #mapper_name {
-                    type Src<'p> = #either_type;
-                    type Dst<'p> = #type_name;
-                    type SrcBorrow<'s> = #either_type_borrow;
-                    type DstBorrow<'s> = &'s #type_name;
-                    type SrcOwned = #either_type_owned;
-                    type DstOwned = #type_name;
-                }
-            }
+            emit_mapper_item(
+                &mapper_name,
+                either_type.clone(),
+                quote! { #type_name },
+                either_type_borrow.clone(),
+                quote! { &'s #type_name },
+                either_type_owned.clone(),
+                quote! { #type_name },
+            )
         };
 
         self.mapper_items.push(mapper_impl);
@@ -1302,9 +1259,6 @@ pub(crate) fn public_owned_type_tokens(
     }
 }
 
-// ===== Helper Functions =====
-
-/// Convert a snake_case name to UpperCamelCase.
 pub(crate) fn snake_to_upper_camel(s: &str) -> String {
     s.split('_')
         .map(|part| {
@@ -1360,31 +1314,6 @@ fn variant_name_from_tag(tag: &TagValue, index: usize) -> String {
     }
 }
 
-// ===== Dispatch Value Enum Generation =====
-
-/// Generate named dispatch value enums for use with `enum_combinator!` macro.
-///
-/// This generates:
-/// - `{dispatch_name}Value<'p>` - enum with lifetime for parsed values
-/// - `{dispatch_name}ValueOwned` - enum without lifetime for generated/owned values
-///
-/// The variant names come from the dispatch case identifiers, and the inner types
-/// are derived from the inner combinator's Type/GType.
-///
-/// # Example Output
-/// ```ignore
-/// pub enum MsgValue<'p> {
-///     Msg1(&'p [u8; 32]),
-///     Msg2(Msg2<'p>),
-///     Msg3(Msg3),
-/// }
-///
-/// pub enum MsgValueOwned {
-///     Msg1(Vec<u8>),
-///     Msg2(Msg2Owned),
-///     Msg3(Msg3),
-/// }
-/// ```
 pub fn generate_dispatch_value_enums(
     dispatch_name: &str,
     cases: &[(String, CombIR)],
@@ -1397,12 +1326,10 @@ pub fn generate_dispatch_value_enums(
     let type_name = format_ident!("{}Value", snake_to_upper_camel(dispatch_name));
     let owned_name = format_ident!("{}ValueOwned", snake_to_upper_camel(dispatch_name));
 
-    // Check if any variant needs a lifetime
     let needs_lifetime = cases
         .iter()
         .any(|(_, comb)| comb_needs_lifetime(comb, def_map));
 
-    // Generate variant definitions for borrowed enum
     let variant_defs: Vec<TokenStream> = cases
         .iter()
         .map(|(name, comb)| {
@@ -1412,7 +1339,6 @@ pub fn generate_dispatch_value_enums(
         })
         .collect();
 
-    // Generate variant definitions for owned enum
     let variant_defs_owned: Vec<TokenStream> = cases
         .iter()
         .map(|(name, comb)| {
@@ -1422,7 +1348,6 @@ pub fn generate_dispatch_value_enums(
         })
         .collect();
 
-    // Borrowed enum
     let enum_def = if needs_lifetime {
         quote! {
             #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1439,7 +1364,6 @@ pub fn generate_dispatch_value_enums(
         }
     };
 
-    // Owned enum (only if we need lifetime, otherwise borrowed and owned are the same)
     let owned_enum_def = if needs_lifetime {
         quote! {
             #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1536,16 +1460,10 @@ fn dispatch_value_type_tokens(
     }
 }
 
-/// Check if a combinator needs a lifetime parameter (for dispatch value enum generation).
 fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -> bool {
     shared_comb_needs_lifetime(comb, def_map, LifetimeCheckMode::LegacyDispatch)
 }
 
-/// Extract case names and combinators from dispatch branches.
-///
-/// This converts `(TagValue, CombIR)` pairs into `(String, CombIR)` pairs
-/// where the string is a suitable variant name derived from the tag value.
-/// For integer tags, we use 0-indexed "Variant{i}" names for consistency with old codegen.
 pub fn extract_dispatch_cases(branches: &[(TagValue, CombIR)]) -> Vec<(String, CombIR)> {
     branches
         .iter()

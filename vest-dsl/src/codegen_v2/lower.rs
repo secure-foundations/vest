@@ -1,5 +1,3 @@
-//! Lowering from VestIR to CombIR.
-
 use crate::vestir::{
     self, ArrayCombinator, BytesCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInner,
     CombinatorInvocation, ConstArray, ConstCombinator, ConstraintElem, ConstraintEnumCombinator,
@@ -12,7 +10,6 @@ use super::combir::{
     PredicateIR, TagRef, TagValue,
 };
 
-/// Lower a list of VestIR definitions to CombIR definitions.
 pub fn lower_definitions(defs: &[Definition], ctx: &mut CodegenCtx) -> Vec<CombDef> {
     for def in defs {
         match def {
@@ -27,47 +24,33 @@ pub fn lower_definitions(defs: &[Definition], ctx: &mut CodegenCtx) -> Vec<CombD
         .collect()
 }
 
-/// Lower a single VestIR definition to a CombIR definition.
 fn lower_definition(def: &Definition, ctx: &CodegenCtx) -> Option<CombDef> {
     match def {
         Definition::Combinator {
             name,
             param_defns,
             combinator,
-        } => {
-            let params = lower_param_defns(param_defns, ctx);
-            let body = lower_combinator(combinator, ctx);
-            let const_defs = extract_const_defs(name, combinator);
-            Some(make_comb_def(name, params, body, false, const_defs))
-        }
+        } => Some(CombDef {
+            name: name.to_string(),
+            params: lower_param_defns(param_defns, ctx),
+            body: lower_combinator(combinator, ctx),
+            is_const: false,
+            const_defs: extract_const_defs(name, combinator),
+        }),
         Definition::ConstCombinator {
             name,
             const_combinator,
-        } => {
-            let body = lower_const_combinator(const_combinator, ctx);
-            Some(make_comb_def(name, Vec::new(), body, true, Vec::new()))
-        }
-        Definition::Endianess(_) => None, // Already handled in first pass
+        } => Some(CombDef {
+            name: name.to_string(),
+            params: Vec::new(),
+            body: lower_const_combinator(const_combinator, ctx),
+            is_const: true,
+            const_defs: Vec::new(),
+        }),
+        Definition::Endianess(_) => None,
     }
 }
 
-fn make_comb_def(
-    name: &str,
-    params: Vec<ParamDef>,
-    body: CombIR,
-    is_const: bool,
-    const_defs: Vec<ConstDef>,
-) -> CombDef {
-    CombDef {
-        name: name.to_string(),
-        params,
-        body,
-        is_const,
-        const_defs,
-    }
-}
-
-/// Extract const definitions from a combinator (for struct fields with const).
 fn extract_const_defs(struct_name: &str, combinator: &Combinator) -> Vec<ConstDef> {
     match &combinator.inner {
         CombinatorInner::Struct(s) => {
@@ -85,7 +68,6 @@ fn extract_const_defs(struct_name: &str, combinator: &Combinator) -> Vec<ConstDe
     }
 }
 
-/// Extract a const definition from a const combinator.
 fn extract_const_def_from_const_combinator(
     struct_name: &str,
     field_name: &str,
@@ -105,12 +87,10 @@ fn extract_const_def_from_const_combinator(
                 value: ci.value,
             })
         }
-        // Bytes and enums don't generate simple const definitions
         _ => None,
     }
 }
 
-/// Convert an integer combinator to its Rust type name.
 fn int_combinator_to_type(int_comb: &IntCombinator) -> String {
     match int_comb {
         IntCombinator::Unsigned(n) => format!("u{}", n),
@@ -119,7 +99,6 @@ fn int_combinator_to_type(int_comb: &IntCombinator) -> String {
     }
 }
 
-/// Lower parameter definitions.
 fn lower_param_defns(params: &[ParamDefn], ctx: &CodegenCtx) -> Vec<ParamDef> {
     params
         .iter()
@@ -132,7 +111,6 @@ fn lower_param_defns(params: &[ParamDefn], ctx: &CodegenCtx) -> Vec<ParamDef> {
         .collect()
 }
 
-/// Lower a combinator (with optional and_then chaining).
 fn lower_combinator(comb: &Combinator, ctx: &CodegenCtx) -> CombIR {
     let inner = lower_combinator_inner(&comb.inner, ctx);
 
@@ -158,7 +136,6 @@ fn lower_combinator(comb: &Combinator, ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower a combinator inner (the main combinator without and_then).
 fn lower_combinator_inner(inner: &CombinatorInner, ctx: &CodegenCtx) -> CombIR {
     match inner {
         CombinatorInner::ConstraintInt(c) => lower_constraint_int(c, ctx),
@@ -176,7 +153,6 @@ fn lower_combinator_inner(inner: &CombinatorInner, ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower an integer combinator.
 fn lower_int_combinator(int_comb: &IntCombinator, endian: Endian) -> CombIR {
     match int_comb {
         IntCombinator::Unsigned(8) => CombIR::U8,
@@ -196,7 +172,6 @@ fn lower_int_combinator(int_comb: &IntCombinator, endian: Endian) -> CombIR {
     }
 }
 
-/// Lower a constraint integer combinator.
 fn lower_constraint_int(comb: &ConstraintIntCombinator, ctx: &CodegenCtx) -> CombIR {
     let inner = lower_int_combinator(&comb.combinator, ctx.endian);
 
@@ -209,13 +184,11 @@ fn lower_constraint_int(comb: &ConstraintIntCombinator, ctx: &CodegenCtx) -> Com
     }
 }
 
-/// Lower a constraint enum combinator.
 fn lower_constraint_enum(comb: &ConstraintEnumCombinator, ctx: &CodegenCtx) -> CombIR {
     let _ = (comb, ctx);
     todo!("Enum constraint lowering is not implemented")
 }
 
-/// Lower a struct combinator.
 fn lower_struct(s: &StructCombinator, ctx: &CodegenCtx) -> CombIR {
     let fields = &s.0;
 
@@ -223,21 +196,17 @@ fn lower_struct(s: &StructCombinator, ctx: &CodegenCtx) -> CombIR {
         return CombIR::Success;
     }
 
-    // Check if we have any dependent fields
     let has_dependent = fields
         .iter()
         .any(|f| matches!(f, StructField::Dependent { .. }));
 
     if has_dependent {
-        // Need to use Pair for dependency handling
         lower_struct_dependent(fields, ctx)
     } else {
-        // Can use simple tuple
         lower_struct_simple(fields, ctx)
     }
 }
 
-/// Lower a simple struct (no dependencies) to a tuple.
 fn lower_struct_simple(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
     let combs = lower_struct_fields_preserve_labels(fields, ctx);
     match combs {
@@ -246,29 +215,20 @@ fn lower_struct_simple(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower struct fields to a tuple while preserving labels, even for singleton tuples.
 fn lower_struct_fields_preserve_labels(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
-    let combs: Vec<(Option<String>, CombIR)> = fields
-        .iter()
-        .map(|field| lower_struct_field_with_label(field, ctx))
-        .collect();
-
-    CombIR::Tuple(combs)
+    CombIR::Tuple(
+        fields
+            .iter()
+            .map(|field| {
+                (
+                    Some(struct_field_label(field)),
+                    lower_struct_field(field, ctx),
+                )
+            })
+            .collect(),
+    )
 }
 
-fn lower_struct_field_with_label(
-    field: &StructField,
-    ctx: &CodegenCtx,
-) -> (Option<String>, CombIR) {
-    let label = match field {
-        StructField::Ordinary { label, .. }
-        | StructField::Const { label, .. }
-        | StructField::Dependent { label, .. } => label.clone(),
-    };
-    (Some(label), lower_struct_field(field, ctx))
-}
-
-/// Lower a struct with dependent fields using Pair.
 fn lower_struct_dependent(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
     if fields.is_empty() {
         return CombIR::Success;
@@ -341,7 +301,6 @@ fn concat_sequence(prefix: CombIR, suffix: CombIR) -> CombIR {
     }
 }
 
-/// Lower a single struct field.
 fn lower_struct_field(field: &StructField, ctx: &CodegenCtx) -> CombIR {
     match field {
         StructField::Ordinary { combinator, .. } | StructField::Dependent { combinator, .. } => {
@@ -351,11 +310,9 @@ fn lower_struct_field(field: &StructField, ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower a wrap combinator.
 fn lower_wrap(w: &WrapCombinator, ctx: &CodegenCtx) -> CombIR {
     let inner = lower_combinator(&w.combinator, ctx);
 
-    // Handle prior (preceded) combinators
     let with_prior = if let Some(prior) = lower_const_sequence(&w.prior, ctx) {
         CombIR::Preceded {
             prefix: Box::new(prior),
@@ -365,7 +322,6 @@ fn lower_wrap(w: &WrapCombinator, ctx: &CodegenCtx) -> CombIR {
         inner
     };
 
-    // Handle post (terminated) combinators
     if let Some(post) = lower_const_sequence(&w.post, ctx) {
         CombIR::Terminated {
             inner: Box::new(with_prior),
@@ -395,13 +351,18 @@ fn lower_const_sequence(consts: &[ConstCombinator], ctx: &CodegenCtx) -> Option<
     })
 }
 
-/// Lower an enum combinator.
+fn struct_field_label(field: &StructField) -> String {
+    match field {
+        StructField::Ordinary { label, .. }
+        | StructField::Const { label, .. }
+        | StructField::Dependent { label, .. } => label.clone(),
+    }
+}
+
 fn lower_enum(e: &EnumCombinator, ctx: &CodegenCtx) -> CombIR {
-    // For now, enums are mapped to a refined integer with the valid values
     match e {
         EnumCombinator::Exhaustive { enums, inferred } => {
             let inner = lower_int_combinator(inferred, ctx.endian);
-            // Create a constraint for valid enum values
             let valid_values: Vec<ConstraintElem> = enums
                 .iter()
                 .map(|e| ConstraintElem::Single(e.value))
@@ -416,13 +377,11 @@ fn lower_enum(e: &EnumCombinator, ctx: &CodegenCtx) -> CombIR {
             }
         }
         EnumCombinator::NonExhaustive { enums: _, inferred } => {
-            // Non-exhaustive enums just use the underlying integer type
             lower_int_combinator(inferred, ctx.endian)
         }
     }
 }
 
-/// Lower a choice combinator.
 fn lower_choice(c: &ChoiceCombinator, ctx: &CodegenCtx) -> CombIR {
     if let Some(depend_id) = &c.depend_id {
         if let Some(choice) = lower_choice_with_tag(depend_id, &c.choices, ctx) {
@@ -486,14 +445,12 @@ fn choice_array_tag_value(tag: &ConstArray) -> Option<TagValue> {
     const_array_to_bytes(tag).map(TagValue::Bytes)
 }
 
-/// Lower a vec combinator.
 fn lower_vec(v: &VecCombinator, ctx: &CodegenCtx) -> CombIR {
     match v {
         VecCombinator::Vec(inner) => CombIR::Repeat(Box::new(lower_combinator(inner, ctx))),
     }
 }
 
-/// Lower an array combinator.
 fn lower_array(a: &ArrayCombinator, ctx: &CodegenCtx) -> CombIR {
     let inner = lower_combinator(&a.combinator, ctx);
     let count = a.len.clone();
@@ -504,7 +461,6 @@ fn lower_array(a: &ArrayCombinator, ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower a bytes combinator.
 fn lower_bytes(b: &BytesCombinator, _ctx: &CodegenCtx) -> CombIR {
     match &b.len {
         LenExpr::Const(n) => CombIR::Fixed { len: *n },
@@ -512,12 +468,10 @@ fn lower_bytes(b: &BytesCombinator, _ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower an option combinator.
 fn lower_option(o: &OptionCombinator, ctx: &CodegenCtx) -> CombIR {
     CombIR::Opt(Box::new(lower_combinator(&o.0, ctx)))
 }
 
-/// Lower a combinator invocation.
 fn lower_invocation(i: &CombinatorInvocation, _ctx: &CodegenCtx) -> CombIR {
     CombIR::Named {
         name: i.func.clone(),
@@ -525,7 +479,6 @@ fn lower_invocation(i: &CombinatorInvocation, _ctx: &CodegenCtx) -> CombIR {
     }
 }
 
-/// Lower a const combinator.
 fn lower_const_combinator(c: &ConstCombinator, ctx: &CodegenCtx) -> CombIR {
     match c {
         ConstCombinator::ConstBytes(cb) => {
