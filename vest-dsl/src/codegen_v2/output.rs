@@ -69,7 +69,6 @@ pub fn generate_module_tokens(defs: &[CombDef], ctx: &TokenCtx) -> TokenStream {
         #nominal_support_items
 
         // ========== Combinator Definitions ==========
-        #constructor_param_helpers
         #const_defs
         #type_items
         #constructor_items
@@ -80,6 +79,7 @@ pub fn generate_module_tokens(defs: &[CombDef], ctx: &TokenCtx) -> TokenStream {
 
         // ========== Wrapper Impls ==========
         #wrapper_impls
+        #constructor_param_helpers
     }
 }
 

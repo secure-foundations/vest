@@ -112,101 +112,6 @@ impl Mapper for PacketMapper {
     type DstOwned = Packet;
 }
 
-pub trait CombinatorParam<'a, T: Copy> {
-    fn into_runtime_value(self) -> RuntimeValue<'a, T>;
-    fn into_length(self) -> Length<'a>;
-}
-
-impl CombinatorParam<'static, u8> for u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u8> {
-        RuntimeValue::from_value(self)
-    }
-    fn into_length(self) -> Length<'static> {
-        Length::from_value(self as usize)
-    }
-}
-
-impl CombinatorParam<'static, u16> for u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u16> {
-        RuntimeValue::from_value(self)
-    }
-    fn into_length(self) -> Length<'static> {
-        Length::from_value(self as usize)
-    }
-}
-
-impl CombinatorParam<'static, u24> for u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u24> {
-        RuntimeValue::from_value(self)
-    }
-    fn into_length(self) -> Length<'static> {
-        Length::from_value(self.as_u32() as usize)
-    }
-}
-
-impl CombinatorParam<'static, u32> for u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u32> {
-        RuntimeValue::from_value(self)
-    }
-    fn into_length(self) -> Length<'static> {
-        Length::from_value(self as usize)
-    }
-}
-
-impl CombinatorParam<'static, u64> for u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u64> {
-        RuntimeValue::from_value(self)
-    }
-    fn into_length(self) -> Length<'static> {
-        Length::from_value(self as usize)
-    }
-}
-
-impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u8> {
-        RuntimeValue::from_mut(self)
-    }
-    fn into_length(self) -> Length<'a> {
-        Length::from_u8_mut(self)
-    }
-}
-
-impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u16> {
-        RuntimeValue::from_mut(self)
-    }
-    fn into_length(self) -> Length<'a> {
-        Length::from_u16_mut(self)
-    }
-}
-
-impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u24> {
-        RuntimeValue::from_mut(self)
-    }
-    fn into_length(self) -> Length<'a> {
-        Length::from_value(self.as_u32() as usize)
-    }
-}
-
-impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u32> {
-        RuntimeValue::from_mut(self)
-    }
-    fn into_length(self) -> Length<'a> {
-        Length::from_u32_mut(self)
-    }
-}
-
-impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u64> {
-        RuntimeValue::from_mut(self)
-    }
-    fn into_length(self) -> Length<'a> {
-        Length::from_u64_mut(self)
-    }
-}
-
 pub const HEADERMAGIC_CONST: u16 = 51966;
 ///Type alias for Header combinator
 pub type HeaderCombinatorAlias = Mapped<(Tag<U16Le, u16>, (U8, U8)), HeaderMapper>;
@@ -463,5 +368,100 @@ where
         [u8]: 's,
     {
         self.0.well_formed(v)
+    }
+}
+
+pub trait CombinatorParam<'a, T: Copy> {
+    fn into_runtime_value(self) -> RuntimeValue<'a, T>;
+    fn into_length(self) -> Length<'a>;
+}
+
+impl CombinatorParam<'static, u8> for u8 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u8> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u16> for u16 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u16> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u24> for u24 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u24> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self.as_u32() as usize)
+    }
+}
+
+impl CombinatorParam<'static, u32> for u32 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u32> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl CombinatorParam<'static, u64> for u64 {
+    fn into_runtime_value(self) -> RuntimeValue<'static, u64> {
+        RuntimeValue::from_value(self)
+    }
+    fn into_length(self) -> Length<'static> {
+        Length::from_value(self as usize)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u8> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u8_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u16> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u16_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u24> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_value(self.as_u32() as usize)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u32> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u32_mut(self)
+    }
+}
+
+impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
+    fn into_runtime_value(self) -> RuntimeValue<'a, u64> {
+        RuntimeValue::from_mut(self)
+    }
+    fn into_length(self) -> Length<'a> {
+        Length::from_u64_mut(self)
     }
 }
