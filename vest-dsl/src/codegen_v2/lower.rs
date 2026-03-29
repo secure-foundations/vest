@@ -7,7 +7,7 @@ use crate::vestir::{
 
 use super::combir::{
     CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, EnumBindings, IntConstraintIR,
-    LenExpr, ParamDef, TagValue,
+    LenExpr, ParamDef, TagValue, TupleField, UIntIR, UIntWidth,
 };
 
 pub fn lower_definitions(defs: &[Definition], ctx: &mut CodegenCtx) -> Vec<CombDef> {
@@ -33,7 +33,11 @@ fn lower_definition(def: &Definition, ctx: &CodegenCtx) -> Option<CombDef> {
         } => Some(CombDef {
             name: name.to_string(),
             params: lower_param_defns(param_defns, ctx),
-            body: lower_combinator_in_env(combinator, ctx, &enum_bindings_from_params(param_defns, ctx)),
+            body: lower_combinator_in_env(
+                combinator,
+                ctx,
+                &enum_bindings_from_params(param_defns, ctx),
+            ),
             is_const: false,
             const_defs: extract_const_defs(name, combinator),
         }),
@@ -163,11 +167,11 @@ fn lower_combinator_inner_in_env(
 
 fn lower_int_combinator(int_comb: &IntCombinator, endian: Endian) -> CombIR {
     match int_comb {
-        IntCombinator::Unsigned(8) => CombIR::U8,
-        IntCombinator::Unsigned(16) => CombIR::U16(endian),
-        IntCombinator::Unsigned(24) => CombIR::U24(endian),
-        IntCombinator::Unsigned(32) => CombIR::U32(endian),
-        IntCombinator::Unsigned(64) => CombIR::U64(endian),
+        IntCombinator::Unsigned(8) => CombIR::UInt(UIntIR::new(UIntWidth::U8, endian)),
+        IntCombinator::Unsigned(16) => CombIR::UInt(UIntIR::new(UIntWidth::U16, endian)),
+        IntCombinator::Unsigned(24) => CombIR::UInt(UIntIR::new(UIntWidth::U24, endian)),
+        IntCombinator::Unsigned(32) => CombIR::UInt(UIntIR::new(UIntWidth::U32, endian)),
+        IntCombinator::Unsigned(64) => CombIR::UInt(UIntIR::new(UIntWidth::U64, endian)),
         IntCombinator::Unsigned(n) => {
             todo!(
                 "Unsupported unsigned integer size lowering is incomplete: {}",
@@ -226,7 +230,7 @@ fn lower_struct_simple(
 ) -> CombIR {
     let combs = lower_struct_fields_preserve_labels(fields, ctx, enum_bindings);
     match combs {
-        CombIR::Tuple(mut elems) if elems.len() == 1 => elems.pop().unwrap().1,
+        CombIR::Tuple(mut elems) if elems.len() == 1 => elems.pop().unwrap().comb,
         other => other,
     }
 }
@@ -240,7 +244,7 @@ fn lower_struct_fields_preserve_labels(
         fields
             .iter()
             .map(|field| {
-                (
+                TupleField::named(
                     struct_field_label(field),
                     lower_struct_field_in_env(field, ctx, enum_bindings),
                 )
@@ -311,7 +315,11 @@ fn lower_struct_dependent(
     let snd_comb = if snd_fields.len() == 1 {
         lower_struct_fields_preserve_labels(snd_fields, ctx, &snd_enum_bindings)
     } else {
-        lower_struct_in_env(&StructCombinator(snd_fields.to_vec()), ctx, &snd_enum_bindings)
+        lower_struct_in_env(
+            &StructCombinator(snd_fields.to_vec()),
+            ctx,
+            &snd_enum_bindings,
+        )
     };
 
     let snd = if dep_names.is_empty() {
@@ -330,10 +338,13 @@ fn concat_sequence(prefix: CombIR, suffix: CombIR) -> CombIR {
     match prefix {
         CombIR::Success => suffix,
         CombIR::Tuple(mut elems) => {
-            elems.push((String::new(), suffix));
+            elems.push(TupleField::anonymous(suffix));
             CombIR::Tuple(elems)
         }
-        other => CombIR::Tuple(vec![(String::new(), other), (String::new(), suffix)]),
+        other => CombIR::Tuple(vec![
+            TupleField::anonymous(other),
+            TupleField::anonymous(suffix),
+        ]),
     }
 }
 
@@ -377,15 +388,15 @@ fn lower_const_sequence(consts: &[ConstCombinator], ctx: &CodegenCtx) -> Option<
         return None;
     }
 
-    let mut combs: Vec<(String, CombIR)> = consts
+    let mut combs: Vec<TupleField> = consts
         .iter()
-        .map(|c| (String::new(), lower_const_combinator(c, ctx)))
+        .map(|c| TupleField::anonymous(lower_const_combinator(c, ctx)))
         .collect();
     Some(if combs.len() == 1 {
         combs
             .pop()
             .expect("singleton const sequence has one element")
-            .1
+            .comb
     } else {
         CombIR::Tuple(combs)
     })
@@ -554,7 +565,11 @@ fn lower_vec_in_env(v: &VecCombinator, ctx: &CodegenCtx, enum_bindings: &EnumBin
     }
 }
 
-fn lower_array_in_env(a: &ArrayCombinator, ctx: &CodegenCtx, enum_bindings: &EnumBindings) -> CombIR {
+fn lower_array_in_env(
+    a: &ArrayCombinator,
+    ctx: &CodegenCtx,
+    enum_bindings: &EnumBindings,
+) -> CombIR {
     let inner = lower_combinator_in_env(&a.combinator, ctx, enum_bindings);
     let count = a.len.clone();
 

@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
 pub(super) fn build_right_nested_tokens<F>(
@@ -26,4 +26,16 @@ pub(super) fn build_nested_pair_expr(items: &[TokenStream]) -> TokenStream {
     build_right_nested_tokens(items, Some(quote! { () }), &|first, rest| {
         quote! { (#first, #rest) }
     })
+}
+
+pub(super) fn build_nested_tuple_pattern(items: &[Ident]) -> TokenStream {
+    match items {
+        [] => panic!("Cannot build tuple pattern from empty identifiers"),
+        [single] => quote! { #single },
+        [first, second] => quote! { (#first, #second) },
+        [first, rest @ ..] => {
+            let rest = build_nested_tuple_pattern(rest);
+            quote! { (#first, #rest) }
+        }
+    }
 }

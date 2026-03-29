@@ -2,7 +2,7 @@
 //!
 //! This IR maps directly to the `vest::regular::*` combinator types in the backend library.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
@@ -15,6 +15,55 @@ pub use crate::vestir::Param as ParamRef;
 
 /// A reference to a tag field in the current struct.
 pub type TagRef = String;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UIntWidth {
+    U8,
+    U16,
+    U24,
+    U32,
+    U64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UIntIR {
+    pub width: UIntWidth,
+    pub endian: Endian,
+}
+
+impl UIntIR {
+    pub fn new(width: UIntWidth, endian: Endian) -> Self {
+        Self { width, endian }
+    }
+
+    pub fn rust_type_tokens(self) -> TokenStream {
+        match self.width {
+            UIntWidth::U8 => quote! { u8 },
+            UIntWidth::U16 => quote! { u16 },
+            UIntWidth::U24 => quote! { u24 },
+            UIntWidth::U32 => quote! { u32 },
+            UIntWidth::U64 => quote! { u64 },
+        }
+    }
+
+    pub fn combinator_type_tokens(self) -> TokenStream {
+        match (self.width, self.endian) {
+            (UIntWidth::U8, _) => quote! { U8 },
+            (UIntWidth::U16, Endian::Little) => quote! { U16Le },
+            (UIntWidth::U16, Endian::Big) => quote! { U16Be },
+            (UIntWidth::U24, Endian::Little) => quote! { U24Le },
+            (UIntWidth::U24, Endian::Big) => quote! { U24Be },
+            (UIntWidth::U32, Endian::Little) => quote! { U32Le },
+            (UIntWidth::U32, Endian::Big) => quote! { U32Be },
+            (UIntWidth::U64, Endian::Little) => quote! { U64Le },
+            (UIntWidth::U64, Endian::Big) => quote! { U64Be },
+        }
+    }
+
+    pub fn is_u24(self) -> bool {
+        matches!(self.width, UIntWidth::U24)
+    }
+}
 
 /// Tag values for dispatch branches.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,22 +88,37 @@ pub struct MapperIR {
     pub name: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TupleField {
+    pub name: String,
+    pub comb: CombIR,
+}
+
+impl TupleField {
+    pub fn named(name: impl Into<String>, comb: CombIR) -> Self {
+        Self {
+            name: name.into(),
+            comb,
+        }
+    }
+
+    pub fn anonymous(comb: CombIR) -> Self {
+        Self::named("", comb)
+    }
+
+    pub fn is_anonymous(&self) -> bool {
+        self.name.is_empty()
+    }
+}
+
 /// Combinator Intermediate Representation.
 ///
 /// Each variant maps to a combinator type in `vest::regular::*`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CombIR {
     // ===== Primitive integers =====
-    /// `uints::U8`
-    U8,
-    /// `uints::U16Le` or `uints::U16Be`
-    U16(Endian),
-    /// `uints::U24Le` or `uints::U24Be`
-    U24(Endian),
-    /// `uints::U32Le` or `uints::U32Be`
-    U32(Endian),
-    /// `uints::U64Le` or `uints::U64Be`
-    U64(Endian),
+    /// `uints::U8`, `uints::U16*`, `uints::U24*`, `uints::U32*`, or `uints::U64*`.
+    UInt(UIntIR),
 
     // ===== Bytes =====
     /// `bytes::Fixed<N>` - fixed-length bytes known at compile time.
@@ -67,7 +131,7 @@ pub enum CombIR {
     // ===== Sequencing =====
     /// Tuple combinator `(A, B)` or `(A, (B, C))` for independent fields.
     /// An empty field name denotes an internal anonymous tuple element.
-    Tuple(Vec<(String, CombIR)>),
+    Tuple(Vec<TupleField>),
     /// `sequence::Pair` - dependent pair where second depends on first.
     Pair {
         fst: Box<CombIR>,
@@ -240,12 +304,34 @@ impl CodegenCtx {
     }
 }
 
+pub fn nominal_wrapper_inner(comb: &CombIR) -> Option<&CombIR> {
+    match comb {
+        CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::FixedLen { inner, .. }
+        | CombIR::AndThen { inner, .. } => Some(inner),
+        _ => None,
+    }
+}
+
+pub fn transparent_inner(comb: &CombIR) -> Option<&CombIR> {
+    match comb {
+        CombIR::Preceded { inner, .. }
+        | CombIR::Terminated { inner, .. }
+        | CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::AndThen { inner, .. }
+        | CombIR::FixedLen { inner, .. } => Some(inner),
+        _ => None,
+    }
+}
+
 pub fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -> bool {
     match comb {
         CombIR::Variable { .. } | CombIR::Tail | CombIR::Fixed { .. } => true,
         CombIR::Tuple(elems) => elems
             .iter()
-            .any(|(_, elem)| comb_needs_lifetime(elem, def_map)),
+            .any(|field| comb_needs_lifetime(&field.comb, def_map)),
         CombIR::Pair { fst, snd } => {
             comb_needs_lifetime(fst, def_map) || comb_needs_lifetime(&snd.comb, def_map)
         }
@@ -268,24 +354,13 @@ pub fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -
             .get(name)
             .map(|def| comb_needs_lifetime(&def.body, def_map))
             .unwrap_or(false),
-        CombIR::U8
-        | CombIR::U16(_)
-        | CombIR::U24(_)
-        | CombIR::U32(_)
-        | CombIR::U64(_)
-        | CombIR::End
-        | CombIR::Success
-        | CombIR::Fail(_) => false,
+        CombIR::UInt(_) | CombIR::End | CombIR::Success | CombIR::Fail(_) => false,
     }
 }
 
 pub fn comb_uint_type_tokens(comb: &CombIR) -> Option<TokenStream> {
     match comb {
-        CombIR::U8 => Some(quote! { u8 }),
-        CombIR::U16(_) => Some(quote! { u16 }),
-        CombIR::U24(_) => Some(quote! { u24 }),
-        CombIR::U32(_) => Some(quote! { u32 }),
-        CombIR::U64(_) => Some(quote! { u64 }),
+        CombIR::UInt(uint) => Some(uint.rust_type_tokens()),
         CombIR::Enum { inner, .. } => comb_uint_type_tokens(inner),
         _ => None,
     }
@@ -308,5 +383,89 @@ pub fn tag_literal_type_tokens(tag_value: &TagValue) -> TokenStream {
             quote! { [u8; #n] }
         }
         TagValue::Wildcard => quote! { i128 },
+    }
+}
+
+pub fn len_uses_dependent_name(len: &LenExpr, name: &str) -> bool {
+    match len {
+        LenExpr::Const(_) | LenExpr::SizeOf(_) => false,
+        LenExpr::Dependent(dep) => dep == name,
+        LenExpr::BinOp { left, right, .. } => {
+            len_uses_dependent_name(left, name) || len_uses_dependent_name(right, name)
+        }
+    }
+}
+
+pub fn used_names_in_comb(comb: &CombIR) -> BTreeSet<String> {
+    let mut names = BTreeSet::new();
+    collect_used_names(comb, &mut names);
+    names
+}
+
+fn collect_used_names(comb: &CombIR, names: &mut BTreeSet<String>) {
+    match comb {
+        CombIR::Variable { len }
+        | CombIR::FixedLen { len, .. }
+        | CombIR::RepeatN { count: len, .. } => {
+            collect_len_names(len, names);
+        }
+        CombIR::Tuple(elems) => {
+            for field in elems {
+                collect_used_names(&field.comb, names);
+            }
+        }
+        CombIR::Pair { fst, snd } => {
+            collect_used_names(fst, names);
+            collect_used_names(&snd.comb, names);
+        }
+        CombIR::Preceded { prefix, inner } => {
+            collect_used_names(prefix, names);
+            collect_used_names(inner, names);
+        }
+        CombIR::Terminated { inner, suffix } => {
+            collect_used_names(inner, names);
+            collect_used_names(suffix, names);
+        }
+        CombIR::Dispatch { tag, branches } => {
+            names.insert(tag.clone());
+            for (_, branch) in branches {
+                collect_used_names(branch, names);
+            }
+        }
+        CombIR::Opt(inner)
+        | CombIR::Repeat(inner)
+        | CombIR::Refined { inner, .. }
+        | CombIR::Mapped { inner, .. }
+        | CombIR::Enum { inner, .. }
+        | CombIR::AndThen { inner, .. }
+        | CombIR::Tag { inner, .. } => collect_used_names(inner, names),
+        CombIR::Named { args, .. } => {
+            for arg in args {
+                match arg {
+                    ParamRef::Dependent(name) => {
+                        names.insert(name.clone());
+                    }
+                }
+            }
+        }
+        CombIR::UInt(_)
+        | CombIR::Fixed { .. }
+        | CombIR::Tail
+        | CombIR::End
+        | CombIR::Success
+        | CombIR::Fail(_) => {}
+    }
+}
+
+fn collect_len_names(len: &LenExpr, names: &mut BTreeSet<String>) {
+    match len {
+        LenExpr::Dependent(name) => {
+            names.insert(name.clone());
+        }
+        LenExpr::BinOp { left, right, .. } => {
+            collect_len_names(left, names);
+            collect_len_names(right, names);
+        }
+        LenExpr::Const(_) | LenExpr::SizeOf(_) => {}
     }
 }
