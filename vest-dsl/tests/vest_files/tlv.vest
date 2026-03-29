@@ -23,13 +23,19 @@ msg3 = {
   y: u16,
 }
 
+msg_ty = enum {
+  Ty1 = 1u8,
+  Ty2 = 2,
+  Ty3 = 3,
+}
+
 msg = {
-  @tag: u8,
+  @tag: msg_ty,
   @len: u16 | 0..8000,
   val: [u8; @len] >>=
     choose (@tag) {
-      1 => msg1,
-      2 => msg2,
-      3 => msg3,
+      Ty1 => msg1,
+      Ty2 => msg2,
+      Ty3 => msg3,
   },
 }

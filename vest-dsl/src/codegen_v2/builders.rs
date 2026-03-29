@@ -27,28 +27,3 @@ pub(super) fn build_nested_pair_expr(items: &[TokenStream]) -> TokenStream {
         quote! { (#first, #rest) }
     })
 }
-
-pub(super) fn build_nested_either_type(items: &[TokenStream]) -> TokenStream {
-    build_right_nested_tokens(items, Some(quote! { () }), &|first, rest| {
-        quote! { Either<#first, #rest> }
-    })
-}
-
-pub(super) fn wrap_right_nested_either(
-    value: TokenStream,
-    index: usize,
-    total: usize,
-) -> TokenStream {
-    if total == 0 {
-        todo!("Either wrapping for zero dispatch branches is not specified");
-    }
-    if total == 1 {
-        return value;
-    }
-    if index == 0 {
-        quote! { Either::Left(#value) }
-    } else {
-        let nested = wrap_right_nested_either(value, index - 1, total - 1);
-        quote! { Either::Right(#nested) }
-    }
-}

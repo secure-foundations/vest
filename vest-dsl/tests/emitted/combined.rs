@@ -6,7 +6,7 @@ use vest_lib::properties::*;
 use vest_lib::errors::*;
 use vest_lib::regular::*;
 use vest_lib::regular::sequence::{Pair, Preceded, Terminated, DepCombinator};
-use vest_lib::regular::variant::{Either, Dispatch, Opt, OptThen, Choice};
+use vest_lib::regular::variant::{Dispatch, Opt, OptThen, Choice};
 use vest_lib::regular::repetition::{Repeat, RepeatN};
 use vest_lib::regular::modifier::{
     Refined, Mapped, FixedLen, Length, RuntimeValue, AndThen, CondEq, Mapper,
@@ -34,7 +34,7 @@ pub struct Record {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Packet {
     pub header: Header,
-    pub field1: u16,
+    pub payload_len: u16,
     pub payload: Vec<Record>,
 }
 
@@ -90,7 +90,7 @@ impl From<(Header, (u16, Vec<Record>))> for Packet {
     fn from(src: (Header, (u16, Vec<Record>))) -> Self {
         Self {
             header: src.0,
-            field1: src.1.0,
+            payload_len: src.1.0,
             payload: src.1.1,
         }
     }
@@ -98,7 +98,7 @@ impl From<(Header, (u16, Vec<Record>))> for Packet {
 
 impl<'s> From<&'s Packet> for (Header, (u16, &'s [Record])) {
     fn from(v: &'s Packet) -> Self {
-        (v.header, (v.field1, v.payload.as_slice()))
+        (v.header, (v.payload_len, v.payload.as_slice()))
     }
 }
 
@@ -371,96 +371,81 @@ where
     }
 }
 
-pub trait CombinatorParam<'a, T: Copy> {
+pub trait RuntimeValParam<'a, T: Copy> {
     fn into_runtime_value(self) -> RuntimeValue<'a, T>;
+}
+
+pub trait LengthParam<'a, T: Copy> {
     fn into_length(self) -> Length<'a>;
 }
 
-impl CombinatorParam<'static, u8> for u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u8> {
+impl<T: Copy> RuntimeValParam<'static, T> for T {
+    fn into_runtime_value(self) -> RuntimeValue<'static, T> {
         RuntimeValue::from_value(self)
     }
+}
+
+impl<'a, T: Copy> RuntimeValParam<'a, T> for &'a mut T {
+    fn into_runtime_value(self) -> RuntimeValue<'a, T> {
+        RuntimeValue::from_mut(self)
+    }
+}
+
+impl LengthParam<'static, u8> for u8 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u16> for u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u16> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u16> for u16 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u24> for u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u24> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u24> for u24 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self.as_u32() as usize)
     }
 }
 
-impl CombinatorParam<'static, u32> for u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u32> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u32> for u32 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u64> for u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u64> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u64> for u64 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u8> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u8> for &'a mut u8 {
     fn into_length(self) -> Length<'a> {
         Length::from_u8_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u16> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u16> for &'a mut u16 {
     fn into_length(self) -> Length<'a> {
         Length::from_u16_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u24> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u24> for &'a mut u24 {
     fn into_length(self) -> Length<'a> {
         Length::from_value(self.as_u32() as usize)
     }
 }
 
-impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u32> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u32> for &'a mut u32 {
     fn into_length(self) -> Length<'a> {
         Length::from_u32_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u64> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u64> for &'a mut u64 {
     fn into_length(self) -> Length<'a> {
         Length::from_u64_mut(self)
     }

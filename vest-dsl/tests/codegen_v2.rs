@@ -20,7 +20,7 @@ fn combined_generate_serialize_parse_roundtrip() {
             .generate(&mut GenSt::new(seed))
             .expect("generate packet");
 
-        let payload_len = value.field1 as usize;
+        let payload_len = value.payload_len as usize;
         assert_eq!(
             payload_len,
             value.payload.len() * 8,
@@ -52,18 +52,20 @@ fn combined_generate_serialize_parse_roundtrip() {
 #[test]
 fn tlv_dispatch_branches_parse() {
     let tag1_payload = [0xAB; 32];
-    let (_, parsed1) = tlv::parse_msg_val(&tag1_payload, 32, 1).expect("parse msg1 payload");
+    let (_, parsed1) =
+        tlv::parse_msg_val(&tag1_payload, 32, tlv::MsgTy::Ty1).expect("parse msg1 payload");
     match parsed1 {
-        tlv::MsgVal::Variant0(bytes) => assert_eq!(bytes, &tag1_payload),
+        tlv::MsgVal::Ty1(bytes) => assert_eq!(bytes, &tag1_payload),
         _ => panic!("expected msg1 branch"),
     }
 
     let mut tag3_payload = Vec::new();
     tag3_payload.extend_from_slice(&0x1234u16.to_le_bytes());
     tag3_payload.extend_from_slice(&0x5678u16.to_le_bytes());
-    let (_, parsed3) = tlv::parse_msg_val(&tag3_payload, 4, 3).expect("parse msg3 payload");
+    let (_, parsed3) =
+        tlv::parse_msg_val(&tag3_payload, 4, tlv::MsgTy::Ty3).expect("parse msg3 payload");
     match parsed3 {
-        tlv::MsgVal::Variant2(msg3) => {
+        tlv::MsgVal::Ty3(msg3) => {
             assert_eq!(msg3.x, 0x1234);
             assert_eq!(msg3.y, 0x5678);
         }
@@ -78,9 +80,9 @@ fn tlv_msg_generate_roundtrip() {
     for seed in 0..16u64 {
         let (reported_len, value) = comb.generate(&mut GenSt::new(seed)).expect("generate msg");
         let stype_val = match &value.val {
-            tlv::MsgValOwned::Variant0(bytes) => tlv::MsgVal::Variant0(bytes.as_slice()),
-            tlv::MsgValOwned::Variant1(pkt) => tlv::MsgVal::Variant1(pkt.clone()),
-            tlv::MsgValOwned::Variant2(msg3) => tlv::MsgVal::Variant2(msg3.clone()),
+            tlv::MsgValOwned::Ty1(bytes) => tlv::MsgVal::Ty1(bytes.as_slice()),
+            tlv::MsgValOwned::Ty2(pkt) => tlv::MsgVal::Ty2(pkt.clone()),
+            tlv::MsgValOwned::Ty3(msg3) => tlv::MsgVal::Ty3(msg3.clone()),
         };
         let stype = tlv::Msg {
             tag: value.tag,

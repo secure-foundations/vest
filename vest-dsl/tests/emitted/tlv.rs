@@ -6,7 +6,7 @@ use vest_lib::properties::*;
 use vest_lib::errors::*;
 use vest_lib::regular::*;
 use vest_lib::regular::sequence::{Pair, Preceded, Terminated, DepCombinator};
-use vest_lib::regular::variant::{Either, Dispatch, Opt, OptThen, Choice};
+use vest_lib::regular::variant::{Dispatch, Opt, OptThen, Choice};
 use vest_lib::regular::repetition::{Repeat, RepeatN};
 use vest_lib::regular::modifier::{
     Refined, Mapped, FixedLen, Length, RuntimeValue, AndThen, CondEq, Mapper,
@@ -34,7 +34,7 @@ pub struct Record {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RefinedPacket {
     pub header: Header,
-    pub field1: u16,
+    pub payload_len: u16,
     pub payload: Vec<Record>,
 }
 
@@ -49,28 +49,35 @@ pub type Msg1Owned = Vec<u8>;
 pub type Msg2 = RefinedPacket;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MsgVal<'a> {
-    Variant0(Msg1<'a>),
-    Variant1(Msg2),
-    Variant2(Msg3),
+    Ty1(Msg1<'a>),
+    Ty2(Msg2),
+    Ty3(Msg3),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MsgValOwned {
-    Variant0(Msg1Owned),
-    Variant1(Msg2),
-    Variant2(Msg3),
+    Ty1(Msg1Owned),
+    Ty2(Msg2),
+    Ty3(Msg3),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MsgTy {
+    Ty1 = 1,
+    Ty2 = 2,
+    Ty3 = 3,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Msg<'a> {
-    pub tag: u8,
+    pub tag: MsgTy,
     pub len: u16,
     pub val: MsgVal<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgOwned {
-    pub tag: u8,
+    pub tag: MsgTy,
     pub len: u16,
     pub val: MsgValOwned,
 }
@@ -127,7 +134,7 @@ impl From<(Header, (u16, Vec<Record>))> for RefinedPacket {
     fn from(src: (Header, (u16, Vec<Record>))) -> Self {
         Self {
             header: src.0,
-            field1: src.1.0,
+            payload_len: src.1.0,
             payload: src.1.1,
         }
     }
@@ -135,7 +142,7 @@ impl From<(Header, (u16, Vec<Record>))> for RefinedPacket {
 
 impl<'s> From<&'s RefinedPacket> for (Header, (u16, &'s [Record])) {
     fn from(v: &'s RefinedPacket) -> Self {
-        (v.header, (v.field1, v.payload.as_slice()))
+        (v.header, (v.payload_len, v.payload.as_slice()))
     }
 }
 
@@ -171,48 +178,35 @@ impl Mapper for Msg3Mapper {
     type DstOwned = Msg3;
 }
 
-impl<'a> From<Either<Msg1<'a>, Either<Msg2, Msg3>>> for MsgVal<'a> {
-    fn from(e: Either<Msg1<'a>, Either<Msg2, Msg3>>) -> Self {
-        match e {
-            Either::Left(v) => MsgVal::Variant0(v),
-            Either::Right(Either::Left(v)) => MsgVal::Variant1(v),
-            Either::Right(Either::Right(v)) => MsgVal::Variant2(v),
+impl From<u8> for MsgTy {
+    fn from(src: u8) -> Self {
+        match src as i128 {
+            1 => Self::Ty1,
+            2 => Self::Ty2,
+            3 => Self::Ty3,
+            _ => unreachable!("validated by combinator"),
         }
     }
 }
 
-impl<'s, 'a: 's> From<&'s MsgVal<'a>> for Either<Msg1<'s>, Either<&'s Msg2, Msg3>> {
-    fn from(e: &'s MsgVal<'a>) -> Self {
-        match e {
-            MsgVal::Variant0(v) => Either::Left(*v),
-            MsgVal::Variant1(v) => Either::Right(Either::Left(v)),
-            MsgVal::Variant2(v) => Either::Right(Either::Right(*v)),
-        }
+impl From<MsgTy> for u8 {
+    fn from(v: MsgTy) -> Self {
+        v as u8
     }
 }
 
-impl From<Either<Msg1Owned, Either<Msg2, Msg3>>> for MsgValOwned {
-    fn from(e: Either<Msg1Owned, Either<Msg2, Msg3>>) -> Self {
-        match e {
-            Either::Left(v) => MsgValOwned::Variant0(v),
-            Either::Right(Either::Left(v)) => MsgValOwned::Variant1(v),
-            Either::Right(Either::Right(v)) => MsgValOwned::Variant2(v),
-        }
-    }
+pub struct MsgTyMapper;
+impl Mapper for MsgTyMapper {
+    type Src<'p> = u8;
+    type Dst<'p> = MsgTy;
+    type SrcBorrow<'s> = u8;
+    type DstBorrow<'s> = MsgTy;
+    type SrcOwned = u8;
+    type DstOwned = MsgTy;
 }
 
-pub struct MsgValMapper;
-impl Mapper for MsgValMapper {
-    type Src<'p> = Either<Msg1<'p>, Either<Msg2, Msg3>>;
-    type Dst<'p> = MsgVal<'p>;
-    type SrcBorrow<'s> = Either<Msg1<'s>, Either<&'s Msg2, Msg3>>;
-    type DstBorrow<'s> = &'s MsgVal<'s>;
-    type SrcOwned = Either<Msg1Owned, Either<Msg2, Msg3>>;
-    type DstOwned = MsgValOwned;
-}
-
-impl<'a> From<((u8, u16), MsgVal<'a>)> for Msg<'a> {
-    fn from(src: ((u8, u16), MsgVal<'a>)) -> Self {
+impl<'a> From<((MsgTy, u16), MsgVal<'a>)> for Msg<'a> {
+    fn from(src: ((MsgTy, u16), MsgVal<'a>)) -> Self {
         Self {
             tag: src.0.0,
             len: src.0.1,
@@ -221,14 +215,14 @@ impl<'a> From<((u8, u16), MsgVal<'a>)> for Msg<'a> {
     }
 }
 
-impl<'s, 'a: 's> From<&'s Msg<'a>> for ((u8, u16), &'s MsgVal<'s>) {
+impl<'s, 'a: 's> From<&'s Msg<'a>> for ((MsgTy, u16), &'s MsgVal<'s>) {
     fn from(v: &'s Msg<'a>) -> Self {
         ((v.tag, v.len), &v.val)
     }
 }
 
-impl From<((u8, u16), MsgValOwned)> for MsgOwned {
-    fn from(src: ((u8, u16), MsgValOwned)) -> Self {
+impl From<((MsgTy, u16), MsgValOwned)> for MsgOwned {
+    fn from(src: ((MsgTy, u16), MsgValOwned)) -> Self {
         Self {
             tag: src.0.0,
             len: src.0.1,
@@ -239,11 +233,11 @@ impl From<((u8, u16), MsgValOwned)> for MsgOwned {
 
 pub struct MsgMapper;
 impl Mapper for MsgMapper {
-    type Src<'p> = ((u8, u16), MsgVal<'p>);
+    type Src<'p> = ((MsgTy, u16), MsgVal<'p>);
     type Dst<'p> = Msg<'p>;
-    type SrcBorrow<'s> = ((u8, u16), &'s MsgVal<'s>);
+    type SrcBorrow<'s> = ((MsgTy, u16), &'s MsgVal<'s>);
     type DstBorrow<'s> = &'s Msg<'s>;
-    type SrcOwned = ((u8, u16), MsgValOwned);
+    type SrcOwned = ((MsgTy, u16), MsgValOwned);
     type DstOwned = MsgOwned;
 }
 
@@ -276,15 +270,19 @@ pub type Msg2CombinatorAlias = RefinedPacketCombinator;
 ///Wrapper struct for msg2 combinator
 pub struct Msg2Combinator<C = Msg2CombinatorAlias>(pub C);
 ///Type alias for msg_val combinator
-pub type MsgValCombinatorAlias<'x> = Mapped<
-    FixedLen<'x, Dispatch<'x, u8, MsgValDispatchCase0, 3>>,
-    MsgValMapper,
+pub type MsgValCombinatorAlias<'x> = FixedLen<
+    'x,
+    Dispatch<'x, MsgTy, MsgValDispatchCase0, 3>,
 >;
 ///Wrapper struct for msg_val combinator
 pub struct MsgValCombinator<C = MsgValCombinatorAlias<'static>>(pub C);
+///Type alias for msg_ty combinator
+pub type MsgTyCombinatorAlias = Mapped<Refined<U8, fn(u8) -> bool>, MsgTyMapper>;
+///Wrapper struct for msg_ty combinator
+pub struct MsgTyCombinator<C = MsgTyCombinatorAlias>(pub C);
 ///Type alias for msg combinator
 pub type MsgCombinatorAlias = Mapped<
-    Pair<(U8, Refined<U16Le, fn(u16) -> bool>), MsgDep>,
+    Pair<(MsgTyCombinator, Refined<U16Le, fn(u16) -> bool>), MsgDep>,
     MsgMapper,
 >;
 ///Wrapper struct for msg combinator
@@ -341,23 +339,33 @@ pub fn msg_val<'a, LenArg, TagArg>(
     tag: TagArg,
 ) -> MsgValCombinator<MsgValCombinatorAlias<'a>>
 where
-    LenArg: CombinatorParam<'a, u16>,
-    TagArg: CombinatorParam<'a, u8>,
+    LenArg: LengthParam<'a, u16>,
+    TagArg: RuntimeValParam<'a, MsgTy>,
 {
     MsgValCombinator(
-        Mapped::new(
-            FixedLen(
-                len.into_length(),
-                Dispatch::new(
-                    tag.into_runtime_value(),
-                    [
-                        (1, MsgValDispatchCase0::V1(msg1())),
-                        (2, MsgValDispatchCase0::V2(msg2())),
-                        (3, MsgValDispatchCase0::V3(msg3())),
-                    ],
-                ),
+        FixedLen(
+            len.into_length(),
+            Dispatch::new(
+                tag.into_runtime_value(),
+                [
+                    (MsgTy::Ty1, MsgValDispatchCase0::V1(msg1())),
+                    (MsgTy::Ty2, MsgValDispatchCase0::V2(msg2())),
+                    (MsgTy::Ty3, MsgValDispatchCase0::V3(msg3())),
+                ],
             ),
-            MsgValMapper,
+        ),
+    )
+}
+
+///Constructor for msg_ty combinator
+pub fn msg_ty() -> MsgTyCombinator {
+    MsgTyCombinator(
+        Mapped::new(
+            Refined {
+                inner: U8,
+                predicate: |v: u8| (v as i128 == 1 || v as i128 == 2 || v as i128 == 3),
+            },
+            MsgTyMapper,
         ),
     )
 }
@@ -368,7 +376,7 @@ pub fn msg() -> MsgCombinator {
         Mapped::new(
             Pair::new(
                 (
-                    U8,
+                    msg_ty(),
                     Refined {
                         inner: U16Le,
                         predicate: |v: u16| v as i128 >= 0 && v as i128 <= 8000,
@@ -433,21 +441,17 @@ where
         GType = Msg3,
     >,
 {
-    type Type<'p> = Either<Msg1<'p>, Either<Msg2, Msg3>>;
-    type SType<'s> = Either<Msg1<'s>, Either<&'s Msg2, Msg3>>;
-    type GType = Either<Msg1Owned, Either<Msg2, Msg3>>;
+    type Type<'p> = MsgVal<'p>;
+    type SType<'s> = &'s MsgVal<'s>;
+    type GType = MsgValOwned;
     fn length<'s>(&self, v: Self::SType<'s>) -> usize
     where
         [u8]: 's,
     {
         match (self, v) {
-            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.length(v0),
-            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
-                inner.length(v1)
-            }
-            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
-                inner.length(v2)
-            }
+            (MsgValDispatchCase0::V1(inner), MsgVal::Ty1(v0)) => inner.length((*v0)),
+            (MsgValDispatchCase0::V2(inner), MsgVal::Ty2(v1)) => inner.length(&(*v1)),
+            (MsgValDispatchCase0::V3(inner), MsgVal::Ty3(v2)) => inner.length((*v2)),
             _ => panic!("dispatch branch combinator does not match value"),
         }
     }
@@ -458,15 +462,15 @@ where
         match self {
             MsgValDispatchCase0::V1(inner) => {
                 let (n, v) = inner.parse(s)?;
-                Ok((n, Either::Left(v)))
+                Ok((n, MsgVal::Ty1(v)))
             }
             MsgValDispatchCase0::V2(inner) => {
                 let (n, v) = inner.parse(s)?;
-                Ok((n, Either::Right(Either::Left(v))))
+                Ok((n, MsgVal::Ty2(v)))
             }
             MsgValDispatchCase0::V3(inner) => {
                 let (n, v) = inner.parse(s)?;
-                Ok((n, Either::Right(Either::Right(v))))
+                Ok((n, MsgVal::Ty3(v)))
             }
         }
     }
@@ -480,14 +484,14 @@ where
         [u8]: 's,
     {
         match (self, v) {
-            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => {
-                inner.serialize(v0, data, pos)
+            (MsgValDispatchCase0::V1(inner), MsgVal::Ty1(v0)) => {
+                inner.serialize((*v0), data, pos)
             }
-            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
-                inner.serialize(v1, data, pos)
+            (MsgValDispatchCase0::V2(inner), MsgVal::Ty2(v1)) => {
+                inner.serialize(&(*v1), data, pos)
             }
-            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
-                inner.serialize(v2, data, pos)
+            (MsgValDispatchCase0::V3(inner), MsgVal::Ty3(v2)) => {
+                inner.serialize((*v2), data, pos)
             }
             _ => {
                 Err(
@@ -502,15 +506,15 @@ where
         match self {
             MsgValDispatchCase0::V1(inner) => {
                 let (n, v) = inner.generate(g)?;
-                Ok((n, Either::Left(v)))
+                Ok((n, MsgValOwned::Ty1(v)))
             }
             MsgValDispatchCase0::V2(inner) => {
                 let (n, v) = inner.generate(g)?;
-                Ok((n, Either::Right(Either::Left(v))))
+                Ok((n, MsgValOwned::Ty2(v)))
             }
             MsgValDispatchCase0::V3(inner) => {
                 let (n, v) = inner.generate(g)?;
-                Ok((n, Either::Right(Either::Right(v))))
+                Ok((n, MsgValOwned::Ty3(v)))
             }
         }
     }
@@ -519,13 +523,11 @@ where
         [u8]: 's,
     {
         match (self, v) {
-            (MsgValDispatchCase0::V1(inner), Either::Left(v0)) => inner.well_formed(v0),
-            (MsgValDispatchCase0::V2(inner), Either::Right(Either::Left(v1))) => {
-                inner.well_formed(v1)
+            (MsgValDispatchCase0::V1(inner), MsgVal::Ty1(v0)) => inner.well_formed((*v0)),
+            (MsgValDispatchCase0::V2(inner), MsgVal::Ty2(v1)) => {
+                inner.well_formed(&(*v1))
             }
-            (MsgValDispatchCase0::V3(inner), Either::Right(Either::Right(v2))) => {
-                inner.well_formed(v2)
-            }
+            (MsgValDispatchCase0::V3(inner), MsgVal::Ty3(v2)) => inner.well_formed((*v2)),
             _ => false,
         }
     }
@@ -533,16 +535,17 @@ where
 
 #[derive(Clone, Copy)]
 pub struct MsgDep {}
-impl DepCombinator<(U8, Refined<U16Le, fn(u16) -> bool>), [u8], Vec<u8>> for MsgDep {
+impl DepCombinator<(MsgTyCombinator, Refined<U16Le, fn(u16) -> bool>), [u8], Vec<u8>>
+for MsgDep {
     type Out = MsgValCombinator;
     type OutGen<'g> = MsgValCombinator<MsgValCombinatorAlias<'g>>;
-    fn dep_snd<'s>(&self, fst: (u8, u16)) -> Self::Out {
-        let fst: (u8, u16) = fst;
+    fn dep_snd<'s>(&self, fst: (MsgTy, u16)) -> Self::Out {
+        let fst: (MsgTy, u16) = fst;
         let (tag, len) = fst;
         msg_val(len, tag)
     }
-    fn dep_snd_gen<'g>(&self, fst: &'g mut (u8, u16)) -> Self::OutGen<'g> {
-        let fst: &'g mut (u8, u16) = fst;
+    fn dep_snd_gen<'g>(&self, fst: &'g mut (MsgTy, u16)) -> Self::OutGen<'g> {
+        let fst: &'g mut (MsgTy, u16) = fst;
         let (tag, len) = fst;
         msg_val(len, tag)
     }
@@ -722,7 +725,7 @@ pub fn generate_msg2(g: &mut GenSt) -> GResult<Msg2, GenerateError> {
 pub fn parse_msg_val<'p>(
     input: &'p [u8],
     len: u16,
-    tag: u8,
+    tag: MsgTy,
 ) -> Result<(usize, MsgVal<'p>), ParseError> {
     let combinator = msg_val(len, tag);
     combinator.parse(input)
@@ -734,14 +737,14 @@ pub fn serialize_msg_val<'s>(
     data: &mut Vec<u8>,
     pos: usize,
     len: u16,
-    tag: u8,
+    tag: MsgTy,
 ) -> Result<usize, SerializeError> {
     let combinator = msg_val(len, tag);
     combinator.serialize(v, data, pos)
 }
 
 ///Length function for msg_val combinator
-pub fn msg_val_len<'s>(v: &'s MsgVal<'s>, len: u16, tag: u8) -> usize {
+pub fn msg_val_len<'s>(v: &'s MsgVal<'s>, len: u16, tag: MsgTy) -> usize {
     let combinator = msg_val(len, tag);
     combinator.length(v)
 }
@@ -750,9 +753,37 @@ pub fn msg_val_len<'s>(v: &'s MsgVal<'s>, len: u16, tag: u8) -> usize {
 pub fn generate_msg_val<'g>(
     g: &mut GenSt,
     len: &'g mut u16,
-    tag: &'g mut u8,
+    tag: &'g mut MsgTy,
 ) -> GResult<MsgValOwned, GenerateError> {
     let mut combinator = msg_val(len, tag);
+    combinator.generate(g)
+}
+
+///Parse function for msg_ty combinator
+pub fn parse_msg_ty<'p>(input: &'p [u8]) -> Result<(usize, MsgTy), ParseError> {
+    let combinator = msg_ty();
+    combinator.parse(input)
+}
+
+///Serialize function for msg_ty combinator
+pub fn serialize_msg_ty<'s>(
+    v: MsgTy,
+    data: &mut Vec<u8>,
+    pos: usize,
+) -> Result<usize, SerializeError> {
+    let combinator = msg_ty();
+    combinator.serialize(v, data, pos)
+}
+
+///Length function for msg_ty combinator
+pub fn msg_ty_len<'s>(v: MsgTy) -> usize {
+    let combinator = msg_ty();
+    combinator.length(v)
+}
+
+///Generate function for msg_ty combinator
+pub fn generate_msg_ty(g: &mut GenSt) -> GResult<MsgTy, GenerateError> {
+    let mut combinator = msg_ty();
     combinator.generate(g)
 }
 
@@ -1071,6 +1102,47 @@ where
     }
 }
 
+impl<C> Combinator<[u8], Vec<u8>> for MsgTyCombinator<C>
+where
+    C: Combinator<[u8], Vec<u8>>,
+{
+    type Type<'p> = C::Type<'p>;
+    type SType<'s> = C::SType<'s>;
+    type GType = C::GType;
+    fn length<'s>(&self, v: Self::SType<'s>) -> usize
+    where
+        [u8]: 's,
+    {
+        self.0.length(v)
+    }
+    fn parse<'p>(&self, s: &'p [u8]) -> Result<(usize, Self::Type<'p>), ParseError>
+    where
+        [u8]: 'p,
+    {
+        self.0.parse(s)
+    }
+    fn serialize<'s>(
+        &self,
+        v: Self::SType<'s>,
+        data: &mut Vec<u8>,
+        pos: usize,
+    ) -> Result<usize, SerializeError>
+    where
+        [u8]: 's,
+    {
+        self.0.serialize(v, data, pos)
+    }
+    fn generate(&mut self, g: &mut GenSt) -> GResult<Self::GType, GenerateError> {
+        self.0.generate(g)
+    }
+    fn well_formed<'s>(&self, v: Self::SType<'s>) -> bool
+    where
+        [u8]: 's,
+    {
+        self.0.well_formed(v)
+    }
+}
+
 impl<C> Combinator<[u8], Vec<u8>> for MsgCombinator<C>
 where
     C: Combinator<[u8], Vec<u8>>,
@@ -1112,96 +1184,81 @@ where
     }
 }
 
-pub trait CombinatorParam<'a, T: Copy> {
+pub trait RuntimeValParam<'a, T: Copy> {
     fn into_runtime_value(self) -> RuntimeValue<'a, T>;
+}
+
+pub trait LengthParam<'a, T: Copy> {
     fn into_length(self) -> Length<'a>;
 }
 
-impl CombinatorParam<'static, u8> for u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u8> {
+impl<T: Copy> RuntimeValParam<'static, T> for T {
+    fn into_runtime_value(self) -> RuntimeValue<'static, T> {
         RuntimeValue::from_value(self)
     }
+}
+
+impl<'a, T: Copy> RuntimeValParam<'a, T> for &'a mut T {
+    fn into_runtime_value(self) -> RuntimeValue<'a, T> {
+        RuntimeValue::from_mut(self)
+    }
+}
+
+impl LengthParam<'static, u8> for u8 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u16> for u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u16> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u16> for u16 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u24> for u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u24> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u24> for u24 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self.as_u32() as usize)
     }
 }
 
-impl CombinatorParam<'static, u32> for u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u32> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u32> for u32 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl CombinatorParam<'static, u64> for u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'static, u64> {
-        RuntimeValue::from_value(self)
-    }
+impl LengthParam<'static, u64> for u64 {
     fn into_length(self) -> Length<'static> {
         Length::from_value(self as usize)
     }
 }
 
-impl<'a> CombinatorParam<'a, u8> for &'a mut u8 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u8> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u8> for &'a mut u8 {
     fn into_length(self) -> Length<'a> {
         Length::from_u8_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u16> for &'a mut u16 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u16> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u16> for &'a mut u16 {
     fn into_length(self) -> Length<'a> {
         Length::from_u16_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u24> for &'a mut u24 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u24> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u24> for &'a mut u24 {
     fn into_length(self) -> Length<'a> {
         Length::from_value(self.as_u32() as usize)
     }
 }
 
-impl<'a> CombinatorParam<'a, u32> for &'a mut u32 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u32> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u32> for &'a mut u32 {
     fn into_length(self) -> Length<'a> {
         Length::from_u32_mut(self)
     }
 }
 
-impl<'a> CombinatorParam<'a, u64> for &'a mut u64 {
-    fn into_runtime_value(self) -> RuntimeValue<'a, u64> {
-        RuntimeValue::from_mut(self)
-    }
+impl<'a> LengthParam<'a, u64> for &'a mut u64 {
     fn into_length(self) -> Length<'a> {
         Length::from_u64_mut(self)
     }

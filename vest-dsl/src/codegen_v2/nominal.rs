@@ -3,12 +3,11 @@ use quote::{format_ident, quote};
 use std::collections::HashMap;
 
 use super::builders::{
-    build_nested_either_type as build_nested_either_type_from_tokens, build_nested_pair_expr,
-    build_nested_pair_type as build_nested_pair_type_from_tokens, wrap_right_nested_either,
+    build_nested_pair_expr, build_nested_pair_type as build_nested_pair_type_from_tokens,
 };
 use super::combir::{
-    comb_needs_lifetime as shared_comb_needs_lifetime, comb_uint_type_tokens, CombDef, CombIR,
-    DepCombIR, LifetimeCheckMode, TagValue,
+    comb_needs_lifetime as shared_comb_needs_lifetime, CombDef, CombIR, DepCombIR,
+    LifetimeCheckMode, TagValue,
 };
 
 #[derive(Debug, Clone)]
@@ -43,16 +42,11 @@ enum TopLevelNominalKind {
         needs_lifetime: bool,
         borrow_by_value: bool,
     },
+    ValueEnum,
     Enum {
         needs_lifetime: bool,
     },
     Alias,
-}
-
-struct EitherTypeSet {
-    parse: TokenStream,
-    borrow: TokenStream,
-    owned: TokenStream,
 }
 
 enum TypeFlavor {
@@ -166,6 +160,7 @@ impl<'a> NominalTypeGen<'a> {
                 needs_lifetime: self.comb_needs_lifetime(comb),
                 borrow_by_value: self.comb_borrow_by_value(comb),
             },
+            CombIR::Enum { .. } => TopLevelNominalKind::ValueEnum,
             CombIR::Dispatch { branches, .. } => TopLevelNominalKind::Enum {
                 needs_lifetime: branches
                     .iter()
@@ -205,6 +200,10 @@ impl<'a> NominalTypeGen<'a> {
                     })
                     .collect();
                 self.generate_enum_type(name, &variants);
+            }
+
+            CombIR::Enum { variants, inner } => {
+                self.generate_value_enum_type(name, inner, variants);
             }
 
             CombIR::Named { .. } => self.generate_alias_type(name, comb),
@@ -258,7 +257,7 @@ impl<'a> NominalTypeGen<'a> {
                 }
             }
             CombIR::Pair { fst, snd } => {
-                self.extract_fields_recursive(fst, fields, dep_names);
+                self.extract_fields_recursive(fst, fields, &snd.dep_names);
                 self.extract_fields_recursive(&snd.comb, fields, &[]);
             }
             _ => {
@@ -342,6 +341,7 @@ impl<'a> NominalTypeGen<'a> {
                 self.comb_borrow_by_value(transparent_inner(comb).expect("transparent wrapper"))
             }
             CombIR::Tag { inner, .. } => self.comb_borrow_by_value(inner),
+            CombIR::Enum { .. } => true,
             CombIR::Named { name, .. } => self.def_borrow_by_value(name),
             CombIR::Pair { .. } | CombIR::Dispatch { .. } | CombIR::Choice(_) => false,
         }
@@ -473,18 +473,9 @@ impl<'a> NominalTypeGen<'a> {
                     _ => quote! { Vec<#inner_ty> },
                 }
             }
-            CombIR::Choice(choices) => build_nested_either_type_from_tokens(
-                &choices
-                    .iter()
-                    .map(|choice| self.type_tokens_with_flavor(choice, flavor))
-                    .collect::<Vec<_>>(),
-            ),
-            CombIR::Dispatch { branches, .. } => build_nested_either_type_from_tokens(
-                &branches
-                    .iter()
-                    .map(|(_, branch)| self.type_tokens_with_flavor(branch, flavor))
-                    .collect::<Vec<_>>(),
-            ),
+            CombIR::Choice(_) => todo!("Choice nominal types are not supported; use Dispatch"),
+            CombIR::Dispatch { .. } => self.dispatch_type_tokens_for_flavor(flavor),
+            CombIR::Enum { inner, .. } => self.type_tokens_with_flavor(inner, flavor),
             CombIR::Named { name, .. } => self.named_type_tokens_for_flavor(name, flavor),
             CombIR::Preceded { .. }
             | CombIR::Terminated { .. }
@@ -525,6 +516,43 @@ impl<'a> NominalTypeGen<'a> {
             TypeFlavor::Nominal { owned: false } => quote! { &'a [u8] },
             TypeFlavor::Parse(lt) => quote! { &#lt [u8] },
             TypeFlavor::Borrow => quote! { &'s [u8] },
+        }
+    }
+
+    fn dispatch_type_tokens_for_flavor(&self, flavor: &TypeFlavor) -> TokenStream {
+        let type_name = format_ident!("{}", snake_to_upper_camel(&self.def.name));
+        let owned_name = format_ident!("{}Owned", snake_to_upper_camel(&self.def.name));
+        let needs_lifetime = self.comb_needs_lifetime(&self.def.body);
+
+        match flavor {
+            TypeFlavor::Nominal { owned: false } => {
+                if needs_lifetime {
+                    quote! { #type_name<'a> }
+                } else {
+                    quote! { #type_name }
+                }
+            }
+            TypeFlavor::Nominal { owned: true } | TypeFlavor::Owned => {
+                if needs_lifetime {
+                    quote! { #owned_name }
+                } else {
+                    quote! { #type_name }
+                }
+            }
+            TypeFlavor::Parse(lt) => {
+                if needs_lifetime {
+                    quote! { #type_name<#lt> }
+                } else {
+                    quote! { #type_name }
+                }
+            }
+            TypeFlavor::Borrow => {
+                if needs_lifetime {
+                    quote! { &'s #type_name<'s> }
+                } else {
+                    quote! { &'s #type_name }
+                }
+            }
         }
     }
 
@@ -694,24 +722,6 @@ impl<'a> NominalTypeGen<'a> {
                 .unwrap_or_else(|| quote! { () }),
             CombIR::Named { .. } => expr,
             _ => expr,
-        }
-    }
-
-    fn variant_borrow_expr(&self, binding: &Ident, comb: &CombIR) -> TokenStream {
-        if let Some(inner) = transparent_inner(comb) {
-            return self.variant_borrow_expr(binding, inner);
-        }
-
-        match comb {
-            CombIR::Tag { .. } => quote! { () },
-            CombIR::Named { name, .. } if self.defs.contains_key(name) => {
-                if self.def_borrow_by_value(name) {
-                    quote! { *#binding }
-                } else {
-                    quote! { #binding }
-                }
-            }
-            _ => quote! { *#binding },
         }
     }
 
@@ -952,29 +962,67 @@ impl<'a> NominalTypeGen<'a> {
         self.mapper_items.push(mapper_impl);
     }
 
-    fn enum_variant_defs(&self, variants: &[VariantInfo], owned: bool) -> Vec<TokenStream> {
-        variants
-            .iter()
-            .map(|variant| {
-                let vname = format_ident!("{}", variant.name);
-                let vtype = self.nominal_type_tokens(&variant.comb, owned);
-                quote! { #vname(#vtype) }
-            })
-            .collect()
-    }
+    fn generate_value_enum_type(
+        &mut self,
+        name: &str,
+        inner: &CombIR,
+        variants: &[(String, i128)],
+    ) {
+        let type_name = format_ident!("{}", snake_to_upper_camel(name));
+        let mapper_name = format_ident!("{}Mapper", snake_to_upper_camel(name));
+        let raw_type = self.parse_type_tokens_with_lt(inner, quote! { 'p });
 
-    fn enum_either_types(&self, variants: &[VariantInfo], parse_lt: TokenStream) -> EitherTypeSet {
-        EitherTypeSet {
-            parse: build_nested_variant_type_with(variants, |variant| {
-                self.parse_type_tokens_with_lt(&variant.comb, parse_lt.clone())
-            }),
-            borrow: build_nested_variant_type_with(variants, |variant| {
-                self.borrow_type_tokens(&variant.comb)
-            }),
-            owned: build_nested_variant_type_with(variants, |variant| {
-                self.owned_type_tokens(&variant.comb)
-            }),
-        }
+        let variant_defs: Vec<_> = variants
+            .iter()
+            .map(|(variant, value)| {
+                let variant = format_ident!("{}", variant);
+                let value = Literal::i128_unsuffixed(*value);
+                quote! { #variant = #value }
+            })
+            .collect();
+        let from_raw_arms: Vec<_> = variants
+            .iter()
+            .map(|(variant, value)| {
+                let variant = format_ident!("{}", variant);
+                let value = Literal::i128_unsuffixed(*value);
+                quote! { #value => Self::#variant }
+            })
+            .collect();
+
+        self.type_items.push(quote! {
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            pub enum #type_name {
+                #(#variant_defs),*
+            }
+        });
+
+        self.from_impls.push(quote! {
+            impl From<#raw_type> for #type_name {
+                fn from(src: #raw_type) -> Self {
+                    match src as i128 {
+                        #(#from_raw_arms,)*
+                        _ => unreachable!("validated by combinator"),
+                    }
+                }
+            }
+        });
+        self.from_impls.push(quote! {
+            impl From<#type_name> for #raw_type {
+                fn from(v: #type_name) -> Self {
+                    v as #raw_type
+                }
+            }
+        });
+
+        self.mapper_items.push(emit_mapper_item(
+            &mapper_name,
+            raw_type.clone(),
+            quote! { #type_name },
+            raw_type.clone(),
+            quote! { #type_name },
+            raw_type,
+            quote! { #type_name },
+        ));
     }
 
     fn generate_enum_type(&mut self, name: &str, variants: &[VariantInfo]) {
@@ -983,8 +1031,22 @@ impl<'a> NominalTypeGen<'a> {
 
         let needs_lifetime = variants.iter().any(|v| self.comb_needs_lifetime(&v.comb));
 
-        let variant_defs = self.enum_variant_defs(variants, false);
-        let variant_defs_owned = self.enum_variant_defs(variants, true);
+        let variant_defs: Vec<_> = variants
+            .iter()
+            .map(|variant| {
+                let vname = format_ident!("{}", variant.name);
+                let vtype = self.nominal_type_tokens(&variant.comb, false);
+                quote! { #vname(#vtype) }
+            })
+            .collect();
+        let variant_defs_owned: Vec<_> = variants
+            .iter()
+            .map(|variant| {
+                let vname = format_ident!("{}", variant.name);
+                let vtype = self.nominal_type_tokens(&variant.comb, true);
+                quote! { #vname(#vtype) }
+            })
+            .collect();
 
         let enum_def = if needs_lifetime {
             quote! {
@@ -1017,155 +1079,6 @@ impl<'a> NominalTypeGen<'a> {
         if needs_lifetime {
             self.type_items.push(owned_enum_def);
         }
-
-        self.generate_enum_from_impls(name, variants, needs_lifetime);
-        self.generate_enum_mapper(name, variants, needs_lifetime);
-    }
-
-    fn generate_enum_from_impls(
-        &mut self,
-        name: &str,
-        variants: &[VariantInfo],
-        needs_lifetime: bool,
-    ) {
-        let type_name = format_ident!("{}", snake_to_upper_camel(name));
-        let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
-
-        let either_types = self.enum_either_types(variants, quote! { 'a });
-        let either_type = &either_types.parse;
-        let either_type_borrow = &either_types.borrow;
-        let either_type_owned = &either_types.owned;
-
-        let from_either_arms: Vec<TokenStream> = variants
-            .iter()
-            .enumerate()
-            .map(|(idx, v)| {
-                let vname = format_ident!("{}", v.name);
-                let pattern = wrap_right_nested_either(quote! { v }, idx, variants.len());
-                let value = self.field_from_expr(quote! { v }, &v.comb);
-                quote! { #pattern => #type_name::#vname(#value) }
-            })
-            .collect();
-
-        let from_either = if needs_lifetime {
-            quote! {
-                impl<'a> From<#either_type> for #type_name<'a> {
-                    fn from(e: #either_type) -> Self {
-                        match e {
-                            #(#from_either_arms),*
-                        }
-                    }
-                }
-            }
-        } else {
-            quote! {
-                impl From<#either_type> for #type_name {
-                    fn from(e: #either_type) -> Self {
-                        match e {
-                            #(#from_either_arms),*
-                        }
-                    }
-                }
-            }
-        };
-
-        let to_either_arms: Vec<TokenStream> = variants
-            .iter()
-            .enumerate()
-            .map(|(idx, v)| {
-                let vname = format_ident!("{}", v.name);
-                let wrap = wrap_right_nested_either(
-                    self.variant_borrow_expr(&format_ident!("v"), &v.comb),
-                    idx,
-                    variants.len(),
-                );
-                quote! { #type_name::#vname(v) => #wrap }
-            })
-            .collect();
-
-        let to_either = if needs_lifetime {
-            quote! {
-                impl<'s, 'a: 's> From<&'s #type_name<'a>> for #either_type_borrow {
-                    fn from(e: &'s #type_name<'a>) -> Self {
-                        match e {
-                            #(#to_either_arms),*
-                        }
-                    }
-                }
-            }
-        } else {
-            quote! {
-                impl<'s> From<&'s #type_name> for #either_type_borrow {
-                    fn from(e: &'s #type_name) -> Self {
-                        match e {
-                            #(#to_either_arms),*
-                        }
-                    }
-                }
-            }
-        };
-
-        self.from_impls.push(from_either);
-        self.from_impls.push(to_either);
-
-        if needs_lifetime {
-            let from_either_arms_owned: Vec<TokenStream> = variants
-                .iter()
-                .enumerate()
-                .map(|(idx, v)| {
-                    let vname = format_ident!("{}", v.name);
-                    let pattern = wrap_right_nested_either(quote! { v }, idx, variants.len());
-                    let value = self.field_from_expr(quote! { v }, &v.comb);
-                    quote! { #pattern => #owned_name::#vname(#value) }
-                })
-                .collect();
-
-            let from_either_owned = quote! {
-                impl From<#either_type_owned> for #owned_name {
-                    fn from(e: #either_type_owned) -> Self {
-                        match e {
-                            #(#from_either_arms_owned),*
-                        }
-                    }
-                }
-            };
-            self.from_impls.push(from_either_owned);
-        }
-    }
-
-    fn generate_enum_mapper(&mut self, name: &str, variants: &[VariantInfo], needs_lifetime: bool) {
-        let type_name = format_ident!("{}", snake_to_upper_camel(name));
-        let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
-        let mapper_name = format_ident!("{}Mapper", snake_to_upper_camel(name));
-
-        let either_types = self.enum_either_types(variants, quote! { 'p });
-        let either_type = &either_types.parse;
-        let either_type_borrow = &either_types.borrow;
-        let either_type_owned = &either_types.owned;
-
-        let mapper_impl = if needs_lifetime {
-            emit_mapper_item(
-                &mapper_name,
-                either_type.clone(),
-                quote! { #type_name<'p> },
-                either_type_borrow.clone(),
-                quote! { &'s #type_name<'s> },
-                either_type_owned.clone(),
-                quote! { #owned_name },
-            )
-        } else {
-            emit_mapper_item(
-                &mapper_name,
-                either_type.clone(),
-                quote! { #type_name },
-                either_type_borrow.clone(),
-                quote! { &'s #type_name },
-                either_type_owned.clone(),
-                quote! { #type_name },
-            )
-        };
-
-        self.mapper_items.push(mapper_impl);
     }
 }
 
@@ -1192,6 +1105,24 @@ pub(crate) fn concrete_owned_type_tokens(
     comb: &CombIR,
 ) -> TokenStream {
     NominalTypeGen::new(def, defs).owned_type_tokens(comb)
+}
+
+pub(crate) fn concrete_field_from_expr(
+    def: &CombDef,
+    defs: &HashMap<String, &CombDef>,
+    expr: TokenStream,
+    comb: &CombIR,
+) -> TokenStream {
+    NominalTypeGen::new(def, defs).field_from_expr(expr, comb)
+}
+
+pub(crate) fn concrete_variant_borrow_expr(
+    def: &CombDef,
+    defs: &HashMap<String, &CombDef>,
+    binding: &Ident,
+    comb: &CombIR,
+) -> TokenStream {
+    NominalTypeGen::new(def, defs).field_borrow_expr(quote! { (*#binding) }, comb)
 }
 
 pub(crate) fn public_parse_type_tokens(
@@ -1240,6 +1171,7 @@ pub(crate) fn public_borrow_type_tokens(
                 quote! { &'s #type_name }
             }
         }
+        TopLevelNominalKind::ValueEnum => quote! { #type_name },
         TopLevelNominalKind::Alias => concrete_borrow_type_tokens(def, defs, &def.body),
     }
 }
@@ -1290,184 +1222,11 @@ fn tuple_field_access(base: &TokenStream, total: usize, index: usize) -> TokenSt
     }
 }
 
-fn build_nested_variant_type_with<F>(variants: &[VariantInfo], mut f: F) -> TokenStream
-where
-    F: FnMut(&VariantInfo) -> TokenStream,
-{
-    if variants.is_empty() {
-        return quote! { () };
-    }
-    if variants.len() == 1 {
-        return f(&variants[0]);
-    }
-
-    let types: Vec<TokenStream> = variants.iter().map(&mut f).collect();
-    build_nested_either_type_from_tokens(&types)
-}
-
-fn variant_name_from_tag(tag: &TagValue, index: usize) -> String {
+pub(crate) fn variant_name_from_tag(tag: &TagValue, index: usize) -> String {
     match tag {
         TagValue::Int(_) => format!("Variant{}", index),
         TagValue::Enum { variant, .. } => variant.clone(),
         TagValue::Bytes(bytes) => format!("Bytes{:02X?}", bytes).replace(['[', ']', ',', ' '], ""),
         TagValue::Wildcard => "Default".to_string(),
     }
-}
-
-pub fn generate_dispatch_value_enums(
-    dispatch_name: &str,
-    cases: &[(String, CombIR)],
-    def_map: &HashMap<String, &CombDef>,
-) -> TokenStream {
-    if cases.is_empty() {
-        return quote! {};
-    }
-
-    let type_name = format_ident!("{}Value", snake_to_upper_camel(dispatch_name));
-    let owned_name = format_ident!("{}ValueOwned", snake_to_upper_camel(dispatch_name));
-
-    let needs_lifetime = cases
-        .iter()
-        .any(|(_, comb)| comb_needs_lifetime(comb, def_map));
-
-    let variant_defs: Vec<TokenStream> = cases
-        .iter()
-        .map(|(name, comb)| {
-            let vname = format_ident!("{}", snake_to_upper_camel(name));
-            let vtype = dispatch_value_type_tokens(comb, def_map, false);
-            quote! { #vname(#vtype) }
-        })
-        .collect();
-
-    let variant_defs_owned: Vec<TokenStream> = cases
-        .iter()
-        .map(|(name, comb)| {
-            let vname = format_ident!("{}", snake_to_upper_camel(name));
-            let vtype = dispatch_value_type_tokens(comb, def_map, true);
-            quote! { #vname(#vtype) }
-        })
-        .collect();
-
-    let enum_def = if needs_lifetime {
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq)]
-            pub enum #type_name<'a> {
-                #(#variant_defs),*
-            }
-        }
-    } else {
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq)]
-            pub enum #type_name {
-                #(#variant_defs),*
-            }
-        }
-    };
-
-    let owned_enum_def = if needs_lifetime {
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq)]
-            pub enum #owned_name {
-                #(#variant_defs_owned),*
-            }
-        }
-    } else {
-        quote! {}
-    };
-
-    quote! {
-        #enum_def
-        #owned_enum_def
-    }
-}
-
-fn dispatch_value_type_tokens(
-    comb: &CombIR,
-    def_map: &HashMap<String, &CombDef>,
-    owned: bool,
-) -> TokenStream {
-    match comb {
-        _ if comb_uint_type_tokens(comb).is_some() => {
-            comb_uint_type_tokens(comb).expect("integer helper guaranteed Some in guard")
-        }
-        CombIR::Fixed { .. } | CombIR::Variable { .. } | CombIR::Tail => {
-            if owned {
-                quote! { Vec<u8> }
-            } else {
-                quote! { &'a [u8] }
-            }
-        }
-        CombIR::Tuple(elems) => match elems.as_slice() {
-            [] => quote! { () },
-            [(_, only)] => dispatch_value_type_tokens(only, def_map, owned),
-            _ => {
-                let types: Vec<TokenStream> = elems
-                    .iter()
-                    .map(|(_, elem)| dispatch_value_type_tokens(elem, def_map, owned))
-                    .collect();
-                quote! { (#(#types),*) }
-            }
-        },
-        CombIR::Opt(inner) => {
-            let inner_ty = dispatch_value_type_tokens(inner, def_map, owned);
-            quote! { Option<#inner_ty> }
-        }
-        CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
-            let inner_ty = dispatch_value_type_tokens(inner, def_map, owned);
-            quote! { Vec<#inner_ty> }
-        }
-        CombIR::Named { name, .. } => {
-            let type_name = format_ident!("{}", snake_to_upper_camel(name));
-            let ref_needs_lt = def_map
-                .get(name)
-                .map(|def| comb_needs_lifetime(&def.body, def_map))
-                .unwrap_or(false);
-
-            if owned && ref_needs_lt {
-                let owned_name = format_ident!("{}Owned", snake_to_upper_camel(name));
-                quote! { #owned_name }
-            } else if ref_needs_lt {
-                quote! { #type_name<'a> }
-            } else {
-                quote! { #type_name }
-            }
-        }
-        CombIR::Refined { inner, .. }
-        | CombIR::Tag { inner, .. }
-        | CombIR::FixedLen { inner, .. }
-        | CombIR::AndThen { inner, .. } => dispatch_value_type_tokens(inner, def_map, owned),
-        CombIR::Mapped { inner, .. } => dispatch_value_type_tokens(inner, def_map, owned),
-        CombIR::Pair { fst, snd } => {
-            let fst_ty = dispatch_value_type_tokens(fst, def_map, owned);
-            let snd_ty = dispatch_value_type_tokens(&snd.comb, def_map, owned);
-            quote! { (#fst_ty, #snd_ty) }
-        }
-        CombIR::Dispatch { branches, .. } => {
-            let types: Vec<TokenStream> = branches
-                .iter()
-                .map(|(_, c)| dispatch_value_type_tokens(c, def_map, owned))
-                .collect();
-            build_nested_either_type_from_tokens(&types)
-        }
-        CombIR::Choice(choices) => {
-            let types: Vec<TokenStream> = choices
-                .iter()
-                .map(|c| dispatch_value_type_tokens(c, def_map, owned))
-                .collect();
-            build_nested_either_type_from_tokens(&types)
-        }
-        _ => quote! { () },
-    }
-}
-
-fn comb_needs_lifetime(comb: &CombIR, def_map: &HashMap<String, &CombDef>) -> bool {
-    shared_comb_needs_lifetime(comb, def_map, LifetimeCheckMode::LegacyDispatch)
-}
-
-pub fn extract_dispatch_cases(branches: &[(TagValue, CombIR)]) -> Vec<(String, CombIR)> {
-    branches
-        .iter()
-        .enumerate()
-        .map(|(i, (tag, comb))| (variant_name_from_tag(tag, i), comb.clone()))
-        .collect()
 }

@@ -2,7 +2,7 @@
 //!
 //! This IR maps directly to the `vest::regular::*` combinator types in the backend library.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
@@ -97,7 +97,7 @@ pub enum CombIR {
     },
 
     // ===== Variants/Choice =====
-    /// Nested `variant::Choice` / `variant::Either` for sum types.
+    /// `variant::Choice` for unsupported non-dispatch sum types.
     Choice(Vec<CombIR>),
     /// `variant::Dispatch` - select branch based on tag.
     Dispatch {
@@ -138,6 +138,11 @@ pub enum CombIR {
         lhs: TagRef,
         rhs: TagValue,
         inner: Box<CombIR>,
+    },
+    /// Exhaustive enum lowered to a validated integer plus a nominal mapper.
+    Enum {
+        inner: Box<CombIR>,
+        variants: Vec<(String, i128)>,
     },
 
     // ===== Tag =====
@@ -225,6 +230,8 @@ pub struct CodegenCtx {
     pub endian: Endian,
     /// Map of format names to their static sizes (if known).
     pub static_sizes: HashMap<String, usize>,
+    /// Top-level exhaustive enum definitions.
+    pub enum_names: HashSet<String>,
 }
 
 impl Default for CodegenCtx {
@@ -232,6 +239,7 @@ impl Default for CodegenCtx {
         Self {
             endian: Endian::Little,
             static_sizes: HashMap::new(),
+            enum_names: HashSet::new(),
         }
     }
 }
@@ -241,6 +249,7 @@ impl From<&crate::type_check::GlobalCtx<'_>> for CodegenCtx {
         Self {
             endian: Endian::Little,
             static_sizes: ctx.static_sizes.clone(),
+            enum_names: ctx.enums.keys().map(|name| (*name).to_string()).collect(),
         }
     }
 }
@@ -277,6 +286,7 @@ pub fn comb_needs_lifetime(
         | CombIR::Mapped { inner, .. }
         | CombIR::AndThen { inner, .. }
         | CombIR::FixedLen { inner, .. }
+        | CombIR::Enum { inner, .. }
         | CombIR::Tag { inner, .. } => comb_needs_lifetime(inner, def_map, mode),
         CombIR::CondEq { inner, .. } => match mode {
             LifetimeCheckMode::Full => comb_needs_lifetime(inner, def_map, mode),
@@ -314,6 +324,7 @@ pub fn comb_uint_type_tokens(comb: &CombIR) -> Option<TokenStream> {
         CombIR::U24(_) => Some(quote! { u24 }),
         CombIR::U32(_) => Some(quote! { u32 }),
         CombIR::U64(_) => Some(quote! { u64 }),
+        CombIR::Enum { inner, .. } => comb_uint_type_tokens(inner),
         _ => None,
     }
 }

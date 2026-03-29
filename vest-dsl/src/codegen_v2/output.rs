@@ -5,19 +5,19 @@ use quote::{format_ident, quote};
 
 use crate::vestir::ConstraintElem;
 
-use super::builders::{
-    build_nested_either_type, build_right_nested_tokens, wrap_right_nested_either,
-};
+use super::builders::build_right_nested_tokens;
 use super::combir::{
-    comb_uint_or_i128_type_tokens, comb_uint_type_tokens, tag_literal_type_tokens, ArithOp,
-    CodegenCtx, CombDef, CombIR, ConstDef, DepCombIR, Endian, IntConstraintIR, LenExpr, ParamRef,
-    PredicateIR, TagRef, TagValue,
+    comb_needs_lifetime as shared_comb_needs_lifetime, comb_uint_or_i128_type_tokens,
+    comb_uint_type_tokens, tag_literal_type_tokens, ArithOp, CodegenCtx, CombDef, CombIR, ConstDef,
+    DepCombIR, Endian, IntConstraintIR, LenExpr, LifetimeCheckMode, ParamRef, PredicateIR, TagRef,
+    TagValue,
 };
 use super::format::{format_rust_code, FormatError};
 use super::nominal::{
-    concrete_borrow_type_tokens, concrete_owned_type_tokens, concrete_parse_type_tokens,
-    public_borrow_type_tokens, public_owned_type_tokens, public_parse_type_tokens,
-    snake_to_upper_camel, NominalTypeGen,
+    concrete_borrow_type_tokens, concrete_field_from_expr, concrete_owned_type_tokens,
+    concrete_parse_type_tokens, concrete_variant_borrow_expr, public_borrow_type_tokens,
+    public_owned_type_tokens, public_parse_type_tokens, snake_to_upper_camel,
+    variant_name_from_tag, NominalTypeGen,
 };
 
 pub struct TokenCtx<'a> {
@@ -113,7 +113,7 @@ fn generate_imports() -> TokenStream {
         use vest_lib::errors::*;
         use vest_lib::regular::*;
         use vest_lib::regular::sequence::{Pair, Preceded, Terminated, DepCombinator};
-        use vest_lib::regular::variant::{Either, Dispatch, Opt, OptThen, Choice};
+        use vest_lib::regular::variant::{Dispatch, Opt, OptThen, Choice};
         use vest_lib::regular::repetition::{Repeat, RepeatN};
         use vest_lib::regular::modifier::{Refined, Mapped, FixedLen, Length, RuntimeValue, AndThen, CondEq, Mapper};
         use vest_lib::regular::tag::Tag;
@@ -127,77 +127,41 @@ fn generate_imports() -> TokenStream {
 }
 
 fn generate_constructor_param_helpers() -> TokenStream {
-    let plain_specs = [
-        (
-            quote! { u8 },
-            quote! { RuntimeValue::from_value(self) },
-            quote! { Length::from_value(self as usize) },
-        ),
-        (
-            quote! { u16 },
-            quote! { RuntimeValue::from_value(self) },
-            quote! { Length::from_value(self as usize) },
-        ),
+    let length_plain_specs = [
+        (quote! { u8 }, quote! { Length::from_value(self as usize) }),
+        (quote! { u16 }, quote! { Length::from_value(self as usize) }),
         (
             quote! { u24 },
-            quote! { RuntimeValue::from_value(self) },
             quote! { Length::from_value(self.as_u32() as usize) },
         ),
-        (
-            quote! { u32 },
-            quote! { RuntimeValue::from_value(self) },
-            quote! { Length::from_value(self as usize) },
-        ),
-        (
-            quote! { u64 },
-            quote! { RuntimeValue::from_value(self) },
-            quote! { Length::from_value(self as usize) },
-        ),
+        (quote! { u32 }, quote! { Length::from_value(self as usize) }),
+        (quote! { u64 }, quote! { Length::from_value(self as usize) }),
     ];
-    let ref_specs = [
-        (
-            quote! { u8 },
-            quote! { RuntimeValue::from_mut(self) },
-            quote! { Length::from_u8_mut(self) },
-        ),
-        (
-            quote! { u16 },
-            quote! { RuntimeValue::from_mut(self) },
-            quote! { Length::from_u16_mut(self) },
-        ),
+    let length_ref_specs = [
+        (quote! { u8 }, quote! { Length::from_u8_mut(self) }),
+        (quote! { u16 }, quote! { Length::from_u16_mut(self) }),
         (
             quote! { u24 },
-            quote! { RuntimeValue::from_mut(self) },
             quote! { Length::from_value(self.as_u32() as usize) },
         ),
-        (
-            quote! { u32 },
-            quote! { RuntimeValue::from_mut(self) },
-            quote! { Length::from_u32_mut(self) },
-        ),
-        (
-            quote! { u64 },
-            quote! { RuntimeValue::from_mut(self) },
-            quote! { Length::from_u64_mut(self) },
-        ),
+        (quote! { u32 }, quote! { Length::from_u32_mut(self) }),
+        (quote! { u64 }, quote! { Length::from_u64_mut(self) }),
     ];
-    let plain_impls: Vec<_> = plain_specs
+    let length_plain_impls: Vec<_> = length_plain_specs
         .into_iter()
-        .map(|(ty, runtime_value, length)| {
+        .map(|(ty, length)| {
             quote! {
-                impl CombinatorParam<'static, #ty> for #ty {
-                    fn into_runtime_value(self) -> RuntimeValue<'static, #ty> { #runtime_value }
+                impl LengthParam<'static, #ty> for #ty {
                     fn into_length(self) -> Length<'static> { #length }
                 }
             }
         })
         .collect();
-    let ref_impls: Vec<_> = ref_specs
+    let length_ref_impls: Vec<_> = length_ref_specs
         .into_iter()
-        .map(|(ty, runtime_value, length)| {
+        .map(|(ty, length)| {
             quote! {
-                impl<'a> CombinatorParam<'a, #ty> for &'a mut #ty {
-                    fn into_runtime_value(self) -> RuntimeValue<'a, #ty> { #runtime_value }
+                impl<'a> LengthParam<'a, #ty> for &'a mut #ty {
                     fn into_length(self) -> Length<'a> { #length }
                 }
             }
@@ -205,13 +169,28 @@ fn generate_constructor_param_helpers() -> TokenStream {
         .collect();
 
     quote! {
-        pub trait CombinatorParam<'a, T: Copy> {
+        pub trait RuntimeValParam<'a, T: Copy> {
             fn into_runtime_value(self) -> RuntimeValue<'a, T>;
+        }
+
+        pub trait LengthParam<'a, T: Copy> {
             fn into_length(self) -> Length<'a>;
         }
 
-        #(#plain_impls)*
-        #(#ref_impls)*
+        impl<T: Copy> RuntimeValParam<'static, T> for T {
+            fn into_runtime_value(self) -> RuntimeValue<'static, T> {
+                RuntimeValue::from_value(self)
+            }
+        }
+
+        impl<'a, T: Copy> RuntimeValParam<'a, T> for &'a mut T {
+            fn into_runtime_value(self) -> RuntimeValue<'a, T> {
+                RuntimeValue::from_mut(self)
+            }
+        }
+
+        #(#length_plain_impls)*
+        #(#length_ref_impls)*
     }
 }
 
@@ -268,6 +247,7 @@ struct DefinitionBundle {
 struct DispatchBranchSpec {
     param: Ident,
     variant: Ident,
+    nominal_variant: Ident,
     default_type: TokenStream,
     parse_type: TokenStream,
     borrow_type: TokenStream,
@@ -280,6 +260,7 @@ struct ParamSpec {
     ident: Ident,
     ty: ValueType,
     needs_generate_ref: bool,
+    needs_length_param: bool,
 }
 
 impl ParamSpec {
@@ -305,10 +286,10 @@ enum ValueType {
     U24,
     U32,
     U64,
+    Named(String),
     ByteSlice,
     Unit,
     Tuple(Vec<ValueType>),
-    Either(Box<ValueType>, Box<ValueType>),
     Option(Box<ValueType>),
     Slice(Box<ValueType>),
 }
@@ -321,6 +302,10 @@ impl ValueType {
             ValueType::U24 => quote! { u24 },
             ValueType::U32 => quote! { u32 },
             ValueType::U64 => quote! { u64 },
+            ValueType::Named(name) => {
+                let ident = format_ident!("{}", snake_to_upper_camel(name));
+                quote! { #ident }
+            }
             ValueType::ByteSlice => quote! { &'static [u8] },
             ValueType::Unit => quote! { () },
             ValueType::Tuple(elems) => {
@@ -333,11 +318,6 @@ impl ValueType {
                         elems.iter().map(ValueType::to_tokens).collect();
                     build_nested_pair_type(&elem_tokens)
                 }
-            }
-            ValueType::Either(left, right) => {
-                let left = left.to_tokens();
-                let right = right.to_tokens();
-                quote! { Either<#left, #right> }
             }
             ValueType::Option(inner) => {
                 let inner = inner.to_tokens();
@@ -443,6 +423,7 @@ impl<'a> DefEmitter<'a> {
                 ident: format_ident!("{}", param.name),
                 ty: emitter.value_type_of_comb(&param.ty),
                 needs_generate_ref: emitter.param_needs_generate_ref(&def.body, &param.name),
+                needs_length_param: emitter.param_needs_length_param(&def.body, &param.name),
             })
             .collect();
         emitter.needs_runtime_ref = param_specs.iter().any(|param| param.needs_generate_ref);
@@ -596,7 +577,11 @@ impl<'a> DefEmitter<'a> {
             .map(|param| {
                 let arg_ty = param.ctor_generic_ident();
                 let raw_ty = param.ty.to_tokens();
-                quote! { #arg_ty: CombinatorParam<#lt, #raw_ty> }
+                if param.needs_length_param {
+                    quote! { #arg_ty: LengthParam<#lt, #raw_ty> }
+                } else {
+                    quote! { #arg_ty: RuntimeValParam<#lt, #raw_ty> }
+                }
             })
             .collect()
     }
@@ -825,7 +810,8 @@ impl<'a> DefEmitter<'a> {
     fn comb_emits_mapper(&self, comb: &CombIR) -> bool {
         match comb {
             CombIR::Tuple(elems) => !elems.is_empty(),
-            CombIR::Pair { .. } | CombIR::Dispatch { .. } => true,
+            CombIR::Pair { .. } | CombIR::Enum { .. } => true,
+            CombIR::Dispatch { .. } => false,
             CombIR::Refined { inner, .. }
             | CombIR::Mapped { inner, .. }
             | CombIR::FixedLen { inner, .. }
@@ -1069,6 +1055,9 @@ impl<'a> DefEmitter<'a> {
                     self.comb_expr_tokens_mode(inner, env, &child_path(path, 0), mode);
                 let mapper_name = format_ident!("{}", mapper.name);
                 quote! { Mapped::new(#inner_tokens, #mapper_name) }
+            }
+            CombIR::Enum { inner, .. } => {
+                self.comb_expr_tokens_mode(inner, env, &child_path(path, 0), mode)
             }
             CombIR::AndThen { len_comb, inner } => {
                 let len_tokens =
@@ -1359,6 +1348,13 @@ impl<'a> DefEmitter<'a> {
                 let mapper_name = format_ident!("{}", mapper.name);
                 quote! { Mapped<#inner_type, #mapper_name> }
             }
+            CombIR::Enum { inner, .. } => self.comb_type_tokens_with_lt_inner(
+                inner,
+                env,
+                &child_path(path, 0),
+                runtime_lt,
+                use_dispatch_defaults,
+            ),
             CombIR::AndThen { len_comb, inner } => {
                 let len_type = self.comb_type_tokens_with_lt_inner(
                     len_comb,
@@ -1623,35 +1619,29 @@ impl<'a> DefEmitter<'a> {
             })
             .collect();
 
-        let parse_type = build_nested_either_type(
-            &branch_specs
-                .iter()
-                .map(|spec| spec.parse_type.clone())
-                .collect::<Vec<_>>(),
-        );
-        let serialize_type = build_nested_either_type(
-            &branch_specs
-                .iter()
-                .map(|spec| spec.borrow_type.clone())
-                .collect::<Vec<_>>(),
-        );
-        let generate_type = build_nested_either_type(
-            &branch_specs
-                .iter()
-                .map(|spec| spec.owned_type.clone())
-                .collect::<Vec<_>>(),
-        );
+        let parse_type = public_parse_type_tokens(self.def, self.defs, quote! { 'p });
+        let serialize_type = public_borrow_type_tokens(self.def, self.defs);
+        let generate_type = public_owned_type_tokens(self.def, self.defs);
+        let type_name = format_ident!("{}", snake_to_upper_camel(&self.def.name));
+        let owned_name = format_ident!("{}Owned", snake_to_upper_camel(&self.def.name));
+        let generate_enum_name =
+            if shared_comb_needs_lifetime(&self.def.body, self.defs, LifetimeCheckMode::Full) {
+                owned_name
+            } else {
+                type_name.clone()
+            };
 
         let parse_arms: Vec<_> = branch_specs
             .iter()
-            .enumerate()
-            .map(|(idx, spec)| {
+            .zip(branches.iter())
+            .map(|(spec, (_, comb))| {
                 let variant = &spec.variant;
-                let wrapped = either_wrap_expr(quote! { v }, idx, branch_params.len());
+                let nominal_variant = &spec.nominal_variant;
+                let value = concrete_field_from_expr(self.def, self.defs, quote! { v }, comb);
                 quote! {
                     #helper::#variant(inner) => {
                         let (n, v) = inner.parse(s)?;
-                        Ok((n, #wrapped))
+                        Ok((n, #type_name::#nominal_variant(#value)))
                     }
                 }
             })
@@ -1659,14 +1649,13 @@ impl<'a> DefEmitter<'a> {
 
         let generate_arms: Vec<_> = branch_specs
             .iter()
-            .enumerate()
-            .map(|(idx, spec)| {
+            .map(|spec| {
                 let variant = &spec.variant;
-                let wrapped = either_wrap_expr(quote! { v }, idx, branch_params.len());
+                let nominal_variant = &spec.nominal_variant;
                 quote! {
                     #helper::#variant(inner) => {
                         let (n, v) = inner.generate(g)?;
-                        Ok((n, #wrapped))
+                        Ok((n, #generate_enum_name::#nominal_variant(v)))
                     }
                 }
             })
@@ -1674,42 +1663,48 @@ impl<'a> DefEmitter<'a> {
 
         let length_arms: Vec<_> = branch_specs
             .iter()
+            .zip(branches.iter())
             .enumerate()
-            .map(|(idx, spec)| {
+            .map(|(idx, (spec, (_, comb)))| {
                 let variant = &spec.variant;
+                let nominal_variant = &spec.nominal_variant;
                 let value = format_ident!("v{}", idx);
-                let value_pat = either_value_pattern(&value, idx, branch_params.len());
+                let borrowed = concrete_variant_borrow_expr(self.def, self.defs, &value, comb);
                 quote! {
-                    (#helper::#variant(inner), #value_pat) =>
-                        inner.length(#value),
+                    (#helper::#variant(inner), #type_name::#nominal_variant(#value)) =>
+                        inner.length(#borrowed),
                 }
             })
             .collect();
 
         let serialize_arms: Vec<_> = branch_specs
             .iter()
+            .zip(branches.iter())
             .enumerate()
-            .map(|(idx, spec)| {
+            .map(|(idx, (spec, (_, comb)))| {
                 let variant = &spec.variant;
+                let nominal_variant = &spec.nominal_variant;
                 let value = format_ident!("v{}", idx);
-                let value_pat = either_value_pattern(&value, idx, branch_params.len());
+                let borrowed = concrete_variant_borrow_expr(self.def, self.defs, &value, comb);
                 quote! {
-                    (#helper::#variant(inner), #value_pat) =>
-                        inner.serialize(#value, data, pos),
+                    (#helper::#variant(inner), #type_name::#nominal_variant(#value)) =>
+                        inner.serialize(#borrowed, data, pos),
                 }
             })
             .collect();
 
         let wf_arms: Vec<_> = branch_specs
             .iter()
+            .zip(branches.iter())
             .enumerate()
-            .map(|(idx, spec)| {
+            .map(|(idx, (spec, (_, comb)))| {
                 let variant = &spec.variant;
+                let nominal_variant = &spec.nominal_variant;
                 let value = format_ident!("v{}", idx);
-                let value_pat = either_value_pattern(&value, idx, branch_params.len());
+                let borrowed = concrete_variant_borrow_expr(self.def, self.defs, &value, comb);
                 quote! {
-                    (#helper::#variant(inner), #value_pat) =>
-                        inner.well_formed(#value),
+                    (#helper::#variant(inner), #type_name::#nominal_variant(#value)) =>
+                        inner.well_formed(#borrowed),
                 }
             })
             .collect();
@@ -1774,9 +1769,10 @@ impl<'a> DefEmitter<'a> {
         branches
             .iter()
             .enumerate()
-            .map(|(idx, (_, comb))| DispatchBranchSpec {
+            .map(|(idx, (tag, comb))| DispatchBranchSpec {
                 param: format_ident!("C{}", idx),
                 variant: dispatch_variant_ident(idx),
+                nominal_variant: format_ident!("{}", variant_name_from_tag(tag, idx)),
                 default_type: self.comb_type_tokens_with_lt(
                     comb,
                     env,
@@ -2066,6 +2062,11 @@ impl<'a> DefEmitter<'a> {
         self.param_needs_generate_ref_inner(comb, name, &mut seen)
     }
 
+    fn param_needs_length_param(&self, comb: &CombIR, name: &str) -> bool {
+        let mut seen = HashSet::new();
+        self.param_needs_length_param_inner(comb, name, &mut seen)
+    }
+
     fn param_needs_generate_ref_inner(
         &self,
         comb: &CombIR,
@@ -2101,6 +2102,7 @@ impl<'a> DefEmitter<'a> {
             | CombIR::Repeat(inner)
             | CombIR::Refined { inner, .. }
             | CombIR::Mapped { inner, .. }
+            | CombIR::Enum { inner, .. }
             | CombIR::AndThen { inner, .. }
             | CombIR::CondEq { inner, .. }
             | CombIR::Tag { inner, .. } => self.param_needs_generate_ref_inner(inner, name, seen),
@@ -2150,6 +2152,91 @@ impl<'a> DefEmitter<'a> {
         }
     }
 
+    fn param_needs_length_param_inner(
+        &self,
+        comb: &CombIR,
+        name: &str,
+        seen: &mut HashSet<String>,
+    ) -> bool {
+        match comb {
+            CombIR::Variable { len } => len_uses_dependent_name(len, name),
+            CombIR::Tuple(elems) => elems
+                .iter()
+                .any(|(_, elem)| self.param_needs_length_param_inner(elem, name, seen)),
+            CombIR::Pair { fst, snd } => {
+                self.param_needs_length_param_inner(fst, name, seen)
+                    || self.param_needs_length_param_inner(&snd.comb, name, seen)
+            }
+            CombIR::Preceded { prefix, inner } => {
+                self.param_needs_length_param_inner(prefix, name, seen)
+                    || self.param_needs_length_param_inner(inner, name, seen)
+            }
+            CombIR::Terminated { inner, suffix } => {
+                self.param_needs_length_param_inner(inner, name, seen)
+                    || self.param_needs_length_param_inner(suffix, name, seen)
+            }
+            CombIR::Choice(choices) => choices
+                .iter()
+                .any(|choice| self.param_needs_length_param_inner(choice, name, seen)),
+            CombIR::Dispatch { branches, .. } => branches
+                .iter()
+                .any(|(_, branch)| self.param_needs_length_param_inner(branch, name, seen)),
+            CombIR::Opt(inner)
+            | CombIR::Repeat(inner)
+            | CombIR::Refined { inner, .. }
+            | CombIR::Mapped { inner, .. }
+            | CombIR::Enum { inner, .. }
+            | CombIR::AndThen { inner, .. }
+            | CombIR::CondEq { inner, .. }
+            | CombIR::Tag { inner, .. } => self.param_needs_length_param_inner(inner, name, seen),
+            CombIR::OptThen { fst, snd } => {
+                self.param_needs_length_param_inner(fst, name, seen)
+                    || self.param_needs_length_param_inner(snd, name, seen)
+            }
+            CombIR::RepeatN { inner, count } => {
+                len_uses_dependent_name(count, name)
+                    || self.param_needs_length_param_inner(inner, name, seen)
+            }
+            CombIR::FixedLen { len, inner } => {
+                len_uses_dependent_name(len, name)
+                    || self.param_needs_length_param_inner(inner, name, seen)
+            }
+            CombIR::Named {
+                name: def_name,
+                args,
+            } => {
+                let Some(def) = self.defs.get(def_name) else {
+                    return false;
+                };
+                if !seen.insert(def_name.clone()) {
+                    return false;
+                }
+                let result = def
+                    .params
+                    .iter()
+                    .zip(args.iter())
+                    .any(|(param, arg)| match arg {
+                        ParamRef::Dependent(arg_name) if arg_name == name => {
+                            self.param_needs_length_param_inner(&def.body, &param.name, seen)
+                        }
+                        _ => false,
+                    });
+                seen.remove(def_name);
+                result
+            }
+            CombIR::Tail
+            | CombIR::U8
+            | CombIR::U16(_)
+            | CombIR::U24(_)
+            | CombIR::U32(_)
+            | CombIR::U64(_)
+            | CombIR::Fixed { .. }
+            | CombIR::End
+            | CombIR::Success
+            | CombIR::Fail(_) => false,
+        }
+    }
+
     fn value_type_of_comb(&self, comb: &CombIR) -> ValueType {
         let mut seen = HashSet::new();
         self.value_type_of_comb_inner(comb, &mut seen)
@@ -2177,10 +2264,11 @@ impl<'a> DefEmitter<'a> {
             | CombIR::Terminated { inner, .. }
             | CombIR::Refined { inner, .. }
             | CombIR::Mapped { inner, .. }
+            | CombIR::Enum { inner, .. }
             | CombIR::AndThen { inner, .. }
             | CombIR::FixedLen { inner, .. }
             | CombIR::CondEq { inner, .. } => self.value_type_of_comb_inner(inner, seen),
-            CombIR::Choice(choices) => value_type_of_choice(self, choices, seen),
+            CombIR::Choice(_) => todo!("Choice value types are not supported; use Dispatch"),
             CombIR::Dispatch { branches, .. } => {
                 if let Some((_, comb)) = branches.first() {
                     self.value_type_of_comb_inner(comb, seen)
@@ -2209,7 +2297,13 @@ impl<'a> DefEmitter<'a> {
                 let value = self
                     .defs
                     .get(name)
-                    .map(|def| self.value_type_of_comb_inner(&def.body, seen))
+                    .map(|def| {
+                        if matches!(def.body, CombIR::Enum { .. }) {
+                            ValueType::Named(name.clone())
+                        } else {
+                            self.value_type_of_comb_inner(&def.body, seen)
+                        }
+                    })
                     .unwrap_or_else(|| {
                         todo!(
                             "Named combinator value type resolution is incomplete for {}",
@@ -2237,22 +2331,6 @@ impl<'a> DefEmitter<'a> {
             CombIR::Tuple(_) => ValueType::Unit,
             other => self.value_type_of_comb(other),
         }
-    }
-}
-
-fn value_type_of_choice(
-    emitter: &DefEmitter<'_>,
-    choices: &[CombIR],
-    seen: &mut HashSet<String>,
-) -> ValueType {
-    if choices.is_empty() {
-        ValueType::Unit
-    } else if choices.len() == 1 {
-        emitter.value_type_of_comb_inner(&choices[0], seen)
-    } else {
-        let first = emitter.value_type_of_comb_inner(&choices[0], seen);
-        let rest = value_type_of_choice(emitter, &choices[1..], seen);
-        ValueType::Either(Box::new(first), Box::new(rest))
     }
 }
 
@@ -2301,6 +2379,7 @@ fn collect_used_names(comb: &CombIR, names: &mut BTreeSet<String>) {
         | CombIR::Repeat(inner)
         | CombIR::Refined { inner, .. }
         | CombIR::Mapped { inner, .. }
+        | CombIR::Enum { inner, .. }
         | CombIR::AndThen { inner, .. }
         | CombIR::Tag { inner, .. } => collect_used_names(inner, names),
         CombIR::OptThen { fst, snd } => {
@@ -2488,14 +2567,6 @@ fn build_nested_pair_expr(exprs: &[TokenStream]) -> TokenStream {
     build_right_nested_tokens(exprs, None, &|first, rest| quote! { (#first, #rest) })
 }
 
-fn either_wrap_expr(value: TokenStream, index: usize, total: usize) -> TokenStream {
-    wrap_right_nested_either(value, index, total)
-}
-
-fn either_value_pattern(value: &Ident, index: usize, total: usize) -> TokenStream {
-    wrap_right_nested_either(quote! { #value }, index, total)
-}
-
 fn dispatch_variant_ident(index: usize) -> Ident {
     format_ident!("V{}", index + 1)
 }
@@ -2528,6 +2599,10 @@ fn dispatch_tag_type_tokens_for_ref(tag_ref: &TagRef, env: &ValueEnv) -> TokenSt
                     ValueType::U24 => comb_uint_type_tokens(&CombIR::U24(Endian::Little)).unwrap(),
                     ValueType::U32 => comb_uint_type_tokens(&CombIR::U32(Endian::Little)).unwrap(),
                     ValueType::U64 => comb_uint_type_tokens(&CombIR::U64(Endian::Little)).unwrap(),
+                    ValueType::Named(ref name) => {
+                        let ident = format_ident!("{}", snake_to_upper_camel(name));
+                        quote! { #ident }
+                    }
                     _ => quote! { i128 },
                 }
             } else {
