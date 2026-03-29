@@ -334,6 +334,14 @@ impl ValueType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+enum PublicFnKind {
+    Parse,
+    Serialize,
+    Length,
+    Generate,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum EmitMode {
     Parse,
     Generate,
@@ -381,23 +389,14 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn top_level_env(&self) -> ValueEnv {
-        self.param_specs
-            .iter()
-            .map(|param| {
-                (
-                    param.name.clone(),
-                    Binding {
-                        ident: param.ident.clone(),
-                        ty: param.ty.clone(),
-                        is_mut_ref: false,
-                        is_generic_int_param: false,
-                    },
-                )
-            })
-            .collect()
+        self.build_top_level_env(false)
     }
 
     fn top_level_ctor_env(&self) -> ValueEnv {
+        self.build_top_level_env(true)
+    }
+
+    fn build_top_level_env(&self, ctor_mode: bool) -> ValueEnv {
         self.param_specs
             .iter()
             .map(|param| {
@@ -407,7 +406,7 @@ impl<'a> DefEmitter<'a> {
                         ident: param.ident.clone(),
                         ty: param.ty.clone(),
                         is_mut_ref: false,
-                        is_generic_int_param: param.needs_generate_ref,
+                        is_generic_int_param: ctor_mode && param.needs_generate_ref,
                     },
                 )
             })
@@ -629,13 +628,15 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn parse_fn(&self) -> TokenStream {
-        let fn_name = format_ident!("parse_{}", self.def.name);
-        let combinator_fn = format_ident!("{}", self.def.name);
-        let parse_type = self.public_parse_type_tokens(quote! { 'p });
+        let fn_name = format_ident!(
+            "{}_{}",
+            self.public_fn_prefix(PublicFnKind::Parse),
+            self.def.name
+        );
         let params = self.param_list_tokens();
-        let arg_names = self.param_idents();
-        let combinator_ctor = self.call_ctor_tokens(&combinator_fn, &arg_names);
         let parse_doc = format!("Parse function for {} combinator", self.def.name);
+        let combinator_ctor = self.public_ctor_call_tokens();
+        let parse_type = self.public_parse_type_tokens(quote! { 'p });
 
         if params.is_empty() {
             quote! {
@@ -657,13 +658,15 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn serialize_fn(&self) -> TokenStream {
-        let fn_name = format_ident!("serialize_{}", self.def.name);
-        let combinator_fn = format_ident!("{}", self.def.name);
+        let fn_name = format_ident!(
+            "{}_{}",
+            self.public_fn_prefix(PublicFnKind::Serialize),
+            self.def.name
+        );
         let borrow_type = self.public_borrow_type_tokens();
         let params = self.param_list_tokens();
-        let arg_names = self.param_idents();
-        let combinator_ctor = self.call_ctor_tokens(&combinator_fn, &arg_names);
         let serialize_doc = format!("Serialize function for {} combinator", self.def.name);
+        let combinator_ctor = self.public_ctor_call_tokens();
 
         if params.is_empty() {
             quote! {
@@ -685,13 +688,15 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn length_fn(&self) -> TokenStream {
-        let fn_name = format_ident!("{}_len", self.def.name);
-        let combinator_fn = format_ident!("{}", self.def.name);
+        let fn_name = format_ident!(
+            "{}{}",
+            self.def.name,
+            self.public_fn_suffix(PublicFnKind::Length)
+        );
         let borrow_type = self.public_borrow_type_tokens();
         let params = self.param_list_tokens();
-        let arg_names = self.param_idents();
-        let combinator_ctor = self.call_ctor_tokens(&combinator_fn, &arg_names);
         let length_doc = format!("Length function for {} combinator", self.def.name);
+        let combinator_ctor = self.public_ctor_call_tokens();
 
         if params.is_empty() {
             quote! {
@@ -713,13 +718,15 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn generate_fn(&self) -> TokenStream {
-        let fn_name = format_ident!("generate_{}", self.def.name);
-        let combinator_fn = format_ident!("{}", self.def.name);
+        let fn_name = format_ident!(
+            "{}_{}",
+            self.public_fn_prefix(PublicFnKind::Generate),
+            self.def.name
+        );
         let owned_type = self.public_owned_type_tokens();
         let params = self.generate_param_list_tokens();
-        let arg_names = self.param_idents();
-        let combinator_ctor = self.call_ctor_tokens(&combinator_fn, &arg_names);
         let generate_doc = format!("Generate function for {} combinator", self.def.name);
+        let combinator_ctor = self.public_ctor_call_tokens();
 
         if params.is_empty() {
             quote! {
@@ -749,23 +756,20 @@ impl<'a> DefEmitter<'a> {
     }
 
     fn param_list_tokens(&self) -> Vec<TokenStream> {
-        self.param_specs
-            .iter()
-            .map(|param| {
-                let ident = &param.ident;
-                let ty = param.ty.to_tokens();
-                quote! { #ident: #ty }
-            })
-            .collect()
+        self.param_list_tokens_with_lifetime(false)
     }
 
     fn generate_param_list_tokens(&self) -> Vec<TokenStream> {
+        self.param_list_tokens_with_lifetime(true)
+    }
+
+    fn param_list_tokens_with_lifetime(&self, generate_mode: bool) -> Vec<TokenStream> {
         self.param_specs
             .iter()
             .map(|param| {
                 let ident = &param.ident;
                 let ty = param.ty.to_tokens();
-                if param.needs_generate_ref {
+                if generate_mode && param.needs_generate_ref {
                     quote! { #ident: &'g mut #ty }
                 } else {
                     quote! { #ident: #ty }
@@ -786,6 +790,28 @@ impl<'a> DefEmitter<'a> {
             quote! { #fn_name() }
         } else {
             quote! { #fn_name(#(#args),*) }
+        }
+    }
+
+    fn public_ctor_call_tokens(&self) -> TokenStream {
+        let combinator_fn = format_ident!("{}", self.def.name);
+        let arg_names = self.param_idents();
+        self.call_ctor_tokens(&combinator_fn, &arg_names)
+    }
+
+    fn public_fn_prefix(&self, kind: PublicFnKind) -> &'static str {
+        match kind {
+            PublicFnKind::Parse => "parse",
+            PublicFnKind::Serialize => "serialize",
+            PublicFnKind::Generate => "generate",
+            PublicFnKind::Length => "",
+        }
+    }
+
+    fn public_fn_suffix(&self, kind: PublicFnKind) -> &'static str {
+        match kind {
+            PublicFnKind::Length => "_len",
+            _ => "",
         }
     }
 

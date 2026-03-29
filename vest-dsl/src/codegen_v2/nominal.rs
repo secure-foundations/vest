@@ -82,6 +82,13 @@ struct EitherTypeSet {
     owned: TokenStream,
 }
 
+enum TypeFlavor {
+    Nominal { owned: bool },
+    Parse(TokenStream),
+    Owned,
+    Borrow,
+}
+
 impl<'a> NominalTypeGen<'a> {
     pub fn new(def: &'a CombDef, defs: &'a HashMap<String, &'a CombDef>) -> Self {
         Self {
@@ -265,14 +272,7 @@ impl<'a> NominalTypeGen<'a> {
     /// Generate a variant name from a tag value and its index in the branch list.
     /// For integer tags, we use 0-indexed "Variant{i}" names for consistency with old codegen.
     fn variant_name_from_tag(&self, tag: &TagValue, index: usize) -> String {
-        match tag {
-            TagValue::Int(_) => format!("Variant{}", index),
-            TagValue::Enum { variant, .. } => variant.clone(),
-            TagValue::Bytes(bytes) => {
-                format!("Bytes{:02X?}", bytes).replace(['[', ']', ',', ' '], "")
-            }
-            TagValue::Wildcard => "Default".to_string(),
-        }
+        variant_name_from_tag(tag, index)
     }
 
     fn generate_alias_type(&mut self, name: &str, comb: &CombIR) {
@@ -371,84 +371,7 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn nominal_type_tokens(&self, comb: &CombIR, owned: bool) -> TokenStream {
-        match comb {
-            CombIR::U8 => quote! { u8 },
-            CombIR::U16(_) => quote! { u16 },
-            CombIR::U24(_) => quote! { u24 },
-            CombIR::U32(_) => quote! { u32 },
-            CombIR::U64(_) => quote! { u64 },
-            CombIR::Fixed { .. } => {
-                if owned {
-                    quote! { Vec<u8> }
-                } else {
-                    quote! { &'a [u8] }
-                }
-            }
-            CombIR::Variable { .. } | CombIR::Tail => {
-                if owned {
-                    quote! { Vec<u8> }
-                } else {
-                    quote! { &'a [u8] }
-                }
-            }
-            CombIR::Tuple(elems) => {
-                if elems.is_empty() {
-                    quote! { () }
-                } else if elems.len() == 1 {
-                    self.nominal_type_tokens(&elems[0].1, owned)
-                } else {
-                    let types: Vec<TokenStream> = elems
-                        .iter()
-                        .map(|(_, elem)| self.nominal_type_tokens(elem, owned))
-                        .collect();
-                    build_nested_pair_type_from_tokens(&types)
-                }
-            }
-            CombIR::Pair { fst, snd } => {
-                let fst_ty = self.nominal_type_tokens(fst, owned);
-                let snd_ty = self.nominal_type_tokens(&snd.comb, owned);
-                quote! { (#fst_ty, #snd_ty) }
-            }
-            CombIR::Opt(inner) => {
-                let inner_ty = self.nominal_type_tokens(inner, owned);
-                quote! { Option<#inner_ty> }
-            }
-            CombIR::OptThen { fst, snd } => {
-                let fst_ty = self.nominal_type_tokens(fst, owned);
-                let snd_ty = self.nominal_type_tokens(snd, owned);
-                quote! { (Option<#fst_ty>, #snd_ty) }
-            }
-            CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
-                let inner_ty = self.nominal_type_tokens(inner, owned);
-                quote! { Vec<#inner_ty> }
-            }
-            CombIR::Choice(choices) => {
-                let types: Vec<TokenStream> = choices
-                    .iter()
-                    .map(|choice| self.nominal_type_tokens(choice, owned))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Dispatch { branches, .. } => {
-                let types: Vec<TokenStream> = branches
-                    .iter()
-                    .map(|(_, branch)| self.nominal_type_tokens(branch, owned))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Named { name, .. } => self.named_type_tokens(name, Some(quote! { 'a }), owned),
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.nominal_type_tokens(inner, owned),
-            CombIR::Tag { inner, value } => self
-                .nominal_tag_type_tokens(inner, value, owned)
-                .unwrap_or_else(|| quote! { () }),
-            CombIR::End | CombIR::Success | CombIR::Fail(_) => quote! { () },
-        }
+        self.type_tokens_with_flavor(comb, &TypeFlavor::Nominal { owned })
     }
 
     fn nominal_tag_type_tokens(
@@ -500,202 +423,123 @@ impl<'a> NominalTypeGen<'a> {
     }
 
     fn parse_type_tokens_with_lt(&self, comb: &CombIR, lt: TokenStream) -> TokenStream {
-        match comb {
-            CombIR::U8 => quote! { u8 },
-            CombIR::U16(_) => quote! { u16 },
-            CombIR::U24(_) => quote! { u24 },
-            CombIR::U32(_) => quote! { u32 },
-            CombIR::U64(_) => quote! { u64 },
-            CombIR::Fixed { .. } => quote! { &#lt [u8] },
-            CombIR::Variable { .. } | CombIR::Tail => quote! { &#lt [u8] },
-            CombIR::Tuple(elems) => {
-                if elems.is_empty() {
-                    quote! { () }
-                } else if elems.len() == 1 {
-                    self.parse_type_tokens_with_lt(&elems[0].1, lt)
-                } else {
-                    let types: Vec<TokenStream> = elems
-                        .iter()
-                        .map(|(_, elem)| self.parse_type_tokens_with_lt(elem, lt.clone()))
-                        .collect();
-                    build_nested_pair_type_from_tokens(&types)
-                }
-            }
-            CombIR::Pair { fst, snd } => {
-                let fst_ty = self.parse_type_tokens_with_lt(fst, lt.clone());
-                let snd_ty = self.parse_type_tokens_with_lt(&snd.comb, lt);
-                quote! { (#fst_ty, #snd_ty) }
-            }
-            CombIR::Opt(inner) => {
-                let inner_ty = self.parse_type_tokens_with_lt(inner, lt);
-                quote! { Option<#inner_ty> }
-            }
-            CombIR::OptThen { fst, snd } => {
-                let fst_ty = self.parse_type_tokens_with_lt(fst, lt.clone());
-                let snd_ty = self.parse_type_tokens_with_lt(snd, lt);
-                quote! { (Option<#fst_ty>, #snd_ty) }
-            }
-            CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
-                let inner_ty = self.parse_type_tokens_with_lt(inner, lt);
-                quote! { Vec<#inner_ty> }
-            }
-            CombIR::Choice(choices) => {
-                let types: Vec<TokenStream> = choices
-                    .iter()
-                    .map(|choice| self.parse_type_tokens_with_lt(choice, lt.clone()))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Dispatch { branches, .. } => {
-                let types: Vec<TokenStream> = branches
-                    .iter()
-                    .map(|(_, branch)| self.parse_type_tokens_with_lt(branch, lt.clone()))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Named { name, .. } => self.named_type_tokens(name, Some(lt), false),
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.parse_type_tokens_with_lt(inner, lt),
-            CombIR::Tag { .. } => quote! { () },
-            CombIR::End | CombIR::Success | CombIR::Fail(_) => quote! { () },
-        }
+        self.type_tokens_with_flavor(comb, &TypeFlavor::Parse(lt))
     }
 
     fn owned_type_tokens(&self, comb: &CombIR) -> TokenStream {
+        self.type_tokens_with_flavor(comb, &TypeFlavor::Owned)
+    }
+
+    fn borrow_type_tokens(&self, comb: &CombIR) -> TokenStream {
+        self.type_tokens_with_flavor(comb, &TypeFlavor::Borrow)
+    }
+
+    fn type_tokens_with_flavor(&self, comb: &CombIR, flavor: &TypeFlavor) -> TokenStream {
         match comb {
             CombIR::U8 => quote! { u8 },
             CombIR::U16(_) => quote! { u16 },
             CombIR::U24(_) => quote! { u24 },
             CombIR::U32(_) => quote! { u32 },
             CombIR::U64(_) => quote! { u64 },
-            CombIR::Fixed { .. } | CombIR::Variable { .. } | CombIR::Tail => quote! { Vec<u8> },
-            CombIR::Tuple(elems) => {
-                if elems.is_empty() {
-                    quote! { () }
-                } else if elems.len() == 1 {
-                    self.owned_type_tokens(&elems[0].1)
-                } else {
-                    let types: Vec<TokenStream> = elems
-                        .iter()
-                        .map(|(_, elem)| self.owned_type_tokens(elem))
-                        .collect();
-                    build_nested_pair_type_from_tokens(&types)
-                }
+            CombIR::Fixed { .. } | CombIR::Variable { .. } | CombIR::Tail => {
+                self.bytes_type_tokens(flavor)
             }
+            CombIR::Tuple(elems) => self.tuple_type_tokens(elems, flavor),
             CombIR::Pair { fst, snd } => {
-                let fst_ty = self.owned_type_tokens(fst);
-                let snd_ty = self.owned_type_tokens(&snd.comb);
+                let fst_ty = self.type_tokens_with_flavor(fst, flavor);
+                let snd_ty = self.type_tokens_with_flavor(&snd.comb, flavor);
                 quote! { (#fst_ty, #snd_ty) }
             }
             CombIR::Opt(inner) => {
-                let inner_ty = self.owned_type_tokens(inner);
+                let inner_ty = self.type_tokens_with_flavor(inner, flavor);
                 quote! { Option<#inner_ty> }
             }
             CombIR::OptThen { fst, snd } => {
-                let fst_ty = self.owned_type_tokens(fst);
-                let snd_ty = self.owned_type_tokens(snd);
+                let fst_ty = self.type_tokens_with_flavor(fst, flavor);
+                let snd_ty = self.type_tokens_with_flavor(snd, flavor);
                 quote! { (Option<#fst_ty>, #snd_ty) }
             }
             CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
-                let inner_ty = self.owned_type_tokens(inner);
-                quote! { Vec<#inner_ty> }
+                let inner_ty = self.type_tokens_with_flavor(inner, flavor);
+                match flavor {
+                    TypeFlavor::Borrow => quote! { &'s [#inner_ty] },
+                    _ => quote! { Vec<#inner_ty> },
+                }
             }
-            CombIR::Choice(choices) => {
-                let types: Vec<TokenStream> = choices
+            CombIR::Choice(choices) => build_nested_either_type_from_tokens(
+                &choices
                     .iter()
-                    .map(|choice| self.owned_type_tokens(choice))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Dispatch { branches, .. } => {
-                let types: Vec<TokenStream> = branches
+                    .map(|choice| self.type_tokens_with_flavor(choice, flavor))
+                    .collect::<Vec<_>>(),
+            ),
+            CombIR::Dispatch { branches, .. } => build_nested_either_type_from_tokens(
+                &branches
                     .iter()
-                    .map(|(_, branch)| self.owned_type_tokens(branch))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
-            }
-            CombIR::Named { name, .. } => self.named_type_tokens(name, None, true),
+                    .map(|(_, branch)| self.type_tokens_with_flavor(branch, flavor))
+                    .collect::<Vec<_>>(),
+            ),
+            CombIR::Named { name, .. } => self.named_type_tokens_for_flavor(name, flavor),
             CombIR::Preceded { inner, .. }
             | CombIR::Terminated { inner, .. }
             | CombIR::Refined { inner, .. }
             | CombIR::Mapped { inner, .. }
             | CombIR::AndThen { inner, .. }
             | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.owned_type_tokens(inner),
-            CombIR::Tag { .. } => quote! { () },
+            | CombIR::CondEq { inner, .. } => self.type_tokens_with_flavor(inner, flavor),
+            CombIR::Tag { inner, value } => self.tag_type_tokens_for_flavor(inner, value, flavor),
             CombIR::End | CombIR::Success | CombIR::Fail(_) => quote! { () },
         }
     }
 
-    fn borrow_type_tokens(&self, comb: &CombIR) -> TokenStream {
-        match comb {
-            CombIR::U8 => quote! { u8 },
-            CombIR::U16(_) => quote! { u16 },
-            CombIR::U24(_) => quote! { u24 },
-            CombIR::U32(_) => quote! { u32 },
-            CombIR::U64(_) => quote! { u64 },
-            CombIR::Fixed { .. } => quote! { &'s [u8] },
-            CombIR::Variable { .. } | CombIR::Tail => quote! { &'s [u8] },
-            CombIR::Tuple(elems) => {
-                if elems.is_empty() {
-                    quote! { () }
-                } else if elems.len() == 1 {
-                    self.borrow_type_tokens(&elems[0].1)
-                } else {
-                    let types: Vec<TokenStream> = elems
-                        .iter()
-                        .map(|(_, elem)| self.borrow_type_tokens(elem))
-                        .collect();
-                    build_nested_pair_type_from_tokens(&types)
-                }
-            }
-            CombIR::Pair { fst, snd } => {
-                let fst_ty = self.borrow_type_tokens(fst);
-                let snd_ty = self.borrow_type_tokens(&snd.comb);
-                quote! { (#fst_ty, #snd_ty) }
-            }
-            CombIR::Opt(inner) => {
-                let inner_ty = self.borrow_type_tokens(inner);
-                quote! { Option<#inner_ty> }
-            }
-            CombIR::OptThen { fst, snd } => {
-                let fst_ty = self.borrow_type_tokens(fst);
-                let snd_ty = self.borrow_type_tokens(snd);
-                quote! { (Option<#fst_ty>, #snd_ty) }
-            }
-            CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
-                let inner_ty = self.borrow_type_tokens(inner);
-                quote! { &'s [#inner_ty] }
-            }
-            CombIR::Choice(choices) => {
-                let types: Vec<TokenStream> = choices
+    fn tuple_type_tokens(
+        &self,
+        elems: &[(Option<String>, CombIR)],
+        flavor: &TypeFlavor,
+    ) -> TokenStream {
+        match elems {
+            [] => quote! { () },
+            [(_, only)] => self.type_tokens_with_flavor(only, flavor),
+            _ => {
+                let types: Vec<TokenStream> = elems
                     .iter()
-                    .map(|choice| self.borrow_type_tokens(choice))
+                    .map(|(_, elem)| self.type_tokens_with_flavor(elem, flavor))
                     .collect();
-                build_nested_either_type_from_tokens(&types)
+                build_nested_pair_type_from_tokens(&types)
             }
-            CombIR::Dispatch { branches, .. } => {
-                let types: Vec<TokenStream> = branches
-                    .iter()
-                    .map(|(_, branch)| self.borrow_type_tokens(branch))
-                    .collect();
-                build_nested_either_type_from_tokens(&types)
+        }
+    }
+
+    fn bytes_type_tokens(&self, flavor: &TypeFlavor) -> TokenStream {
+        match flavor {
+            TypeFlavor::Nominal { owned: true } | TypeFlavor::Owned => quote! { Vec<u8> },
+            TypeFlavor::Nominal { owned: false } => quote! { &'a [u8] },
+            TypeFlavor::Parse(lt) => quote! { &#lt [u8] },
+            TypeFlavor::Borrow => quote! { &'s [u8] },
+        }
+    }
+
+    fn named_type_tokens_for_flavor(&self, name: &str, flavor: &TypeFlavor) -> TokenStream {
+        match flavor {
+            TypeFlavor::Nominal { owned } => {
+                self.named_type_tokens(name, Some(quote! { 'a }), *owned)
             }
-            CombIR::Named { name, .. } => self.named_borrow_type_tokens(name),
-            CombIR::Preceded { inner, .. }
-            | CombIR::Terminated { inner, .. }
-            | CombIR::Refined { inner, .. }
-            | CombIR::Mapped { inner, .. }
-            | CombIR::AndThen { inner, .. }
-            | CombIR::FixedLen { inner, .. }
-            | CombIR::CondEq { inner, .. } => self.borrow_type_tokens(inner),
-            CombIR::Tag { .. } => quote! { () },
-            CombIR::End | CombIR::Success | CombIR::Fail(_) => quote! { () },
+            TypeFlavor::Parse(lt) => self.named_type_tokens(name, Some(lt.clone()), false),
+            TypeFlavor::Owned => self.named_type_tokens(name, None, true),
+            TypeFlavor::Borrow => self.named_borrow_type_tokens(name),
+        }
+    }
+
+    fn tag_type_tokens_for_flavor(
+        &self,
+        inner: &CombIR,
+        value: &TagValue,
+        flavor: &TypeFlavor,
+    ) -> TokenStream {
+        match flavor {
+            TypeFlavor::Nominal { owned } => self
+                .nominal_tag_type_tokens(inner, value, *owned)
+                .unwrap_or_else(|| quote! { () }),
+            TypeFlavor::Parse(_) | TypeFlavor::Owned | TypeFlavor::Borrow => quote! { () },
         }
     }
 
@@ -968,15 +812,7 @@ impl<'a> NominalTypeGen<'a> {
         let tuple_type_borrow = self.borrow_type_tokens(comb);
         let tuple_type_owned = self.owned_type_tokens(comb);
         let tuple_exprs = self.collect_field_exprs(comb, quote! { src });
-        let field_assigns: Vec<TokenStream> = field_names
-            .iter()
-            .zip(fields.iter())
-            .zip(tuple_exprs.iter())
-            .map(|((fname, field), expr)| {
-                let value = self.field_from_expr(expr.clone(), &field.comb);
-                quote! { #fname: #value }
-            })
-            .collect();
+        let field_assigns = self.build_field_assigns(&field_names, fields, &tuple_exprs);
 
         // From<tuple> for Struct (forward conversion for parsing)
         let from_tuple = if needs_lifetime {
@@ -998,78 +834,26 @@ impl<'a> NominalTypeGen<'a> {
         };
 
         // From<&Struct> for tuple (backward conversion for serialization)
-        let from_struct = if needs_lifetime && !borrow_by_value {
-            let field_exprs: Vec<TokenStream> = fields
-                .iter()
-                .zip(field_names.iter())
-                .map(|(field, name)| self.field_borrow_expr(quote! { v.#name }, &field.comb))
-                .collect();
-            let tuple_expr = self.build_raw_expr_from_fields(comb, &field_exprs);
-            quote! {
-                impl<'s, 'a: 's> From<&'s #type_name<'a>> for #tuple_type_borrow {
-                    fn from(v: &'s #type_name<'a>) -> Self {
-                        #tuple_expr
-                    }
-                }
-            }
-        } else if !borrow_by_value {
-            let field_exprs: Vec<TokenStream> = fields
-                .iter()
-                .zip(field_names.iter())
-                .map(|(field, name)| self.field_borrow_expr(quote! { v.#name }, &field.comb))
-                .collect();
-            let tuple_expr = self.build_raw_expr_from_fields(comb, &field_exprs);
-            quote! {
-                impl<'s> From<&'s #type_name> for #tuple_type_borrow {
-                    fn from(v: &'s #type_name) -> Self {
-                        #tuple_expr
-                    }
-                }
-            }
-        } else if needs_lifetime {
-            let field_exprs: Vec<TokenStream> = fields
-                .iter()
-                .zip(field_names.iter())
-                .map(|(field, name)| self.field_borrow_expr(quote! { v.#name }, &field.comb))
-                .collect();
-            let tuple_expr = self.build_raw_expr_from_fields(comb, &field_exprs);
-            quote! {
-                impl<'s> From<#type_name<'s>> for #tuple_type_borrow {
-                    fn from(v: #type_name<'s>) -> Self {
-                        #tuple_expr
-                    }
-                }
-            }
-        } else {
-            let field_exprs: Vec<TokenStream> = fields
-                .iter()
-                .zip(field_names.iter())
-                .map(|(field, name)| self.field_borrow_expr(quote! { v.#name }, &field.comb))
-                .collect();
-            let tuple_expr = self.build_raw_expr_from_fields(comb, &field_exprs);
-            quote! {
-                impl<'s> From<#type_name> for #tuple_type_borrow {
-                    fn from(v: #type_name) -> Self {
-                        #tuple_expr
-                    }
-                }
-            }
-        };
+        let field_exprs: Vec<TokenStream> = fields
+            .iter()
+            .zip(field_names.iter())
+            .map(|(field, name)| self.field_borrow_expr(quote! { v.#name }, &field.comb))
+            .collect();
+        let tuple_expr = self.build_raw_expr_from_fields(comb, &field_exprs);
+        let from_struct = self.struct_to_tuple_impl(
+            &type_name,
+            &tuple_type_borrow,
+            tuple_expr,
+            needs_lifetime,
+            borrow_by_value,
+        );
 
         self.from_impls.push(from_tuple);
         self.from_impls.push(from_struct);
 
         // Owned conversions
         if needs_lifetime {
-            let field_assigns_owned: Vec<TokenStream> = field_names
-                .iter()
-                .zip(fields.iter())
-                .zip(tuple_exprs.iter())
-                .map(|((fname, field), expr)| {
-                    let value = self.field_from_expr(expr.clone(), &field.comb);
-                    quote! { #fname: #value }
-                })
-                .collect();
+            let field_assigns_owned = self.build_field_assigns(&field_names, fields, &tuple_exprs);
 
             let from_tuple_owned = quote! {
                 impl From<#tuple_type_owned> for #owned_name {
@@ -1079,6 +863,63 @@ impl<'a> NominalTypeGen<'a> {
                 }
             };
             self.from_impls.push(from_tuple_owned);
+        }
+    }
+
+    fn build_field_assigns(
+        &self,
+        field_names: &[Ident],
+        fields: &[FieldInfo],
+        tuple_exprs: &[TokenStream],
+    ) -> Vec<TokenStream> {
+        field_names
+            .iter()
+            .zip(fields.iter())
+            .zip(tuple_exprs.iter())
+            .map(|((fname, field), expr)| {
+                let value = self.field_from_expr(expr.clone(), &field.comb);
+                quote! { #fname: #value }
+            })
+            .collect()
+    }
+
+    fn struct_to_tuple_impl(
+        &self,
+        type_name: &Ident,
+        tuple_type_borrow: &TokenStream,
+        tuple_expr: TokenStream,
+        needs_lifetime: bool,
+        borrow_by_value: bool,
+    ) -> TokenStream {
+        match (needs_lifetime, borrow_by_value) {
+            (true, false) => quote! {
+                impl<'s, 'a: 's> From<&'s #type_name<'a>> for #tuple_type_borrow {
+                    fn from(v: &'s #type_name<'a>) -> Self {
+                        #tuple_expr
+                    }
+                }
+            },
+            (false, false) => quote! {
+                impl<'s> From<&'s #type_name> for #tuple_type_borrow {
+                    fn from(v: &'s #type_name) -> Self {
+                        #tuple_expr
+                    }
+                }
+            },
+            (true, true) => quote! {
+                impl<'s> From<#type_name<'s>> for #tuple_type_borrow {
+                    fn from(v: #type_name<'s>) -> Self {
+                        #tuple_expr
+                    }
+                }
+            },
+            (false, true) => quote! {
+                impl<'s> From<#type_name> for #tuple_type_borrow {
+                    fn from(v: #type_name) -> Self {
+                        #tuple_expr
+                    }
+                }
+            },
         }
     }
 
@@ -1510,6 +1351,15 @@ where
     build_nested_either_type_from_tokens(&types)
 }
 
+fn variant_name_from_tag(tag: &TagValue, index: usize) -> String {
+    match tag {
+        TagValue::Int(_) => format!("Variant{}", index),
+        TagValue::Enum { variant, .. } => variant.clone(),
+        TagValue::Bytes(bytes) => format!("Bytes{:02X?}", bytes).replace(['[', ']', ',', ' '], ""),
+        TagValue::Wildcard => "Default".to_string(),
+    }
+}
+
 // ===== Dispatch Value Enum Generation =====
 
 /// Generate named dispatch value enums for use with `enum_combinator!` macro.
@@ -1607,73 +1457,43 @@ pub fn generate_dispatch_value_enums(
     }
 }
 
-/// Generate the value type tokens for a dispatch variant's inner combinator.
-///
-/// This determines the appropriate Rust type for the parsed/generated value:
-/// - Primitives (u8, u16, etc.) -> use the type directly
-/// - Fixed bytes -> `&'a [u8]` (borrowed) or `Vec<u8>` (owned)
-/// - Variable bytes -> `&'a [u8]` (borrowed) or `Vec<u8>` (owned)
-/// - Named references -> `XxxType<'a>` (borrowed) or `XxxTypeOwned` (owned)
 fn dispatch_value_type_tokens(
     comb: &CombIR,
     def_map: &HashMap<String, &CombDef>,
     owned: bool,
 ) -> TokenStream {
     match comb {
-        // Primitive integers - no lifetime needed
         _ if comb_uint_type_tokens(comb).is_some() => {
             comb_uint_type_tokens(comb).expect("integer helper guaranteed Some in guard")
         }
-
-        // Fixed-length bytes
-        CombIR::Fixed { .. } => {
+        CombIR::Fixed { .. } | CombIR::Variable { .. } | CombIR::Tail => {
             if owned {
                 quote! { Vec<u8> }
             } else {
                 quote! { &'a [u8] }
             }
         }
-
-        // Variable-length bytes
-        CombIR::Variable { .. } | CombIR::Tail => {
-            if owned {
-                quote! { Vec<u8> }
-            } else {
-                quote! { &'a [u8] }
-            }
-        }
-
-        // Tuple types
-        CombIR::Tuple(elems) => {
-            if elems.is_empty() {
-                quote! { () }
-            } else if elems.len() == 1 {
-                dispatch_value_type_tokens(&elems[0].1, def_map, owned)
-            } else {
+        CombIR::Tuple(elems) => match elems.as_slice() {
+            [] => quote! { () },
+            [(_, only)] => dispatch_value_type_tokens(only, def_map, owned),
+            _ => {
                 let types: Vec<TokenStream> = elems
                     .iter()
                     .map(|(_, elem)| dispatch_value_type_tokens(elem, def_map, owned))
                     .collect();
                 quote! { (#(#types),*) }
             }
-        }
-
-        // Optional type
+        },
         CombIR::Opt(inner) => {
             let inner_ty = dispatch_value_type_tokens(inner, def_map, owned);
             quote! { Option<#inner_ty> }
         }
-
-        // Repetition types
         CombIR::RepeatN { inner, .. } | CombIR::Repeat(inner) => {
             let inner_ty = dispatch_value_type_tokens(inner, def_map, owned);
             quote! { Vec<#inner_ty> }
         }
-
-        // Named reference - look up the referenced type
         CombIR::Named { name, .. } => {
             let type_name = format_ident!("{}", snake_to_upper_camel(name));
-            // Check if the referenced type needs a lifetime
             let ref_needs_lt = def_map
                 .get(name)
                 .map(|def| comb_needs_lifetime(&def.body, def_map))
@@ -1688,24 +1508,16 @@ fn dispatch_value_type_tokens(
                 quote! { #type_name }
             }
         }
-
-        // Modifiers - pass through to inner
         CombIR::Refined { inner, .. }
         | CombIR::Tag { inner, .. }
         | CombIR::FixedLen { inner, .. }
         | CombIR::AndThen { inner, .. } => dispatch_value_type_tokens(inner, def_map, owned),
-
-        // Mapped types - use the inner combinator's type
         CombIR::Mapped { inner, .. } => dispatch_value_type_tokens(inner, def_map, owned),
-
-        // Pair types - build nested tuple
         CombIR::Pair { fst, snd } => {
             let fst_ty = dispatch_value_type_tokens(fst, def_map, owned);
             let snd_ty = dispatch_value_type_tokens(&snd.comb, def_map, owned);
             quote! { (#fst_ty, #snd_ty) }
         }
-
-        // Dispatch/Choice - nested Either types
         CombIR::Dispatch { branches, .. } => {
             let types: Vec<TokenStream> = branches
                 .iter()
@@ -1713,7 +1525,6 @@ fn dispatch_value_type_tokens(
                 .collect();
             build_nested_either_type_from_tokens(&types)
         }
-
         CombIR::Choice(choices) => {
             let types: Vec<TokenStream> = choices
                 .iter()
@@ -1721,8 +1532,6 @@ fn dispatch_value_type_tokens(
                 .collect();
             build_nested_either_type_from_tokens(&types)
         }
-
-        // Other cases
         _ => quote! { () },
     }
 }
@@ -1741,16 +1550,6 @@ pub fn extract_dispatch_cases(branches: &[(TagValue, CombIR)]) -> Vec<(String, C
     branches
         .iter()
         .enumerate()
-        .map(|(i, (tag, comb))| {
-            let name = match tag {
-                TagValue::Int(_) => format!("Variant{}", i),
-                TagValue::Enum { variant, .. } => variant.clone(),
-                TagValue::Bytes(bytes) => {
-                    format!("Bytes{:02X?}", bytes).replace(['[', ']', ',', ' '], "")
-                }
-                TagValue::Wildcard => "Default".to_string(),
-            };
-            (name, comb.clone())
-        })
+        .map(|(i, (tag, comb))| (variant_name_from_tag(tag, i), comb.clone()))
         .collect()
 }

@@ -38,55 +38,51 @@ fn lower_definition(def: &Definition, ctx: &CodegenCtx) -> Option<CombDef> {
             let params = lower_param_defns(param_defns, ctx);
             let body = lower_combinator(combinator, ctx);
             let const_defs = extract_const_defs(name, combinator);
-            Some(CombDef {
-                name: name.clone(),
-                params,
-                body,
-                is_const: false,
-                const_defs,
-            })
+            Some(make_comb_def(name, params, body, false, const_defs))
         }
         Definition::ConstCombinator {
             name,
             const_combinator,
         } => {
             let body = lower_const_combinator(const_combinator, ctx);
-            Some(CombDef {
-                name: name.clone(),
-                params: Vec::new(),
-                body,
-                is_const: true,
-                const_defs: Vec::new(),
-            })
+            Some(make_comb_def(name, Vec::new(), body, true, Vec::new()))
         }
         Definition::Endianess(_) => None, // Already handled in first pass
     }
 }
 
-/// Extract const definitions from a combinator (for struct fields with const).
-fn extract_const_defs(struct_name: &str, combinator: &Combinator) -> Vec<ConstDef> {
-    extract_const_defs_inner(struct_name, &combinator.inner)
-}
-
-/// Extract const definitions from a combinator inner.
-fn extract_const_defs_inner(struct_name: &str, inner: &CombinatorInner) -> Vec<ConstDef> {
-    match inner {
-        CombinatorInner::Struct(s) => extract_const_defs_from_struct(struct_name, s),
-        CombinatorInner::Wrap(w) => extract_const_defs(&struct_name, &w.combinator),
-        _ => Vec::new(),
+fn make_comb_def(
+    name: &str,
+    params: Vec<ParamDef>,
+    body: CombIR,
+    is_const: bool,
+    const_defs: Vec<ConstDef>,
+) -> CombDef {
+    CombDef {
+        name: name.to_string(),
+        params,
+        body,
+        is_const,
+        const_defs,
     }
 }
 
-/// Extract const definitions from struct fields.
-fn extract_const_defs_from_struct(struct_name: &str, s: &StructCombinator) -> Vec<ConstDef> {
-    s.0.iter()
-        .filter_map(|field| match field {
-            StructField::Const { label, combinator } => {
-                extract_const_def_from_const_combinator(struct_name, label, combinator)
-            }
-            _ => None,
-        })
-        .collect()
+/// Extract const definitions from a combinator (for struct fields with const).
+fn extract_const_defs(struct_name: &str, combinator: &Combinator) -> Vec<ConstDef> {
+    match &combinator.inner {
+        CombinatorInner::Struct(s) => {
+            s.0.iter()
+                .filter_map(|field| match field {
+                    StructField::Const { label, combinator } => {
+                        extract_const_def_from_const_combinator(struct_name, label, combinator)
+                    }
+                    _ => None,
+                })
+                .collect()
+        }
+        CombinatorInner::Wrap(w) => extract_const_defs(struct_name, &w.combinator),
+        _ => Vec::new(),
+    }
 }
 
 /// Extract a const definition from a const combinator.
@@ -117,19 +113,9 @@ fn extract_const_def_from_const_combinator(
 /// Convert an integer combinator to its Rust type name.
 fn int_combinator_to_type(int_comb: &IntCombinator) -> String {
     match int_comb {
-        IntCombinator::Unsigned(8) => "u8".to_string(),
-        IntCombinator::Unsigned(16) => "u16".to_string(),
-        IntCombinator::Unsigned(24) => "u24".to_string(),
-        IntCombinator::Unsigned(32) => "u32".to_string(),
-        IntCombinator::Unsigned(64) => "u64".to_string(),
         IntCombinator::Unsigned(n) => format!("u{}", n),
-        IntCombinator::Signed(8) => "i8".to_string(),
-        IntCombinator::Signed(16) => "i16".to_string(),
-        IntCombinator::Signed(32) => "i32".to_string(),
-        IntCombinator::Signed(64) => "i64".to_string(),
         IntCombinator::Signed(n) => format!("i{}", n),
-        IntCombinator::BtcVarint => "u64".to_string(),
-        IntCombinator::ULEB128 => "u64".to_string(),
+        IntCombinator::BtcVarint | IntCombinator::ULEB128 => "u64".to_string(),
     }
 }
 
@@ -264,20 +250,22 @@ fn lower_struct_simple(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
 fn lower_struct_fields_preserve_labels(fields: &[StructField], ctx: &CodegenCtx) -> CombIR {
     let combs: Vec<(Option<String>, CombIR)> = fields
         .iter()
-        .filter_map(|field| match field {
-            StructField::Ordinary { label, combinator } => {
-                Some((Some(label.clone()), lower_combinator(combinator, ctx)))
-            }
-            StructField::Const { label, combinator } => {
-                Some((Some(label.clone()), lower_const_combinator(combinator, ctx)))
-            }
-            StructField::Dependent { label, combinator } => {
-                Some((Some(label.clone()), lower_combinator(combinator, ctx)))
-            }
-        })
+        .map(|field| lower_struct_field_with_label(field, ctx))
         .collect();
 
     CombIR::Tuple(combs)
+}
+
+fn lower_struct_field_with_label(
+    field: &StructField,
+    ctx: &CodegenCtx,
+) -> (Option<String>, CombIR) {
+    let label = match field {
+        StructField::Ordinary { label, .. }
+        | StructField::Const { label, .. }
+        | StructField::Dependent { label, .. } => label.clone(),
+    };
+    (Some(label), lower_struct_field(field, ctx))
 }
 
 /// Lower a struct with dependent fields using Pair.
@@ -368,44 +356,43 @@ fn lower_wrap(w: &WrapCombinator, ctx: &CodegenCtx) -> CombIR {
     let inner = lower_combinator(&w.combinator, ctx);
 
     // Handle prior (preceded) combinators
-    let with_prior = if w.prior.is_empty() {
-        inner
-    } else {
-        let prior_combs: Vec<(Option<String>, CombIR)> = w
-            .prior
-            .iter()
-            .map(|c| (None, lower_const_combinator(c, ctx)))
-            .collect();
-        let prior = if prior_combs.len() == 1 {
-            prior_combs.into_iter().next().unwrap().1
-        } else {
-            CombIR::Tuple(prior_combs)
-        };
+    let with_prior = if let Some(prior) = lower_const_sequence(&w.prior, ctx) {
         CombIR::Preceded {
             prefix: Box::new(prior),
             inner: Box::new(inner),
         }
+    } else {
+        inner
     };
 
     // Handle post (terminated) combinators
-    if w.post.is_empty() {
-        with_prior
-    } else {
-        let post_combs: Vec<(Option<String>, CombIR)> = w
-            .post
-            .iter()
-            .map(|c| (None, lower_const_combinator(c, ctx)))
-            .collect();
-        let post = if post_combs.len() == 1 {
-            post_combs.into_iter().next().unwrap().1
-        } else {
-            CombIR::Tuple(post_combs)
-        };
+    if let Some(post) = lower_const_sequence(&w.post, ctx) {
         CombIR::Terminated {
             inner: Box::new(with_prior),
             suffix: Box::new(post),
         }
+    } else {
+        with_prior
     }
+}
+
+fn lower_const_sequence(consts: &[ConstCombinator], ctx: &CodegenCtx) -> Option<CombIR> {
+    if consts.is_empty() {
+        return None;
+    }
+
+    let mut combs: Vec<(Option<String>, CombIR)> = consts
+        .iter()
+        .map(|c| (None, lower_const_combinator(c, ctx)))
+        .collect();
+    Some(if combs.len() == 1 {
+        combs
+            .pop()
+            .expect("singleton const sequence has one element")
+            .1
+    } else {
+        CombIR::Tuple(combs)
+    })
 }
 
 /// Lower an enum combinator.
@@ -496,12 +483,7 @@ fn choice_int_tag_value(tag: &Option<ConstraintElem>) -> Option<TagValue> {
 }
 
 fn choice_array_tag_value(tag: &ConstArray) -> Option<TagValue> {
-    match tag {
-        ConstArray::Char(bytes) => Some(TagValue::Bytes(bytes.clone())),
-        ConstArray::Int(ints) => Some(TagValue::Bytes(ints.iter().map(|&i| i as u8).collect())),
-        ConstArray::Repeat(v, count) => Some(TagValue::Bytes(vec![*v as u8; *count])),
-        ConstArray::Wildcard => None,
-    }
+    const_array_to_bytes(tag).map(TagValue::Bytes)
 }
 
 /// Lower a vec combinator.
@@ -578,10 +560,14 @@ fn lower_const_combinator(c: &ConstCombinator, ctx: &CodegenCtx) -> CombIR {
 }
 
 fn const_array_bytes(values: &ConstArray) -> Vec<u8> {
+    const_array_to_bytes(values).unwrap_or_default()
+}
+
+fn const_array_to_bytes(values: &ConstArray) -> Option<Vec<u8>> {
     match values {
-        ConstArray::Char(bytes) => bytes.clone(),
-        ConstArray::Int(ints) => ints.iter().map(|&i| i as u8).collect(),
-        ConstArray::Repeat(val, count) => vec![*val as u8; *count],
-        ConstArray::Wildcard => Vec::new(),
+        ConstArray::Char(bytes) => Some(bytes.clone()),
+        ConstArray::Int(ints) => Some(ints.iter().map(|&i| i as u8).collect()),
+        ConstArray::Repeat(val, count) => Some(vec![*val as u8; *count]),
+        ConstArray::Wildcard => None,
     }
 }
