@@ -1,4 +1,4 @@
-//! Integration tests for the v2 code generator.
+//! Integration tests for the current Rust code generator.
 //!
 //! These tests use pre-generated Rust code from vest files located in `tests/emitted/`.
 //! To regenerate the emitted files, run:

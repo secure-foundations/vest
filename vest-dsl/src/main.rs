@@ -1,7 +1,7 @@
 use std::{error::Error, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
-use vest::{codegen::CodegenOpts, compile_to, compile_to_v2};
+use vest::{codegen::CodegenOpts, compile_to, compile_to_v3};
 
 /// Target language for code generation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -51,8 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.target {
         Target::Rust => {
-            // Use the new token-based code generator
-            compile_to_v2(&args.vest_file, &output_file)?;
+            compile_to_v3(&args.vest_file, &output_file)?;
         }
         Target::Verus => {
             // Use the existing Verus code generator

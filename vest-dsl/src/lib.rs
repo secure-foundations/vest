@@ -3,7 +3,7 @@ use std::io::Write;
 
 mod ast;
 pub mod codegen;
-pub mod codegen_v2;
+pub mod codegen_v3;
 mod elab;
 mod type_check;
 mod utils;
@@ -166,34 +166,28 @@ pub fn compile_to(
     Ok(())
 }
 
-/// Compiles the given source code using the new token-based code generator.
-/// This generates pure Rust code without Verus specs/proofs.
-pub fn compile_v2(file_name: &str, input: String) -> Result<String, Box<dyn Error>> {
+/// Compiles the given source code using the incremental v3 generator pipeline.
+pub fn compile_v3(file_name: &str, input: String) -> Result<String, Box<dyn Error>> {
     let source = (file_name, &ariadne::Source::from(input.clone()));
 
-    // parse the vest file
     println!("📜 Parsing the vest file...");
     match ast::from_str(&input) {
         Ok(mut ast) => {
-            // elaborate the AST
             println!("🔨 Elaborating the AST...");
             elab::elaborate(&mut ast);
 
-            // type check the AST
             println!("🔍 Type checking...");
             match type_check::check(&ast, source) {
                 Ok(ctx) => {
-                    // Convert to VestIR
-                    println!("📝 Generating Rust code (v2)...");
+                    println!("📝 Generating Rust code (v3)...");
                     let ir: Vec<vestir::Definition> = ast
                         .clone()
                         .into_iter()
                         .map(vestir::Definition::from)
                         .collect();
 
-                    // Use new codegen_v2
-                    let codegen_ctx: codegen_v2::CodegenCtx = (&ctx).into();
-                    let code = codegen_v2::generate_rust_module(&ir, &codegen_ctx)?;
+                    let codegen_ctx: codegen_v3::CodegenCtx = (&ctx).into();
+                    let code = codegen_v3::generate_rust_module(&ir, &codegen_ctx)?;
                     println!("👏 Done!");
 
                     Ok(code)
@@ -225,10 +219,10 @@ pub fn compile_v2(file_name: &str, input: String) -> Result<String, Box<dyn Erro
     }
 }
 
-/// Compiles the given file using the v2 generator and saves it to `output_file`.
-pub fn compile_to_v2(input_file: &str, output_file: &str) -> Result<(), Box<dyn Error>> {
+/// Compiles the given file using the v3 generator and saves it to `output_file`.
+pub fn compile_to_v3(input_file: &str, output_file: &str) -> Result<(), Box<dyn Error>> {
     let vest = std::fs::read_to_string(input_file)?;
-    let code = compile_v2(input_file, vest)?;
+    let code = compile_v3(input_file, vest)?;
     let mut file = std::fs::File::create(output_file)?;
     file.write_all(code.as_bytes())?;
     Ok(())
