@@ -2,7 +2,7 @@
 use crate::properties::*;
 use vstd::prelude::*;
 
-use super::bytes::Variable;
+use super::bytes::{Tail, Variable};
 
 verus! {
 
@@ -814,6 +814,39 @@ impl<Next: SpecCombinator> SpecCombinator for AndThen<Variable, Next> {
     }
 }
 
+impl<Next: SpecCombinator> SpecCombinator for AndThen<Tail, Next> {
+    type Type = Next::Type;
+
+    open spec fn requires(&self) -> bool {
+        self.0.requires() && self.1.requires()
+    }
+
+    open spec fn wf(&self, v: Self::Type) -> bool {
+        self.1.wf(v) && self.0.wf(self.1.spec_serialize(v))
+    }
+
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> {
+        if let Some((n, v1)) = self.0.spec_parse(s) {
+            if let Some((m, v2)) = self.1.spec_parse(v1) {
+                if m == n {
+                    Some((n, v2))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> {
+        let buf1 = self.1.spec_serialize(v);
+        self.0.spec_serialize(buf1)
+    }
+}
+
 impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next> {
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
         let buf1 = self.1.spec_serialize(v);
@@ -858,6 +891,48 @@ impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Variable, Next
     }
 }
 
+impl<Next: SecureSpecCombinator> SecureSpecCombinator for AndThen<Tail, Next> {
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type) {
+        let buf1 = self.1.spec_serialize(v);
+        self.1.theorem_serialize_parse_roundtrip(v);
+        self.0.theorem_serialize_parse_roundtrip(buf1);
+    }
+
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>) {
+        if let Some((n, v1)) = self.0.spec_parse(buf) {
+            if let Some((m, v2)) = self.1.spec_parse(v1) {
+                self.0.theorem_parse_serialize_roundtrip(buf);
+                self.1.theorem_parse_serialize_roundtrip(v1);
+                if m == n {
+                    let buf2 = self.1.spec_serialize(v2);
+                    let buf1 = self.0.spec_serialize(buf2);
+                    assert(buf1 == buf.subrange(0, n as int));
+                }
+            }
+        }
+    }
+
+    open spec fn is_prefix_secure() -> bool {
+        Tail::is_prefix_secure()
+    }
+
+    proof fn lemma_prefix_secure(&self, _buf: Seq<u8>, _s2: Seq<u8>) {
+    }
+
+    proof fn lemma_parse_length(&self, s: Seq<u8>) {
+        if let Some((_, v1)) = self.0.spec_parse(s) {
+            self.1.lemma_parse_length(v1);
+        }
+    }
+
+    open spec fn is_productive(&self) -> bool {
+        self.0.is_productive()
+    }
+
+    proof fn lemma_parse_productive(&self, _s: Seq<u8>) {
+    }
+}
+
 impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Variable, Next> where
     I: VestInput,
     O: VestOutput<I>,
@@ -888,6 +963,39 @@ impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Vari
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         // we can skip the call to `self.0.serialize` because we know that it
         // will be an "no-op"
+        let n = self.1.serialize(v, data, pos)?;
+        Ok(n)
+    }
+}
+
+impl<'x, I, O, Next: Combinator<'x, I, O>> Combinator<'x, I, O> for AndThen<Tail, Next> where
+    I: VestInput,
+    O: VestOutput<I>,
+    Next::V: SecureSpecCombinator<Type = <Next::Type as View>::V>,
+ {
+    type Type = Next::Type;
+
+    type SType = Next::SType;
+
+    fn length(&self, v: Self::SType) -> usize {
+        self.1.length(v)
+    }
+
+    open spec fn ex_requires(&self) -> bool {
+        self.1.ex_requires()
+    }
+
+    fn parse(&self, s: I) -> Result<(usize, Self::Type), ParseError> {
+        let (n, v1) = <_ as Combinator<I, O>>::parse(&self.0, s)?;
+        let (m, v2) = self.1.parse(v1)?;
+        if m == n {
+            Ok((n, v2))
+        } else {
+            Err(ParseError::AndThenUnusedBytes)
+        }
+    }
+
+    fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         let n = self.1.serialize(v, data, pos)?;
         Ok(n)
     }

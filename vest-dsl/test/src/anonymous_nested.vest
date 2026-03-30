@@ -1,0 +1,75 @@
+!LITTLE_ENDIAN
+
+a_or_b = enum {
+  A = 1,
+  B = 2,
+}
+
+c_or_d = enum {
+  C = 1,
+  D = 2,
+}
+
+nested_inner_struct = {
+  @len: u32,
+  inner: [u8; @len] >>= {
+    x: u8,
+    y: Tail,
+  },
+}
+
+nested_inner_choice(@choice1: a_or_b, @choice2: c_or_d) = {
+  x: choose(@choice1) {
+    A => choose(@choice2) {
+      C => u8,
+      D => u16,
+    },
+    B => u32,
+  },
+}
+
+capture_outer_and_local = {
+  @frame_len: u8 | { 1.. },
+  payload: [u8; @frame_len] >>= {
+    @tag: u8,
+    body: choose(@tag) {
+      0 => [u8; @frame_len - |u8|],
+      _ => {
+        @count: u8,
+        items: [u8; @count],
+      },
+    },
+  },
+}
+
+capture_local_in_anon_struct = {
+  wrapper: {
+    @tag: u8,
+    value: choose(@tag) {
+      0 => {
+        @len: u8,
+        bytes: [u8; @len],
+      },
+      _ => u16,
+    },
+  },
+}
+
+capture_param_and_local(@choice1: a_or_b, @choice2: c_or_d) = {
+  x: choose(@choice1) {
+    A => {
+      @len: u8,
+      payload: choose(@choice2) {
+        C => [u8; @len],
+        D => [u8; @len],
+      },
+    },
+    B => {
+      @tag: u8,
+      y: choose(@tag) {
+        0 => u8,
+        _ => u16,
+      },
+    },
+  },
+}

@@ -1,6 +1,6 @@
 [package]
 name = "vest_lib"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 license = "MIT"
 description = "VestLib: A library of formally verified parser and serializer combinators"
@@ -17,7 +17,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-vstd = "0.0.0-2026-03-01-0109"
+vstd = "0.0.0-2026-03-17-2326"
 
 #vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 #verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }

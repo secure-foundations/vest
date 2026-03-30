@@ -1,12 +1,7 @@
-use std::{error::Error, io::Write, path::PathBuf};
-
-mod ast;
-mod elab;
-mod type_check;
-mod utils;
-mod vestir;
+use std::{error::Error, path::PathBuf};
 
 use clap::Parser;
+use vest::{codegen::CodegenOpts, compile_to};
 
 /// Vest: A generator for formally verified parsers/serializers in Verus
 #[derive(Parser, Debug)]
@@ -34,41 +29,22 @@ fn replace_extension(filename: &str, new_ext: &str) -> String {
     path.to_string_lossy().into_owned()
 }
 
-#[derive(Debug)]
-pub enum VestError {
-    ParsingError,
-    TypeError,
-    CodegenError,
-}
-
-impl std::fmt::Display for VestError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            VestError::ParsingError => write!(f, "Failed to compile, parsing error."),
-            VestError::TypeError => write!(f, "Failed to compile, type error."),
-            VestError::CodegenError => write!(f, "Failed to compile, codegen error."),
-        }
-    }
-}
-
-impl std::error::Error for VestError {}
-
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let codegen_opt = args
         .codegen
         .map(|s| match s.as_str() {
-            "all" => vest::codegen::CodegenOpts::All,
-            "types" => vest::codegen::CodegenOpts::Types,
-            "impls" => vest::codegen::CodegenOpts::Impls,
-            "anns" => vest::codegen::CodegenOpts::Anns,
+            "all" => CodegenOpts::All,
+            "types" => CodegenOpts::Types,
+            "impls" => CodegenOpts::Impls,
+            "anns" => CodegenOpts::Anns,
             _ => panic!("Invalid codegen option"),
         })
-        .unwrap_or(vest::codegen::CodegenOpts::All);
+        .unwrap_or(CodegenOpts::All);
     let output_file = args
         .output
         .unwrap_or(replace_extension(args.vest_file.as_str(), "rs"));
-    vest::compile_to(&args.vest_file, codegen_opt, &output_file)?;
+    compile_to(&args.vest_file, codegen_opt, &output_file)?;
     Ok(())
 }

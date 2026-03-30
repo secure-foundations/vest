@@ -1,3 +1,4 @@
+use crate::ast;
 use itertools::Itertools;
 use std::{
     collections::{HashMap, HashSet},
@@ -46,12 +47,10 @@ pub enum CombinatorInner {
     Wrap(WrapCombinator),
     Enum(EnumCombinator),
     Choice(ChoiceCombinator),
-    SepBy(SepByCombinator),
     Vec(VecCombinator),
     Array(ArrayCombinator),
     Bytes(BytesCombinator),
     Tail(TailCombinator),
-    Apply(ApplyCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
 }
@@ -120,7 +119,6 @@ pub enum StructField {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Param {
-    Stream(String),
     Dependent(String),
 }
 
@@ -165,25 +163,45 @@ pub enum Choices {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VecCombinator {
     Vec(Box<Combinator>),
-    Vec1(Box<Combinator>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SepByCombinator {
-    pub combinator: VecCombinator,
-    pub sep: ConstCombinator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ArrayCombinator {
     pub combinator: Box<Combinator>,
-    pub len: LengthSpecifier,
+    pub len: LengthExpr,
 }
 
+/// Arithmetic operators for length expressions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ArithOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl From<ast::ArithOp> for ArithOp {
+    fn from(op: ast::ArithOp) -> Self {
+        match op {
+            ast::ArithOp::Add => ArithOp::Add,
+            ast::ArithOp::Sub => ArithOp::Sub,
+            ast::ArithOp::Mul => ArithOp::Mul,
+            ast::ArithOp::Div => ArithOp::Div,
+        }
+    }
+}
+
+/// Length expression for array sizes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum LengthSpecifier {
+pub enum LengthExpr {
     Const(usize),
     Dependent(String),
+    SizeOf(String),
+    BinOp {
+        op: ArithOp,
+        left: Box<LengthExpr>,
+        right: Box<LengthExpr>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -191,17 +209,11 @@ pub struct OptionCombinator(pub Box<Combinator>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BytesCombinator {
-    pub len: LengthSpecifier,
+    pub len: LengthExpr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TailCombinator;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ApplyCombinator {
-    pub stream: String,
-    pub combinator: Box<Combinator>,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CombinatorInvocation {
@@ -211,21 +223,10 @@ pub struct CombinatorInvocation {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ConstCombinator {
-    Vec(Box<ConstCombinator>),
-    ConstArray(ConstArrayCombinator),
     ConstBytes(ConstBytesCombinator),
     ConstInt(ConstIntCombinator),
     ConstEnum(ConstEnumCombinator),
-    ConstStruct(ConstStructCombinator),
-    ConstChoice(ConstChoiceCombinator),
     ConstCombinatorInvocation(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstArrayCombinator {
-    pub combinator: IntCombinator,
-    pub len: usize,
-    pub values: ConstArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -252,17 +253,6 @@ pub enum ConstArray {
 pub struct ConstIntCombinator {
     pub combinator: IntCombinator,
     pub value: i128,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstStructCombinator(pub Vec<ConstCombinator>);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoiceCombinator(pub Vec<ConstChoice>);
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConstChoice {
-    pub tag: String,
-    pub combinator: ConstCombinator,
 }
 
 impl Display for Definition {
@@ -320,12 +310,10 @@ impl Display for CombinatorInner {
             CombinatorInner::Wrap(w) => write!(f, "{}", w),
             CombinatorInner::Enum(e) => write!(f, "{}", e),
             CombinatorInner::Choice(c) => write!(f, "{}", c),
-            CombinatorInner::SepBy(s) => write!(f, "{}", s),
             CombinatorInner::Vec(v) => write!(f, "{}", v),
             CombinatorInner::Array(a) => write!(f, "{}", a),
             CombinatorInner::Bytes(a) => write!(f, "{}", a),
             CombinatorInner::Tail(t) => write!(f, "{}", t),
-            CombinatorInner::Apply(a) => write!(f, "{}", a),
             CombinatorInner::Option(o) => write!(f, "{}", o),
             CombinatorInner::Invocation(i) => write!(f, "{}", i),
         }
@@ -433,21 +421,11 @@ impl Display for StructField {
 impl Display for ConstCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstCombinator::Vec(v) => write!(f, "{}", v),
-            ConstCombinator::ConstArray(a) => write!(f, "{}", a),
             ConstCombinator::ConstBytes(b) => write!(f, "{}", b),
             ConstCombinator::ConstInt(i) => write!(f, "{}", i),
             ConstCombinator::ConstEnum(e) => write!(f, "{}", e),
-            ConstCombinator::ConstStruct(s) => write!(f, "{}", s),
-            ConstCombinator::ConstChoice(c) => write!(f, "{}", c),
             ConstCombinator::ConstCombinatorInvocation(i) => write!(f, "{}", i),
         }
-    }
-}
-
-impl Display for ConstArrayCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}]", self.values)
     }
 }
 
@@ -495,36 +473,9 @@ impl Display for ConstIntCombinator {
     }
 }
 
-impl Display for ConstStructCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for combinator in &self.0 {
-            write!(f, "{}", combinator)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoiceCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{")?;
-        for choice in &self.0 {
-            write!(f, "{}", choice)?;
-        }
-        write!(f, "}}")
-    }
-}
-
-impl Display for ConstChoice {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.tag, self.combinator)
-    }
-}
-
 impl Display for Param {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Param::Stream(s) => write!(f, "${}", s),
             Param::Dependent(s) => write!(f, "{}", s),
         }
     }
@@ -608,17 +559,10 @@ impl Display for Choices {
     }
 }
 
-impl Display for SepByCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}_sepby_{}", self.combinator, self.sep)
-    }
-}
-
 impl Display for VecCombinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             VecCombinator::Vec(v) => write!(f, "{}*", v),
-            VecCombinator::Vec1(v) => write!(f, "{}+", v),
         }
     }
 }
@@ -629,11 +573,21 @@ impl Display for ArrayCombinator {
     }
 }
 
-impl Display for LengthSpecifier {
+impl Display for LengthExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LengthSpecifier::Const(n) => write!(f, "{}", n),
-            LengthSpecifier::Dependent(s) => write!(f, "{}", s),
+            LengthExpr::Const(n) => write!(f, "{}", n),
+            LengthExpr::Dependent(s) => write!(f, "@{}", s),
+            LengthExpr::SizeOf(name) => write!(f, "|{}|", name),
+            LengthExpr::BinOp { op, left, right } => {
+                let op_str = match op {
+                    ArithOp::Add => "+",
+                    ArithOp::Sub => "-",
+                    ArithOp::Mul => "*",
+                    ArithOp::Div => "/",
+                };
+                write!(f, "({} {} {})", left, op_str, right)
+            }
         }
     }
 }
@@ -656,12 +610,6 @@ impl Display for OptionCombinator {
     }
 }
 
-impl Display for ApplyCombinator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", self.stream, self.combinator)
-    }
-}
-
 impl Display for CombinatorInvocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.args.is_empty() {
@@ -677,6 +625,7 @@ pub struct GlobalCtx {
     pub combinators: HashSet<CombinatorSig>,
     pub const_combinators: HashSet<ConstCombinatorSig>,
     pub enums: HashMap<String, EnumCombinator>,
+    pub static_sizes: HashMap<String, usize>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -766,9 +715,6 @@ pub mod lowering {
                     const_combinator: const_combinator.into(),
                 },
                 ast::Definition::Endianess(e) => ir::Definition::Endianess(e.into()),
-                ast::Definition::SecCombinator { .. } => {
-                    unimplemented!("Secret format is not supported by VestDSL yet")
-                }
                 ast::Definition::MacroDefn { .. } => unreachable!(
                     "Macro definitions should have been expanded before lowering to IR"
                 ),
@@ -789,9 +735,6 @@ pub mod lowering {
     impl<'i> From<ast::ParamDefn<'i>> for ir::ParamDefn {
         fn from(p: ast::ParamDefn<'i>) -> Self {
             match p {
-                ast::ParamDefn::Stream { .. } => {
-                    unimplemented!("Stream transformations are not supported by VestDSL yet")
-                }
                 ast::ParamDefn::Dependent {
                     name, combinator, ..
                 } => ir::ParamDefn::Dependent {
@@ -805,7 +748,6 @@ pub mod lowering {
     impl<'i> From<ast::Param<'i>> for ir::Param {
         fn from(p: ast::Param<'i>) -> Self {
             match p {
-                ast::Param::Stream(i) => ir::Param::Stream(id(i)),
                 ast::Param::Dependent(i) => ir::Param::Dependent(id(i)),
             }
         }
@@ -832,12 +774,10 @@ pub mod lowering {
                 A::Wrap(x) => B::Wrap(x.into()),
                 A::Enum(x) => B::Enum(x.into()),
                 A::Choice(x) => B::Choice(x.into()),
-                A::SepBy(x) => B::SepBy(x.into()),
                 A::Vec(x) => B::Vec(x.into()),
                 A::Array(x) => B::Array(x.into()),
                 A::Bytes(x) => B::Bytes(x.into()),
                 A::Tail(_x) => B::Tail(ir::TailCombinator),
-                A::Apply(x) => B::Apply(x.into()),
                 A::Option(x) => B::Option(ir::OptionCombinator(Box::new((*x.0).clone().into()))),
                 A::Invocation(x) => B::Invocation(x.into()),
                 A::MacroInvocation { .. } => unreachable!(
@@ -922,9 +862,6 @@ pub mod lowering {
     impl<'i> From<ast::StructField<'i>> for ir::StructField {
         fn from(f: ast::StructField<'i>) -> Self {
             match f {
-                ast::StructField::Stream(..) => {
-                    unimplemented!("Stream transformations are not supported by VestDSL yet")
-                }
                 ast::StructField::Dependent {
                     label, combinator, ..
                 } => ir::StructField::Dependent {
@@ -1013,26 +950,16 @@ pub mod lowering {
         }
     }
 
-    // ---------- Vec / SepBy ----------
+    // ---------- Vec ----------
     impl<'i> From<ast::VecCombinator<'i>> for ir::VecCombinator {
         fn from(v: ast::VecCombinator<'i>) -> Self {
             match v {
                 ast::VecCombinator::Vec(b) => ir::VecCombinator::Vec(Box::new((*b).into())),
-                ast::VecCombinator::Vec1(b) => ir::VecCombinator::Vec1(Box::new((*b).into())),
             }
         }
     }
 
-    impl<'i> From<ast::SepByCombinator<'i>> for ir::SepByCombinator {
-        fn from(s: ast::SepByCombinator<'i>) -> Self {
-            ir::SepByCombinator {
-                combinator: s.combinator.into(),
-                sep: s.sep.into(),
-            }
-        }
-    }
-
-    // ---------- Array / Bytes / Tail / Apply / Option ----------
+    // ---------- Array / Bytes / Tail / Option ----------
     impl<'i> From<ast::ArrayCombinator<'i>> for ir::ArrayCombinator {
         fn from(a: ast::ArrayCombinator<'i>) -> Self {
             ir::ArrayCombinator {
@@ -1042,11 +969,21 @@ pub mod lowering {
         }
     }
 
-    impl<'i> From<ast::LengthSpecifier<'i>> for ir::LengthSpecifier {
-        fn from(l: ast::LengthSpecifier<'i>) -> Self {
+    impl<'i> From<ast::LengthExpr<'i>> for ir::LengthExpr {
+        fn from(l: ast::LengthExpr<'i>) -> Self {
             match l {
-                ast::LengthSpecifier::Const(n) => ir::LengthSpecifier::Const(n),
-                ast::LengthSpecifier::Dependent(i) => ir::LengthSpecifier::Dependent(id(i)),
+                ast::LengthExpr::Const { value, .. } => ir::LengthExpr::Const(value),
+                ast::LengthExpr::Dependent(d) => ir::LengthExpr::Dependent(d.full_path()),
+                ast::LengthExpr::SizeOf { format_name, .. } => {
+                    ir::LengthExpr::SizeOf(format_name.name)
+                }
+                ast::LengthExpr::BinOp {
+                    op, left, right, ..
+                } => ir::LengthExpr::BinOp {
+                    op: op.into(),
+                    left: Box::new((*left).into()),
+                    right: Box::new((*right).into()),
+                },
             }
         }
     }
@@ -1060,15 +997,6 @@ pub mod lowering {
     impl<'i> From<ast::TailCombinator<'i>> for ir::TailCombinator {
         fn from(_: ast::TailCombinator<'i>) -> Self {
             ir::TailCombinator
-        }
-    }
-
-    impl<'i> From<ast::ApplyCombinator<'i>> for ir::ApplyCombinator {
-        fn from(a: ast::ApplyCombinator<'i>) -> Self {
-            ir::ApplyCombinator {
-                stream: id(a.stream),
-                combinator: Box::new((*a.combinator).into()),
-            }
         }
     }
 
@@ -1091,26 +1019,12 @@ pub mod lowering {
     impl<'i> From<ast::ConstCombinator<'i>> for ir::ConstCombinator {
         fn from(c: ast::ConstCombinator<'i>) -> Self {
             match c {
-                ast::ConstCombinator::Vec(b) => ir::ConstCombinator::Vec(Box::new((*b).into())),
-                ast::ConstCombinator::ConstArray(x) => ir::ConstCombinator::ConstArray(x.into()),
                 ast::ConstCombinator::ConstBytes(x) => ir::ConstCombinator::ConstBytes(x.into()),
                 ast::ConstCombinator::ConstInt(x) => ir::ConstCombinator::ConstInt(x.into()),
                 ast::ConstCombinator::ConstEnum(x) => ir::ConstCombinator::ConstEnum(x.into()),
-                ast::ConstCombinator::ConstStruct(x) => ir::ConstCombinator::ConstStruct(x.into()),
-                ast::ConstCombinator::ConstChoice(x) => ir::ConstCombinator::ConstChoice(x.into()),
                 ast::ConstCombinator::ConstCombinatorInvocation { name, .. } => {
                     ir::ConstCombinator::ConstCombinatorInvocation(id(name))
                 }
-            }
-        }
-    }
-
-    impl<'i> From<ast::ConstArrayCombinator<'i>> for ir::ConstArrayCombinator {
-        fn from(c: ast::ConstArrayCombinator<'i>) -> Self {
-            ir::ConstArrayCombinator {
-                combinator: c.combinator.into(),
-                len: c.len,
-                values: c.values.into(),
             }
         }
     }
@@ -1155,27 +1069,6 @@ pub mod lowering {
         }
     }
 
-    impl<'i> From<ast::ConstStructCombinator<'i>> for ir::ConstStructCombinator {
-        fn from(c: ast::ConstStructCombinator<'i>) -> Self {
-            ir::ConstStructCombinator(c.0.into_iter().map(Into::into).collect())
-        }
-    }
-
-    impl<'i> From<ast::ConstChoiceCombinator<'i>> for ir::ConstChoiceCombinator {
-        fn from(c: ast::ConstChoiceCombinator<'i>) -> Self {
-            ir::ConstChoiceCombinator(c.0.into_iter().map(Into::into).collect())
-        }
-    }
-
-    impl<'i> From<ast::ConstChoice<'i>> for ir::ConstChoice {
-        fn from(c: ast::ConstChoice<'i>) -> Self {
-            ir::ConstChoice {
-                tag: c.tag,
-                combinator: c.combinator.into(),
-            }
-        }
-    }
-
     impl<'i> From<crate::type_check::ConstCombinatorSig<'i>> for ir::ConstCombinatorSig {
         fn from(src: crate::type_check::ConstCombinatorSig<'i>) -> Self {
             ir::ConstCombinatorSig {
@@ -1209,6 +1102,7 @@ pub mod lowering {
                 combinators,
                 const_combinators,
                 enums,
+                static_sizes: src.static_sizes.clone(),
             }
         }
     }

@@ -214,6 +214,9 @@ pub open spec fn spec_a_typed_choose(e: SpecATypedClosedEnum) -> SpecATypedChoos
 }
 
 pub fn a_typed_choose<'a>(e: ATypedClosedEnum) -> (o: ATypedChooseCombinator)
+    requires
+        spec_a_typed_closed_enum().wf(e@),
+
     ensures o@ == spec_a_typed_choose(e@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -230,6 +233,8 @@ pub fn a_typed_choose<'a>(e: ATypedClosedEnum) -> (o: ATypedChooseCombinator)
 pub fn parse_a_typed_choose<'a>(input: &'a [u8], e: ATypedClosedEnum) -> (res: PResult<<ATypedChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_a_typed_closed_enum().wf(e@),
+
     ensures
         res matches Ok((n, v)) ==> spec_a_typed_choose(e@).spec_parse(input@) == Some((n as int, v@)),
         spec_a_typed_choose(e@).spec_parse(input@) matches Some((n, v))
@@ -245,6 +250,8 @@ pub fn serialize_a_typed_choose<'a>(v: <ATypedChooseCombinator as Combinator<'a,
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_a_typed_choose(e@).wf(v@),
+        spec_a_typed_closed_enum().wf(e@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -261,6 +268,8 @@ pub fn a_typed_choose_len<'a>(v: <ATypedChooseCombinator as Combinator<'a, &'a [
     requires
         spec_a_typed_choose(e@).wf(v@),
         spec_a_typed_choose(e@).spec_serialize(v@).len() <= usize::MAX,
+        spec_a_typed_closed_enum().wf(e@),
+
     ensures
         serialize_len == spec_a_typed_choose(e@).spec_serialize(v@).len(),
 {
@@ -868,6 +877,9 @@ pub open spec fn spec_a_regular_choose(e: SpecAClosedEnum) -> SpecARegularChoose
 }
 
 pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
+    requires
+        spec_a_closed_enum().wf(e@),
+
     ensures o@ == spec_a_regular_choose(e@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -884,6 +896,8 @@ pub fn a_regular_choose<'a>(e: AClosedEnum) -> (o: ARegularChooseCombinator)
 pub fn parse_a_regular_choose<'a>(input: &'a [u8], e: AClosedEnum) -> (res: PResult<<ARegularChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_a_closed_enum().wf(e@),
+
     ensures
         res matches Ok((n, v)) ==> spec_a_regular_choose(e@).spec_parse(input@) == Some((n as int, v@)),
         spec_a_regular_choose(e@).spec_parse(input@) matches Some((n, v))
@@ -899,6 +913,8 @@ pub fn serialize_a_regular_choose<'a>(v: <ARegularChooseCombinator as Combinator
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_a_regular_choose(e@).wf(v@),
+        spec_a_closed_enum().wf(e@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -915,6 +931,8 @@ pub fn a_regular_choose_len<'a>(v: <ARegularChooseCombinator as Combinator<'a, &
     requires
         spec_a_regular_choose(e@).wf(v@),
         spec_a_regular_choose(e@).spec_serialize(v@).len() <= usize::MAX,
+        spec_a_closed_enum().wf(e@),
+
     ensures
         serialize_len == spec_a_regular_choose(e@).spec_serialize(v@).len(),
 {
@@ -1935,6 +1953,9 @@ pub open spec fn spec_a_typed_choose_with_default(e: u32) -> SpecATypedChooseWit
 }
 
 pub fn a_typed_choose_with_default<'a>(e: u32) -> (o: ATypedChooseWithDefaultCombinator)
+    requires
+        spec_a_typed_open_enum().wf(e@),
+
     ensures o@ == spec_a_typed_choose_with_default(e@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -1951,6 +1972,8 @@ pub fn a_typed_choose_with_default<'a>(e: u32) -> (o: ATypedChooseWithDefaultCom
 pub fn parse_a_typed_choose_with_default<'a>(input: &'a [u8], e: u32) -> (res: PResult<<ATypedChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_a_typed_open_enum().wf(e@),
+
     ensures
         res matches Ok((n, v)) ==> spec_a_typed_choose_with_default(e@).spec_parse(input@) == Some((n as int, v@)),
         spec_a_typed_choose_with_default(e@).spec_parse(input@) matches Some((n, v))
@@ -1966,6 +1989,8 @@ pub fn serialize_a_typed_choose_with_default<'a>(v: <ATypedChooseWithDefaultComb
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_a_typed_choose_with_default(e@).wf(v@),
+        spec_a_typed_open_enum().wf(e@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -1982,6 +2007,8 @@ pub fn a_typed_choose_with_default_len<'a>(v: <ATypedChooseWithDefaultCombinator
     requires
         spec_a_typed_choose_with_default(e@).wf(v@),
         spec_a_typed_choose_with_default(e@).spec_serialize(v@).len() <= usize::MAX,
+        spec_a_typed_open_enum().wf(e@),
+
     ensures
         serialize_len == spec_a_typed_choose_with_default(e@).spec_serialize(v@).len(),
 {
@@ -2185,6 +2212,9 @@ pub open spec fn spec_a_choose_with_default(e: u8) -> SpecAChooseWithDefaultComb
 }
 
 pub fn a_choose_with_default<'a>(e: u8) -> (o: AChooseWithDefaultCombinator)
+    requires
+        spec_an_open_enum().wf(e@),
+
     ensures o@ == spec_a_choose_with_default(e@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -2201,6 +2231,8 @@ pub fn a_choose_with_default<'a>(e: u8) -> (o: AChooseWithDefaultCombinator)
 pub fn parse_a_choose_with_default<'a>(input: &'a [u8], e: u8) -> (res: PResult<<AChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_an_open_enum().wf(e@),
+
     ensures
         res matches Ok((n, v)) ==> spec_a_choose_with_default(e@).spec_parse(input@) == Some((n as int, v@)),
         spec_a_choose_with_default(e@).spec_parse(input@) matches Some((n, v))
@@ -2216,6 +2248,8 @@ pub fn serialize_a_choose_with_default<'a>(v: <AChooseWithDefaultCombinator as C
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_a_choose_with_default(e@).wf(v@),
+        spec_an_open_enum().wf(e@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -2232,6 +2266,8 @@ pub fn a_choose_with_default_len<'a>(v: <AChooseWithDefaultCombinator as Combina
     requires
         spec_a_choose_with_default(e@).wf(v@),
         spec_a_choose_with_default(e@).spec_serialize(v@).len() <= usize::MAX,
+        spec_an_open_enum().wf(e@),
+
     ensures
         serialize_len == spec_a_choose_with_default(e@).spec_serialize(v@).len(),
 {

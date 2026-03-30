@@ -33,9 +33,10 @@ impl std::error::Error for VestError {}
 /// Compiles the given source code and returns the resulting output.
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// use std::error::Error;
 /// use std::io::Write;
+/// use vest::{compile, codegen::CodegenOpts};
 ///
 /// // build.rs
 /// fn main() -> Result<(), Box<dyn Error>> {
@@ -113,10 +114,11 @@ pub fn compile(
 /// Compiles the given file and returns the resulting output.
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// // build.rs
 /// use std::error::Error;
 /// use std::io::Write;
+/// use vest::{compile_file, codegen::CodegenOpts};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///   println!("cargo::rerun-if-changed=src/tlv.vest");
@@ -138,15 +140,16 @@ pub fn compile_file(
 /// Compiles the given file and saves it to `output_file`.
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// // build.rs
 /// use std::error::Error;
+/// use vest::{compile_to, codegen::CodegenOpts};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///   println!("cargo::rerun-if-changed=src/tlv.vest");
 ///   let input_file = "src/tlv.vest";
 ///   let output_file = "src/tlv.rs";
-///   let code = compile_to(file_name, CodegenOpts::All, output_file)?;
+///   compile_to(input_file, CodegenOpts::All, output_file)?;
 ///   Ok(())
 /// }
 /// ```

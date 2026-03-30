@@ -1049,6 +1049,9 @@ pub open spec fn spec_tst_mydata(tag: u8) -> SpecTstMydataCombinator {
 }
 
 pub fn tst_mydata<'a>(tag: u8) -> (o: TstMydataCombinator)
+    requires
+        spec_tst_tag().wf(tag@),
+
     ensures o@ == spec_tst_mydata(tag@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -1065,6 +1068,8 @@ pub fn tst_mydata<'a>(tag: u8) -> (o: TstMydataCombinator)
 pub fn parse_tst_mydata<'a>(input: &'a [u8], tag: u8) -> (res: PResult<<TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_tst_tag().wf(tag@),
+
     ensures
         res matches Ok((n, v)) ==> spec_tst_mydata(tag@).spec_parse(input@) == Some((n as int, v@)),
         spec_tst_mydata(tag@).spec_parse(input@) matches Some((n, v))
@@ -1080,6 +1085,8 @@ pub fn serialize_tst_mydata<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_tst_mydata(tag@).wf(v@),
+        spec_tst_tag().wf(tag@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -1096,6 +1103,8 @@ pub fn tst_mydata_len<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Ve
     requires
         spec_tst_mydata(tag@).wf(v@),
         spec_tst_mydata(tag@).spec_serialize(v@).len() <= usize::MAX,
+        spec_tst_tag().wf(tag@),
+
     ensures
         serialize_len == spec_tst_mydata(tag@).spec_serialize(v@).len(),
 {
@@ -1324,16 +1333,20 @@ type TstCont0Input<'a, 'b, 'x> = POrSType<TstCont0Type<'a, 'b>, TstCont0SType<'a
 impl<'a, 'b, 'x> Continuation<TstCont0Input<'a, 'b, 'x>> for TstCont0 {
     type Output = TstMydataCombinator;
 
-    open spec fn requires(&self, deps: TstCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: TstCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (spec_tst_tag()).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: TstCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_tst_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_tst_cont0(deps@)
     }
 
     fn apply(&self, deps: TstCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let tag = *deps;
+                let tag = deps;
+                let tag = *tag;
                 tst_mydata(tag)
             }
             POrSType::S(deps) => {

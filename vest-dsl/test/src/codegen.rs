@@ -1021,6 +1021,9 @@ pub open spec fn spec_msg4_v(t: SpecAType) -> SpecMsg4VCombinator {
 }
 
 pub fn msg4_v<'a>(t: AType) -> (o: Msg4VCombinator)
+    requires
+        spec_a_type().wf(t@),
+
     ensures o@ == spec_msg4_v(t@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
@@ -1037,6 +1040,8 @@ pub fn msg4_v<'a>(t: AType) -> (o: Msg4VCombinator)
 pub fn parse_msg4_v<'a>(input: &'a [u8], t: AType) -> (res: PResult<<Msg4VCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_a_type().wf(t@),
+
     ensures
         res matches Ok((n, v)) ==> spec_msg4_v(t@).spec_parse(input@) == Some((n as int, v@)),
         spec_msg4_v(t@).spec_parse(input@) matches Some((n, v))
@@ -1052,6 +1057,8 @@ pub fn serialize_msg4_v<'a>(v: <Msg4VCombinator as Combinator<'a, &'a [u8], Vec<
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_msg4_v(t@).wf(v@),
+        spec_a_type().wf(t@),
+
     ensures
         o matches Ok(n) ==> {
             &&& data@.len() == old(data)@.len()
@@ -1068,6 +1075,8 @@ pub fn msg4_v_len<'a>(v: <Msg4VCombinator as Combinator<'a, &'a [u8], Vec<u8>>>:
     requires
         spec_msg4_v(t@).wf(v@),
         spec_msg4_v(t@).spec_serialize(v@).len() <= usize::MAX,
+        spec_a_type().wf(t@),
+
     ensures
         serialize_len == spec_msg4_v(t@).spec_serialize(v@).len(),
 {
@@ -1299,16 +1308,20 @@ type Msg4Cont0Input<'a, 'b, 'x> = POrSType<Msg4Cont0Type<'a, 'b>, Msg4Cont0SType
 impl<'a, 'b, 'x> Continuation<Msg4Cont0Input<'a, 'b, 'x>> for Msg4Cont0 {
     type Output = (Msg4VCombinator, bytes::Tail);
 
-    open spec fn requires(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> bool {
+        &&& (spec_a_type()).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: Msg4Cont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_msg4_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_msg4_cont0(deps@)
     }
 
     fn apply(&self, deps: Msg4Cont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let t = *deps;
+                let t = deps;
+                let t = *t;
                 (msg4_v(t), bytes::Tail)
             }
             POrSType::S(deps) => {
