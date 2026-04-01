@@ -249,7 +249,7 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
     ;
 }
 
-/// Body combinators that already carry the standard Vest proof properties.
+/// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
 pub trait StrictCombinator: SoundParser +
     NonMalleable +
     GoodSerializer +
