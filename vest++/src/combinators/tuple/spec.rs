@@ -122,7 +122,6 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Pair<A, B> {
     }
 }
 
-
 impl<A, B> SpecParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
     A: SpecParser,
     B: SpecParser,
@@ -294,6 +293,5 @@ impl<A, B> SpecByteLen for super::DepPair<A, spec_fn(A::T) -> B> where
         self.0.byte_len(key) + next.byte_len(val)
     }
 }
-
 
 } // verus!

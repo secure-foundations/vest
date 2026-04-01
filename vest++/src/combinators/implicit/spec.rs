@@ -585,10 +585,11 @@ impl<A, B> GoodSerializer for super::ImplicitManual<
     }
 }
 
-impl<A, B> SpecByteLen for super::ImplicitManual<A, spec_fn(A::T) -> B, spec_fn(B::T) -> A::T> where
-    A: SpecByteLen + Consistency<Val = A::T>,
-    B: SpecByteLen + Consistency<Val = B::T>,
- {
+impl<A, B> SpecByteLen for super::ImplicitManual<
+    A,
+    spec_fn(A::T) -> B,
+    spec_fn(B::T) -> A::T,
+> where A: SpecByteLen + Consistency<Val = A::T>, B: SpecByteLen + Consistency<Val = B::T> {
     type T = B::T;
 
     open spec fn byte_len(&self, value: Self::T) -> nat {

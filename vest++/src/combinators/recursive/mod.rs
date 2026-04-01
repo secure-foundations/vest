@@ -1,12 +1,17 @@
 //! Bounded fixpoint combinator for recursive formats.
+/// Correctness proofs for this combinator.
+pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
 use vstd::prelude::*;
 
+pub use proof::{
+    EquivSerializersGeneralRecBody, NoLookAheadRecBody, NonMalleableRecBody, SPRoundTripDpsRecBody,
+    StrictRecBody,
+};
 pub use spec::{
-    EquivSerializersGeneralRecBody, GoodSerializerRecBody, NoLookAheadRecBody, NonMalleableRecBody,
-    NonTailFmtRecBody, SPRoundTripDpsRecBody, SoundParserRecBody, SpecRecBody,
+    BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SoundParserRecBody, SpecRecBody,
 };
 
 verus! {

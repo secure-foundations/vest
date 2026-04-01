@@ -1,12 +1,12 @@
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::implicit::VLDataOf;
 use crate::combinators::disjoint::{
     lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_repeat, lemma_disjoint_tag,
 };
+use crate::combinators::implicit::VLDataOf;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Implicit, Cond, Eof, Fixed, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail, U16Le,
-    U32Le, U8,
+    Cond, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail,
+    U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

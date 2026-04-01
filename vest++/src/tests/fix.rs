@@ -1,6 +1,5 @@
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::recursive::*;
-use crate::combinators::recursive::spec::BundledSpecs;
 use crate::combinators::*;
 use crate::core::proof::*;
 use crate::core::spec::*;
@@ -11,7 +10,6 @@ verus! {
 /*
 * Example recursive parser: nested braces
 */
-
 /// Example recursive value type: nested braces `{...}` or empty `\0`.
 pub enum NestedBracesT {
     /// A brace-wrapped recursive value: `'{' inner '}'`.
@@ -93,38 +91,8 @@ impl SpecRecBody for NestedBracesBody {
     }
 }
 
-impl SoundParserRecBody for NestedBracesBody {
-    proof fn lemma_body_sound_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl NonMalleableRecBody for NestedBracesBody {
-    proof fn lemma_body_nonmal_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl GoodSerializerRecBody for NestedBracesBody {
-    proof fn lemma_s_body_serialize_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl NonTailFmtRecBody for NestedBracesBody {
-    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl SPRoundTripDpsRecBody for NestedBracesBody {
-    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl NoLookAheadRecBody for NestedBracesBody {
-    proof fn lemma_body_no_lookahead_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl EquivSerializersGeneralRecBody for NestedBracesBody {
-    proof fn lemma_s_body_equiv_general_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
+impl StrictRecBody for NestedBracesBody {
+    proof fn lemma_body_all_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
     }
 }
 

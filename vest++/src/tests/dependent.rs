@@ -7,8 +7,8 @@ use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
-    Implicit, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag, Tagged,
-    Tail, U16Le, U32Le, Varied, U8,
+    Choice, Cond, DepCombinator, Eof, Fixed, Implicit, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag,
+    Tagged, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
