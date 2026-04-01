@@ -35,7 +35,7 @@
 //!
 //! | Combinator | Description |
 //! |---|---|
-//! | [`Implicit<A, B>`] | Like `Preceded<A, B>`, but `B` can depend on `A`'s value |
+//! | [`DepPair<A, B>`] | Like `Pair<A, B>`, but `B` can depend on `A`'s value |
 //! | [`Bind<A, B>`] | Like `Implicit<A, B>`, but `B` must be one of the [dependent family of combinators](DepCombinator) |
 //!
 //! ## Dependent family of combinators
@@ -98,7 +98,7 @@ pub use bytes::{Fixed, Varied};
 pub use choice::{Alt, Choice, Sum};
 pub use cond::Cond;
 pub use dependent::{Bind, DepCombinator, TVLeaf, TVOr, VoidTag};
-pub use implicit::{Implicit, ImplicitAuto};
+pub use implicit::{DepPair, ImplicitAuto};
 pub use length::AsLen;
 pub use mapped::Mapped;
 pub use marker::{Empty, Void};

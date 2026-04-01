@@ -38,7 +38,7 @@ proof fn requires_deterministic<T: EquivSerializersGeneral>(
     combinator: T,
     v: <T as SpecSerializer>::SVal,
     obuf: Seq<u8>,
-) 
+)
     requires
         combinator.equiv_general_inv(),
 {

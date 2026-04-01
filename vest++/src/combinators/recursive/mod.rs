@@ -5,9 +5,8 @@ pub mod spec;
 use vstd::prelude::*;
 
 pub use spec::{
-    EquivSerializersGeneralRecBody, GoodSerializerRecBody, NoLookAheadRecBody,
-    NonMalleableRecBody, NonTailFmtRecBody, SPRoundTripDpsRecBody, SpecRecBody,
-    SoundParserRecBody,
+    EquivSerializersGeneralRecBody, GoodSerializerRecBody, NoLookAheadRecBody, NonMalleableRecBody,
+    NonTailFmtRecBody, SPRoundTripDpsRecBody, SoundParserRecBody, SpecRecBody,
 };
 
 verus! {

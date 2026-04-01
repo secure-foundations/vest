@@ -1,61 +1,49 @@
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{Choice, Cond, Implicit, ImplicitAuto, Sum, U16Le, U32Le, Varied, U8};
+use crate::combinators::{Choice, Cond, DepPair, ImplicitAuto, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
-proof fn test_implicit_fmt1_roundtrip() {
-    let fmt1 = Implicit(U8, |len: u8| Varied(len));
-    let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
+proof fn test_dep_pair_fmt1_roundtrip() {
+    let fmt1 = DepPair(U8, |len: u8| Varied(len));
+    let v = (3u8, seq![0xAAu8, 0xBBu8, 0xCCu8]);
 
     assert(fmt1.unambiguous());
-    assert(fmt1.consistent(v)) by {
-        let len = v.len() as u8;
-        assert(fmt1.0.consistent(len));
-        assert(fmt1.1(len).consistent(v));
-    };
+    assert(fmt1.consistent(v));
     fmt1.theorem_serialize_parse_roundtrip(v);
 
     let ibuf = fmt1.spec_serialize(v);
     assert(fmt1.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
 }
 
-proof fn test_implicit_fmt3_roundtrip() {
+proof fn test_dep_pair_fmt3_roundtrip() {
     broadcast use lemma_disjoint_cond;
 
-    let fmt3 = Implicit(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
+    let fmt3 = DepPair(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
 
-    let v0 = Sum::Inl(0x1234u16);
-    let v1 = Sum::Inr(0x78563412u32);
+    let v0 = (0u8, Sum::Inl(0x1234u16));
+    let v1 = (1u8, Sum::Inr(0x78563412u32));
 
     assert(fmt3.unambiguous());
 
-    assert(fmt3.consistent(v0)) by {
-        let tag = 0u8;
-        assert(fmt3.0.consistent(tag));
-        assert(fmt3.1(tag).consistent(v0));
-    };
+    assert(fmt3.consistent(v0));
     fmt3.theorem_serialize_parse_roundtrip(v0);
     let ibuf0 = fmt3.spec_serialize(v0);
     assert(fmt3.spec_parse(ibuf0) == Some((ibuf0.len() as int, v0)));
     let buf0 = seq![0u8, 0x34u8, 0x12u8];
-    if let Some((n0, parsed0)) = fmt3.spec_parse(buf0) {
+    if let Some((n0, (_, parsed0))) = fmt3.spec_parse(buf0) {
         assert(n0 == 3int);
         assert(parsed0 is Inl);
     }
-    assert(fmt3.consistent(v1)) by {
-        let tag = 1u8;
-        assert(fmt3.0.consistent(tag));
-        assert(fmt3.1(tag).consistent(v1));
-    };
+    assert(fmt3.consistent(v1));
     fmt3.theorem_serialize_parse_roundtrip(v1);
     let ibuf1 = fmt3.spec_serialize(v1);
     assert(fmt3.spec_parse(ibuf1) == Some((ibuf1.len() as int, v1)));
     let buf1 = seq![1u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8];
-    if let Some((n1, parsed1)) = fmt3.spec_parse(buf1) {
+    if let Some((n1, (_, parsed1))) = fmt3.spec_parse(buf1) {
         assert(n1 == 5int);
         assert(parsed1 is Inr);
     }
@@ -226,56 +214,21 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
 
     #[verusfmt::skip]
     let tlv2 =
-        Implicit(U8, |tag: u8|
-        Implicit(U8, |len1: u8|
+        DepPair(U8, |tag: u8|
+        DepPair(U8, |len1: u8|
         Pair(Fixed::<3>,
-        Implicit(U16Le, |len2: u16|
+        DepPair(U16Le, |len2: u16|
         Pair(Varied(len1),
         ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
                                  Choice(Cond(tag == 1u8, Varied(len2)),
                                         Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
 
+    let msg1 = (0u8, (5u8, (padding, (2u16, (v1, v2_1)))));
+    let msg2 = (1u8, (5u8, (padding, (4u16, (v1, v2_2)))));
+
     assert(tlv2.unambiguous());
-    assert(tlv2.consistent(msg1)) by {
-        let tag = 0u8;
-        let len1 = 5u8;
-        let len2 = 2u16;
-
-        assert(tlv2.0.consistent(tag));
-        assert(tlv2.1(tag).0.consistent(len1));
-        assert(tlv2.1(tag).1(len1).0.consistent(padding));
-        assert(tlv2.1(tag).1(len1).1.0.consistent(len2));
-        assert(tlv2.1(tag).1(len1).1.1(len2).0.consistent(v1));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.1.consistent(v2_1));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.0 == tlv2.1(tag).1(len1).1.1(len2).1.1.byte_len(
-            v2_1,
-        ));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.consistent(v2_1));
-        assert(tlv2.1(tag).1(len1).1.1(len2).consistent((v1, v2_1)));
-        assert(tlv2.1(tag).1(len1).1.consistent((v1, v2_1)));
-        assert(tlv2.1(tag).1(len1).consistent(msg1));
-        assert(tlv2.1(tag).consistent(msg1));
-    }
-    assert(tlv2.consistent(msg2)) by {
-        let tag = 1u8;
-        let len1 = 5u8;
-        let len2 = 4u16;
-
-        assert(tlv2.0.consistent(tag));
-        assert(tlv2.1(tag).0.consistent(len1));
-        assert(tlv2.1(tag).1(len1).0.consistent(padding));
-        assert(tlv2.1(tag).1(len1).1.0.consistent(len2));
-        assert(tlv2.1(tag).1(len1).1.1(len2).0.consistent(v1));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.1.consistent(v2_2));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.0 == tlv2.1(tag).1(len1).1.1(len2).1.1.byte_len(
-            v2_2,
-        ));
-        assert(tlv2.1(tag).1(len1).1.1(len2).1.consistent(v2_2));
-        assert(tlv2.1(tag).1(len1).1.1(len2).consistent((v1, v2_2)));
-        assert(tlv2.1(tag).1(len1).1.consistent((v1, v2_2)));
-        assert(tlv2.1(tag).1(len1).consistent(msg2));
-        assert(tlv2.1(tag).consistent(msg2));
-    }
+    assert(tlv2.consistent(msg1));
+    assert(tlv2.consistent(msg2));
 
     tlv2.theorem_serialize_parse_roundtrip(msg1);
     tlv2.theorem_serialize_parse_roundtrip(msg2);

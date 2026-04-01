@@ -9,13 +9,17 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Dependent sequential combinator with implicit key recovery.
+/// (Sequential) dependent pair combinator.
 ///
-/// Parsing semantics: parses `A` to get a key, then parses `B(key)`, returning only
-/// the value from `B`.
-/// During serialization, the key is recovered existentially. Prefer [`super::Bind`]
-/// to avoid existential reasoning.
-pub struct Implicit<A, B>(pub A, pub B);
+/// Parsing semantics: parses `A` to get a `key`, then parses `B(key)` to get the body `value`,
+/// and returns `(key, value)`.
+/// During serialization, the caller must provide both the `key` and `value`, and the combinator verifies that
+/// the `key` is consistent with `A` and the `value` is consistent with `B(key)`.
+///
+/// ## Note on usage
+///
+/// Prefer [`super::Bind`] to avoid manually recovering the key during serialization.
+pub struct DepPair<A, B>(pub A, pub B);
 
 /// Dependent sequential combinator with explicit recovery function.
 pub struct ImplicitAuto<A, B, Recover>(pub A, pub B, pub Recover);
@@ -26,7 +30,7 @@ pub struct ImplicitAuto<A, B, Recover>(pub A, pub B, pub Recover);
 pub trait LosslessImplicit<A: Consistency, B: Consistency> {
     /// The body value uniquely determines the key.
     proof fn lemma_value_uniquely_determines_key(
-        fmt: &Implicit<A, spec_fn(A::Val) -> B>,
+        fmt: &DepPair<A, spec_fn(A::Val) -> B>,
         k1: A::Val,
         k2: A::Val,
         value: B::Val,

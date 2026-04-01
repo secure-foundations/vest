@@ -4,7 +4,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
+impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
@@ -15,14 +15,14 @@ impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-        let a = choose|a: A::T| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
-        let next = (self.1)(a);
-        let next_buf = next.spec_serialize_dps(value, obuf);
-        let serialized = self.0.spec_serialize_dps(a, next_buf);
-        next.theorem_serialize_dps_parse_roundtrip(value, obuf);
-        self.0.theorem_serialize_dps_parse_roundtrip(a, next_buf);
-        self.0.lemma_serialize_dps_prepend(a, next_buf);
-        self.0.lemma_serialize_dps_len(a, next_buf);
+        let (key, val) = value;
+        let next = (self.1)(key);
+        let next_buf = next.spec_serialize_dps(val, obuf);
+        let serialized = self.0.spec_serialize_dps(key, next_buf);
+        next.theorem_serialize_dps_parse_roundtrip(val, obuf);
+        self.0.theorem_serialize_dps_parse_roundtrip(key, next_buf);
+        self.0.lemma_serialize_dps_prepend(key, next_buf);
+        self.0.lemma_serialize_dps_len(key, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
             assert(serialized.skip(n0) == next_buf);
@@ -30,7 +30,7 @@ impl<A, B> SPRoundTripDps for super::Implicit<A, spec_fn(A::T) -> B> where
     }
 }
 
-impl<A, B> EquivSerializersGeneral for super::Implicit<A, spec_fn(A::SVal) -> B> where
+impl<A, B> EquivSerializersGeneral for super::DepPair<A, spec_fn(A::SVal) -> B> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral + Consistency<Val = B::SVal>,
  {
@@ -40,15 +40,15 @@ impl<A, B> EquivSerializersGeneral for super::Implicit<A, spec_fn(A::SVal) -> B>
     }
 
     proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
-        let a = choose|a: A::SVal| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
-        let next = (self.1)(a);
-        let obuf1 = next.spec_serialize_dps(value, obuf);
-        next.lemma_serialize_equiv(value, obuf);
-        self.0.lemma_serialize_equiv(a, obuf1);
+        let (key, val) = value;
+        let next = (self.1)(key);
+        let obuf1 = next.spec_serialize_dps(val, obuf);
+        next.lemma_serialize_equiv(val, obuf);
+        self.0.lemma_serialize_equiv(key, obuf1);
     }
 }
 
-impl<A, B> NoLookAhead for super::Implicit<A, spec_fn(A::PVal) -> B> where
+impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
     A: NoLookAhead,
     B: NoLookAhead,
     Self: super::LosslessImplicit<A, B>,
@@ -88,7 +88,7 @@ impl<A, B> NoLookAhead for super::Implicit<A, spec_fn(A::PVal) -> B> where
     }
 }
 
-impl<A, B> EquivSerializers for super::Implicit<A, spec_fn(A::SVal) -> B> where
+impl<A, B> EquivSerializers for super::DepPair<A, spec_fn(A::SVal) -> B> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializers + Consistency<Val = B::SVal>,
  {
@@ -98,16 +98,16 @@ impl<A, B> EquivSerializers for super::Implicit<A, spec_fn(A::SVal) -> B> where
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
-        let a = choose|a: A::SVal| #![auto] self.0.consistent(a) && (self.1)(a).consistent(value);
-        let next = (self.1)(a);
+        let (key, val) = value;
+        let next = (self.1)(key);
         let empty = Seq::empty();
-        let obuf = next.spec_serialize_dps(value, empty);
-        next.lemma_serialize_equiv_on_empty(value);
-        self.0.lemma_serialize_equiv(a, obuf);
+        let obuf = next.spec_serialize_dps(val, empty);
+        next.lemma_serialize_equiv_on_empty(val);
+        self.0.lemma_serialize_equiv(key, obuf);
     }
 }
 
-impl<A, B> NonMalleable for super::Implicit<A, spec_fn(A::PVal) -> B> where
+impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
     A: NonMalleable,
     B: NonMalleable,
     Self: super::LosslessImplicit<A, B>,
