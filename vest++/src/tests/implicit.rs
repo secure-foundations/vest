@@ -1,7 +1,7 @@
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{Choice, Cond, DepPair, ImplicitAuto, Sum, U16Le, U32Le, Varied, U8};
+use crate::combinators::{Choice, Cond, DepPair, ImplicitManual, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -50,7 +50,7 @@ proof fn test_dep_pair_fmt3_roundtrip() {
 }
 
 proof fn test_implicit_inferred_fmt1_roundtrip() {
-    let fmt1 = ImplicitAuto(U8, |len: u8| Varied(len), |v: Seq<u8>| v.len() as u8);
+    let fmt1 = ImplicitManual(U8, |len: u8| Varied(len), |v: Seq<u8>| v.len() as u8);
     let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
 
     assert(fmt1.unambiguous());
@@ -73,9 +73,9 @@ proof fn test_implicit_inferred_fmt2_roundtrip() {
     #[verusfmt::skip]
     let fmt2 =
         // Format:
-        ImplicitAuto(U8, |len1: u8|
+        ImplicitManual(U8, |len1: u8|
         Pair(Fixed::<3>,
-        ImplicitAuto(U16Le, |len2: u16|
+        ImplicitManual(U16Le, |len2: u16|
         Pair(Varied(len1),
         Pair(Varied(len2),
          Varied(len1))),
@@ -109,7 +109,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
     #[verusfmt::skip]
     let fmt3 =
         // Format:
-        ImplicitAuto(U8, |tag|
+        ImplicitManual(U8, |tag|
             Choice(Cond(tag == 0u8, U16Le),
             Choice(Cond(tag == 1u8, U32Le),
                    Cond(tag == 2u8, Fixed::<0>))),
@@ -159,10 +159,10 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     #[verusfmt::skip]
     let tlv =
         // Format:
-        ImplicitAuto(U8, |tag: u8|
-        ImplicitAuto(U8, |len1: u8|
+        ImplicitManual(U8, |tag: u8|
+        ImplicitManual(U8, |len1: u8|
         Pair(Fixed::<3>,
-        ImplicitAuto(U16Le, |len2: u16|
+        ImplicitManual(U16Le, |len2: u16|
         Pair(Varied(len1),
         ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
                                  Choice(Cond(tag == 1u8, Varied(len2)),

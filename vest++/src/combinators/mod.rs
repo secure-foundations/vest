@@ -36,7 +36,7 @@
 //! | Combinator | Description |
 //! |---|---|
 //! | [`DepPair<A, B>`] | Like `Pair<A, B>`, but `B` can depend on `A`'s value |
-//! | [`Bind<A, B>`] | Like `Implicit<A, B>`, but `B` must be one of the [dependent family of combinators](DepCombinator) |
+//! | [`Implicit<A, B>`] | Like `DepPair<A, B>`, but `B` must be one of the [dependent family of combinators](DepCombinator) |
 //!
 //! ## Dependent family of combinators
 //!
@@ -76,9 +76,8 @@ pub mod berbool;
 pub mod bytes;
 pub mod choice;
 pub mod cond;
-pub mod dependent;
-pub mod disjoint;
 pub mod implicit;
+pub mod disjoint;
 pub mod length;
 pub mod mapped;
 pub mod marker;
@@ -97,8 +96,7 @@ pub use berbool::BerBool;
 pub use bytes::{Fixed, Varied};
 pub use choice::{Alt, Choice, Sum};
 pub use cond::Cond;
-pub use dependent::{Bind, DepCombinator, TVLeaf, TVOr, VoidTag};
-pub use implicit::{DepPair, ImplicitAuto};
+pub use implicit::{Implicit, ImplicitManual, DepCombinator, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
 pub use mapped::Mapped;
 pub use marker::{Empty, Void};
@@ -113,5 +111,5 @@ pub use refined::{Refined, Tag, Tagged};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
-pub use tuple::Pair;
+pub use tuple::{Pair, DepPair};
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

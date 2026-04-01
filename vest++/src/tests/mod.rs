@@ -10,4 +10,5 @@ mod opt;
 mod recursive;
 mod star;
 mod tail;
+mod fix;
 mod unambuguity;

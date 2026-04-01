@@ -1,11 +1,11 @@
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::dependent::VLDataOf;
+use crate::combinators::implicit::VLDataOf;
 use crate::combinators::disjoint::{
     lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_repeat, lemma_disjoint_tag,
 };
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Bind, Cond, Eof, Fixed, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail, U16Le,
+    Implicit, Cond, Eof, Fixed, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail, U16Le,
     U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
@@ -63,7 +63,7 @@ proof fn test_chain_end_with_tailrepeat() {
     let f1 = U8;
     let f2 = Fixed::<3>;
     let f3 = Tagged(U8, 0xA2, U8);
-    let f4 = Tagged(U8, 0xB2, Bind(U16Le, VLDataOf(RepeatTillEnd(U16Le))));
+    let f4 = Tagged(U8, 0xB2, Implicit(U16Le, VLDataOf(RepeatTillEnd(U16Le))));
     let f5 = U32Le;
 
     #[verusfmt::skip]

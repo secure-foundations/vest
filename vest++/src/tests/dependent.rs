@@ -1,13 +1,13 @@
 use std::prelude::v1;
 
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::dependent::{TLVOf, TLVal, TagValNode, Uninhabited};
-use crate::combinators::dependent::{TVNode, VLData, VLDataOf};
+use crate::combinators::implicit::{TLVOf, TLVal, TagValNode, Uninhabited};
+use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
-    Bind, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag, Tagged,
+    Implicit, Choice, Cond, DepCombinator, Eof, Fixed, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag, Tagged,
     Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
@@ -16,7 +16,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_dependent_varied_u8() {
-    let fmt = Bind(U8, VLData());
+    let fmt = Implicit(U8, VLData());
     let value = seq![0xAAu8, 0xBBu8, 0xCCu8];
 
     assert(fmt.unambiguous());
@@ -31,7 +31,7 @@ proof fn test_dependent_nary_tagval() {
     broadcast use lemma_disjoint_cond;
 
     #[verusfmt::skip]
-    let fmt = Bind(U8,
+    let fmt = Implicit(U8,
         TVOr(0u8, U16Le,
         TVOr(1u8, U32Le,
         TVOr(2u8, Empty, Uninhabited()))),
@@ -66,7 +66,7 @@ proof fn test_dependent_nary_custom_tag() {
 
     use MyTag::*;
     #[verusfmt::skip]
-    let fmt = Bind(
+    let fmt = Implicit(
         my_tag,
         TVOr(A, U16Le,
         TVOr(B, U32Le,
@@ -89,7 +89,7 @@ proof fn test_dependent_nary_custom_tag() {
 }
 
 proof fn test_dependent_n_consecutive_lengths_values() {
-    let fmt = Bind(Pair(U8, Pair(U16Le, U8)), Pair(VLData(), Pair(VLData(), VLData())));
+    let fmt = Implicit(Pair(U8, Pair(U16Le, U8)), Pair(VLData(), Pair(VLData(), VLData())));
     let value = (
         seq![0x6Eu8; u8::MAX as nat],
         (seq![0x69u8; u16::MAX as nat], seq![0x34u8; u8::MAX as nat]),
@@ -117,7 +117,7 @@ proof fn test_dependent_simple_tlv() {
     //
     #[verusfmt::skip]
     let tlv =
-        Bind(Pair(U16Le, U8),
+        Implicit(Pair(U16Le, U8),
         TLVOf(
         TVNode(
             TVNode(
@@ -225,7 +225,7 @@ proof fn test_dependent_complex_tlv() {
     // }
     broadcast use lemma_disjoint_cond;
 
-    let tlv = Bind(Pair(U8, Pair(U8, U8)), TLVRest);
+    let tlv = Implicit(Pair(U8, Pair(U8, U8)), TLVRest);
 
     let padding = [0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
@@ -257,12 +257,12 @@ impl DepCombinator for TXSegwitRest {
 
     type Val = (Seq<u8>, <TXSegwitRestRest as DepCombinator>::Val);
 
-    type Body = Pair<Varied, Bind<U8, TXSegwitRestRest>>;
+    type Body = Pair<Varied, Implicit<U8, TXSegwitRestRest>>;
 
     open spec fn apply(&self, key: Self::Key) -> Self::Body {
         let txin_count = key;
         let txins_fmt = VLData().apply(txin_count);
-        let rest_fmt = Bind(U8, TXSegwitRestRest { txin_count });
+        let rest_fmt = Implicit(U8, TXSegwitRestRest { txin_count });
         Pair(txins_fmt, rest_fmt)
     }
 
@@ -350,7 +350,7 @@ proof fn test_bitcoin_tx() {
     let tx_segwit = Tagged(
         U8,
         1u8,
-        Bind(
+        Implicit(
             U8,
             TXSegwitRest,
         )

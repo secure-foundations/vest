@@ -33,7 +33,7 @@
 //!
 //! ```rust
 //! let tlv =
-//!     Bind(
+//!     Implicit(
 //!     (U8, U16Le),
 //!     TLVOf(
 //!       TVOr(0x01, RepeatUntilEof(Msg1),
