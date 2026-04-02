@@ -94,7 +94,7 @@ pub mod uints;
 
 pub use berbool::BerBool;
 pub use bytes::{Fixed, Varied};
-pub use choice::{Alt, Choice, Sum};
+pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
 pub use implicit::{DepCombinator, Implicit, ImplicitManual, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;

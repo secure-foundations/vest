@@ -205,4 +205,152 @@ impl<A, B> EquivSerializers for super::Alt<A, B> where
     }
 }
 
+impl<T, C, const N: usize> SPRoundTripDps for super::Dispatch<T, C, N> where C: SPRoundTripDps {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.active_branch().sp_roundtrip_dps_inv()
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        self.active_branch().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl<T, C: NonMalleable, const N: usize> NonMalleable for super::Dispatch<T, C, N> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.active_branch().nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((_n1, _v1)) = self.spec_parse(buf1) {
+            if let Some((_n2, _v2)) = self.spec_parse(buf2) {
+                self.active_branch().lemma_parse_non_malleable(buf1, buf2);
+            }
+        }
+    }
+}
+
+impl<T, C: NoLookAhead, const N: usize> NoLookAhead for super::Dispatch<T, C, N> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.active_branch().no_lookahead_inv()
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    self.active_branch().lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
+    }
+}
+
+impl<T, C, const N: usize> EquivSerializersGeneral for super::Dispatch<T, C, N> where
+    C: EquivSerializersGeneral,
+ {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.active_branch().equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        self.active_branch().lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<T, C: EquivSerializers, const N: usize> EquivSerializers for super::Dispatch<T, C, N> {
+    open spec fn equiv_inv(&self) -> bool {
+        self.active_branch().equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        self.active_branch().lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for Sum<A, B> {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.sp_roundtrip_dps_inv(),
+            Sum::Inr(b) => b.sp_roundtrip_dps_inv(),
+        }
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.theorem_serialize_dps_parse_roundtrip(va, obuf),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.theorem_serialize_dps_parse_roundtrip(vb, obuf),
+            _ => (),
+        }
+    }
+}
+
+impl<A: NonMalleable, B: NonMalleable> NonMalleable for Sum<A, B> {
+    open spec fn nonmal_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.nonmal_inv(),
+            Sum::Inr(b) => b.nonmal_inv(),
+        }
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_parse_non_malleable(buf1, buf2),
+            Sum::Inr(b) => b.lemma_parse_non_malleable(buf1, buf2),
+        }
+    }
+}
+
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for Sum<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.no_lookahead_inv(),
+            Sum::Inr(b) => b.no_lookahead_inv(),
+        }
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_no_lookahead(i1, i2),
+            Sum::Inr(b) => b.lemma_no_lookahead(i1, i2),
+        }
+    }
+}
+
+impl<A, B> EquivSerializersGeneral for Sum<A, B> where
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+ {
+    open spec fn equiv_general_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.equiv_general_inv(),
+            Sum::Inr(b) => b.equiv_general_inv(),
+        }
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_equiv(va, obuf),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_equiv(vb, obuf),
+            _ => (),
+        }
+    }
+}
+
+impl<A, B> EquivSerializers for Sum<A, B> where A: EquivSerializers, B: EquivSerializers {
+    open spec fn equiv_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.equiv_inv(),
+            Sum::Inr(b) => b.equiv_inv(),
+        }
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_equiv_on_empty(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_equiv_on_empty(vb),
+            _ => (),
+        }
+    }
+}
+
 } // verus!

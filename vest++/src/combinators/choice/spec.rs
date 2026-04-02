@@ -1,5 +1,5 @@
 use crate::core::{proof::*, spec::*};
-use vstd::prelude::*;
+use vstd::{pervasive::arbitrary, prelude::*};
 
 verus! {
 
@@ -299,6 +299,310 @@ impl<A, B> SpecByteLen for super::Alt<A, B> where
             self.0.byte_len(v)
         } else {
             self.1.byte_len(v)
+        }
+    }
+}
+
+pub open spec fn branch_exists<T, C>(tag: T, branches: Seq<(T, C)>) -> bool {
+    exists|i: int| 0 <= i < branches.len() && #[trigger] branches[i].0 == tag
+}
+
+pub open spec fn tag_position<T, C>(tag: T, branches: Seq<(T, C)>) -> nat
+    recommends
+        branch_exists(tag, branches),
+    decreases branches.len(),
+{
+    if branches.len() == 0 {
+        arbitrary()
+    } else if branches[0].0 == tag {
+        0
+    } else {
+        1 + tag_position(tag, branches.skip(1))
+    }
+}
+
+proof fn lemma_dispatch_tag_position<T, C>(tag: T, branches: Seq<(T, C)>)
+    requires
+        branch_exists(tag, branches),
+    ensures
+        tag_position(tag, branches) < branches.len(),
+        branches[tag_position(tag, branches) as int].0 == tag,
+    decreases branches.len(),
+{
+    let idx = choose|i: int| 0 <= i < branches.len() && #[trigger] branches[i].0 == tag;
+    assert(0 <= idx < branches.len());
+    if branches[0].0 == tag {
+    } else {
+        assert(idx > 0);
+        assert(branch_exists(tag, branches.skip(1))) by {
+            let shifted = idx - 1;
+            assert(0 <= shifted < branches.skip(1).len());
+            assert(branches.skip(1)[shifted].0 == tag);
+        };
+        lemma_dispatch_tag_position(tag, branches.skip(1));
+    }
+}
+
+impl<T, C, const N: usize> super::Dispatch<T, C, N> {
+    pub open spec fn has_active_branch(&self) -> bool {
+        branch_exists(self.0, self.1@)
+    }
+
+    pub open spec fn active_branch(&self) -> C
+        recommends
+            self.has_active_branch(),
+    {
+        self.1[tag_position(self.0, self.1@) as int].1
+    }
+}
+
+impl<T, C: SpecParser, const N: usize> SpecParser for super::Dispatch<T, C, N> {
+    type PVal = C::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        if self.has_active_branch() {
+            self.active_branch().spec_parse(ibuf)
+        } else {
+            None
+        }
+    }
+}
+
+impl<T, C: Consistency, const N: usize> Consistency for super::Dispatch<T, C, N> {
+    type Val = C::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.has_active_branch()
+        &&& self.active_branch().consistent(v)
+    }
+}
+
+impl<T, C: SoundParser, const N: usize> SoundParser for super::Dispatch<T, C, N> {
+    open spec fn sound_inv(&self) -> bool {
+        self.active_branch().sound_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        if self.has_active_branch() {
+            self.active_branch().lemma_parse_safe(ibuf);
+        }
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        if self.has_active_branch() {
+            self.active_branch().lemma_parse_sound_consumption(ibuf);
+        }
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        if self.has_active_branch() {
+            self.active_branch().lemma_parse_sound_value(ibuf);
+        }
+    }
+}
+
+impl<T, C: SpecSerializerDps, const N: usize> SpecSerializerDps for super::Dispatch<T, C, N> {
+    type ST = C::ST;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.active_branch().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<T, C: SpecSerializer, const N: usize> SpecSerializer for super::Dispatch<T, C, N> {
+    type SVal = C::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.active_branch().spec_serialize(v)
+    }
+}
+
+impl<T, C: Unambiguity, const N: usize> Unambiguity for super::Dispatch<T, C, N> {
+    open spec fn unambiguous(&self) -> bool {
+        self.active_branch().unambiguous()
+    }
+}
+
+impl<T, C: NonTailFmt, const N: usize> NonTailFmt for super::Dispatch<T, C, N> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.active_branch().serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.active_branch().lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.active_branch().lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<T, C: GoodSerializer, const N: usize> GoodSerializer for super::Dispatch<T, C, N> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.active_branch().serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.active_branch().lemma_serialize_len(v);
+    }
+}
+
+impl<T, C: SpecByteLen, const N: usize> SpecByteLen for super::Dispatch<T, C, N> {
+    type T = C::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.active_branch().byte_len(v)
+    }
+}
+
+impl<A: SpecParser, B: SpecParser> SpecParser for Sum<A, B> {
+    type PVal = Sum<A::PVal, B::PVal>;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match self {
+            Sum::Inl(a) => {
+                match a.spec_parse(ibuf) {
+                    Some((n, va)) => Some((n, Sum::Inl(va))),
+                    None => None,
+                }
+            },
+            Sum::Inr(b) => {
+                match b.spec_parse(ibuf) {
+                    Some((n, vb)) => Some((n, Sum::Inr(vb))),
+                    None => None,
+                }
+            },
+        }
+    }
+}
+
+impl<A: Consistency, B: Consistency> Consistency for Sum<A, B> {
+    type Val = Sum<A::Val, B::Val>;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.consistent(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.consistent(vb),
+            _ => false,
+        }
+    }
+}
+
+impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
+    open spec fn sound_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.sound_inv(),
+            Sum::Inr(b) => b.sound_inv(),
+        }
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_parse_safe(ibuf),
+            Sum::Inr(b) => b.lemma_parse_safe(ibuf),
+        }
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_parse_sound_consumption(ibuf),
+            Sum::Inr(b) => b.lemma_parse_sound_consumption(ibuf),
+        }
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_parse_sound_value(ibuf),
+            Sum::Inr(b) => b.lemma_parse_sound_value(ibuf),
+        }
+    }
+}
+
+impl<A, B> SpecSerializerDps for Sum<A, B> where A: SpecSerializerDps, B: SpecSerializerDps {
+    type ST = Sum<A::ST, B::ST>;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.spec_serialize_dps(va, obuf),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.spec_serialize_dps(vb, obuf),
+            _ => obuf,
+        }
+    }
+}
+
+impl<A, B> SpecSerializer for Sum<A, B> where A: SpecSerializer, B: SpecSerializer {
+    type SVal = Sum<A::SVal, B::SVal>;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.spec_serialize(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.spec_serialize(vb),
+            _ => Seq::empty(),
+        }
+    }
+}
+
+impl<A: Unambiguity, B: Unambiguity> Unambiguity for Sum<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.unambiguous(),
+            Sum::Inr(b) => b.unambiguous(),
+        }
+    }
+}
+
+impl<A, B> NonTailFmt for Sum<A, B> where A: NonTailFmt, B: NonTailFmt {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.serialize_dps_inv(),
+            Sum::Inr(b) => b.serialize_dps_inv(),
+        }
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_dps_prepend(va, obuf),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_dps_prepend(vb, obuf),
+            _ => {
+                assert(self.spec_serialize_dps(v, obuf) == Seq::<u8>::empty() + obuf);
+            },
+        }
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_dps_len(va, obuf),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_dps_len(vb, obuf),
+            _ => (),
+        }
+    }
+}
+
+impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for Sum<A, B> {
+    open spec fn serialize_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.serialize_inv(),
+            Sum::Inr(b) => b.serialize_inv(),
+        }
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_len(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_len(vb),
+            _ => (),
+        }
+    }
+}
+
+impl<A, B> SpecByteLen for Sum<A, B> where A: SpecByteLen, B: SpecByteLen {
+    type T = Sum<A::T, B::T>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.byte_len(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.byte_len(vb),
+            _ => 0,
         }
     }
 }

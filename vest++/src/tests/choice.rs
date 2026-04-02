@@ -1,9 +1,11 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::{
-    Alt, BerBool, Choice, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
+    Alt, BerBool, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le,
+    U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
+use vstd::pervasive::arbitrary;
 use vstd::prelude::*;
 
 verus! {
@@ -56,6 +58,100 @@ proof fn test_alt_tag() {
     assert(alt_parser.spec_parse(buf_v1) == Some((1int, ())));
     assert(alt_parser.spec_parse(buf_v2) == Some((1int, ())));
     assert(alt_parser.spec_parse(buf_invalid) is None);
+}
+
+pub enum MyEnum {
+    A = 1,
+    B = 2,
+    C = 3,
+}
+
+pub enum MyTag {
+    A(u16),
+    B(u32),
+    C([u8; 5]),
+}
+
+use Sum::*;
+pub type MyTagInner = Sum<u16, Sum<u32, [u8; 5]>>;
+
+pub struct MyTagMapper;
+
+impl Mapper for MyTagMapper {
+    type In = MyTagInner;
+
+    type Out = MyTag;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        match i {
+            Inl(v) => MyTag::A(v),
+            Inr(Inl(v)) => MyTag::B(v),
+            Inr(Inr(v)) => MyTag::C(v),
+        }
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        match o {
+            MyTag::A(v) => Inl(v),
+            MyTag::B(v) => Inr(Inl(v)),
+            MyTag::C(v) => Inr(Inr(v)),
+        }
+    }
+}
+
+impl IsoMapper for MyTagMapper {
+    proof fn lemma_map_iso(&self, i: Self::In) {
+    }
+
+    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    }
+}
+
+proof fn test_dispatch_tag() {
+    use MyEnum::*;
+    use Sum::Inl as L;
+    use Sum::Inr as R;
+    #[verusfmt::skip]
+    let dispatch = Dispatch(
+        B,
+        [
+            (A, Mapped { inner: L(U16Le), mapper: MyTagMapper }),
+            (B, Mapped { inner: R(L(U32Le)), mapper: MyTagMapper }),
+            (C, Mapped { inner: R(R(Fixed::<5>)), mapper: MyTagMapper }),
+        ],
+    );
+    #[verusfmt::skip]
+    let dispatch = Mapped {
+        inner: Dispatch(
+            B,
+            [
+                (A, L(U16Le)),
+                (B, R(L(U32Le))),
+                (C, R(R(Fixed::<5>))),
+            ],
+        ),
+        mapper: MyTagMapper,
+    };
+    let obuf = Seq::empty();
+    let v = MyTag::B(42u32);
+    let buf = dispatch.spec_serialize(v);
+
+    // assert(dispatch.1[1].0 == B);
+    assert(dispatch.inner.1[1].0 == B);
+    reveal_with_fuel(crate::combinators::choice::spec::tag_position, 2);
+    assert(dispatch.consistent(v));
+    assert(dispatch.unambiguous());
+    assert(dispatch.spec_serialize_dps(v, obuf) == buf);
+
+    dispatch.lemma_parse_safe(buf);
+    dispatch.lemma_parse_sound_value(buf);
+    dispatch.lemma_parse_sound_consumption(buf);
+    dispatch.lemma_parse_non_malleable(buf, buf);
+    dispatch.lemma_serialize_len(v);
+    dispatch.lemma_serialize_dps_len(v, obuf);
+    dispatch.lemma_no_lookahead(buf, buf);
+    dispatch.theorem_serialize_parse_roundtrip(v);
+    dispatch.theorem_parse_serialize_roundtrip(buf);
 }
 
 proof fn test_alt_flexible_length_encoding() {
