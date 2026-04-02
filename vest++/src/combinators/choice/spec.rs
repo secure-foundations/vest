@@ -321,25 +321,20 @@ pub open spec fn tag_position<T, C>(tag: T, branches: Seq<(T, C)>) -> nat
     }
 }
 
-proof fn lemma_dispatch_tag_position<T, C>(tag: T, branches: Seq<(T, C)>)
+proof fn lemma_dispatch_tag_position_is<T, C>(tag: T, branches: Seq<(T, C)>, idx: nat)
     requires
-        branch_exists(tag, branches),
+        idx < branches.len(),
+        branches[idx as int].0 == tag,
+        forall|j: int| 0 <= j < idx ==> #[trigger] branches[j].0 != tag,
     ensures
-        tag_position(tag, branches) < branches.len(),
+        branch_exists(tag, branches),
+        tag_position(tag, branches) == idx,
         branches[tag_position(tag, branches) as int].0 == tag,
     decreases branches.len(),
 {
-    let idx = choose|i: int| 0 <= i < branches.len() && #[trigger] branches[i].0 == tag;
-    assert(0 <= idx < branches.len());
-    if branches[0].0 == tag {
+    if idx == 0 {
     } else {
-        assert(idx > 0);
-        assert(branch_exists(tag, branches.skip(1))) by {
-            let shifted = idx - 1;
-            assert(0 <= shifted < branches.skip(1).len());
-            assert(branches.skip(1)[shifted].0 == tag);
-        };
-        lemma_dispatch_tag_position(tag, branches.skip(1));
+        lemma_dispatch_tag_position_is(tag, branches.skip(1), (idx - 1) as nat);
     }
 }
 
@@ -353,6 +348,18 @@ impl<T, C, const N: usize> super::Dispatch<T, C, N> {
             self.has_active_branch(),
     {
         self.1[tag_position(self.0, self.1@) as int].1
+    }
+
+    pub proof fn lemma_active_branch_is(&self, idx: nat)
+        requires
+            idx < self.1.len(),
+            self.1[idx as int].0 == self.0,
+            forall|j: int| 0 <= j < idx ==> #[trigger] self.1@[j].0 != self.0,
+        ensures
+            self.has_active_branch(),
+            self.active_branch() == self.1[idx as int].1,
+    {
+        lemma_dispatch_tag_position_is(self.0, self.1@, idx);
     }
 }
 

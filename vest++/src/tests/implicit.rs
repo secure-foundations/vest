@@ -1,7 +1,10 @@
 use crate::combinators::bytes::ExactLen;
+use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::tuple::Pair;
-use crate::combinators::{disjoint::*, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{Choice, Cond, DepPair, ImplicitManual, Sum, U16Le, U32Le, Varied, U8};
+use crate::combinators::{disjoint::*, Dispatch, Eof, Fixed, Repeat, Star, Tail};
+use crate::combinators::{
+    Choice, Cond, DepPair, Implicit, ImplicitManual, Mapped, Sum, U16Le, U32Le, Varied, U8,
+};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -212,6 +215,8 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     assert(tlv.spec_parse(ibuf16) == Some((ibuf16.len() as int, msg1)));
     assert(tlv.spec_parse(ibuf32) == Some((ibuf32.len() as int, msg2)));
 
+    use Sum::Inl as L;
+    use Sum::Inr as R;
     #[verusfmt::skip]
     let tlv2 =
         DepPair(U8, |tag: u8|
@@ -219,16 +224,33 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         Pair(Fixed::<3>,
         DepPair(U16Le, |len2: u16|
         Pair(Varied(len1),
-        ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
-                                 Choice(Cond(tag == 1u8, Varied(len2)),
-                                        Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
+        // ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
+        //                          Choice(Cond(tag == 1u8, Varied(len2)),
+        //                                 Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
+        ExactLen(len2, Dispatch(tag, [
+            (0u8, L(Tail)),
+            (1u8, R(L(Varied(len2)))),
+            (2u8, R(R(Repeat(U16Le, Eof)))),
+        ])))))));
 
     let msg1 = (0u8, (5u8, (padding, (2u16, (v1, v2_1)))));
     let msg2 = (1u8, (5u8, (padding, (4u16, (v1, v2_2)))));
 
     assert(tlv2.unambiguous());
-    assert(tlv2.consistent(msg1));
-    assert(tlv2.consistent(msg2));
+    assert(tlv2.consistent(msg1)) by {
+        let dispatch = Dispatch(
+            0u8,
+            [(0u8, L(Tail)), (1u8, R(L(Varied(2u16)))), (2u8, R(R(Repeat(U16Le, Eof))))],
+        );
+        dispatch.lemma_active_branch_is(0);
+    };
+    assert(tlv2.consistent(msg2)) by {
+        let dispatch = Dispatch(
+            1u8,
+            [(0u8, L(Tail)), (1u8, R(L(Varied(4u16)))), (2u8, R(R(Repeat(U16Le, Eof))))],
+        );
+        dispatch.lemma_active_branch_is(1);
+    };
 
     tlv2.theorem_serialize_parse_roundtrip(msg1);
     tlv2.theorem_serialize_parse_roundtrip(msg2);

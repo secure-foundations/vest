@@ -73,6 +73,7 @@ pub enum MyTag {
 }
 
 use Sum::*;
+
 pub type MyTagInner = Sum<u16, Sum<u32, [u8; 5]>>;
 
 pub struct MyTagMapper;
