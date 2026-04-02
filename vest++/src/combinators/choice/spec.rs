@@ -1,5 +1,5 @@
 use crate::core::{proof::*, spec::*};
-use vstd::{pervasive::arbitrary, prelude::*};
+use vstd::prelude::*;
 
 verus! {
 
@@ -304,38 +304,20 @@ impl<A, B> SpecByteLen for super::Alt<A, B> where
 }
 
 pub open spec fn branch_exists<T, C>(tag: T, branches: Seq<(T, C)>) -> bool {
-    exists|i: int| 0 <= i < branches.len() && #[trigger] branches[i].0 == tag
+    exists|i: nat| i < branches.len() && #[trigger] branches[i as int].0 == tag
+}
+
+pub open spec fn unique_branch_match<T, C>(tag: T, branches: Seq<(T, C)>) -> bool {
+    forall|i: nat, j: nat|
+        i < branches.len() && #[trigger] branches[i as int].0 == tag && j < branches.len()
+            && #[trigger] branches[j as int].0 == tag ==> i == j
 }
 
 pub open spec fn tag_position<T, C>(tag: T, branches: Seq<(T, C)>) -> nat
     recommends
         branch_exists(tag, branches),
-    decreases branches.len(),
 {
-    if branches.len() == 0 {
-        arbitrary()
-    } else if branches[0].0 == tag {
-        0
-    } else {
-        1 + tag_position(tag, branches.skip(1))
-    }
-}
-
-proof fn lemma_dispatch_tag_position_is<T, C>(tag: T, branches: Seq<(T, C)>, idx: nat)
-    requires
-        idx < branches.len(),
-        branches[idx as int].0 == tag,
-        forall|j: int| 0 <= j < idx ==> #[trigger] branches[j].0 != tag,
-    ensures
-        branch_exists(tag, branches),
-        tag_position(tag, branches) == idx,
-        branches[tag_position(tag, branches) as int].0 == tag,
-    decreases branches.len(),
-{
-    if idx == 0 {
-    } else {
-        lemma_dispatch_tag_position_is(tag, branches.skip(1), (idx - 1) as nat);
-    }
+    choose|i: nat| i < branches.len() && #[trigger] branches[i as int].0 == tag
 }
 
 impl<T, C, const N: usize> super::Dispatch<T, C, N> {
@@ -352,14 +334,13 @@ impl<T, C, const N: usize> super::Dispatch<T, C, N> {
 
     pub proof fn lemma_active_branch_is(&self, idx: nat)
         requires
-            idx < self.1.len(),
+            idx < self.1@.len(),
             self.1[idx as int].0 == self.0,
-            forall|j: int| 0 <= j < idx ==> #[trigger] self.1@[j].0 != self.0,
+            unique_branch_match(self.0, self.1@),
         ensures
             self.has_active_branch(),
             self.active_branch() == self.1[idx as int].1,
     {
-        lemma_dispatch_tag_position_is(self.0, self.1@, idx);
     }
 }
 
@@ -426,7 +407,8 @@ impl<T, C: SpecSerializer, const N: usize> SpecSerializer for super::Dispatch<T,
 
 impl<T, C: Unambiguity, const N: usize> Unambiguity for super::Dispatch<T, C, N> {
     open spec fn unambiguous(&self) -> bool {
-        self.active_branch().unambiguous()
+        &&& unique_branch_match(self.0, self.1@)
+        &&& self.active_branch().unambiguous()
     }
 }
 

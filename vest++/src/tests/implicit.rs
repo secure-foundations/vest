@@ -218,38 +218,33 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     use Sum::Inl as L;
     use Sum::Inr as R;
     #[verusfmt::skip]
+    let payload_fmt = |tag, len2| {
+        ExactLen(len2, Dispatch(tag, [
+            (0u8, L(Tail)),
+            (1u8, R(L(Varied(len2)))),
+            (2u8, R(R(Repeat(U16Le, Eof)))),
+        ]))
+    };
+    #[verusfmt::skip]
     let tlv2 =
         DepPair(U8, |tag: u8|
         DepPair(U8, |len1: u8|
         Pair(Fixed::<3>,
         DepPair(U16Le, |len2: u16|
         Pair(Varied(len1),
-        // ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
-        //                          Choice(Cond(tag == 1u8, Varied(len2)),
-        //                                 Cond(tag == 2u8, Repeat(U16Le, Eof))))))))));
-        ExactLen(len2, Dispatch(tag, [
-            (0u8, L(Tail)),
-            (1u8, R(L(Varied(len2)))),
-            (2u8, R(R(Repeat(U16Le, Eof)))),
-        ])))))));
+        payload_fmt(tag, len2))))));
 
     let msg1 = (0u8, (5u8, (padding, (2u16, (v1, v2_1)))));
     let msg2 = (1u8, (5u8, (padding, (4u16, (v1, v2_2)))));
 
     assert(tlv2.unambiguous());
     assert(tlv2.consistent(msg1)) by {
-        let dispatch = Dispatch(
-            0u8,
-            [(0u8, L(Tail)), (1u8, R(L(Varied(2u16)))), (2u8, R(R(Repeat(U16Le, Eof))))],
-        );
-        dispatch.lemma_active_branch_is(0);
+        let dispatch = payload_fmt(0u8, 2u16);
+        dispatch.1.lemma_active_branch_is(0);
     };
     assert(tlv2.consistent(msg2)) by {
-        let dispatch = Dispatch(
-            1u8,
-            [(0u8, L(Tail)), (1u8, R(L(Varied(4u16)))), (2u8, R(R(Repeat(U16Le, Eof))))],
-        );
-        dispatch.lemma_active_branch_is(1);
+        let dispatch = payload_fmt(1u8, 4u16);
+        dispatch.1.lemma_active_branch_is(1);
     };
 
     tlv2.theorem_serialize_parse_roundtrip(msg1);

@@ -137,9 +137,7 @@ proof fn test_dispatch_tag() {
     let v = MyTag::B(42u32);
     let buf = dispatch.spec_serialize(v);
 
-    // assert(dispatch.1[1].0 == B);
-    assert(dispatch.inner.1[1].0 == B);
-    reveal_with_fuel(crate::combinators::choice::spec::tag_position, 2);
+    dispatch.inner.lemma_active_branch_is(1);
     assert(dispatch.consistent(v));
     assert(dispatch.unambiguous());
     assert(dispatch.spec_serialize_dps(v, obuf) == buf);
