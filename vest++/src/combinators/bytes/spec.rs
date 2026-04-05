@@ -168,6 +168,12 @@ impl<Len: AsLen> SpecByteLen for super::Varied<Len> {
     }
 }
 
+impl<Len: AsLen> super::Varied<Len> {
+    pub open spec fn byte_len(v: <Self as SpecByteLen>::T) -> nat {
+        v.len()
+    }
+}
+
 impl<Len: AsLen> BytesCombinator for super::Varied<Len> {
     proof fn lemma_byte_len_is_buf_len(&self, s: Seq<u8>) {
     }
@@ -265,6 +271,12 @@ impl<Inner: SpecByteLen, Len: AsLen> SpecByteLen for super::ExactLen<Inner, Len>
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         super::AndThen(super::Varied(self.0), self.1).byte_len(v)
+    }
+}
+
+impl<Inner: SpecByteLen, Len: AsLen> super::ExactLen<Inner, Len> {
+    pub open spec fn byte_len(inner: Inner, v: <Self as SpecByteLen>::T) -> nat {
+        inner.byte_len(v)
     }
 }
 

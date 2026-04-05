@@ -144,8 +144,8 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
 proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     broadcast use lemma_disjoint_cond;
 
-    use Sum::{Inl as Inl, Inr as Inr};
-    use Sum as Sum;
+    use Sum::Inl as L;
+    use Sum::Inr as R;
 
     // tlv = {
     //   @tag: u8
@@ -160,6 +160,12 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     //   }
     // }
     #[verusfmt::skip]
+    let payload_fmt = |tag, len2| {
+        Choice(Cond(tag == 0u8, Tail),
+        Choice(Cond(tag == 1u8, Varied(len2)),
+               Cond(tag == 2u8, Repeat(U16Le, Eof))))
+    };
+    #[verusfmt::skip]
     let tlv =
         // Format:
         ImplicitManual(U8, |tag: u8|
@@ -167,26 +173,28 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         Pair(Fixed::<3>,
         ImplicitManual(U16Le, |len2: u16|
         Pair(Varied(len1),
-        ExactLen(len2, Choice(Cond(tag == 0u8, Tail),
-                                 Choice(Cond(tag == 1u8, Varied(len2)),
-                                        Cond(tag == 2u8, Repeat(U16Le, Eof)))))),
+        ExactLen(len2, payload_fmt(tag, len2))),
         // Recovery logics:
         |v: (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>)| {
             let (v1, v2) = v;
             let len2 = match v2 {
-                Inl(val) => val.len() as u16,
-                Inr(Inl(val)) => val.len() as u16,
-                Inr(Inr((val))) => Repeat(U16Le, Eof).byte_len(val) as u16,
+                L(val) => Tail.byte_len(val) as u16,
+                R(L(val)) => Varied::<u16>::byte_len(val) as u16,
+                R(R((val))) => Repeat(U16Le, Eof).byte_len(val) as u16,
             };
             len2
         })),
-        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| v.1.0.len() as u8),
+        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| {
+           let (padding, (v1, v2)) = v;
+            let len1 = Varied::<u8>::byte_len(v1);
+            len1 as u8
+        }),
         |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| {
             let (padding, (v1, v2)) = v;
             let tag = match v2 {
-                Inl(_) => 0u8,
-                Inr(Inl(_)) => 1u8,
-                Inr(Inr(_)) => 2u8,
+                L(_) => 0u8,
+                R(L(_)) => 1u8,
+                R(R(_)) => 2u8,
             };
             tag
         });
@@ -194,8 +202,8 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     let padding = [0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
 
-    let v2_1 = Inl(seq![0xEFu8, 0xBEu8]);
-    let v2_2 = Inr(Inl(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
+    let v2_1 = L(seq![0xEFu8, 0xBEu8]);
+    let v2_2 = R(L(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
     // let v2_3 = Inr(Inr((seq![0xEFu16, 0xBEu16], ())));
 
     let msg1 = (padding, (v1, v2_1));
@@ -215,8 +223,6 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     assert(tlv.spec_parse(ibuf16) == Some((ibuf16.len() as int, msg1)));
     assert(tlv.spec_parse(ibuf32) == Some((ibuf32.len() as int, msg2)));
 
-    use Sum::Inl as L;
-    use Sum::Inr as R;
     #[verusfmt::skip]
     let payload_fmt = |tag, len2| {
         ExactLen(len2, Dispatch(tag, [
