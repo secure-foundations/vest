@@ -13,6 +13,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
+        assert(self.sp_roundtrip_dps_inv());
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(v.0, serialized1);
         self.0.lemma_serialize_dps_prepend(v.0, serialized1);
@@ -39,10 +40,12 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Pair<A, B> {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
-                    let (n1a, _) = self.0.spec_parse(buf1)->0;
-                    let (n2a, _) = self.0.spec_parse(buf2)->0;
-                    let (n1b, _) = self.1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, _) = self.1.spec_parse(buf2.skip(n2a))->0;
+                    let (n1a, a1) = self.0.spec_parse(buf1)->0;
+                    let (n2a, a2) = self.0.spec_parse(buf2)->0;
+                    let (n1b, b1) = self.1.spec_parse(buf1.skip(n1a))->0;
+                    let (n2b, b2) = self.1.spec_parse(buf2.skip(n2a))->0;
+                    assert(self.sound_inv());
+                    assert(self.nonmal_inv());
                     self.0.lemma_parse_safe(buf1);
                     self.0.lemma_parse_safe(buf2);
                     self.1.lemma_parse_safe(buf1.skip(n1a));
@@ -84,12 +87,12 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n1, v1)) = self.0.spec_parse(i1) {
                         if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
+                            assert(self.sound_inv());
+                            assert(self.no_lookahead_inv());
+                            assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
                             self.1.lemma_parse_safe(i1.skip(n1));
-                            assert(self.no_lookahead_inv());
-                            assert(self.0.no_lookahead_inv());
-                            assert(self.1.no_lookahead_inv());
                             assert(i2.take(n1) == i1.take(n1));
                             self.0.lemma_no_lookahead(i1, i2);
                             assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
@@ -116,6 +119,7 @@ impl<A, B> EquivSerializersGeneral for super::Pair<A, B> where
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         let obuf1 = self.1.spec_serialize_dps(v.1, obuf);
+        assert(self.equiv_general_inv());
 
         self.1.lemma_serialize_equiv(v.1, obuf);
         self.0.lemma_serialize_equiv(v.0, obuf1);
@@ -147,6 +151,7 @@ impl<A, B> EquivSerializers for super::Pair<A, B> where
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let empty = Seq::empty();
         let obuf = self.1.spec_serialize_dps(v.1, empty);
+        assert(self.equiv_inv());
         self.1.lemma_serialize_equiv_on_empty(v.1);
         self.0.lemma_serialize_equiv(v.0, obuf);
     }
@@ -167,6 +172,7 @@ impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
         let serialized = self.0.spec_serialize_dps(key, next_buf);
+        assert(self.sp_roundtrip_dps_inv());
         next.theorem_serialize_dps_parse_roundtrip(val, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(key, next_buf);
         self.0.lemma_serialize_dps_prepend(key, next_buf);
@@ -198,6 +204,9 @@ impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
                         let next = (self.1)(key);
                         if let Some((n2, val)) = next.spec_parse(i1.skip(n1)) {
+                            assert(self.sound_inv());
+                            assert(self.no_lookahead_inv());
+                            assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
                             next.lemma_parse_safe(i1.skip(n1));
@@ -230,6 +239,8 @@ impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
+                    assert(self.sound_inv());
+                    assert(self.nonmal_inv());
                     let (n1a, key1) = self.0.spec_parse(buf1)->0;
                     let (n2a, key2) = self.0.spec_parse(buf2)->0;
                     let next1 = (self.1)(key1);
@@ -268,6 +279,7 @@ impl<A, B> EquivSerializersGeneral for super::DepPair<A, spec_fn(A::SVal) -> B> 
         let (key, val) = value;
         let next = (self.1)(key);
         let obuf1 = next.spec_serialize_dps(val, obuf);
+        assert(self.equiv_general_inv());
         next.lemma_serialize_equiv(val, obuf);
         self.0.lemma_serialize_equiv(key, obuf1);
     }
@@ -287,6 +299,7 @@ impl<A, B> EquivSerializers for super::DepPair<A, spec_fn(A::SVal) -> B> where
         let next = (self.1)(key);
         let empty = Seq::empty();
         let obuf = next.spec_serialize_dps(val, empty);
+        assert(self.equiv_inv());
         next.lemma_serialize_equiv_on_empty(val);
         self.0.lemma_serialize_equiv(key, obuf);
     }

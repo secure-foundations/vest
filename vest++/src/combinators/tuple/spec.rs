@@ -87,6 +87,7 @@ impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
+        assert(self.serialize_dps_inv());
         self.1.lemma_serialize_dps_prepend(v.1, obuf);
         self.0.lemma_serialize_dps_prepend(v.0, serialized1);
         let witness1 = choose|wit1: Seq<u8>| self.1.spec_serialize_dps(v.1, obuf) == wit1 + obuf;
@@ -96,6 +97,7 @@ impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        assert(self.serialize_dps_inv());
         self.1.lemma_serialize_dps_len(v.1, obuf);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         self.0.lemma_serialize_dps_len(v.0, serialized1);
@@ -109,6 +111,7 @@ impl<A, B> GoodSerializer for super::Pair<A, B> where A: GoodSerializer, B: Good
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        assert(self.serialize_inv());
         self.1.lemma_serialize_len(v.1);
         self.0.lemma_serialize_len(v.0);
     }
@@ -246,6 +249,7 @@ impl<A, B> NonTailFmt for super::DepPair<A, spec_fn(A::ST) -> B> where
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
 
+        assert(self.serialize_dps_inv());
         next.lemma_serialize_dps_prepend(val, obuf);
         self.0.lemma_serialize_dps_prepend(key, next_buf);
 
@@ -259,6 +263,7 @@ impl<A, B> NonTailFmt for super::DepPair<A, spec_fn(A::ST) -> B> where
         let (key, val) = value;
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
+        assert(self.serialize_dps_inv());
         next.lemma_serialize_dps_len(val, obuf);
         self.0.lemma_serialize_dps_len(key, next_buf);
     }
@@ -276,6 +281,7 @@ impl<A, B> GoodSerializer for super::DepPair<A, spec_fn(A::SVal) -> B> where
     proof fn lemma_serialize_len(&self, value: Self::SVal) {
         let (key, val) = value;
         let next = (self.1)(key);
+        assert(self.serialize_inv());
         self.0.lemma_serialize_len(key);
         next.lemma_serialize_len(val);
     }
