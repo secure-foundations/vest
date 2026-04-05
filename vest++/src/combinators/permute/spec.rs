@@ -1,5 +1,4 @@
 use crate::combinators::choice::Alt;
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::Mapped;
 use crate::core::{proof::*, spec::*};

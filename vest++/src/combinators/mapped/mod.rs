@@ -1,4 +1,4 @@
-//! Isomorphic type transformation combinator.
+//! Type transformation combinator.
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.
@@ -8,17 +8,14 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Isomorphic format transformation combinator.
+
+/// `Mapped { inner, mapper }` transforms the inner combinator's value type.
 ///
-/// `Mapped { inner, mapper }` applies a bijective mapping to transform the inner
-/// combinator's value type. The binary format is identical to `inner`'s.
-///
-/// Consistency, byte length, unambiguity, and non-malleability are all inherited
-/// from `inner` (through the bijection).
+/// Lossless mappers preserve all format properties including parser soundness and non-malleability, while lossy mappers may introduce malleability.
 pub struct Mapped<Inner, M> {
     /// The inner combinator whose values are being transformed.
     pub inner: Inner,
-    /// The bijective mapping between the inner and outer value types.
+    /// The mapping between the inner and outer value types.
     pub mapper: M,
 }
 

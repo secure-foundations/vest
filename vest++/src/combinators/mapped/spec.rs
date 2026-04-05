@@ -1,14 +1,12 @@
-//! Mapper traits for isomorphic type transformations used by [`super::Mapped`].
+//! Mapper traits for type transformations used by [`super::Mapped`].
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
-/// A pair of spec functions forming a bidirectional mapping.
-type IsoFns<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
-
 /// A bidirectional mapping between two types (forward for parsing, reverse for
-/// serialization). For roundtrip guarantees, implement and prove [`IsoMapper`].
+/// serialization). For roundtrip guarantees, implement and prove
+/// [`LossyMapper`] or [`LosslessMapper`] as appropriate.
 pub trait Mapper {
     /// The input type.
     type In;
@@ -24,20 +22,23 @@ pub trait Mapper {
 
     /// Optional refinement predicates on the input type.
     ///
-    /// This is the precondition for [`IsoMapper::lemma_map_iso`].
+    /// This is the precondition for [`LosslessMapper::lemma_map_iso`].
     open spec fn wf_in(&self, i: Self::In) -> bool {
         true
     }
 
     /// Optional refinement predicates on the output type.
     ///
-    /// This is the precondition for [`IsoMapper::lemma_map_iso_rev`].
+    /// This is the precondition for [`LossyMapper::lemma_map_iso_rev`].
     open spec fn wf_out(&self, o: Self::Out) -> bool {
         true
     }
 }
 
-impl<In, Out> Mapper for IsoFns<In, Out> {
+/// A pair of spec functions forming a bidirectional mapping.
+type MapFns<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
+
+impl<In, Out> Mapper for MapFns<In, Out> {
     type In = In;
 
     type Out = Out;
@@ -51,22 +52,35 @@ impl<In, Out> Mapper for IsoFns<In, Out> {
     }
 }
 
-/// A [`Mapper`] proven bijective, thus forming an isomorphism between the input and output types.
-pub trait IsoMapper: Mapper {
-    /// `spec_map_rev(spec_map(i)) == i`.
-    proof fn lemma_map_iso(&self, i: Self::In)
+/// A [`Mapper`] that can be lossy (i.e., malleable).
+pub trait LossyMapper: Mapper {
+    /// A sound mapper should satisfy `spec_map(spec_map_rev(o)) == o` for all well-formed `o`.
+    /// That is, once `Self::Out` values are mapped to `Self::In`, `spec_map` should map them back to the original `Self::Out` values.
+    proof fn lemma_sound_mapper(&self, o: Self::Out)
+        requires
+            self.wf_out(o),
+        ensures
+            self.spec_map(self.spec_map_rev(o)) == o,
+    ;
+}
+
+/// A [`Mapper`] that is lossless (i.e., non-malleable).
+pub trait LosslessMapper: LossyMapper {
+    /// A lossless mapper should satisfy `spec_map_rev(spec_map(i)) == i` for all well-formed `i`.
+    /// That is, `spec_map` should be injective on well-formed `Self::In` values, and `spec_map_rev` should be its inverse.
+    proof fn lemma_lossless_mapper(&self, i: Self::In)
         requires
             self.wf_in(i),
         ensures
             self.spec_map_rev(self.spec_map(i)) == i,
     ;
 
-    /// `spec_map(spec_map_rev(o)) == o`.
-    proof fn lemma_map_iso_rev(&self, o: Self::Out)
+    /// For well-formed `i`, `spec_map(i)` should also be well-formed.
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In)
         requires
-            self.wf_out(o),
+            self.wf_in(i),
         ensures
-            self.spec_map(self.spec_map_rev(o)) == o,
+            self.wf_out(self.spec_map(i)),
     ;
 }
 
@@ -86,7 +100,7 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
 
 impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
     Inner: SoundParser,
-    M: IsoMapper<In = Inner::PVal>,
+    M: LosslessMapper<In = Inner::PVal>,
  {
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
@@ -102,7 +116,7 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
         self.inner.lemma_parse_sound_value(ibuf);
         if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
             assert(self.mapper.wf_in(inner_v));
-            self.mapper.lemma_map_iso(inner_v);
+            self.mapper.lemma_lossless_mapper(inner_v);
         }
     }
 
@@ -110,7 +124,9 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
         self.inner.lemma_parse_sound_value(ibuf);
         if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
             assert(self.mapper.wf_in(inner_v));
-            self.mapper.lemma_map_iso(inner_v);
+            self.mapper.lemma_mapper_wf_in_out(inner_v);
+            self.mapper.lemma_lossless_mapper(inner_v);
+            assert(self.consistent(self.mapper.spec_map(inner_v)));
         }
     }
 }
@@ -122,7 +138,8 @@ impl<Inner, M> Consistency for super::Mapped<Inner, M> where
     type Val = M::Out;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        self.inner.consistent(self.mapper.spec_map_rev(v))
+        &&& self.inner.consistent(self.mapper.spec_map_rev(v))
+        &&& self.mapper.wf_out(v)
     }
 }
 

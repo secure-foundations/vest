@@ -6,29 +6,28 @@ verus! {
 
 impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
-    M: IsoMapper<In = Inner::T>,
+    M: LossyMapper<In = Inner::T>,
  {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.inner.sp_roundtrip_dps_inv()
-        &&& forall|v: Self::T| self.consistent(v) ==> self.mapper.wf_out(v)
+        self.inner.sp_roundtrip_dps_inv()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
         assert(self.mapper.wf_out(v));
-        self.mapper.lemma_map_iso_rev(v);
+        self.mapper.lemma_sound_mapper(v);
     }
 }
 
 // impl<Inner, M> PSRoundTrip for super::Mapped<Inner, M> where
 //     Inner: PSRoundTrip,
-//     M: IsoMapper<In = Inner::PVal>,
+//     M: LosslessMapper<In = Inner::PVal>,
 //  {
 // }
 impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     Inner: NonMalleable,
-    M: IsoMapper<In = Inner::PVal>,
+    M: LosslessMapper<In = Inner::PVal>,
  {
     open spec fn nonmal_inv(&self) -> bool {
         self.inner.nonmal_inv()
@@ -44,8 +43,8 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
                     self.inner.lemma_parse_sound_value(buf2);
                     assert(self.mapper.wf_in(i_v1));
                     assert(self.mapper.wf_in(i_v2));
-                    self.mapper.lemma_map_iso(i_v1);
-                    self.mapper.lemma_map_iso(i_v2);
+                    self.mapper.lemma_lossless_mapper(i_v1);
+                    self.mapper.lemma_lossless_mapper(i_v2);
                     self.inner.lemma_parse_non_malleable(buf1, buf2);
                 }
             }
@@ -55,7 +54,7 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
 
 impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     Inner: NoLookAhead,
-    M: IsoMapper<In = Inner::PVal>,
+    M: LosslessMapper<In = Inner::PVal>,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         self.inner.no_lookahead_inv()

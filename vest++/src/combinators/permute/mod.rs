@@ -5,7 +5,7 @@ pub mod spec;
 use vstd::prelude::*;
 
 use crate::combinators::choice::Alt;
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::Mapped;
 use core::marker::PhantomData;
 
@@ -28,11 +28,16 @@ impl<A, B> Mapper for Swap2Mapper<A, B> {
     }
 }
 
-impl<A, B> IsoMapper for Swap2Mapper<A, B> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B> LossyMapper for Swap2Mapper<A, B> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B> LosslessMapper for Swap2Mapper<A, B> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -53,11 +58,16 @@ impl<A, B, C> Mapper for Swap3Mapper1<A, B, C> {
     }
 }
 
-impl<A, B, C> IsoMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B, C> LossyMapper for Swap3Mapper1<A, B, C> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B, C> LosslessMapper for Swap3Mapper1<A, B, C> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -78,11 +88,16 @@ impl<A, B, C> Mapper for Swap3Mapper2<A, B, C> {
     }
 }
 
-impl<A, B, C> IsoMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B, C> LossyMapper for Swap3Mapper2<A, B, C> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B, C> LosslessMapper for Swap3Mapper2<A, B, C> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -103,11 +118,16 @@ impl<A, B, C, D> Mapper for Swap4Mapper1<A, B, C, D> {
     }
 }
 
-impl<A, B, C, D> IsoMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B, C, D> LossyMapper for Swap4Mapper1<A, B, C, D> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B, C, D> LosslessMapper for Swap4Mapper1<A, B, C, D> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -128,11 +148,16 @@ impl<A, B, C, D> Mapper for Swap4Mapper2<A, B, C, D> {
     }
 }
 
-impl<A, B, C, D> IsoMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B, C, D> LossyMapper for Swap4Mapper2<A, B, C, D> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B, C, D> LosslessMapper for Swap4Mapper2<A, B, C, D> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -153,11 +178,16 @@ impl<A, B, C, D> Mapper for Swap4Mapper3<A, B, C, D> {
     }
 }
 
-impl<A, B, C, D> IsoMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl<A, B, C, D> LossyMapper for Swap4Mapper3<A, B, C, D> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, B, C, D> LosslessMapper for Swap4Mapper3<A, B, C, D> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 

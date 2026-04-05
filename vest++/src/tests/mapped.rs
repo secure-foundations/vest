@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::{Mapped, Refined, U8};
 
 use crate::core::{proof::*, spec::*};
@@ -34,13 +34,18 @@ impl Mapper for MyIsoMapper {
     }
 }
 
-impl IsoMapper for MyIsoMapper {
-    proof fn lemma_map_iso(&self, i: u8) {
+impl LossyMapper for MyIsoMapper {
+    proof fn lemma_sound_mapper(&self, o: u8) {
+        assert(self.spec_map(self.spec_map_rev(o)) == o);
+    }
+}
+
+impl LosslessMapper for MyIsoMapper {
+    proof fn lemma_lossless_mapper(&self, i: u8) {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
 
-    proof fn lemma_map_iso_rev(&self, o: u8) {
-        assert(self.spec_map(self.spec_map_rev(o)) == o);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -91,11 +96,16 @@ impl Mapper for MyTagMapper {
     }
 }
 
-impl IsoMapper for MyTagMapper {
-    proof fn lemma_map_iso(&self, i: u8) {
+impl LossyMapper for MyTagMapper {
+    proof fn lemma_sound_mapper(&self, o: MyTag) {
+    }
+}
+
+impl LosslessMapper for MyTagMapper {
+    proof fn lemma_lossless_mapper(&self, i: u8) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: MyTag) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
