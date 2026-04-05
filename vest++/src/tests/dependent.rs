@@ -3,7 +3,7 @@ use std::prelude::v1;
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::implicit::{TLVOf, TLVal, TagValNode, Uninhabited};
 use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Empty, Refined, Void, VoidTag};
 use crate::combinators::{
@@ -377,7 +377,7 @@ pub enum MyTag {
     C = 3,
 }
 
-pub type MyTagIn = Sum<(), Sum<(), ()>>;
+pub type MyTagIn = Sum<u8, Sum<u8, u8>>;
 
 pub struct MyTagMapper;
 
@@ -386,37 +386,56 @@ impl Mapper for MyTagMapper {
 
     type Out = MyTag;
 
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        match i {
+            Sum::Inl(v) => v == 1u8,
+            Sum::Inr(Sum::Inl(v)) => v == 2u8,
+            Sum::Inr(Sum::Inr(v)) => v == 3u8,
+        }
+    }
+
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
-            Sum::Inl(()) => MyTag::A,
-            Sum::Inr(Sum::Inl(())) => MyTag::B,
-            Sum::Inr(Sum::Inr(())) => MyTag::C,
+            Sum::Inl(_) => MyTag::A,
+            Sum::Inr(Sum::Inl(_)) => MyTag::B,
+            Sum::Inr(Sum::Inr(_)) => MyTag::C,
         }
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
-            MyTag::A => Sum::Inl(()),
-            MyTag::B => Sum::Inr(Sum::Inl(())),
-            MyTag::C => Sum::Inr(Sum::Inr(())),
+            MyTag::A => Sum::Inl(1u8),
+            MyTag::B => Sum::Inr(Sum::Inl(2u8)),
+            MyTag::C => Sum::Inr(Sum::Inr(3u8)),
         }
     }
 }
 
-impl IsoMapper for MyTagMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for MyTagMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for MyTagMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         match i {
-            Sum::Inl(vl) => {},
+            Sum::Inl(vl) => {
+                assert(vl == 1u8);
+            },
             Sum::Inr(vr) => {
                 match vr {
-                    Sum::Inl(vl) => {},
-                    Sum::Inr(vr) => {},
+                    Sum::Inl(vl) => {
+                        assert(vl == 2u8);
+                    },
+                    Sum::Inr(vr) => {
+                        assert(vr == 3u8);
+                    },
                 }
             },
         }
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 

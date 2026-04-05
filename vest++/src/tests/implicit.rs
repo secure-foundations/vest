@@ -1,5 +1,5 @@
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Dispatch, Eof, Fixed, Repeat, Star, Tail};
 use crate::combinators::{

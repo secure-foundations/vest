@@ -1,7 +1,8 @@
+use crate::asn1::{BerBool, DerBool};
 use crate::combinators::bytes::spec::axiom_array_from_seq;
 use crate::combinators::refined::Tag;
 use crate::combinators::tuple::Pair;
-use crate::combinators::{BerBool, Fixed, Preceded, Refined, Terminated, U16Le, U8};
+use crate::combinators::{Fixed, Preceded, Refined, Terminated, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -147,8 +148,8 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let inner = Terminated(U8, tag1);
     let outer = Terminated(inner, tag2);
 
-    let footer_buf = tag2.spec_serialize_dps((), obuf);
-    let inner_buf = tag1.spec_serialize_dps((), footer_buf);
+    let footer_buf = tag2.spec_serialize_dps([val2, val2], obuf);
+    let inner_buf = tag1.spec_serialize_dps([val1, val1], footer_buf);
 
     assert(inner.unambiguous());
     assert(outer.unambiguous());
@@ -163,12 +164,22 @@ proof fn test_berbool_sp_roundtrip(v: bool, obuf: Seq<u8>) {
 
 proof fn test_berbool_fails_ps_roundtrip(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let parser = BerBool;
-    // requires_ps_roundtrip(parser, ibuf, obuf); // Would fail: BerBool does not implement PSRoundTrip
+    // requires_ps_roundtrip(parser, ibuf); // Would fail: BerBool does not implement PSRoundTrip
 }
 
 proof fn test_berbool_fails_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let parser = BerBool;
     // requires_non_malleable(parser, buf1, buf2); // Would fail: BerBool does not implement NonMalleable
+}
+
+proof fn test_derbool_ps_roundtrip(ibuf: Seq<u8>, obuf: Seq<u8>) {
+    let parser = DerBool;
+    requires_ps_roundtrip(parser, ibuf);
+}
+
+proof fn test_derbool_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
+    let parser = DerBool;
+    requires_non_malleable(parser, buf1, buf2);
 }
 
 proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: Pair<A, B>)
@@ -206,8 +217,8 @@ proof fn test_large_format_with_berbools() {
     assert(format.unambiguous()) by {
         unambiguous_pair(Pair(format.0, format.1));
     }
-    assert(format.0.0.consistent(()));
-    assert(format.1.consistent(()));
+    assert(format.0.0.consistent([val1, val1]));
+    assert(format.1.consistent(0xFFu8));
     assert(format.consistent(v));
     requires_sp_roundtrip(format, v, obuf);
     // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable

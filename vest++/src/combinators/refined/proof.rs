@@ -41,7 +41,12 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
+                    assert(self.sound_inv());
+                    assert(self.no_lookahead_inv());
+                    assert(self.unambiguous());
                     self.inner.lemma_no_lookahead(i1, i2);
+                    assert(self.inner.spec_parse(i2) == Some((n, v)));
+                    assert(self.spec_parse(i2) == Some((n, v)));
                 }
             }
         }
@@ -79,8 +84,9 @@ impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
         self.inner.sp_roundtrip_dps_inv()
     }
 
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, _v: Self::ST, obuf: Seq<u8>) {
-        self.inner.theorem_serialize_dps_parse_roundtrip(self.tag, obuf);
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
+        assert(v == self.tag);
+        self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
@@ -122,8 +128,8 @@ impl<Inner> EquivSerializersGeneral for super::Tag<Inner, Inner::SVal> where
         self.inner.equiv_general_inv()
     }
 
-    proof fn lemma_serialize_equiv(&self, _v: <Self as SpecSerializerDps>::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(self.tag, obuf);
+    proof fn lemma_serialize_equiv(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -132,8 +138,8 @@ impl<Inner> EquivSerializers for super::Tag<Inner, Inner::SVal> where Inner: Equ
         self.inner.equiv_inv()
     }
 
-    proof fn lemma_serialize_equiv_on_empty(&self, _v: Self::ST) {
-        self.inner.lemma_serialize_equiv_on_empty(self.tag);
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::ST) {
+        self.inner.lemma_serialize_equiv_on_empty(v);
     }
 }
 
@@ -142,15 +148,12 @@ impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
     Of: SPRoundTripDps,
  {
     open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        let tag = super::Tag { inner: self.0, tag: self.1 };
-        &&& tag.sp_roundtrip_dps_inv()
-        &&& tag.serialize_dps_inv()
-        &&& self.2.sp_roundtrip_dps_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).sp_roundtrip_dps_inv()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let tag = super::Tag { inner: self.0, tag: self.1 };
-        assert(tag.consistent(()));
+        assert(tag.consistent(self.1));
         Preceded(tag, self.2).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -160,8 +163,7 @@ impl<Tg, Of> NonMalleable for super::Tagged<Tg, Of> where
     Of: NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        &&& self.0.nonmal_inv()
-        &&& self.2.nonmal_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -177,8 +179,7 @@ impl<Tg, Of> NoLookAhead for super::Tagged<Tg, Of> where
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
-        &&& self.0.no_lookahead_inv()
-        &&& self.2.no_lookahead_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
@@ -191,8 +192,7 @@ impl<Tg, Of> EquivSerializersGeneral for super::Tagged<Tg, Of> where
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
-        &&& self.0.equiv_general_inv()
-        &&& self.2.equiv_general_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -205,8 +205,7 @@ impl<Tg, Of> EquivSerializers for super::Tagged<Tg, Of> where
     Of: EquivSerializers,
  {
     open spec fn equiv_inv(&self) -> bool {
-        &&& self.0.equiv_general_inv()
-        &&& self.2.equiv_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::ST) {

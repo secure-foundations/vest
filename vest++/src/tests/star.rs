@@ -11,7 +11,7 @@ proof fn test_repeat_roundtrip_basic() {
     let rep = Repeat(inner, term);
     let obuf = Seq::empty();
     // let v: (Seq<()>, ()) = (seq![(), ()], ());
-    let v: (Seq<u8>, ()) = (seq![0x00u8, 0x01u8], ());
+    let v: (Seq<u8>, u8) = (seq![0x00u8, 0x01u8], 0xFFu8);
 
     assert(rep.consistent(v));
     assert(rep.unambiguous());
@@ -26,7 +26,7 @@ proof fn test_repeat_roundtrip_empty() {
     let term = Tag { inner: U8, tag: 0xFFu8 };
     let rep = Repeat(inner, term);
     let obuf = Seq::empty();
-    let v: (Seq<()>, ()) = (Seq::empty(), ());
+    let v: (Seq<u8>, u8) = (Seq::empty(), 0xFFu8);
 
     assert(rep.consistent(v));
     assert(rep.unambiguous());
@@ -41,7 +41,7 @@ proof fn test_repeat_needs_distinct_terminator() {
     let term_same = Tag { inner: U8, tag: 0xAAu8 };
     let rep_bad = Repeat(inner, term_same);
     let obuf = Seq::empty();
-    let term_buf = term_same.spec_serialize_dps((), obuf);
+    let term_buf = term_same.spec_serialize_dps(0xAAu8, obuf);
     assert(inner.spec_parse(term_buf) is Some);
     assert(!parser_fails_on(inner, term_buf));
     assert(!rep_bad.unambiguous());
@@ -52,7 +52,7 @@ proof fn test_repeat_with_tuple_inner() {
     let term = Tag { inner: U16Le, tag: 0xFFFFu16 };
     let rep = Repeat(inner, term);
     let obuf = Seq::empty();
-    let v: (Seq<()>, ()) = (seq![(), ()], ());
+    let v: (Seq<u16>, u16) = (seq![0x1234u16, 0x1234u16], 0xFFFFu16);
 
     assert(rep.consistent(v));
     assert(rep.unambiguous());

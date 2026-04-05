@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::recursive::*;
 use crate::combinators::*;
 use crate::core::proof::*;
@@ -18,44 +18,56 @@ pub enum NestedBracesT {
     Eps,
 }
 
-/// Mapper between `Sum<NestedBracesT, ()>` and `NestedBracesT`.
+/// Mapper between `Sum<NestedBracesT, u8>` and `NestedBracesT`.
 pub struct NestedBracesMapper;
 
 impl Mapper for NestedBracesMapper {
-    type In = Sum<NestedBracesT, ()>;
+    type In = Sum<NestedBracesT, u8>;
 
     type Out = NestedBracesT;
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        match i {
+            Sum::Inl(_) => true,
+            Sum::Inr(tag) => tag == 0x00u8,
+        }
+    }
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
             Sum::Inl(inner) => NestedBracesT::Brace(Box::new(inner)),
-            Sum::Inr(()) => NestedBracesT::Eps,
+            Sum::Inr(_) => NestedBracesT::Eps,
         }
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
             NestedBracesT::Brace(inner) => Sum::Inl(*inner),
-            NestedBracesT::Eps => Sum::Inr(()),
+            NestedBracesT::Eps => Sum::Inr(0x00u8),
         }
     }
 }
 
-impl IsoMapper for NestedBracesMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
-        match i {
-            Sum::Inl(_) => {},
-            Sum::Inr(u) => {
-                assert(u == ());
-            },
-        }
-    }
-
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+impl LossyMapper for NestedBracesMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
         match o {
             NestedBracesT::Brace(_) => {},
             NestedBracesT::Eps => {},
         }
+    }
+}
+
+impl LosslessMapper for NestedBracesMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        match i {
+            Sum::Inl(_) => {},
+            Sum::Inr(tag) => {
+                assert(tag == 0x00u8);
+            },
+        }
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 

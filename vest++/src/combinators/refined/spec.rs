@@ -111,26 +111,31 @@ impl<A, Pred> SpecByteLen for super::Refined<A, Pred> where A: SpecByteLen, Pred
 }
 
 impl<Inner> SpecParser for super::Tag<Inner, Inner::PVal> where Inner: SpecParser {
-    type PVal = ();
+    type PVal = Inner::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.inner.spec_parse(ibuf) {
-            Some((n, v)) if v == self.tag => Some((n, ())),
+            Some((n, v)) if v == self.tag => Some((n, v)),
             _ => None,
         }
     }
 }
 
 impl<Inner> Consistency for super::Tag<Inner, Inner::Val> where Inner: Consistency {
-    type Val = ();
+    type Val = Inner::Val;
 
-    open spec fn consistent(&self, _v: Self::Val) -> bool {
-        self.inner.consistent(self.tag)
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.inner.consistent(v)
+        &&& v == self.tag
     }
 }
 
 impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consistency {
     proof fn lemma_unique_consistent_val(&self, v1: Self::Val, v2: Self::Val) {
+        if self.consistent(v1) && self.consistent(v2) {
+            assert(v1 == self.tag);
+            assert(v2 == self.tag);
+        }
     }
 }
 
@@ -153,18 +158,18 @@ impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundPar
 }
 
 impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where Inner: SpecSerializerDps {
-    type ST = ();
+    type ST = Inner::ST;
 
-    open spec fn spec_serialize_dps(&self, _v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        self.inner.spec_serialize_dps(self.tag, obuf)
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(v, obuf)
     }
 }
 
 impl<Inner> SpecSerializer for super::Tag<Inner, Inner::SVal> where Inner: SpecSerializer {
-    type SVal = ();
+    type SVal = Inner::SVal;
 
-    open spec fn spec_serialize(&self, _v: Self::SVal) -> Seq<u8> {
-        self.inner.spec_serialize(self.tag)
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.inner.spec_serialize(v)
     }
 }
 
@@ -179,12 +184,12 @@ impl<Inner> NonTailFmt for super::Tag<Inner, Inner::ST> where Inner: NonTailFmt 
         self.inner.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, _v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_prepend(self.tag, obuf);
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, _v: Self::ST, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_len(self.tag, obuf);
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -193,16 +198,16 @@ impl<Inner> GoodSerializer for super::Tag<Inner, Inner::SVal> where Inner: GoodS
         self.inner.serialize_inv()
     }
 
-    proof fn lemma_serialize_len(&self, _v: Self::SVal) {
-        self.inner.lemma_serialize_len(self.tag);
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.inner.lemma_serialize_len(v);
     }
 }
 
 impl<Inner> SpecByteLen for super::Tag<Inner, Inner::T> where Inner: SpecByteLen {
-    type T = ();
+    type T = Inner::T;
 
-    open spec fn byte_len(&self, _v: Self::T) -> nat {
-        self.inner.byte_len(self.tag)
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(v)
     }
 }
 
@@ -224,11 +229,8 @@ impl<Tg, Of> Consistency for super::Tagged<Tg, Of> where
     type Val = Of::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        self.0.consistent(self.1) && self.2.consistent(
-            v,
-        )
-        // Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).consistent(v)
-
+        &&& self.0.consistent(self.1)
+        &&& self.2.consistent(v)
     }
 }
 
@@ -237,8 +239,7 @@ impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.2.sound_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -292,8 +293,7 @@ impl<Tg, Of> NonTailFmt for super::Tagged<Tg, Of> where
     Of: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
-        &&& self.0.serialize_dps_inv()
-        &&& self.2.serialize_dps_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).serialize_dps_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -316,8 +316,7 @@ impl<Tg, Of> GoodSerializer for super::Tagged<Tg, Of> where
     Of: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
-        &&& self.0.serialize_inv()
-        &&& self.2.serialize_inv()
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).serialize_inv()
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {

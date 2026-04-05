@@ -24,6 +24,7 @@ pub struct Refined<Inner, Pred> {
 /// Constant-tag combinator: matches a specific constant value.
 ///
 /// Parsing semantics: parses with `inner` and succeeds only if the result equals `tag`.
+/// The matched tag value itself is returned.
 ///
 /// Implements [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal).
 pub struct Tag<Inner, Tag> {
