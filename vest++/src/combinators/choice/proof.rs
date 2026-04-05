@@ -99,7 +99,7 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);
         } else {
             self.1.theorem_serialize_dps_parse_roundtrip(v, obuf);
@@ -109,13 +109,11 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
 
 // NonMalleable only holds for [`Alt`] when the two parsers produce disjoint sets of values.
 // This ensures that if two byte sequences parse to the same value, they must have used the same underlying parser.
-impl<A, B> NonMalleable for super::Alt<A, B> where
-    A: NonMalleable + DisjointFrom<B>,
-    B: NonMalleable<T = A::T>,
- {
+impl<A, B> NonMalleable for super::Alt<A, B> where A: NonMalleable, B: NonMalleable<T = A::T> {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
         &&& self.1.nonmal_inv()
+        &&& disjoint_values(self.0, self.1)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -137,14 +135,14 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
                             self.1.lemma_parse_sound_value(buf2);
                             assert(self.0.consistent(v1));
                             assert(self.1.consistent(v2));
-                            self.0.lemma_disjoint(&self.1, v1);
+                            assert(disjoint_values(self.0, self.1));
                         } else {
                             // buf1 uses B; buf2 uses A
                             self.1.lemma_parse_sound_value(buf1);
                             self.0.lemma_parse_sound_value(buf2);
                             assert(self.1.consistent(v1));
                             assert(self.0.consistent(v2));
-                            self.0.lemma_disjoint(&self.1, v1);
+                            assert(disjoint_values(self.0, self.1));
                         }
                     }
                 }
@@ -153,10 +151,7 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
     }
 }
 
-impl<A, B> NoLookAhead for super::Alt<A, B> where
-    A: NoLookAhead + DisjointFrom<B>,
-    B: NoLookAhead<T = A::T>,
- {
+impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead<T = A::T> {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()
@@ -179,7 +174,7 @@ impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.lemma_serialize_equiv(v, obuf);
         } else {
             self.1.lemma_serialize_equiv(v, obuf);
@@ -197,7 +192,7 @@ impl<A, B> EquivSerializers for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.lemma_serialize_equiv_on_empty(v);
         } else {
             self.1.lemma_serialize_equiv_on_empty(v);

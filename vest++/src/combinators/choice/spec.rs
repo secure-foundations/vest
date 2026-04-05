@@ -1,4 +1,5 @@
 use crate::core::{proof::*, spec::*};
+use vstd::pervasive::arbitrary;
 use vstd::prelude::*;
 
 verus! {
@@ -169,13 +170,25 @@ impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A,
     }
 }
 
-impl<A, B> SoundParser for super::Alt<A, B> where
-    A: SoundParser + DisjointFrom<B>,
-    B: SoundParser<T = A::T>,
- {
+impl<A: Consistency, B: Consistency<Val = A::Val>> super::Alt<A, B> {
+    /// If exactly one branch accepts `v`, this returns that branch.
+    /// If both accept `v`, the choice is unspecified.
+    pub open spec fn choose_left(&self, v: A::Val) -> bool {
+        if self.0.consistent(v) && self.1.consistent(v) {
+            arbitrary()
+        } else if self.0.consistent(v) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<A, B> SoundParser for super::Alt<A, B> where A: SoundParser, B: SoundParser<T = A::T> {
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& self.1.sound_inv()
+        &&& disjoint_values(self.0, self.1)
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -189,10 +202,15 @@ impl<A, B> SoundParser for super::Alt<A, B> where
         self.0.lemma_parse_sound_value(ibuf);
         self.1.lemma_parse_sound_value(ibuf);
         if let Some((n, v)) = self.0.spec_parse(ibuf) {
+            assert(disjoint_values(self.0, self.1));
+            assert(self.choose_left(v));
             assert(n == self.byte_len(v));
         } else if let Some((n, v)) = self.1.spec_parse(ibuf) {
             assert(self.1.consistent(v));
-            self.0.lemma_disjoint(&self.1, v);
+            assert(disjoint_values(self.0, self.1));
+            assert(!self.choose_left(v));
+            assert(self.byte_len(v) == self.1.byte_len(v));
+            assert(n == self.1.byte_len(v));
         }
     }
 
@@ -202,10 +220,6 @@ impl<A, B> SoundParser for super::Alt<A, B> where
     }
 }
 
-pub open spec fn triv(b: bool) -> bool {
-    true
-}
-
 impl<A, B> SpecSerializerDps for super::Alt<A, B> where
     A: SpecSerializerDps + Consistency<Val = A::ST>,
     B: SpecSerializerDps<ST = A::ST> + Consistency<Val = B::ST>,
@@ -213,7 +227,7 @@ impl<A, B> SpecSerializerDps for super::Alt<A, B> where
     type ST = A::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.spec_serialize_dps(v, obuf)
         } else {
             self.1.spec_serialize_dps(v, obuf)
@@ -239,7 +253,7 @@ impl<A, B> NonTailFmt for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.lemma_serialize_dps_prepend(v, obuf)
         } else {
             self.1.lemma_serialize_dps_prepend(v, obuf)
@@ -247,7 +261,7 @@ impl<A, B> NonTailFmt for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.lemma_serialize_dps_len(v, obuf)
         } else {
             self.1.lemma_serialize_dps_len(v, obuf)
@@ -262,7 +276,7 @@ impl<A, B> SpecSerializer for super::Alt<A, B> where
     type SVal = A::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.spec_serialize(v)
         } else {
             self.1.spec_serialize(v)
@@ -280,7 +294,7 @@ impl<A, B> GoodSerializer for super::Alt<A, B> where
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.lemma_serialize_len(v)
         } else {
             self.1.lemma_serialize_len(v)
@@ -295,7 +309,7 @@ impl<A, B> SpecByteLen for super::Alt<A, B> where
     type T = A::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        if self.0.consistent(v) {
+        if self.choose_left(v) {
             self.0.byte_len(v)
         } else {
             self.1.byte_len(v)

@@ -30,6 +30,10 @@ pub struct Choice<A, B>(pub A, pub B);
 /// Parsing semantics: like [`Choice`], but both branches consume/produce the same type.
 /// The result is returned directly without a [`Sum`] wrapper.
 ///
+/// Serialization semantics: if only one branch is consistent with a value, that
+/// branch is used. If both branches are consistent, serialization is
+/// intentionally underspecified and may use either branch.
+///
 /// ## Consistency
 ///
 /// A value `v` is consistent with `Alt(A, B)` iff it is consistent with `A` OR `B`.
