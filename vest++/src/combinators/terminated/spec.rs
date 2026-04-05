@@ -1,19 +1,65 @@
 use crate::{
-    combinators::Pair,
+    combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper},
+    combinators::{Mapped, Pair},
     core::{proof::*, spec::*},
 };
+use core::marker::PhantomData;
 use vstd::prelude::*;
 
 verus! {
+
+impl<B, VA, VB> Mapper for super::TerminatedMapper<B, VA, VB> where B: Consistency<Val = VB> {
+    type In = (VA, VB);
+
+    type Out = VA;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        i.0
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        let vb = choose|vb: VB| self.0.consistent(vb);
+        (o, vb)
+    }
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        self.0.consistent(i.1)
+    }
+
+    open spec fn wf_out(&self, _o: Self::Out) -> bool {
+        exists|vb: VB| self.0.consistent(vb)
+    }
+}
+
+impl<B, VA, VB> LossyMapper for super::TerminatedMapper<B, VA, VB> where B: Consistency<Val = VB> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<B, VA, VB> LosslessMapper for super::TerminatedMapper<B, VA, VB> where
+    B: AdmitsUniqueVal<Val = VB>,
+ {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        let vb_wit = choose|vb_wit: VB| self.0.consistent(vb_wit);
+        assert(self.0.consistent(vb_wit));
+        self.0.lemma_unique_consistent_val(vb_wit, i.1);
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        assert(exists|vb: VB| self.0.consistent(vb)) by {
+            assert(self.0.consistent(i.1));
+        }
+    }
+}
 
 impl<A, B> SpecParser for super::Terminated<A, B> where A: SpecParser, B: SpecParser {
     type PVal = A::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        match Pair(self.0, self.1).spec_parse(ibuf) {
-            Some((n, (va, _vb))) => Some((n, va)),
-            None => None,
-        }
+        Mapped {
+            inner: Pair(self.0, self.1),
+            mapper: |pair: (A::PVal, B::PVal)| pair.0,
+        }.spec_parse(ibuf)
     }
 }
 
@@ -21,8 +67,7 @@ impl<A, B> Consistency for super::Terminated<A, B> where A: Consistency, B: Cons
     type Val = A::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        &&& self.0.consistent(v)
-        &&& exists|vb: B::Val| self.1.consistent(vb)
+        super::terminated_fmt::<A, B, A::Val, B::Val>(self.0, self.1).consistent(v)
     }
 }
 
@@ -31,27 +76,24 @@ impl<A, B> SoundParser for super::Terminated<A, B> where
     B: SoundParser + AdmitsUniqueVal,
  {
     open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.1.sound_inv()
+        super::terminated_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_safe(ibuf);
+        super::terminated_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_sound_consumption(ibuf);
-        Pair(self.0, self.1).lemma_parse_sound_value(ibuf);
-        if let Some((n, (va, vb))) = Pair(self.0, self.1).spec_parse(ibuf) {
-            let vb_wit = choose|vb_wit: B::T| self.1.consistent(vb_wit);
-            self.1.lemma_unique_consistent_val(vb_wit, vb);
-            assert(self.byte_len(va) == Pair(self.0, self.1).byte_len((va, vb)));
-            assert(n == self.byte_len(va));
-        }
+        super::terminated_fmt::<A, B, A::PVal, B::PVal>(
+            self.0,
+            self.1,
+        ).lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_sound_value(ibuf);
+        super::terminated_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_sound_value(
+            ibuf,
+        );
     }
 }
 
@@ -62,8 +104,7 @@ impl<A, B> SpecSerializerDps for super::Terminated<A, B> where
     type ST = A::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
-        Pair(self.0, self.1).spec_serialize_dps((v, vb), obuf)
+        super::terminated_fmt::<A, B, A::ST, B::ST>(self.0, self.1).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -74,8 +115,7 @@ impl<A, B> SpecSerializer for super::Terminated<A, B> where
     type SVal = A::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        let vb = choose|vb: B::SVal| self.1.consistent(vb);
-        Pair(self.0, self.1).spec_serialize((v, vb))
+        super::terminated_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).spec_serialize(v)
     }
 }
 
@@ -90,19 +130,21 @@ impl<A, B> NonTailFmt for super::Terminated<A, B> where
     B: NonTailFmt + Consistency<Val = B::ST>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
-        &&& self.0.serialize_dps_inv()
-        &&& self.1.serialize_dps_inv()
+        super::terminated_fmt::<A, B, A::ST, B::ST>(self.0, self.1).serialize_dps_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
-        Pair(self.0, self.1).lemma_serialize_dps_prepend((v, vb), obuf);
-
+        super::terminated_fmt::<A, B, A::ST, B::ST>(self.0, self.1).lemma_serialize_dps_prepend(
+            v,
+            obuf,
+        );
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        let vb = choose|vb: B::ST| #![auto] self.1.consistent(vb);
-        Pair(self.0, self.1).lemma_serialize_dps_len((v, vb), obuf);
+        super::terminated_fmt::<A, B, A::ST, B::ST>(self.0, self.1).lemma_serialize_dps_len(
+            v,
+            obuf,
+        );
     }
 }
 
@@ -111,13 +153,11 @@ impl<A, B> GoodSerializer for super::Terminated<A, B> where
     B: GoodSerializer + Consistency<Val = B::SVal>,
  {
     open spec fn serialize_inv(&self) -> bool {
-        &&& self.0.serialize_inv()
-        &&& self.1.serialize_inv()
+        super::terminated_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).serialize_inv()
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        let vb = choose|vb: B::SVal| #![auto] self.1.consistent(vb);
-        Pair(self.0, self.1).lemma_serialize_len((v, vb));
+        super::terminated_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).lemma_serialize_len(v);
     }
 }
 
@@ -128,8 +168,7 @@ impl<A, B> SpecByteLen for super::Terminated<A, B> where
     type T = A::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        let vb = choose|vb: B::T| self.1.consistent(vb);
-        Pair(self.0, self.1).byte_len((v, vb))
+        super::terminated_fmt::<A, B, A::T, B::T>(self.0, self.1).byte_len(v)
     }
 }
 

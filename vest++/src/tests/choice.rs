@@ -322,18 +322,20 @@ proof fn test_malleable_varint() {
         assert(((100u32 >> 24) & 0xff) as u8 == 0x00u8) by (bit_vector);
     }
 
+    // Trigger the exsistential quantifiers
+    let tag = Tag { inner: U8, tag: VARINT_TAG_U16 };
+    assert(tag.consistent(VARINT_TAG_U16));
+    let tag = Tag { inner: U8, tag: VARINT_TAG_U32 };
+    assert(tag.consistent(VARINT_TAG_U32));
+
     // Invoke the roundtrip theorems for u16 and u32 forms
     assert(u16_form.spec_parse(buf_u16) == Some((3int, 100u32))) by {
         let u16_form_inner = Tagged(U8, VARINT_TAG_U16, U16Le);
         u16_form_inner.theorem_serialize_parse_roundtrip(100u16);
-        let tag = Tag { inner: U8, tag: VARINT_TAG_U16 };
-        assert(tag.consistent(VARINT_TAG_U16));
         assert(u16_form_inner.spec_serialize(100u16) == buf_u16) by {}
     }
     assert(u32_form.spec_parse(buf_u32) == Some((5int, 100u32))) by {
         u32_form.theorem_serialize_parse_roundtrip(100u32);
-        let tag = Tag { inner: U8, tag: VARINT_TAG_U32 };
-        assert(tag.consistent(VARINT_TAG_U32));
         assert(u32_form.spec_serialize(100u32) == buf_u32) by {}
     }
 
@@ -342,7 +344,15 @@ proof fn test_malleable_varint() {
         ||| serialized == buf_u8
         ||| serialized == buf_u16
         ||| serialized == buf_u32
-    });
+    }) by {
+        if varint.choose_left(val) {
+            assert(serialized == buf_u32);
+        } else if varint.1.choose_left(val) {
+            assert(serialized == buf_u16);
+        } else {
+            assert(serialized == buf_u8);
+        }
+    };
 
     // Different encodings consume different byte counts
     // All three encodings represent the same logical value (100)
@@ -350,7 +360,7 @@ proof fn test_malleable_varint() {
         &&& varint.spec_parse(buf_u8) == Some((1int, 100u32))
         &&& varint.spec_parse(buf_u16) == Some((3int, 100u32))
         &&& varint.spec_parse(buf_u32) == Some((5int, 100u32))
-    });
+    }) by {};
 }
 
 /*

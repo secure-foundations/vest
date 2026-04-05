@@ -1,19 +1,65 @@
 use crate::{
-    combinators::Pair,
+    combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper},
+    combinators::{Mapped, Pair},
     core::{proof::*, spec::*},
 };
+use core::marker::PhantomData;
 use vstd::prelude::*;
 
 verus! {
+
+impl<A, VA, VB> Mapper for super::PrecededMapper<A, VA, VB> where A: Consistency<Val = VA> {
+    type In = (VA, VB);
+
+    type Out = VB;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        i.1
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        let va = choose|va: VA| self.0.consistent(va);
+        (va, o)
+    }
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        self.0.consistent(i.0)
+    }
+
+    open spec fn wf_out(&self, _o: Self::Out) -> bool {
+        exists|va: VA| self.0.consistent(va)
+    }
+}
+
+impl<A, VA, VB> LossyMapper for super::PrecededMapper<A, VA, VB> where A: Consistency<Val = VA> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl<A, VA, VB> LosslessMapper for super::PrecededMapper<A, VA, VB> where
+    A: AdmitsUniqueVal<Val = VA>,
+ {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        let va_wit = choose|va_wit: VA| self.0.consistent(va_wit);
+        assert(self.0.consistent(va_wit));
+        self.0.lemma_unique_consistent_val(va_wit, i.0);
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        assert(exists|va: VA| self.0.consistent(va)) by {
+            assert(self.0.consistent(i.0));
+        }
+    }
+}
 
 impl<A, B> SpecParser for super::Preceded<A, B> where A: SpecParser, B: SpecParser {
     type PVal = B::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        match Pair(self.0, self.1).spec_parse(ibuf) {
-            Some((n, (_va, vb))) => Some((n, vb)),
-            None => None,
-        }
+        Mapped {
+            inner: Pair(self.0, self.1),
+            mapper: |pair: (A::PVal, B::PVal)| pair.1,
+        }.spec_parse(ibuf)
     }
 }
 
@@ -21,8 +67,7 @@ impl<A, B> Consistency for super::Preceded<A, B> where A: Consistency, B: Consis
     type Val = B::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        &&& self.1.consistent(v)
-        &&& exists|va: A::Val| self.0.consistent(va)
+        super::preceded_fmt::<A, B, A::Val, B::Val>(self.0, self.1).consistent(v)
     }
 }
 
@@ -31,27 +76,21 @@ impl<A, B> SoundParser for super::Preceded<A, B> where
     B: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.1.sound_inv()
+        super::preceded_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).sound_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_safe(ibuf);
+        super::preceded_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_sound_consumption(ibuf);
-        Pair(self.0, self.1).lemma_parse_sound_value(ibuf);
-        if let Some((n, (va, vb))) = Pair(self.0, self.1).spec_parse(ibuf) {
-            let va_wit = choose|va_wit: A::T| self.0.consistent(va_wit);
-            self.0.lemma_unique_consistent_val(va_wit, va);
-            assert(self.byte_len(vb) == Pair(self.0, self.1).byte_len((va, vb)));
-            assert(n == self.byte_len(vb));
-        }
+        super::preceded_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_sound_consumption(
+            ibuf,
+        );
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_sound_value(ibuf);
+        super::preceded_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -62,9 +101,7 @@ impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
     type ST = B::ST;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        // Use an arbitrary consistent witness value for A
-        let va = choose|va: A::ST| self.0.consistent(va);
-        Pair(self.0, self.1).spec_serialize_dps((va, v), obuf)
+        super::preceded_fmt::<A, B, A::ST, B::ST>(self.0, self.1).spec_serialize_dps(v, obuf)
     }
 }
 
@@ -75,8 +112,7 @@ impl<A, B> SpecSerializer for super::Preceded<A, B> where
     type SVal = B::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        let va = choose|va: A::SVal| self.0.consistent(va);
-        Pair(self.0, self.1).spec_serialize((va, v))
+        super::preceded_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).spec_serialize(v)
     }
 }
 
@@ -91,18 +127,18 @@ impl<A, B> NonTailFmt for super::Preceded<A, B> where
     B: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
-        &&& self.0.serialize_dps_inv()
-        &&& self.1.serialize_dps_inv()
+        super::preceded_fmt::<A, B, A::ST, B::ST>(self.0, self.1).serialize_dps_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        let va = choose|va: A::ST| #![auto] self.0.consistent(va);
-        Pair(self.0, self.1).lemma_serialize_dps_prepend((va, v), obuf);
+        super::preceded_fmt::<A, B, A::ST, B::ST>(self.0, self.1).lemma_serialize_dps_prepend(
+            v,
+            obuf,
+        );
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        let va = choose|va: A::ST| #![auto] self.0.consistent(va);
-        Pair(self.0, self.1).lemma_serialize_dps_len((va, v), obuf);
+        super::preceded_fmt::<A, B, A::ST, B::ST>(self.0, self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -111,13 +147,11 @@ impl<A, B> GoodSerializer for super::Preceded<A, B> where
     B: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
-        &&& self.0.serialize_inv()
-        &&& self.1.serialize_inv()
+        super::preceded_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).serialize_inv()
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        let va = choose|va: A::SVal| #![auto] self.0.consistent(va);
-        Pair(self.0, self.1).lemma_serialize_len((va, v));
+        super::preceded_fmt::<A, B, A::SVal, B::SVal>(self.0, self.1).lemma_serialize_len(v);
     }
 }
 
@@ -128,8 +162,7 @@ impl<A, B> SpecByteLen for super::Preceded<A, B> where
     type T = B::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        let va = choose|va: A::T| self.0.consistent(va);
-        Pair(self.0, self.1).byte_len((va, v))
+        super::preceded_fmt::<A, B, A::T, B::T>(self.0, self.1).byte_len(v)
     }
 }
 

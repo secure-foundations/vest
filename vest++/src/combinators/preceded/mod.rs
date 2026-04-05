@@ -4,6 +4,9 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
+use crate::combinators::{Mapped, Pair};
+use crate::core::spec::Consistency;
+use core::marker::PhantomData;
 use vstd::prelude::*;
 
 verus! {
@@ -21,5 +24,15 @@ verus! {
 /// This combinator introduces malleability by default: the parser loses information about `A`'s value.
 /// `A` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
 pub struct Preceded<A, B>(pub A, pub B);
+
+pub struct PrecededMapper<A, VA, VB>(pub A, pub PhantomData<(VA, VB)>);
+
+pub open spec fn preceded_fmt<A, B, VA, VB>(
+    prefix: A,
+    body: B,
+) -> Mapped<Pair<A, B>, PrecededMapper<A, VA, VB>>
+{
+    Mapped { inner: Pair(prefix, body), mapper: PrecededMapper(prefix, PhantomData) }
+}
 
 } // verus!
