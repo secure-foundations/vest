@@ -56,6 +56,7 @@ pub type Never = !;
 #[cfg(not(verus_only))]
 pub type Never = ::core::convert::Infallible;
 
+pub mod asn1;
 pub mod combinators;
 pub mod core;
 

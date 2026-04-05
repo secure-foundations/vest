@@ -27,7 +27,7 @@
 //! | [`Terminated<A, B>`] | Same as `Pair(A, B)`, but discards B's value |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
-//! | [`Tag<Inner, T>`] | Matches a specific constant value |
+//! | [`Tag<Inner, T>`] | Matches and returns a specific constant value |
 //! | [`Tagged<T, Of>`] | Same as `Preceded<Tag<T, T::Val>, Of>` (for convenience) |
 //! | [`Cond<Inner>`] | Boolean-gated combinator (most often used in branches of `Choice` / `Alt`) |
 //!
@@ -72,7 +72,6 @@
 //! | Combinator | Description |
 //! |---|---|
 //! | [`Fix<LIMIT, Body>`] | (Compile-time) bounded fixpoint for recursive formats |
-pub mod berbool;
 pub mod bytes;
 pub mod choice;
 pub mod cond;
@@ -92,7 +91,6 @@ pub mod terminated;
 pub mod tuple;
 pub mod uints;
 
-pub use berbool::BerBool;
 pub use bytes::{Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;

@@ -26,13 +26,12 @@ pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2
 
 /// Combinator denotations that admit disjoint (mutually exclusive) sets of consistent values.
 ///
-/// Used by [`crate::combinators::Alt`] for non-malleability.
-pub trait DisjointFrom<Other: Consistency<Val = Self::Val>>: Consistency {
-    /// No value is simultaneously consistent with both `Self` and `Other`.
-    proof fn lemma_disjoint(&self, other: &Other, v: Self::Val)
-        ensures
-            self.consistent(v) && other.consistent(v) ==> false,
-    ;
+/// Used by [`crate::combinators::Alt`] to recover non-malleability.
+pub open spec fn disjoint_values<C1, C2>(c1: C1, c2: C2) -> bool where
+    C1: Consistency,
+    C2: Consistency<Val = C1::Val>,
+ {
+    forall|v: C1::Val| c1.consistent(v) && c2.consistent(v) ==> false
 }
 
 /// Returns `true` when parser `p` fails on input `ibuf`.

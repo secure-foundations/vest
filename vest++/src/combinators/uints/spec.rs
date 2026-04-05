@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::{Fixed, Mapped};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -25,8 +25,18 @@ impl Mapper for U16LeMapper {
     }
 }
 
-impl IsoMapper for U16LeMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for U16LeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8)) by (bit_vector);
+    }
+}
+
+impl LosslessMapper for U16LeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
         let i1 = i[1] as u16;
@@ -35,12 +45,7 @@ impl IsoMapper for U16LeMapper {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
-        assert({
-            &&& o & 0xff < 256
-            &&& (o >> 8) & 0xff < 256
-        }) by (bit_vector);
-        assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8)) by (bit_vector);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -64,8 +69,18 @@ impl Mapper for U16BeMapper {
     }
 }
 
-impl IsoMapper for U16BeMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for U16BeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == (((o >> 8) & 0xff) << 8 | (o & 0xff))) by (bit_vector);
+    }
+}
+
+impl LosslessMapper for U16BeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u16;
         let i1 = i[1] as u16;
@@ -74,12 +89,7 @@ impl IsoMapper for U16BeMapper {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
-        assert({
-            &&& o & 0xff < 256
-            &&& (o >> 8) & 0xff < 256
-        }) by (bit_vector);
-        assert(o == (((o >> 8) & 0xff) << 8 | (o & 0xff))) by (bit_vector);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -108,8 +118,21 @@ impl Mapper for U32LeMapper {
     }
 }
 
-impl IsoMapper for U32LeMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for U32LeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+            &&& (o >> 16) & 0xff < 256
+            &&& (o >> 24) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8 | ((o >> 16) & 0xff) << 16 | ((o >> 24)
+            & 0xff) << 24)) by (bit_vector);
+    }
+}
+
+impl LosslessMapper for U32LeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u32;
         let i1 = i[1] as u32;
@@ -121,15 +144,7 @@ impl IsoMapper for U32LeMapper {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
-        assert({
-            &&& o & 0xff < 256
-            &&& (o >> 8) & 0xff < 256
-            &&& (o >> 16) & 0xff < 256
-            &&& (o >> 24) & 0xff < 256
-        }) by (bit_vector);
-        assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8 | ((o >> 16) & 0xff) << 16 | ((o >> 24)
-            & 0xff) << 24)) by (bit_vector);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -158,8 +173,21 @@ impl Mapper for U32BeMapper {
     }
 }
 
-impl IsoMapper for U32BeMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for U32BeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert({
+            &&& o & 0xff < 256
+            &&& (o >> 8) & 0xff < 256
+            &&& (o >> 16) & 0xff < 256
+            &&& (o >> 24) & 0xff < 256
+        }) by (bit_vector);
+        assert(o == (((o >> 24) & 0xff) << 24 | ((o >> 16) & 0xff) << 16 | ((o >> 8) & 0xff) << 8
+            | (o & 0xff))) by (bit_vector);
+    }
+}
+
+impl LosslessMapper for U32BeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         let x = self.spec_map(i);
         let i0 = i[0] as u32;
         let i1 = i[1] as u32;
@@ -171,15 +199,7 @@ impl IsoMapper for U32BeMapper {
         assert(self.spec_map_rev(self.spec_map(i)) == i);
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
-        assert({
-            &&& o & 0xff < 256
-            &&& (o >> 8) & 0xff < 256
-            &&& (o >> 16) & 0xff < 256
-            &&& (o >> 24) & 0xff < 256
-        }) by (bit_vector);
-        assert(o == (((o >> 24) & 0xff) << 24 | ((o >> 16) & 0xff) << 16 | ((o >> 8) & 0xff) << 8
-            | (o & 0xff))) by (bit_vector);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
