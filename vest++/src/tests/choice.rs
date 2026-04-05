@@ -1,8 +1,8 @@
+use crate::asn1::BerBool;
 use crate::combinators::disjoint::*;
-use crate::combinators::mapped::spec::{IsoMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::{
-    Alt, BerBool, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le,
-    U32Le, U8,
+    Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::pervasive::arbitrary;
@@ -13,7 +13,7 @@ verus! {
 proof fn test_choice_compose() {
     let c = Choice(Tag { inner: U8, tag: 0u8 }, Tag { inner: U8, tag: 2u8 });
     let obuf = Seq::empty();
-    let v = Sum::Inr(());
+    let v = Sum::Inr(2u8);
     assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
@@ -25,9 +25,9 @@ proof fn test_choice_compose1() {
     let tag2 = Tag { inner: U16Le, tag: 2u16 };
     let c = Choice(tag1, tag2);
     let obuf = Seq::empty();
-    let v = Sum::Inr(());
-    tag1.theorem_serialize_parse_roundtrip(());
-    tag2.theorem_serialize_parse_roundtrip(());
+    let v = Sum::Inr(2u16);
+    tag1.theorem_serialize_parse_roundtrip(0u16);
+    tag2.theorem_serialize_parse_roundtrip(2u16);
     assert(c.unambiguous());
     let ibuf = c.spec_serialize_dps(v, obuf);
     c.theorem_serialize_parse_roundtrip(v);
@@ -55,8 +55,8 @@ proof fn test_alt_tag() {
     let buf_v2: Seq<u8> = seq![0x02u8];
     let buf_invalid: Seq<u8> = seq![0x03u8];
 
-    assert(alt_parser.spec_parse(buf_v1) == Some((1int, ())));
-    assert(alt_parser.spec_parse(buf_v2) == Some((1int, ())));
+    assert(alt_parser.spec_parse(buf_v1) == Some((1int, 0x01u8)));
+    assert(alt_parser.spec_parse(buf_v2) == Some((1int, 0x02u8)));
     assert(alt_parser.spec_parse(buf_invalid) is None);
 }
 
@@ -100,11 +100,16 @@ impl Mapper for MyTagMapper {
     }
 }
 
-impl IsoMapper for MyTagMapper {
-    proof fn lemma_map_iso(&self, i: Self::In) {
+impl LossyMapper for MyTagMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for MyTagMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_map_iso_rev(&self, o: Self::Out) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -168,36 +173,27 @@ proof fn test_alt_flexible_length_encoding() {
 }
 
 // =============================================================================
-// Malleable Bitcoin Varint (simplified to u8, u16, u32 variants)
+// Simplified Bitcoin Varint with both malleable and canonical encodings
 // =============================================================================
 //
-// Bitcoin varint encoding:
-// - Values 0x00-0xFC: encoded as single byte
-// - Values 0xFD-0xFFFF: 0xFD prefix + 2 bytes (little-endian u16)
-// - Values 0x10000-0xFFFFFFFF: 0xFE prefix + 4 bytes (little-endian u32)
+// This format reserves 0xFD and 0xFE as length-extension tags:
+// - Any other one-byte value is encoded directly
+// - 0xFD prefix + 2 bytes encodes the u16 form (little-endian)
+// - 0xFE prefix + 4 bytes encodes the u32 form (little-endian)
 //
-// Without enforcement of shortest representation, this is MALLEABLE:
-// e.g., value 100 can be encoded as:
-//   - [0x64]           (1 byte, direct)
-//   - [0xFD, 0x64, 0x00] (3 bytes, u16 form)
-//   - [0xFE, 0x64, 0x00, 0x00, 0x00] (5 bytes, u32 form)
+// Without a shortest-form restriction, the format is malleable:
+// e.g., value 100 can be encoded as
+//   - [0x64]
+//   - [0xFD, 0x64, 0x00]
+//   - [0xFE, 0x64, 0x00, 0x00, 0x00]
 pub const VARINT_TAG_U16: u8 = 0xFDu8;
 
 pub const VARINT_TAG_U32: u8 = 0xFEu8;
 
-// Predicate: byte is NOT a tag (valid for direct u8 encoding)
-pub struct NotVarintTag;
-
-impl SpecPred<u8> for NotVarintTag {
-    open spec fn apply(&self, value: u8) -> bool {
-        value != VARINT_TAG_U16 && value != VARINT_TAG_U32
-    }
-}
-
 // Mapper: u8 -> u32
-struct U8ToU32Mapper;
+pub struct U8AsU32;
 
-impl Mapper for U8ToU32Mapper {
+impl Mapper for U8AsU32 {
     type In = u8;
 
     type Out = u32;
@@ -206,15 +202,32 @@ impl Mapper for U8ToU32Mapper {
         i as u32
     }
 
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        o <= u8::MAX
+    }
+
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        (o & 0xFF) as u8
+        o as u8
+    }
+}
+
+impl LossyMapper for U8AsU32 {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for U8AsU32 {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
 // Mapper: u16 -> u32
-struct U16ToU32Mapper;
+pub struct U16AsU32;
 
-impl Mapper for U16ToU32Mapper {
+impl Mapper for U16AsU32 {
     type In = u16;
 
     type Out = u32;
@@ -223,47 +236,178 @@ impl Mapper for U16ToU32Mapper {
         i as u32
     }
 
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        o <= u16::MAX
+    }
+
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         (o & 0xFFFF) as u16
     }
 }
 
-proof fn test_malleable_varint_parsing() {
-    // Direct u8 form: values 0x00-0xFC encoded as single byte
-    let u8_form = Mapped {
-        inner: Refined { inner: U8, pred: NotVarintTag },
-        mapper: U8ToU32Mapper,
-    };
+impl LossyMapper for U16AsU32 {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert(((o & 0xFFFF) as u16) as u32 == o) by (bit_vector)
+            requires
+                self.wf_out(o),
+        ;
+    }
+}
 
-    // u16 form: 0xFD prefix + 2 bytes little-endian
-    let u16_form = Mapped { inner: Tagged(U8, VARINT_TAG_U16, U16Le), mapper: U16ToU32Mapper };
+impl LosslessMapper for U16AsU32 {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        assert(((i as u32) & 0xFFFF) as u16 == i) by (bit_vector);
+    }
 
-    // u32 form: 0xFE prefix + 4 bytes little-endian
-    let u32_form = Tagged(U8, VARINT_TAG_U32, U32Le);
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        assert(i as u32 <= 0xFFFF);
+    }
+}
+
+// Direct one-byte form: every byte except VARINT_TAG_U16 and VARINT_TAG_U32 is encoded directly as a u8
+pub open spec fn varint_u8_form() -> Refined<Mapped<U8, U8AsU32>, spec_fn(u32) -> bool> {
+    Refined {
+        inner: Mapped { inner: U8, mapper: U8AsU32 },
+        pred: |v: u32| v != VARINT_TAG_U16 as u32 && v != VARINT_TAG_U32 as u32,
+    }
+}
+
+// u16 form: 0xFD prefix + 2 bytes little-endian
+pub open spec fn varint_u16_form() -> Mapped<Tagged<U8, U16Le>, U16AsU32> {
+    Mapped {
+        inner: Tagged(U8, VARINT_TAG_U16, U16Le),
+        mapper: U16AsU32,
+    }
+    // Equivalently:
+    // Tagged(U8, VARINT_TAG_U16, Mapped { inner: U16Le, mapper: U16ToU32Mapper })
+
+}
+
+// u32 form: 0xFE prefix + 4 bytes little-endian
+pub open spec fn varint_u32_form() -> Tagged<U8, U32Le> {
+    Tagged(U8, VARINT_TAG_U32, U32Le)
+}
+
+proof fn test_malleable_varint() {
+    let u8_form = varint_u8_form();
+    let u16_form = varint_u16_form();
+    let u32_form = varint_u32_form();
+    let varint = Alt(u32_form, Alt(u16_form, u8_form));
+
+    assert(varint.unambiguous());
+    let val = 100u32;
+    // `val` is consistent with all three forms
+    assert(u32_form.consistent(val));
+    assert(u16_form.consistent(val));
+    assert(u8_form.consistent(val));
+    // but the overall varint parser is not non-malleable, since it accepts multiple encodings of the same value
+    assert(!varint.nonmal_inv());
+
+    let serialized = varint.spec_serialize(val);
+
+    // Value 100 (0x64) - can be encoded three ways:
+    let buf_u8 = seq![0x64u8];
+    let buf_u16 = seq![0xFDu8, 0x64u8, 0x00u8];
+    let buf_u32 = seq![0xFEu8, 0x64u8, 0x00u8, 0x00u8, 0x00u8];
+
+    // Some bitvector proofs for the little-endian encodings of 100
+    assert(U16Le.spec_serialize(100u16) == seq![0x64u8, 0x00u8]) by {
+        assert((100u16 & 0xff) as u8 == 0x64u8) by (bit_vector);
+        assert(((100u16 >> 8) & 0xff) as u8 == 0x00u8) by (bit_vector);
+    }
+    assert(U32Le.spec_serialize(100u32) == seq![0x64u8, 0x00u8, 0x00u8, 0x00u8]) by {
+        assert((100u32 & 0xff) as u8 == 0x64u8) by (bit_vector);
+        assert(((100u32 >> 8) & 0xff) as u8 == 0x00u8) by (bit_vector);
+        assert(((100u32 >> 16) & 0xff) as u8 == 0x00u8) by (bit_vector);
+        assert(((100u32 >> 24) & 0xff) as u8 == 0x00u8) by (bit_vector);
+    }
+
+    // Invoke the roundtrip theorems for u16 and u32 forms
+    assert(u16_form.spec_parse(buf_u16) == Some((3int, 100u32))) by {
+        let u16_form_inner = Tagged(U8, VARINT_TAG_U16, U16Le);
+        u16_form_inner.theorem_serialize_parse_roundtrip(100u16);
+        let tag = Tag { inner: U8, tag: VARINT_TAG_U16 };
+        assert(tag.consistent(VARINT_TAG_U16));
+        assert(u16_form_inner.spec_serialize(100u16) == buf_u16) by {}
+    }
+    assert(u32_form.spec_parse(buf_u32) == Some((5int, 100u32))) by {
+        u32_form.theorem_serialize_parse_roundtrip(100u32);
+        let tag = Tag { inner: U8, tag: VARINT_TAG_U32 };
+        assert(tag.consistent(VARINT_TAG_U32));
+        assert(u32_form.spec_serialize(100u32) == buf_u32) by {}
+    }
+
+    // varint serializer non-deterministically picks one of the three encodings
+    assert({
+        ||| serialized == buf_u8
+        ||| serialized == buf_u16
+        ||| serialized == buf_u32
+    });
+
+    // Different encodings consume different byte counts
+    // All three encodings represent the same logical value (100)
+    assert({
+        &&& varint.spec_parse(buf_u8) == Some((1int, 100u32))
+        &&& varint.spec_parse(buf_u16) == Some((3int, 100u32))
+        &&& varint.spec_parse(buf_u32) == Some((5int, 100u32))
+    });
+}
+
+/*
+ * Canonicality restrictions:
+ * - Values less than VARINT_TAG_U16 must use the u8 form
+ * - Values between VARINT_TAG_U16 and u16::MAX must use the u16 form
+ * - Values above u16::MAX must use the u32 form
+ * These restrictions ensure that each value has a unique encoding, making the overall varint parser non-malleable.
+ */
+
+pub open spec fn canonical_u8_varint_value(v: u32) -> bool {
+    v < VARINT_TAG_U16 as u32
+}
+
+pub open spec fn canonical_u16_varint_value(v: u32) -> bool {
+    VARINT_TAG_U16 as u32 <= v <= u16::MAX
+}
+
+pub open spec fn canonical_u32_varint_value(v: u32) -> bool {
+    u16::MAX < v
+}
+
+proof fn test_canonical_varint_roundtrip() {
+    let u8_form = Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) };
+    let u16_form = Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) };
+    let u32_form = Refined { inner: varint_u32_form(), pred: |v| canonical_u32_varint_value(v) };
 
     let varint = Alt(u32_form, Alt(u16_form, u8_form));
     assert(varint.unambiguous());
 
-    // Value 100 (0x64) - can be encoded three ways:
-    let buf_direct: Seq<u8> = seq![0x64u8];
-    let buf_u16: Seq<u8> = seq![0xFDu8, 0x64u8, 0x00u8];
-    let buf_u32: Seq<u8> = seq![0xFEu8, 0x64u8, 0x00u8, 0x00u8, 0x00u8];
+    let v_u8 = 100u32;
+    let v_u16 = VARINT_TAG_U32 as u32;
+    let v_u32 = 0x1_0000u32;
 
-    assert(varint.spec_parse(buf_direct) is Some);
-    assert(varint.spec_parse(buf_u16) is Some);
-    assert(varint.spec_parse(buf_u32) is Some);
+    assert(u32_form.consistent(v_u32));
+    assert(u16_form.consistent(v_u16));
+    assert(u8_form.consistent(v_u8));
 
-    // Different encodings consume different byte counts
-    // All three encodings represent the same logical value (100)
-    if let Some((n1, _v1)) = varint.spec_parse(buf_direct) {
-        assert(n1 == 1);
-    }
-    if let Some((n2, _v2)) = varint.spec_parse(buf_u16) {
-        assert(n2 == 3);
-    }
-    if let Some((n3, _v3)) = varint.spec_parse(buf_u32) {
-        assert(n3 == 5);
-    }
+    // Canonicality restrictions prevent non-deterministic encodings of the same value
+    assert(!u32_form.consistent(v_u16));
+    assert(!u32_form.consistent(v_u8));
+    assert(!u16_form.consistent(v_u8));
+    // And the overall varint parser is now non-malleable, since each value has a unique encoding
+    assert(varint.nonmal_inv());
+
+    let buf_u8 = seq![0x64u8];
+    // let buf_u16 = seq![VARINT_TAG_U16, VARINT_TAG_U32, 0x00u8];
+    let buf_u16 = varint.spec_serialize(v_u16);
+    let buf_u32 = seq![VARINT_TAG_U32, 0x00u8, 0x00u8, 0x01u8, 0x00u8];
+
+    varint.theorem_serialize_parse_roundtrip(v_u8);
+    varint.theorem_serialize_parse_roundtrip(v_u16);
+    varint.theorem_serialize_parse_roundtrip(v_u32);
+    let arbitrary_input = choose|i| varint.spec_parse(i) == Some((3int, v_u16));
+    varint.lemma_parse_non_malleable(buf_u16, arbitrary_input);
+    assert(arbitrary_input.take(3) == buf_u16.take(3));
+
 }
 
 } // verus!
