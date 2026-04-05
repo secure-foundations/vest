@@ -166,4 +166,16 @@ impl<A, B> SpecByteLen for super::Preceded<A, B> where
     }
 }
 
+impl<A, B> StaticByteLen for super::Preceded<A, B> where A: StaticByteLen, B: StaticByteLen {
+    open spec fn static_byte_len() -> nat {
+        crate::combinators::Pair::<A, B>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        super::preceded_fmt::<A, B, A::T, B::T>(self.0, self.1).lemma_static_len_matches_byte_len(
+            v,
+        );
+    }
+}
+
 } // verus!

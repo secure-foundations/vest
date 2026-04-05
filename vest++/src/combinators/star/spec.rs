@@ -1,9 +1,54 @@
 use crate::combinators::length::AsLen;
 use crate::combinators::Pair;
 use crate::core::{proof::*, spec::*};
+use vstd::calc;
 use vstd::prelude::*;
 
 verus! {
+
+proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
+    ensures
+        (super::Star { inner }).byte_len(vs) == vs.len() * A::static_byte_len(),
+    decreases vs.len(),
+{
+    use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
+
+    let star = super::Star { inner };
+    if vs.len() == 0 {
+    } else {
+        let v0 = vs[0];
+        let rest = vs.skip(1);
+        let k = A::static_byte_len();
+        let f = |acc: nat, elem: A::T| acc + inner.byte_len(elem);
+
+        calc! {
+            (==)
+            star.byte_len(vs); {
+                assert(vs == seq![v0] + rest);
+            }
+            (seq![v0] + rest).fold_left(0, f); {
+                (seq![v0] + rest).lemma_fold_left_alt(0, f);
+            }
+            (seq![v0] + rest).fold_left_alt(0, f); {}
+            rest.fold_left_alt(inner.byte_len(v0), f); {
+                rest.lemma_fold_left_alt(inner.byte_len(v0), f);
+            }
+            rest.fold_left(inner.byte_len(v0), f); {
+                lemma_fold_left_accumulate_nat(rest, inner.byte_len(v0), f);
+            }
+            inner.byte_len(v0) + rest.fold_left(0, f); {}
+            inner.byte_len(v0) + star.byte_len(rest); {
+                inner.lemma_static_len_matches_byte_len(v0);
+            }
+            k + star.byte_len(rest); {
+                lemma_static_seq_byte_len(inner, rest);
+            }
+            k + rest.len() * k;
+        }
+        assert(k + rest.len() * k == (rest.len() + 1) * k) by (nonlinear_arith);
+        assert((rest.len() + 1) * k == vs.len() * k);
+    }
+}
 
 impl<A: SpecParser> super::Star<A> {
     /// Recursive helper function for parsing.
@@ -517,6 +562,20 @@ impl<const N: usize, C: SpecByteLen> SpecByteLen for super::Array<N, C> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         super::RepeatN(N, self.0).byte_len(v@)
+    }
+}
+
+impl<const N: usize, C: StaticByteLen> StaticByteLen for super::Array<N, C> {
+    open spec fn static_byte_len() -> nat {
+        N as nat * C::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        let star = super::Star { inner: self.0 };
+        lemma_static_seq_byte_len(star.inner, v@);
+        assert(self.byte_len(v) == star.byte_len(v@));
+        assert(v@.len() == N as nat);
+        assert(self.byte_len(v) == v@.len() * C::static_byte_len());
     }
 }
 

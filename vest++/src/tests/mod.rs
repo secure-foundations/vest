@@ -10,5 +10,6 @@ mod mapped;
 mod opt;
 mod recursive;
 mod star;
+mod static_len;
 mod tail;
 mod unambuguity;

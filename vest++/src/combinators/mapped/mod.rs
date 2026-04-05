@@ -8,7 +8,6 @@ use vstd::prelude::*;
 
 verus! {
 
-
 /// `Mapped { inner, mapper }` transforms the inner combinator's value type.
 ///
 /// Lossless mappers preserve all format properties including parser soundness and non-malleability, while lossy mappers may introduce malleability.

@@ -4,6 +4,8 @@ use vstd::prelude::*;
 
 verus! {
 
+pub const ZERO_BYTE_LEN: usize = 0;
+
 impl SpecParser for super::Empty {
     type PVal = ();
 
@@ -76,7 +78,16 @@ impl SpecByteLen for super::Empty {
     type T = ();
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        0
+        ZERO_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::Empty {
+    open spec fn static_byte_len() -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -153,7 +164,16 @@ impl SpecByteLen for super::Void {
     type T = Never;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        0
+        ZERO_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::Void {
+    open spec fn static_byte_len() -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 

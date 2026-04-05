@@ -106,6 +106,17 @@ impl<P1: SpecByteLen, P2: SpecByteLen> SpecByteLen for super::Permute2<P1, P2> {
     }
 }
 
+impl<P1: StaticByteLen, P2: StaticByteLen> StaticByteLen for super::Permute2<P1, P2> {
+    open spec fn static_byte_len() -> nat {
+        P1::static_byte_len() + P2::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v.0);
+        self.1.lemma_static_len_matches_byte_len(v.1);
+    }
+}
+
 // ============== Permute3 ==============
 // Permute3(A, B, C) ::= Alt(
 //     (A, Permute2(B, C)),
@@ -239,6 +250,22 @@ impl<A: SpecByteLen, B: SpecByteLen, C: SpecByteLen> SpecByteLen for super::Perm
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(self.0, super::Permute2(self.1, self.2)).byte_len(v)
+    }
+}
+
+impl<A: StaticByteLen, B: StaticByteLen, C: StaticByteLen> StaticByteLen for super::Permute3<
+    A,
+    B,
+    C,
+> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + <super::Permute2<B, C> as StaticByteLen>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v.0);
+        self.1.lemma_static_len_matches_byte_len(v.1.0);
+        self.2.lemma_static_len_matches_byte_len(v.1.1);
     }
 }
 
@@ -405,6 +432,24 @@ impl<
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).byte_len(v)
+    }
+}
+
+impl<
+    A: StaticByteLen,
+    B: StaticByteLen,
+    C: StaticByteLen,
+    D: StaticByteLen,
+> StaticByteLen for super::Permute4<A, B, C, D> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + <super::Permute3<B, C, D> as StaticByteLen>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v.0);
+        self.1.lemma_static_len_matches_byte_len(v.1.0);
+        self.2.lemma_static_len_matches_byte_len(v.1.1.0);
+        self.3.lemma_static_len_matches_byte_len(v.1.1.1);
     }
 }
 

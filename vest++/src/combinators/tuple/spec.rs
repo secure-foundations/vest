@@ -125,6 +125,17 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Pair<A, B> {
     }
 }
 
+impl<A: StaticByteLen, B: StaticByteLen> StaticByteLen for super::Pair<A, B> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + B::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v.0);
+        self.1.lemma_static_len_matches_byte_len(v.1);
+    }
+}
+
 impl<A, B> SpecParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
     A: SpecParser,
     B: SpecParser,
@@ -297,6 +308,19 @@ impl<A, B> SpecByteLen for super::DepPair<A, spec_fn(A::T) -> B> where
         let (key, val) = value;
         let next = (self.1)(key);
         self.0.byte_len(key) + next.byte_len(val)
+    }
+}
+
+impl<A: StaticByteLen, B: StaticByteLen> StaticByteLen for super::DepPair<A, spec_fn(A::T) -> B> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + B::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, value: Self::T) {
+        let (key, val) = value;
+        let next = (self.1)(key);
+        self.0.lemma_static_len_matches_byte_len(key);
+        next.lemma_static_len_matches_byte_len(val);
     }
 }
 

@@ -5,6 +5,12 @@ use vstd::prelude::*;
 
 verus! {
 
+pub const U8_BYTE_LEN: usize = 1;
+
+pub const U16_BYTE_LEN: usize = 2;
+
+pub const U32_BYTE_LEN: usize = 4;
+
 /// Isomorphic mapper: `[u8; 2]` ↔ `u16` in **little-endian** byte order.
 ///
 /// Forward: `[lo, hi]` → `lo | (hi << 8)`.
@@ -276,7 +282,16 @@ impl SpecByteLen for super::U8 {
     type T = u8;
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        1
+        U8_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::U8 {
+    open spec fn static_byte_len() -> nat {
+        U8_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -352,7 +367,16 @@ impl SpecByteLen for super::U16Le {
     type T = u16;
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        2
+        U16_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::U16Le {
+    open spec fn static_byte_len() -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -428,7 +452,16 @@ impl SpecByteLen for super::U16Be {
     type T = u16;
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        2
+        U16_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::U16Be {
+    open spec fn static_byte_len() -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -504,7 +537,16 @@ impl SpecByteLen for super::U32Le {
     type T = u32;
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        4
+        U32_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::U32Le {
+    open spec fn static_byte_len() -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -580,7 +622,16 @@ impl SpecByteLen for super::U32Be {
     type T = u32;
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        4
+        U32_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::U32Be {
+    open spec fn static_byte_len() -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 

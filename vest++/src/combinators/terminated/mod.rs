@@ -27,11 +27,10 @@ pub struct Terminated<A, B>(pub A, pub B);
 
 pub struct TerminatedMapper<B, VA, VB>(pub B, pub PhantomData<(VA, VB)>);
 
-pub open spec fn terminated_fmt<A, B, VA, VB>(
-    head: A,
-    tail: B,
-) -> Mapped<Pair<A, B>, TerminatedMapper<B, VA, VB>>
-{
+pub open spec fn terminated_fmt<A, B, VA, VB>(head: A, tail: B) -> Mapped<
+    Pair<A, B>,
+    TerminatedMapper<B, VA, VB>,
+> {
     Mapped { inner: Pair(head, tail), mapper: TerminatedMapper(tail, PhantomData) }
 }
 

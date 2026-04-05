@@ -1,4 +1,5 @@
 use crate::{
+    combinators::marker::spec::ZERO_BYTE_LEN,
     combinators::{Optional, Repeat},
     core::{proof::*, spec::*},
 };
@@ -131,7 +132,16 @@ impl SpecByteLen for super::Eof {
     type T = ();
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
-        0
+        ZERO_BYTE_LEN as nat
+    }
+}
+
+impl StaticByteLen for super::Eof {
+    open spec fn static_byte_len() -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 

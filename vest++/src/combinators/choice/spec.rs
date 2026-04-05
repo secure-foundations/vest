@@ -458,6 +458,16 @@ impl<T, C: SpecByteLen, const N: usize> SpecByteLen for super::Dispatch<T, C, N>
     }
 }
 
+impl<T, C: StaticByteLen, const N: usize> StaticByteLen for super::Dispatch<T, C, N> {
+    open spec fn static_byte_len() -> nat {
+        C::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.active_branch().lemma_static_len_matches_byte_len(v);
+    }
+}
+
 impl<A: SpecParser, B: SpecParser> SpecParser for Sum<A, B> {
     type PVal = Sum<A::PVal, B::PVal>;
 

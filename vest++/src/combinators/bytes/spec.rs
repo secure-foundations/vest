@@ -91,6 +91,15 @@ impl<const N: usize> SpecByteLen for super::Fixed<N> {
     }
 }
 
+impl<const N: usize> StaticByteLen for super::Fixed<N> {
+    open spec fn static_byte_len() -> nat {
+        N as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl<Len: AsLen> SpecParser for super::Varied<Len> {
     type PVal = Seq<u8>;
 

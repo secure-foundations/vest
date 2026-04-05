@@ -9,6 +9,8 @@ use vstd::prelude::*;
 
 verus! {
 
+pub const BOOL_BYTE_LEN: usize = 1;
+
 pub struct BoolBytePred<const DER: bool>;
 
 pub struct BoolMapper<const DER: bool>;
@@ -156,7 +158,17 @@ impl<const DER: bool> SpecByteLen for super::Bool<DER> {
     type T = bool;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        bool_fmt::<DER>().byte_len(v)
+        BOOL_BYTE_LEN as nat
+    }
+}
+
+impl<const DER: bool> StaticByteLen for super::Bool<DER> {
+    open spec fn static_byte_len() -> nat {
+        BOOL_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        bool_fmt::<DER>().lemma_static_len_matches_byte_len(v);
     }
 }
 

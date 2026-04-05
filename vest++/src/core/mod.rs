@@ -8,6 +8,7 @@
 //! - [`spec::SpecSerializer`] — serializer specification
 //! - [`spec::SpecSerializerDps`] — destination-passing style serializer specification
 //! - [`spec::SpecByteLen`] — byte length of serialized values
+//! - [`spec::StaticByteLen`] — fixed byte length for static-size formats
 //! - [`spec::Consistency`] — value well-formedness against the format specification
 //! - [`spec::Unambiguity`] — conditions for unambiguous format composition
 //!

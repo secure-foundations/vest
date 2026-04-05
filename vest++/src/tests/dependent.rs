@@ -5,7 +5,9 @@ use crate::combinators::implicit::{TLVOf, TLVal, TagValNode, Uninhabited};
 use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::tuple::Pair;
-use crate::combinators::{disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag};
+use crate::combinators::{
+    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag,
+};
 use crate::combinators::{
     Choice, Cond, DepCombinator, Eof, Fixed, Implicit, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag,
     Tagged, Tail, U16Le, U32Le, Varied, U8,
@@ -315,7 +317,14 @@ impl DepCombinator for TXSegwitRestRest {
 }
 
 proof fn test_bitcoin_tx() {
-    use super::choice::{canonical_u16_varint_value, canonical_u32_varint_value, canonical_u8_varint_value, varint_u16_form, varint_u32_form, varint_u8_form};
+    use super::choice::{
+        canonical_u16_varint_value,
+        canonical_u32_varint_value,
+        canonical_u8_varint_value,
+        varint_u16_form,
+        varint_u32_form,
+        varint_u8_form,
+    };
 
     let u8_form = Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) };
     let u16_form = Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) };

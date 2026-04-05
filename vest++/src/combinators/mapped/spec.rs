@@ -204,6 +204,19 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
     }
 }
 
+impl<Inner, M> StaticByteLen for super::Mapped<Inner, M> where
+    Inner: StaticByteLen,
+    M: Mapper<In = Inner::T>,
+ {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(self.mapper.spec_map_rev(v));
+    }
+}
+
 impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     Inner: SpecSerializer,
     M: Mapper<In = Inner::SVal>,

@@ -138,6 +138,18 @@ pub trait SpecByteLen {
     spec fn byte_len(&self, v: Self::T) -> nat;
 }
 
+/// Static byte length for fixed-size combinators.
+pub trait StaticByteLen: SpecByteLen + Consistency<Val = Self::T> {
+    /// The statically known serialized length.
+    spec fn static_byte_len() -> nat;
+
+    /// Bridge between the dynamic byte-length view and the static one.
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T)
+        ensures
+            self.byte_len(v) == Self::static_byte_len(),
+    ;
+}
+
 /// Marker for combinators whose corresponding values are raw bytes (`Seq<u8>`).
 pub trait BytesCombinator: SpecByteLen<T = Seq<u8>> {
     /// Byte length equals buffer length.

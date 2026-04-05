@@ -104,4 +104,14 @@ impl<Inner: SpecByteLen> SpecByteLen for super::Cond<Inner> {
     }
 }
 
+impl<Inner: StaticByteLen> StaticByteLen for super::Cond<Inner> {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.1.lemma_static_len_matches_byte_len(v);
+    }
+}
+
 } // verus!

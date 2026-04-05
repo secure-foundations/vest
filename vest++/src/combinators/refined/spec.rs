@@ -1,3 +1,4 @@
+use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::preceded::Preceded;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -110,6 +111,19 @@ impl<A, Pred> SpecByteLen for super::Refined<A, Pred> where A: SpecByteLen, Pred
     }
 }
 
+impl<A, Pred> StaticByteLen for super::Refined<A, Pred> where
+    A: StaticByteLen,
+    Pred: SpecPred<A::T>,
+ {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(v);
+    }
+}
+
 impl<Inner> SpecParser for super::Tag<Inner, Inner::PVal> where Inner: SpecParser {
     type PVal = Inner::PVal;
 
@@ -208,6 +222,16 @@ impl<Inner> SpecByteLen for super::Tag<Inner, Inner::T> where Inner: SpecByteLen
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.inner.byte_len(v)
+    }
+}
+
+impl<Inner> StaticByteLen for super::Tag<Inner, Inner::T> where Inner: StaticByteLen {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(v);
     }
 }
 
@@ -332,6 +356,19 @@ impl<Tg, Of> SpecByteLen for super::Tagged<Tg, Of> where
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).byte_len(v)
+    }
+}
+
+impl<Tg, Of> StaticByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of: StaticByteLen {
+    open spec fn static_byte_len() -> nat {
+        Tg::static_byte_len() + Of::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        Preceded(
+            super::Tag { inner: self.0, tag: self.1 },
+            self.2,
+        ).lemma_static_len_matches_byte_len(v);
     }
 }
 
