@@ -5,190 +5,56 @@ pub mod spec;
 use vstd::prelude::*;
 
 use crate::combinators::choice::Alt;
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::Mapped;
-use core::marker::PhantomData;
 
 verus! {
 
-/// Mapper that swaps a pair `(B, A)` to `(A, B)`
-pub struct Swap2Mapper<A, B>(pub PhantomData<(A, B)>);
-
-impl<A, B> Mapper for Swap2Mapper<A, B> {
-    type In = (B, A);
-
-    type Out = (A, B);
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1, i.0)
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1, o.0)
-    }
+pub open spec fn swap2<A, B>(i: (B, A)) -> (A, B) {
+    (i.1, i.0)
 }
 
-impl<A, B> LossyMapper for Swap2Mapper<A, B> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
+pub open spec fn unswap2<A, B>(o: (A, B)) -> (B, A) {
+    (o.1, o.0)
 }
 
-impl<A, B> LosslessMapper for Swap2Mapper<A, B> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
+pub open spec fn swap3_1<A, B, C>(i: (B, (A, C))) -> (A, (B, C)) {
+    (i.1.0, (i.0, i.1.1))
 }
 
-/// Mapper for Permute3: `(B, (A, C)) -> (A, (B, C))`
-pub struct Swap3Mapper1<A, B, C>(pub PhantomData<(A, B, C)>);
-
-impl<A, B, C> Mapper for Swap3Mapper1<A, B, C> {
-    type In = (B, (A, C));
-
-    type Out = (A, (B, C));
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1.0, (i.0, i.1.1))
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1.0, (o.0, o.1.1))
-    }
+pub open spec fn unswap3_1<A, B, C>(o: (A, (B, C))) -> (B, (A, C)) {
+    (o.1.0, (o.0, o.1.1))
 }
 
-impl<A, B, C> LossyMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
+pub open spec fn swap3_2<A, B, C>(i: (C, (A, B))) -> (A, (B, C)) {
+    (i.1.0, (i.1.1, i.0))
 }
 
-impl<A, B, C> LosslessMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
+pub open spec fn unswap3_2<A, B, C>(o: (A, (B, C))) -> (C, (A, B)) {
+    (o.1.1, (o.0, o.1.0))
 }
 
-/// Mapper for Permute3: `(C, (A, B)) -> (A, (B, C))`
-pub struct Swap3Mapper2<A, B, C>(pub PhantomData<(A, B, C)>);
-
-impl<A, B, C> Mapper for Swap3Mapper2<A, B, C> {
-    type In = (C, (A, B));
-
-    type Out = (A, (B, C));
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1.0, (i.1.1, i.0))
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1.1, (o.0, o.1.0))
-    }
+pub open spec fn swap4_1<A, B, C, D>(i: (B, (A, (C, D)))) -> (A, (B, (C, D))) {
+    (i.1.0, (i.0, i.1.1))
 }
 
-impl<A, B, C> LossyMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
+pub open spec fn unswap4_1<A, B, C, D>(o: (A, (B, (C, D)))) -> (B, (A, (C, D))) {
+    (o.1.0, (o.0, o.1.1))
 }
 
-impl<A, B, C> LosslessMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
+pub open spec fn swap4_2<A, B, C, D>(i: (C, (A, (B, D)))) -> (A, (B, (C, D))) {
+    (i.1.0, (i.1.1.0, (i.0, i.1.1.1)))
 }
 
-/// Mapper for Permute4: `(B, (A, (C, D))) -> (A, (B, (C, D)))`
-pub struct Swap4Mapper1<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
-
-impl<A, B, C, D> Mapper for Swap4Mapper1<A, B, C, D> {
-    type In = (B, (A, (C, D)));
-
-    type Out = (A, (B, (C, D)));
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1.0, (i.0, i.1.1))
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1.0, (o.0, o.1.1))
-    }
+pub open spec fn unswap4_2<A, B, C, D>(o: (A, (B, (C, D)))) -> (C, (A, (B, D))) {
+    (o.1.1.0, (o.0, (o.1.0, o.1.1.1)))
 }
 
-impl<A, B, C, D> LossyMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
+pub open spec fn swap4_3<A, B, C, D>(i: (D, (A, (B, C)))) -> (A, (B, (C, D))) {
+    (i.1.0, (i.1.1.0, (i.1.1.1, i.0)))
 }
 
-impl<A, B, C, D> LosslessMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
-}
-
-/// Mapper for Permute4: `(C, (A, (B, D))) -> (A, (B, (C, D)))`
-pub struct Swap4Mapper2<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
-
-impl<A, B, C, D> Mapper for Swap4Mapper2<A, B, C, D> {
-    type In = (C, (A, (B, D)));
-
-    type Out = (A, (B, (C, D)));
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1.0, (i.1.1.0, (i.0, i.1.1.1)))
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1.1.0, (o.0, (o.1.0, o.1.1.1)))
-    }
-}
-
-impl<A, B, C, D> LossyMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
-}
-
-impl<A, B, C, D> LosslessMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
-}
-
-/// Mapper for Permute4: `(D, (A, (B, C))) -> (A, (B, (C, D)))`
-pub struct Swap4Mapper3<A, B, C, D>(pub PhantomData<(A, B, C, D)>);
-
-impl<A, B, C, D> Mapper for Swap4Mapper3<A, B, C, D> {
-    type In = (D, (A, (B, C)));
-
-    type Out = (A, (B, (C, D)));
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        (i.1.0, (i.1.1.0, (i.1.1.1, i.0)))
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        (o.1.1.1, (o.0, (o.1.0, o.1.1.0)))
-    }
-}
-
-impl<A, B, C, D> LossyMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-    }
-}
-
-impl<A, B, C, D> LosslessMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-    }
+pub open spec fn unswap4_3<A, B, C, D>(o: (A, (B, (C, D)))) -> (D, (A, (B, C))) {
+    (o.1.1.1, (o.0, (o.1.0, o.1.1.0)))
 }
 
 /// `Permute2<P1, P2>` parses either `(P1, P2)` or `(P2, P1)` and produces `(P1::PVal, P2::PVal)`

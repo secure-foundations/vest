@@ -13,22 +13,22 @@ pub struct U8;
 
 /// Little-endian unsigned 16-bit integer.
 ///
-/// Defined as `Mapped { inner: Fixed::<2>, mapper: U16LeMapper }`.
+/// Defined as `Mapped { inner: Fixed::<2>, mapper: (u16_le_from_bytes, u16_le_to_bytes) }`.
 pub struct U16Le;
 
 /// Big-endian unsigned 16-bit integer.
 ///
-/// Defined as `Mapped { inner: Fixed::<2>, mapper: U16BeMapper }`.
+/// Defined as `Mapped { inner: Fixed::<2>, mapper: (u16_be_from_bytes, u16_be_to_bytes) }`.
 pub struct U16Be;
 
 /// Little-endian unsigned 32-bit integer.
 ///
-/// Defined as `Mapped { inner: Fixed::<4>, mapper: U32LeMapper }`.
+/// Defined as `Mapped { inner: Fixed::<4>, mapper: (u32_le_from_bytes, u32_le_to_bytes) }`.
 pub struct U32Le;
 
 /// Big-endian unsigned 32-bit integer.
 ///
-/// Defined as `Mapped { inner: Fixed::<4>, mapper: U32BeMapper }`.
+/// Defined as `Mapped { inner: Fixed::<4>, mapper: (u32_be_from_bytes, u32_be_to_bytes) }`.
 pub struct U32Be;
 
 } // verus!

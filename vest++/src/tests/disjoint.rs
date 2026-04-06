@@ -1,5 +1,4 @@
 use crate::combinators::disjoint::*;
-use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::tuple::Pair;
 use crate::combinators::*;
 use crate::core::spec::*;
@@ -42,26 +41,9 @@ proof fn test_disjointness_tags() {
     assert(c2.unambiguous());
 }
 
-// Mapped helper
-struct MyMapper;
-
-impl Mapper for MyMapper {
-    type In = u8;
-
-    type Out = u8;
-
-    open spec fn spec_map(i: u8) -> u8 {
-        i
-    }
-
-    open spec fn spec_map_rev(o: u8) -> u8 {
-        o
-    }
-}
-
 proof fn test_disjointness_mapped() {
     let eof = Eof;
-    let m1 = Mapped { inner: U8, mapper: MyMapper };
+    let m1 = Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) };
     let c3 = Choice(m1, eof);
     assert(c3.unambiguous());
 }

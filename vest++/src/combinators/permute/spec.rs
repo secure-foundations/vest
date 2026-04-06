@@ -2,10 +2,7 @@ use crate::combinators::choice::Alt;
 use crate::combinators::tuple::Pair;
 use crate::combinators::Mapped;
 use crate::core::{proof::*, spec::*};
-use core::marker::PhantomData;
 use vstd::prelude::*;
-
-use super::{Swap2Mapper, Swap3Mapper1, Swap3Mapper2, Swap4Mapper1, Swap4Mapper2, Swap4Mapper3};
 
 verus! {
 
@@ -19,7 +16,7 @@ impl<P1, P2> SpecParser for super::Permute2<P1, P2> where P1: SpecParser, P2: Sp
             Pair(self.0, self.1),
             Mapped {
                 inner: Pair(self.1, self.0),
-                mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
+                mapper: (|i| super::swap2(i), |o| super::unswap2(o)),
             },
         );
         inner.spec_parse(ibuf)
@@ -62,7 +59,7 @@ impl<P1, P2> Unambiguity for super::Permute2<P1, P2> where P1: Unambiguity, P2: 
             Pair(self.0, self.1),
             Mapped {
                 inner: Pair(self.1, self.0),
-                mapper: Swap2Mapper::<P1::PVal, P2::PVal>(PhantomData),
+                mapper: (|i| super::swap2(i), |o| super::unswap2(o)),
             },
         );
         inner.unambiguous()
@@ -106,6 +103,16 @@ impl<P1: SpecByteLen, P2: SpecByteLen> SpecByteLen for super::Permute2<P1, P2> {
     }
 }
 
+impl<P1: ValueByteLen, P2: ValueByteLen> ValueByteLen for super::Permute2<P1, P2> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <crate::combinators::Pair<P1, P2> as ValueByteLen>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        crate::combinators::Pair(self.0, self.1).lemma_value_len_matches_byte_len(v);
+    }
+}
+
 impl<P1: StaticByteLen, P2: StaticByteLen> StaticByteLen for super::Permute2<P1, P2> {
     open spec fn static_byte_len() -> nat {
         P1::static_byte_len() + P2::static_byte_len()
@@ -138,11 +145,11 @@ impl<A, B, C> SpecParser for super::Permute3<A, B, C> where
             Alt(
                 Mapped {
                     inner: Pair(self.1, super::Permute2(self.0, self.2)),
-                    mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
+                    mapper: (|i| super::swap3_1(i), |o| super::unswap3_1(o)),
                 },
                 Mapped {
                     inner: Pair(self.2, super::Permute2(self.0, self.1)),
-                    mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
+                    mapper: (|i| super::swap3_2(i), |o| super::unswap3_2(o)),
                 },
             ),
         );
@@ -197,11 +204,11 @@ impl<A, B, C> Unambiguity for super::Permute3<A, B, C> where
             Alt(
                 Mapped {
                     inner: Pair(self.1, super::Permute2(self.0, self.2)),
-                    mapper: Swap3Mapper1::<A::PVal, B::PVal, C::PVal>(PhantomData),
+                    mapper: (|i| super::swap3_1(i), |o| super::unswap3_1(o)),
                 },
                 Mapped {
                     inner: Pair(self.2, super::Permute2(self.0, self.1)),
-                    mapper: Swap3Mapper2::<A::PVal, B::PVal, C::PVal>(PhantomData),
+                    mapper: (|i| super::swap3_2(i), |o| super::unswap3_2(o)),
                 },
             ),
         );
@@ -253,6 +260,19 @@ impl<A: SpecByteLen, B: SpecByteLen, C: SpecByteLen> SpecByteLen for super::Perm
     }
 }
 
+impl<A: ValueByteLen, B: ValueByteLen, C: ValueByteLen> ValueByteLen for super::Permute3<A, B, C> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <crate::combinators::Pair<A, super::Permute2<B, C>> as ValueByteLen>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        crate::combinators::Pair(
+            self.0,
+            super::Permute2(self.1, self.2),
+        ).lemma_value_len_matches_byte_len(v);
+    }
+}
+
 impl<A: StaticByteLen, B: StaticByteLen, C: StaticByteLen> StaticByteLen for super::Permute3<
     A,
     B,
@@ -294,16 +314,16 @@ impl<A, B, C, D> SpecParser for super::Permute4<A, B, C, D> where
             Alt(
                 Mapped {
                     inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                    mapper: (|i| super::swap4_1(i), |o| super::unswap4_1(o)),
                 },
                 Alt(
                     Mapped {
                         inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                        mapper: (|i| super::swap4_2(i), |o| super::unswap4_2(o)),
                     },
                     Mapped {
                         inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                        mapper: (|i| super::swap4_3(i), |o| super::unswap4_3(o)),
                     },
                 ),
             ),
@@ -364,16 +384,16 @@ impl<A, B, C, D> Unambiguity for super::Permute4<A, B, C, D> where
             Alt(
                 Mapped {
                     inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: Swap4Mapper1::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                    mapper: (|i| super::swap4_1(i), |o| super::unswap4_1(o)),
                 },
                 Alt(
                     Mapped {
                         inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: Swap4Mapper2::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                        mapper: (|i| super::swap4_2(i), |o| super::unswap4_2(o)),
                     },
                     Mapped {
                         inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: Swap4Mapper3::<A::PVal, B::PVal, C::PVal, D::PVal>(PhantomData),
+                        mapper: (|i| super::swap4_3(i), |o| super::unswap4_3(o)),
                     },
                 ),
             ),
@@ -432,6 +452,24 @@ impl<
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).byte_len(v)
+    }
+}
+
+impl<
+    A: ValueByteLen,
+    B: ValueByteLen,
+    C: ValueByteLen,
+    D: ValueByteLen,
+> ValueByteLen for super::Permute4<A, B, C, D> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <crate::combinators::Pair<A, super::Permute3<B, C, D>> as ValueByteLen>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        crate::combinators::Pair(
+            self.0,
+            super::Permute3(self.1, self.2, self.3),
+        ).lemma_value_len_matches_byte_len(v);
     }
 }
 

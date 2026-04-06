@@ -1,5 +1,5 @@
 use crate::asn1::{BerBool, DerBool};
-use crate::combinators::mapped::spec::Mapper;
+use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{
     Array, Cond, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded, Refined, Tag,
     Tagged, Terminated, U16Le, U32Be, U32Le, U8,
@@ -8,22 +8,6 @@ use crate::core::spec::*;
 use vstd::prelude::*;
 
 verus! {
-
-struct IdMapper<T>(core::marker::PhantomData<T>);
-
-impl<T> Mapper for IdMapper<T> {
-    type In = T;
-
-    type Out = T;
-
-    open spec fn spec_map(i: Self::In) -> Self::Out {
-        i
-    }
-
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        o
-    }
-}
 
 proof fn requires_static<C: StaticByteLen>(c: C) {
 }
@@ -42,7 +26,10 @@ type ArrayFmt = Array<3, U8>;
 
 type BoolFmt = crate::asn1::Bool<true>;
 
-type NestedPairFmt = Mapped<Pair<Pair<U8, U16Le>, U32Be>, IdMapper<((u8, u16), u32)>>;
+type NestedPairFmt = Mapped<
+    Pair<Pair<U8, U16Le>, U32Be>,
+    FnSpecMapper<((u8, u16), u32), ((u8, u16), u32)>,
+>;
 
 type TaggedDispatchFmt = Tagged<U8, Dispatch<u8, Pair<U8, U16Le>, 2>>;
 
@@ -61,7 +48,7 @@ proof fn test_static_byte_len_trait_surface() {
     requires_static(Preceded(U8, U16Le));
     requires_static(Terminated(U16Le, U8));
     requires_static(Cond(true, U16Le));
-    requires_static(Mapped { inner: U8, mapper: IdMapper(core::marker::PhantomData) });
+    requires_static(Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) });
     requires_static(Refined { inner: U8, pred: |b: u8| b <= 10u8 });
     requires_static(Tag { inner: U8, tag: 0x7fu8 });
     requires_static(Tagged(U8, 0xa1u8, U16Le));

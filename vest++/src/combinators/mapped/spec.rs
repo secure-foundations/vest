@@ -183,7 +183,20 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
     type T = M::Out;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.inner.byte_len(self.mapper.spec_map_rev(v))
+        self.inner.byte_len(M::spec_map_rev(v))
+    }
+}
+
+impl<Inner, M> ValueByteLen for super::Mapped<Inner, M> where
+    Inner: ValueByteLen,
+    M: Mapper<In = Inner::T>,
+ {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Inner::value_byte_len(M::spec_map_rev(v))
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_value_len_matches_byte_len(M::spec_map_rev(v));
     }
 }
 
@@ -211,6 +224,8 @@ impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     }
 }
 
+pub type FnSpecMapper<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
+
 impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::PVal) -> Out> {
     type PVal = Out;
 
@@ -222,25 +237,71 @@ impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::
     }
 }
 
-impl<Inner: Unambiguity, Out> Unambiguity for super::Mapped<Inner, spec_fn(Inner::PVal) -> Out> {
+impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
+    type PVal = Out;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Out)> {
+        match self.inner.spec_parse(ibuf) {
+            Some((n, v)) => Some((n, (self.mapper.0)(v))),
+            None => None,
+        }
+    }
+}
+
+impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.inner.sound_inv()
+        &&& forall|v: Inner::T|
+            #![auto]
+            self.inner.consistent(v) ==> (self.mapper.1)((self.mapper.0)(v)) == v
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
+        self.inner.lemma_parse_sound_value(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner: Unambiguity, Out> Unambiguity for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
     open spec fn unambiguous(&self) -> bool {
         self.inner.unambiguous()
     }
 }
 
-impl<Inner: Consistency, Out> Consistency for super::Mapped<Inner, spec_fn(Out) -> Inner::Val> {
+impl<Inner: Consistency, Out> Consistency for super::Mapped<Inner, FnSpecMapper<Inner::Val, Out>> {
     type Val = Out;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        self.inner.consistent((self.mapper)(v))
+        self.inner.consistent((self.mapper.1)(v))
     }
 }
 
-impl<Inner: SpecByteLen, Out> SpecByteLen for super::Mapped<Inner, spec_fn(Out) -> Inner::T> {
+impl<Inner: SpecByteLen, Out> SpecByteLen for super::Mapped<Inner, FnSpecMapper<Inner::T, Out>> {
     type T = Out;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.inner.byte_len((self.mapper)(v))
+        self.inner.byte_len((self.mapper.1)(v))
+    }
+}
+
+impl<Inner: StaticByteLen, Out> StaticByteLen for super::Mapped<
+    Inner,
+    FnSpecMapper<Inner::T, Out>,
+> {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len((self.mapper.1)(v));
     }
 }
 
@@ -255,6 +316,32 @@ impl<Inner: SpecSerializerDps, Out> SpecSerializerDps for super::Mapped<
     }
 }
 
+impl<Inner, Out> SpecSerializerDps for super::Mapped<Inner, FnSpecMapper<Inner::ST, Out>> where
+    Inner: SpecSerializerDps,
+ {
+    type ST = Out;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps((self.mapper.1)(v), obuf)
+    }
+}
+
+impl<Inner, Out> NonTailFmt for super::Mapped<Inner, FnSpecMapper<Inner::ST, Out>> where
+    Inner: NonTailFmt,
+ {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend((self.mapper.1)(v), obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len((self.mapper.1)(v), obuf);
+    }
+}
+
 impl<Inner: SpecSerializer, Out> SpecSerializer for super::Mapped<
     Inner,
     spec_fn(Out) -> Inner::SVal,
@@ -263,6 +350,28 @@ impl<Inner: SpecSerializer, Out> SpecSerializer for super::Mapped<
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         self.inner.spec_serialize((self.mapper)(v))
+    }
+}
+
+impl<Inner, Out> SpecSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVal, Out>> where
+    Inner: SpecSerializer,
+ {
+    type SVal = Out;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.inner.spec_serialize((self.mapper.1)(v))
+    }
+}
+
+impl<Inner, Out> GoodSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVal, Out>> where
+    Inner: GoodSerializer,
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.inner.lemma_serialize_len((self.mapper.1)(v));
     }
 }
 
