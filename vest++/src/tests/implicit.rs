@@ -141,6 +141,8 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
     fmt3.theorem_serialize_parse_roundtrip(v2);
 }
 
+type PayloadFmt = Choice<Cond<Tail>, Choice<Cond<Varied<u16>>, Cond<Repeat<U16Le, Eof>>>>;
+
 proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     broadcast use lemma_disjoint_cond;
 
@@ -160,7 +162,7 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     //   }
     // }
     #[verusfmt::skip]
-    let payload_fmt = |tag, len2| {
+    let payload_fmt = |tag, len2| -> PayloadFmt {
         Choice(Cond(tag == 0u8, Tail),
         Choice(Cond(tag == 1u8, Varied(len2)),
                Cond(tag == 2u8, Repeat(U16Le, Eof))))
@@ -175,21 +177,17 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         Pair(Varied(len1),
         ExactLen(len2, payload_fmt(tag, len2))),
         // Recovery logics:
-        |v: (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>)| {
+        |v: (Seq<u8>, <PayloadFmt as SpecByteLen>::T)| {
             let (v1, v2) = v;
-            let len2 = match v2 {
-                L(val) => Tail.byte_len(val) as u16,
-                R(L(val)) => Varied::<u16>::byte_len(val) as u16,
-                R(R((val))) => Repeat(U16Le, Eof).byte_len(val) as u16,
-            };
-            len2
+            let len2 = PayloadFmt::value_byte_len(v2);
+            len2 as u16
         })),
-        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| {
+        |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
            let (padding, (v1, v2)) = v;
-            let len1 = Varied::<u8>::byte_len(v1);
+            let len1 = Varied::<u8>::value_byte_len(v1);
             len1 as u8
         }),
-        |v: ([u8; 3], (Seq<u8>, Sum<Seq<u8>, Sum<Seq<u8>, (Seq<u16>, ())>>))| {
+        |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
             let (padding, (v1, v2)) = v;
             let tag = match v2 {
                 L(_) => 0u8,
@@ -215,6 +213,7 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     assert(tlv.consistent(msg2));
     // assert(tlv.consistent(msg3));
 
+
     tlv.theorem_serialize_parse_roundtrip(msg1);
     tlv.theorem_serialize_parse_roundtrip(msg2);
 
@@ -223,14 +222,14 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     assert(tlv.spec_parse(ibuf16) == Some((ibuf16.len() as int, msg1)));
     assert(tlv.spec_parse(ibuf32) == Some((ibuf32.len() as int, msg2)));
 
-    #[verusfmt::skip]
-    let payload_fmt = |tag, len2| {
-        ExactLen(len2, Dispatch(tag, [
-            (0u8, L(Tail)),
-            (1u8, R(L(Varied(len2)))),
-            (2u8, R(R(Repeat(U16Le, Eof)))),
-        ]))
-    };
+    // #[verusfmt::skip]
+    // let payload_fmt = |tag, len2| {
+    //     ExactLen(len2, Dispatch(tag, [
+    //         (0u8, L(Tail)),
+    //         (1u8, R(L(Varied(len2)))),
+    //         (2u8, R(R(Repeat(U16Le, Eof)))),
+    //     ]))
+    // };
     #[verusfmt::skip]
     let tlv2 =
         DepPair(U8, |tag: u8|
@@ -240,18 +239,25 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
         Pair(Varied(len1),
         payload_fmt(tag, len2))))));
 
-    let msg1 = (0u8, (5u8, (padding, (2u16, (v1, v2_1)))));
-    let msg2 = (1u8, (5u8, (padding, (4u16, (v1, v2_2)))));
+    let msg1 = (
+        0u8,
+        (
+            Varied::<u8>::value_byte_len(v1) as u8,
+            (padding, (PayloadFmt::value_byte_len(v2_1) as u16, (v1, v2_1))),
+        ),
+    );
+    let msg2 = (
+        1u8,
+        (
+            Varied::<u8>::value_byte_len(v1) as u8,
+            (padding, (PayloadFmt::value_byte_len(v2_2) as u16, (v1, v2_2))),
+        ),
+    );
 
     assert(tlv2.unambiguous());
-    assert(tlv2.consistent(msg1)) by {
-        let dispatch = payload_fmt(0u8, 2u16);
-        dispatch.1.lemma_active_branch_is(0);
-    };
-    assert(tlv2.consistent(msg2)) by {
-        let dispatch = payload_fmt(1u8, 4u16);
-        dispatch.1.lemma_active_branch_is(1);
-    };
+    assert(tlv2.consistent(msg1));
+    assert(tlv2.consistent(msg2));
+    assert(tlv2.nonmal_inv());
 
     tlv2.theorem_serialize_parse_roundtrip(msg1);
     tlv2.theorem_serialize_parse_roundtrip(msg2);
