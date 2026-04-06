@@ -148,44 +148,44 @@ impl<T> EquivSerializers for BundledSpecs<T> {
 
 /// Non-malleability preservation for recursive bodies.
 pub trait NonMalleableRecBody: SoundParserRecBody where Self::Body: NonMalleable {
-    proof fn lemma_body_nonmal_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_body_nonmal_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.sound_inv(),
             rec.nonmal_inv(),
         ensures
-            self.spec_body(rec).nonmal_inv(),
+            Self::spec_body(rec).nonmal_inv(),
     ;
 }
 
 /// DPS serialize-parse roundtrip preservation for recursive bodies.
 /// Similar to [`Star`], the body must also be [`NonTailFmt`].
 pub trait SPRoundTripDpsRecBody: NonTailFmtRecBody where Self::Body: SPRoundTripDps + NonTailFmt {
-    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.sp_roundtrip_dps_inv(),
             rec.serialize_dps_inv(),
         ensures
-            self.spec_body(rec).sp_roundtrip_dps_inv(),
+            Self::spec_body(rec).sp_roundtrip_dps_inv(),
     ;
 }
 
 /// No-lookahead invariant preservation for recursive bodies.
 pub trait NoLookAheadRecBody: SoundParserRecBody where Self::Body: NoLookAhead {
-    proof fn lemma_body_no_lookahead_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_body_no_lookahead_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.no_lookahead_inv(),
         ensures
-            self.spec_body(rec).no_lookahead_inv(),
+            Self::spec_body(rec).no_lookahead_inv(),
     ;
 }
 
 /// Serializer equivalence invariant preservation for recursive bodies.
 pub trait EquivSerializersGeneralRecBody: SpecRecBody where Self::Body: EquivSerializersGeneral {
-    proof fn lemma_s_body_equiv_general_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_s_body_equiv_general_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.equiv_general_inv(),
         ensures
-            self.spec_body(rec).equiv_general_inv(),
+            Self::spec_body(rec).equiv_general_inv(),
     ;
 }
 
@@ -193,68 +193,68 @@ pub trait EquivSerializersGeneralRecBody: SpecRecBody where Self::Body: EquivSer
 ///
 /// Implementing this once is enough to derive the individual `*RecBody` traits via blanket impls.
 pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
-    proof fn lemma_body_all_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_body_all_inv_preservation(rec: BundledSpecs<Self::T>)
         ensures
-            rec.sound_inv() ==> self.spec_body(rec).sound_inv(),
-            rec.sound_inv() && rec.nonmal_inv() ==> self.spec_body(rec).nonmal_inv(),
-            rec.serialize_inv() ==> self.spec_body(rec).serialize_inv(),
-            rec.serialize_dps_inv() ==> self.spec_body(rec).serialize_dps_inv(),
-            rec.sp_roundtrip_dps_inv() && rec.serialize_dps_inv() ==> self.spec_body(
+            rec.sound_inv() ==> Self::spec_body(rec).sound_inv(),
+            rec.sound_inv() && rec.nonmal_inv() ==> Self::spec_body(rec).nonmal_inv(),
+            rec.serialize_inv() ==> Self::spec_body(rec).serialize_inv(),
+            rec.serialize_dps_inv() ==> Self::spec_body(rec).serialize_dps_inv(),
+            rec.sp_roundtrip_dps_inv() && rec.serialize_dps_inv() ==> Self::spec_body(
                 rec,
             ).sp_roundtrip_dps_inv(),
-            rec.no_lookahead_inv() ==> self.spec_body(rec).no_lookahead_inv(),
-            rec.equiv_general_inv() ==> self.spec_body(rec).equiv_general_inv(),
+            rec.no_lookahead_inv() ==> Self::spec_body(rec).no_lookahead_inv(),
+            rec.equiv_general_inv() ==> Self::spec_body(rec).equiv_general_inv(),
     ;
 }
 
 impl<Body: StrictRecBody> SoundParserRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_body_sound_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).sound_inv());
+    proof fn lemma_body_sound_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).sound_inv());
     }
 }
 
 impl<Body: StrictRecBody> NonMalleableRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_body_nonmal_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).nonmal_inv());
+    proof fn lemma_body_nonmal_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).nonmal_inv());
     }
 }
 
 impl<Body: StrictRecBody> GoodSerializerRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_s_body_serialize_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).serialize_inv());
+    proof fn lemma_s_body_serialize_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).serialize_inv());
     }
 }
 
 impl<Body: StrictRecBody> NonTailFmtRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).serialize_dps_inv());
+    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).serialize_dps_inv());
     }
 }
 
 impl<Body: StrictRecBody> SPRoundTripDpsRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).sp_roundtrip_dps_inv());
+    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).sp_roundtrip_dps_inv());
     }
 }
 
 impl<Body: StrictRecBody> NoLookAheadRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_body_no_lookahead_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).no_lookahead_inv());
+    proof fn lemma_body_no_lookahead_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).no_lookahead_inv());
     }
 }
 
 impl<Body: StrictRecBody> EquivSerializersGeneralRecBody for Body where
     Body::Body: StrictCombinator,
  {
-    proof fn lemma_s_body_equiv_general_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
-        self.lemma_body_all_inv_preservation(rec);
-        assert(self.spec_body(rec).equiv_general_inv());
+    proof fn lemma_s_body_equiv_general_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).equiv_general_inv());
     }
 }
 
@@ -274,22 +274,22 @@ impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> wher
         v2: Body::T,
     )
         ensures
-            self.spec_parse_gas(gas, buf1) == Some((n1, v1)) ==>
-            self.spec_parse_gas(gas, buf2) == Some((n2, v2)) ==>
+            Self::spec_parse_gas(gas, buf1) == Some((n1, v1)) ==>
+            Self::spec_parse_gas(gas, buf2) == Some((n2, v2)) ==>
             v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
         decreases gas,
     {
-        if !(self.spec_parse_gas(gas, buf1) == Some((n1, v1))) {
+        if !(Self::spec_parse_gas(gas, buf1) == Some((n1, v1))) {
             return ;
         }
-        if !(self.spec_parse_gas(gas, buf2) == Some((n2, v2))) {
+        if !(Self::spec_parse_gas(gas, buf2) == Some((n2, v2))) {
             return ;
         }
         if !(v1 == v2) {
             return ;
         }
 
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_p = callback.2;
         let callback_c = callback.0;
         let callback_b = callback.1;
@@ -323,15 +323,15 @@ impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> wher
             assert(p_fn == callback_p);
         }
 
-        self.0.lemma_body_sound_inv_preservation(callback);
-        self.0.lemma_body_nonmal_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_body_sound_inv_preservation(callback);
+        Body::lemma_body_nonmal_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
         body.lemma_parse_non_malleable(buf1, buf2);
 
         // By definition
-        assert(self.spec_parse_gas(gas, buf1) == body.spec_parse(buf1));
-        assert(self.spec_parse_gas(gas, buf2) == body.spec_parse(buf2));
+        assert(Self::spec_parse_gas(gas, buf1) == body.spec_parse(buf1));
+        assert(Self::spec_parse_gas(gas, buf2) == body.spec_parse(buf2));
     }
 }
 
@@ -356,15 +356,15 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
     /// Inductive proof for DPS serialize-parse roundtrip under bounded unfolding.
     proof fn sp_roundtrip_dps_by_induction(&self, gas: nat, v: Body::T, obuf: Seq<u8>)
         requires
-            self.consistent_gas(gas, v),
-            self.unambiguity_gas(gas),
+            Self::consistent_gas(gas, v),
+            Self::unambiguity_gas(gas),
         ensures
-            self.spec_parse_gas(gas, self.spec_serialize_dps_gas(gas, v, obuf)) == Some(
-                (self.byte_len_gas(gas, v) as int, v),
+            Self::spec_parse_gas(gas, Self::spec_serialize_dps_gas(gas, v, obuf)) == Some(
+                (Self::byte_len_gas(gas, v) as int, v),
             ),
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_c = callback.0;
         let callback_b = callback.1;
         let callback_p = callback.2;
@@ -396,7 +396,7 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
             if gas > 0 {
                 self.nontail_dps_by_induction((gas - 1) as nat, vv, buf);
                 let witness = choose|w: Seq<u8>|
-                    self.spec_serialize_dps_gas((gas - 1) as nat, vv, buf) == w + buf;
+                    Self::spec_serialize_dps_gas((gas - 1) as nat, vv, buf) == w + buf;
                 assert(callback_s_dps(vv, buf) == witness + buf);
             } else {
                 assert(callback_s_dps(vv, buf) == Seq::<u8>::empty() + buf);
@@ -406,18 +406,18 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
         assert(callback.sp_roundtrip_dps_inv());
         assert(callback.serialize_dps_inv());
 
-        self.0.lemma_body_sp_roundtrip_dps_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_body_sp_roundtrip_dps_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
-        assert(self.consistent_gas(gas, v) == body.consistent(v));
-        assert(self.unambiguity_gas(gas) == body.unambiguous());
+        assert(Self::consistent_gas(gas, v) == body.consistent(v));
+        assert(Self::unambiguity_gas(gas) == body.unambiguous());
 
         body.theorem_serialize_dps_parse_roundtrip(v, obuf);
 
         // By definition
-        assert(self.spec_parse_gas(gas, self.spec_serialize_dps_gas(gas, v, obuf))
+        assert(Self::spec_parse_gas(gas, Self::spec_serialize_dps_gas(gas, v, obuf))
             == body.spec_parse(body.spec_serialize_dps(v, obuf)));
-        assert(self.byte_len_gas(gas, v) == body.byte_len(v));
+        assert(Self::byte_len_gas(gas, v) == body.byte_len(v));
     }
 }
 
@@ -436,10 +436,10 @@ impl<const LIMIT: usize, Body: EquivSerializersGeneralRecBody> super::Fix<LIMIT,
     /// Inductive proof that DPS and non-DPS serializers are equivalent under bounded unfolding.
     proof fn equiv_serializers_general_by_induction(&self, gas: nat, v: Body::T, obuf: Seq<u8>)
         ensures
-            self.spec_serialize_dps_gas(gas, v, obuf) == self.spec_serialize_gas(gas, v) + obuf,
+            Self::spec_serialize_dps_gas(gas, v, obuf) == Self::spec_serialize_gas(gas, v) + obuf,
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_s = callback.3;
         let callback_s_dps = callback.4;
 
@@ -456,14 +456,14 @@ impl<const LIMIT: usize, Body: EquivSerializersGeneralRecBody> super::Fix<LIMIT,
         }
 
         assert(callback.equiv_general_inv());
-        self.0.lemma_s_body_equiv_general_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_s_body_equiv_general_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
         body.lemma_serialize_equiv(v, obuf);
 
         // By definition
-        assert(self.spec_serialize_dps_gas(gas, v, obuf) == body.spec_serialize_dps(v, obuf));
-        assert(self.spec_serialize_gas(gas, v) == body.spec_serialize(v));
+        assert(Self::spec_serialize_dps_gas(gas, v, obuf) == body.spec_serialize_dps(v, obuf));
+        assert(Self::spec_serialize_gas(gas, v) == body.spec_serialize(v));
     }
 }
 
@@ -498,15 +498,15 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         v: Body::T,
     )
         requires
-            self.spec_parse_gas(gas, i1) == Some((n, v)),
+            Self::spec_parse_gas(gas, i1) == Some((n, v)),
             0 <= n <= i2.len(),
             i2.take(n) == i1.take(n),
-            self.unambiguity_gas(gas),
+            Self::unambiguity_gas(gas),
         ensures
-            self.spec_parse_gas(gas, i2) == Some((n, v)),
+            Self::spec_parse_gas(gas, i2) == Some((n, v)),
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_p = callback.2;
         let callback_c = callback.0;
         let callback_b = callback.1;
@@ -540,13 +540,13 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         assert(callback.sound_inv());
         assert(callback.no_lookahead_inv());
 
-        self.0.lemma_body_sound_inv_preservation(callback);
-        self.0.lemma_body_no_lookahead_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_body_sound_inv_preservation(callback);
+        Body::lemma_body_no_lookahead_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
-        assert(self.unambiguity_gas(gas) == body.unambiguous());
-        assert(self.spec_parse_gas(gas, i1) == body.spec_parse(i1));
-        assert(self.spec_parse_gas(gas, i2) == body.spec_parse(i2));
+        assert(Self::unambiguity_gas(gas) == body.unambiguous());
+        assert(Self::spec_parse_gas(gas, i1) == body.spec_parse(i1));
+        assert(Self::spec_parse_gas(gas, i2) == body.spec_parse(i2));
 
         body.lemma_no_lookahead(i1, i2);
 

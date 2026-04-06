@@ -319,36 +319,36 @@ pub trait SpecRecBody {
 
     /// Define one recursive unfolding, where `rec` provides callbacks for all recursive positions.
     /// the callback for recursive positions in the body.
-    spec fn spec_body(&self, rec: BundledSpecs<Self::T>) -> Self::Body;
+    spec fn spec_body(rec: BundledSpecs<Self::T>) -> Self::Body;
 }
 
 /// Soundness preservation for recursive bodies.
 pub trait SoundParserRecBody: SpecRecBody where Self::Body: SoundParser {
-    proof fn lemma_body_sound_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_body_sound_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.sound_inv(),
         ensures
-            self.spec_body(rec).sound_inv(),
+            Self::spec_body(rec).sound_inv(),
     ;
 }
 
 /// Serializer's properties preservation for recursive bodies.
 pub trait GoodSerializerRecBody: SpecRecBody where Self::Body: GoodSerializer {
-    proof fn lemma_s_body_serialize_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_s_body_serialize_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.serialize_inv(),
         ensures
-            self.spec_body(rec).serialize_inv(),
+            Self::spec_body(rec).serialize_inv(),
     ;
 }
 
 /// DPS serializer's properties preservation for recursive bodies.
 pub trait NonTailFmtRecBody: SpecRecBody where Self::Body: NonTailFmt {
-    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(&self, rec: BundledSpecs<Self::T>)
+    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.serialize_dps_inv(),
         ensures
-            self.spec_body(rec).serialize_dps_inv(),
+            Self::spec_body(rec).serialize_dps_inv(),
     ;
 }
 
@@ -356,7 +356,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecByteLen for super::Fix<LIMIT, Bo
     type T = Body::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.byte_len_gas(LIMIT as nat, v)
+        Self::byte_len_gas(LIMIT as nat, v)
     }
 }
 
@@ -364,7 +364,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> Consistency for super::Fix<LIMIT, Bo
     type Val = Body::T;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        self.consistent_gas(LIMIT as nat, v)
+        Self::consistent_gas(LIMIT as nat, v)
     }
 }
 
@@ -372,7 +372,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecParser for super::Fix<LIMIT, Bod
     type PVal = Body::T;
 
     open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
-        self.spec_parse_gas(LIMIT as nat, input)
+        Self::spec_parse_gas(LIMIT as nat, input)
     }
 }
 
@@ -380,7 +380,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecSerializer for super::Fix<LIMIT,
     type SVal = Body::T;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        self.spec_serialize_gas(LIMIT as nat, v)
+        Self::spec_serialize_gas(LIMIT as nat, v)
     }
 }
 
@@ -388,7 +388,7 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecSerializerDps for super::Fix<LIM
     type ST = Body::T;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        self.spec_serialize_dps_gas(LIMIT as nat, v, obuf)
+        Self::spec_serialize_dps_gas(LIMIT as nat, v, obuf)
     }
 }
 
@@ -399,119 +399,119 @@ impl<const LIMIT: usize, Body: SpecRecBody> Unambiguity for super::Fix<LIMIT, Bo
 }
 
 impl<const LIMIT: usize, Body: SpecRecBody> super::Fix<LIMIT, Body> {
-    pub open spec fn byte_len_gas(&self, gas: nat, v: Body::T) -> nat
+    pub open spec fn byte_len_gas(gas: nat, v: Body::T) -> nat
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).byte_len(v)
+        Body::spec_body(Self::specs_callback(gas)).byte_len(v)
     }
 
-    pub open spec fn consistent_gas(&self, gas: nat, v: Body::T) -> bool
+    pub open spec fn consistent_gas(gas: nat, v: Body::T) -> bool
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).consistent(v)
+        Body::spec_body(Self::specs_callback(gas)).consistent(v)
     }
 
-    pub open spec fn spec_parse_gas(&self, gas: nat, input: Seq<u8>) -> Option<(int, Body::T)>
+    pub open spec fn spec_parse_gas(gas: nat, input: Seq<u8>) -> Option<(int, Body::T)>
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).spec_parse(input)
+        Body::spec_body(Self::specs_callback(gas)).spec_parse(input)
     }
 
-    pub open spec fn spec_serialize_gas(&self, gas: nat, v: Body::T) -> Seq<u8>
+    pub open spec fn spec_serialize_gas(gas: nat, v: Body::T) -> Seq<u8>
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).spec_serialize(v)
+        Body::spec_body(Self::specs_callback(gas)).spec_serialize(v)
     }
 
-    pub open spec fn spec_serialize_dps_gas(&self, gas: nat, v: Body::T, obuf: Seq<u8>) -> Seq<u8>
+    pub open spec fn spec_serialize_dps_gas(gas: nat, v: Body::T, obuf: Seq<u8>) -> Seq<u8>
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).spec_serialize_dps(v, obuf)
+        Body::spec_body(Self::specs_callback(gas)).spec_serialize_dps(v, obuf)
     }
 
-    pub open spec fn unambiguity_gas(&self, gas: nat) -> bool
+    pub open spec fn unambiguity_gas(gas: nat) -> bool
         decreases gas, 2nat,
     {
-        self.0.spec_body(self.specs_callback(gas)).unambiguous()
+        Body::spec_body(Self::specs_callback(gas)).unambiguous()
     }
 
-    pub open spec fn spec_parse_callback(&self, gas: nat) -> ParserFnSpec<Body::T>
+    pub open spec fn spec_parse_callback(gas: nat) -> ParserFnSpec<Body::T>
         decreases gas, 0nat,
     {
         |ibuf: Seq<u8>|
             if gas > 0 {
-                self.spec_parse_gas((gas - 1) as nat, ibuf)
+                Self::spec_parse_gas((gas - 1) as nat, ibuf)
             } else {
                 None
             }
     }
 
-    pub open spec fn consistent_callback(&self, gas: nat) -> PredFnSpec<Body::T>
+    pub open spec fn consistent_callback(gas: nat) -> PredFnSpec<Body::T>
         decreases gas, 0nat,
     {
         |vv: Body::T|
             if gas > 0 {
-                self.consistent_gas((gas - 1) as nat, vv)
+                Self::consistent_gas((gas - 1) as nat, vv)
             } else {
                 false
             }
     }
 
-    pub open spec fn byte_len_callback(&self, gas: nat) -> ByteLenFnSpec<Body::T>
+    pub open spec fn byte_len_callback(gas: nat) -> ByteLenFnSpec<Body::T>
         decreases gas, 0nat,
     {
         |vv: Body::T|
             if gas > 0 {
-                self.byte_len_gas((gas - 1) as nat, vv)
+                Self::byte_len_gas((gas - 1) as nat, vv)
             } else {
                 0
             }
     }
 
-    pub open spec fn spec_serialize_callback(&self, gas: nat) -> SerializerFnSpec<Body::T>
+    pub open spec fn spec_serialize_callback(gas: nat) -> SerializerFnSpec<Body::T>
         decreases gas, 0nat,
     {
         |vv: Body::T|
             if gas > 0 {
-                self.spec_serialize_gas((gas - 1) as nat, vv)
+                Self::spec_serialize_gas((gas - 1) as nat, vv)
             } else {
                 Seq::empty()
             }
     }
 
-    pub open spec fn spec_serialize_dps_callback(&self, gas: nat) -> SerializerDPSFnSpec<Body::T>
+    pub open spec fn spec_serialize_dps_callback(gas: nat) -> SerializerDPSFnSpec<Body::T>
         decreases gas, 0nat,
     {
         |vv: Body::T, obuf: Seq<u8>|
             if gas > 0 {
-                self.spec_serialize_dps_gas((gas - 1) as nat, vv, obuf)
+                Self::spec_serialize_dps_gas((gas - 1) as nat, vv, obuf)
             } else {
                 obuf
             }
     }
 
-    pub open spec fn unambiguity_callback(&self, gas: nat) -> UnambiguityFnSpec
+    pub open spec fn unambiguity_callback(gas: nat) -> UnambiguityFnSpec
         decreases gas, 0nat,
     {
         ||
             if gas > 0 {
-                self.unambiguity_gas((gas - 1) as nat)
+                Self::unambiguity_gas((gas - 1) as nat)
             } else {
                 true
             }
     }
 
     /// Bundled callbacks used when unfolding one recursive level.
-    pub open spec fn specs_callback(&self, gas: nat) -> BundledSpecs<Body::T>
+    pub open spec fn specs_callback(gas: nat) -> BundledSpecs<Body::T>
         decreases gas, 1nat,
     {
         (
-            self.consistent_callback(gas),
-            self.byte_len_callback(gas),
-            self.spec_parse_callback(gas),
-            self.spec_serialize_callback(gas),
-            self.spec_serialize_dps_callback(gas),
-            self.unambiguity_callback(gas),
+            Self::consistent_callback(gas),
+            Self::byte_len_callback(gas),
+            Self::spec_parse_callback(gas),
+            Self::spec_serialize_callback(gas),
+            Self::spec_serialize_dps_callback(gas),
+            Self::unambiguity_callback(gas),
         )
     }
 }
@@ -528,18 +528,18 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
         v: Body::T,
     )
         ensures
-            self.spec_parse_gas(gas, input) == Some((n, v)) ==> {
+            Self::spec_parse_gas(gas, input) == Some((n, v)) ==> {
                 &&& 0 <= n <= input.len()
-                &&& self.consistent_gas(gas, v)
-                &&& self.byte_len_gas(gas, v) == n
+                &&& Self::consistent_gas(gas, v)
+                &&& Self::byte_len_gas(gas, v) == n
             },
         decreases gas,
     {
         // vacuous case
-        if !(self.spec_parse_gas(gas, input) == Some((n, v))) {
+        if !(Self::spec_parse_gas(gas, input) == Some((n, v))) {
             return ;
         }
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_p = callback.2;
         let callback_c = callback.0;
         let callback_b = callback.1;
@@ -554,9 +554,9 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
             if let Some((nn, vv)) = callback_p(rem) {
                 self.sound_parser_by_induction((gas - 1) as nat, rem, nn, vv);
                 assert(0 <= nn <= rem.len());
-                assert(self.spec_parse_gas((gas - 1) as nat, rem) == Some((nn, vv)));
-                assert(self.consistent_gas((gas - 1) as nat, vv) == callback_c(vv));
-                assert(self.byte_len_gas((gas - 1) as nat, vv) == callback_b(vv));
+                assert(Self::spec_parse_gas((gas - 1) as nat, rem) == Some((nn, vv)));
+                assert(Self::consistent_gas((gas - 1) as nat, vv) == callback_c(vv));
+                assert(Self::byte_len_gas((gas - 1) as nat, vv) == callback_b(vv));
                 assert(callback_c(vv));
                 assert(callback_b(vv) == nn);
             }
@@ -564,17 +564,17 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
 
         assert(sound_parser(callback_p, callback_c, callback_b));
 
-        self.0.lemma_body_sound_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_body_sound_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
         body.lemma_parse_safe(input);
         body.lemma_parse_sound_consumption(input);
         body.lemma_parse_sound_value(input);
 
         // By definition
-        assert(self.spec_parse_gas(gas, input) == body.spec_parse(input));
-        assert(self.consistent_gas(gas, v) == body.consistent(v));
-        assert(self.byte_len_gas(gas, v) == body.byte_len(v));
+        assert(Self::spec_parse_gas(gas, input) == body.spec_parse(input));
+        assert(Self::consistent_gas(gas, v) == body.consistent(v));
+        assert(Self::byte_len_gas(gas, v) == body.byte_len(v));
     }
 }
 
@@ -606,10 +606,10 @@ impl<const LIMIT: usize, Body: GoodSerializerRecBody> super::Fix<LIMIT, Body> wh
     /// Inductive proof that `spec_serialize_gas` satisfies [`good_serializer_fn`].
     proof fn good_serializer_by_induction(&self, gas: nat, v: Body::T)
         ensures
-            self.spec_serialize_gas(gas, v).len() == self.byte_len_gas(gas, v),
+            Self::spec_serialize_gas(gas, v).len() == Self::byte_len_gas(gas, v),
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_s = callback.3;
         let callback_b = callback.1;
 
@@ -622,14 +622,14 @@ impl<const LIMIT: usize, Body: GoodSerializerRecBody> super::Fix<LIMIT, Body> wh
 
         assert(good_serializer_fn(callback_s, callback_b));
 
-        self.0.lemma_s_body_serialize_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_s_body_serialize_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
         body.lemma_serialize_len(v);
 
         // By definition
-        assert(self.spec_serialize_gas(gas, v) == body.spec_serialize(v));
-        assert(self.byte_len_gas(gas, v) == body.byte_len(v));
+        assert(Self::spec_serialize_gas(gas, v) == body.spec_serialize(v));
+        assert(Self::byte_len_gas(gas, v) == body.byte_len(v));
     }
 }
 
@@ -649,14 +649,14 @@ impl<const LIMIT: usize, Body: NonTailFmtRecBody> super::Fix<LIMIT, Body> where
     pub(crate) proof fn nontail_dps_by_induction(&self, gas: nat, v: Body::T, obuf: Seq<u8>)
         ensures
             exists|new_buf: Seq<u8>|
-                (#[trigger] self.spec_serialize_dps_gas(gas, v, obuf) == new_buf + obuf),
-            self.spec_serialize_dps_gas(gas, v, obuf).len() - obuf.len() == self.byte_len_gas(
+                (#[trigger] Self::spec_serialize_dps_gas(gas, v, obuf) == new_buf + obuf),
+            Self::spec_serialize_dps_gas(gas, v, obuf).len() - obuf.len() == Self::byte_len_gas(
                 gas,
                 v,
             ),
         decreases gas, 1nat,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(gas);
         let callback_s_dps = callback.4;
         let callback_b = callback.1;
 
@@ -673,7 +673,7 @@ impl<const LIMIT: usize, Body: NonTailFmtRecBody> super::Fix<LIMIT, Body> where
             if gas > 0 {
                 self.nontail_dps_by_induction((gas - 1) as nat, vv, buf);
                 let witness = choose|w: Seq<u8>|
-                    self.spec_serialize_dps_gas((gas - 1) as nat, vv, buf) == w + buf;
+                    Self::spec_serialize_dps_gas((gas - 1) as nat, vv, buf) == w + buf;
                 assert(callback_s_dps(vv, buf) == witness + buf);
             } else {
                 assert(callback_s_dps(vv, buf) == Seq::<u8>::empty() + buf);
@@ -681,15 +681,15 @@ impl<const LIMIT: usize, Body: NonTailFmtRecBody> super::Fix<LIMIT, Body> where
         }
 
         assert(callback.serialize_dps_inv());
-        self.0.lemma_s_body_dps_serialize_dps_inv_preservation(callback);
-        let body = self.0.spec_body(callback);
+        Body::lemma_s_body_dps_serialize_dps_inv_preservation(callback);
+        let body = Body::spec_body(callback);
 
         body.lemma_serialize_dps_prepend(v, obuf);
         body.lemma_serialize_dps_len(v, obuf);
 
         // By definition
-        assert(self.spec_serialize_dps_gas(gas, v, obuf) == body.spec_serialize_dps(v, obuf));
-        assert(self.byte_len_gas(gas, v) == body.byte_len(v));
+        assert(Self::spec_serialize_dps_gas(gas, v, obuf) == body.spec_serialize_dps(v, obuf));
+        assert(Self::byte_len_gas(gas, v) == body.byte_len(v));
     }
 }
 

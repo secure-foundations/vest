@@ -98,20 +98,20 @@ impl SpecRecBody for NestedBracesBody {
 
     type Body = NestedBracesBodyComb<BundledSpecs<Self::T>>;
 
-    open spec fn spec_body(&self, rec: BundledSpecs<Self::T>) -> Self::Body {
+    open spec fn spec_body(rec: BundledSpecs<Self::T>) -> Self::Body {
         nested_braces_body(rec)
     }
 }
 
 impl StrictRecBody for NestedBracesBody {
-    proof fn lemma_body_all_inv_preservation(&self, rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_all_inv_preservation(rec: BundledSpecs<Self::T>) {
     }
 }
 
 /// TODO: hide/automate this?
 proof fn nested_braces_unambiguous_gas(gas: nat)
     ensures
-        Fix::<10, NestedBracesBody>(NestedBracesBody).unambiguity_gas(gas),
+        Fix::<10, NestedBracesBody>::unambiguity_gas(gas),
     decreases gas,
 {
     if gas > 0 {
@@ -127,7 +127,7 @@ proof fn nested_braces_sound_parser() {
     assert(nested_braces.spec_parse(input) == Some(
         (3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))),
     )) by {
-        let cb = nested_braces.specs_callback(10);
+        let cb = Fix::<10, NestedBracesBody>::specs_callback(10);
         let body10 = nested_braces_body(cb);
         assert(body10.spec_parse(input) == Some(
             (3int, NestedBracesT::Brace(Box::new(NestedBracesT::Eps))),
