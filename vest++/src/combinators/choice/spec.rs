@@ -37,15 +37,22 @@ impl<A: Consistency, B: Consistency> Consistency for super::Choice<A, B> {
     }
 }
 
-impl<A: SoundParser, B: SoundParser> SoundParser for super::Choice<A, B> {
-    open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.1.sound_inv()
+impl<A: SafeParser, B: SafeParser> SafeParser for super::Choice<A, B> {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_safe(ibuf);
         self.1.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<A: SoundParser, B: SoundParser> SoundParser for super::Choice<A, B> {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -209,11 +216,6 @@ impl<A, B> SoundParser for super::Alt<A, B> where A: SoundParser, B: SoundParser
         &&& disjoint_values(self.0, self.1)
     }
 
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_safe(ibuf);
-        self.1.lemma_parse_safe(ibuf);
-    }
-
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_consumption(ibuf);
         self.1.lemma_parse_sound_consumption(ibuf);
@@ -235,6 +237,18 @@ impl<A, B> SoundParser for super::Alt<A, B> where A: SoundParser, B: SoundParser
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
         self.1.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A, B> SafeParser for super::Alt<A, B> where A: SafeParser, B: SafeParser<PVal = A::PVal> {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_safe(ibuf);
+        self.1.lemma_parse_safe(ibuf);
     }
 }
 
@@ -397,15 +411,21 @@ impl<T, C: Consistency, const N: usize> Consistency for super::Dispatch<T, C, N>
     }
 }
 
-impl<T, C: SoundParser, const N: usize> SoundParser for super::Dispatch<T, C, N> {
-    open spec fn sound_inv(&self) -> bool {
-        self.active_branch().sound_inv()
+impl<T, C: SafeParser, const N: usize> SafeParser for super::Dispatch<T, C, N> {
+    open spec fn safe_inv(&self) -> bool {
+        self.active_branch().safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         if self.has_active_branch() {
             self.active_branch().lemma_parse_safe(ibuf);
         }
+    }
+}
+
+impl<T, C: SoundParser, const N: usize> SoundParser for super::Dispatch<T, C, N> {
+    open spec fn sound_inv(&self) -> bool {
+        self.active_branch().sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -529,11 +549,11 @@ impl<A: Consistency, B: Consistency> Consistency for Sum<A, B> {
     }
 }
 
-impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
-    open spec fn sound_inv(&self) -> bool {
+impl<A: SafeParser, B: SafeParser> SafeParser for Sum<A, B> {
+    open spec fn safe_inv(&self) -> bool {
         match self {
-            Sum::Inl(a) => a.sound_inv(),
-            Sum::Inr(b) => b.sound_inv(),
+            Sum::Inl(a) => a.safe_inv(),
+            Sum::Inr(b) => b.safe_inv(),
         }
     }
 
@@ -541,6 +561,15 @@ impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
         match self {
             Sum::Inl(a) => a.lemma_parse_safe(ibuf),
             Sum::Inr(b) => b.lemma_parse_safe(ibuf),
+        }
+    }
+}
+
+impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
+    open spec fn sound_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.sound_inv(),
+            Sum::Inr(b) => b.sound_inv(),
         }
     }
 

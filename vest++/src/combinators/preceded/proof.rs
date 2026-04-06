@@ -24,11 +24,12 @@ impl<A, B> SPRoundTripDps for super::Preceded<A, B> where
 }
 
 impl<A, B> NonMalleable for super::Preceded<A, B> where
-    A: NonMalleable + AdmitsUniqueVal,
-    B: NonMalleable,
+    A: SoundParser + NonMalleable + AdmitsUniqueVal,
+    B: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        Pair(self.0, self.1).nonmal_inv()
+        &&& Pair(self.0, self.1).nonmal_inv()
+        &&& Pair(self.0, self.1).sound_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -53,10 +54,7 @@ impl<A, B> NonMalleable for super::Preceded<A, B> where
     }
 }
 
-impl<A, B> NoLookAhead for super::Preceded<A, B> where
-    A: NoLookAhead + AdmitsUniqueVal,
-    B: NoLookAhead,
- {
+impl<A, B> NoLookAhead for super::Preceded<A, B> where A: NoLookAhead, B: NoLookAhead {
     open spec fn no_lookahead_inv(&self) -> bool {
         Pair(self.0, self.1).no_lookahead_inv()
     }

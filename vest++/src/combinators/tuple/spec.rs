@@ -25,17 +25,25 @@ impl<A, B> Consistency for super::Pair<A, B> where A: Consistency, B: Consistenc
     }
 }
 
-impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParser {
-    open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.1.sound_inv()
+impl<A, B> SafeParser for super::Pair<A, B> where A: SafeParser, B: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        assert(self.safe_inv());
         self.0.lemma_parse_safe(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
             self.1.lemma_parse_safe(ibuf.skip(n1));
         }
+    }
+}
+
+impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParser {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -179,6 +187,25 @@ impl<A, B> Consistency for super::DepPair<A, spec_fn(A::Val) -> B> where
     }
 }
 
+impl<A, B> SafeParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
+    A: SafeParser,
+    B: SafeParser,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& forall|key: A::PVal| #[trigger] (self.1)(key).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        assert(self.safe_inv());
+        self.0.lemma_parse_safe(ibuf);
+        if let Some((n1, key)) = self.0.spec_parse(ibuf) {
+            let next = (self.1)(key);
+            next.lemma_parse_safe(ibuf.skip(n1));
+        }
+    }
+}
+
 impl<A, B> SoundParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
     A: SoundParser,
     B: SoundParser,
@@ -186,14 +213,6 @@ impl<A, B> SoundParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& forall|key: A::PVal| #[trigger] (self.1)(key).sound_inv()
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_safe(ibuf);
-        if let Some((n1, key)) = self.0.spec_parse(ibuf) {
-            let next = (self.1)(key);
-            next.lemma_parse_safe(ibuf.skip(n1));
-        }
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {

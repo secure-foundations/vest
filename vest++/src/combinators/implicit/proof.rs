@@ -32,19 +32,22 @@ impl<Head, Tail> SPRoundTripDps for super::Implicit<Head, Tail> where
 }
 
 impl<Head, Tail> NonMalleable for super::Implicit<Head, Tail> where
-    Head: NonMalleable,
+    Head: SoundParser + NonMalleable,
     Tail: super::DepCombinator<Key = Head::T>,
-    Tail::Body: NonMalleable<T = Tail::Val>,
+    Tail::Body: SoundParser<T = Tail::Val> + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
+        &&& self.0.sound_inv()
         &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).nonmal_inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).sound_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
+                    assert(self.nonmal_inv());
                     let (n1a, k1) = self.0.spec_parse(buf1)->0;
                     let (n2a, k2) = self.0.spec_parse(buf2)->0;
                     let body1 = self.1.apply(k1);
@@ -79,7 +82,7 @@ impl<Head, Tail> NonMalleable for super::Implicit<Head, Tail> where
 impl<Head, Tail> NoLookAhead for super::Implicit<Head, Tail> where
     Head: NoLookAhead,
     Tail: super::DepCombinator<Key = Head::PVal>,
-    Tail::Body: NoLookAhead<T = Tail::Val>,
+    Tail::Body: NoLookAhead<PVal = Tail::Val>,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()

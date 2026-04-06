@@ -69,10 +69,9 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
     }
 }
 
-impl<A: NonMalleable> super::Star<A> {
+impl<A: NonMalleable + SafeParser> super::Star<A> {
     proof fn lemma_parse_non_malleable_rec(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.sound_inv(),
             self.nonmal_inv(),
         ensures
             ({
@@ -109,10 +108,12 @@ impl<A: NonMalleable> super::Star<A> {
                         assert(buf1.take(m1) == buf2.take(m2));
 
                         // induction
+                        assert(self.safe_inv());
                         self.lemma_parse_non_malleable_rec(buf1.skip(m1), buf2.skip(m2));
                         assert(buf1.skip(m1).take(n1_rest) == buf2.skip(m2).take(n2_rest));
 
                         // need to show buf1.take(n1) == buf2.take(n2)
+                        assert(self.safe_inv());
                         self.lemma_parse_safe(buf1.skip(m1));
                         self.lemma_parse_safe(buf2.skip(m2));
                         assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(n1_rest));
@@ -125,13 +126,15 @@ impl<A: NonMalleable> super::Star<A> {
     }
 }
 
-impl<A: NonMalleable> NonMalleable for super::Star<A> {
+impl<A: NonMalleable + SafeParser> NonMalleable for super::Star<A> {
     open spec fn nonmal_inv(&self) -> bool {
-        self.inner.nonmal_inv()
+        &&& self.inner.nonmal_inv()
+        &&& self.inner.safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         assert(self.nonmal_inv());
+        assert(self.safe_inv());
         self.lemma_parse_non_malleable_rec(buf1, buf2);
     }
 }
@@ -139,7 +142,7 @@ impl<A: NonMalleable> NonMalleable for super::Star<A> {
 impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.safe_inv(),
             self.inner.no_lookahead_inv(),
             self.inner.unambiguous(),
             parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
@@ -159,10 +162,12 @@ impl<A: NoLookAhead> super::Star<A> {
                 let i1_rest = i1.skip(m);
                 let i2_rest = i2.skip(m);
                 let (n_rest, vs_rest) = self.parse_rec(i1_rest);
+                assert(self.safe_inv());
                 self.lemma_parse_safe(i1_rest);
                 if 0 <= n <= i2.len() {
                     if i2.take(n) == i1.take(n) {
                         assert(i2.take(m) == i1.take(m));
+                        assert(self.inner.safe_inv());
                         self.inner.lemma_no_lookahead(i1, i2);
                         assert(i2_rest.take(n_rest) == i1_rest.take(n_rest)) by {
                             lemma_take_skip(i1, m, n_rest);
@@ -346,8 +351,8 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable_rec(&self, count: nat, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.1.sound_inv(),
             self.1.nonmal_inv(),
+            self.1.safe_inv(),
         ensures
             self.parse_n_rec(count, buf1) matches Some((n1, v1)) ==>
             self.parse_n_rec(count, buf2) matches Some((n2, v2)) ==>
@@ -397,12 +402,14 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
     }
 }
 
-impl<C: NonMalleable, N: AsLen> NonMalleable for super::RepeatN<C, N> {
+impl<C: NonMalleable + SafeParser, N: AsLen> NonMalleable for super::RepeatN<C, N> {
     open spec fn nonmal_inv(&self) -> bool {
-        self.1.nonmal_inv()
+        &&& self.1.nonmal_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        assert(self.nonmal_inv());
         self.lemma_parse_non_malleable_rec(self.0.as_usize() as nat, buf1, buf2);
     }
 }
@@ -410,7 +417,7 @@ impl<C: NonMalleable, N: AsLen> NonMalleable for super::RepeatN<C, N> {
 impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_no_lookahead_rec(&self, count: nat, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.1.sound_inv(),
+            self.1.safe_inv(),
             self.1.no_lookahead_inv(),
             self.1.unambiguous(),
         ensures
@@ -574,8 +581,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
-        &&& self.0.nonmal_inv()
-        &&& self.1.nonmal_inv()
+        Pair(super::Star { inner: self.0 }, self.1).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {

@@ -42,14 +42,14 @@ impl<Head, Tail> Consistency for Implicit<Head, Tail> where
     }
 }
 
-impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
-    Head: SoundParser,
+impl<Head, Tail> SafeParser for Implicit<Head, Tail> where
+    Head: SafeParser,
     Tail: DepCombinator<Key = Head::PVal>,
-    Tail::Body: SoundParser<T = Tail::Val>,
+    Tail::Body: SafeParser<PVal = Tail::Val>,
  {
-    open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).sound_inv()
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -58,6 +58,17 @@ impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
             let body = self.1.apply(key);
             body.lemma_parse_safe(ibuf.skip(n1));
         }
+    }
+}
+
+impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
+    Head: SoundParser,
+    Tail: DepCombinator<Key = Head::PVal>,
+    Tail::Body: SoundParser<T = Tail::Val>,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -489,6 +500,24 @@ impl<A, B, Infer> SpecParser for super::ImplicitManual<A, spec_fn(A::PVal) -> B,
                 }
             },
             None => None,
+        }
+    }
+}
+
+impl<A, B, Infer> SafeParser for super::ImplicitManual<A, spec_fn(A::PVal) -> B, Infer> where
+    A: SafeParser,
+    B: SafeParser,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_safe(ibuf);
+        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
+            let next = (self.1)(a);
+            next.lemma_parse_safe(ibuf.skip(n1));
         }
     }
 }

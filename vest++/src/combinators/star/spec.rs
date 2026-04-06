@@ -113,7 +113,7 @@ impl<A: SpecParser> super::Star<A> {
     }
 }
 
-impl<A: SoundParser> super::Star<A> {
+impl<A: SpecByteLen> super::Star<A> {
     proof fn lemma_byte_len_cons(&self, v: A::T, vs: Seq<A::T>)
         ensures
             self.byte_len(seq![v] + vs) == self.inner.byte_len(v) + self.byte_len(vs),
@@ -126,10 +126,12 @@ impl<A: SoundParser> super::Star<A> {
         lemma_fold_left_accumulate_nat(vs, self.inner.byte_len(v), f);
         assert((seq![v] + vs).skip(1) == vs);
     }
+}
 
+impl<A: SafeParser> super::Star<A> {
     proof fn lemma_parse_rec_length(&self, ibuf: Seq<u8>)
         requires
-            self.inner.sound_inv(),
+            self.inner.safe_inv(),
         ensures
             0 <= self.parse_rec(ibuf).0 <= ibuf.len(),
         decreases ibuf.len(),
@@ -141,7 +143,9 @@ impl<A: SoundParser> super::Star<A> {
             }
         }
     }
+}
 
+impl<A: SoundParser> super::Star<A> {
     proof fn lemma_parse_rec_consistent(&self, ibuf: Seq<u8>)
         requires
             self.inner.sound_inv(),
@@ -192,13 +196,19 @@ impl<A> Consistency for super::Star<A> where A: Consistency {
     }
 }
 
-impl<A> SoundParser for super::Star<A> where A: SoundParser {
-    open spec fn sound_inv(&self) -> bool {
-        self.inner.sound_inv()
+impl<A> SafeParser for super::Star<A> where A: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.lemma_parse_rec_length(ibuf);
+    }
+}
+
+impl<A> SoundParser for super::Star<A> where A: SoundParser {
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -391,10 +401,10 @@ impl<C: Consistency, N: AsLen> Consistency for super::RepeatN<C, N> {
     }
 }
 
-impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
+impl<C: SafeParser, N: AsLen> super::RepeatN<C, N> {
     pub(crate) proof fn lemma_parse_n_len_bound(&self, count: nat, ibuf: Seq<u8>)
         requires
-            self.1.sound_inv(),
+            self.1.safe_inv(),
         ensures
             self.parse_n_rec(count, ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
         decreases count,
@@ -407,7 +417,9 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
             }
         }
     }
+}
 
+impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_parse_n_byte_len(&self, count: nat, ibuf: Seq<u8>)
         requires
             self.1.sound_inv(),
@@ -450,13 +462,19 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
     }
 }
 
-impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
-    open spec fn sound_inv(&self) -> bool {
-        self.1.sound_inv()
+impl<C: SafeParser, N: AsLen> SafeParser for super::RepeatN<C, N> {
+    open spec fn safe_inv(&self) -> bool {
+        self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.lemma_parse_n_len_bound(self.0.as_usize() as nat, ibuf);
+    }
+}
+
+impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
+    open spec fn sound_inv(&self) -> bool {
+        self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -553,13 +571,19 @@ impl<const N: usize, C: Consistency> Consistency for super::Array<N, C> {
     }
 }
 
-impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
-    open spec fn sound_inv(&self) -> bool {
-        super::RepeatN(N, self.0).sound_inv()
+impl<const N: usize, C: SafeParser> SafeParser for super::Array<N, C> {
+    open spec fn safe_inv(&self) -> bool {
+        super::RepeatN(N, self.0).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
+    open spec fn sound_inv(&self) -> bool {
+        super::RepeatN(N, self.0).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -673,14 +697,21 @@ impl<A, B> Consistency for super::Repeat<A, B> where A: Consistency, B: Consiste
     }
 }
 
-impl<A, B> SoundParser for super::Repeat<A, B> where A: SoundParser, B: SoundParser {
-    open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& self.1.sound_inv()
+impl<A, B> SafeParser for super::Repeat<A, B> where A: SafeParser, B: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_parse_safe(ibuf)
+    }
+}
+
+impl<A, B> SoundParser for super::Repeat<A, B> where A: SoundParser, B: SoundParser {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {

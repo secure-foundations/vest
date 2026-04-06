@@ -107,10 +107,13 @@ impl<const DER: bool> Consistency for super::Bool<DER> {
     }
 }
 
-impl<const DER: bool> SoundParser for super::Bool<DER> {
+impl<const DER: bool> SafeParser for super::Bool<DER> {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        bool_fmt::<DER>().lemma_parse_safe(ibuf);
     }
+}
 
+impl<const DER: bool> SoundParser for super::Bool<DER> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 

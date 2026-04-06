@@ -41,7 +41,6 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
-                    assert(self.sound_inv());
                     assert(self.no_lookahead_inv());
                     assert(self.unambiguous());
                     self.inner.lemma_no_lookahead(i1, i2);
@@ -159,8 +158,8 @@ impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
 }
 
 impl<Tg, Of> NonMalleable for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + NonMalleable,
-    Of: NonMalleable,
+    Tg: SoundParser + NonMalleable,
+    Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).nonmal_inv()
@@ -175,7 +174,7 @@ impl<Tg, Of> NonMalleable for super::Tagged<Tg, Of> where
 }
 
 impl<Tg, Of> NoLookAhead for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + NoLookAhead,
+    Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {

@@ -109,8 +109,13 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
 
 // NonMalleable only holds for [`Alt`] when the two parsers produce disjoint sets of values.
 // This ensures that if two byte sequences parse to the same value, they must have used the same underlying parser.
-impl<A, B> NonMalleable for super::Alt<A, B> where A: NonMalleable, B: NonMalleable<T = A::T> {
+impl<A, B> NonMalleable for super::Alt<A, B> where
+    A: SoundParser + NonMalleable,
+    B: SoundParser<T = A::T> + NonMalleable,
+ {
     open spec fn nonmal_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
         &&& self.0.nonmal_inv()
         &&& self.1.nonmal_inv()
         &&& disjoint_values(self.0, self.1)
@@ -151,7 +156,7 @@ impl<A, B> NonMalleable for super::Alt<A, B> where A: NonMalleable, B: NonMallea
     }
 }
 
-impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead<T = A::T> {
+impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead<PVal = A::PVal> {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()

@@ -24,11 +24,12 @@ impl<A, B> SPRoundTripDps for super::Terminated<A, B> where
 }
 
 impl<A, B> NonMalleable for super::Terminated<A, B> where
-    A: NonMalleable,
-    B: NonMalleable + AdmitsUniqueVal,
+    A: SoundParser + NonMalleable,
+    B: SoundParser + NonMalleable + AdmitsUniqueVal,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        Pair(self.0, self.1).nonmal_inv()
+        &&& Pair(self.0, self.1).nonmal_inv()
+        &&& Pair(self.0, self.1).sound_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {

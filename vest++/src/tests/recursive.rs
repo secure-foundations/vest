@@ -103,11 +103,13 @@ impl SpecByteLen for NestedBracesCombinator {
     }
 }
 
-impl SoundParser for NestedBracesCombinator {
+impl SafeParser for NestedBracesCombinator {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         lemma_parse_length_nested_braces(ibuf);
     }
+}
 
+impl SoundParser for NestedBracesCombinator {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         lemma_parse_sound_consumption_nested_braces(ibuf);
     }

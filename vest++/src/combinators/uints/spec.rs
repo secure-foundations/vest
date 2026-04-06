@@ -255,10 +255,12 @@ impl SpecSerializer for super::U8 {
     }
 }
 
-impl SoundParser for super::U8 {
+impl SafeParser for super::U8 {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
+}
 
+impl SoundParser for super::U8 {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
@@ -346,12 +348,14 @@ impl SpecSerializer for super::U16Le {
     }
 }
 
-impl SoundParser for super::U16Le {
+impl SafeParser for super::U16Le {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         lemma_u16_le_fmt_inv();
         u16_le_fmt().lemma_parse_safe(ibuf);
     }
+}
 
+impl SoundParser for super::U16Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         lemma_u16_le_fmt_inv();
         u16_le_fmt().lemma_parse_sound_consumption(ibuf);
@@ -443,12 +447,14 @@ impl SpecSerializer for super::U16Be {
     }
 }
 
-impl SoundParser for super::U16Be {
+impl SafeParser for super::U16Be {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         lemma_u16_be_fmt_inv();
         u16_be_fmt().lemma_parse_safe(ibuf);
     }
+}
 
+impl SoundParser for super::U16Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         lemma_u16_be_fmt_inv();
         u16_be_fmt().lemma_parse_sound_consumption(ibuf);
@@ -540,12 +546,14 @@ impl SpecSerializer for super::U32Le {
     }
 }
 
-impl SoundParser for super::U32Le {
+impl SafeParser for super::U32Le {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         lemma_u32_le_fmt_inv();
         u32_le_fmt().lemma_parse_safe(ibuf);
     }
+}
 
+impl SoundParser for super::U32Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         lemma_u32_le_fmt_inv();
         u32_le_fmt().lemma_parse_sound_consumption(ibuf);
@@ -637,12 +645,14 @@ impl SpecSerializer for super::U32Be {
     }
 }
 
-impl SoundParser for super::U32Be {
+impl SafeParser for super::U32Be {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         lemma_u32_be_fmt_inv();
         u32_be_fmt().lemma_parse_safe(ibuf);
     }
+}
 
+impl SoundParser for super::U32Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         lemma_u32_be_fmt_inv();
         u32_be_fmt().lemma_parse_sound_consumption(ibuf);

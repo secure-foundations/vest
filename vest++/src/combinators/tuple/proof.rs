@@ -34,6 +34,8 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Pair<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
         &&& self.1.nonmal_inv()
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -44,7 +46,6 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Pair<A, B> {
                     let (n2a, a2) = self.0.spec_parse(buf2)->0;
                     let (n1b, b1) = self.1.spec_parse(buf1.skip(n1a))->0;
                     let (n2b, b2) = self.1.spec_parse(buf2.skip(n2a))->0;
-                    assert(self.sound_inv());
                     assert(self.nonmal_inv());
                     self.0.lemma_parse_safe(buf1);
                     self.0.lemma_parse_safe(buf2);
@@ -87,7 +88,6 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n1, v1)) = self.0.spec_parse(i1) {
                         if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
-                            assert(self.sound_inv());
                             assert(self.no_lookahead_inv());
                             assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
@@ -204,7 +204,6 @@ impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
                         let next = (self.1)(key);
                         if let Some((n2, val)) = next.spec_parse(i1.skip(n1)) {
-                            assert(self.sound_inv());
                             assert(self.no_lookahead_inv());
                             assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
@@ -232,14 +231,15 @@ impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
+        &&& self.0.safe_inv()
         &&& forall|a: A::PVal| #[trigger] (self.1)(a).nonmal_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
             if let Some((n2, v2)) = self.spec_parse(buf2) {
                 if v1 == v2 {
-                    assert(self.sound_inv());
                     assert(self.nonmal_inv());
                     let (n1a, key1) = self.0.spec_parse(buf1)->0;
                     let (n2a, key2) = self.0.spec_parse(buf2)->0;

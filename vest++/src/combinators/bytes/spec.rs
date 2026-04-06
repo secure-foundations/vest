@@ -38,10 +38,12 @@ impl<const N: usize> Consistency for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> SoundParser for super::Fixed<N> {
+impl<const N: usize> SafeParser for super::Fixed<N> {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
+}
 
+impl<const N: usize> SoundParser for super::Fixed<N> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
@@ -129,10 +131,12 @@ impl<Len: AsLen> Consistency for super::Varied<Len> {
     }
 }
 
-impl<Len: AsLen> SoundParser for super::Varied<Len> {
+impl<Len: AsLen> SafeParser for super::Varied<Len> {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
+}
 
+impl<Len: AsLen> SoundParser for super::Varied<Len> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
@@ -226,13 +230,19 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>, Len: AsLen> Consistency f
     }
 }
 
-impl<Inner: SoundParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len> {
-    open spec fn sound_inv(&self) -> bool {
-        super::AndThen(super::Varied(self.0), self.1).sound_inv()
+impl<Inner: SafeParser, Len: AsLen> SafeParser for super::ExactLen<Inner, Len> {
+    open spec fn safe_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<Inner: SoundParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len> {
+    open spec fn sound_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -335,7 +345,7 @@ impl<A, Then> SpecParser for super::AndThen<A, Then> where
 }
 
 impl<A, Then> Consistency for super::AndThen<A, Then> where
-    A: Consistency<Val = Seq<u8>> + SpecByteLen<T = Seq<u8>>,
+    A: BytesCombinator + Consistency<Val = Seq<u8>>,
     Then: Consistency + SpecByteLen<T = Then::Val>,
  {
     type Val = Then::Val;
@@ -347,12 +357,12 @@ impl<A, Then> Consistency for super::AndThen<A, Then> where
     }
 }
 
-impl<A, Then> SoundParser for super::AndThen<A, Then> where
-    A: BytesCombinator + SoundParser,
-    Then: SoundParser,
+impl<A, Then> SafeParser for super::AndThen<A, Then> where
+    A: BytesCombinator + SafeParser<PVal = Seq<u8>>,
+    Then: SafeParser,
  {
-    open spec fn sound_inv(&self) -> bool {
-        self.0.sound_inv() && self.1.sound_inv()
+    open spec fn safe_inv(&self) -> bool {
+        self.0.safe_inv() && self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -364,6 +374,15 @@ impl<A, Then> SoundParser for super::AndThen<A, Then> where
                 _ => {},
             },
         }
+    }
+}
+
+impl<A, Then> SoundParser for super::AndThen<A, Then> where
+    A: BytesCombinator + SoundParser,
+    Then: SoundParser,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        self.0.sound_inv() && self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -477,7 +496,7 @@ impl<A, Then: SpecByteLen> SpecByteLen for super::AndThen<A, Then> {
 }
 
 impl<A, Then> ValueByteLen for super::AndThen<A, Then> where
-    A: Consistency<Val = Seq<u8>> + SpecByteLen<T = Seq<u8>>,
+    A: BytesCombinator + Consistency<Val = Seq<u8>>,
     Then: ValueByteLen,
  {
     open spec fn value_byte_len(v: Self::T) -> nat {

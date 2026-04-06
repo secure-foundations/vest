@@ -27,10 +27,12 @@ impl AdmitsUniqueVal for super::Empty {
     }
 }
 
-impl SoundParser for super::Empty {
+impl SafeParser for super::Empty {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
+}
 
+impl SoundParser for super::Empty {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 
@@ -121,10 +123,12 @@ impl AdmitsUniqueVal for super::Void {
     }
 }
 
-impl SoundParser for super::Void {
+impl SafeParser for super::Void {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
     }
+}
 
+impl SoundParser for super::Void {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }
 

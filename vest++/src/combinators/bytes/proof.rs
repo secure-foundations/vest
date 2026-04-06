@@ -92,7 +92,7 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 // [`ExactLen`] can make "look-ahead" parsers (e.g., [`Tail`] and [`Eof`]) non-look-ahead
 // (s.t. they can no longer "predict" the future)
 // because it always consumes the same number of bytes when it succeeds
-impl<Inner: SoundParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
+impl<Inner: SafeParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
     open spec fn no_lookahead_inv(&self) -> bool {
         super::AndThen(super::Varied(self.0), self.1).no_lookahead_inv()
     }
@@ -146,11 +146,11 @@ impl<Len, Then> SPRoundTripDps for super::AndThen<Varied<Len>, Then> where
 }
 
 impl<A, Then> NonMalleable for super::AndThen<A, Then> where
-    A: BytesCombinator + NonMalleable,
+    A: BytesCombinator + SoundParser + NonMalleable,
     Then: NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        self.0.nonmal_inv() && self.1.nonmal_inv()
+        self.0.nonmal_inv() && self.1.nonmal_inv() && self.0.sound_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -180,8 +180,8 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
 }
 
 impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
-    A: BytesCombinator + NoLookAhead,
-    Then: SoundParser + Unambiguity,
+    A: BytesCombinator + NoLookAhead<PVal = Seq<u8>>,
+    Then: SafeParser + Unambiguity,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         self.0.no_lookahead_inv()

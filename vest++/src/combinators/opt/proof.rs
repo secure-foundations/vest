@@ -33,7 +33,7 @@ impl<A: SPRoundTripDps> super::Opt<A> {
 impl<A: NoLookAhead> super::Opt<A> {
     proof fn lemma_opt_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.0.sound_inv(),
+            self.0.safe_inv(),
             self.0.no_lookahead_inv(),
             self.0.unambiguous(),
             parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
@@ -122,8 +122,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
-        &&& self.0.nonmal_inv()
-        &&& self.1.nonmal_inv()
+        Pair(super::Opt(self.0), self.1).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -146,8 +145,11 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
+                    assert(self.safe_inv());
                     if let Some((n0, a)) = self.0.spec_parse(i1) {
                         if let Some((n1, b)) = self.1.spec_parse(i1.skip(n0)) {
+                            assert(opt.safe_inv());
+                            assert(self.1.safe_inv());
                             opt.lemma_parse_safe(i1);
                             self.1.lemma_parse_safe(i1.skip(n0));
                             assert(i2.take(n0) == i1.take(n0));
@@ -160,6 +162,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
                         }
                     } else if let Some((n1, b)) = self.1.spec_parse(i1) {
                         assert(disjoint_domains(self.0, self.1));
+                        assert(self.1.safe_inv());
                         self.1.lemma_no_lookahead(i1, i2);
                     }
                 }

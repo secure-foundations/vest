@@ -49,6 +49,11 @@ impl<SpecP, Cnstcy, Blen> SpecParser for ParserSpecs<SpecP, Cnstcy, Blen> where
     }
 }
 
+/// The functional version of [`SafeParser`].
+pub open spec fn safe_parser<T>(parser: ParserFnSpec<T>) -> bool {
+    forall|input: Seq<u8>| #[trigger] parser(input) matches Some((n, _)) ==> 0 <= n <= input.len()
+}
+
 /// A bundled non-DPS serializer: pairs a [`SerializerFnSpec`] with a [`ByteLenFnSpec`].
 pub type SerializerSpecs<SpecS, Blen> where
     Blen: SpecByteLen,
@@ -119,6 +124,29 @@ impl<SpecS, Blen> GoodSerializer for SerializerSpecs<SpecS, Blen> where
     }
 }
 
+impl<SpecP, Cnstcy, Blen> SafeParser for (SpecP, Cnstcy, Blen) where
+    Blen: SpecByteLen,
+    SpecP: SpecParser<PVal = Blen::T>,
+    Cnstcy: Consistency<Val = Blen::T>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        let (p, _, _) = *self;
+        let p_fn = |ibuf| p.spec_parse(ibuf);
+        safe_parser(p_fn)
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        let (p, _, _) = *self;
+        let p_fn = |i: Seq<u8>| p.spec_parse(i);
+        assert(self.safe_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(safe_parser(p_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(0 <= n <= ibuf.len());
+        }
+    }
+}
+
 impl<SpecP, Cnstcy, Blen> SoundParser for (SpecP, Cnstcy, Blen) where
     Blen: SpecByteLen,
     SpecP: SpecParser<PVal = Blen::T>,
@@ -132,21 +160,6 @@ impl<SpecP, Cnstcy, Blen> SoundParser for (SpecP, Cnstcy, Blen) where
             |v| b.byte_len(v),
         );
         sound_parser(p_fn, c_fn, b_fn)
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        let (p, c, b) = *self;
-        let (p_fn, c_fn, b_fn) = (
-            |i: Seq<u8>| p.spec_parse(i),
-            |v: Blen::T| c.consistent(v),
-            |v: Blen::T| b.byte_len(v),
-        );
-        assert(self.sound_inv());
-        if let Some((n, v)) = self.spec_parse(ibuf) {
-            assert(sound_parser(p_fn, c_fn, b_fn));
-            assert(p_fn(ibuf) == Some((n, v)));
-            assert(0 <= n <= ibuf.len());
-        }
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -188,7 +201,6 @@ pub open spec fn sound_parser<T>(
 ) -> bool {
     forall|input: Seq<u8>| #[trigger]
         parser(input) matches Some((n, v)) ==> {
-            &&& 0 <= n <= input.len()
             &&& consistent(v)
             &&& byte_len(v) == n
         }
@@ -258,13 +270,19 @@ impl<T> SpecSerializerDps for BundledSpecs<T> {
     }
 }
 
-impl<T> SoundParser for BundledSpecs<T> {
-    open spec fn sound_inv(&self) -> bool {
-        parser_specs(*self).sound_inv()
+impl<T> SafeParser for BundledSpecs<T> {
+    open spec fn safe_inv(&self) -> bool {
+        parser_specs(*self).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         parser_specs(*self).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<T> SoundParser for BundledSpecs<T> {
+    open spec fn sound_inv(&self) -> bool {
+        parser_specs(*self).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -320,6 +338,16 @@ pub trait SpecRecBody {
     /// Define one recursive unfolding, where `rec` provides callbacks for all recursive positions.
     /// the callback for recursive positions in the body.
     spec fn spec_body(rec: BundledSpecs<Self::T>) -> Self::Body;
+}
+
+/// Safety preservation for recursive bodies.
+pub trait SafeParserRecBody: SpecRecBody where Self::Body: SafeParser {
+    proof fn lemma_body_safe_inv_preservation(rec: BundledSpecs<Self::T>)
+        requires
+            rec.safe_inv(),
+        ensures
+            Self::spec_body(rec).safe_inv(),
+    ;
 }
 
 /// Soundness preservation for recursive bodies.
@@ -525,6 +553,56 @@ impl<const LIMIT: usize, Body: SpecRecBody> super::Fix<LIMIT, Body> {
     }
 }
 
+impl<const LIMIT: usize, Body: SafeParserRecBody> super::Fix<LIMIT, Body> where
+    Body::Body: SafeParser,
+ {
+    /// Inductive proof that `spec_parse_gas` satisfies [`safe_parser`].
+    pub(crate) proof fn safe_parser_by_induction(
+        &self,
+        gas: nat,
+        input: Seq<u8>,
+        n: int,
+        v: Body::T,
+    )
+        ensures
+            Self::spec_parse_gas(gas, input) == Some((n, v)) ==> 0 <= n <= input.len(),
+        decreases gas,
+    {
+        if !(Self::spec_parse_gas(gas, input) == Some((n, v))) {
+            return ;
+        }
+        let callback = Self::specs_callback(gas);
+        let callback_p = callback.2;
+
+        assert forall|rem: Seq<u8>| #[trigger]
+            callback_p(rem) matches Some((nn, _vv)) ==> 0 <= nn <= rem.len() by {
+            if let Some((nn, vv)) = callback_p(rem) {
+                self.safe_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+                assert(Self::spec_parse_gas((gas - 1) as nat, rem) == Some((nn, vv)));
+                assert(0 <= nn <= rem.len());
+            }
+        }
+
+        assert(safe_parser(callback_p));
+
+        Body::lemma_body_safe_inv_preservation(callback);
+        let body = Body::spec_body(callback);
+        body.lemma_parse_safe(input);
+
+        assert(Self::spec_parse_gas(gas, input) == body.spec_parse(input));
+    }
+}
+
+impl<const LIMIT: usize, Body: SafeParserRecBody> SafeParser for super::Fix<LIMIT, Body> where
+    Body::Body: SafeParser,
+ {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            self.safe_parser_by_induction(LIMIT as nat, ibuf, n, v);
+        }
+    }
+}
+
 impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
     Body::Body: SoundParser,
  {
@@ -538,7 +616,6 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
     )
         ensures
             Self::spec_parse_gas(gas, input) == Some((n, v)) ==> {
-                &&& 0 <= n <= input.len()
                 &&& Self::consistent_gas(gas, v)
                 &&& Self::byte_len_gas(gas, v) == n
             },
@@ -556,13 +633,11 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
         // establish sound_parser(callback_p, callback_c, callback_b)
         assert forall|rem: Seq<u8>| #[trigger]
             callback_p(rem) matches Some((nn, vv)) ==> {
-                &&& 0 <= nn <= rem.len()
                 &&& callback_c(vv)
                 &&& callback_b(vv) == nn
             } by {
             if let Some((nn, vv)) = callback_p(rem) {
                 self.sound_parser_by_induction((gas - 1) as nat, rem, nn, vv);
-                assert(0 <= nn <= rem.len());
                 assert(Self::spec_parse_gas((gas - 1) as nat, rem) == Some((nn, vv)));
                 assert(Self::consistent_gas((gas - 1) as nat, vv) == callback_c(vv));
                 assert(Self::byte_len_gas((gas - 1) as nat, vv) == callback_b(vv));
@@ -576,7 +651,6 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
         Body::lemma_body_sound_inv_preservation(callback);
         let body = Body::spec_body(callback);
 
-        body.lemma_parse_safe(input);
         body.lemma_parse_sound_consumption(input);
         body.lemma_parse_sound_value(input);
 
@@ -590,12 +664,6 @@ impl<const LIMIT: usize, Body: SoundParserRecBody> super::Fix<LIMIT, Body> where
 impl<const LIMIT: usize, Body: SoundParserRecBody> SoundParser for super::Fix<LIMIT, Body> where
     Body::Body: SoundParser,
  {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(ibuf) {
-            self.sound_parser_by_induction(LIMIT as nat, ibuf, n, v);
-        }
-    }
-
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.sound_parser_by_induction(LIMIT as nat, ibuf, n, v);

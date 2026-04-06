@@ -11,7 +11,8 @@ pub use proof::{
     StrictRecBody,
 };
 pub use spec::{
-    BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SoundParserRecBody, SpecRecBody,
+    BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SafeParserRecBody, SoundParserRecBody,
+    SpecRecBody,
 };
 
 verus! {

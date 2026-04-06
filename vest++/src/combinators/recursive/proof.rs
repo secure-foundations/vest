@@ -147,9 +147,12 @@ impl<T> EquivSerializers for BundledSpecs<T> {
 }
 
 /// Non-malleability preservation for recursive bodies.
-pub trait NonMalleableRecBody: SoundParserRecBody where Self::Body: NonMalleable {
+pub trait NonMalleableRecBody: SafeParserRecBody + SoundParserRecBody where
+    Self::Body: NonMalleable + SoundParser,
+ {
     proof fn lemma_body_nonmal_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
+            rec.safe_inv(),
             rec.sound_inv(),
             rec.nonmal_inv(),
         ensures
@@ -170,7 +173,7 @@ pub trait SPRoundTripDpsRecBody: NonTailFmtRecBody where Self::Body: SPRoundTrip
 }
 
 /// No-lookahead invariant preservation for recursive bodies.
-pub trait NoLookAheadRecBody: SoundParserRecBody where Self::Body: NoLookAhead {
+pub trait NoLookAheadRecBody: SafeParserRecBody where Self::Body: NoLookAhead {
     proof fn lemma_body_no_lookahead_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
             rec.no_lookahead_inv(),
@@ -195,8 +198,11 @@ pub trait EquivSerializersGeneralRecBody: SpecRecBody where Self::Body: EquivSer
 pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
     proof fn lemma_body_all_inv_preservation(rec: BundledSpecs<Self::T>)
         ensures
+            rec.safe_inv() ==> Self::spec_body(rec).safe_inv(),
             rec.sound_inv() ==> Self::spec_body(rec).sound_inv(),
-            rec.sound_inv() && rec.nonmal_inv() ==> Self::spec_body(rec).nonmal_inv(),
+            rec.safe_inv() && rec.sound_inv() && rec.nonmal_inv() ==> Self::spec_body(
+                rec,
+            ).nonmal_inv(),
             rec.serialize_inv() ==> Self::spec_body(rec).serialize_inv(),
             rec.serialize_dps_inv() ==> Self::spec_body(rec).serialize_dps_inv(),
             rec.sp_roundtrip_dps_inv() && rec.serialize_dps_inv() ==> Self::spec_body(
@@ -205,6 +211,13 @@ pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
             rec.no_lookahead_inv() ==> Self::spec_body(rec).no_lookahead_inv(),
             rec.equiv_general_inv() ==> Self::spec_body(rec).equiv_general_inv(),
     ;
+}
+
+impl<Body: StrictRecBody> SafeParserRecBody for Body where Body::Body: StrictCombinator {
+    proof fn lemma_body_safe_inv_preservation(rec: BundledSpecs<Self::T>) {
+        Body::lemma_body_all_inv_preservation(rec);
+        assert(Body::spec_body(rec).safe_inv());
+    }
 }
 
 impl<Body: StrictRecBody> SoundParserRecBody for Body where Body::Body: StrictCombinator {
@@ -259,7 +272,7 @@ impl<Body: StrictRecBody> EquivSerializersGeneralRecBody for Body where
 }
 
 impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> where
-    Body::Body: NonMalleable,
+    Body::Body: NonMalleable + SoundParser,
  {
     /// Inductive proof that `spec_parse_gas` is non-malleable.
     #[verusfmt::skip]
@@ -294,10 +307,16 @@ impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> wher
         let callback_c = callback.0;
         let callback_b = callback.1;
 
+        assert forall|rem: Seq<u8>| #[trigger]
+            callback_p(rem) matches Some((nn, _vv)) ==> 0 <= nn <= rem.len() by {
+            if let Some((nn, vv)) = callback_p(rem) {
+                self.safe_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+            }
+        }
+
         // establish sound_parser(callback_p, callback_c, callback_b)
         assert forall|rem: Seq<u8>| #[trigger]
             callback_p(rem) matches Some((nn, vv)) ==> {
-                &&& 0 <= nn <= rem.len()
                 &&& callback_c(vv)
                 &&& callback_b(vv) == nn
             } by {
@@ -317,13 +336,14 @@ impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> wher
             }
         }
 
-        assert(callback.sound_inv());
         assert(callback.nonmal_inv()) by {
             let p_fn = |ibuf: Seq<u8>| callback.2.spec_parse(ibuf);
             assert(p_fn == callback_p);
         }
+        assert(callback.safe_inv());
+        assert(callback.sound_inv());
 
-        Body::lemma_body_sound_inv_preservation(callback);
+        Body::lemma_body_safe_inv_preservation(callback);
         Body::lemma_body_nonmal_inv_preservation(callback);
         let body = Body::spec_body(callback);
 
@@ -336,7 +356,7 @@ impl<const LIMIT: usize, Body: NonMalleableRecBody> super::Fix<LIMIT, Body> wher
 }
 
 impl<const LIMIT: usize, Body: NonMalleableRecBody> NonMalleable for super::Fix<LIMIT, Body> where
-    Body::Body: NonMalleable,
+    Body::Body: NonMalleable + SafeParser + SoundParser,
  {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         if let Some((n1, v1)) = self.spec_parse(buf1) {
@@ -512,15 +532,11 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         let callback_b = callback.1;
         let callback_u = callback.5;
 
-        // establish callback.sound_inv()
+        // establish callback.safe_inv()
         assert forall|rem: Seq<u8>| #[trigger]
-            callback_p(rem) matches Some((nn, vv)) ==> {
-                &&& 0 <= nn <= rem.len()
-                &&& callback_c(vv)
-                &&& callback_b(vv) == nn
-            } by {
+            callback_p(rem) matches Some((nn, _vv)) ==> 0 <= nn <= rem.len() by {
             if let Some((nn, vv)) = callback_p(rem) {
-                self.sound_parser_by_induction((gas - 1) as nat, rem, nn, vv);
+                self.safe_parser_by_induction((gas - 1) as nat, rem, nn, vv);
             }
         }
 
@@ -536,11 +552,10 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
             }
         }
 
-        assert(sound_parser(callback_p, callback_c, callback_b));
-        assert(callback.sound_inv());
+        assert(callback.safe_inv());
         assert(callback.no_lookahead_inv());
 
-        Body::lemma_body_sound_inv_preservation(callback);
+        Body::lemma_body_safe_inv_preservation(callback);
         Body::lemma_body_no_lookahead_inv_preservation(callback);
         let body = Body::spec_body(callback);
 

@@ -39,24 +39,35 @@ pub open spec fn parser_fails_on<P: SpecParser>(p: P, ibuf: Seq<u8>) -> bool {
     p.spec_parse(ibuf) is None
 }
 
-/// Parser soundness.
+/// Parser safety.
 ///
-/// This trait specifies basic properties that a parser must satisfy to be considered sound w.r.t.
-/// its format spec.
-pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
+/// Successful parses never consume bytes out of bounds.
+pub trait SafeParser: SpecParser {
     /// Optional invariant (used by spec-function combinators; struct-based combinators
     /// typically leave this as `true`).
-    open spec fn sound_inv(&self) -> bool {
+    open spec fn safe_inv(&self) -> bool {
         true
     }
 
     /// For any successful parse `Some((n, _))`, `0 <= n <= ibuf.len()`.
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.safe_inv(),
         ensures
             self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
+}
+
+/// Parser soundness.
+///
+/// This trait specifies semantic soundness w.r.t. the format spec, independent
+/// from the orthogonal safety property captured by [`SafeParser`].
+pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
+    /// Optional invariant (used by spec-function combinators; struct-based combinators
+    /// typically leave this as `true`).
+    open spec fn sound_inv(&self) -> bool {
+        true
+    }
 
     /// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)

@@ -81,6 +81,20 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
     }
 }
 
+impl<Inner, M> SafeParser for super::Mapped<Inner, M> where
+    Inner: SafeParser,
+    M: Mapper<In = Inner::PVal>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        assert(self.safe_inv());
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
 impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
     Inner: SoundParser,
     M: LosslessMapper<In = Inner::PVal>,
@@ -88,10 +102,6 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
         &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> M::wf_in(v)
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -248,16 +258,23 @@ impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, FnSpecMapper<In
     }
 }
 
+impl<Inner: SafeParser, Out> SafeParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        assert(self.safe_inv());
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
 impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
         &&& forall|v: Inner::T|
             #![auto]
             self.inner.consistent(v) ==> (self.mapper.1)((self.mapper.0)(v)) == v
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {

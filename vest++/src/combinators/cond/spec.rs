@@ -23,15 +23,21 @@ impl<Inner: Consistency> Consistency for super::Cond<Inner> {
     }
 }
 
-impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
-    open spec fn sound_inv(&self) -> bool {
-        self.1.sound_inv()
+impl<Inner: SafeParser> SafeParser for super::Cond<Inner> {
+    open spec fn safe_inv(&self) -> bool {
+        self.1.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         if self.0 {
             self.1.lemma_parse_safe(ibuf);
         }
+    }
+}
+
+impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
+    open spec fn sound_inv(&self) -> bool {
+        self.1.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {

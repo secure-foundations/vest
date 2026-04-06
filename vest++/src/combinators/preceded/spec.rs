@@ -54,16 +54,22 @@ impl<A, B> Consistency for super::Preceded<A, B> where A: Consistency, B: Consis
     }
 }
 
+impl<A, B> SafeParser for super::Preceded<A, B> where A: SafeParser, B: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        Pair(self.0, self.1).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Pair(self.0, self.1).lemma_parse_safe(ibuf);
+    }
+}
+
 impl<A, B> SoundParser for super::Preceded<A, B> where
     A: SoundParser + AdmitsUniqueVal,
     B: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
         Pair(self.0, self.1).sound_inv()
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Pair(self.0, self.1).lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {

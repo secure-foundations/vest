@@ -24,16 +24,22 @@ impl<A, Pred> Consistency for super::Refined<A, Pred> where A: Consistency, Pred
     }
 }
 
+impl<A, Pred> SafeParser for super::Refined<A, Pred> where A: SafeParser, Pred: SpecPred<A::PVal> {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
 impl<A, Pred> SoundParser for super::Refined<A, Pred> where
     A: SoundParser,
     Pred: SpecPred<A::PVal>,
  {
     open spec fn sound_inv(&self) -> bool {
         self.inner.sound_inv()
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -163,13 +169,19 @@ impl<Inner> AdmitsUniqueVal for super::Tag<Inner, Inner::Val> where Inner: Consi
     }
 }
 
-impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundParser {
-    open spec fn sound_inv(&self) -> bool {
-        self.inner.sound_inv()
+impl<Inner> SafeParser for super::Tag<Inner, Inner::PVal> where Inner: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundParser {
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -278,16 +290,25 @@ impl<Tg, Of> Consistency for super::Tagged<Tg, Of> where
     }
 }
 
+impl<Tg, Of> SafeParser for super::Tagged<Tg, Of> where
+    Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
+    Of: SafeParser,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_safe(ibuf)
+    }
+}
+
 impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).sound_inv()
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_safe(ibuf)
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -324,7 +345,7 @@ impl<Tg, Of> SpecSerializer for super::Tagged<Tg, Of> where
 }
 
 impl<Tg, Of> Unambiguity for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + Unambiguity + SpecParser<PVal = Tg::T>,
+    Tg: SpecByteLen + Unambiguity<PVal = Tg::T>,
     Of: Unambiguity,
  {
     open spec fn unambiguous(&self) -> bool {

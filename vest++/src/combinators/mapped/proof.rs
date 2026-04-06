@@ -26,11 +26,13 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
 //  {
 // }
 impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
-    Inner: NonMalleable,
+    Inner: SoundParser + NonMalleable,
     M: LosslessMapper<In = Inner::PVal>,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        self.inner.nonmal_inv()
+        &&& self.inner.nonmal_inv()
+        &&& self.inner.sound_inv()
+        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> M::wf_in(v)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -114,12 +116,12 @@ impl<Inner: SPRoundTripDps, Out> SPRoundTripDps for super::Mapped<
     }
 }
 
-impl<Inner: NonMalleable, Out> NonMalleable for super::Mapped<
-    Inner,
-    FnSpecMapper<Inner::PVal, Out>,
-> {
+impl<Inner, Out> NonMalleable for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> where
+    Inner: SoundParser + NonMalleable,
+ {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()
+        &&& self.inner.sound_inv()
         &&& forall|v: Inner::PVal|
             #![auto]
             self.inner.consistent(v) ==> (self.mapper.1)((self.mapper.0)(v)) == v

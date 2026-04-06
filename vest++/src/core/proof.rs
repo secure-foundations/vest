@@ -131,9 +131,9 @@ pub trait PSRoundTrip where
     }
 }
 
-impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
+impl<C: SPRoundTrip + NonMalleable + SoundParser> PSRoundTrip for C {
     open spec fn ps_roundtrip_inv(&self) -> bool {
-        self.sound_inv() && self.nonmal_inv() && self.sp_roundtrip_inv()
+        self.safe_inv() && self.sound_inv() && self.nonmal_inv() && self.sp_roundtrip_inv()
     }
 
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
@@ -156,7 +156,7 @@ impl<C: SPRoundTrip + NonMalleable> PSRoundTrip for C {
 ///
 /// If two buffers parse to equal values, their consumed bytes are identical—i.e.,
 /// each semantic value has a unique byte-level representation.
-pub trait NonMalleable: SoundParser {
+pub trait NonMalleable: SafeParser {
     /// Optional invariant (used by spec-function combinators; struct-based combinators
     /// typically leave this as `true`)
     open spec fn nonmal_inv(&self) -> bool {
@@ -166,7 +166,7 @@ pub trait NonMalleable: SoundParser {
     #[verusfmt::skip]
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.safe_inv(),
             self.nonmal_inv(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
@@ -181,7 +181,7 @@ pub trait NonMalleable: SoundParser {
 /// (i.e., it does not need to "look ahead"/"peek" at them to decide how to parse the prefix).
 ///
 /// Formally: if two buffers share a common prefix that successfully parses, then they parse to the same value.
-pub trait NoLookAhead: SoundParser + Unambiguity {
+pub trait NoLookAhead: SafeParser + Unambiguity {
     open spec fn no_lookahead_inv(&self) -> bool {
         true
     }
@@ -189,7 +189,7 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
     #[verusfmt::skip]
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.safe_inv(),
             self.no_lookahead_inv(),
             self.unambiguous(),
         ensures
@@ -200,7 +200,7 @@ pub trait NoLookAhead: SoundParser + Unambiguity {
 
     proof fn corollary_non_extensible(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
-            self.sound_inv(),
+            self.safe_inv(),
             self.no_lookahead_inv(),
             self.unambiguous(),
         ensures
@@ -250,7 +250,9 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 }
 
 /// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
-pub trait StrictCombinator: SoundParser +
+pub trait StrictCombinator:
+    SafeParser +
+    SoundParser +
     NonMalleable +
     GoodSerializer +
     NonTailFmt +
@@ -261,7 +263,9 @@ pub trait StrictCombinator: SoundParser +
 }
 
 impl<Body> StrictCombinator for Body where
-    Body: SoundParser +
+    Body:
+        SafeParser +
+        SoundParser +
         NonMalleable +
         GoodSerializer +
         NonTailFmt +
