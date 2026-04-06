@@ -4,9 +4,6 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
-use crate::combinators::{Mapped, Pair};
-use crate::core::spec::Consistency;
-use core::marker::PhantomData;
 use vstd::prelude::*;
 
 verus! {

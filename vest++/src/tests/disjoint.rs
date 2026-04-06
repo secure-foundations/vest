@@ -50,11 +50,11 @@ impl Mapper for MyMapper {
 
     type Out = u8;
 
-    open spec fn spec_map(&self, i: u8) -> u8 {
+    open spec fn spec_map(i: u8) -> u8 {
         i
     }
 
-    open spec fn spec_map_rev(&self, o: u8) -> u8 {
+    open spec fn spec_map_rev(o: u8) -> u8 {
         o
     }
 }

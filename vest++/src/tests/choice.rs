@@ -83,7 +83,7 @@ impl Mapper for MyTagMapper {
 
     type Out = MyTag;
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         match i {
             Inl(v) => MyTag::A(v),
             Inr(Inl(v)) => MyTag::B(v),
@@ -91,7 +91,7 @@ impl Mapper for MyTagMapper {
         }
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         match o {
             MyTag::A(v) => Inl(v),
             MyTag::B(v) => Inr(Inl(v)),
@@ -101,15 +101,15 @@ impl Mapper for MyTagMapper {
 }
 
 impl LossyMapper for MyTagMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl LosslessMapper for MyTagMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -198,29 +198,29 @@ impl Mapper for U8AsU32 {
 
     type Out = u32;
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         i as u32
     }
 
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
+    open spec fn wf_out(o: Self::Out) -> bool {
         o <= u8::MAX
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         o as u8
     }
 }
 
 impl LossyMapper for U8AsU32 {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl LosslessMapper for U8AsU32 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -232,34 +232,34 @@ impl Mapper for U16AsU32 {
 
     type Out = u32;
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         i as u32
     }
 
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
+    open spec fn wf_out(o: Self::Out) -> bool {
         o <= u16::MAX
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o & 0xFFFF) as u16
     }
 }
 
 impl LossyMapper for U16AsU32 {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
         assert(((o & 0xFFFF) as u16) as u32 == o) by (bit_vector)
             requires
-                self.wf_out(o),
+                Self::wf_out(o),
         ;
     }
 }
 
 impl LosslessMapper for U16AsU32 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
         assert(((i as u32) & 0xFFFF) as u16 == i) by (bit_vector);
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
         assert(i as u32 <= 0xFFFF);
     }
 }

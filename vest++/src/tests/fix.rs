@@ -26,21 +26,21 @@ impl Mapper for NestedBracesMapper {
 
     type Out = NestedBracesT;
 
-    open spec fn wf_in(&self, i: Self::In) -> bool {
+    open spec fn wf_in(i: Self::In) -> bool {
         match i {
             Sum::Inl(_) => true,
             Sum::Inr(tag) => tag == 0x00u8,
         }
     }
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         match i {
             Sum::Inl(inner) => NestedBracesT::Brace(Box::new(inner)),
             Sum::Inr(_) => NestedBracesT::Eps,
         }
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         match o {
             NestedBracesT::Brace(inner) => Sum::Inl(*inner),
             NestedBracesT::Eps => Sum::Inr(0x00u8),
@@ -49,7 +49,7 @@ impl Mapper for NestedBracesMapper {
 }
 
 impl LossyMapper for NestedBracesMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
         match o {
             NestedBracesT::Brace(_) => {},
             NestedBracesT::Eps => {},
@@ -58,7 +58,7 @@ impl LossyMapper for NestedBracesMapper {
 }
 
 impl LosslessMapper for NestedBracesMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
         match i {
             Sum::Inl(_) => {},
             Sum::Inr(tag) => {
@@ -67,7 +67,7 @@ impl LosslessMapper for NestedBracesMapper {
         }
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 

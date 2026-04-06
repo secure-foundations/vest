@@ -16,11 +16,11 @@ impl<T> Mapper for IdMapper<T> {
 
     type Out = T;
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         i
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         o
     }
 }

@@ -405,7 +405,7 @@ impl Mapper for MyTagMapper {
 
     type Out = MyTag;
 
-    open spec fn wf_in(&self, i: Self::In) -> bool {
+    open spec fn wf_in(i: Self::In) -> bool {
         match i {
             Sum::Inl(v) => v == 1u8,
             Sum::Inr(Sum::Inl(v)) => v == 2u8,
@@ -413,7 +413,7 @@ impl Mapper for MyTagMapper {
         }
     }
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         match i {
             Sum::Inl(_) => MyTag::A,
             Sum::Inr(Sum::Inl(_)) => MyTag::B,
@@ -421,7 +421,7 @@ impl Mapper for MyTagMapper {
         }
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         match o {
             MyTag::A => Sum::Inl(1u8),
             MyTag::B => Sum::Inr(Sum::Inl(2u8)),
@@ -431,12 +431,12 @@ impl Mapper for MyTagMapper {
 }
 
 impl LossyMapper for MyTagMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl LosslessMapper for MyTagMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
         match i {
             Sum::Inl(vl) => {
                 assert(vl == 1u8);
@@ -454,7 +454,7 @@ impl LosslessMapper for MyTagMapper {
         }
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 

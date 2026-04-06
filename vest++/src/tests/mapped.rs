@@ -25,27 +25,27 @@ impl Mapper for MyIsoMapper {
 
     type Out = u8;
 
-    open spec fn spec_map(&self, i: u8) -> u8 {
+    open spec fn spec_map(i: u8) -> u8 {
         i
     }
 
-    open spec fn spec_map_rev(&self, o: u8) -> u8 {
+    open spec fn spec_map_rev(o: u8) -> u8 {
         o
     }
 }
 
 impl LossyMapper for MyIsoMapper {
-    proof fn lemma_sound_mapper(&self, o: u8) {
-        assert(self.spec_map(self.spec_map_rev(o)) == o);
+    proof fn lemma_sound_mapper(o: u8) {
+        assert(Self::spec_map(Self::spec_map_rev(o)) == o);
     }
 }
 
 impl LosslessMapper for MyIsoMapper {
-    proof fn lemma_lossless_mapper(&self, i: u8) {
-        assert(self.spec_map_rev(self.spec_map(i)) == i);
+    proof fn lemma_lossless_mapper(i: u8) {
+        assert(Self::spec_map_rev(Self::spec_map(i)) == i);
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -74,7 +74,7 @@ impl Mapper for MyTagMapper {
 
     type Out = MyTag;
 
-    open spec fn spec_map(&self, i: u8) -> MyTag {
+    open spec fn spec_map(i: u8) -> MyTag {
         match i {
             1u8 => MyTag::A,
             2u8 => MyTag::B,
@@ -83,7 +83,7 @@ impl Mapper for MyTagMapper {
         }
     }
 
-    open spec fn spec_map_rev(&self, o: MyTag) -> u8 {
+    open spec fn spec_map_rev(o: MyTag) -> u8 {
         match o {
             MyTag::A => 1u8,
             MyTag::B => 2u8,
@@ -91,21 +91,21 @@ impl Mapper for MyTagMapper {
         }
     }
 
-    open spec fn wf_in(&self, i: Self::In) -> bool {
+    open spec fn wf_in(i: Self::In) -> bool {
         is_my_tag_byte(i)
     }
 }
 
 impl LossyMapper for MyTagMapper {
-    proof fn lemma_sound_mapper(&self, o: MyTag) {
+    proof fn lemma_sound_mapper(o: MyTag) {
     }
 }
 
 impl LosslessMapper for MyTagMapper {
-    proof fn lemma_lossless_mapper(&self, i: u8) {
+    proof fn lemma_lossless_mapper(i: u8) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -133,14 +133,12 @@ spec fn test() -> () {
     use super::super::*;
     let m1 = Mapped { inner: U8, mapper: |x: u8| x as u16 };
     let m2 = Mapped { inner: U8, mapper: |x: u16| x as u8 };
-    let m3 = Mapped { inner: U8, mapper: (|x: u8| x, |y: u8| y) };
-    let m4 = Mapped { inner: U8, mapper: MyIsoMapper };
-    let m5 = Mapped { inner: Refined { inner: U8, pred: IsMyTagByte }, mapper: MyTagMapper };
+    let m3 = Mapped { inner: U8, mapper: MyIsoMapper };
+    let m4 = Mapped { inner: Refined { inner: U8, pred: IsMyTagByte }, mapper: MyTagMapper };
     needs_spec_parser(m1);
     needs_spec_serializer(m2);
     needs_spec_combinator(m3);
     needs_spec_combinator(m4);
-    needs_spec_combinator(m5);
     ()
 }
 

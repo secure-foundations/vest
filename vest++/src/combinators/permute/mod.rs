@@ -19,25 +19,25 @@ impl<A, B> Mapper for Swap2Mapper<A, B> {
 
     type Out = (A, B);
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1, i.0)
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1, o.0)
     }
 }
 
 impl<A, B> LossyMapper for Swap2Mapper<A, B> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B> LosslessMapper for Swap2Mapper<A, B> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -49,25 +49,25 @@ impl<A, B, C> Mapper for Swap3Mapper1<A, B, C> {
 
     type Out = (A, (B, C));
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1.0, (i.0, i.1.1))
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1.0, (o.0, o.1.1))
     }
 }
 
 impl<A, B, C> LossyMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B, C> LosslessMapper for Swap3Mapper1<A, B, C> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -79,25 +79,25 @@ impl<A, B, C> Mapper for Swap3Mapper2<A, B, C> {
 
     type Out = (A, (B, C));
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1.0, (i.1.1, i.0))
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1.1, (o.0, o.1.0))
     }
 }
 
 impl<A, B, C> LossyMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B, C> LosslessMapper for Swap3Mapper2<A, B, C> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -109,25 +109,25 @@ impl<A, B, C, D> Mapper for Swap4Mapper1<A, B, C, D> {
 
     type Out = (A, (B, (C, D)));
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1.0, (i.0, i.1.1))
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1.0, (o.0, o.1.1))
     }
 }
 
 impl<A, B, C, D> LossyMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B, C, D> LosslessMapper for Swap4Mapper1<A, B, C, D> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -139,25 +139,25 @@ impl<A, B, C, D> Mapper for Swap4Mapper2<A, B, C, D> {
 
     type Out = (A, (B, (C, D)));
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1.0, (i.1.1.0, (i.0, i.1.1.1)))
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1.1.0, (o.0, (o.1.0, o.1.1.1)))
     }
 }
 
 impl<A, B, C, D> LossyMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B, C, D> LosslessMapper for Swap4Mapper2<A, B, C, D> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
@@ -169,25 +169,25 @@ impl<A, B, C, D> Mapper for Swap4Mapper3<A, B, C, D> {
 
     type Out = (A, (B, (C, D)));
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+    open spec fn spec_map(i: Self::In) -> Self::Out {
         (i.1.0, (i.1.1.0, (i.1.1.1, i.0)))
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
         (o.1.1.1, (o.0, (o.1.0, o.1.1.0)))
     }
 }
 
 impl<A, B, C, D> LossyMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    proof fn lemma_sound_mapper(o: Self::Out) {
     }
 }
 
 impl<A, B, C, D> LosslessMapper for Swap4Mapper3<A, B, C, D> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    proof fn lemma_lossless_mapper(i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
     }
 }
 
