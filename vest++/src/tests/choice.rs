@@ -1,4 +1,5 @@
 use crate::asn1::BerBool;
+use crate::combinators::choice::spec::arbitrary_or_left;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::{
@@ -383,10 +384,34 @@ pub open spec fn canonical_u32_varint_value(v: u32) -> bool {
     u16::MAX < v
 }
 
+pub type CanonicalVarintU8Form = Refined<
+    Refined<Mapped<U8, U8AsU32>, spec_fn(u32) -> bool>,
+    spec_fn(u32) -> bool,
+>;
+
+pub type CanonicalVarintU16Form = Refined<
+    Mapped<Tagged<U8, U16Le>, U16AsU32>,
+    spec_fn(u32) -> bool,
+>;
+
+pub type CanonicalVarintU32Form = Refined<Tagged<U8, U32Le>, spec_fn(u32) -> bool>;
+
+pub open spec fn canonical_varint_u8_form() -> CanonicalVarintU8Form {
+    Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) }
+}
+
+pub open spec fn canonical_varint_u16_form() -> CanonicalVarintU16Form {
+    Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) }
+}
+
+pub open spec fn canonical_varint_u32_form() -> CanonicalVarintU32Form {
+    Refined { inner: varint_u32_form(), pred: |v| canonical_u32_varint_value(v) }
+}
+
 proof fn test_canonical_varint_roundtrip() {
-    let u8_form = Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) };
-    let u16_form = Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) };
-    let u32_form = Refined { inner: varint_u32_form(), pred: |v| canonical_u32_varint_value(v) };
+    let u8_form = canonical_varint_u8_form();
+    let u16_form = canonical_varint_u16_form();
+    let u32_form = canonical_varint_u32_form();
 
     let varint = Alt(u32_form, Alt(u16_form, u8_form));
     assert(varint.unambiguous());
@@ -418,6 +443,208 @@ proof fn test_canonical_varint_roundtrip() {
     varint.lemma_parse_non_malleable(buf_u16, arbitrary_input);
     assert(arbitrary_input.take(3) == buf_u16.take(3));
 
+}
+
+pub type VarintChoiceInner = Sum<u32, Sum<u32, u32>>;
+
+pub open spec fn flatten_varint_choice(v: VarintChoiceInner) -> u32 {
+    match v {
+        Inl(v) => v,
+        Inr(Inl(v)) => v,
+        Inr(Inr(v)) => v,
+    }
+}
+
+pub open spec fn non_deterministic_varint_choice(v: u32) -> VarintChoiceInner {
+    let u32_c = varint_u32_form().consistent(v);
+    let u16_c = varint_u16_form().consistent(v);
+    let u8_c = varint_u8_form().consistent(v);
+
+    if arbitrary_or_left(u32_c, u16_c || u8_c) {
+        Inl(v)
+    } else if arbitrary_or_left(u16_c, u8_c) {
+        Inr(Inl(v))
+    } else {
+        Inr(Inr(v))
+    }
+}
+
+pub open spec fn preferred_varint_choice(v: u32) -> VarintChoiceInner {
+    if canonical_u32_varint_value(v) {
+        Inl(v)
+    } else if canonical_u16_varint_value(v) {
+        Inr(Inl(v))
+    } else {
+        Inr(Inr(v))
+    }
+}
+
+pub struct VarintLossyMapper;
+
+impl Mapper for VarintLossyMapper {
+    type In = VarintChoiceInner;
+
+    type Out = u32;
+
+    open spec fn spec_map(i: Self::In) -> Self::Out {
+        flatten_varint_choice(i)
+    }
+
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+        non_deterministic_varint_choice(o)
+    }
+}
+
+impl LossyMapper for VarintLossyMapper {
+    proof fn lemma_sound_mapper(o: Self::Out) {
+        assert(Self::spec_map(Self::spec_map_rev(o)) == o) by {}
+    }
+}
+
+pub struct VarintLosslessMapper;
+
+impl Mapper for VarintLosslessMapper {
+    type In = VarintChoiceInner;
+
+    type Out = u32;
+
+    open spec fn spec_map(i: Self::In) -> Self::Out {
+        flatten_varint_choice(i)
+    }
+
+    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+        preferred_varint_choice(o)
+    }
+
+    open spec fn wf_in(i: Self::In) -> bool {
+        match i {
+            Inl(v) => canonical_u32_varint_value(v),
+            Inr(Inl(v)) => canonical_u16_varint_value(v),
+            Inr(Inr(v)) => canonical_u8_varint_value(v),
+        }
+    }
+}
+
+impl LossyMapper for VarintLosslessMapper {
+    proof fn lemma_sound_mapper(o: Self::Out) {
+        assert(Self::spec_map(Self::spec_map_rev(o)) == o) by {}
+    }
+}
+
+impl LosslessMapper for VarintLosslessMapper {
+    proof fn lemma_lossless_mapper(i: Self::In) {
+        match i {
+            Inl(v) => {
+                assert(canonical_u32_varint_value(v));
+            },
+            Inr(Inl(v)) => {
+                assert(canonical_u16_varint_value(v));
+            },
+            Inr(Inr(v)) => {
+                assert(canonical_u8_varint_value(v));
+            },
+        }
+    }
+
+    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    }
+}
+
+proof fn test_malleable_choice_varint() {
+    broadcast use lemma_disjoint_choice;
+
+    let u8_form = varint_u8_form();
+    let u16_form = varint_u16_form();
+    let u32_form = varint_u32_form();
+
+    let inner = Choice(u32_form, Choice(u16_form, u8_form));
+    let varint = Mapped { inner, mapper: VarintLossyMapper };
+
+    assert(varint.unambiguous());
+
+    let val = 100u32;
+    let buf_u8 = seq![0x64u8];
+    let buf_u16 = seq![0xFDu8, 0x64u8, 0x00u8];
+    let buf_u32 = seq![0xFEu8, 0x64u8, 0x00u8, 0x00u8, 0x00u8];
+
+    assert(varint.consistent(val));
+    // The same value is consistent with all three forms
+    assert(varint_u8_form().consistent(val));
+    assert(varint_u16_form().consistent(val));
+    assert(varint_u32_form().consistent(val));
+
+    let serialized = varint.spec_serialize(val);
+
+    varint.theorem_serialize_parse_roundtrip(val);
+
+    // varint serializer non-deterministically picks one of the three encodings
+    // assert({
+    //     ||| serialized == buf_u8
+    //     ||| serialized == buf_u16
+    //     ||| serialized == buf_u32
+    // }) by {}
+
+    // parsing the different encodings yields the same logical value
+    match varint.spec_parse(serialized) {
+        Some((n, v)) if n == 1int => {
+            assert(v == 100u32);
+            assert(serialized == buf_u8);
+        },
+        Some((n, v)) if n == 3int => {
+            assert(v == 100u32);
+            // assert(serialized == buf_u16);
+        },
+        Some((n, v)) if n == 5int => {
+            assert(v == 100u32);
+            // assert(serialized == buf_u32);
+        },
+        _ => {},
+    }
+}
+
+proof fn test_canonical_choice_varint_roundtrip() {
+    broadcast use lemma_disjoint_choice;
+
+    let u8_form = canonical_varint_u8_form();
+    let u16_form = canonical_varint_u16_form();
+    let u32_form = canonical_varint_u32_form();
+
+    let inner = Choice(u32_form, Choice(u16_form, u8_form));
+    let varint = Mapped { inner, mapper: VarintLosslessMapper };
+
+    assert(varint.unambiguous());
+
+    let v_u8 = 100u32;
+    let v_u16 = VARINT_TAG_U32 as u32;
+    let v_u32 = 0x1_0000u32;
+
+    let buf_u8 = seq![0x64u8];
+    assert(varint.consistent(v_u8));
+    assert(varint.consistent(v_u16));
+    assert(varint.consistent(v_u32));
+
+    // Canonicality restrictions prevent non-deterministic encodings of the same value
+    assert(!u32_form.consistent(v_u16));
+    assert(!u32_form.consistent(v_u8));
+    assert(!u16_form.consistent(v_u8));
+    // And the overall varint parser is now non-malleable, since each value has a unique encoding
+    assert(varint.nonmal_inv());
+
+    assert(varint.spec_serialize(v_u8) == buf_u8);
+    let buf_u16 = varint.spec_serialize(v_u16);
+    let buf_u32 = varint.spec_serialize(v_u32);
+
+    varint.theorem_serialize_parse_roundtrip(v_u8);
+    varint.theorem_serialize_parse_roundtrip(v_u16);
+    varint.theorem_serialize_parse_roundtrip(v_u32);
+
+    assert(varint.spec_parse(buf_u8) == Some((1int, v_u8)));
+    assert(varint.spec_parse(buf_u16) == Some((3int, v_u16)));
+    assert(varint.spec_parse(buf_u32) == Some((5int, v_u32)));
+
+    let arbitrary_input = choose|i| varint.spec_parse(i) == Some((3int, v_u16));
+    varint.lemma_parse_non_malleable(buf_u16, arbitrary_input);
+    assert(arbitrary_input.take(3) == buf_u16.take(3));
 }
 
 } // verus!
