@@ -514,10 +514,60 @@ impl<A, B, Infer> SafeParser for super::ImplicitManual<A, spec_fn(A::PVal) -> B,
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        assert(self.safe_inv());
         self.0.lemma_parse_safe(ibuf);
         if let Some((n1, a)) = self.0.spec_parse(ibuf) {
             let next = (self.1)(a);
+            assert(next.safe_inv());
             next.lemma_parse_safe(ibuf.skip(n1));
+        }
+    }
+}
+
+impl<A, B> SoundParser for super::ImplicitManual<
+    A,
+    spec_fn(A::PVal) -> B,
+    spec_fn(B::T) -> A::T,
+> where A: SoundParser, B: SoundParser {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).sound_inv()
+        &&& forall|a: A::T, value: B::T|
+            self.0.consistent(a) && #[trigger] (self.1)(a).consistent(value) ==> (self.2)(value)
+                == a
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_consumption(ibuf);
+        self.0.lemma_parse_sound_value(ibuf);
+        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
+            let next = (self.1)(a);
+            assert(self.sound_inv());
+            assert(next.sound_inv());
+            next.lemma_parse_sound_consumption(ibuf.skip(n1));
+            next.lemma_parse_sound_value(ibuf.skip(n1));
+            if let Some((n2, value)) = next.spec_parse(ibuf.skip(n1)) {
+                assert(self.0.consistent(a));
+                assert(next.consistent(value));
+                assert((self.2)(value) == a);
+                assert(self.byte_len(value) == self.0.byte_len(a) + next.byte_len(value));
+            }
+        }
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_value(ibuf);
+        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
+            let next = (self.1)(a);
+            assert(self.sound_inv());
+            assert(next.sound_inv());
+            next.lemma_parse_sound_value(ibuf.skip(n1));
+            if let Some((_n2, value)) = next.spec_parse(ibuf.skip(n1)) {
+                assert(self.0.consistent(a));
+                assert(next.consistent(value));
+                assert((self.2)(value) == a);
+                assert(self.consistent(value));
+            }
         }
     }
 }
@@ -532,21 +582,6 @@ impl<A, B> Consistency for super::ImplicitManual<
     open spec fn consistent(&self, value: Self::Val) -> bool {
         let a = (self.2)(value);
         self.0.consistent(a) && (self.1)(a).consistent(value)
-    }
-}
-
-impl<A, B> super::LosslessImplicitAuto<A, B> for super::ImplicitManual<
-    A,
-    spec_fn(A::Val) -> B,
-    spec_fn(B::Val) -> A::Val,
-> where A: Consistency + AdmitsUniqueVal, B: Consistency {
-    proof fn lemma_value_determines_key(
-        fmt: &super::ImplicitManual<A, spec_fn(A::Val) -> B, spec_fn(B::Val) -> A::Val>,
-        k1: A::Val,
-        k2: A::Val,
-        value: B::Val,
-    ) {
-        fmt.0.lemma_unique_consistent_val(k1, k2);
     }
 }
 

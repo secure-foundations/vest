@@ -187,50 +187,102 @@ impl<A, B> SPRoundTripDps for super::ImplicitManual<
     }
 }
 
-// impl<A, B> NonMalleable for super::ImplicitAuto<A, spec_fn(A::T) -> B, spec_fn(B::T) -> A::T> where
-//     Self: GoodParser<T = B::T>,
-//     A: NonMalleable,
-//     B: NonMalleable,
-//     Self: super::LosslessImplicitAuto<A, B>,
-//  {
-//     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-//         if let Some((n1, v1)) = self.spec_parse(buf1) {
-//             if let Some((n2, v2)) = self.spec_parse(buf2) {
-//                 if v1 == v2 {
-//                     let (n1a, a1) = self.0.spec_parse(buf1)->0;
-//                     let (n2a, a2) = self.0.spec_parse(buf2)->0;
-//                     let next1 = (self.1)(a1);
-//                     let next2 = (self.1)(a2);
-//                     let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
-//                     let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
-//                     self.0.lemma_parse_sound_value(buf1);
-//                     self.0.lemma_parse_sound_value(buf2);
-//                     next1.lemma_parse_sound_value(buf1.skip(n1a));
-//                     next2.lemma_parse_sound_value(buf2.skip(n2a));
-//                     <Self as super::LosslessImplicitAuto<A, B>>::lemma_value_determines_key(
-//                         self,
-//                         a1,
-//                         a2,
-//                         v,
-//                     );
-//                     assert(a1 == a2 && next1 == next2);
-//                     let next = next1;
-//                     self.0.lemma_parse_safe(buf1);
-//                     self.0.lemma_parse_safe(buf2);
-//                     next.lemma_parse_safe(buf1.skip(n1a));
-//                     next.lemma_parse_safe(buf2.skip(n2a));
-//                     self.0.lemma_parse_non_malleable(buf1, buf2);
-//                     next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
-//                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
-//                     assert(buf1.take(n1) == buf2.take(n2)) by {
-//                         assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-//                         assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+impl<A, B> NonMalleable for super::ImplicitManual<
+    A,
+    spec_fn(A::PVal) -> B,
+    spec_fn(B::T) -> A::T,
+> where A: SoundParser + NonMalleable, B: SoundParser + NonMalleable {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.sound_inv()
+        &&& self.0.nonmal_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    assert(self.safe_inv());
+                    assert(self.nonmal_inv());
+                    assert(self.sound_inv());
+
+                    let (n1a, a1) = self.0.spec_parse(buf1)->0;
+                    let (n2a, a2) = self.0.spec_parse(buf2)->0;
+                    let next1 = (self.1)(a1);
+                    let next2 = (self.1)(a2);
+                    let (n1b, v) = next1.spec_parse(buf1.skip(n1a))->0;
+                    let (n2b, v) = next2.spec_parse(buf2.skip(n2a))->0;
+
+                    self.0.lemma_parse_sound_value(buf1);
+                    self.0.lemma_parse_sound_value(buf2);
+                    next1.lemma_parse_sound_value(buf1.skip(n1a));
+                    next2.lemma_parse_sound_value(buf2.skip(n2a));
+                    assert(self.0.consistent(a1));
+                    assert(self.0.consistent(a2));
+                    assert(next1.consistent(v));
+                    assert(next2.consistent(v));
+                    assert((self.2)(v) == a1);
+                    assert((self.2)(v) == a2);
+                    assert(a1 == a2);
+                    assert(next1 == next2);
+
+                    let next = next1;
+                    self.0.lemma_parse_safe(buf1);
+                    self.0.lemma_parse_safe(buf2);
+                    next.lemma_parse_safe(buf1.skip(n1a));
+                    next.lemma_parse_safe(buf2.skip(n2a));
+                    self.0.lemma_parse_non_malleable(buf1, buf2);
+                    next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+
+                    assert(n1 == n1a + n1b && n2 == n2a + n2b);
+                    assert(buf1.take(n1) == buf2.take(n2)) by {
+                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
+                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<A, B, Infer> NoLookAhead for super::ImplicitManual<A, spec_fn(A::PVal) -> B, Infer> where
+    A: NoLookAhead,
+    B: NoLookAhead,
+ {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& forall|a: A::PVal| #[trigger] (self.1)(a).no_lookahead_inv()
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        use crate::combinators::tuple::proof::lemma_take_skip;
+
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n1, a)) = self.0.spec_parse(i1) {
+                        let next = (self.1)(a);
+                        if let Some((n2, _v2)) = next.spec_parse(i1.skip(n1)) {
+                            self.0.lemma_parse_safe(i1);
+                            next.lemma_parse_safe(i1.skip(n1));
+                            assert(i2.take(n1) == i1.take(n1));
+                            self.0.lemma_no_lookahead(i1, i2);
+                            assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
+                                lemma_take_skip(i1, n1, n2);
+                                lemma_take_skip(i2, n1, n2);
+                            };
+                            next.lemma_no_lookahead(i1.skip(n1), i2.skip(n1));
+                            assert(self.spec_parse(i2) == Some((n, v)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for super::ImplicitManual<
     A,
     spec_fn(A::SVal) -> B,
