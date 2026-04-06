@@ -91,6 +91,15 @@ impl StaticByteLen for super::Empty {
     }
 }
 
+impl ValueByteLen for super::Empty {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl SpecParser for super::Void {
     type PVal = Never;
 
@@ -174,6 +183,15 @@ impl StaticByteLen for super::Void {
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl ValueByteLen for super::Void {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 

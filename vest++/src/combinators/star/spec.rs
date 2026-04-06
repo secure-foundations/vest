@@ -50,6 +50,53 @@ proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
     }
 }
 
+proof fn lemma_value_seq_byte_len<A: ValueByteLen>(inner: A, vs: Seq<A::T>)
+    ensures
+        (super::Star { inner }).byte_len(vs) == vs.fold_left(
+            0,
+            |acc: nat, elem| acc + A::value_byte_len(elem),
+        ),
+    decreases vs.len(),
+{
+    use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
+
+    let star = super::Star { inner };
+    if vs.len() == 0 {
+    } else {
+        let v0 = vs[0];
+        let rest = vs.skip(1);
+        let f = |acc: nat, elem: A::T| acc + inner.byte_len(elem);
+        let g = |acc: nat, elem: A::T| acc + A::value_byte_len(elem);
+
+        lemma_value_seq_byte_len(inner, rest);
+        inner.lemma_value_len_matches_byte_len(v0);
+        assert(star.byte_len(rest) == rest.fold_left(0, g));
+
+        calc! {
+            (==)
+            star.byte_len(vs); {
+                assert(vs == seq![v0] + rest);
+            }
+            (seq![v0] + rest).fold_left(0, f); {
+                (seq![v0] + rest).lemma_fold_left_alt(0, f);
+            }
+            (seq![v0] + rest).fold_left_alt(0, f); {}
+            rest.fold_left_alt(inner.byte_len(v0), f); {
+                rest.lemma_fold_left_alt(inner.byte_len(v0), f);
+            }
+            rest.fold_left(inner.byte_len(v0), f); {
+                lemma_fold_left_accumulate_nat(rest, inner.byte_len(v0), f);
+            }
+            inner.byte_len(v0) + rest.fold_left(0, f); {}
+            inner.byte_len(v0) + star.byte_len(rest); {}
+            A::value_byte_len(v0) + rest.fold_left(0, g);
+        }
+        lemma_fold_left_accumulate_nat(rest, A::value_byte_len(v0), g);
+        rest.lemma_fold_left_alt(A::value_byte_len(v0), g);
+        (seq![v0] + rest).lemma_fold_left_alt(0, g);
+    }
+}
+
 impl<A: SpecParser> super::Star<A> {
     /// Recursive helper function for parsing.
     /// Since `Star` always succeeds, this function is total.
@@ -279,6 +326,16 @@ impl<A: SpecByteLen> SpecByteLen for super::Star<A> {
     }
 }
 
+impl<A: ValueByteLen> ValueByteLen for super::Star<A> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        v.fold_left(0, |acc: nat, elem| acc + A::value_byte_len(elem))
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        lemma_value_seq_byte_len(self.inner, v);
+    }
+}
+
 impl<C: SpecParser, N: AsLen> super::RepeatN<C, N> {
     pub open spec fn parse_n_rec(&self, count: nat, ibuf: Seq<u8>) -> Option<(int, Seq<C::PVal>)>
         decreases count,
@@ -465,6 +522,16 @@ impl<C: SpecByteLen, N: AsLen> SpecByteLen for super::RepeatN<C, N> {
     }
 }
 
+impl<C: ValueByteLen, N: AsLen> ValueByteLen for super::RepeatN<C, N> {
+    open spec fn value_byte_len(vs: Self::T) -> nat {
+        <super::Star<C> as ValueByteLen>::value_byte_len(vs)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, vs: Self::T) {
+        lemma_value_seq_byte_len(self.1, vs);
+    }
+}
+
 impl<const N: usize, C: SpecParser> SpecParser for super::Array<N, C> {
     type PVal = [C::PVal; N];
 
@@ -579,6 +646,17 @@ impl<const N: usize, C: StaticByteLen> StaticByteLen for super::Array<N, C> {
     }
 }
 
+impl<const N: usize, C: ValueByteLen> ValueByteLen for super::Array<N, C> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <super::Star<C> as ValueByteLen>::value_byte_len(v@)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        lemma_value_seq_byte_len(self.0, v@);
+        assert(self.byte_len(v) == (super::Star { inner: self.0 }).byte_len(v@));
+    }
+}
+
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Repeat<A, B> {
     type PVal = (Seq<A::PVal>, B::PVal);
 
@@ -661,6 +739,16 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Repeat<A, B> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(super::Star { inner: self.0 }, self.1).byte_len(v)
+    }
+}
+
+impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Repeat<A, B> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <Pair<super::Star<A>, B> as ValueByteLen>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        Pair(super::Star { inner: self.0 }, self.1).lemma_value_len_matches_byte_len(v);
     }
 }
 

@@ -32,10 +32,24 @@ impl<A, B> NonMalleable for super::Terminated<A, B> where
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        super::terminated_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_non_malleable(
-            buf1,
-            buf2,
-        );
+        let pair = Pair(self.0, self.1);
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    assert(pair.spec_parse(buf1) matches Some((_, _)));
+                    assert(pair.spec_parse(buf2) matches Some((_, _)));
+                    let (_m1, p1) = pair.spec_parse(buf1)->0;
+                    let (_m2, p2) = pair.spec_parse(buf2)->0;
+                    assert(p1.0 == v1);
+                    assert(p2.0 == v2);
+                    pair.lemma_parse_sound_value(buf1);
+                    pair.lemma_parse_sound_value(buf2);
+                    self.1.lemma_unique_consistent_val(p1.1, p2.1);
+                    assert(p1 == p2);
+                    pair.lemma_parse_non_malleable(buf1, buf2);
+                }
+            }
+        }
     }
 }
 

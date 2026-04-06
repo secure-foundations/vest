@@ -150,6 +150,22 @@ impl<A, B> SpecByteLen for super::Choice<A, B> where A: SpecByteLen, B: SpecByte
     }
 }
 
+impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Choice<A, B> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        match v {
+            Sum::Inl(va) => A::value_byte_len(va),
+            Sum::Inr(vb) => B::value_byte_len(vb),
+        }
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        match v {
+            Sum::Inl(va) => self.0.lemma_value_len_matches_byte_len(va),
+            Sum::Inr(vb) => self.1.lemma_value_len_matches_byte_len(vb),
+        }
+    }
+}
+
 impl<A: SpecParser, B: SpecParser<PVal = A::PVal>> SpecParser for super::Alt<A, B> {
     type PVal = A::PVal;
 
@@ -170,17 +186,19 @@ impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A,
     }
 }
 
+pub open spec fn arbitrary_or_left(l: bool, r: bool) -> bool {
+    if l && r {
+        arbitrary()
+    } else {
+        l
+    }
+}
+
 impl<A: Consistency, B: Consistency<Val = A::Val>> super::Alt<A, B> {
     /// If exactly one branch accepts `v`, this returns that branch.
     /// If both accept `v`, the choice is unspecified.
     pub open spec fn choose_left(&self, v: A::Val) -> bool {
-        if self.0.consistent(v) && self.1.consistent(v) {
-            arbitrary()
-        } else if self.0.consistent(v) {
-            true
-        } else {
-            false
-        }
+        arbitrary_or_left(self.0.consistent(v), self.1.consistent(v))
     }
 }
 
@@ -455,6 +473,16 @@ impl<T, C: SpecByteLen, const N: usize> SpecByteLen for super::Dispatch<T, C, N>
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.active_branch().byte_len(v)
+    }
+}
+
+impl<T, C: ValueByteLen, const N: usize> ValueByteLen for super::Dispatch<T, C, N> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        C::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.active_branch().lemma_value_len_matches_byte_len(v);
     }
 }
 

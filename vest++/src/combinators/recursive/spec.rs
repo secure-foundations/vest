@@ -394,7 +394,16 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecSerializerDps for super::Fix<LIM
 
 impl<const LIMIT: usize, Body: SpecRecBody> Unambiguity for super::Fix<LIMIT, Body> {
     open spec fn unambiguous(&self) -> bool {
-        self.unambiguity_gas(LIMIT as nat)
+        Self::unambiguity_gas(LIMIT as nat)
+    }
+}
+
+impl<const LIMIT: usize, Body: SpecRecBody> ValueByteLen for super::Fix<LIMIT, Body> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Self::byte_len_gas(LIMIT as nat, v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 

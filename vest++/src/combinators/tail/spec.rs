@@ -67,6 +67,15 @@ impl BytesCombinator for super::Tail {
     }
 }
 
+impl ValueByteLen for super::Tail {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        v.len()
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl GoodSerializer for super::Tail {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
     }
@@ -142,6 +151,15 @@ impl StaticByteLen for super::Eof {
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl ValueByteLen for super::Eof {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -221,6 +239,16 @@ impl<C: SpecByteLen> SpecByteLen for super::OptionalEnd<C> {
     }
 }
 
+impl<C: ValueByteLen> ValueByteLen for super::OptionalEnd<C> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <Optional<C, super::Eof> as ValueByteLen>::value_byte_len((v, ()))
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        Optional(self.0, super::Eof).lemma_value_len_matches_byte_len((v, ()));
+    }
+}
+
 impl<C: Unambiguity> Unambiguity for super::OptionalEnd<C> {
     open spec fn unambiguous(&self) -> bool {
         Optional(self.0, super::Eof).unambiguous()
@@ -295,6 +323,16 @@ impl<C: SpecByteLen> SpecByteLen for super::RepeatTillEnd<C> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Repeat(self.0, super::Eof).byte_len((v, ()))
+    }
+}
+
+impl<C: ValueByteLen> ValueByteLen for super::RepeatTillEnd<C> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <Repeat<C, super::Eof> as ValueByteLen>::value_byte_len((v, ()))
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        Repeat(self.0, super::Eof).lemma_value_len_matches_byte_len((v, ()));
     }
 }
 

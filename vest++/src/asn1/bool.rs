@@ -172,6 +172,16 @@ impl<const DER: bool> StaticByteLen for super::Bool<DER> {
     }
 }
 
+impl<const DER: bool> ValueByteLen for super::Bool<DER> {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        BOOL_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        bool_fmt::<DER>().lemma_static_len_matches_byte_len(v);
+    }
+}
+
 impl<const DER: bool> SPRoundTripDps for super::Bool<DER> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         bool_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);

@@ -125,6 +125,17 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Pair<A, B> {
     }
 }
 
+impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Pair<A, B> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        A::value_byte_len(v.0) + B::value_byte_len(v.1)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_value_len_matches_byte_len(v.0);
+        self.1.lemma_value_len_matches_byte_len(v.1);
+    }
+}
+
 impl<A: StaticByteLen, B: StaticByteLen> StaticByteLen for super::Pair<A, B> {
     open spec fn static_byte_len() -> nat {
         A::static_byte_len() + B::static_byte_len()
@@ -308,6 +319,22 @@ impl<A, B> SpecByteLen for super::DepPair<A, spec_fn(A::T) -> B> where
         let (key, val) = value;
         let next = (self.1)(key);
         self.0.byte_len(key) + next.byte_len(val)
+    }
+}
+
+impl<A, B> ValueByteLen for super::DepPair<A, spec_fn(A::T) -> B> where
+    A: ValueByteLen,
+    B: ValueByteLen + Consistency<Val = B::T>,
+ {
+    open spec fn value_byte_len(value: Self::T) -> nat {
+        A::value_byte_len(value.0) + B::value_byte_len(value.1)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, value: Self::T) {
+        let (key, val) = value;
+        let next = (self.1)(key);
+        self.0.lemma_value_len_matches_byte_len(key);
+        next.lemma_value_len_matches_byte_len(val);
     }
 }
 

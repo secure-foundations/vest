@@ -63,7 +63,7 @@ impl<A, B> SoundParser for super::Terminated<A, B> where
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        super::terminated_fmt::<A, B, A::PVal, B::PVal>(self.0, self.1).lemma_parse_safe(ibuf);
+        Pair(self.0, self.1).lemma_parse_safe(ibuf);
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -140,9 +140,23 @@ impl<A, B> StaticByteLen for super::Terminated<A, B> where A: StaticByteLen, B: 
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        super::terminated_fmt::<A, B, A::T, B::T>(self.0, self.1).lemma_static_len_matches_byte_len(
-            v,
-        );
+        let vb = choose|vb: B::T| self.1.consistent(vb);
+        assert(self.byte_len(v) == Pair(self.0, self.1).byte_len((v, vb)));
+        self.0.lemma_static_len_matches_byte_len(v);
+        self.1.lemma_static_len_matches_byte_len(vb);
+    }
+}
+
+impl<A, B> ValueByteLen for super::Terminated<A, B> where A: ValueByteLen, B: StaticByteLen {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        A::value_byte_len(v) + B::static_byte_len()
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        let vb = choose|vb: B::T| self.1.consistent(vb);
+        assert(self.byte_len(v) == Pair(self.0, self.1).byte_len((v, vb)));
+        self.0.lemma_value_len_matches_byte_len(v);
+        self.1.lemma_static_len_matches_byte_len(vb);
     }
 }
 

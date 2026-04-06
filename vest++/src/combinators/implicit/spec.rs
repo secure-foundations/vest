@@ -192,6 +192,40 @@ impl<Head, Tail> SpecByteLen for Implicit<Head, Tail> where
     }
 }
 
+impl<Head, Tail> StaticByteLen for Implicit<Head, Tail> where
+    Head: StaticByteLen,
+    Tail: DepCombinator<Key = Head::T>,
+    Tail::Body: StaticByteLen<T = Tail::Val>,
+ {
+    open spec fn static_byte_len() -> nat {
+        Head::static_byte_len() + Tail::Body::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        let key = self.1.recover(v);
+        let body = self.1.apply(key);
+        self.0.lemma_static_len_matches_byte_len(key);
+        body.lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Head, Tail> ValueByteLen for Implicit<Head, Tail> where
+    Head: StaticByteLen,
+    Tail: DepCombinator<Key = Head::T>,
+    Tail::Body: ValueByteLen<T = Tail::Val>,
+ {
+    open spec fn value_byte_len(value: Self::T) -> nat {
+        Head::static_byte_len() + Tail::Body::value_byte_len(value)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, value: Self::T) {
+        let key = self.1.recover(value);
+        let next = self.1.apply(key);
+        self.0.lemma_static_len_matches_byte_len(key);
+        next.lemma_value_len_matches_byte_len(value);
+    }
+}
+
 // ----To enable compositions like `Implicit(T1, Implicit(T2, ...))`---
 // NOTE: The above is not true... but I will keep it here for fun
 impl<Head, Nested> DepCombinator for Implicit<Head, Nested> where
@@ -596,6 +630,40 @@ impl<A, B> SpecByteLen for super::ImplicitManual<
         let a = (self.2)(value);
         let next = (self.1)(a);
         self.0.byte_len(a) + next.byte_len(value)
+    }
+}
+
+impl<A, B> StaticByteLen for super::ImplicitManual<
+    A,
+    spec_fn(A::T) -> B,
+    spec_fn(B::T) -> A::T,
+> where A: StaticByteLen + Consistency<Val = A::T>, B: StaticByteLen + Consistency<Val = B::T> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + B::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, value: Self::T) {
+        let a = (self.2)(value);
+        let next = (self.1)(a);
+        self.0.lemma_static_len_matches_byte_len(a);
+        next.lemma_static_len_matches_byte_len(value);
+    }
+}
+
+impl<A, B> ValueByteLen for super::ImplicitManual<
+    A,
+    spec_fn(A::T) -> B,
+    spec_fn(B::T) -> A::T,
+> where A: StaticByteLen + Consistency<Val = A::T>, B: ValueByteLen + Consistency<Val = B::T> {
+    open spec fn value_byte_len(value: Self::T) -> nat {
+        A::static_byte_len() + B::value_byte_len(value)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, value: Self::T) {
+        let a = (self.2)(value);
+        let next = (self.1)(a);
+        self.0.lemma_static_len_matches_byte_len(a);
+        next.lemma_value_len_matches_byte_len(value);
     }
 }
 

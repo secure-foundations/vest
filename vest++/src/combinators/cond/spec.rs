@@ -114,4 +114,14 @@ impl<Inner: StaticByteLen> StaticByteLen for super::Cond<Inner> {
     }
 }
 
+impl<Inner: ValueByteLen> ValueByteLen for super::Cond<Inner> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Inner::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.1.lemma_value_len_matches_byte_len(v);
+    }
+}
+
 } // verus!

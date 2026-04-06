@@ -22,13 +22,4 @@ verus! {
 /// `A` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
 pub struct Preceded<A, B>(pub A, pub B);
 
-pub struct PrecededMapper<A, VA, VB>(pub A, pub PhantomData<(VA, VB)>);
-
-pub open spec fn preceded_fmt<A, B, VA, VB>(prefix: A, body: B) -> Mapped<
-    Pair<A, B>,
-    PrecededMapper<A, VA, VB>,
-> {
-    Mapped { inner: Pair(prefix, body), mapper: PrecededMapper(prefix, PhantomData) }
-}
-
 } // verus!

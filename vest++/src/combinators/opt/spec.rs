@@ -134,6 +134,22 @@ impl<Inner: SpecByteLen> SpecByteLen for super::Opt<Inner> {
     }
 }
 
+impl<Inner: ValueByteLen> ValueByteLen for super::Opt<Inner> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        match v {
+            None => 0,
+            Some(vv) => Inner::value_byte_len(vv),
+        }
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        match v {
+            None => (),
+            Some(vv) => self.0.lemma_value_len_matches_byte_len(vv),
+        }
+    }
+}
+
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Optional<A, B> {
     type PVal = (Option<A::PVal>, B::PVal);
 
@@ -208,6 +224,16 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Optional<A, B> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(super::Opt(self.0), self.1).byte_len(v)
+    }
+}
+
+impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Optional<A, B> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <Pair<super::Opt<A>, B> as ValueByteLen>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        Pair(super::Opt(self.0), self.1).lemma_value_len_matches_byte_len(v);
     }
 }
 

@@ -124,6 +124,16 @@ impl<A, Pred> StaticByteLen for super::Refined<A, Pred> where
     }
 }
 
+impl<A, Pred> ValueByteLen for super::Refined<A, Pred> where A: ValueByteLen, Pred: SpecPred<A::T> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        A::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_value_len_matches_byte_len(v);
+    }
+}
+
 impl<Inner> SpecParser for super::Tag<Inner, Inner::PVal> where Inner: SpecParser {
     type PVal = Inner::PVal;
 
@@ -232,6 +242,16 @@ impl<Inner> StaticByteLen for super::Tag<Inner, Inner::T> where Inner: StaticByt
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
         self.inner.lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Inner> ValueByteLen for super::Tag<Inner, Inner::T> where Inner: ValueByteLen {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Inner::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_value_len_matches_byte_len(v);
     }
 }
 
@@ -369,6 +389,19 @@ impl<Tg, Of> StaticByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of
             super::Tag { inner: self.0, tag: self.1 },
             self.2,
         ).lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Tg, Of> ValueByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of: ValueByteLen {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Tg::static_byte_len() + Of::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        Preceded(
+            super::Tag { inner: self.0, tag: self.1 },
+            self.2,
+        ).lemma_value_len_matches_byte_len(v);
     }
 }
 

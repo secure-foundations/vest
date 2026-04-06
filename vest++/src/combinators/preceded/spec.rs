@@ -140,9 +140,23 @@ impl<A, B> StaticByteLen for super::Preceded<A, B> where A: StaticByteLen, B: St
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        super::preceded_fmt::<A, B, A::T, B::T>(self.0, self.1).lemma_static_len_matches_byte_len(
-            v,
-        );
+        let va = choose|va: A::T| self.0.consistent(va);
+        assert(self.byte_len(v) == Pair(self.0, self.1).byte_len((va, v)));
+        self.0.lemma_static_len_matches_byte_len(va);
+        self.1.lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<A, B> ValueByteLen for super::Preceded<A, B> where A: StaticByteLen, B: ValueByteLen {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        A::static_byte_len() + B::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        let va = choose|va: A::T| self.0.consistent(va);
+        assert(self.byte_len(v) == Pair(self.0, self.1).byte_len((va, v)));
+        self.0.lemma_static_len_matches_byte_len(va);
+        self.1.lemma_value_len_matches_byte_len(v);
     }
 }
 

@@ -129,7 +129,7 @@ pub trait SpecSerializerDps {
     spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8>;
 }
 
-/// Byte length of serialized values.
+/// Denotes the byte length of a value w.r.t. a combinator's format spec.
 pub trait SpecByteLen {
     /// The type of values whose byte length is being computed.
     type T;
@@ -147,6 +147,19 @@ pub trait StaticByteLen: SpecByteLen + Consistency<Val = Self::T> {
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T)
         ensures
             self.byte_len(v) == Self::static_byte_len(),
+    ;
+}
+
+/// Like [`SpecByteLen`], but the byte length can be computed from the value alone, without needing to refer
+/// to the combinator/format's parameters or internal states (`self`).
+pub trait ValueByteLen: SpecByteLen + Consistency<Val = Self::T> {
+    /// The byte length computed from the value alone.
+    spec fn value_byte_len(v: Self::T) -> nat;
+
+    /// Bridge between the parameterized byte-length view and the value-based one.
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T)
+        ensures
+            self.byte_len(v) == Self::value_byte_len(v),
     ;
 }
 
