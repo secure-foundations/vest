@@ -6,11 +6,11 @@ use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag,
+    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag
 };
 use crate::combinators::{
-    Choice, Cond, DepCombinator, Eof, Fixed, Implicit, Mapped, Repeat, Sum, TVLeaf, TVOr, Tag,
-    Tagged, Tail, U16Le, U32Le, Varied, U8,
+    Choice, Cond, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
+    TVLeaf, TVOr, Tag, Tagged, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -252,69 +252,17 @@ proof fn test_dependent_complex_tlv() {
     tlv.theorem_serialize_parse_roundtrip(msg3);
 }
 
-struct TXSegwitRest;
+type TXSegwitRestRestVal = (Seq<u8>, (Seq<u8>, u32));
 
-impl DepCombinator for TXSegwitRest {
-    type Key = u8;
+type TXSegwitRestVal = (Seq<u8>, TXSegwitRestRestVal);
 
-    type Val = (Seq<u8>, <TXSegwitRestRest as DepCombinator>::Val);
+type TXSegwitRestRest = FnDepCombinator<u8, TXSegwitRestRestVal, Pair<Varied, Pair<Varied, U32Le>>>;
 
-    type Body = Pair<Varied, Implicit<U8, TXSegwitRestRest>>;
-
-    open spec fn apply(&self, key: Self::Key) -> Self::Body {
-        let txin_count = key;
-        let txins_fmt = VLData().apply(txin_count);
-        Pair(txins_fmt, Implicit(U8, TXSegwitRestRest { txin_count }))
-    }
-
-    open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        let (txins, (txouts, (witness, lock_time))) = value;
-        let txin_count = VLData().recover(txins);
-        txin_count
-    }
-
-    proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
-        if self.apply(key).consistent(value) {
-            let (txins, (txouts, (witness, lock_time))) = value;
-            VLData().lemma_recover_consistent(key, txins);
-        }
-    }
-}
-
-pub struct TXSegwitRestRest {
-    pub txin_count: u8,
-}
-
-impl DepCombinator for TXSegwitRestRest {
-    type Key = u8;
-
-    type Val = (Seq<u8>, (Seq<u8>, u32));
-
-    type Body = Pair<Varied, Pair<Varied, U32Le>>;
-
-    open spec fn apply(&self, key: Self::Key) -> Self::Body {
-        let txin_count = self.txin_count;
-        let txout_count = key;
-        let txouts_fmt = VLData().apply(txout_count);
-        let witness_fmt = VLData().apply(txin_count);
-        let lock_time_fmt = U32Le;
-        Pair(txouts_fmt, Pair(witness_fmt, lock_time_fmt))
-    }
-
-    open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        let (txouts, (witness, lock_time)) = value;
-        let txout_count = VLData().recover(txouts);
-        txout_count
-    }
-
-    proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
-        if self.apply(key).consistent(value) {
-            let (txouts, (witness, lock_time)) = value;
-            assert(self.apply(key).0.consistent(txouts));
-            VLData().lemma_recover_consistent(key, txouts);
-        }
-    }
-}
+type TXSegwitRest = FnDepCombinator<
+    u8,
+    TXSegwitRestVal,
+    Pair<Varied, Implicit<U8, TXSegwitRestRest>>,
+>;
 
 proof fn test_bitcoin_tx() {
     use super::choice::{
@@ -372,8 +320,24 @@ proof fn test_bitcoin_tx() {
     #[verusfmt::skip]
     let tx_segwit =
         Tagged(U8, 1u8,
-        Implicit(U8,
-        TXSegwitRest));
+        Implicit(U8, (|txin_count: u8|
+        Pair(Varied(txin_count),
+        Implicit(U8, (|txout_count: u8|
+        Pair(Varied(txout_count),
+        Pair(Varied(txin_count),
+        U32Le)),
+        |value: TXSegwitRestRestVal|
+        {
+            let (txouts, (_witness, _lock_time)) = value;
+            Varied::<u8>::value_byte_len(txouts) as u8
+        }))
+        ),
+        |value: TXSegwitRestVal|
+        {
+            let (txins, _rest) = value;
+            Varied::<u8>::value_byte_len(txins) as u8
+        })),
+    );
 
     let txins = seq![0x01u8, 0x02u8, 0x03u8];
     let txouts = seq![0xAAu8; u8::MAX as nat];
@@ -383,6 +347,8 @@ proof fn test_bitcoin_tx() {
     let value = (txins, (txouts, (witness, lock_time)));
 
     assert(tx_segwit.unambiguous());
+    assert(tx_segwit.sound_inv());
+    assert(tx_segwit.nonmal_inv());
     assert(tx_segwit.consistent(value));
     tx_segwit.theorem_serialize_parse_roundtrip(value);
 

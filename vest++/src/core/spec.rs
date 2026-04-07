@@ -174,6 +174,14 @@ pub trait ValueByteLen: SpecByteLen + Consistency<Val = Self::T> {
     ;
 }
 
+/// Broadcast wrapper for [`ValueByteLen::lemma_value_len_matches_byte_len`].
+pub broadcast proof fn lemma_value_len_matches_byte_len<C: ValueByteLen>(c: C, v: C::T)
+    ensures
+        #[trigger] c.byte_len(v) == C::value_byte_len(v),
+{
+    c.lemma_value_len_matches_byte_len(v);
+}
+
 /// Marker for combinators whose corresponding values are raw bytes (`Seq<u8>`).
 pub trait BytesCombinator: SpecByteLen<T = Seq<u8>> {
     /// Byte length equals buffer length.

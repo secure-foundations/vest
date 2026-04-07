@@ -3,7 +3,7 @@ use crate::combinators::mapped::spec::{LosslessMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Dispatch, Eof, Fixed, Repeat, Star, Tail};
 use crate::combinators::{
-    Choice, Cond, DepPair, Implicit, ImplicitManual, Mapped, Sum, U16Le, U32Le, Varied, U8,
+    Choice, Cond, DepPair, Implicit,  Mapped, Sum, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -52,18 +52,6 @@ proof fn test_dep_pair_fmt3_roundtrip() {
     }
 }
 
-proof fn test_implicit_inferred_fmt1_roundtrip() {
-    let fmt1 = ImplicitManual(U8, |len: u8| Varied(len), |v: Seq<u8>| v.len() as u8);
-    let v = seq![0xAAu8, 0xBBu8, 0xCCu8];
-
-    assert(fmt1.unambiguous());
-    assert(fmt1.consistent(v));
-    fmt1.theorem_serialize_parse_roundtrip(v);
-
-    let ibuf = fmt1.spec_serialize(v);
-    assert(fmt1.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
-}
-
 proof fn test_implicit_inferred_fmt2_roundtrip() {
     // fmt2 = {
     //   @len1: u8
@@ -76,15 +64,15 @@ proof fn test_implicit_inferred_fmt2_roundtrip() {
     #[verusfmt::skip]
     let fmt2 =
         // Format:
-        ImplicitManual(U8, |len1: u8|
+        Implicit(U8, (|len1: u8|
         Pair(Fixed::<3>,
-        ImplicitManual(U16Le, |len2: u16|
+        Implicit(U16Le, (|len2: u16|
         Pair(Varied(len1),
         Pair(Varied(len2),
          Varied(len1))),
         // Recovery logics:
-        |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16)),
-        |v: ([u8; 3], (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8);
+        |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16))),
+        |v: ([u8; 3], (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8));
 
     let v = (
         [0x10u8, 0x20u8, 0x30u8],
@@ -112,7 +100,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
     #[verusfmt::skip]
     let fmt3 =
         // Format:
-        ImplicitManual(U8, |tag|
+        Implicit(U8, (|tag|
             Choice(Cond(tag == 0u8, U16Le),
             Choice(Cond(tag == 1u8, U32Le),
                    Cond(tag == 2u8, Fixed::<0>))),
@@ -125,7 +113,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
                     Sum::Inr(Sum::Inr(_)) => 2u8,
                 }
             },
-    );
+    ));
 
     let v0 = Sum::Inl(0x1234u16);
     let v1 = Sum::Inr(Sum::Inl(0x78563412u32));
@@ -145,6 +133,7 @@ type PayloadFmt = Choice<Cond<Tail>, Choice<Cond<Varied<u16>>, Cond<Repeat<U16Le
 
 proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     broadcast use lemma_disjoint_cond;
+    broadcast use lemma_value_len_matches_byte_len;
 
     use Sum::Inl as L;
     use Sum::Inr as R;
@@ -170,10 +159,10 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     #[verusfmt::skip]
     let tlv =
         // Format:
-        ImplicitManual(U8, |tag: u8|
-        ImplicitManual(U8, |len1: u8|
+        Implicit(U8, (|tag: u8|
+        Implicit(U8, (|len1: u8|
         Pair(Fixed::<3>,
-        ImplicitManual(U16Le, |len2: u16|
+        Implicit(U16Le, (|len2: u16|
         Pair(Varied(len1),
         ExactLen(len2, payload_fmt(tag, len2))),
         // Recovery logics:
@@ -181,12 +170,12 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
             let (v1, v2) = v;
             let len2 = PayloadFmt::value_byte_len(v2);
             len2 as u16
-        })),
+        }))),
         |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
            let (padding, (v1, v2)) = v;
             let len1 = Varied::<u8>::value_byte_len(v1);
             len1 as u8
-        }),
+        })),
         |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
             let (padding, (v1, v2)) = v;
             let tag = match v2 {
@@ -195,7 +184,7 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
                 R(R(_)) => 2u8,
             };
             tag
-        });
+        }));
 
     let padding = [0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
@@ -209,6 +198,8 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     // let msg3 = (padding, (v1, v2_3));
 
     assert(tlv.unambiguous());
+    assert(tlv.sound_inv());
+    assert(tlv.nonmal_inv());
     assert(tlv.consistent(msg1));
     assert(tlv.consistent(msg2));
     // assert(tlv.consistent(msg3));
