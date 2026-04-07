@@ -69,6 +69,7 @@ impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& forall|key: Head::PVal| #[trigger] self.1.apply(key).sound_inv()
+        &&& self.1.recover_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -257,8 +258,41 @@ impl<Head, Nested> DepCombinator for Implicit<Head, Nested> where
         self.1.recover(value)
     }
 
+    open spec fn recover_inv(&self) -> bool {
+        self.1.recover_inv()
+    }
+
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         self.1.lemma_recover_consistent(key, value);
+    }
+}
+
+impl<Key, Val, Body> DepCombinator for FnDepCombinator<Key, Val, Body> where
+    Body: Consistency<Val = Val>,
+ {
+    type Key = Key;
+
+    type Val = Val;
+
+    type Body = Body;
+
+    open spec fn apply(&self, key: Self::Key) -> Self::Body {
+        (self.0)(key)
+    }
+
+    open spec fn recover(&self, value: Self::Val) -> Self::Key {
+        (self.1)(value)
+    }
+
+    open spec fn recover_inv(&self) -> bool {
+        forall|key: Key, value: Val| #[trigger]
+            (self.0)(key).consistent(value) ==> (self.1)(value) == key
+    }
+
+    proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
+        if self.apply(key).consistent(value) {
+            assert(self.recover(value) == key);
+        }
     }
 }
 
@@ -338,6 +372,10 @@ impl<D1: DepCombinator, D2: DepCombinator> DepCombinator for Pair<D1, D2> {
         (self.0.recover(value.0), self.1.recover(value.1))
     }
 
+    open spec fn recover_inv(&self) -> bool {
+        self.0.recover_inv() && self.1.recover_inv()
+    }
+
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         self.0.lemma_recover_consistent(key.0, value.0);
         self.1.lemma_recover_consistent(key.1, value.1);
@@ -363,6 +401,10 @@ impl<Tag, C, Rest> DepCombinator for TVOr<Tag, C, Rest> where
             Sum::Inl(_) => self.0,
             Sum::Inr(vr) => self.2.recover(vr),
         }
+    }
+
+    open spec fn recover_inv(&self) -> bool {
+        self.2.recover_inv()
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
@@ -420,6 +462,10 @@ impl<Tag, Left, Right> DepCombinator for TagValNode<Tag, Left, Right> where
         }
     }
 
+    open spec fn recover_inv(&self) -> bool {
+        self.0.recover_inv() && self.1.recover_inv()
+    }
+
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         match value {
             Sum::Inl(vl) => {
@@ -473,6 +519,10 @@ impl<Tag, Len, V> DepCombinator for TLVal<Tag, Len, V> where
         (tag, Len::from_nat(body.byte_len(value)))
     }
 
+    open spec fn recover_inv(&self) -> bool {
+        self.0.recover_inv()
+    }
+
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         if self.apply(key).consistent(value) {
             self.0.lemma_recover_consistent(key.0, value);
@@ -481,253 +531,6 @@ impl<Tag, Len, V> DepCombinator for TLVal<Tag, Len, V> where
             assert(body.byte_len(value) == key.1.as_usize());
             assert(body.byte_len(value) == key.1.as_usize() as nat);
         }
-    }
-}
-
-impl<A, B, Infer> SpecParser for super::ImplicitManual<A, spec_fn(A::PVal) -> B, Infer> where
-    A: SpecParser,
-    B: SpecParser,
- {
-    type PVal = B::PVal;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        match self.0.spec_parse(ibuf) {
-            Some((n1, a)) => {
-                let next = (self.1)(a);
-                match next.spec_parse(ibuf.skip(n1)) {
-                    Some((n2, v)) => Some((n1 + n2, v)),
-                    None => None,
-                }
-            },
-            None => None,
-        }
-    }
-}
-
-impl<A, B, Infer> SafeParser for super::ImplicitManual<A, spec_fn(A::PVal) -> B, Infer> where
-    A: SafeParser,
-    B: SafeParser,
- {
-    open spec fn safe_inv(&self) -> bool {
-        &&& self.0.safe_inv()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).safe_inv()
-    }
-
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        assert(self.safe_inv());
-        self.0.lemma_parse_safe(ibuf);
-        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
-            let next = (self.1)(a);
-            assert(next.safe_inv());
-            next.lemma_parse_safe(ibuf.skip(n1));
-        }
-    }
-}
-
-impl<A, B> SoundParser for super::ImplicitManual<
-    A,
-    spec_fn(A::PVal) -> B,
-    spec_fn(B::T) -> A::T,
-> where A: SoundParser, B: SoundParser {
-    open spec fn sound_inv(&self) -> bool {
-        &&& self.0.sound_inv()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).sound_inv()
-        &&& forall|a: A::T, value: B::T|
-            self.0.consistent(a) && #[trigger] (self.1)(a).consistent(value) ==> (self.2)(value)
-                == a
-    }
-
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-        self.0.lemma_parse_sound_value(ibuf);
-        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
-            let next = (self.1)(a);
-            assert(self.sound_inv());
-            assert(next.sound_inv());
-            next.lemma_parse_sound_consumption(ibuf.skip(n1));
-            next.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((n2, value)) = next.spec_parse(ibuf.skip(n1)) {
-                assert(self.0.consistent(a));
-                assert(next.consistent(value));
-                assert((self.2)(value) == a);
-                assert(self.byte_len(value) == self.0.byte_len(a) + next.byte_len(value));
-            }
-        }
-    }
-
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_value(ibuf);
-        if let Some((n1, a)) = self.0.spec_parse(ibuf) {
-            let next = (self.1)(a);
-            assert(self.sound_inv());
-            assert(next.sound_inv());
-            next.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((_n2, value)) = next.spec_parse(ibuf.skip(n1)) {
-                assert(self.0.consistent(a));
-                assert(next.consistent(value));
-                assert((self.2)(value) == a);
-                assert(self.consistent(value));
-            }
-        }
-    }
-}
-
-impl<A, B> Consistency for super::ImplicitManual<
-    A,
-    spec_fn(A::Val) -> B,
-    spec_fn(B::Val) -> A::Val,
-> where A: Consistency, B: Consistency {
-    type Val = B::Val;
-
-    open spec fn consistent(&self, value: Self::Val) -> bool {
-        let a = (self.2)(value);
-        self.0.consistent(a) && (self.1)(a).consistent(value)
-    }
-}
-
-impl<A, B> SpecSerializerDps for super::ImplicitManual<
-    A,
-    spec_fn(A::ST) -> B,
-    spec_fn(B::ST) -> A::ST,
-> where
-    A: SpecSerializerDps + Consistency<Val = A::ST>,
-    B: SpecSerializerDps + Consistency<Val = B::ST>,
- {
-    type ST = B::ST;
-
-    open spec fn spec_serialize_dps(&self, value: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.spec_serialize_dps(a, next.spec_serialize_dps(value, obuf))
-    }
-}
-
-impl<A, B> SpecSerializer for super::ImplicitManual<
-    A,
-    spec_fn(A::SVal) -> B,
-    spec_fn(B::SVal) -> A::SVal,
-> where
-    A: SpecSerializer + Consistency<Val = A::SVal>,
-    B: SpecSerializer + Consistency<Val = B::SVal>,
- {
-    type SVal = B::SVal;
-
-    open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.spec_serialize(a) + next.spec_serialize(value)
-    }
-}
-
-impl<A, B, Infer> Unambiguity for super::ImplicitManual<A, spec_fn(A::PVal) -> B, Infer> where
-    A: Unambiguity,
-    B: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).unambiguous()
-    }
-}
-
-impl<A, B> NonTailFmt for super::ImplicitManual<
-    A,
-    spec_fn(A::ST) -> B,
-    spec_fn(B::ST) -> A::ST,
-> where A: NonTailFmt + Consistency<Val = A::ST>, B: NonTailFmt + Consistency<Val = B::ST> {
-    open spec fn serialize_dps_inv(&self) -> bool {
-        &&& self.0.serialize_dps_inv()
-        &&& forall|a: A::ST| #[trigger] (self.1)(a).serialize_dps_inv()
-    }
-
-    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        let next_buf = next.spec_serialize_dps(value, obuf);
-
-        next.lemma_serialize_dps_prepend(value, obuf);
-        self.0.lemma_serialize_dps_prepend(a, next_buf);
-
-        let witness_next = choose|w: Seq<u8>| next.spec_serialize_dps(value, obuf) == w + obuf;
-        let witness_prefix = choose|w: Seq<u8>|
-            self.0.spec_serialize_dps(a, next_buf) == w + next_buf;
-        assert(self.spec_serialize_dps(value, obuf) == witness_prefix + witness_next + obuf);
-    }
-
-    proof fn lemma_serialize_dps_len(&self, value: Self::ST, obuf: Seq<u8>) {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        let next_buf = next.spec_serialize_dps(value, obuf);
-        next.lemma_serialize_dps_len(value, obuf);
-        self.0.lemma_serialize_dps_len(a, next_buf);
-    }
-}
-
-impl<A, B> GoodSerializer for super::ImplicitManual<
-    A,
-    spec_fn(A::SVal) -> B,
-    spec_fn(B::SVal) -> A::SVal,
-> where
-    A: GoodSerializer + Consistency<Val = A::SVal>,
-    B: GoodSerializer + Consistency<Val = B::SVal>,
- {
-    open spec fn serialize_inv(&self) -> bool {
-        &&& self.0.serialize_inv()
-        &&& forall|a: A::SVal| #[trigger] (self.1)(a).serialize_inv()
-    }
-
-    proof fn lemma_serialize_len(&self, value: Self::SVal) {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.lemma_serialize_len(a);
-        next.lemma_serialize_len(value);
-    }
-}
-
-impl<A, B> SpecByteLen for super::ImplicitManual<
-    A,
-    spec_fn(A::T) -> B,
-    spec_fn(B::T) -> A::T,
-> where A: SpecByteLen + Consistency<Val = A::T>, B: SpecByteLen + Consistency<Val = B::T> {
-    type T = B::T;
-
-    open spec fn byte_len(&self, value: Self::T) -> nat {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.byte_len(a) + next.byte_len(value)
-    }
-}
-
-impl<A, B> StaticByteLen for super::ImplicitManual<
-    A,
-    spec_fn(A::T) -> B,
-    spec_fn(B::T) -> A::T,
-> where A: StaticByteLen + Consistency<Val = A::T>, B: StaticByteLen + Consistency<Val = B::T> {
-    open spec fn static_byte_len() -> nat {
-        A::static_byte_len() + B::static_byte_len()
-    }
-
-    proof fn lemma_static_len_matches_byte_len(&self, value: Self::T) {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.lemma_static_len_matches_byte_len(a);
-        next.lemma_static_len_matches_byte_len(value);
-    }
-}
-
-impl<A, B> ValueByteLen for super::ImplicitManual<
-    A,
-    spec_fn(A::T) -> B,
-    spec_fn(B::T) -> A::T,
-> where A: StaticByteLen + Consistency<Val = A::T>, B: ValueByteLen + Consistency<Val = B::T> {
-    open spec fn value_byte_len(value: Self::T) -> nat {
-        A::static_byte_len() + B::value_byte_len(value)
-    }
-
-    proof fn lemma_value_len_matches_byte_len(&self, value: Self::T) {
-        let a = (self.2)(value);
-        let next = (self.1)(a);
-        self.0.lemma_static_len_matches_byte_len(a);
-        next.lemma_value_len_matches_byte_len(value);
     }
 }
 

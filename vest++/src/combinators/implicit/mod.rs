@@ -12,9 +12,6 @@ verus! {
 /// A family of dependent combinators indexed by a key type.
 ///
 /// Used to constrain the `Tail` combinator in a [`Implicit<Head, Tail>`].
-///
-/// While possible, most users will use the provided dependent combinators ([`TVOr`], [`TLVal`],
-/// [`VariedLen`], etc.) rather than implementing this trait directly.
 pub trait DepCombinator {
     /// The type of keys parsed by the head combinator/to be recovered during serialization.
     type Key;
@@ -31,12 +28,21 @@ pub trait DepCombinator {
     /// Given a body value, recover the key used to produce the body combinator.
     spec fn recover(&self, value: Self::Val) -> Self::Key;
 
+    open spec fn recover_inv(&self) -> bool {
+        true
+    }
+
     /// Recover must agree with any key that makes the body's value consistent.
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val)
+        requires
+            self.recover_inv(),
         ensures
             self.apply(key).consistent(value) ==> self.recover(value) == key,
     ;
 }
+
+/// Dependent family encoded by a pair of pure spec closures `(apply, recover)`.
+pub type FnDepCombinator<Key, Val, Body> = (spec_fn(Key) -> Body, spec_fn(Val) -> Key);
 
 /// Dependent sequential combinator with deterministic key recovery.
 ///
@@ -129,8 +135,5 @@ pub open spec fn TVNode<Tag, Left, Right>(left: Left, right: Right) -> TagValNod
 > {
     TagValNode(left, right, core::marker::PhantomData)
 }
-
-/// Dependent sequential combinator with explicit recovery function.
-pub struct ImplicitManual<A, B, Recover>(pub A, pub B, pub Recover);
 
 } // verus!
