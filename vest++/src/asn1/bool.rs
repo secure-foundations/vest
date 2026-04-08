@@ -193,18 +193,7 @@ impl<const DER: bool> SPRoundTripDps for super::Bool<DER> {
 
 impl<const DER: bool> NoLookAhead for super::Bool<DER> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        let inner = Refined { inner: U8, pred: BoolBytePred::<DER> };
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    self.lemma_parse_safe(i1);
-                    let (m, b) = inner.spec_parse(i1)->0;
-                    inner.lemma_no_lookahead(i1, i2);
-                    assert(inner.spec_parse(i2) == Some((m, b)));
-                    assert(self.spec_parse(i2) == Some((m, v)));
-                }
-            }
-        }
+        bool_fmt::<DER>().lemma_no_lookahead(i1, i2);
     }
 }
 

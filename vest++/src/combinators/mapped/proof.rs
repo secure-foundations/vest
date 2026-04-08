@@ -56,7 +56,7 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
 
 impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     Inner: NoLookAhead,
-    M: LosslessMapper<In = Inner::PVal>,
+    M: LossyMapper<In = Inner::PVal>,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         self.inner.no_lookahead_inv()
@@ -66,6 +66,9 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
+                    assert(self.safe_inv());
+                    assert(self.no_lookahead_inv());
+                    assert(self.unambiguous());
                     self.inner.lemma_no_lookahead(i1, i2);
                 }
             }
