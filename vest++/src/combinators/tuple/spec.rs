@@ -80,12 +80,6 @@ impl<A, B> SpecSerializer for super::Pair<A, B> where A: SpecSerializer, B: Spec
     }
 }
 
-impl<A, B> Unambiguity for super::Pair<A, B> where A: Unambiguity, B: Unambiguity {
-    open spec fn unambiguous(&self) -> bool {
-        self.1.unambiguous() && self.0.unambiguous()
-    }
-}
-
 impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
@@ -263,16 +257,6 @@ impl<A, B> SpecSerializer for super::DepPair<A, spec_fn(A::SVal) -> B> where
         let (key, val) = value;
         let next = (self.1)(key);
         self.0.spec_serialize(key) + next.spec_serialize(val)
-    }
-}
-
-impl<A, B> Unambiguity for super::DepPair<A, spec_fn(A::PVal) -> B> where
-    A: Unambiguity,
-    B: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& forall|key: A::PVal| #[trigger] (self.1)(key).unambiguous()
     }
 }
 

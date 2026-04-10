@@ -8,7 +8,9 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Unsigned 8-bit integer combinator. Reads/writes a single byte.
+/// Unsigned 8-bit integer combinator.
+///
+/// Defined as `Mapped { inner: Fixed::<1>, mapper: (u8_from_bytes, u8_to_bytes) }`.
 pub struct U8;
 
 /// Little-endian unsigned 16-bit integer.

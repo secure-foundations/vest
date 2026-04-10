@@ -157,15 +157,6 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     }
 }
 
-impl<Inner, M> Unambiguity for super::Mapped<Inner, M> where
-    Inner: Unambiguity,
-    M: Mapper<In = Inner::PVal>,
- {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
-    }
-}
-
 impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     Inner: NonTailFmt,
     M: Mapper<In = Inner::ST>,
@@ -294,12 +285,6 @@ impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_value(ibuf);
-    }
-}
-
-impl<Inner: Unambiguity, Out> Unambiguity for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
     }
 }
 
@@ -475,15 +460,6 @@ impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
 
     open spec fn spec_serialize_dps(&self, v: M::Out, obuf: Seq<u8>) -> Seq<u8> {
         self.inner().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<Inner, M> Unambiguity for super::TryMap<Inner, M> where
-    Inner: Unambiguity,
-    M: Mapper<In = Inner::PVal>,
- {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner().unambiguous()
     }
 }
 

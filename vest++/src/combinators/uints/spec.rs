@@ -77,16 +77,6 @@ pub broadcast proof fn lemma_u16_le_value_roundtrip(o: u16)
     assert(o == ((o & 0xff) | ((o >> 8) & 0xff) << 8)) by (bit_vector);
 }
 
-pub proof fn lemma_u16_le_fmt_inv()
-    ensures
-        u16_le_fmt().sound_inv(),
-        u16_le_fmt().nonmal_inv(),
-        u16_le_fmt().sp_roundtrip_dps_inv(),
-{
-    broadcast use lemma_u16_le_bytes_roundtrip, lemma_u16_le_value_roundtrip;
-
-}
-
 pub open spec fn u16_be_from_bytes(i: [u8; 2]) -> u16 {
     (i[0] as u16) << 8 | (i[1] as u16)
 }
@@ -115,16 +105,6 @@ pub broadcast proof fn lemma_u16_be_value_roundtrip(o: u16)
         &&& (o >> 8) & 0xff < 256
     }) by (bit_vector);
     assert(o == (((o >> 8) & 0xff) << 8 | (o & 0xff))) by (bit_vector);
-}
-
-pub proof fn lemma_u16_be_fmt_inv()
-    ensures
-        u16_be_fmt().sound_inv(),
-        u16_be_fmt().nonmal_inv(),
-        u16_be_fmt().sp_roundtrip_dps_inv(),
-{
-    broadcast use lemma_u16_be_bytes_roundtrip, lemma_u16_be_value_roundtrip;
-
 }
 
 pub open spec fn u32_le_from_bytes(i: [u8; 4]) -> u32 {
@@ -163,16 +143,6 @@ pub broadcast proof fn lemma_u32_le_value_roundtrip(o: u32)
         << 24)) by (bit_vector);
 }
 
-pub proof fn lemma_u32_le_fmt_inv()
-    ensures
-        u32_le_fmt().sound_inv(),
-        u32_le_fmt().nonmal_inv(),
-        u32_le_fmt().sp_roundtrip_dps_inv(),
-{
-    broadcast use lemma_u32_le_bytes_roundtrip, lemma_u32_le_value_roundtrip;
-
-}
-
 pub open spec fn u32_be_from_bytes(i: [u8; 4]) -> u32 {
     (i[0] as u32) << 24 | (i[1] as u32) << 16 | (i[2] as u32) << 8 | (i[3] as u32)
 }
@@ -207,16 +177,6 @@ pub broadcast proof fn lemma_u32_be_value_roundtrip(o: u32)
     }) by (bit_vector);
     assert(o == (((o >> 24) & 0xff) << 24 | ((o >> 16) & 0xff) << 16 | ((o >> 8) & 0xff) << 8 | (o
         & 0xff))) by (bit_vector);
-}
-
-pub proof fn lemma_u32_be_fmt_inv()
-    ensures
-        u32_be_fmt().sound_inv(),
-        u32_be_fmt().nonmal_inv(),
-        u32_be_fmt().sp_roundtrip_dps_inv(),
-{
-    broadcast use lemma_u32_be_bytes_roundtrip, lemma_u32_be_value_roundtrip;
-
 }
 
 impl SpecParser for super::U8 {
@@ -265,12 +225,6 @@ impl SoundParser for super::U8 {
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-    }
-}
-
-impl Unambiguity for super::U8 {
-    open spec fn unambiguous(&self) -> bool {
-        true
     }
 }
 
@@ -350,26 +304,21 @@ impl SpecSerializer for super::U16Le {
 
 impl SafeParser for super::U16Le {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
         u16_le_fmt().lemma_parse_safe(ibuf);
     }
 }
 
 impl SoundParser for super::U16Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
+        broadcast use lemma_u16_le_bytes_roundtrip;
+
         u16_le_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
-        u16_le_fmt().lemma_parse_sound_value(ibuf);
-    }
-}
+        broadcast use lemma_u16_le_bytes_roundtrip;
 
-impl Unambiguity for super::U16Le {
-    open spec fn unambiguous(&self) -> bool {
-        u16_le_fmt().unambiguous()
+        u16_le_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -449,26 +398,21 @@ impl SpecSerializer for super::U16Be {
 
 impl SafeParser for super::U16Be {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
         u16_be_fmt().lemma_parse_safe(ibuf);
     }
 }
 
 impl SoundParser for super::U16Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
+        broadcast use lemma_u16_be_bytes_roundtrip;
+
         u16_be_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
-        u16_be_fmt().lemma_parse_sound_value(ibuf);
-    }
-}
+        broadcast use lemma_u16_be_bytes_roundtrip;
 
-impl Unambiguity for super::U16Be {
-    open spec fn unambiguous(&self) -> bool {
-        u16_be_fmt().unambiguous()
+        u16_be_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -548,26 +492,21 @@ impl SpecSerializer for super::U32Le {
 
 impl SafeParser for super::U32Le {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
         u32_le_fmt().lemma_parse_safe(ibuf);
     }
 }
 
 impl SoundParser for super::U32Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
+        broadcast use lemma_u32_le_bytes_roundtrip;
+
         u32_le_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
-        u32_le_fmt().lemma_parse_sound_value(ibuf);
-    }
-}
+        broadcast use lemma_u32_le_bytes_roundtrip;
 
-impl Unambiguity for super::U32Le {
-    open spec fn unambiguous(&self) -> bool {
-        u32_le_fmt().unambiguous()
+        u32_le_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 
@@ -647,26 +586,21 @@ impl SpecSerializer for super::U32Be {
 
 impl SafeParser for super::U32Be {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
         u32_be_fmt().lemma_parse_safe(ibuf);
     }
 }
 
 impl SoundParser for super::U32Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
+        broadcast use lemma_u32_be_bytes_roundtrip;
+
         u32_be_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
-        u32_be_fmt().lemma_parse_sound_value(ibuf);
-    }
-}
+        broadcast use lemma_u32_be_bytes_roundtrip;
 
-impl Unambiguity for super::U32Be {
-    open spec fn unambiguous(&self) -> bool {
-        u32_be_fmt().unambiguous()
+        u32_be_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 

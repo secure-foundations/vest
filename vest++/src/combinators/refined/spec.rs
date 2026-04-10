@@ -73,15 +73,6 @@ impl<A, Pred> SpecSerializer for super::Refined<A, Pred> where
     }
 }
 
-impl<A, Pred> Unambiguity for super::Refined<A, Pred> where
-    A: Unambiguity,
-    Pred: SpecPred<A::PVal>,
- {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
-    }
-}
-
 impl<A, Pred> NonTailFmt for super::Refined<A, Pred> where A: NonTailFmt, Pred: SpecPred<A::ST> {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner.serialize_dps_inv()
@@ -206,12 +197,6 @@ impl<Inner> SpecSerializer for super::Tag<Inner, Inner::SVal> where Inner: SpecS
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         self.inner.spec_serialize(v)
-    }
-}
-
-impl<Inner> Unambiguity for super::Tag<Inner, Inner::PVal> where Inner: Unambiguity {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
     }
 }
 
@@ -341,15 +326,6 @@ impl<Tg, Of> SpecSerializer for super::Tagged<Tg, Of> where
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize(v)
-    }
-}
-
-impl<Tg, Of> Unambiguity for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + Unambiguity<PVal = Tg::T>,
-    Of: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).unambiguous()
     }
 }
 

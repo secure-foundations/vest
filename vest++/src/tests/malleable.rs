@@ -13,7 +13,6 @@ verus! {
 proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq<u8>)
     requires
         serializer.sp_roundtrip_inv(),
-        serializer.unambiguous(),
         serializer.consistent(v),
 {
     serializer.theorem_serialize_parse_roundtrip(v);
@@ -22,7 +21,6 @@ proof fn requires_sp_roundtrip<T: SPRoundTrip>(serializer: T, v: T::T, obuf: Seq
 proof fn requires_ps_roundtrip<T: PSRoundTrip>(parser: T, ibuf: Seq<u8>)
     requires
         parser.ps_roundtrip_inv(),
-        parser.unambiguous(),
 {
     parser.theorem_parse_serialize_roundtrip(ibuf);
 }
@@ -182,8 +180,9 @@ proof fn test_derbool_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     requires_non_malleable(parser, buf1, buf2);
 }
 
-proof fn unambiguous_pair<A: Unambiguity, B: Unambiguity>(pair: Pair<A, B>)
+proof fn unambiguous_pair<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps>(pair: Pair<A, B>)
     requires
+        pair.0.serialize_dps_inv(),
         pair.0.unambiguous(),
         pair.1.unambiguous(),
     ensures

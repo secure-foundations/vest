@@ -6,27 +6,23 @@ use vstd::prelude::*;
 verus! {
 
 /// Functional version of [`SPRoundTripDps`] for parser/serializer callback bundles.
-pub open spec fn sp_roundtrip_dps_parser<T>(
+pub open spec fn sp_roundtrip_dps<T>(
     parser: ParserFnSpec<T>,
     consistent: PredFnSpec<T>,
     byte_len: ByteLenFnSpec<T>,
     serializer_dps: SerializerDPSFnSpec<T>,
-    unambiguous: UnambiguityFnSpec,
 ) -> bool {
     forall|v: T, obuf: Seq<u8>|
-        consistent(v) && unambiguous() ==> #[trigger] parser(serializer_dps(v, obuf)) == Some(
+        consistent(v) ==> #[trigger] parser(serializer_dps(v, obuf)) == Some(
             (byte_len(v) as int, v),
         )
 }
 
 /// Functional version of [`NoLookAhead`] for parsers.
-pub open spec fn no_lookahead_parser<T>(
-    parser: ParserFnSpec<T>,
-    unambiguous: UnambiguityFnSpec,
-) -> bool {
+pub open spec fn no_lookahead_parser<T>(parser: ParserFnSpec<T>) -> bool {
     forall|i1: Seq<u8>, i2: Seq<u8>|
-        unambiguous() ==> (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len()
-            ==> i2.take(n) == i1.take(n) ==> #[trigger] parser(i2) == Some((n, v)))
+        (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
+            == i1.take(n) ==> #[trigger] parser(i2) == Some((n, v)))
 }
 
 pub open spec fn parser_pair_some<T>(
@@ -88,32 +84,31 @@ impl<T> NonMalleable for BundledSpecs<T> {
 }
 
 impl<T> SPRoundTripDps for BundledSpecs<T> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        let (c, b, p, _, s_dps, u) = *self;
-        sp_roundtrip_dps_parser(p, c, b, s_dps, u)
+    open spec fn unambiguous(&self) -> bool {
+        let (c, b, p, _, s_dps) = *self;
+        sp_roundtrip_dps(p, c, b, s_dps)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let (c, b, p, _, s_dps, u) = *self;
-        assert(self.unambiguous());
-        assert(sp_roundtrip_dps_parser(p, c, b, s_dps, u));
+        let (c, b, p, _, s_dps) = *self;
+        assert(sp_roundtrip_dps(p, c, b, s_dps));
+        assert(c(v));
         assert(p(s_dps(v, obuf)) == Some(((b)(v) as int, v)));
     }
 }
 
 impl<T> NoLookAhead for BundledSpecs<T> {
     open spec fn no_lookahead_inv(&self) -> bool {
-        let (_, _, p, _, _, u) = *self;
-        no_lookahead_parser(p, u)
+        let (_, _, p, _, _) = *self;
+        no_lookahead_parser(p)
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        let (_, _, p, _, _, u) = *self;
+        let (_, _, p, _, _) = *self;
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
-                    assert(self.unambiguous());
-                    assert(no_lookahead_parser(p, u));
+                    assert(no_lookahead_parser(p));
                     assert(p(i1) == Some((n, v)));
                     assert(p(i2) == Some((n, v)));
                 }
@@ -124,24 +119,24 @@ impl<T> NoLookAhead for BundledSpecs<T> {
 
 impl<T> EquivSerializersGeneral for BundledSpecs<T> {
     open spec fn equiv_general_inv(&self) -> bool {
-        let (_, _, _, s, s_dps, _) = *self;
+        let (_, _, _, s, s_dps) = *self;
         forall|v: T, obuf: Seq<u8>| #[trigger] (s_dps)(v, obuf) == (s)(v) + obuf
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let (_, _, _, s, s_dps, _) = *self;
+        let (_, _, _, s, s_dps) = *self;
         assert((s_dps)(v, obuf) == (s)(v) + obuf);
     }
 }
 
 impl<T> EquivSerializers for BundledSpecs<T> {
     open spec fn equiv_inv(&self) -> bool {
-        let (_, _, _, s, s_dps, _) = *self;
+        let (_, _, _, s, s_dps) = *self;
         forall|v: T| #[trigger] (s_dps)(v, seq![]) == (s)(v) + seq![]
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let (_, _, _, s, s_dps, _) = *self;
+        let (_, _, _, s, s_dps) = *self;
         assert((s_dps)(v, seq![]) == (s)(v) + seq![]);
     }
 }
@@ -165,10 +160,10 @@ pub trait NonMalleableRecBody: SafeParserRecBody + SoundParserRecBody where
 pub trait SPRoundTripDpsRecBody: NonTailFmtRecBody where Self::Body: SPRoundTripDps + NonTailFmt {
     proof fn lemma_body_sp_roundtrip_dps_inv_preservation(rec: BundledSpecs<Self::T>)
         requires
-            rec.sp_roundtrip_dps_inv(),
+            rec.unambiguous(),
             rec.serialize_dps_inv(),
         ensures
-            Self::spec_body(rec).sp_roundtrip_dps_inv(),
+            Self::spec_body(rec).unambiguous(),
     ;
 }
 
@@ -205,9 +200,7 @@ pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
             ).nonmal_inv(),
             rec.serialize_inv() ==> Self::spec_body(rec).serialize_inv(),
             rec.serialize_dps_inv() ==> Self::spec_body(rec).serialize_dps_inv(),
-            rec.sp_roundtrip_dps_inv() && rec.serialize_dps_inv() ==> Self::spec_body(
-                rec,
-            ).sp_roundtrip_dps_inv(),
+            rec.unambiguous() && rec.serialize_dps_inv() ==> Self::spec_body(rec).unambiguous(),
             rec.no_lookahead_inv() ==> Self::spec_body(rec).no_lookahead_inv(),
             rec.equiv_general_inv() ==> Self::spec_body(rec).equiv_general_inv(),
     ;
@@ -251,7 +244,7 @@ impl<Body: StrictRecBody> NonTailFmtRecBody for Body where Body::Body: StrictCom
 impl<Body: StrictRecBody> SPRoundTripDpsRecBody for Body where Body::Body: StrictCombinator {
     proof fn lemma_body_sp_roundtrip_dps_inv_preservation(rec: BundledSpecs<Self::T>) {
         Body::lemma_body_all_inv_preservation(rec);
-        assert(Body::spec_body(rec).sp_roundtrip_dps_inv());
+        assert(Body::spec_body(rec).unambiguous());
     }
 }
 
@@ -377,7 +370,6 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
     proof fn sp_roundtrip_dps_by_induction(&self, gas: nat, v: Body::T, obuf: Seq<u8>)
         requires
             Self::consistent_gas(gas, v),
-            Self::unambiguity_gas(gas),
         ensures
             Self::spec_parse_gas(gas, Self::spec_serialize_dps_gas(gas, v, obuf)) == Some(
                 (Self::byte_len_gas(gas, v) as int, v),
@@ -389,13 +381,12 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
         let callback_b = callback.1;
         let callback_p = callback.2;
         let callback_s_dps = callback.4;
-        let callback_u = callback.5;
 
         // establish sp_roundtrip_dps_parser(callback_p, callback_c, callback_b, callback_s_dps, callback_u)
-        assert forall|vv: Body::T, buf: Seq<u8>|
-            (callback_c(vv) && callback_u()) implies #[trigger] callback_p(callback_s_dps(vv, buf))
-            == Some((callback_b(vv) as int, vv)) by {
-            if callback_c(vv) && callback_u() {
+        assert forall|vv: Body::T, buf: Seq<u8>| (callback_c(vv)) implies #[trigger] callback_p(
+            callback_s_dps(vv, buf),
+        ) == Some((callback_b(vv) as int, vv)) by {
+            if callback_c(vv) {
                 self.sp_roundtrip_dps_by_induction((gas - 1) as nat, vv, buf);
             }
         }
@@ -423,14 +414,13 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> where
             }
         }
 
-        assert(callback.sp_roundtrip_dps_inv());
+        assert(callback.unambiguous());
         assert(callback.serialize_dps_inv());
 
         Body::lemma_body_sp_roundtrip_dps_inv_preservation(callback);
         let body = Body::spec_body(callback);
 
         assert(Self::consistent_gas(gas, v) == body.consistent(v));
-        assert(Self::unambiguity_gas(gas) == body.unambiguous());
 
         body.theorem_serialize_dps_parse_roundtrip(v, obuf);
 
@@ -521,7 +511,6 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
             Self::spec_parse_gas(gas, i1) == Some((n, v)),
             0 <= n <= i2.len(),
             i2.take(n) == i1.take(n),
-            Self::unambiguity_gas(gas),
         ensures
             Self::spec_parse_gas(gas, i2) == Some((n, v)),
         decreases gas,
@@ -530,7 +519,6 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         let callback_p = callback.2;
         let callback_c = callback.0;
         let callback_b = callback.1;
-        let callback_u = callback.5;
 
         // establish callback.safe_inv()
         assert forall|rem: Seq<u8>| #[trigger]
@@ -541,10 +529,9 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         }
 
         // establish callback.no_lookahead_inv()
-        assert forall|i1: Seq<u8>, i2: Seq<u8>| callback_u() implies (#[trigger] callback_p(
-            i1,
-        ) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n) == i1.take(n)
-            ==> #[trigger] callback_p(i2) == Some((n, v))) by {
+        assert forall|i1: Seq<u8>, i2: Seq<u8>|
+            (#[trigger] callback_p(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
+                == i1.take(n) ==> #[trigger] callback_p(i2) == Some((n, v))) by {
             if let Some((n, v)) = callback_p(i1) {
                 if 0 <= n && n <= i2.len() && i2.take(n) == i1.take(n) {
                     self.no_lookahead_by_induction((gas - 1) as nat, i1, i2, n, v);
@@ -559,7 +546,6 @@ impl<const LIMIT: usize, Body: NoLookAheadRecBody> super::Fix<LIMIT, Body> where
         Body::lemma_body_no_lookahead_inv_preservation(callback);
         let body = Body::spec_body(callback);
 
-        assert(Self::unambiguity_gas(gas) == body.unambiguous());
         assert(Self::spec_parse_gas(gas, i1) == body.spec_parse(i1));
         assert(Self::spec_parse_gas(gas, i2) == body.spec_parse(i2));
 

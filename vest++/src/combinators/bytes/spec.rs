@@ -67,10 +67,6 @@ impl<const N: usize> SpecSerializer for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> Unambiguity for super::Fixed<N> {
-
-}
-
 impl<const N: usize> NonTailFmt for super::Fixed<N> {
     proof fn lemma_serialize_dps_prepend(&self, v: [u8; N], obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
@@ -157,12 +153,6 @@ impl<Len: AsLen> SpecSerializer for super::Varied<Len> {
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         v
-    }
-}
-
-impl<Len: AsLen> Unambiguity for super::Varied<Len> {
-    open spec fn unambiguous(&self) -> bool {
-        true
     }
 }
 
@@ -267,12 +257,6 @@ impl<Inner: SpecSerializer, Len: AsLen> SpecSerializer for super::ExactLen<Inner
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         super::AndThen(super::Varied(self.0), self.1).spec_serialize(v)
-    }
-}
-
-impl<Inner: Unambiguity, Len: AsLen> Unambiguity for super::ExactLen<Inner, Len> {
-    open spec fn unambiguous(&self) -> bool {
-        super::AndThen(super::Varied(self.0), self.1).unambiguous()
     }
 }
 
@@ -435,15 +419,6 @@ impl<A, Then> SpecSerializer for super::AndThen<A, Then> where
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         let inner_bytes = self.1.spec_serialize(v);
         self.0.spec_serialize(inner_bytes)
-    }
-}
-
-impl<A, Then> Unambiguity for super::AndThen<A, Then> where
-    A: Unambiguity<PVal = Seq<u8>>,
-    Then: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        self.0.unambiguous() && self.1.unambiguous()
     }
 }
 

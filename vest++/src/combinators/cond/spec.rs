@@ -72,12 +72,6 @@ impl<Inner: SpecSerializer> SpecSerializer for super::Cond<Inner> {
     }
 }
 
-impl<Inner: Unambiguity> Unambiguity for super::Cond<Inner> {
-    open spec fn unambiguous(&self) -> bool {
-        self.1.unambiguous()
-    }
-}
-
 impl<Inner: NonTailFmt> NonTailFmt for super::Cond<Inner> {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.1.serialize_dps_inv()

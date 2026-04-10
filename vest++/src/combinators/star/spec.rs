@@ -228,12 +228,6 @@ impl<A: SpecSerializerDps> super::Star<A> {
     }
 }
 
-impl<A: Unambiguity> Unambiguity for super::Star<A> {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
-    }
-}
-
 impl<A: NonTailFmt> super::Star<A> {
     proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
         requires
@@ -292,6 +286,7 @@ impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
         decreases vs.len(),
     {
         use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
+        assert(self.serialize_dps_inv());
 
         if vs.len() == 0 {
         } else {
@@ -502,12 +497,6 @@ impl<C: SpecSerializer, N: AsLen> SpecSerializer for super::RepeatN<C, N> {
     }
 }
 
-impl<C: Unambiguity, N: AsLen> Unambiguity for super::RepeatN<C, N> {
-    open spec fn unambiguous(&self) -> bool {
-        self.1.unambiguous()
-    }
-}
-
 impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.1.serialize_dps_inv()
@@ -518,6 +507,7 @@ impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        assert(self.serialize_dps_inv());
         super::Star { inner: self.1 }.lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -615,12 +605,6 @@ impl<const N: usize, C: SpecSerializer> SpecSerializer for super::Array<N, C> {
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         super::RepeatN(N, self.0).spec_serialize(v@)
-    }
-}
-
-impl<const N: usize, C: Unambiguity> Unambiguity for super::Array<N, C> {
-    open spec fn unambiguous(&self) -> bool {
-        super::RepeatN(N, self.0).unambiguous()
     }
 }
 
@@ -780,14 +764,6 @@ impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Repeat<A, B> {
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_value_len_matches_byte_len(v);
-    }
-}
-
-impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Repeat<A, B> {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& self.1.unambiguous()
-        &&& disjoint_domains(self.0, self.1)
     }
 }
 

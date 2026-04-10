@@ -91,14 +91,6 @@ impl<A, B> SpecSerializer for super::Choice<A, B> where A: SpecSerializer, B: Sp
     }
 }
 
-impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Choice<A, B> {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& self.1.unambiguous()
-        &&& disjoint_domains(self.0, self.1)
-    }
-}
-
 impl<A, B> NonTailFmt for super::Choice<A, B> where A: NonTailFmt, B: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
@@ -264,14 +256,6 @@ impl<A, B> SpecSerializerDps for super::Alt<A, B> where
         } else {
             self.1.spec_serialize_dps(v, obuf)
         }
-    }
-}
-
-impl<A: Unambiguity, B: Unambiguity<PVal = A::PVal>> Unambiguity for super::Alt<A, B> {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& self.1.unambiguous()
-        &&& disjoint_domains(self.0, self.1)
     }
 }
 
@@ -457,13 +441,6 @@ impl<T, C: SpecSerializer, const N: usize> SpecSerializer for super::Dispatch<T,
     }
 }
 
-impl<T, C: Unambiguity, const N: usize> Unambiguity for super::Dispatch<T, C, N> {
-    open spec fn unambiguous(&self) -> bool {
-        &&& unique_branch_match(self.0, self.1@)
-        &&& self.active_branch().unambiguous()
-    }
-}
-
 impl<T, C: NonTailFmt, const N: usize> NonTailFmt for super::Dispatch<T, C, N> {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.active_branch().serialize_dps_inv()
@@ -608,15 +585,6 @@ impl<A, B> SpecSerializer for Sum<A, B> where A: SpecSerializer, B: SpecSerializ
             (Sum::Inl(a), Sum::Inl(va)) => a.spec_serialize(va),
             (Sum::Inr(b), Sum::Inr(vb)) => b.spec_serialize(vb),
             _ => Seq::empty(),
-        }
-    }
-}
-
-impl<A: Unambiguity, B: Unambiguity> Unambiguity for Sum<A, B> {
-    open spec fn unambiguous(&self) -> bool {
-        match self {
-            Sum::Inl(a) => a.unambiguous(),
-            Sum::Inr(b) => b.unambiguous(),
         }
     }
 }

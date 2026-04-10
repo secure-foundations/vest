@@ -1,7 +1,6 @@
 //! Type aliases and trait implementations allowing plain `spec_fn`s to serve as combinators.
 use crate::core::spec::{
     Consistency, PredFnSpec, SpecByteLen, SpecParser, SpecSerializer, SpecSerializerDps,
-    Unambiguity,
 };
 use vstd::prelude::*;
 
@@ -58,8 +57,5 @@ impl<T> SpecSerializer for SerializerFnSpec<T> {
         (self)(v)
     }
 }
-
-/// A spec-level unambiguity predicate.
-pub type UnambiguityFnSpec = spec_fn() -> bool;
 
 } // verus!

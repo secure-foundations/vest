@@ -115,17 +115,6 @@ impl StrictRecBody for NestedBracesBody {
     }
 }
 
-/// TODO: hide/automate this?
-proof fn nested_braces_unambiguous_gas<const N: usize>(gas: nat)
-    ensures
-        Fix::<N, NestedBracesBody>::unambiguity_gas(gas),
-    decreases gas,
-{
-    if gas > 0 {
-        nested_braces_unambiguous_gas::<N>((gas - 1) as nat);
-    }
-}
-
 impl<const N: usize> ProvenStrictCombinator for Fix<N, NestedBracesBody> {
     proof fn invariants_hold(&self)
         ensures
@@ -135,11 +124,9 @@ impl<const N: usize> ProvenStrictCombinator for Fix<N, NestedBracesBody> {
             self.nonmal_inv(),
             self.serialize_inv(),
             self.serialize_dps_inv(),
-            self.sp_roundtrip_dps_inv(),
             self.no_lookahead_inv(),
             self.equiv_general_inv(),
     {
-        nested_braces_unambiguous_gas::<N>(N as nat);
     }
 }
 

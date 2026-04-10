@@ -56,10 +56,6 @@ impl SpecSerializer for super::Empty {
     }
 }
 
-impl Unambiguity for super::Empty {
-
-}
-
 impl NonTailFmt for super::Empty {
     proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == Seq::<u8>::empty() + obuf);
@@ -152,10 +148,6 @@ impl SpecSerializer for super::Void {
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         Seq::empty()
     }
-}
-
-impl Unambiguity for super::Void {
-
 }
 
 impl NonTailFmt for super::Void {

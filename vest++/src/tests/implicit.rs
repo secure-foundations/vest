@@ -2,9 +2,7 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::mapped::spec::{LosslessMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Dispatch, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{
-    Choice, Cond, DepPair, Implicit,  Mapped, Sum, U16Le, U32Le, Varied, U8,
-};
+use crate::combinators::{Choice, Cond, DepPair, Implicit, Mapped, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -203,7 +201,6 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     assert(tlv.consistent(msg1));
     assert(tlv.consistent(msg2));
     // assert(tlv.consistent(msg3));
-
 
     tlv.theorem_serialize_parse_roundtrip(msg1);
     tlv.theorem_serialize_parse_roundtrip(msg2);

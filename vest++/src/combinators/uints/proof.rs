@@ -1,7 +1,4 @@
-use super::spec::{
-    lemma_u16_be_fmt_inv, lemma_u16_le_fmt_inv, lemma_u32_be_fmt_inv, lemma_u32_le_fmt_inv,
-    u16_be_fmt, u16_le_fmt, u32_be_fmt, u32_le_fmt,
-};
+use super::spec::*;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -13,10 +10,6 @@ impl SPRoundTripDps for super::U8 {
     }
 }
 
-// impl PSRoundTrip for super::U8 {
-//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//     }
-// }
 impl NonMalleable for super::U8 {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
     }
@@ -47,35 +40,23 @@ impl EquivSerializers for super::U8 {
 
 impl SPRoundTripDps for super::U16Le {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
+        broadcast use lemma_u16_le_value_roundtrip;
+
         u16_le_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-// impl PSRoundTrip for super::U16Le {
-//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         u16_le_fmt().theorem_parse_serialize_roundtrip(ibuf);
-//     }
-// }
 impl NonMalleable for super::U16Le {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
+        broadcast use lemma_u16_le_bytes_roundtrip;
+
         u16_le_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl NoLookAhead for super::U16Le {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        lemma_u16_le_fmt_inv();
-        let mapped = u16_le_fmt();
-        mapped.lemma_no_lookahead(i1, i2);
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.spec_parse(i2) == Some((n, v)));
-                }
-            }
-        }
+        u16_le_fmt().lemma_no_lookahead(i1, i2);
     }
 }
 
@@ -93,35 +74,23 @@ impl EquivSerializers for super::U16Le {
 
 impl SPRoundTripDps for super::U16Be {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
+        broadcast use lemma_u16_be_value_roundtrip;
+
         u16_be_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-// impl PSRoundTrip for super::U16Be {
-//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         u16_be_fmt().theorem_parse_serialize_roundtrip(ibuf);
-//     }
-// }
 impl NonMalleable for super::U16Be {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
+        broadcast use lemma_u16_be_bytes_roundtrip;
+
         u16_be_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl NoLookAhead for super::U16Be {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        lemma_u16_be_fmt_inv();
-        let mapped = u16_be_fmt();
-        mapped.lemma_no_lookahead(i1, i2);
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.spec_parse(i2) == Some((n, v)));
-                }
-            }
-        }
+        u16_be_fmt().lemma_no_lookahead(i1, i2);
     }
 }
 
@@ -139,30 +108,23 @@ impl EquivSerializers for super::U16Be {
 
 impl SPRoundTripDps for super::U32Le {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
+        broadcast use lemma_u32_le_value_roundtrip;
+
         u32_le_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
 impl NonMalleable for super::U32Le {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
+        broadcast use lemma_u32_le_bytes_roundtrip;
+
         u32_le_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl NoLookAhead for super::U32Le {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        lemma_u32_le_fmt_inv();
-        let mapped = u32_le_fmt();
-        mapped.lemma_no_lookahead(i1, i2);
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.spec_parse(i2) == Some((n, v)));
-                }
-            }
-        }
+        u32_le_fmt().lemma_no_lookahead(i1, i2);
     }
 }
 
@@ -180,30 +142,23 @@ impl EquivSerializers for super::U32Le {
 
 impl SPRoundTripDps for super::U32Be {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
+        broadcast use lemma_u32_be_value_roundtrip;
+
         u32_be_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
 impl NonMalleable for super::U32Be {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
+        broadcast use lemma_u32_be_bytes_roundtrip;
+
         u32_be_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl NoLookAhead for super::U32Be {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        lemma_u32_be_fmt_inv();
-        let mapped = u32_be_fmt();
-        mapped.lemma_no_lookahead(i1, i2);
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.spec_parse(i2) == Some((n, v)));
-                }
-            }
-        }
+        u32_be_fmt().lemma_no_lookahead(i1, i2);
     }
 }
 

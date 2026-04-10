@@ -9,7 +9,6 @@ verus! {
 impl<A: SPRoundTripDps> super::Opt<A> {
     proof fn lemma_serialize_parse_roundtrip(&self, v: Option<A::T>, obuf: Seq<u8>)
         requires
-            self.0.sp_roundtrip_dps_inv(),
             self.0.unambiguous(),
             parser_fails_on(self.0, obuf),
         ensures
@@ -35,7 +34,6 @@ impl<A: NoLookAhead> super::Opt<A> {
         requires
             self.0.safe_inv(),
             self.0.no_lookahead_inv(),
-            self.0.unambiguous(),
             parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
@@ -96,10 +94,11 @@ impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
 }
 
 impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Optional<A, B> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
-        &&& self.1.sp_roundtrip_dps_inv()
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -134,6 +133,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {

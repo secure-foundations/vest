@@ -53,19 +53,6 @@ impl<P1, P2> SpecSerializer for super::Permute2<P1, P2> where
     }
 }
 
-impl<P1, P2> Unambiguity for super::Permute2<P1, P2> where P1: Unambiguity, P2: Unambiguity {
-    open spec fn unambiguous(&self) -> bool {
-        let inner = Alt(
-            Pair(self.0, self.1),
-            Mapped {
-                inner: Pair(self.1, self.0),
-                mapper: (|i| super::swap2(i), |o| super::unswap2(o)),
-            },
-        );
-        inner.unambiguous()
-    }
-}
-
 impl<P1, P2> NonTailFmt for super::Permute2<P1, P2> where P1: NonTailFmt, P2: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
@@ -190,29 +177,6 @@ impl<A, B, C> SpecSerializer for super::Permute3<A, B, C> where
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         Pair(self.0, super::Permute2(self.1, self.2)).spec_serialize(v)
-    }
-}
-
-impl<A, B, C> Unambiguity for super::Permute3<A, B, C> where
-    A: Unambiguity,
-    B: Unambiguity,
-    C: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        let inner = Alt(
-            Pair(self.0, super::Permute2(self.1, self.2)),
-            Alt(
-                Mapped {
-                    inner: Pair(self.1, super::Permute2(self.0, self.2)),
-                    mapper: (|i| super::swap3_1(i), |o| super::unswap3_1(o)),
-                },
-                Mapped {
-                    inner: Pair(self.2, super::Permute2(self.0, self.1)),
-                    mapper: (|i| super::swap3_2(i), |o| super::unswap3_2(o)),
-                },
-            ),
-        );
-        inner.unambiguous()
     }
 }
 
@@ -369,36 +333,6 @@ impl<A, B, C, D> SpecSerializer for super::Permute4<A, B, C, D> where
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize(v)
-    }
-}
-
-impl<A, B, C, D> Unambiguity for super::Permute4<A, B, C, D> where
-    A: Unambiguity,
-    B: Unambiguity,
-    C: Unambiguity,
-    D: Unambiguity,
- {
-    open spec fn unambiguous(&self) -> bool {
-        let inner = Alt(
-            Pair(self.0, super::Permute3(self.1, self.2, self.3)),
-            Alt(
-                Mapped {
-                    inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: (|i| super::swap4_1(i), |o| super::unswap4_1(o)),
-                },
-                Alt(
-                    Mapped {
-                        inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: (|i| super::swap4_2(i), |o| super::unswap4_2(o)),
-                    },
-                    Mapped {
-                        inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: (|i| super::swap4_3(i), |o| super::unswap4_3(o)),
-                    },
-                ),
-            ),
-        );
-        inner.unambiguous()
     }
 }
 

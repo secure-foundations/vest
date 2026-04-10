@@ -10,8 +10,8 @@ impl<A, B> SPRoundTripDps for super::Terminated<A, B> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        Pair(self.0, self.1).sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        Pair(self.0, self.1).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {

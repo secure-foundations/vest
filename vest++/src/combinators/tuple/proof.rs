@@ -4,16 +4,16 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Pair<A, B> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
-        &&& self.1.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
-        assert(self.sp_roundtrip_dps_inv());
+        assert(self.unambiguous());
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(v.0, serialized1);
         self.0.lemma_serialize_dps_prepend(v.0, serialized1);
@@ -89,7 +89,6 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
                     if let Some((n1, v1)) = self.0.spec_parse(i1) {
                         if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
                             assert(self.no_lookahead_inv());
-                            assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
                             self.1.lemma_parse_safe(i1.skip(n1));
@@ -161,10 +160,10 @@ impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
-        &&& forall|a: A::T| #[trigger] (self.1)(a).sp_roundtrip_dps_inv()
+        &&& self.0.unambiguous()
+        &&& forall|key: A::T| #[trigger] (self.1)(key).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
@@ -172,7 +171,7 @@ impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
         let serialized = self.0.spec_serialize_dps(key, next_buf);
-        assert(self.sp_roundtrip_dps_inv());
+        assert(self.unambiguous());
         next.theorem_serialize_dps_parse_roundtrip(val, obuf);
         self.0.theorem_serialize_dps_parse_roundtrip(key, next_buf);
         self.0.lemma_serialize_dps_prepend(key, next_buf);
@@ -205,7 +204,6 @@ impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
                         let next = (self.1)(key);
                         if let Some((n2, val)) = next.spec_parse(i1.skip(n1)) {
                             assert(self.no_lookahead_inv());
-                            assert(self.unambiguous());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
                             next.lemma_parse_safe(i1.skip(n1));

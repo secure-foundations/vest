@@ -64,7 +64,7 @@ impl<Inner, Len> SPRoundTripDps for super::ExactLen<Inner, Len> where
     Inner: EquivSerializers + GoodSerializer + SPRoundTrip,
     Len: AsLen,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+    open spec fn unambiguous(&self) -> bool {
         &&& self.1.serialize_inv()
         &&& self.1.equiv_inv()
         &&& self.1.sp_roundtrip_inv()
@@ -92,7 +92,7 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 // [`ExactLen`] can make "look-ahead" parsers (e.g., [`Tail`] and [`Eof`]) non-look-ahead
 // (s.t. they can no longer "predict" the future)
 // because it always consumes the same number of bytes when it succeeds
-impl<Inner: SafeParser + Unambiguity, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
+impl<Inner: SafeParser, Len: AsLen> NoLookAhead for super::ExactLen<Inner, Len> {
     open spec fn no_lookahead_inv(&self) -> bool {
         super::AndThen(super::Varied(self.0), self.1).no_lookahead_inv()
     }
@@ -130,7 +130,7 @@ impl<Len, Then> SPRoundTripDps for super::AndThen<Varied<Len>, Then> where
     Then: EquivSerializers + GoodSerializer + SPRoundTrip,
     Len: AsLen,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+    open spec fn unambiguous(&self) -> bool {
         &&& self.1.serialize_inv()
         &&& self.1.equiv_inv()
         &&& self.1.sp_roundtrip_inv()
@@ -181,7 +181,7 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
 
 impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
     A: BytesCombinator + NoLookAhead<PVal = Seq<u8>>,
-    Then: SafeParser + Unambiguity,
+    Then: SafeParser,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         self.0.no_lookahead_inv()

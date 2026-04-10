@@ -6,7 +6,7 @@ use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag
+    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag,
 };
 use crate::combinators::{
     Choice, Cond, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,

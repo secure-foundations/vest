@@ -11,7 +11,6 @@
 //! - [`spec::ValueByteLen`] — byte length determined by the semantic value alone
 //! - [`spec::StaticByteLen`] — fixed byte length for static-size formats
 //! - [`spec::Consistency`] — value well-formedness against the format specification
-//! - [`spec::Unambiguity`] — conditions for unambiguous format composition
 //!
 //! These traits are designed to be as independent as possible such that they can be useful individually
 //! (e.g., applications that only need to specify parsing but not serialization, or vice versa). However,
@@ -22,7 +21,8 @@
 //! ## [`proof`] — Proof Family of Traits
 //!
 //! - [`proof::SPRoundTrip`] — serialize-parse roundtrip
-//! - [`proof::SPRoundTripDps`] — serialize-parse roundtrip (the DPS variant, used mostly internally)
+//! - [`proof::SPRoundTripDps`] — serialize-parse roundtrip (the DPS variant, used mostly internally),
+//!   which also carries the unambiguity side condition needed by roundtrip proofs
 //! - [`proof::PSRoundTrip`] — parse-serialize roundtrip
 //! - [`proof::NonMalleable`] — parser non-malleability
 //! - [`proof::NoLookAhead`] — parser no-look-ahead property

@@ -1,3 +1,4 @@
+use crate::combinators::choice::spec::{tag_position, unique_branch_match};
 use crate::combinators::Sum;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -5,9 +6,10 @@ use vstd::prelude::*;
 verus! {
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for super::Choice<A, B> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
-        &&& self.1.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -44,6 +46,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Choice<A, B> {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
@@ -93,9 +96,10 @@ impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B
 }
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::Alt<A, B> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
-        &&& self.1.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -160,6 +164,7 @@ impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()
+        &&& disjoint_domains(self.0, self.1)
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
@@ -207,8 +212,8 @@ impl<A, B> EquivSerializers for super::Alt<A, B> where
 }
 
 impl<T, C, const N: usize> SPRoundTripDps for super::Dispatch<T, C, N> where C: SPRoundTripDps {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.active_branch().sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        self.active_branch().unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -269,10 +274,10 @@ impl<T, C: EquivSerializers, const N: usize> EquivSerializers for super::Dispatc
 }
 
 impl<A: SPRoundTripDps, B: SPRoundTripDps> SPRoundTripDps for Sum<A, B> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+    open spec fn unambiguous(&self) -> bool {
         match self {
-            Sum::Inl(a) => a.sp_roundtrip_dps_inv(),
-            Sum::Inr(b) => b.sp_roundtrip_dps_inv(),
+            Sum::Inl(a) => a.unambiguous(),
+            Sum::Inr(b) => b.unambiguous(),
         }
     }
 

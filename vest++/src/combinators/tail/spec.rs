@@ -52,10 +52,6 @@ impl SpecSerializer for super::Tail {
     }
 }
 
-impl Unambiguity for super::Tail {
-
-}
-
 impl SpecByteLen for super::Tail {
     type T = Seq<u8>;
 
@@ -127,10 +123,6 @@ impl SpecSerializerDps for super::Eof {
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
         Seq::empty()
     }
-}
-
-impl Unambiguity for super::Eof {
-
 }
 
 impl SpecSerializer for super::Eof {
@@ -259,12 +251,6 @@ impl<C: ValueByteLen> ValueByteLen for super::OptionalEnd<C> {
     }
 }
 
-impl<C: Unambiguity> Unambiguity for super::OptionalEnd<C> {
-    open spec fn unambiguous(&self) -> bool {
-        Optional(self.0, super::Eof).unambiguous()
-    }
-}
-
 impl<C: SpecParser> SpecParser for super::RepeatTillEnd<C> {
     type PVal = Seq<C::PVal>;
 
@@ -349,12 +335,6 @@ impl<C: ValueByteLen> ValueByteLen for super::RepeatTillEnd<C> {
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
         Repeat(self.0, super::Eof).lemma_value_len_matches_byte_len((v, ()));
-    }
-}
-
-impl<C: Unambiguity> Unambiguity for super::RepeatTillEnd<C> {
-    open spec fn unambiguous(&self) -> bool {
-        Repeat(self.0, super::Eof).unambiguous()
     }
 }
 

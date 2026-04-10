@@ -89,12 +89,6 @@ impl<A, B> SoundParser for super::Preceded<A, B> where
     }
 }
 
-impl<A, B> Unambiguity for super::Preceded<A, B> where A: Unambiguity, B: Unambiguity {
-    open spec fn unambiguous(&self) -> bool {
-        Pair(self.0, self.1).unambiguous()
-    }
-}
-
 impl<A, B> NonTailFmt for super::Preceded<A, B> where
     A: NonTailFmt + Consistency<Val = A::ST>,
     B: NonTailFmt,

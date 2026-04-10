@@ -8,8 +8,8 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
     M: LossyMapper<In = Inner::T>,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.inner.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        self.inner.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -68,7 +68,6 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
                 if i2.take(n) == i1.take(n) {
                     assert(self.safe_inv());
                     assert(self.no_lookahead_inv());
-                    assert(self.unambiguous());
                     self.inner.lemma_no_lookahead(i1, i2);
                 }
             }
@@ -108,8 +107,8 @@ impl<Inner: SPRoundTripDps, Out> SPRoundTripDps for super::Mapped<
     Inner,
     FnSpecMapper<Inner::T, Out>,
 > {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.inner.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.inner.unambiguous()
         &&& forall|o: Out| #![auto] self.consistent(o) ==> (self.mapper.0)((self.mapper.1)(o)) == o
     }
 
@@ -154,6 +153,7 @@ impl<Inner: NoLookAhead, Out> NoLookAhead for super::Mapped<Inner, FnSpecMapper<
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
+                    assert(self.no_lookahead_inv());
                     self.inner.lemma_no_lookahead(i1, i2);
                 }
             }
@@ -193,8 +193,8 @@ impl<Inner, M> SPRoundTripDps for super::TryMap<Inner, M> where
     Inner: SPRoundTripDps,
     M: LossyMapper<In = Inner::T>,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.inner().sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        self.inner().unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {

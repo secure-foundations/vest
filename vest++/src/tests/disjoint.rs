@@ -1,6 +1,7 @@
 use crate::combinators::disjoint::*;
 use crate::combinators::tuple::Pair;
 use crate::combinators::*;
+use crate::core::proof::*;
 use crate::core::spec::*;
 use vstd::prelude::*;
 

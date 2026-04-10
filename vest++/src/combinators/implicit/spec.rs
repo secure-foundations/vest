@@ -128,17 +128,6 @@ impl<Head, Tail> SpecSerializer for Implicit<Head, Tail> where
     }
 }
 
-impl<Head, Tail> Unambiguity for Implicit<Head, Tail> where
-    Head: Unambiguity,
-    Tail: DepCombinator<Key = Head::PVal>,
-    Tail::Body: Unambiguity + SpecParser<PVal = Tail::Val>,
- {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& forall|key: Head::PVal| #[trigger] (self.1.apply(key)).unambiguous()
-    }
-}
-
 impl<Head, Tail> NonTailFmt for Implicit<Head, Tail> where
     Head: NonTailFmt,
     Tail: DepCombinator<Key = Head::ST>,

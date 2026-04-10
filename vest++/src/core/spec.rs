@@ -17,7 +17,7 @@ pub trait SpecParser {
 
 /// Two parsers have disjoint domains if no input can be successfully parsed by both.
 ///
-/// This is the key condition for establishing [`Unambiguity`] in combinator compositions.
+/// This is the key condition for establishing unambiguity in combinator compositions.
 /// See also [`crate::combinators::disjoint`] for broadcast lemmas establishing
 /// disjointness for common compositions.
 pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> bool {
@@ -202,14 +202,6 @@ pub trait SpecSerializer {
     spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8>;
 }
 
-/// Conditions for unambiguous format composition.
-pub trait Unambiguity: SpecParser {
-    /// Returns the condition for this parser (combinator) to be unambiguous.
-    open spec fn unambiguous(&self) -> bool {
-        true
-    }
-}
-
 /// A non-tail format combinator would allow for things to be serialized after itself.
 ///
 /// ## Notable formats that are *not* non-tail (i.e., tail formats)
@@ -261,21 +253,19 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
 }
 
 /// Marker trait for all specification traits bundled together.
-pub trait SpecCombinator: SpecByteLen + Consistency<Val = Self::T> + Unambiguity + SpecParser<
+pub trait SpecCombinator: SpecByteLen + Consistency<Val = Self::T> + SpecParser<
     PVal = Self::T,
 > + SpecSerializer<SVal = Self::T> + SpecSerializerDps<ST = Self::T> {
 
 }
 
 impl<T> SpecCombinator for T where
-    T: SpecByteLen + Consistency<Val = Self::T> + Unambiguity + SpecParser<
-        PVal = Self::T,
-    > + SpecSerializer<SVal = Self::T> + SpecSerializerDps<ST = Self::T>,
+    T: SpecByteLen + Consistency<Val = Self::T> + SpecParser<PVal = Self::T> + SpecSerializer<
+        SVal = Self::T,
+    > + SpecSerializerDps<ST = Self::T>,
  {
 
 }
 
 } // verus!
-pub use crate::core::fns::{
-    ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerFnSpec, UnambiguityFnSpec,
-};
+pub use crate::core::fns::{ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerFnSpec};

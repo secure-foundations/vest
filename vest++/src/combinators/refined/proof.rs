@@ -8,8 +8,8 @@ impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
     A: SPRoundTripDps,
     Pred: SpecPred<A::PVal>,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.inner.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        self.inner.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -42,7 +42,6 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
                     assert(self.no_lookahead_inv());
-                    assert(self.unambiguous());
                     self.inner.lemma_no_lookahead(i1, i2);
                     assert(self.inner.spec_parse(i2) == Some((n, v)));
                     assert(self.spec_parse(i2) == Some((n, v)));
@@ -79,8 +78,8 @@ impl<A, Pred> EquivSerializers for super::Refined<A, Pred> where
 }
 
 impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        self.inner.sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        self.inner.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::ST, obuf: Seq<u8>) {
@@ -146,8 +145,8 @@ impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
     Of: SPRoundTripDps,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).sp_roundtrip_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {

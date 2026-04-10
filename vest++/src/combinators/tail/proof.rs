@@ -45,9 +45,8 @@ impl EquivSerializers for super::Eof {
 }
 
 impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::OptionalEnd<C> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
-        &&& self.0.serialize_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        Optional(self.0, super::Eof).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -76,9 +75,8 @@ impl<C: EquivSerializersGeneral> EquivSerializers for super::OptionalEnd<C> {
 }
 
 impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::RepeatTillEnd<C> {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
-        &&& self.0.sp_roundtrip_dps_inv()
-        &&& self.0.serialize_dps_inv()
+    open spec fn unambiguous(&self) -> bool {
+        Repeat(self.0, super::Eof).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {

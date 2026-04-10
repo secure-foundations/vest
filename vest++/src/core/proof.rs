@@ -25,16 +25,14 @@ pub trait SPRoundTripDps where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializerDps<ST = Self::T> +
-          Consistency<Val = Self::T> +
-          Unambiguity,
+          Consistency<Val = Self::T>,
  {
-    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+    open spec fn unambiguous(&self) -> bool {
         true
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>)
         requires
-            self.sp_roundtrip_dps_inv(),
             self.unambiguous(),
             self.consistent(v),
         ensures
@@ -60,7 +58,6 @@ pub trait SPRoundTrip where
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
           Consistency<Val = Self::T> +
-          Unambiguity,
 {
     open spec fn sp_roundtrip_inv(&self) -> bool {
         true
@@ -69,7 +66,6 @@ pub trait SPRoundTrip where
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T)
         requires
             self.sp_roundtrip_inv(),
-            self.unambiguous(),
             self.consistent(v),
         ensures
             ({
@@ -81,7 +77,7 @@ pub trait SPRoundTrip where
 
 impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
     open spec fn sp_roundtrip_inv(&self) -> bool {
-        self.serialize_inv() && self.sp_roundtrip_dps_inv() && self.equiv_inv()
+        self.serialize_inv() && self.equiv_inv() && self.unambiguous()
     }
 
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::T) {
@@ -103,7 +99,6 @@ pub trait PSRoundTrip where
     Self: SpecByteLen +
           SpecParser<PVal = Self::T> +
           SpecSerializer<SVal = Self::T> +
-          Unambiguity,
 {
     open spec fn ps_roundtrip_inv(&self) -> bool {
         true
@@ -112,7 +107,6 @@ pub trait PSRoundTrip where
     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>)
         requires
             self.ps_roundtrip_inv(),
-            self.unambiguous(),
         ensures
             self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
     ;
@@ -120,7 +114,6 @@ pub trait PSRoundTrip where
     proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
         requires
             self.ps_roundtrip_inv(),
-            self.unambiguous(),
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>
@@ -181,7 +174,7 @@ pub trait NonMalleable: SafeParser {
 /// (i.e., it does not need to "look ahead"/"peek" at them to decide how to parse the prefix).
 ///
 /// Formally: if two buffers share a common prefix that successfully parses, then they parse to the same value.
-pub trait NoLookAhead: SafeParser + Unambiguity {
+pub trait NoLookAhead: SafeParser {
     open spec fn no_lookahead_inv(&self) -> bool {
         true
     }
@@ -191,7 +184,6 @@ pub trait NoLookAhead: SafeParser + Unambiguity {
         requires
             self.safe_inv(),
             self.no_lookahead_inv(),
-            self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==>
             0 <= n <= i2.len() ==> i2.take(n) == i1.take(n) ==>
@@ -202,7 +194,6 @@ pub trait NoLookAhead: SafeParser + Unambiguity {
         requires
             self.safe_inv(),
             self.no_lookahead_inv(),
-            self.unambiguous(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==> self.spec_parse(i1 + i2) == Some((n, v)),
     {
@@ -251,7 +242,6 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 
 /// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
 pub trait StrictCombinator:
-    Unambiguity +
     SafeParser +
     SoundParser +
     NonMalleable +
@@ -265,7 +255,6 @@ pub trait StrictCombinator:
 
 impl<Body> StrictCombinator for Body where
     Body:
-        Unambiguity +
         SafeParser +
         SoundParser +
         NonMalleable +
@@ -278,9 +267,15 @@ impl<Body> StrictCombinator for Body where
 
 }
 
-/// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
-pub trait ProvenStrictCombinator:
-    Unambiguity +
+/// This is a marker trait for combinators that are "leaves" in the combinator hierarchy.
+///
+/// A "leaf" combinator does not expose any non-trivial preconditions on its correctness and security properties.
+///
+/// Built-in combinators that are "leaves" include [Fixed](crate::combinators::bytes::Fixed), [Varied](crate::combinators::bytes::Varied),
+/// [U8](crate::combinators::uints::U8)/[U16Le](crate::combinators::uints::U16Le)/[U32Le](crate::combinators::uints::U32Le), etc.
+///
+/// In addition, any dedrived/composed combinator that is proven to satisfy [`LeafCombinator::invariants_hold`] can also be marked as a leaf combinator.
+pub trait LeafCombinator:
     SafeParser +
     SoundParser +
     NonMalleable +
@@ -297,7 +292,6 @@ pub trait ProvenStrictCombinator:
             self.nonmal_inv(),
             self.serialize_inv(),
             self.serialize_dps_inv(),
-            self.sp_roundtrip_dps_inv(),
             self.no_lookahead_inv(),
             self.equiv_general_inv(),
     ;

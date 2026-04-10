@@ -82,12 +82,6 @@ impl<A> SpecSerializer for super::Opt<A> where A: SpecSerializer {
     }
 }
 
-impl<A: Unambiguity> Unambiguity for super::Opt<A> {
-    open spec fn unambiguous(&self) -> bool {
-        self.0.unambiguous()
-    }
-}
-
 impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.0.serialize_dps_inv()
@@ -255,14 +249,6 @@ impl<A: SpecSerializer, B: SpecSerializer> SpecSerializer for super::Optional<A,
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
         Pair(super::Opt(self.0), self.1).spec_serialize(v)
-    }
-}
-
-impl<A: Unambiguity, B: Unambiguity> Unambiguity for super::Optional<A, B> {
-    open spec fn unambiguous(&self) -> bool {
-        &&& self.0.unambiguous()
-        &&& self.1.unambiguous()
-        &&& disjoint_domains(self.0, self.1)
     }
 }
 
