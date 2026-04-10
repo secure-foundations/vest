@@ -399,6 +399,9 @@ impl Mapper for MyTagMapper {
 impl LossyMapper for MyTagMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
     }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    }
 }
 
 impl LosslessMapper for MyTagMapper {

@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, Mapper};
 use crate::combinators::recursive::*;
 use crate::combinators::*;
 use crate::core::proof::*;
@@ -50,6 +50,13 @@ impl Mapper for NestedBracesMapper {
 
 impl LossyMapper for NestedBracesMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
+        match o {
+            NestedBracesT::Brace(_) => {},
+            NestedBracesT::Eps => {},
+        }
+    }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
         match o {
             NestedBracesT::Brace(_) => {},
             NestedBracesT::Eps => {},
@@ -109,13 +116,30 @@ impl StrictRecBody for NestedBracesBody {
 }
 
 /// TODO: hide/automate this?
-proof fn nested_braces_unambiguous_gas(gas: nat)
+proof fn nested_braces_unambiguous_gas<const N: usize>(gas: nat)
     ensures
-        Fix::<10, NestedBracesBody>::unambiguity_gas(gas),
+        Fix::<N, NestedBracesBody>::unambiguity_gas(gas),
     decreases gas,
 {
     if gas > 0 {
-        nested_braces_unambiguous_gas((gas - 1) as nat);
+        nested_braces_unambiguous_gas::<N>((gas - 1) as nat);
+    }
+}
+
+impl<const N: usize> ProvenStrictCombinator for Fix<N, NestedBracesBody> {
+    proof fn invariants_hold(&self)
+        ensures
+            self.unambiguous(),
+            self.safe_inv(),
+            self.sound_inv(),
+            self.nonmal_inv(),
+            self.serialize_inv(),
+            self.serialize_dps_inv(),
+            self.sp_roundtrip_dps_inv(),
+            self.no_lookahead_inv(),
+            self.equiv_general_inv(),
+    {
+        nested_braces_unambiguous_gas::<N>(N as nat);
     }
 }
 
@@ -144,7 +168,7 @@ proof fn nested_braces_sound_parser() {
     nested_braces.lemma_serialize_len(v);
 
     let serialized = nested_braces.spec_serialize(v);
-    nested_braces_unambiguous_gas(10);
+    nested_braces.invariants_hold();
     assert(nested_braces.unambiguous());
     nested_braces.lemma_no_lookahead(input, input2);
     nested_braces.theorem_serialize_parse_roundtrip(v);

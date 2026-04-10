@@ -104,6 +104,9 @@ impl Mapper for MyTagMapper {
 impl LossyMapper for MyTagMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
     }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    }
 }
 
 impl LosslessMapper for MyTagMapper {
@@ -215,6 +218,9 @@ impl Mapper for U8AsU32 {
 impl LossyMapper for U8AsU32 {
     proof fn lemma_sound_mapper(o: Self::Out) {
     }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    }
 }
 
 impl LosslessMapper for U8AsU32 {
@@ -252,6 +258,9 @@ impl LossyMapper for U16AsU32 {
             requires
                 Self::wf_out(o),
         ;
+    }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
     }
 }
 
@@ -499,6 +508,9 @@ impl LossyMapper for VarintLossyMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
         assert(Self::spec_map(Self::spec_map_rev(o)) == o) by {}
     }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    }
 }
 
 pub struct VarintLosslessMapper;
@@ -528,6 +540,9 @@ impl Mapper for VarintLosslessMapper {
 impl LossyMapper for VarintLosslessMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
         assert(Self::spec_map(Self::spec_map_rev(o)) == o) by {}
+    }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
     }
 }
 

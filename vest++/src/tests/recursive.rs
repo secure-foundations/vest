@@ -52,6 +52,9 @@ impl Mapper for NestedBracesMapper {
 impl LossyMapper for NestedBracesMapper {
     proof fn lemma_sound_mapper(o: Self::Out) {
     }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    }
 }
 
 impl LosslessMapper for NestedBracesMapper {

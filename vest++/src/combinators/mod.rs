@@ -26,6 +26,7 @@
 //! | [`Preceded<A, B>`] | Same as `Pair(A, B)`, but discards A's value |
 //! | [`Terminated<A, B>`] | Same as `Pair(A, B)`, but discards B's value |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
+//! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
 //! | [`Tag<Inner, T>`] | Matches and returns a specific constant value |
 //! | [`Tagged<T, Of>`] | Same as `Preceded<Tag<T, T::Val>, Of>` (for convenience) |
@@ -96,7 +97,7 @@ pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
 pub use implicit::{DepCombinator, FnDepCombinator, Implicit, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
-pub use mapped::Mapped;
+pub use mapped::{Mapped, TryMap};
 pub use marker::{Empty, Void};
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
