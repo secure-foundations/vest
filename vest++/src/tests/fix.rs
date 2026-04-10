@@ -115,21 +115,6 @@ impl StrictRecBody for NestedBracesBody {
     }
 }
 
-impl<const N: usize> ProvenStrictCombinator for Fix<N, NestedBracesBody> {
-    proof fn invariants_hold(&self)
-        ensures
-            self.unambiguous(),
-            self.safe_inv(),
-            self.sound_inv(),
-            self.nonmal_inv(),
-            self.serialize_inv(),
-            self.serialize_dps_inv(),
-            self.no_lookahead_inv(),
-            self.equiv_general_inv(),
-    {
-    }
-}
-
 proof fn nested_braces_sound_parser() {
     let nested_braces = Fix::<10, _>(NestedBracesBody);
 
@@ -155,7 +140,7 @@ proof fn nested_braces_sound_parser() {
     nested_braces.lemma_serialize_len(v);
 
     let serialized = nested_braces.spec_serialize(v);
-    nested_braces.invariants_hold();
+    nested_braces.nonmal_leaf_inv();
     assert(nested_braces.unambiguous());
     nested_braces.lemma_no_lookahead(input, input2);
     nested_braces.theorem_serialize_parse_roundtrip(v);

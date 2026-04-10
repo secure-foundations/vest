@@ -4,7 +4,10 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
+use crate::core::proof::LeafNonMalleable;
 use vstd::prelude::*;
+
+use super::AsLen;
 
 verus! {
 
@@ -40,5 +43,15 @@ pub struct ExactLen<Inner, Len = u8>(pub Len, pub Inner);
 /// `A::Val` that is consistent w.r.t `A` and whose byte length equals the byte length of the `B::Val` value w.r.t `B`.
 /// Prefer [`ExactLen`] over `AndThen` to avoid the existential reasoning in the consistency condition.
 pub struct AndThen<A, B>(pub A, pub B);
+
+impl<const N: usize> LeafNonMalleable for Fixed<N> {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+impl<Len: AsLen> LeafNonMalleable for Varied<Len> {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
 
 } // verus!

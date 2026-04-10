@@ -272,19 +272,34 @@ impl<Body> StrictCombinator for Body where
 /// A "leaf" combinator does not expose any non-trivial preconditions on its correctness and security properties.
 ///
 /// Built-in combinators that are "leaves" include [Fixed](crate::combinators::bytes::Fixed), [Varied](crate::combinators::bytes::Varied),
-/// [U8](crate::combinators::uints::U8)/[U16Le](crate::combinators::uints::U16Le)/[U32Le](crate::combinators::uints::U32Le), etc.
+/// [U8](crate::combinators::uints::U8)/[U16Le](crate::combinators::uints::U16Le)/[U32Le](crate::combinators::uints::U32Le),
+/// [Fix](crate::combinators::recursive::Fix), [Empty](crate::combinators::marker::Empty), and [Void](crate::combinators::marker::Void).
 ///
-/// In addition, any dedrived/composed combinator that is proven to satisfy [`LeafCombinator::invariants_hold`] can also be marked as a leaf combinator.
-pub trait LeafCombinator:
+/// In addition, any dedrived/composed combinator that is proven to satisfy [`Leaf::leaf_inv`] can also be marked as a leaf combinator.
+pub trait Leaf:
     SafeParser +
-    SoundParser +
-    NonMalleable +
     GoodSerializer +
     NonTailFmt +
     SPRoundTripDps +
     NoLookAhead +
     EquivSerializersGeneral {
-    proof fn invariants_hold(&self)
+    proof fn leaf_inv(&self)
+        ensures
+            self.unambiguous(),
+            self.safe_inv(),
+            self.serialize_inv(),
+            self.serialize_dps_inv(),
+            self.no_lookahead_inv(),
+            self.equiv_general_inv(),
+    ;
+}
+
+/// Similar to [`Leaf`], but also includes the parser soundness and non-malleability properties.
+pub trait LeafNonMalleable:
+    Leaf +
+    SoundParser +
+    NonMalleable {
+    proof fn nonmal_leaf_inv(&self)
         ensures
             self.unambiguous(),
             self.safe_inv(),
@@ -295,6 +310,12 @@ pub trait LeafCombinator:
             self.no_lookahead_inv(),
             self.equiv_general_inv(),
     ;
+}
+
+impl<Fmt: LeafNonMalleable> Leaf for Fmt {
+    proof fn leaf_inv(&self) {
+        self.nonmal_leaf_inv();
+    }
 }
 
 } // verus!

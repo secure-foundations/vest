@@ -4,6 +4,8 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
+use crate::core::proof::LeafNonMalleable;
+use crate::core::proof::StrictCombinator;
 use vstd::prelude::*;
 
 pub use proof::{
@@ -21,5 +23,12 @@ verus! {
 ///
 /// Parsing semantics: parses with `Body`, which may recursively refer to `Fix` (up to `LIMIT` times).
 pub struct Fix<const LIMIT: usize, Body>(pub Body);
+
+impl<const N: usize, Body: StrictRecBody> LeafNonMalleable for Fix<N, Body> where
+    Body::Body: StrictCombinator,
+ {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
 
 } // verus!

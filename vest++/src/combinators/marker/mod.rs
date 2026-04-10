@@ -4,6 +4,7 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
+use crate::core::proof::LeafNonMalleable;
 use vstd::prelude::*;
 
 verus! {
@@ -23,5 +24,15 @@ pub struct Empty;
 ///
 /// No value is consistent with `Void`.
 pub struct Void;
+
+impl LeafNonMalleable for Empty {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+impl LeafNonMalleable for Void {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
 
 } // verus!
