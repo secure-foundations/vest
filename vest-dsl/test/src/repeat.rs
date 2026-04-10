@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -29,6 +30,11 @@ macro_rules! impl_wrapper_combinator {
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+
+            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
+                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
             }
         } // verus!
     };
@@ -182,6 +188,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OpaqueU16Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for OpaqueU16Combinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type OpaqueU16CombinatorAlias = Mapped<Pair<Refined<U16Le, Predicate17626095872143391426>, bytes::Variable, OpaqueU16Cont0>, OpaqueU16Mapper>;
 
 
@@ -255,6 +265,22 @@ pub fn serialize_opaque_u16<'a>(v: <OpaqueU16Combinator as Combinator<'a, &'a [u
 {
     let combinator = opaque_u16();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_opaque_u16_infallible<'a>(v: <OpaqueU16Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_opaque_u16().wf(v@),
+        spec_opaque_u16().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_opaque_u16().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_opaque_u16().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_opaque_u16().spec_serialize(v@)),
+{
+    let combinator = opaque_u16();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn opaque_u16_len<'a>(v: <OpaqueU16Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -354,6 +380,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for RepeatFixCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for RepeatFixCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type RepeatFixCombinatorAlias = RepeatN<U16Le>;
 
 
@@ -404,6 +434,22 @@ pub fn serialize_repeat_fix<'a>(v: <RepeatFixCombinator as Combinator<'a, &'a [u
 {
     let combinator = repeat_fix();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_repeat_fix_infallible<'a>(v: <RepeatFixCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_repeat_fix().wf(v@),
+        spec_repeat_fix().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_repeat_fix().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_repeat_fix().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_repeat_fix().spec_serialize(v@)),
+{
+    let combinator = repeat_fix();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn repeat_fix_len<'a>(v: <RepeatFixCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -472,6 +518,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type ResponderIdCombinatorAlias = OpaqueU16Combinator;
 
 
@@ -522,6 +572,22 @@ pub fn serialize_responder_id<'a>(v: <ResponderIdCombinator as Combinator<'a, &'
 {
     let combinator = responder_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_responder_id_infallible<'a>(v: <ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_responder_id().wf(v@),
+        spec_responder_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_responder_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_responder_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_responder_id().spec_serialize(v@)),
+{
+    let combinator = responder_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn responder_id_len<'a>(v: <ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -684,6 +750,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type ResponderIdListCombinatorAlias = Mapped<Pair<Refined<U16Le, Predicate2984462868727922620>, AndThen<bytes::Variable, Repeat<ResponderIdCombinator>>, ResponderIdListCont0>, ResponderIdListMapper>;
 
 
@@ -757,6 +827,22 @@ pub fn serialize_responder_id_list<'a>(v: <ResponderIdListCombinator as Combinat
 {
     let combinator = responder_id_list();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_responder_id_list_infallible<'a>(v: <ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_responder_id_list().wf(v@),
+        spec_responder_id_list().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_responder_id_list().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_responder_id_list().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_responder_id_list().spec_serialize(v@)),
+{
+    let combinator = responder_id_list();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn responder_id_list_len<'a>(v: <ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -930,6 +1016,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for RepeatDynCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for RepeatDynCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type RepeatDynCombinatorAlias = Mapped<Pair<BtcVarint, RepeatN<ResponderIdListCombinator>, RepeatDynCont0>, RepeatDynMapper>;
 
 
@@ -1003,6 +1093,22 @@ pub fn serialize_repeat_dyn<'a>(v: <RepeatDynCombinator as Combinator<'a, &'a [u
 {
     let combinator = repeat_dyn();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_repeat_dyn_infallible<'a>(v: <RepeatDynCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_repeat_dyn().wf(v@),
+        spec_repeat_dyn().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_repeat_dyn().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_repeat_dyn().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_repeat_dyn().spec_serialize(v@)),
+{
+    let combinator = repeat_dyn();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn repeat_dyn_len<'a>(v: <RepeatDynCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

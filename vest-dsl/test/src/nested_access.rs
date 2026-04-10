@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -29,6 +30,11 @@ macro_rules! impl_wrapper_combinator {
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+
+            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
+                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
             }
         } // verus!
     };
@@ -201,6 +207,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GenericHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for GenericHeaderCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type GenericHeaderCombinatorAlias = Mapped<GenericHeaderCombinator2, GenericHeaderMapper>;
 
 
@@ -259,6 +269,22 @@ pub fn serialize_generic_header<'a>(v: <GenericHeaderCombinator as Combinator<'a
 {
     let combinator = generic_header();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_generic_header_infallible<'a>(v: <GenericHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_generic_header().wf(v@),
+        spec_generic_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_generic_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_generic_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_generic_header().spec_serialize(v@)),
+{
+    let combinator = generic_header();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn generic_header_len<'a>(v: <GenericHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -408,6 +434,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OuterHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for OuterHeaderCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type OuterHeaderCombinatorAlias = Mapped<OuterHeaderCombinator1, OuterHeaderMapper>;
 
 
@@ -466,6 +496,22 @@ pub fn serialize_outer_header<'a>(v: <OuterHeaderCombinator as Combinator<'a, &'
 {
     let combinator = outer_header();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_outer_header_infallible<'a>(v: <OuterHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_outer_header().wf(v@),
+        spec_outer_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_outer_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_outer_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_outer_header().spec_serialize(v@)),
+{
+    let combinator = outer_header();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn outer_header_len<'a>(v: <OuterHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -608,6 +654,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PayloadWithHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for PayloadWithHeaderCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type PayloadWithHeaderCombinatorAlias = Mapped<Pair<GenericHeaderCombinator, bytes::Variable, PayloadWithHeaderCont0>, PayloadWithHeaderMapper>;
 
 
@@ -681,6 +731,22 @@ pub fn serialize_payload_with_header<'a>(v: <PayloadWithHeaderCombinator as Comb
 {
     let combinator = payload_with_header();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_payload_with_header_infallible<'a>(v: <PayloadWithHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_payload_with_header().wf(v@),
+        spec_payload_with_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_payload_with_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_payload_with_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_payload_with_header().spec_serialize(v@)),
+{
+    let combinator = payload_with_header();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn payload_with_header_len<'a>(v: <PayloadWithHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -852,6 +918,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeepNestedCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeepNestedCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type DeepNestedCombinatorAlias = Mapped<Pair<OuterHeaderCombinator, bytes::Variable, DeepNestedCont0>, DeepNestedMapper>;
 
 
@@ -925,6 +995,22 @@ pub fn serialize_deep_nested<'a>(v: <DeepNestedCombinator as Combinator<'a, &'a 
 {
     let combinator = deep_nested();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_deep_nested_infallible<'a>(v: <DeepNestedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_deep_nested().wf(v@),
+        spec_deep_nested().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_deep_nested().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_deep_nested().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_deep_nested().spec_serialize(v@)),
+{
+    let combinator = deep_nested();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn deep_nested_len<'a>(v: <DeepNestedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1096,6 +1182,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CombinedExampleCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CombinedExampleCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type CombinedExampleCombinatorAlias = Mapped<Pair<GenericHeaderCombinator, bytes::Variable, CombinedExampleCont0>, CombinedExampleMapper>;
 
 
@@ -1175,6 +1265,23 @@ pub fn serialize_combined_example<'a>(v: <CombinedExampleCombinator as Combinato
 {
     let combinator = combined_example( total_len );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_combined_example_infallible<'a>(v: <CombinedExampleCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, total_len: u32) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_combined_example(total_len@).wf(v@),
+        ((total_len) >= 65535 && (total_len) <= 4294967295),
+        spec_combined_example(total_len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_combined_example(total_len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_combined_example(total_len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_combined_example(total_len@).spec_serialize(v@)),
+{
+    let combinator = combined_example( total_len );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn combined_example_len<'a>(v: <CombinedExampleCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, total_len: u32) -> (serialize_len: usize)

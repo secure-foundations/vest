@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -29,6 +30,11 @@ macro_rules! impl_wrapper_combinator {
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+            }
+
+            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
+                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
             }
         } // verus!
     };
@@ -201,6 +207,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MyTypedEnumCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for MyTypedEnumCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type MyTypedEnumCombinatorAlias = TryMap<U16Le, MyTypedEnumMapper>;
 
 
@@ -251,6 +261,22 @@ pub fn serialize_my_typed_enum<'a>(v: <MyTypedEnumCombinator as Combinator<'a, &
 {
     let combinator = my_typed_enum();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_my_typed_enum_infallible<'a>(v: <MyTypedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_my_typed_enum().wf(v@),
+        spec_my_typed_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_my_typed_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_my_typed_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_my_typed_enum().spec_serialize(v@)),
+{
+    let combinator = my_typed_enum();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn my_typed_enum_len<'a>(v: <MyTypedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -432,6 +458,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MyEnumCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for MyEnumCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type MyEnumCombinatorAlias = TryMap<U8, MyEnumMapper>;
 
 
@@ -482,6 +512,22 @@ pub fn serialize_my_enum<'a>(v: <MyEnumCombinator as Combinator<'a, &'a [u8], Ve
 {
     let combinator = my_enum();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_my_enum_infallible<'a>(v: <MyEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_my_enum().wf(v@),
+        spec_my_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_my_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_my_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_my_enum().spec_serialize(v@)),
+{
+    let combinator = my_enum();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn my_enum_len<'a>(v: <MyEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -710,6 +756,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TypedEnumConstraintsCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TypedEnumConstraintsCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type TypedEnumConstraintsCombinatorAlias = Mapped<TypedEnumConstraintsCombinator3, TypedEnumConstraintsMapper>;
 
 
@@ -768,6 +818,22 @@ pub fn serialize_typed_enum_constraints<'a>(v: <TypedEnumConstraintsCombinator a
 {
     let combinator = typed_enum_constraints();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_typed_enum_constraints_infallible<'a>(v: <TypedEnumConstraintsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_typed_enum_constraints().wf(v@),
+        spec_typed_enum_constraints().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_typed_enum_constraints().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_typed_enum_constraints().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_typed_enum_constraints().spec_serialize(v@)),
+{
+    let combinator = typed_enum_constraints();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn typed_enum_constraints_len<'a>(v: <TypedEnumConstraintsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -996,6 +1062,10 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EnumConstraintsCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
+impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EnumConstraintsCombinator {
+    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
+}
 pub type EnumConstraintsCombinatorAlias = Mapped<EnumConstraintsCombinator3, EnumConstraintsMapper>;
 
 
@@ -1054,6 +1124,22 @@ pub fn serialize_enum_constraints<'a>(v: <EnumConstraintsCombinator as Combinato
 {
     let combinator = enum_constraints();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_enum_constraints_infallible<'a>(v: <EnumConstraintsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_enum_constraints().wf(v@),
+        spec_enum_constraints().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_enum_constraints().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_enum_constraints().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_enum_constraints().spec_serialize(v@)),
+{
+    let combinator = enum_constraints();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn enum_constraints_len<'a>(v: <EnumConstraintsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
