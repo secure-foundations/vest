@@ -163,6 +163,7 @@ impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(self.no_lookahead_inv());
         self.0.lemma_no_lookahead(i1, i2);
         self.1.lemma_no_lookahead(i1, i2);
         assert(disjoint_domains(self.0, self.1));
