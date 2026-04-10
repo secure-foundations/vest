@@ -251,6 +251,7 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> 
 
 /// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
 pub trait StrictCombinator:
+    Unambiguity +
     SafeParser +
     SoundParser +
     NonMalleable +
@@ -264,6 +265,7 @@ pub trait StrictCombinator:
 
 impl<Body> StrictCombinator for Body where
     Body:
+        Unambiguity +
         SafeParser +
         SoundParser +
         NonMalleable +
@@ -274,6 +276,31 @@ impl<Body> StrictCombinator for Body where
         EquivSerializersGeneral,
  {
 
+}
+
+/// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
+pub trait ProvenStrictCombinator:
+    Unambiguity +
+    SafeParser +
+    SoundParser +
+    NonMalleable +
+    GoodSerializer +
+    NonTailFmt +
+    SPRoundTripDps +
+    NoLookAhead +
+    EquivSerializersGeneral {
+    proof fn invariants_hold(&self)
+        ensures
+            self.unambiguous(),
+            self.safe_inv(),
+            self.sound_inv(),
+            self.nonmal_inv(),
+            self.serialize_inv(),
+            self.serialize_dps_inv(),
+            self.sp_roundtrip_dps_inv(),
+            self.no_lookahead_inv(),
+            self.equiv_general_inv(),
+    ;
 }
 
 } // verus!
