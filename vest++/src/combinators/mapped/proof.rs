@@ -189,4 +189,69 @@ impl<Inner: EquivSerializers, Out> EquivSerializers for super::Mapped<
     }
 }
 
+impl<Inner, M> SPRoundTripDps for super::TryMap<Inner, M> where
+    Inner: SPRoundTripDps,
+    M: LossyMapper<In = Inner::T>,
+ {
+    open spec fn sp_roundtrip_dps_inv(&self) -> bool {
+        self.inner().sp_roundtrip_dps_inv()
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        self.inner().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl<Inner, M> NonMalleable for super::TryMap<Inner, M> where
+    Inner: SoundParser + NonMalleable,
+    M: LosslessMapper<In = Inner::PVal>,
+ {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.inner().nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        self.inner().lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<Inner, M> NoLookAhead for super::TryMap<Inner, M> where
+    Inner: NoLookAhead,
+    M: LossyMapper<In = Inner::PVal>,
+ {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.inner().no_lookahead_inv()
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        self.inner().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<Inner, M> EquivSerializersGeneral for super::TryMap<Inner, M> where
+    Inner: EquivSerializersGeneral,
+    M: Mapper<In = Inner::SVal>,
+ {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner().equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        self.inner().lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<Inner, M> EquivSerializers for super::TryMap<Inner, M> where
+    Inner: EquivSerializers,
+    M: Mapper<In = Inner::SVal>,
+ {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner().equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        self.inner().lemma_serialize_equiv_on_empty(v);
+    }
+}
+
 } // verus!

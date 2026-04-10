@@ -1,5 +1,8 @@
 //! Mapper traits for type transformations used by [`super::Mapped`].
-use crate::core::{proof::*, spec::*};
+use crate::{
+    combinators::refined::Refined,
+    core::{proof::*, spec::*},
+};
 use vstd::prelude::*;
 
 verus! {
@@ -22,14 +25,14 @@ pub trait Mapper {
 
     /// Optional refinement predicates on the input type.
     ///
-    /// This is the precondition for [`LosslessMapper::lemma_map_iso`].
+    /// This is the precondition for [`LosslessMapper::lemma_lossless_mapper`].
     open spec fn wf_in(i: Self::In) -> bool {
         true
     }
 
     /// Optional refinement predicates on the output type.
     ///
-    /// This is the precondition for [`LossyMapper::lemma_map_iso_rev`].
+    /// This is the precondition for [`LossyMapper::lemma_sound_mapper`].
     open spec fn wf_out(o: Self::Out) -> bool {
         true
     }
@@ -44,6 +47,13 @@ pub trait LossyMapper: Mapper {
             Self::wf_out(o),
         ensures
             Self::spec_map(Self::spec_map_rev(o)) == o,
+    ;
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out)
+        requires
+            Self::wf_out(o),
+        ensures
+            Self::wf_in(Self::spec_map_rev(o)),
     ;
 }
 
@@ -131,8 +141,8 @@ impl<Inner, M> Consistency for super::Mapped<Inner, M> where
     type Val = M::Out;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        &&& self.inner.consistent(M::spec_map_rev(v))
         &&& M::wf_out(v)
+        &&& self.inner.consistent(M::spec_map_rev(v))
     }
 }
 
@@ -389,6 +399,169 @@ impl<Inner, Out> GoodSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVa
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         self.inner.lemma_serialize_len((self.mapper.1)(v));
+    }
+}
+
+pub type TryMapPred<In> = PredFnSpec<In>;
+
+pub type TryMapInner<Inner, M: Mapper> = super::Mapped<Refined<Inner, TryMapPred<M::In>>, M>;
+
+impl<Inner, M: Mapper> super::TryMap<Inner, M> {
+    pub open spec fn inner(&self) -> TryMapInner<Inner, M> {
+        super::Mapped {
+            inner: Refined { inner: self.inner, pred: |v: M::In| M::wf_in(v) },
+            mapper: self.mapper,
+        }
+    }
+}
+
+impl<Inner, M> SpecParser for super::TryMap<Inner, M> where
+    Inner: SpecParser,
+    M: Mapper<In = Inner::PVal>,
+ {
+    type PVal = M::Out;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, M::Out)> {
+        self.inner().spec_parse(ibuf)
+    }
+}
+
+impl<Inner, M> SafeParser for super::TryMap<Inner, M> where
+    Inner: SafeParser,
+    M: Mapper<In = Inner::PVal>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner().safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner().lemma_parse_safe(ibuf);
+    }
+}
+
+impl<Inner, M> SoundParser for super::TryMap<Inner, M> where
+    Inner: SoundParser,
+    M: LosslessMapper<In = Inner::PVal>,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        self.inner().sound_inv()
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner().lemma_parse_sound_consumption(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner, M> Consistency for super::TryMap<Inner, M> where
+    Inner: Consistency,
+    M: Mapper<In = Inner::Val>,
+ {
+    type Val = M::Out;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.inner().consistent(v)
+    }
+}
+
+impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
+    Inner: SpecSerializerDps,
+    M: Mapper<In = Inner::ST>,
+ {
+    type ST = M::Out;
+
+    open spec fn spec_serialize_dps(&self, v: M::Out, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<Inner, M> Unambiguity for super::TryMap<Inner, M> where
+    Inner: Unambiguity,
+    M: Mapper<In = Inner::PVal>,
+ {
+    open spec fn unambiguous(&self) -> bool {
+        self.inner().unambiguous()
+    }
+}
+
+impl<Inner, M> NonTailFmt for super::TryMap<Inner, M> where
+    Inner: NonTailFmt,
+    M: Mapper<In = Inner::ST>,
+ {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner().serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: M::Out, obuf: Seq<u8>) {
+        self.inner().lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: M::Out, obuf: Seq<u8>) {
+        self.inner().lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<Inner, M> GoodSerializer for super::TryMap<Inner, M> where
+    Inner: GoodSerializer,
+    M: Mapper<In = Inner::SVal>,
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner().serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: M::Out) {
+        self.inner().lemma_serialize_len(v);
+    }
+}
+
+impl<Inner, M> SpecByteLen for super::TryMap<Inner, M> where
+    Inner: SpecByteLen,
+    M: Mapper<In = Inner::T>,
+ {
+    type T = M::Out;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner().byte_len(v)
+    }
+}
+
+impl<Inner, M> ValueByteLen for super::TryMap<Inner, M> where
+    Inner: ValueByteLen,
+    M: Mapper<In = Inner::T>,
+ {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        TryMapInner::<Inner, M>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.inner().lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<Inner, M> StaticByteLen for super::TryMap<Inner, M> where
+    Inner: StaticByteLen,
+    M: Mapper<In = Inner::T>,
+ {
+    open spec fn static_byte_len() -> nat {
+        TryMapInner::<Inner, M>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner().lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Inner, M> SpecSerializer for super::TryMap<Inner, M> where
+    Inner: SpecSerializer,
+    M: Mapper<In = Inner::SVal>,
+ {
+    type SVal = M::Out;
+
+    open spec fn spec_serialize(&self, v: M::Out) -> Seq<u8> {
+        self.inner().spec_serialize(v)
     }
 }
 
