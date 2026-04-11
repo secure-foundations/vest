@@ -1,13 +1,13 @@
 //! ASN.1 formats.
+pub(crate) mod base256;
 /// ASN.1 BOOLEAN.
 pub mod boolean;
-// /// ASN.1 INTEGER contents octets.
-// pub mod integer;
+/// ASN.1 INTEGER contents octets.
+pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
 
-use crate::core::proof::Leaf;
-use crate::core::proof::LeafNonMalleable;
+use crate::core::proof::{Leaf, LeafNonMalleable};
 use vstd::prelude::*;
 
 verus! {
@@ -54,8 +54,9 @@ pub const BerLength: Length<false> = Length;
 /// Convenience value alias for the DER variant of ASN.1 definite length.
 pub const DerLength: Length<true> = Length;
 
-// /// ASN.1 INTEGER contents format.
-// pub struct Integer;
+/// ASN.1 INTEGER contents format with externally supplied contents length.
+pub struct Integer<Len = usize>(pub Len);
+
 impl LeafNonMalleable for DerBool {
     proof fn nonmal_leaf_inv(&self) {
     }

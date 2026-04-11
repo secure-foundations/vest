@@ -1,3 +1,8 @@
+use super::base256::{
+    lemma_from_be_bytes_lower_bound, lemma_from_be_bytes_singleton,
+    lemma_from_be_bytes_upper_bound, lemma_from_to_be_bytes_roundtrip, lemma_to_be_bytes_len_bound,
+    lemma_to_be_bytes_props, lemma_to_from_be_bytes_roundtrip, nat_from_be_bytes, nat_to_be_bytes,
+};
 use crate::{
     combinators::{
         implicit::{VLData, VariedLen},
@@ -7,16 +12,7 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
-use vstd::arithmetic::{
-    div_mod::{
-        lemma_div_decreases, lemma_div_non_zero, lemma_fundamental_div_mod,
-        lemma_fundamental_div_mod_converse, lemma_mod_bound,
-    },
-    power::{
-        lemma_pow0, lemma_pow1, lemma_pow_adds, lemma_pow_increases,
-        lemma_pow_strictly_increases_converse, pow,
-    },
-};
+use vstd::arithmetic::power::{lemma_pow1, lemma_pow_increases, pow};
 use vstd::prelude::*;
 
 verus! {
@@ -85,136 +81,6 @@ pub open spec fn der_long_len_bytes_minimal(bytes: Seq<u8>) -> bool {
     &&& bytes.len() > 1 ==> bytes[0] != 0x00u8
 }
 
-pub open spec fn from_be_bytes(bytes: Seq<u8>) -> nat
-    decreases bytes.len(),
-{
-    if bytes.len() == 0 {
-        0
-    } else {
-        from_be_bytes(bytes.drop_last()) * 256 + bytes.last() as nat
-    }
-}
-
-pub open spec fn to_be_bytes(n: nat) -> Seq<u8>
-    decreases n,
-{
-    if n < 256 {
-        seq![n as u8]
-    } else {
-        to_be_bytes((n / 256) as nat).push((n % 256) as u8)
-    }
-}
-
-pub proof fn lemma_from_be_bytes_singleton(b: u8)
-    ensures
-        from_be_bytes(seq![b]) == (b as nat),
-{
-    assert(Seq::<u8>::empty() == Seq::<u8>::empty().push(b).drop_last());
-    assert(from_be_bytes(seq![b]) == from_be_bytes(seq![]) * 256 + b as nat);
-}
-
-pub proof fn lemma_pow256_succ(exp: nat)
-    ensures
-        pow(256, exp + 1) == pow(256, exp) * 256,
-{
-    lemma_pow_adds(256, exp, 1);
-    lemma_pow1(256);
-}
-
-pub proof fn lemma_from_be_bytes_upper_bound(bytes: Seq<u8>)
-    ensures
-        from_be_bytes(bytes) < pow(256, bytes.len()),
-    decreases bytes.len(),
-{
-    if bytes.len() == 0 {
-        lemma_pow0(256);
-    } else {
-        let prefix = bytes.drop_last();
-        lemma_from_be_bytes_upper_bound(prefix);
-        lemma_pow256_succ(prefix.len());
-    }
-}
-
-pub proof fn lemma_from_be_bytes_lower_bound(bytes: Seq<u8>)
-    requires
-        bytes.len() > 0,
-        bytes[0] != 0,
-    ensures
-        pow(256, (bytes.len() - 1) as nat) <= from_be_bytes(bytes),
-    decreases bytes.len(),
-{
-    if bytes.len() == 1 {
-        lemma_pow0(256);
-    } else {
-        let prefix = bytes.drop_last();
-        lemma_from_be_bytes_lower_bound(prefix);
-        lemma_pow256_succ((prefix.len() - 1) as nat);
-    }
-}
-
-pub proof fn lemma_to_be_bytes_props(n: nat)
-    ensures
-        to_be_bytes(n).len() > 0,
-        n > 0 ==> to_be_bytes(n)[0] != 0,
-        n > 0 ==> pow(256, (to_be_bytes(n).len() - 1) as nat) <= n,
-    decreases n,
-{
-    if n < 256 {
-        lemma_pow0(256);
-    } else {
-        let q = (n / 256) as nat;
-        lemma_to_be_bytes_props(q);
-        lemma_pow256_succ((to_be_bytes(q).len() - 1) as nat);
-    }
-}
-
-pub proof fn lemma_to_be_bytes_len_bound(n: nat, max_len: nat)
-    requires
-        0 < max_len,
-        n < pow(256, max_len),
-    ensures
-        to_be_bytes(n).len() <= max_len,
-{
-    if n == 0 {
-    } else {
-        lemma_to_be_bytes_props(n);
-        // b^e1 < b^e2 ==> e1 < e2
-        lemma_pow_strictly_increases_converse(256, (to_be_bytes(n).len() - 1) as nat, max_len);
-    }
-}
-
-pub proof fn lemma_to_from_be_bytes_roundtrip(n: nat)
-    ensures
-        from_be_bytes(to_be_bytes(n)) == n,
-    decreases n,
-{
-    if n < 256 {
-        lemma_from_be_bytes_singleton(n as u8);
-    } else {
-        let q = (n / 256) as nat;
-        let r = (n % 256) as nat;
-        lemma_to_from_be_bytes_roundtrip(q);
-        assert(to_be_bytes(q).push(r as u8).drop_last() == to_be_bytes(q));
-    }
-}
-
-pub proof fn lemma_from_to_be_bytes_roundtrip(bytes: Seq<u8>)
-    requires
-        bytes.len() > 0,
-        bytes.len() > 1 ==> bytes[0] != 0,
-    ensures
-        to_be_bytes(from_be_bytes(bytes)) == bytes,
-    decreases bytes.len(),
-{
-    if bytes.len() == 1 {
-        lemma_from_be_bytes_singleton(bytes[0]);
-        assert(bytes == seq![bytes[0]]);
-    } else {
-        let prefix = bytes.drop_last();
-        lemma_from_to_be_bytes_roundtrip(prefix);
-    }
-}
-
 pub proof fn lemma_long_len_bytes_consistent(bytes: Seq<u8>)
     requires
         LONG_FORM_MIN_COUNT as nat <= bytes.len() <= LONG_FORM_MAX_COUNT as nat,
@@ -229,7 +95,7 @@ pub proof fn lemma_der_minimal_sufficient(bytes: Seq<u8>)
         len_prefixed_bytes().consistent(bytes),
         der_long_len_bytes_minimal(bytes),
     ensures
-        SHORT_FORM_MAX < from_be_bytes(bytes),
+        SHORT_FORM_MAX < nat_from_be_bytes(bytes),
 {
     if bytes.len() == 1 {
         assert(bytes == seq![bytes[0]]);
@@ -245,12 +111,12 @@ pub proof fn lemma_to_be_bytes_minimal(n: nat)
     requires
         SHORT_FORM_MAX < n,
     ensures
-        der_long_len_bytes_minimal(to_be_bytes(n)),
+        der_long_len_bytes_minimal(nat_to_be_bytes(n)),
 {
-    if to_be_bytes(n).len() == 1 {
-        assert(to_be_bytes(n) == seq![to_be_bytes(n)[0]]);
+    if nat_to_be_bytes(n).len() == 1 {
+        assert(nat_to_be_bytes(n) == seq![nat_to_be_bytes(n)[0]]);
         lemma_to_from_be_bytes_roundtrip(n);
-        lemma_from_be_bytes_singleton(to_be_bytes(n)[0]);
+        lemma_from_be_bytes_singleton(nat_to_be_bytes(n)[0]);
     } else {
         lemma_to_be_bytes_props(n);
     }
@@ -378,11 +244,11 @@ impl<const DER: bool> Mapper for NatFromToBytes<DER> {
     }
 
     open spec fn spec_map(i: Self::In) -> Self::Out {
-        from_be_bytes(i)
+        nat_from_be_bytes(i)
     }
 
     open spec fn spec_map_rev(o: Self::Out) -> Self::In {
-        to_be_bytes(o)
+        nat_to_be_bytes(o)
     }
 }
 
@@ -393,7 +259,7 @@ impl<const DER: bool> LossyMapper for NatFromToBytes<DER> {
 
     proof fn lemma_mapper_wf_out_in(o: Self::Out) {
         lemma_to_be_bytes_len_bound(o, LONG_FORM_MAX_COUNT as nat);
-        lemma_long_len_bytes_consistent(to_be_bytes(o));
+        lemma_long_len_bytes_consistent(nat_to_be_bytes(o));
         if DER {
             lemma_to_be_bytes_minimal(o);
         }
