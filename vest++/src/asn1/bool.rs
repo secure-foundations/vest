@@ -1,7 +1,7 @@
 use crate::{
     combinators::{
         mapped::spec::{LosslessMapper, LossyMapper, Mapper},
-        Mapped, Refined, U8,
+        TryMap, U8,
     },
     core::{proof::*, spec::*},
 };
@@ -11,40 +11,32 @@ verus! {
 
 pub const BOOL_BYTE_LEN: usize = 1;
 
-pub struct BoolBytePred<const DER: bool>;
+pub const FALSE_BYTE: u8 = 0x00;
+
+pub const CANONICAL_TRUE_BYTE: u8 = 0xFF;
 
 pub struct BoolMapper<const DER: bool>;
 
 pub open spec fn non_zero(b: u8) -> bool {
-    b != 0x00u8
+    b != FALSE_BYTE
 }
 
-pub open spec fn der_bool(b: u8) -> bool {
-    b == 0x00u8 || b == 0xFFu8
+pub open spec fn der_bool_byte(b: u8) -> bool {
+    b == CANONICAL_TRUE_BYTE || b == FALSE_BYTE
 }
 
 pub open spec fn true_byte<const DER: bool>() -> u8 {
     if DER {
-        0xFFu8
+        CANONICAL_TRUE_BYTE
     } else {
         choose|x: u8| non_zero(x)
     }
 }
 
-pub type BoolFmt<const DER: bool> = Mapped<Refined<U8, BoolBytePred<DER>>, BoolMapper<DER>>;
+pub type BoolFmt<const DER: bool> = TryMap<U8, BoolMapper<DER>>;
 
 pub open spec fn bool_fmt<const DER: bool>() -> BoolFmt<DER> {
-    Mapped { inner: Refined { inner: U8, pred: BoolBytePred::<DER> }, mapper: BoolMapper::<DER> }
-}
-
-impl<const DER: bool> SpecPred<u8> for BoolBytePred<DER> {
-    open spec fn apply(&self, byte: u8) -> bool {
-        if DER {
-            der_bool(byte)
-        } else {
-            true
-        }
-    }
+    TryMap { inner: U8, mapper: BoolMapper::<DER> }
 }
 
 impl<const DER: bool> Mapper for BoolMapper<DER> {
@@ -53,7 +45,11 @@ impl<const DER: bool> Mapper for BoolMapper<DER> {
     type Out = bool;
 
     open spec fn wf_in(i: Self::In) -> bool {
-        BoolBytePred::<DER>.apply(i)
+        if DER {
+            der_bool_byte(i)
+        } else {
+            true
+        }
     }
 
     open spec fn spec_map(i: Self::In) -> Self::Out {
@@ -64,22 +60,18 @@ impl<const DER: bool> Mapper for BoolMapper<DER> {
         if o {
             true_byte::<DER>()
         } else {
-            0x00u8
+            FALSE_BYTE
         }
     }
 }
 
 impl<const DER: bool> LossyMapper for BoolMapper<DER> {
     proof fn lemma_sound_mapper(o: Self::Out) {
-        if o {
-            if DER {
-                assert(true_byte::<DER>() == 0xFFu8);
-            } else {
-                assert(exists|x: u8| non_zero(x)) by {
-                    assert(non_zero(0x01u8));
-                }
-            }
-        }
+        assert(non_zero(CANONICAL_TRUE_BYTE));
+    }
+
+    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+        assert(non_zero(CANONICAL_TRUE_BYTE));
     }
 }
 
@@ -137,10 +129,6 @@ impl<const DER: bool> SpecSerializer for super::Bool<DER> {
     }
 }
 
-impl<const DER: bool> Unambiguity for super::Bool<DER> {
-
-}
-
 impl<const DER: bool> NonTailFmt for super::Bool<DER> {
     proof fn lemma_serialize_dps_prepend(&self, v: bool, obuf: Seq<u8>) {
         bool_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
@@ -186,6 +174,10 @@ impl<const DER: bool> ValueByteLen for super::Bool<DER> {
 }
 
 impl<const DER: bool> SPRoundTripDps for super::Bool<DER> {
+    open spec fn unambiguous(&self) -> bool {
+        bool_fmt::<DER>().unambiguous()
+    }
+
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         bool_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
@@ -203,8 +195,6 @@ impl NonMalleable for super::Bool<true> {
     }
 }
 
-// Bool<false> intentionally does NOT implement PSRoundTrip or NonMalleable:
-// any non-zero byte parses as true, so BER BOOLEAN remains malleable.
 impl<const DER: bool> EquivSerializersGeneral for super::Bool<DER> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         bool_fmt::<DER>().lemma_serialize_equiv(v, obuf);

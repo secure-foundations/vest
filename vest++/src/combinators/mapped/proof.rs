@@ -224,6 +224,7 @@ impl<Inner, M> NoLookAhead for super::TryMap<Inner, M> where
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(self.no_lookahead_inv());
         self.inner().lemma_no_lookahead(i1, i2);
     }
 }

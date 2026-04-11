@@ -70,7 +70,7 @@ pub struct Implicit<Head, Tail>(pub Head, pub Tail);
 /// One of the [dependent family of combinators](DepCombinator)
 ///
 /// Typically used as `Implicit(U8, VLData())`.
-pub struct VariedLen<Len>(pub core::marker::PhantomData<Len>);
+pub struct VariedLen<Len = u8>(pub core::marker::PhantomData<Len>);
 
 /// Convenience constructor for [`VariedLen`].
 #[allow(non_snake_case)]
