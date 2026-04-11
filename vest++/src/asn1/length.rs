@@ -60,8 +60,11 @@ pub open spec fn long_len_inner<const DER: bool>() -> LongLenInner<DER> {
                 // by `inner.consistent(bytes)` we already know:
                 // 0 < bytes.len() <= 126
                 if DER {
-                    // DER requires minimality so no leading zeros
-                    bytes.len() > 1 ==> bytes[0] != 0x00u8
+                    // DER requires minimality, so
+                    // 1. for single-byte length in the long form, the value must be > 127 (i.e. not encodable in short form)
+                    // 2. for multi-byte length in the long form, the first byte must be non-zero (i.e. no leading zeros)
+                    &&& bytes.len() == 1 ==> bytes[0] > SHORT_FORM_MAX
+                    &&& bytes.len() > 1 ==> bytes[0] != 0x00u8
                 } else {
                     true
                 }
