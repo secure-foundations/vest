@@ -5,10 +5,8 @@ use super::base256::{
 };
 use crate::{
     combinators::{
-        bytes::Varied,
-        length::AsLen,
         mapped::spec::{LosslessMapper, LossyMapper, Mapper},
-        TryMap,
+        Tail, TryMap,
     },
     core::{proof::*, spec::*},
 };
@@ -20,10 +18,10 @@ verus! {
 
 pub struct IntFromToBytes;
 
-pub type IntegerFmt<Len> = TryMap<Varied<Len>, IntFromToBytes>;
+pub type IntegerFmt = TryMap<Tail, IntFromToBytes>;
 
-pub open spec fn integer_fmt<Len: AsLen>(len: Len) -> IntegerFmt<Len> {
-    TryMap { inner: Varied(len), mapper: IntFromToBytes }
+pub open spec fn integer_fmt() -> IntegerFmt {
+    TryMap { inner: Tail, mapper: IntFromToBytes }
 }
 
 pub open spec fn sign_bit_set(b: u8) -> bool {
@@ -241,115 +239,93 @@ impl LosslessMapper for IntFromToBytes {
     }
 }
 
-impl<Len: AsLen> SpecParser for super::Integer<Len> {
+impl SpecParser for super::Integer {
     type PVal = int;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        integer_fmt(self.0).spec_parse(ibuf)
+        integer_fmt().spec_parse(ibuf)
     }
 }
 
-impl<Len: AsLen> Consistency for super::Integer<Len> {
+impl Consistency for super::Integer {
     type Val = int;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        integer_fmt(self.0).consistent(v)
+        integer_fmt().consistent(v)
     }
 }
 
-impl<Len: AsLen> SafeParser for super::Integer<Len> {
+impl SafeParser for super::Integer {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_parse_safe(ibuf);
+        integer_fmt().lemma_parse_safe(ibuf);
     }
 }
 
-impl<Len: AsLen> SoundParser for super::Integer<Len> {
+impl SoundParser for super::Integer {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_parse_sound_consumption(ibuf);
+        integer_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_parse_sound_value(ibuf);
+        integer_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 
-impl<Len: AsLen> SpecSerializerDps for super::Integer<Len> {
+impl SpecSerializerDps for super::Integer {
     type ST = int;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        integer_fmt(self.0).spec_serialize_dps(v, obuf)
+        integer_fmt().spec_serialize_dps(v, obuf)
     }
 }
 
-impl<Len: AsLen> SpecSerializer for super::Integer<Len> {
+impl SpecSerializer for super::Integer {
     type SVal = int;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        integer_fmt(self.0).spec_serialize(v)
+        integer_fmt().spec_serialize(v)
     }
 }
 
-impl<Len: AsLen> NonTailFmt for super::Integer<Len> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_serialize_dps_prepend(v, obuf);
-    }
-
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_serialize_dps_len(v, obuf);
-    }
-}
-
-impl<Len: AsLen> GoodSerializer for super::Integer<Len> {
+impl GoodSerializer for super::Integer {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        integer_fmt(self.0).lemma_serialize_len(v);
+        integer_fmt().lemma_serialize_len(v);
     }
 }
 
-impl<Len: AsLen> SpecByteLen for super::Integer<Len> {
+impl SpecByteLen for super::Integer {
     type T = int;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        integer_fmt(self.0).byte_len(v)
+        integer_fmt().byte_len(v)
     }
 }
 
-impl<Len: AsLen> ValueByteLen for super::Integer<Len> {
+impl ValueByteLen for super::Integer {
     open spec fn value_byte_len(v: Self::T) -> nat {
-        IntegerFmt::<Len>::value_byte_len(v)
+        IntegerFmt::value_byte_len(v)
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        integer_fmt(self.0).lemma_value_len_matches_byte_len(v);
+        integer_fmt().lemma_value_len_matches_byte_len(v);
     }
 }
 
-impl<Len: AsLen> SPRoundTripDps for super::Integer<Len> {
+impl SPRoundTripDps for super::Integer {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        integer_fmt(self.0).theorem_serialize_dps_parse_roundtrip(v, obuf);
+        integer_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl<Len: AsLen> NoLookAhead for super::Integer<Len> {
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        integer_fmt(self.0).lemma_no_lookahead(i1, i2);
-    }
-}
-
-impl<Len: AsLen> NonMalleable for super::Integer<Len> {
+impl NonMalleable for super::Integer {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        integer_fmt(self.0).lemma_parse_non_malleable(buf1, buf2);
+        integer_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl<Len: AsLen> EquivSerializersGeneral for super::Integer<Len> {
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        integer_fmt(self.0).lemma_serialize_equiv(v, obuf);
-    }
-}
-
-impl<Len: AsLen> EquivSerializers for super::Integer<Len> {
+impl EquivSerializers for super::Integer {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        integer_fmt(self.0).lemma_serialize_equiv_on_empty(v);
+        integer_fmt().lemma_serialize_equiv_on_empty(v);
     }
 }
 
