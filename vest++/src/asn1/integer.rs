@@ -51,6 +51,7 @@ pub open spec fn integer_bytes_minimal(bytes: Seq<u8>) -> bool {
 }
 
 pub open spec fn integer_bytes_wf(bytes: Seq<u8>) -> bool {
+    // 8.3.1 The encoding of an integer value shall be primitive. The contents octets shall consist of one or more octets.
     &&& bytes.len() > 0
     &&& integer_bytes_minimal(bytes)
 }
