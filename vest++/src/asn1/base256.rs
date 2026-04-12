@@ -1,13 +1,22 @@
 use vstd::arithmetic::{
     div_mod::{
         lemma_div_decreases, lemma_div_non_zero, lemma_fundamental_div_mod,
-        lemma_fundamental_div_mod_converse, lemma_mod_bound,
+        lemma_fundamental_div_mod_converse, lemma_mod_bound, lemma_small_mod,
     },
-    power::{lemma_pow0, lemma_pow1, lemma_pow_adds, lemma_pow_strictly_increases_converse, pow},
+    power::{
+        lemma_pow0, lemma_pow1, lemma_pow_adds, lemma_pow_increases,
+        lemma_pow_strictly_increases_converse, pow,
+    },
+    power2::pow2,
 };
-use vstd::prelude::*;
+use vstd::bits::{lemma_usize_low_bits_mask_is_mod, lemma_usize_shr_is_div, low_bits_mask};
+use vstd::{calc, prelude::*};
 
 verus! {
+
+const USIZE_MODULUS_32: u64 = 0x100000000;
+
+const USIZE_MODULUS_64: u128 = 0x10000000000000000u128;
 
 /// Unsigned big-endian base-256 decoding.
 pub open spec fn nat_from_be_bytes(bytes: Seq<u8>) -> nat
@@ -28,6 +37,168 @@ pub open spec fn nat_to_be_bytes(n: nat) -> Seq<u8>
         seq![n as u8]
     } else {
         nat_to_be_bytes((n / 256) as nat).push((n % 256) as u8)
+    }
+}
+
+/// Number of bytes in `usize`.
+pub open spec fn size_of_usize() -> nat {
+    if usize::BITS == 32 {
+        4
+    } else {
+        8
+    }
+}
+
+/// Unsigned big-endian base-256 decoding into `usize`.
+pub open spec fn usize_from_be_bytes_total(bytes: Seq<u8>) -> usize
+    recommends
+        bytes.len() <= size_of_usize(),
+    decreases bytes.len(),
+{
+    if bytes.len() == 0 {
+        0
+    } else {
+        (usize_from_be_bytes_total(bytes.drop_last()) << 8) | bytes.last() as usize
+    }
+}
+
+/// Unsigned big-endian base-256 encoding from `usize`.
+pub open spec fn usize_to_be_bytes(v: usize) -> Seq<u8>
+    decreases v as nat,
+    via usize_to_be_bytes_decreases
+{
+    if v < 256 {
+        seq![v as u8]
+    } else {
+        usize_to_be_bytes(v >> 8).push((v & 0xff) as u8)
+    }
+}
+
+#[via_fn]
+proof fn usize_to_be_bytes_decreases(v: usize) {
+    if v >= 256 {
+        lemma_usize_shr8_is_div256(v);
+        lemma_div_decreases(v as int, 256);
+    }
+}
+
+/// Checked decoding wrapper for [`len_from_be_bytes_total`].
+pub open spec fn usize_from_be_bytes(bytes: Seq<u8>) -> Option<usize> {
+    if bytes.len() <= size_of_usize() {
+        Some(usize_from_be_bytes_total(bytes))
+    } else {
+        None
+    }
+}
+
+proof fn lemma_usize_shr8_is_div256(v: usize)
+    ensures
+        (v >> 8usize) as nat == v as nat / 256,
+{
+    lemma_usize_shr_is_div(v, 8usize);
+    assert(pow2(8) == 256) by (compute_only);
+}
+
+proof fn lemma_usize_low8_is_mod256(v: usize)
+    ensures
+        (v & 0xffusize) as nat == v as nat % 256,
+{
+    lemma_usize_low_bits_mask_is_mod(v, 8);
+    assert(pow2(8) == 256) by (compute_only);
+}
+
+proof fn lemma_nat_from_be_bytes_fits_shr8(bytes: Seq<u8>)
+    requires
+        bytes.len() <= size_of_usize(),
+    ensures
+        usize::BITS == 32 ==> nat_from_be_bytes(bytes) < USIZE_MODULUS_32 as nat,
+        usize::BITS == 64 ==> nat_from_be_bytes(bytes) < USIZE_MODULUS_64 as nat,
+{
+    lemma_from_be_bytes_upper_bound(bytes);
+    assert(usize::BITS == 32 || usize::BITS == 64);
+    if usize::BITS == 32 {
+        assert(size_of_usize() == 4);
+        reveal_with_fuel(pow, 5);
+    } else {
+        assert(usize::BITS == 64);
+        assert(size_of_usize() == 8);
+        reveal_with_fuel(pow, 9);
+    }
+}
+
+proof fn lemma_usize32_shl8_or_is_base256(v: usize, b: u8)
+    by (bit_vector)
+    requires
+        usize::BITS == 32,
+    ensures
+        (((v << 8usize) | b as usize) as nat) == (v as nat * 256 + b as nat) % (
+        USIZE_MODULUS_32 as nat),
+{
+}
+
+proof fn lemma_usize64_shl8_or_is_base256(v: usize, b: u8)
+    by (bit_vector)
+    requires
+        usize::BITS == 64,
+    ensures
+        (((v << 8usize) | b as usize) as nat) == (v as nat * 256 + b as nat) % (
+        USIZE_MODULUS_64 as nat),
+{
+}
+
+pub proof fn lemma_len_to_be_bytes_equiv_nat(v: usize)
+    ensures
+        usize_to_be_bytes(v) == nat_to_be_bytes(v as nat),
+    decreases v as nat,
+{
+    if v < 256usize {
+    } else {
+        let q = v >> 8usize;
+        let r = (v & 0xffusize) as u8;
+        lemma_usize_shr8_is_div256(v);
+        lemma_usize_low8_is_mod256(v);
+        lemma_len_to_be_bytes_equiv_nat(q);
+        assert(v as nat >= 256);
+
+        calc! {
+            (==)
+            usize_to_be_bytes(v); {}
+            usize_to_be_bytes(q).push(r); {}
+            nat_to_be_bytes(q as nat).push(r); {}
+            nat_to_be_bytes((v as nat / 256) as nat).push((v as nat % 256) as u8); {}
+            nat_to_be_bytes(v as nat);
+        }
+    }
+}
+
+pub proof fn lemma_len_from_be_bytes_total_equiv_nat(bytes: Seq<u8>)
+    requires
+        bytes.len() <= size_of_usize(),
+    ensures
+        usize_from_be_bytes_total(bytes) as nat == nat_from_be_bytes(bytes),
+    decreases bytes.len(),
+{
+    if bytes.len() == 0 {
+    } else {
+        let prefix = bytes.drop_last();
+        let last = bytes.last();
+        let prefix_v = usize_from_be_bytes_total(prefix);
+        lemma_len_from_be_bytes_total_equiv_nat(prefix);
+        lemma_nat_from_be_bytes_fits_shr8(bytes);
+        if usize::BITS == 32 {
+            lemma_usize32_shl8_or_is_base256(prefix_v, last);
+        } else {
+            lemma_usize64_shl8_or_is_base256(prefix_v, last);
+        }
+    }
+}
+
+pub proof fn lemma_len_from_be_bytes_equiv_nat(bytes: Seq<u8>)
+    ensures
+        usize_from_be_bytes(bytes) matches Some(v) ==> v == nat_from_be_bytes(bytes),
+{
+    if bytes.len() <= size_of_usize() {
+        lemma_len_from_be_bytes_total_equiv_nat(bytes);
     }
 }
 
