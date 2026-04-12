@@ -1,5 +1,7 @@
 //! ASN.1 formats.
 pub(crate) mod base256;
+/// ASN.1 BIT STRING contents octets.
+pub mod bitstring;
 /// ASN.1 BOOLEAN.
 pub mod boolean;
 /// ASN.1 INTEGER contents octets.
@@ -7,7 +9,10 @@ pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
 
-use crate::core::proof::{Leaf, LeafNonMalleable};
+use crate::{
+    combinators::Tail,
+    core::proof::{Leaf, LeafNonMalleable},
+};
 use vstd::prelude::*;
 
 verus! {
@@ -56,6 +61,21 @@ pub const DerLength: Length<true> = Length;
 
 /// ASN.1 INTEGER contents format with externally supplied contents length.
 pub struct Integer<Len = usize>(pub Len);
+
+/// ASN.1 BIT STRING contents format.
+pub struct BitString<const DER: bool = true>;
+
+/// Convenience type alias for the BER variant of ASN.1 BIT STRING.
+pub type BerBitString = BitString<false>;
+
+/// Convenience type alias for the DER variant of ASN.1 BIT STRING.
+pub type DerBitString = BitString<true>;
+
+/// ASN.1 OCTET STRING contents format.
+pub type OctetString = Tail;
+
+/// Convenience value alias for ASN.1 OCTET STRING contents format.
+pub const OctetString: Tail = Tail;
 
 impl LeafNonMalleable for DerBool {
     proof fn nonmal_leaf_inv(&self) {
