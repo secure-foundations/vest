@@ -2,7 +2,7 @@
 pub(crate) mod base256;
 /// ASN.1 BIT STRING contents octets.
 pub mod bitstring;
-/// ASN.1 BOOLEAN.
+/// ASN.1 BOOLEAN contents octet.
 pub mod boolean;
 /// ASN.1 INTEGER contents octets.
 pub mod integer;
@@ -10,12 +10,26 @@ pub mod integer;
 pub mod length;
 
 use crate::{
-    combinators::Tail,
+    combinators::{
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, Tagged, Tail, TryMap, U8,
+    },
     core::proof::{Leaf, LeafNonMalleable},
 };
 use vstd::prelude::*;
 
 verus! {
+
+pub enum ASN1Tag {
+    Boolean = 0x01,
+    Integer = 0x02,
+    BitString = 0x03,
+    OctetString = 0x04,
+    // ...
+}
+
+pub type TagFmt = TryMap<U8, FnSpecMapper<u8, ASN1Tag>>;
+
+pub type ASN1TLV<T, Len = usize> = Tagged<TagFmt, Implicit<Length, NBytesOf<Len, T>>>;
 
 /// ASN.1 BOOLEAN format.
 ///
@@ -43,8 +57,8 @@ pub const DerBool: Bool<true> = Bool;
 /// When `DER = true` (the default), only the canonical DER definite form is
 /// accepted/produced.
 ///
-/// When `DER = false`, the parser is BER-permissive over short and long
-/// definite forms, while serialization remains canonical.
+/// When `DER = false`, the parser/serializer is BER-permissive over short and long
+/// definite forms, without minimality constraints.
 pub struct Length<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 definite length.
@@ -59,10 +73,15 @@ pub const BerLength: Length<false> = Length;
 /// Convenience value alias for the DER variant of ASN.1 definite length.
 pub const DerLength: Length<true> = Length;
 
-/// ASN.1 INTEGER contents format with externally supplied contents length.
-pub struct Integer<Len = usize>(pub Len);
+/// ASN.1 INTEGER contents format.
+pub struct Integer;
 
 /// ASN.1 BIT STRING contents format.
+///
+/// When `DER = true` (the default), only the canonical DER form is accepted, which requires
+/// the trailing unused bits to be zero.
+///
+/// When `DER = false`, the parser allows any value for the trailing unused bits.
 pub struct BitString<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BIT STRING.
