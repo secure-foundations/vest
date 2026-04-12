@@ -312,7 +312,7 @@ impl<Len: AsLen> DepCombinator for VariedLen<Len> {
 }
 
 // Similar to `VariedLen`, but with the body being an arbitrary combinator instead of just `Varied`.
-impl<Len, Then> DepCombinator for VariedLenOf<Len, Then> where
+impl<Len, Then> DepCombinator for NBytesOf<Len, Then> where
     Len: AsLen,
     Then: SpecByteLen + Consistency<Val = Then::T>,
  {

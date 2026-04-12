@@ -80,13 +80,13 @@ pub open spec fn VLData<Len>() -> VariedLen<Len> {
 
 /// One of the [dependent family of combinators](DepCombinator)
 ///
-/// Typically used as `Implicit(U16Le, VLDataOf(inner_fmt))`.
-pub struct VariedLenOf<Len, Then>(pub core::marker::PhantomData<Len>, pub Then);
+/// Typically used as `Implicit(U16Le, NBytesOf(inner_fmt))`.
+pub struct NBytesOf<Len, Then>(pub core::marker::PhantomData<Len>, pub Then);
 
-/// Convenience constructor for [`VariedLenOf`].
+/// Convenience constructor for [`NBytesOf`].
 #[allow(non_snake_case)]
-pub open spec fn VLDataOf<Len, C>(c: C) -> VariedLenOf<Len, C> {
-    VariedLenOf(core::marker::PhantomData, c)
+pub open spec fn VLDataOf<Len, C>(c: C) -> NBytesOf<Len, C> {
+    NBytesOf(core::marker::PhantomData, c)
 }
 
 /// One of the [dependent family of combinators](DepCombinator)
