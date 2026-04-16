@@ -1,15 +1,9 @@
 use vstd::arithmetic::{
-    div_mod::{
-        lemma_div_decreases, lemma_div_non_zero, lemma_fundamental_div_mod,
-        lemma_fundamental_div_mod_converse, lemma_mod_bound, lemma_small_mod,
-    },
-    power::{
-        lemma_pow0, lemma_pow1, lemma_pow_adds, lemma_pow_increases,
-        lemma_pow_strictly_increases_converse, pow,
-    },
-    power2::pow2,
+    div_mod::*,
+    power::*,
+    power2::*,
 };
-use vstd::bits::{lemma_usize_low_bits_mask_is_mod, lemma_usize_shr_is_div, low_bits_mask};
+use vstd::bits::*;
 use vstd::{calc, prelude::*};
 
 verus! {

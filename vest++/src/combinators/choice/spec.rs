@@ -1,5 +1,4 @@
 use crate::core::{proof::*, spec::*};
-use vstd::pervasive::arbitrary;
 use vstd::prelude::*;
 
 verus! {
@@ -186,6 +185,7 @@ impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A,
 }
 
 pub open spec fn arbitrary_or_left(l: bool, r: bool) -> bool {
+    use vstd::pervasive::arbitrary;
     if l && r {
         arbitrary()
     } else {

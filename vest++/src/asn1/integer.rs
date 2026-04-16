@@ -1,8 +1,4 @@
-use super::base256::{
-    lemma_from_be_bytes_prepend, lemma_from_be_bytes_push, lemma_from_be_bytes_singleton,
-    lemma_from_be_bytes_upper_bound, lemma_from_to_be_bytes_roundtrip, lemma_pow256_succ,
-    lemma_to_be_bytes_props, lemma_to_from_be_bytes_roundtrip, nat_from_be_bytes, nat_to_be_bytes,
-};
+use super::base256::*;
 use crate::{
     combinators::{
         mapped::spec::{LosslessMapper, LossyMapper, Mapper},
@@ -10,7 +6,7 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
-use vstd::arithmetic::power::{lemma_pow0, pow};
+use vstd::arithmetic::power::*;
 use vstd::assert_seqs_equal;
 use vstd::prelude::*;
 

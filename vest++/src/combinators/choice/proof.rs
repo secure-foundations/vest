@@ -1,4 +1,4 @@
-use crate::combinators::choice::spec::{tag_position, unique_branch_match};
+use super::spec::*;
 use crate::combinators::Sum;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
