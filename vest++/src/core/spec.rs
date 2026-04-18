@@ -156,6 +156,8 @@ pub trait StaticByteLen: SpecByteLen + Consistency<Val = Self::T> {
 
     /// Bridge between the dynamic byte-length view and the static one.
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T)
+        requires
+            self.consistent(v),
         ensures
             self.byte_len(v) == Self::static_byte_len(),
     ;
@@ -169,13 +171,17 @@ pub trait ValueByteLen: SpecByteLen + Consistency<Val = Self::T> {
 
     /// Bridge between the parameterized byte-length view and the value-based one.
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T)
+        requires
+            self.consistent(v),
         ensures
             self.byte_len(v) == Self::value_byte_len(v),
     ;
 }
 
 /// Broadcast wrapper for [`ValueByteLen::lemma_value_len_matches_byte_len`].
-pub broadcast proof fn lemma_value_len_matches_byte_len<C: ValueByteLen>(c: C, v: C::T)
+pub broadcast proof fn lemma_value_len_matches_byte_len<C: ValueByteLen + Consistency>(c: C, v: C::T)
+    requires
+        c.consistent(v),
     ensures
         #[trigger] c.byte_len(v) == C::value_byte_len(v),
 {

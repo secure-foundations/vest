@@ -7,6 +7,8 @@ use vstd::prelude::*;
 verus! {
 
 proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
+    requires
+        forall|i: int| 0 <= i < vs.len() ==> #[trigger] inner.consistent(vs[i]),
     ensures
         (super::Star { inner }).byte_len(vs) == vs.len() * A::static_byte_len(),
     decreases vs.len(),
@@ -51,6 +53,8 @@ proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
 }
 
 proof fn lemma_value_seq_byte_len<A: ValueByteLen>(inner: A, vs: Seq<A::T>)
+    requires
+        forall|i: int| 0 <= i < vs.len() ==> #[trigger] inner.consistent(vs[i]),
     ensures
         (super::Star { inner }).byte_len(vs) == vs.fold_left(
             0,

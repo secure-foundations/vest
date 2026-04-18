@@ -645,4 +645,21 @@ impl<A, B> SpecByteLen for Sum<A, B> where A: SpecByteLen, B: SpecByteLen {
     }
 }
 
+impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for Sum<A, B> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        match v {
+            Sum::Inl(va) => A::value_byte_len(va),
+            Sum::Inr(vb) => B::value_byte_len(vb),
+        }
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_value_len_matches_byte_len(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_value_len_matches_byte_len(vb),
+            _ => (),
+        }
+    }
+}
+
 } // verus!
