@@ -1,3 +1,4 @@
+use crate::combinators::Fixed;
 use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::preceded::Preceded;
 use crate::core::{proof::*, spec::*};
@@ -252,6 +253,127 @@ impl<Inner> ValueByteLen for super::Tag<Inner, Inner::T> where Inner: ValueByteL
     }
 }
 
+impl<const N: usize> SpecParser for super::Tag<Fixed::<N>, [u8; N]> {
+    type PVal = Seq<u8>;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match self.inner.spec_parse(ibuf) {
+            Some((n, v)) if v == self.tag@ => Some((n, v)),
+            _ => None,
+        }
+    }
+}
+
+impl<const N: usize> Consistency for super::Tag<Fixed::<N>, [u8; N]> {
+    type Val = Seq<u8>;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.inner.consistent(v)
+        &&& v == self.tag@
+    }
+}
+
+impl<const N: usize> AdmitsUniqueVal for super::Tag<Fixed::<N>, [u8; N]> {
+    proof fn lemma_unique_consistent_val(&self, v1: Self::Val, v2: Self::Val) {
+        if self.consistent(v1) && self.consistent(v2) {
+            assert(v1 == self.tag@);
+            assert(v2 == self.tag@);
+        }
+    }
+}
+
+impl<const N: usize> SafeParser for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<const N: usize> SoundParser for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn sound_inv(&self) -> bool {
+        self.inner.sound_inv()
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<const N: usize> SpecSerializerDps for super::Tag<Fixed::<N>, [u8; N]> {
+    type ST = Seq<u8>;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<const N: usize> SpecSerializer for super::Tag<Fixed::<N>, [u8; N]> {
+    type SVal = Seq<u8>;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.inner.spec_serialize(v)
+    }
+}
+
+impl<const N: usize> NonTailFmt for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<const N: usize> GoodSerializer for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.inner.lemma_serialize_len(v);
+    }
+}
+
+impl<const N: usize> SpecByteLen for super::Tag<Fixed::<N>, [u8; N]> {
+    type T = Seq<u8>;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(v)
+    }
+}
+
+impl<const N: usize> StaticByteLen for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn static_byte_len() -> nat {
+        Fixed::<N>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<const N: usize> ValueByteLen for super::Tag<Fixed::<N>, [u8; N]> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Fixed::<N>::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_value_len_matches_byte_len(v);
+    }
+}
+
 impl<Tg, Of> SpecParser for super::Tagged<Tg, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     Of: SpecParser,
@@ -382,10 +504,9 @@ impl<Tg, Of> StaticByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        Preceded(
-            super::Tag { inner: self.0, tag: self.1 },
-            self.2,
-        ).lemma_static_len_matches_byte_len(v);
+        let fmt = Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2);
+        assert(fmt.0.consistent(self.1));
+        fmt.lemma_static_len_matches_byte_len(v);
     }
 }
 
@@ -395,10 +516,9 @@ impl<Tg, Of> ValueByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of:
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        Preceded(
-            super::Tag { inner: self.0, tag: self.1 },
-            self.2,
-        ).lemma_value_len_matches_byte_len(v);
+        let fmt = Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2);
+        assert(fmt.0.consistent(self.1));
+        fmt.lemma_value_len_matches_byte_len(v);
     }
 }
 
