@@ -70,10 +70,10 @@ proof fn test_implicit_inferred_fmt2_roundtrip() {
          Varied(len1))),
         // Recovery logics:
         |v: (Seq<u8>, (Seq<u8>, Seq<u8>))| v.1.0.len() as u16))),
-        |v: ([u8; 3], (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8));
+        |v: (Seq<u8>, (Seq<u8>, (Seq<u8>, Seq<u8>)))| v.1.0.len() as u8));
 
     let v = (
-        [0x10u8, 0x20u8, 0x30u8],
+        seq![0x10u8, 0x20u8, 0x30u8],
         (seq![0x10u8, 0x20u8], (seq![0x30u8, 0x40u8, 0x50u8], seq![0x30u8, 0x40u8])),
     );
     assert(fmt2.unambiguous());
@@ -103,7 +103,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
             Choice(Cond(tag == 1u8, U32Le),
                    Cond(tag == 2u8, Fixed::<0>))),
         // Recovery logics:
-        |v: Sum<u16, Sum<u32, [u8; 0]>>|
+        |v: Sum<u16, Sum<u32, Seq<u8>>>|
             {
                 match v {
                     Sum::Inl(_) => 0u8,
@@ -115,7 +115,7 @@ proof fn test_implicit_inferred_fmt3_roundtrip() {
 
     let v0 = Sum::Inl(0x1234u16);
     let v1 = Sum::Inr(Sum::Inl(0x78563412u32));
-    let v2 = Sum::Inr(Sum::Inr([]));
+    let v2 = Sum::Inr(Sum::Inr(seq![]));
 
     assert(fmt3.unambiguous());
     assert(fmt3.consistent(v0));
@@ -169,12 +169,12 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
             let len2 = PayloadFmt::value_byte_len(v2);
             len2 as u16
         }))),
-        |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
+        |v: (Seq<u8>, (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
            let (padding, (v1, v2)) = v;
             let len1 = Varied::<u8>::value_byte_len(v1);
             len1 as u8
         })),
-        |v: ([u8; 3], (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
+        |v: (Seq<u8>, (Seq<u8>, <PayloadFmt as SpecByteLen>::T))| {
             let (padding, (v1, v2)) = v;
             let tag = match v2 {
                 L(_) => 0u8,
@@ -184,7 +184,7 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
             tag
         }));
 
-    let padding = [0xDEu8, 0xADu8, 0xBEu8];
+    let padding = seq![0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
 
     let v2_1 = L(seq![0xEFu8, 0xBEu8]);

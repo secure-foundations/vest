@@ -1,4 +1,5 @@
 use super::spec::*;
+use crate::combinators::bytes::spec::*;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -41,6 +42,7 @@ impl EquivSerializers for super::U8 {
 impl SPRoundTripDps for super::U16Le {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
         broadcast use lemma_u16_le_value_roundtrip;
+        broadcast use lemma_array_from_seq_roundtrip;
 
         u16_le_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
@@ -49,6 +51,7 @@ impl SPRoundTripDps for super::U16Le {
 impl NonMalleable for super::U16Le {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         broadcast use lemma_u16_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u16_le_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
@@ -74,6 +77,7 @@ impl EquivSerializers for super::U16Le {
 
 impl SPRoundTripDps for super::U16Be {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u16, obuf: Seq<u8>) {
+        broadcast use lemma_array_from_seq_roundtrip;
         broadcast use lemma_u16_be_value_roundtrip;
 
         u16_be_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
@@ -82,6 +86,7 @@ impl SPRoundTripDps for super::U16Be {
 
 impl NonMalleable for super::U16Be {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
         broadcast use lemma_u16_be_bytes_roundtrip;
 
         u16_be_fmt().lemma_parse_non_malleable(buf1, buf2);
@@ -108,6 +113,7 @@ impl EquivSerializers for super::U16Be {
 
 impl SPRoundTripDps for super::U32Le {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
+        broadcast use lemma_array_from_seq_roundtrip;
         broadcast use lemma_u32_le_value_roundtrip;
 
         u32_le_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
@@ -116,6 +122,7 @@ impl SPRoundTripDps for super::U32Le {
 
 impl NonMalleable for super::U32Le {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
         broadcast use lemma_u32_le_bytes_roundtrip;
 
         u32_le_fmt().lemma_parse_non_malleable(buf1, buf2);
@@ -142,6 +149,7 @@ impl EquivSerializers for super::U32Le {
 
 impl SPRoundTripDps for super::U32Be {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
+        broadcast use lemma_array_from_seq_roundtrip;
         broadcast use lemma_u32_be_value_roundtrip;
 
         u32_be_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
@@ -150,6 +158,7 @@ impl SPRoundTripDps for super::U32Be {
 
 impl NonMalleable for super::U32Be {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
         broadcast use lemma_u32_be_bytes_roundtrip;
 
         u32_be_fmt().lemma_parse_non_malleable(buf1, buf2);

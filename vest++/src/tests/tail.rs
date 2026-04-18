@@ -49,8 +49,8 @@ proof fn test_chain_end_with_tailopt() {
     let v = (
         0x11u8,
         (
-            [0x22u8, 0x33u8, 0x44u8],
-            (Some([0x00u8]), (seq![0x1122u16, 0x3344u16], Some(0x66778899u32))),
+            seq![0x22u8, 0x33u8, 0x44u8],
+            (Some(seq![0x00u8]), (seq![0x1122u16, 0x3344u16], Some(0x66778899u32))),
         ),
     );
 
@@ -74,7 +74,10 @@ proof fn test_chain_end_with_tailrepeat() {
         Pair(f4,
         RepeatTillEnd(f5)))));
 
-    let v = (0x11u8, ([0x22u8, 0x33u8, 0x44u8], (None::<u8>, (seq![], seq![0x99u32, 0xffu32]))));
+    let v = (
+        0x11u8,
+        (seq![0x22u8, 0x33u8, 0x44u8], (None::<u8>, (seq![], seq![0x99u32, 0xffu32]))),
+    );
 
     assert(c.consistent(v));
     assert(c.unambiguous());

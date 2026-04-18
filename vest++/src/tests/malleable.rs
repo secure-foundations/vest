@@ -97,7 +97,7 @@ proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
 // Tag has AdmitsUniqueVal because it restricts
 // its consistent values to exactly one value (the tag).
 proof fn test_preceded_tag_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let tag = Tag { inner: Fixed::<2>, tag: [0u8, 0u8] };
+    let tag = Tag { inner: Fixed::<2>, tag: seq![0u8, 0u8] };
     let combinator = Preceded(tag, U8);
     assert(combinator.unambiguous());
     requires_ps_roundtrip(combinator, ibuf);  // Should pass: Tag has AdmitsUniqueVal
@@ -141,13 +141,13 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let val1 = 0x00u8;
     let val2 = 0xFFu8;
     let obuf = Seq::empty();
-    let tag1 = Tag { inner: Fixed::<2>, tag: [val1, val1] };
-    let tag2 = Tag { inner: Fixed::<2>, tag: [val2, val2] };
+    let tag1 = Tag { inner: Fixed::<2>, tag: seq![val1, val1] };
+    let tag2 = Tag { inner: Fixed::<2>, tag: seq![val2, val2] };
     let inner = Terminated(U8, tag1);
     let outer = Terminated(inner, tag2);
 
-    let footer_buf = tag2.spec_serialize_dps([val2, val2], obuf);
-    let inner_buf = tag1.spec_serialize_dps([val1, val1], footer_buf);
+    let footer_buf = tag2.spec_serialize_dps(seq![val2, val2], obuf);
+    let inner_buf = tag1.spec_serialize_dps(seq![val1, val1], footer_buf);
 
     assert(inner.unambiguous());
     assert(outer.unambiguous());
@@ -195,11 +195,11 @@ proof fn test_large_format_with_berbools() {
     let val1 = 0x00u8;
     let format_inner = Pair(Pair(BerBool, BerBool), Fixed::<2>);
     let format = Terminated(
-        Preceded(Tag { inner: Fixed::<2>, tag: [val1, val1] }, format_inner),
+        Preceded(Tag { inner: Fixed::<2>, tag: seq![val1, val1] }, format_inner),
         Tag { inner: U8, tag: 0xFFu8 },
     );
 
-    let v = ((true, false), [0x11u8, 0x22u8]);
+    let v = ((true, false), seq![0x11u8, 0x22u8]);
     let obuf = Seq::empty();
 
     // establish well-formedness of header and footer (for serializability)
@@ -216,7 +216,7 @@ proof fn test_large_format_with_berbools() {
     assert(format.unambiguous()) by {
         unambiguous_pair(Pair(format.0, format.1));
     }
-    assert(format.0.0.consistent([val1, val1]));
+    assert(format.0.0.consistent(seq![val1, val1]));
     assert(format.1.consistent(0xFFu8));
     assert(format.consistent(v));
     requires_sp_roundtrip(format, v, obuf);

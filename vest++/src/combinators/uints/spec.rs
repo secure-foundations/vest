@@ -1,3 +1,4 @@
+use crate::combinators::bytes::spec::*;
 use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{Fixed, Mapped};
 use crate::core::{proof::*, spec::*};
@@ -11,39 +12,39 @@ pub const U16_BYTE_LEN: usize = 2;
 
 pub const U32_BYTE_LEN: usize = 4;
 
-pub type U16LeFmt = Mapped<Fixed<2>, FnSpecMapper<[u8; 2], u16>>;
+pub type U16LeFmt = Mapped<Fixed<2>, FnSpecMapper<Seq<u8>, u16>>;
 
-pub type U16BeFmt = Mapped<Fixed<2>, FnSpecMapper<[u8; 2], u16>>;
+pub type U16BeFmt = Mapped<Fixed<2>, FnSpecMapper<Seq<u8>, u16>>;
 
-pub type U32LeFmt = Mapped<Fixed<4>, FnSpecMapper<[u8; 4], u32>>;
+pub type U32LeFmt = Mapped<Fixed<4>, FnSpecMapper<Seq<u8>, u32>>;
 
-pub type U32BeFmt = Mapped<Fixed<4>, FnSpecMapper<[u8; 4], u32>>;
+pub type U32BeFmt = Mapped<Fixed<4>, FnSpecMapper<Seq<u8>, u32>>;
 
 pub open spec fn u16_le_fmt() -> U16LeFmt {
     Mapped {
         inner: Fixed::<2>,
-        mapper: (|i: [u8; 2]| u16_le_from_bytes(i), |o: u16| u16_le_to_bytes(o)),
+        mapper: (|i: Seq<u8>| u16_le_from_bytes(array_from_seq(i)), |o: u16| u16_le_to_bytes(o)@),
     }
 }
 
 pub open spec fn u16_be_fmt() -> U16BeFmt {
     Mapped {
         inner: Fixed::<2>,
-        mapper: (|i: [u8; 2]| u16_be_from_bytes(i), |o: u16| u16_be_to_bytes(o)),
+        mapper: (|i: Seq<u8>| u16_be_from_bytes(array_from_seq(i)), |o: u16| u16_be_to_bytes(o)@),
     }
 }
 
 pub open spec fn u32_le_fmt() -> U32LeFmt {
     Mapped {
         inner: Fixed::<4>,
-        mapper: (|i: [u8; 4]| u32_le_from_bytes(i), |o: u32| u32_le_to_bytes(o)),
+        mapper: (|i: Seq<u8>| u32_le_from_bytes(array_from_seq(i)), |o: u32| u32_le_to_bytes(o)@),
     }
 }
 
 pub open spec fn u32_be_fmt() -> U32BeFmt {
     Mapped {
         inner: Fixed::<4>,
-        mapper: (|i: [u8; 4]| u32_be_from_bytes(i), |o: u32| u32_be_to_bytes(o)),
+        mapper: (|i: Seq<u8>| u32_be_from_bytes(array_from_seq(i)), |o: u32| u32_be_to_bytes(o)@),
     }
 }
 
@@ -311,12 +312,14 @@ impl SafeParser for super::U16Le {
 impl SoundParser for super::U16Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u16_le_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u16_le_fmt().lemma_parse_sound_value(ibuf);
     }
@@ -405,12 +408,14 @@ impl SafeParser for super::U16Be {
 impl SoundParser for super::U16Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u16_be_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u16_be_fmt().lemma_parse_sound_value(ibuf);
     }
@@ -499,12 +504,14 @@ impl SafeParser for super::U32Le {
 impl SoundParser for super::U32Le {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u32_le_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u32_le_fmt().lemma_parse_sound_value(ibuf);
     }
@@ -593,12 +600,14 @@ impl SafeParser for super::U32Be {
 impl SoundParser for super::U32Be {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u32_be_fmt().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
 
         u32_be_fmt().lemma_parse_sound_value(ibuf);
     }

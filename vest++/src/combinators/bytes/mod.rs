@@ -11,7 +11,7 @@ use super::AsLen;
 
 verus! {
 
-/// Parses/serializes exactly `N` bytes as `[u8; N]`.
+/// Parses/serializes exactly `N` bytes as `Seq<u8>`.
 pub struct Fixed<const N: usize>;
 
 /// Parses/serializes a variable-length byte sequence `Seq<u8>`.

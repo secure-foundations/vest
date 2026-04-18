@@ -146,8 +146,8 @@ proof fn test_dependent_simple_tlv() {
 }
 
 type ComplexVal = (
-    [u8; 3],
-    (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), !>>>, [u8; 4])),
+    Seq<u8>,
+    (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), !>>>, Seq<u8>)),
 );
 
 type ComplexBody = Pair<
@@ -158,7 +158,7 @@ type ComplexBody = Pair<
             ExactLen<
                 Choice<Cond<Tail>, Choice<Cond<Tail>, Choice<Cond<Repeat<U16Le, Eof>>, Void>>>,
             >,
-            Refined<Fixed::<4>, spec_fn([u8; 4]) -> bool>,
+            Refined<Fixed::<4>, spec_fn(Seq<u8>) -> bool>,
         >,
     >,
 >;
@@ -195,7 +195,7 @@ impl DepCombinator for TLVRest {
         let v2_fmt = v2_fmt().apply((tag, len2));
         let magic_fmt = Refined {
             inner: Fixed::<4>,
-            pred: |x: [u8; 4]| x == [0x12u8, 0x34u8, 0x56u8, 0x78u8],
+            pred: |x: Seq<u8>| x == seq![0x12u8, 0x34u8, 0x56u8, 0x78u8],
         };
         Pair(padding_fmt, Pair(v1_fmt, Pair(v2_fmt, magic_fmt)))
     }
@@ -229,14 +229,14 @@ proof fn test_dependent_complex_tlv() {
 
     let tlv = Implicit(Pair(U8, Pair(U8, U8)), TLVRest);
 
-    let padding = [0xDEu8, 0xADu8, 0xBEu8];
+    let padding = seq![0xDEu8, 0xADu8, 0xBEu8];
     let v1 = seq![0xffu8; 5];
 
     let v2_1 = Sum::Inl(seq![0xEFu8, 0xBEu8]);
     let v2_2 = Sum::Inr(Sum::Inl(seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]));
     let v2_3 = Sum::Inr(Sum::Inr(Sum::Inl((seq![], ()))));
 
-    let magic = [0x12u8, 0x34u8, 0x56u8, 0x78u8];
+    let magic = seq![0x12u8, 0x34u8, 0x56u8, 0x78u8];
 
     let msg1 = (padding, (v1, (v2_1, magic)));
     let msg2 = (padding, (v1, (v2_2, magic)));

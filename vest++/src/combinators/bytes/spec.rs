@@ -18,23 +18,31 @@ pub broadcast axiom fn axiom_array_from_seq<const N: usize, T>(s: Seq<T>)
         (#[trigger] array_from_seq::<N, T>(s))@ == s,
 ;
 
+pub broadcast proof fn lemma_array_from_seq_roundtrip<const N: usize, T>(a: [T; N])
+    ensures
+        #[trigger] array_from_seq::<N, T>(a@) == a,
+{
+    broadcast use axiom_array_from_seq;
+
+}
+
 impl<const N: usize> SpecParser for super::Fixed<N> {
-    type PVal = [u8; N];
+    type PVal = Seq<u8>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         if ibuf.len() < N as int {
             None
         } else {
-            Some((N as int, array_from_seq(ibuf.take(N as int))))
+            Some((N as int, ibuf.take(N as int)))
         }
     }
 }
 
 impl<const N: usize> Consistency for super::Fixed<N> {
-    type Val = [u8; N];
+    type Val = Seq<u8>;
 
-    open spec fn consistent(&self, _v: Self::Val) -> bool {
-        true
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        v.len() == N
     }
 }
 
@@ -52,40 +60,42 @@ impl<const N: usize> SoundParser for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
-    type ST = [u8; N];
+    type ST = Seq<u8>;
 
     open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
-        v@ + obuf
+        v + obuf
     }
 }
 
 impl<const N: usize> SpecSerializer for super::Fixed<N> {
-    type SVal = [u8; N];
+    type SVal = Seq<u8>;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        v@
+        v
     }
 }
 
 impl<const N: usize> NonTailFmt for super::Fixed<N> {
-    proof fn lemma_serialize_dps_prepend(&self, v: [u8; N], obuf: Seq<u8>) {
-        assert(self.spec_serialize_dps(v, obuf) == v@ + obuf);
+    proof fn lemma_serialize_dps_prepend(&self, v: Seq<u8>, obuf: Seq<u8>) {
+        assert(self.spec_serialize_dps(v, obuf) == v + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: [u8; N], obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Seq<u8>, obuf: Seq<u8>) {
+        assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == v.len());
     }
 }
 
 impl<const N: usize> GoodSerializer for super::Fixed<N> {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        assert(self.spec_serialize(v).len() == v.len());
     }
 }
 
 impl<const N: usize> SpecByteLen for super::Fixed<N> {
-    type T = [u8; N];
+    type T = Seq<u8>;
 
-    open spec fn byte_len(&self, _v: Self::T) -> nat {
-        N as nat
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        v.len()
     }
 }
 

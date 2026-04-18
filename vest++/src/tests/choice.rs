@@ -70,12 +70,12 @@ pub enum MyEnum {
 pub enum MyTag {
     A(u16),
     B(u32),
-    C([u8; 5]),
+    C(Seq<u8>),
 }
 
 use Sum::*;
 
-pub type MyTagInner = Sum<u16, Sum<u32, [u8; 5]>>;
+pub type MyTagInner = Sum<u16, Sum<u32, Seq<u8>>>;
 
 pub struct MyTagMapper;
 
