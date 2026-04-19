@@ -8,12 +8,12 @@ verus! {
 
 pub type PResult<T> = Result<(usize, T), ParseError>;
 
-pub trait Parser<Input: View<V = Seq<u8>>, Ty: DeepView<V = Self::PVal>>: SpecParser {
+pub trait Parser<I: View<V = Seq<u8>>, T: DeepView<V = Self::PVal>>: SpecParser {
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
-    fn parse(&self, ibuf: Input) -> (r: PResult<Ty>)
+    fn parse(&self, ibuf: &I) -> (r: PResult<T>)
         requires
             self.exec_inv(),
         ensures
@@ -23,7 +23,7 @@ pub trait Parser<Input: View<V = Seq<u8>>, Ty: DeepView<V = Self::PVal>>: SpecPa
     ;
 
     /// This is intended for DSL-generated entry points around user-defined formats.
-    fn parse_with_format(&self, current_format: &'static str, ibuf: Input) -> (r: PResult<Ty>)
+    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &I) -> (r: PResult<T>)
         requires
             self.exec_inv(),
         ensures
@@ -33,7 +33,7 @@ pub trait Parser<Input: View<V = Seq<u8>>, Ty: DeepView<V = Self::PVal>>: SpecPa
     {
         match self.parse(ibuf) {
             Ok((n, v)) => Ok((n, v)),
-            Err(err) => Err(err.push_format(current_format)),
+            Err(err) => Err(err.push_format(current_fmt)),
         }
     }
 }
@@ -46,15 +46,15 @@ impl<Spec, Exec> SpecParser for (Spec, Exec) where Spec: SpecParser {
     }
 }
 
-impl<Input, Ty, Spec, Exec> Parser<Input, Ty> for (Spec, Exec) where
-    Input: View<V = Seq<u8>>,
-    Ty: DeepView<V = Spec::PVal>,
+impl<I, T, Spec, Exec> Parser<I, T> for (Spec, Exec) where
+    I: View<V = Seq<u8>>,
+    T: DeepView<V = Spec::PVal>,
     Spec: SpecParser,
-    Exec: Fn(Input) -> PResult<Ty>,
+    Exec: Fn(&I) -> PResult<T>,
  {
     open spec fn exec_inv(&self) -> bool {
-        &&& forall|i: Input| call_requires(self.1, (i,))
-        &&& forall|i: Input, r: PResult<Ty>|
+        &&& forall|i: &I| call_requires(self.1, (i,))
+        &&& forall|i: &I, r: PResult<T>|
             call_ensures(self.1, (i,), r) ==> {
                 &&& r is Ok <==> self.spec_parse(i@) is Some
                 &&& r is Err <==> self.spec_parse(i@) is None
@@ -62,8 +62,30 @@ impl<Input, Ty, Spec, Exec> Parser<Input, Ty> for (Spec, Exec) where
             }
     }
 
-    fn parse(&self, ibuf: Input) -> (r: PResult<Ty>) {
+    fn parse(&self, ibuf: &I) -> (r: PResult<T>) {
         (self.1)(ibuf)
+    }
+}
+
+impl<P: SpecParser> SpecParser for &P {
+    type PVal = P::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        (*self).spec_parse(ibuf)
+    }
+}
+
+impl<I, T, P> Parser<I, T> for &P where
+    I: View<V = Seq<u8>>,
+    T: DeepView<V = P::PVal>,
+    P: Parser<I, T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        (*self).exec_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> (r: PResult<T>) {
+        (*self).parse(ibuf)
     }
 }
 
