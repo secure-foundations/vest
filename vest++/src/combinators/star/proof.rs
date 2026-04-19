@@ -339,7 +339,7 @@ impl<C, N> SPRoundTripDps for super::RepeatN<C, N> where C: SPRoundTripDps + Non
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        self.lemma_serialize_parse_roundtrip_rec(v, self.0.as_usize() as nat, obuf);
+        self.lemma_serialize_parse_roundtrip_rec(v, self.0.as_nat(), obuf);
         self.lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -407,7 +407,7 @@ impl<C: NonMalleable + SafeParser, N: AsLen> NonMalleable for super::RepeatN<C, 
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         assert(self.nonmal_inv());
-        self.lemma_parse_non_malleable_rec(self.0.as_usize() as nat, buf1, buf2);
+        self.lemma_parse_non_malleable_rec(self.0.as_nat(), buf1, buf2);
     }
 }
 
@@ -456,7 +456,7 @@ impl<C: NoLookAhead, N: AsLen> NoLookAhead for super::RepeatN<C, N> {
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        self.lemma_no_lookahead_rec(self.0.as_usize() as nat, i1, i2);
+        self.lemma_no_lookahead_rec(self.0.as_nat(), i1, i2);
     }
 }
 

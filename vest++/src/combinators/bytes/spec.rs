@@ -121,10 +121,10 @@ impl<Len: AsLen> SpecParser for super::Varied<Len> {
     type PVal = Seq<u8>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        if ibuf.len() < self.0.as_usize() {
+        if ibuf.len() < self.0.as_nat() {
             None
         } else {
-            Some((self.0.as_usize() as int, ibuf.take(self.0.as_usize() as int)))
+            Some((self.0.as_nat() as int, ibuf.take(self.0.as_nat() as int)))
         }
     }
 }
@@ -133,7 +133,7 @@ impl<Len: AsLen> Consistency for super::Varied<Len> {
     type Val = Seq<u8>;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        v.len() == self.0.as_usize()
+        v.len() == self.0.as_nat()
     }
 }
 
@@ -226,7 +226,7 @@ impl<Inner: Consistency + SpecByteLen<T = Inner::Val>, Len: AsLen> Consistency f
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
         &&& self.1.consistent(v)
-        &&& self.0.as_usize() == self.1.byte_len(v)
+        &&& self.0.as_nat() == self.1.byte_len(v)
     }
 }
 

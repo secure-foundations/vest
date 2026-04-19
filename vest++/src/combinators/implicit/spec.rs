@@ -305,8 +305,7 @@ impl<Len: AsLen> DepCombinator for VariedLen<Len> {
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
         if self.apply(key).consistent(value) {
             Len::lemma_lossless_casting(key);
-            assert(value.len() == key.as_usize());
-            assert(value.len() == key.as_usize() as nat);
+            assert(value.len() == key.as_nat());
         }
     }
 }
@@ -517,8 +516,7 @@ impl<Tag, Len, V> DepCombinator for TLVal<Tag, Len, V> where
             self.0.lemma_recover_consistent(key.0, value);
             Len::lemma_lossless_casting(key.1);
             let body = self.0.apply(key.0);
-            assert(body.byte_len(value) == key.1.as_usize());
-            assert(body.byte_len(value) == key.1.as_usize() as nat);
+            assert(body.byte_len(value) == key.1.as_nat());
         }
     }
 }

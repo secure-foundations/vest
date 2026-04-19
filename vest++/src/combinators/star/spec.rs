@@ -377,9 +377,9 @@ impl<C: SpecParser, N: AsLen> super::RepeatN<C, N> {
 
     pub proof fn lemma_parse_exactly_n_times(&self, ibuf: Seq<u8>)
         ensures
-            self.spec_parse(ibuf) matches Some((_, vs)) ==> vs.len() == self.0.as_usize(),
+            self.spec_parse(ibuf) matches Some((_, vs)) ==> vs.len() == self.0.as_nat(),
     {
-        self.lemma_parse_n_rec_count(self.0.as_usize() as nat, ibuf);
+        self.lemma_parse_n_rec_count(self.0.as_nat(), ibuf);
     }
 }
 
@@ -387,7 +387,7 @@ impl<C: SpecParser, N: AsLen> SpecParser for super::RepeatN<C, N> {
     type PVal = Seq<C::PVal>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        self.parse_n_rec(self.0.as_usize() as nat, ibuf)
+        self.parse_n_rec(self.0.as_nat(), ibuf)
     }
 }
 
@@ -395,7 +395,7 @@ impl<C: Consistency, N: AsLen> Consistency for super::RepeatN<C, N> {
     type Val = Seq<C::Val>;
 
     open spec fn consistent(&self, vs: Self::Val) -> bool {
-        &&& vs.len() == self.0.as_usize()
+        &&& vs.len() == self.0.as_nat()
         &&& super::Star { inner: self.1 }.consistent(vs)
     }
 }
@@ -467,7 +467,7 @@ impl<C: SafeParser, N: AsLen> SafeParser for super::RepeatN<C, N> {
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        self.lemma_parse_n_len_bound(self.0.as_usize() as nat, ibuf);
+        self.lemma_parse_n_len_bound(self.0.as_nat(), ibuf);
     }
 }
 
@@ -477,11 +477,11 @@ impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.lemma_parse_n_byte_len(self.0.as_usize() as nat, ibuf);
+        self.lemma_parse_n_byte_len(self.0.as_nat(), ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        self.lemma_parse_n_consistent(self.0.as_usize() as nat, ibuf);
+        self.lemma_parse_n_consistent(self.0.as_nat(), ibuf);
     }
 }
 
