@@ -1,7 +1,12 @@
 [package]
-name = "vest-plus"
+name = "vest_lib"
 version = "0.1.0"
 edition = "2021"
+
+[features]
+default = ["std"]
+std = ["alloc", "vstd/std"]
+alloc = ["vstd/alloc"]
 
 [dependencies]
 vstd = "0.0.0-2026-03-29-0113"

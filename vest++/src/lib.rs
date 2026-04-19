@@ -44,10 +44,14 @@
 //! ```
 //!
 //! See the [`combinators`] module for the full catalog of available combinators.
+// #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
 #![warn(missing_docs)]
 #![allow(rustdoc::broken_intra_doc_links)]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 /// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
 #[cfg(verus_only)]
@@ -62,4 +66,4 @@ pub mod core;
 
 /// Test suite exercising the combinator library with concrete examples.
 // #[cfg(test)]
-pub mod tests;
+pub mod spec_tests;
