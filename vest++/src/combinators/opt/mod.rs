@@ -1,4 +1,6 @@
 //! Optional field combinators.
+/// Executable trait implementations for this combinator.
+pub mod exec;
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

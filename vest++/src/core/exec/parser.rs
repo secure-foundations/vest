@@ -1,19 +1,21 @@
 //! Executable parser traits.
-use crate::core::spec::SpecParser;
+use crate::core::spec::{SafeParser, SpecParser};
 use vstd::prelude::*;
 
 use super::ParseError;
 
 verus! {
 
-pub type PResult<T> = Result<(usize, T), ParseError>;
+pub type PResult<O> = Result<(usize, O), ParseError>;
 
-pub trait Parser<I: View<V = Seq<u8>>, T: DeepView<V = Self::PVal>>: SpecParser {
+pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
+    type O: DeepView<V = Self::PVal>;
+
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
-    fn parse(&self, ibuf: &I) -> (r: PResult<T>)
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::O>)
         requires
             self.exec_inv(),
         ensures
@@ -23,7 +25,7 @@ pub trait Parser<I: View<V = Seq<u8>>, T: DeepView<V = Self::PVal>>: SpecParser 
     ;
 
     /// This is intended for DSL-generated entry points around user-defined formats.
-    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &I) -> (r: PResult<T>)
+    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &I) -> (r: PResult<Self::O>)
         requires
             self.exec_inv(),
         ensures
@@ -46,12 +48,14 @@ impl<Spec, Exec> SpecParser for (Spec, Exec) where Spec: SpecParser {
     }
 }
 
-impl<I, T, Spec, Exec> Parser<I, T> for (Spec, Exec) where
+impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
     I: View<V = Seq<u8>>,
     T: DeepView<V = Spec::PVal>,
     Spec: SpecParser,
     Exec: Fn(&I) -> PResult<T>,
  {
+    type O = T;
+
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| call_requires(self.1, (i,))
         &&& forall|i: &I, r: PResult<T>|
@@ -75,16 +79,24 @@ impl<P: SpecParser> SpecParser for &P {
     }
 }
 
-impl<I, T, P> Parser<I, T> for &P where
-    I: View<V = Seq<u8>>,
-    T: DeepView<V = P::PVal>,
-    P: Parser<I, T>,
- {
+impl<P: SafeParser> SafeParser for &P {
+    open spec fn safe_inv(&self) -> bool {
+        (*self).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        (*self).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<I, P> Parser<I> for &P where I: View<V = Seq<u8>>, P: Parser<I> {
+    type O = P::O;
+
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> (r: PResult<T>) {
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::O>) {
         (*self).parse(ibuf)
     }
 }

@@ -1,4 +1,6 @@
 //! Conditional combinator: enabled or disabled by a boolean flag.
+/// Executable trait implementations for this combinator.
+pub mod exec;
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

@@ -12,9 +12,7 @@ pub trait InputSlice: View<V = Seq<u8>> + DeepView<V = Seq<u8>> {
 
 /// Trait for types that can be used as input for Vest parsers, roughly corresponding to byte
 /// buffers.
-pub trait InputBuf: View<V = Seq<u8>> {
-    type Slice: InputSlice;
-
+pub trait InputBuf: InputSlice + Sized {
     /// The length of the buffer.
     fn len(&self) -> (len: usize)
         ensures
@@ -22,7 +20,7 @@ pub trait InputBuf: View<V = Seq<u8>> {
     ;
 
     /// A slice-like view of the range `[i, j)` of the buffer.
-    fn subrange(&self, i: usize, j: usize) -> (sliced: Self::Slice)
+    fn subrange(&self, i: usize, j: usize) -> (sliced: Self)
         requires
             0 <= i as int <= j as int <= self@.len(),
         ensures
@@ -31,7 +29,7 @@ pub trait InputBuf: View<V = Seq<u8>> {
     ;
 
     /// A view of the first `n` bytes of the buffer.
-    fn take(&self, n: usize) -> (taken: Self::Slice)
+    fn take(&self, n: usize) -> (taken: Self)
         requires
             n as int <= self@.len(),
         ensures
@@ -42,7 +40,7 @@ pub trait InputBuf: View<V = Seq<u8>> {
     }
 
     /// A view of the buffer with the first `n` bytes skipped.
-    fn skip(&self, n: usize) -> (skipped: Self::Slice)
+    fn skip(&self, n: usize) -> (skipped: Self)
         requires
             n as int <= self@.len(),
         ensures
@@ -60,8 +58,6 @@ impl<'input> InputSlice for &'input [u8] {
 }
 
 impl<'input> InputBuf for &'input [u8] {
-    type Slice = Self;
-
     fn len(&self) -> (len: usize) {
         <[u8]>::len(self)
     }

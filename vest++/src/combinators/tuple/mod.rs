@@ -1,5 +1,7 @@
 //! Sequential composition for pairs.
 //! N-ary formats are built by nesting: `Pair(A, Pair(B, C))`.
+/// Executable trait implementations for this combinator.
+pub mod exec;
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

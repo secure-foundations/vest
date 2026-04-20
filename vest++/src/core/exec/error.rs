@@ -79,6 +79,11 @@ impl ParseError {
         Self::new(ParseErrorKind::UnexpectedEof)
     }
 
+    /// Creates an expecting end-of-input error.
+    pub fn expecting_eof() -> Self {
+        Self::new(ParseErrorKind::ExpectingEof)
+    }
+
     /// Creates an invalid-tag error.
     pub fn invalid_tag() -> Self {
         Self::new(ParseErrorKind::InvalidTag)
@@ -99,9 +104,9 @@ impl ParseError {
         Self::new(ParseErrorKind::PredicateFailed)
     }
 
-    /// Creates a branch-rejected error.
-    pub fn branch_rejected() -> Self {
-        Self::new(ParseErrorKind::BranchRejected)
+    /// Creates a condition-rejected error.
+    pub fn cond_rejected() -> Self {
+        Self::new(ParseErrorKind::CondRejected)
     }
 
     /// Creates a non-canonical-encoding error.
@@ -154,6 +159,8 @@ verus! {
 pub enum ParseErrorKind {
     /// The parser needed more input bytes.
     UnexpectedEof,
+    /// The parser expected the end of input, but more bytes were present.
+    ExpectingEof,
     /// A tag or discriminant byte sequence was invalid.
     InvalidTag,
     /// A parsed length field was invalid.
@@ -163,7 +170,7 @@ pub enum ParseErrorKind {
     /// A refinement predicate or semantic check failed.
     PredicateFailed,
     /// A branch was rejected after partial inspection.
-    BranchRejected,
+    CondRejected,
     /// A non-canonical representation was observed.
     NonCanonical,
     /// An integer or size computation overflowed.
@@ -183,11 +190,12 @@ impl fmt::Display for ParseErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseErrorKind::UnexpectedEof => f.write_str("unexpected end of input"),
+            ParseErrorKind::ExpectingEof => f.write_str("expecting end of input"),
             ParseErrorKind::InvalidTag => f.write_str("invalid tag"),
             ParseErrorKind::InvalidLength => f.write_str("invalid length"),
             ParseErrorKind::LengthMismatch => f.write_str("length mismatch"),
             ParseErrorKind::PredicateFailed => f.write_str("predicate failed"),
-            ParseErrorKind::BranchRejected => f.write_str("branch rejected"),
+            ParseErrorKind::CondRejected => f.write_str("condition failed"),
             ParseErrorKind::NonCanonical => f.write_str("non-canonical encoding"),
             ParseErrorKind::Overflow => f.write_str("overflow"),
             ParseErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
