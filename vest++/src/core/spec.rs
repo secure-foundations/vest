@@ -129,6 +129,12 @@ impl<T> SpecPred<T> for PredFnSpec<T> {
     }
 }
 
+impl<T, P: SpecPred<T>> SpecPred<T> for &P {
+    open spec fn apply(&self, value: T) -> bool {
+        (*self).apply(value)
+    }
+}
+
 /// Destination-passing style (DPS) serializer specification.
 ///
 /// See [`crate::core::proof::EquivSerializers`] for its relationship to [`SpecSerializer`].

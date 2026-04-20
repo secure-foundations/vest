@@ -9,6 +9,7 @@ mod malleable;
 mod mapped;
 mod opt;
 mod recursive;
+mod refined;
 mod star;
 mod static_len;
 mod tail;
