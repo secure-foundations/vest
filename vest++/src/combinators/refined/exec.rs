@@ -4,7 +4,7 @@ use crate::core::{
     exec::{
         input::InputSlice,
         parser::{PResult, Parser},
-        pred::Pred,
+        fns::Pred,
         ParseError,
     },
     spec::SpecParser,

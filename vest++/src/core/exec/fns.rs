@@ -1,4 +1,4 @@
-//! Executable predicate traits.
+//! Executable fn traits.
 use crate::core::spec::SpecPred;
 use core::marker::PhantomData;
 use vstd::prelude::*;

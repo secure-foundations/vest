@@ -1,5 +1,4 @@
 use crate::combinators::Fixed;
-use crate::combinators::mapped::spec::Mapper;
 use crate::combinators::preceded::Preceded;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
