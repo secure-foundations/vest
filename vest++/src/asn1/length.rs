@@ -3,7 +3,7 @@ use crate::{
     combinators::{
         implicit::*,
         length::AsLen,
-        mapped::spec::{LosslessMapper, LossyMapper, Mapper},
+        mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
         Alt, Implicit, Mapped, Refined, TryMap, U8,
     },
     core::{proof::*, spec::*},
@@ -118,7 +118,7 @@ pub proof fn lemma_to_be_bytes_minimal(n: nat)
     }
 }
 
-impl Mapper for NatFromToU8 {
+impl SpecMapper for NatFromToU8 {
     type In = u8;
 
     type Out = nat;
@@ -156,7 +156,7 @@ impl LosslessMapper for NatFromToU8 {
     }
 }
 
-impl Mapper for NBytesMasks {
+impl SpecMapper for NBytesMasks {
     type In = u8;
 
     type Out = u8;
@@ -219,7 +219,7 @@ impl LosslessMapper for NBytesMasks {
     }
 }
 
-impl<const DER: bool> Mapper for NatFromToBytes<DER> {
+impl<const DER: bool> SpecMapper for NatFromToBytes<DER> {
     type In = Seq<u8>;
 
     type Out = nat;

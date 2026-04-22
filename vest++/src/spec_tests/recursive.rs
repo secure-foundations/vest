@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::*;
 use crate::core::proof::*;
 use crate::core::spec::*;
@@ -22,7 +22,7 @@ pub open spec fn height(n: NestedBracesT) -> nat
 
 pub struct NestedBracesMapper;
 
-impl Mapper for NestedBracesMapper {
+impl SpecMapper for NestedBracesMapper {
     type In = Sum<NestedBracesT, u8>;
 
     type Out = NestedBracesT;
@@ -373,7 +373,7 @@ impl<A: ProductiveParser, B: ProductiveParser> ProductiveParser for Choice<A, B>
     }
 }
 
-impl<Inner: ProductiveParser, M: Mapper<In = Inner::PVal>> ProductiveParser for Mapped<Inner, M> {
+impl<Inner: ProductiveParser, M: SpecMapper<In = Inner::PVal>> ProductiveParser for Mapped<Inner, M> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_productive(ibuf);
     }

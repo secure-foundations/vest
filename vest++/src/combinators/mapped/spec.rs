@@ -10,7 +10,7 @@ verus! {
 /// A bidirectional mapping between two types (forward for parsing, reverse for
 /// serialization). For roundtrip guarantees, implement and prove
 /// [`LossyMapper`] or [`LosslessMapper`] as appropriate.
-pub trait Mapper {
+pub trait SpecMapper {
     /// The input type.
     type In;
 
@@ -39,7 +39,7 @@ pub trait Mapper {
 }
 
 /// A [`Mapper`] that can be lossy (i.e., malleable).
-pub trait LossyMapper: Mapper {
+pub trait LossyMapper: SpecMapper {
     /// A sound mapper should satisfy `spec_map(spec_map_rev(o)) == o` for all well-formed `o`.
     /// That is, once `Self::Out` values are mapped to `Self::In`, `spec_map` should map them back to the original `Self::Out` values.
     proof fn lemma_sound_mapper(o: Self::Out)
@@ -79,7 +79,7 @@ pub trait LosslessMapper: LossyMapper {
 
 impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
     Inner: SpecParser,
-    M: Mapper<In = Inner::PVal>,
+    M: SpecMapper<In = Inner::PVal>,
  {
     type PVal = M::Out;
 
@@ -93,7 +93,7 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
 
 impl<Inner, M> SafeParser for super::Mapped<Inner, M> where
     Inner: SafeParser,
-    M: Mapper<In = Inner::PVal>,
+    M: SpecMapper<In = Inner::PVal>,
  {
     open spec fn safe_inv(&self) -> bool {
         self.inner.safe_inv()
@@ -136,7 +136,7 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
 
 impl<Inner, M> Consistency for super::Mapped<Inner, M> where
     Inner: Consistency,
-    M: Mapper<In = Inner::Val>,
+    M: SpecMapper<In = Inner::Val>,
  {
     type Val = M::Out;
 
@@ -148,7 +148,7 @@ impl<Inner, M> Consistency for super::Mapped<Inner, M> where
 
 impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     Inner: SpecSerializerDps,
-    M: Mapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::ST>,
  {
     type ST = M::Out;
 
@@ -159,7 +159,7 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
 
 impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     Inner: NonTailFmt,
-    M: Mapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::ST>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner.serialize_dps_inv()
@@ -176,7 +176,7 @@ impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
 
 impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     Inner: GoodSerializer,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn serialize_inv(&self) -> bool {
         self.inner.serialize_inv()
@@ -189,7 +189,7 @@ impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
 
 impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
     Inner: SpecByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     type T = M::Out;
 
@@ -200,7 +200,7 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
 
 impl<Inner, M> ValueByteLen for super::Mapped<Inner, M> where
     Inner: ValueByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     open spec fn value_byte_len(v: Self::T) -> nat {
         Inner::value_byte_len(M::spec_map_rev(v))
@@ -213,7 +213,7 @@ impl<Inner, M> ValueByteLen for super::Mapped<Inner, M> where
 
 impl<Inner, M> StaticByteLen for super::Mapped<Inner, M> where
     Inner: StaticByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     open spec fn static_byte_len() -> nat {
         Inner::static_byte_len()
@@ -226,7 +226,7 @@ impl<Inner, M> StaticByteLen for super::Mapped<Inner, M> where
 
 impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     Inner: SpecSerializer,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     type SVal = M::Out;
 
@@ -389,9 +389,9 @@ impl<Inner, Out> GoodSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVa
 
 pub type TryMapPred<In> = PredFnSpec<In>;
 
-pub type TryMapInner<Inner, M: Mapper> = super::Mapped<Refined<Inner, TryMapPred<M::In>>, M>;
+pub type TryMapInner<Inner, M: SpecMapper> = super::Mapped<Refined<Inner, TryMapPred<M::In>>, M>;
 
-impl<Inner, M: Mapper> super::TryMap<Inner, M> {
+impl<Inner, M: SpecMapper> super::TryMap<Inner, M> {
     pub open spec fn inner(&self) -> TryMapInner<Inner, M> {
         super::Mapped {
             inner: Refined { inner: self.inner, pred: |v: M::In| M::wf_in(v) },
@@ -402,7 +402,7 @@ impl<Inner, M: Mapper> super::TryMap<Inner, M> {
 
 impl<Inner, M> SpecParser for super::TryMap<Inner, M> where
     Inner: SpecParser,
-    M: Mapper<In = Inner::PVal>,
+    M: SpecMapper<In = Inner::PVal>,
  {
     type PVal = M::Out;
 
@@ -413,7 +413,7 @@ impl<Inner, M> SpecParser for super::TryMap<Inner, M> where
 
 impl<Inner, M> SafeParser for super::TryMap<Inner, M> where
     Inner: SafeParser,
-    M: Mapper<In = Inner::PVal>,
+    M: SpecMapper<In = Inner::PVal>,
  {
     open spec fn safe_inv(&self) -> bool {
         self.inner().safe_inv()
@@ -443,7 +443,7 @@ impl<Inner, M> SoundParser for super::TryMap<Inner, M> where
 
 impl<Inner, M> Consistency for super::TryMap<Inner, M> where
     Inner: Consistency,
-    M: Mapper<In = Inner::Val>,
+    M: SpecMapper<In = Inner::Val>,
  {
     type Val = M::Out;
 
@@ -454,7 +454,7 @@ impl<Inner, M> Consistency for super::TryMap<Inner, M> where
 
 impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
     Inner: SpecSerializerDps,
-    M: Mapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::ST>,
  {
     type ST = M::Out;
 
@@ -465,7 +465,7 @@ impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
 
 impl<Inner, M> NonTailFmt for super::TryMap<Inner, M> where
     Inner: NonTailFmt,
-    M: Mapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::ST>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner().serialize_dps_inv()
@@ -482,7 +482,7 @@ impl<Inner, M> NonTailFmt for super::TryMap<Inner, M> where
 
 impl<Inner, M> GoodSerializer for super::TryMap<Inner, M> where
     Inner: GoodSerializer,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn serialize_inv(&self) -> bool {
         self.inner().serialize_inv()
@@ -495,7 +495,7 @@ impl<Inner, M> GoodSerializer for super::TryMap<Inner, M> where
 
 impl<Inner, M> SpecByteLen for super::TryMap<Inner, M> where
     Inner: SpecByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     type T = M::Out;
 
@@ -506,7 +506,7 @@ impl<Inner, M> SpecByteLen for super::TryMap<Inner, M> where
 
 impl<Inner, M> ValueByteLen for super::TryMap<Inner, M> where
     Inner: ValueByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     open spec fn value_byte_len(v: Self::T) -> nat {
         TryMapInner::<Inner, M>::value_byte_len(v)
@@ -519,7 +519,7 @@ impl<Inner, M> ValueByteLen for super::TryMap<Inner, M> where
 
 impl<Inner, M> StaticByteLen for super::TryMap<Inner, M> where
     Inner: StaticByteLen,
-    M: Mapper<In = Inner::T>,
+    M: SpecMapper<In = Inner::T>,
  {
     open spec fn static_byte_len() -> nat {
         TryMapInner::<Inner, M>::static_byte_len()
@@ -532,7 +532,7 @@ impl<Inner, M> StaticByteLen for super::TryMap<Inner, M> where
 
 impl<Inner, M> SpecSerializer for super::TryMap<Inner, M> where
     Inner: SpecSerializer,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     type SVal = M::Out;
 

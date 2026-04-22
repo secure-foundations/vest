@@ -1,6 +1,6 @@
 use crate::combinators::{refined::exec::lemma_refined_exec_inv, Refined, U8};
 use crate::core::exec::parser::Parser;
-use crate::core::exec::pred::{FnPred, Pred};
+use crate::core::exec::fns::{FnPred, Pred};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

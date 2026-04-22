@@ -1,6 +1,6 @@
 use crate::{
     combinators::{
-        mapped::spec::{LosslessMapper, LossyMapper, Mapper},
+        mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
         TryMap, U8,
     },
     core::{proof::*, spec::*},
@@ -39,7 +39,7 @@ pub open spec fn bool_fmt<const DER: bool>() -> BoolFmt<DER> {
     TryMap { inner: U8, mapper: BoolMapper::<DER> }
 }
 
-impl<const DER: bool> Mapper for BoolMapper<DER> {
+impl<const DER: bool> SpecMapper for BoolMapper<DER> {
     type In = u8;
 
     type Out = bool;

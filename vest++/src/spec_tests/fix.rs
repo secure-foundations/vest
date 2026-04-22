@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::recursive::*;
 use crate::combinators::*;
 use crate::core::proof::*;
@@ -21,7 +21,7 @@ pub enum NestedBracesT {
 /// Mapper between `Sum<NestedBracesT, u8>` and `NestedBracesT`.
 pub struct NestedBracesMapper;
 
-impl Mapper for NestedBracesMapper {
+impl SpecMapper for NestedBracesMapper {
     type In = Sum<NestedBracesT, u8>;
 
     type Out = NestedBracesT;

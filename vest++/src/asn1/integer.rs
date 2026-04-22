@@ -1,7 +1,7 @@
 use super::base256::*;
 use crate::{
     combinators::{
-        mapped::spec::{LosslessMapper, LossyMapper, Mapper},
+        mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
         Tail, TryMap,
     },
     core::{proof::*, spec::*},
@@ -130,7 +130,7 @@ pub proof fn lemma_from_be_bytes_invert(bytes: Seq<u8>)
     }
 }
 
-impl Mapper for IntFromToBytes {
+impl SpecMapper for IntFromToBytes {
     type In = Seq<u8>;
 
     type Out = int;

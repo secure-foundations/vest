@@ -3,7 +3,7 @@ use std::prelude::v1;
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::implicit::{TLVOf, TLVal, TagValNode, Uninhabited};
 use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
     disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag,
@@ -366,7 +366,7 @@ pub type MyTagIn = Sum<u8, Sum<u8, u8>>;
 
 pub struct MyTagMapper;
 
-impl Mapper for MyTagMapper {
+impl SpecMapper for MyTagMapper {
     type In = MyTagIn;
 
     type Out = MyTag;

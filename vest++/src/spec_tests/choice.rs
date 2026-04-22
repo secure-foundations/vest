@@ -1,7 +1,7 @@
 use crate::asn1::BerBool;
 use crate::combinators::choice::spec::arbitrary_or_left;
 use crate::combinators::disjoint::*;
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
     Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
 };
@@ -79,7 +79,7 @@ pub type MyTagInner = Sum<u16, Sum<u32, Seq<u8>>>;
 
 pub struct MyTagMapper;
 
-impl Mapper for MyTagMapper {
+impl SpecMapper for MyTagMapper {
     type In = MyTagInner;
 
     type Out = MyTag;
@@ -197,7 +197,7 @@ pub const VARINT_TAG_U32: u8 = 0xFEu8;
 // Mapper: u8 -> u32
 pub struct U8AsU32;
 
-impl Mapper for U8AsU32 {
+impl SpecMapper for U8AsU32 {
     type In = u8;
 
     type Out = u32;
@@ -234,7 +234,7 @@ impl LosslessMapper for U8AsU32 {
 // Mapper: u16 -> u32
 pub struct U16AsU32;
 
-impl Mapper for U16AsU32 {
+impl SpecMapper for U16AsU32 {
     type In = u16;
 
     type Out = u32;
@@ -490,7 +490,7 @@ pub open spec fn preferred_varint_choice(v: u32) -> VarintChoiceInner {
 
 pub struct VarintLossyMapper;
 
-impl Mapper for VarintLossyMapper {
+impl SpecMapper for VarintLossyMapper {
     type In = VarintChoiceInner;
 
     type Out = u32;
@@ -515,7 +515,7 @@ impl LossyMapper for VarintLossyMapper {
 
 pub struct VarintLosslessMapper;
 
-impl Mapper for VarintLosslessMapper {
+impl SpecMapper for VarintLosslessMapper {
     type In = VarintChoiceInner;
 
     type Out = u32;

@@ -1,4 +1,4 @@
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, Mapper};
+use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{Mapped, Refined, U8};
 
 use crate::core::{proof::*, spec::*};
@@ -38,7 +38,7 @@ impl SpecPred<u8> for IsMyTagByte {
 
 struct MyTagMapper;
 
-impl Mapper for MyTagMapper {
+impl SpecMapper for MyTagMapper {
     type In = u8;
 
     type Out = MyTag;

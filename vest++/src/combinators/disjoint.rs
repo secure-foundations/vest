@@ -2,7 +2,7 @@
 //! for common combinator compositions.
 use super::choice::Choice;
 use super::cond::Cond;
-use super::mapped::spec::Mapper;
+use super::mapped::spec::SpecMapper;
 use super::mapped::Mapped;
 use super::opt::Optional;
 use super::preceded::Preceded;
@@ -114,7 +114,7 @@ pub broadcast proof fn lemma_disjoint_terminated<U: SpecParser, U1: SpecParser, 
 pub broadcast proof fn lemma_disjoint_mapped<
     P: SpecParser,
     Inner1: SpecParser,
-    M1: Mapper<In = Inner1::PVal>,
+    M1: SpecMapper<In = Inner1::PVal>,
 >(p: P, m: Mapped<Inner1, M1>)
     requires
         disjoint_domains(p, m.inner),

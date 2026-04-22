@@ -77,7 +77,7 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
 
 impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     Inner: EquivSerializersGeneral,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn equiv_general_inv(&self) -> bool {
         self.inner.equiv_general_inv()
@@ -91,7 +91,7 @@ impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
 
 impl<Inner, M> EquivSerializers for super::Mapped<Inner, M> where
     Inner: EquivSerializers,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn equiv_inv(&self) -> bool {
         self.inner.equiv_inv()
@@ -231,7 +231,7 @@ impl<Inner, M> NoLookAhead for super::TryMap<Inner, M> where
 
 impl<Inner, M> EquivSerializersGeneral for super::TryMap<Inner, M> where
     Inner: EquivSerializersGeneral,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn equiv_general_inv(&self) -> bool {
         self.inner().equiv_general_inv()
@@ -244,7 +244,7 @@ impl<Inner, M> EquivSerializersGeneral for super::TryMap<Inner, M> where
 
 impl<Inner, M> EquivSerializers for super::TryMap<Inner, M> where
     Inner: EquivSerializers,
-    M: Mapper<In = Inner::SVal>,
+    M: SpecMapper<In = Inner::SVal>,
  {
     open spec fn equiv_inv(&self) -> bool {
         self.inner().equiv_inv()
