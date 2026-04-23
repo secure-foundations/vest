@@ -1,12 +1,12 @@
 use crate::asn1::BerBool;
-use crate::combinators::choice::spec::arbitrary_or_left;
+use crate::combinators::choice::spec::*;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
     Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
-use vstd::pervasive::arbitrary;
+use vstd::pervasive::*;
 use vstd::prelude::*;
 
 verus! {

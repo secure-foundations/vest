@@ -1,8 +1,7 @@
 use std::prelude::v1;
 
 use crate::combinators::bytes::ExactLen;
-use crate::combinators::implicit::{TLVOf, TLVal, TagValNode, Uninhabited};
-use crate::combinators::implicit::{TVNode, VLData, VLDataOf};
+use crate::combinators::implicit::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
@@ -13,6 +12,7 @@ use crate::combinators::{
     TVLeaf, TVOr, Tag, Tagged, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
+use crate::Never;
 use vstd::prelude::*;
 
 verus! {
@@ -147,7 +147,7 @@ proof fn test_dependent_simple_tlv() {
 
 type ComplexVal = (
     Seq<u8>,
-    (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), !>>>, Seq<u8>)),
+    (Seq<u8>, (Sum<Seq<u8>, Sum<Seq<u8>, Sum<(Seq<u16>, ()), Never>>>, Seq<u8>)),
 );
 
 type ComplexBody = Pair<

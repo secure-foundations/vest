@@ -1,9 +1,8 @@
-
-use crate::core::exec::parser::Parser;
+use crate::combinators::mapped::exec::*;
 use crate::combinators::mapped::spec::*;
-use crate::combinators::mapped::exec::{FnMap, lemma_map_exec_inv};
-use crate::combinators::{Mapped, Refined, U8};
 use crate::combinators::*;
+use crate::combinators::{Mapped, Refined, U8};
+use crate::core::exec::parser::Parser;
 
 use crate::core::{proof::*, spec::*};
 use vest_derive::DeepView;

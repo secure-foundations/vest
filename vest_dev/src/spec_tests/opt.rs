@@ -1,6 +1,4 @@
-use crate::combinators::disjoint::{
-    lemma_disjoint_eof, lemma_disjoint_optional, lemma_disjoint_tag,
-};
+use crate::combinators::disjoint::*;
 use crate::combinators::{Eof, Opt, Optional, Refined, Tag, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
