@@ -1,0 +1,23 @@
+[package]
+name = "vest_dev"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["std"]
+std = ["alloc", "vstd/std", "vest_lib/std"]
+alloc = ["vstd/alloc", "vest_lib/alloc"]
+
+[dependencies]
+vstd = "=0.0.0-2026-03-29-0113"
+vest_lib = { path = "../vest++", default-features = false }
+vest_derive = { path = "../vest_derive" }
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }

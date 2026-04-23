@@ -63,7 +63,3 @@ pub type Never = ::core::convert::Infallible;
 pub mod asn1;
 pub mod combinators;
 pub mod core;
-
-/// Test suite exercising the combinator library with concrete examples.
-// #[cfg(test)]
-pub mod spec_tests;
