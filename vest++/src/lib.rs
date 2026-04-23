@@ -47,7 +47,8 @@
 // #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
-#![warn(missing_docs)]
+#![allow(dead_code)]
+// #![warn(missing_docs)]
 #![allow(rustdoc::broken_intra_doc_links)]
 
 #[cfg(feature = "alloc")]
