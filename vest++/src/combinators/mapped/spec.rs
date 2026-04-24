@@ -389,7 +389,7 @@ impl<Inner, Out> GoodSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVa
 
 pub type TryMapPred<In> = PredFnSpec<In>;
 
-pub type TryMapInner<Inner, M: SpecMapper> = super::Mapped<Refined<Inner, TryMapPred<M::In>>, M>;
+pub type TryMapInner<Inner, M> = super::Mapped<Refined<Inner, TryMapPred<<M as SpecMapper>::In>>, M>;
 
 impl<Inner, M: SpecMapper> super::TryMap<Inner, M> {
     pub open spec fn inner(&self) -> TryMapInner<Inner, M> {

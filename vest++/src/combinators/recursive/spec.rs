@@ -5,11 +5,7 @@ verus! {
 
 /// Bundled triple of parser, consistency, and byte-length spec functions.
 // pub type ParserSpecs<T> = (ParserFnSpec<T>, PredFnSpec<T>, ByteLenFnSpec<T>);
-pub type ParserSpecs<SpecP, Cnstcy, Blen> where
-    Blen: SpecByteLen,
-    SpecP: SpecParser<PVal = Blen::T>,
-    Cnstcy: Consistency<Val = Blen::T>,
- = (SpecP, Cnstcy, Blen);
+pub type ParserSpecs<SpecP, Cnstcy, Blen> = (SpecP, Cnstcy, Blen);
 
 pub type ParserFnSpecs<T> = (ParserFnSpec<T>, PredFnSpec<T>, ByteLenFnSpec<T>);
 
@@ -55,10 +51,7 @@ pub open spec fn safe_parser<T>(parser: ParserFnSpec<T>) -> bool {
 }
 
 /// A bundled non-DPS serializer: pairs a [`SerializerFnSpec`] with a [`ByteLenFnSpec`].
-pub type SerializerSpecs<SpecS, Blen> where
-    Blen: SpecByteLen,
-    SpecS: SpecSerializer<SVal = Blen::T>,
- = (SpecS, Blen);
+pub type SerializerSpecs<SpecS, Blen> = (SpecS, Blen);
 
 pub type SerializerFnSpecs<T> = (SerializerFnSpec<T>, ByteLenFnSpec<T>);
 
