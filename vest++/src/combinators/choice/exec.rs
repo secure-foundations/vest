@@ -1,5 +1,8 @@
 use crate::core::{
-    exec::parser::{PResult, Parser},
+    exec::{
+        parser::{PResult, Parser},
+        ParseErrorKind,
+    },
     spec::SpecParser,
 };
 use vstd::prelude::*;
@@ -43,11 +46,20 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
     fn parse(&self, ibuf: &I) -> PResult<Self::O> {
         match self.0.parse(ibuf) {
             Ok((n, v)) => Ok((n, super::Sum::Inl(v))),
-            Err(_) => {
-                let (n, v) = self.1.parse(ibuf)?;
-                let inr_v = super::Sum::Inr(v);
-                assert(self.spec_parse(ibuf@) == Some((n as int, inr_v.deep_view())));
-                Ok((n, inr_v))
+            Err(first_err) => {
+                match self.1.parse(ibuf) {
+                    Ok((n, v)) => {
+                        let inr_v = super::Sum::Inr(v);
+                        assert(self.spec_parse(ibuf@) == Some((n as int, inr_v.deep_view())));
+                        Ok((n, inr_v))
+                    },
+                    Err(second_err) => {
+                        match first_err.kind {
+                            ParseErrorKind::RecursionLimitExceeded => Err(first_err),
+                            _ => Err(second_err),
+                        }
+                    },
+                }
             },
         }
     }
