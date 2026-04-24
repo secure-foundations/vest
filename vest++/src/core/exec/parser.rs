@@ -8,6 +8,15 @@ verus! {
 
 pub type PResult<O> = Result<(usize, O), ParseError>;
 
+pub open spec fn parse_matches_spec<O: DeepView>(
+    r: PResult<O>,
+    spec_parse: Option<(int, O::V)>,
+) -> bool {
+    &&& r is Ok <==> spec_parse is Some
+    &&& r is Err <==> spec_parse is None
+    &&& r matches Ok((n, v)) ==> spec_parse == Some((n as int, v.deep_view()))
+}
+
 pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
     type O: DeepView<V = Self::PVal>;
 
@@ -19,9 +28,7 @@ pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
         requires
             self.exec_inv(),
         ensures
-            r is Ok <==> self.spec_parse(ibuf@) is Some,
-            r is Err <==> self.spec_parse(ibuf@) is None,
-            r matches Ok((n, v)) ==> self.spec_parse(ibuf@) == Some((n as int, v.deep_view())),
+            parse_matches_spec(r, self.spec_parse(ibuf@)),
     ;
 
     /// This is intended for DSL-generated entry points around user-defined formats.
@@ -29,9 +36,7 @@ pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
         requires
             self.exec_inv(),
         ensures
-            r is Ok <==> self.spec_parse(ibuf@) is Some,
-            r is Err <==> self.spec_parse(ibuf@) is None,
-            r matches Ok((n, v)) ==> self.spec_parse(ibuf@) == Some((n as int, v.deep_view())),
+            parse_matches_spec(r, self.spec_parse(ibuf@)),
     {
         match self.parse(ibuf) {
             Ok((n, v)) => Ok((n, v)),
@@ -48,6 +53,16 @@ impl<Spec, Exec> SpecParser for (Spec, Exec) where Spec: SpecParser {
     }
 }
 
+impl<Spec, Exec> SafeParser for (Spec, Exec) where Spec: SafeParser {
+    open spec fn safe_inv(&self) -> bool {
+        self.0.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_safe(ibuf);
+    }
+}
+
 impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
     I: View<V = Seq<u8>>,
     T: DeepView<V = Spec::PVal>,
@@ -59,11 +74,8 @@ impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| call_requires(self.1, (i,))
         &&& forall|i: &I, r: PResult<T>|
-            call_ensures(self.1, (i,), r) ==> {
-                &&& r is Ok <==> self.spec_parse(i@) is Some
-                &&& r is Err <==> self.spec_parse(i@) is None
-                &&& r matches Ok((n, v)) ==> self.spec_parse(i@) == Some((n as int, v.deep_view()))
-            }
+            #![auto]
+            call_ensures(self.1, (i,), r) ==> parse_matches_spec(r, self.spec_parse(i@))
     }
 
     fn parse(&self, ibuf: &I) -> (r: PResult<T>) {
