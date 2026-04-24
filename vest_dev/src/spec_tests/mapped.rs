@@ -2,6 +2,7 @@ use crate::combinators::mapped::exec::*;
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::combinators::{Mapped, Refined, U8};
+use crate::core::exec::fns::*;
 use crate::core::exec::parser::Parser;
 
 use crate::core::{proof::*, spec::*};
@@ -148,7 +149,6 @@ pub struct Triple<'i> {
 //         TripleRef { a: i.0, b: i.1.0, c: i.1.1 }
 //     }
 // }
-
 type TripleFmt = Pair<U8, Pair<U8, Fixed<3>>>;
 
 // type TripleSpecInner = (u8, (u8, Seq<u8>));

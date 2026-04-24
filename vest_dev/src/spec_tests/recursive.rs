@@ -373,7 +373,10 @@ impl<A: ProductiveParser, B: ProductiveParser> ProductiveParser for Choice<A, B>
     }
 }
 
-impl<Inner: ProductiveParser, M: SpecMapper<In = Inner::PVal>> ProductiveParser for Mapped<Inner, M> {
+impl<Inner: ProductiveParser, M: SpecMapper<In = Inner::PVal>> ProductiveParser for Mapped<
+    Inner,
+    M,
+> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_productive(ibuf);
     }
