@@ -4,6 +4,100 @@ use vstd::prelude::*;
 
 verus! {
 
+impl<Inner, M, MRev> SPRoundTripDps for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SPRoundTripDps,
+    M: SpecMap<SpecI = Inner::T>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.inner.unambiguous()
+        &&& forall|o: M::SpecO| #![auto] self.mapper.1.wf(o) ==> self.mapper.sound(o)
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert(self.mapper.sound(v));
+        let inner_v = self.mapper.1.spec_map(v);
+        self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
+    }
+}
+
+impl<Inner, M, MRev> NonMalleable for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SoundParser + NonMalleable,
+    M: SpecMap<SpecI = Inner::PVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn nonmal_inv(&self) -> bool {
+        &&& self.inner.nonmal_inv()
+        &&& self.inner.sound_inv()
+        &&& forall|i: Inner::T| #![auto] self.inner.consistent(i) ==> self.mapper.lossless(i)
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        if let Some((n1, v1)) = self.spec_parse(buf1) {
+            if let Some((n2, v2)) = self.spec_parse(buf2) {
+                if v1 == v2 {
+                    let (i_n1, i_v1) = self.inner.spec_parse(buf1)->0;
+                    let (i_n2, i_v2) = self.inner.spec_parse(buf2)->0;
+                    self.inner.lemma_parse_sound_value(buf1);
+                    self.inner.lemma_parse_sound_value(buf2);
+                    self.inner.lemma_parse_non_malleable(buf1, buf2);
+                }
+            }
+        }
+    }
+}
+
+impl<Inner, M, MRev> NoLookAhead for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: NoLookAhead,
+    M: SpecMap<SpecI = Inner::PVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        self.inner.no_lookahead_inv()
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.no_lookahead_inv());
+                    self.inner.lemma_no_lookahead(i1, i2);
+                }
+            }
+        }
+    }
+}
+
+impl<Inner, M, MRev> EquivSerializersGeneral for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: EquivSerializersGeneral,
+    M: SpecMap<SpecI = Inner::SVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.inner.equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        let inner_v = self.mapper.1.spec_map(v);
+        self.inner.lemma_serialize_equiv(inner_v, obuf);
+    }
+}
+
+impl<Inner, M, MRev> EquivSerializers for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: EquivSerializers,
+    M: SpecMap<SpecI = Inner::SVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn equiv_inv(&self) -> bool {
+        self.inner.equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        let inner_v = self.mapper.1.spec_map(v);
+        self.inner.lemma_serialize_equiv_on_empty(inner_v);
+    }
+}
+
 impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
     M: LossyMapper<In = Inner::T>,

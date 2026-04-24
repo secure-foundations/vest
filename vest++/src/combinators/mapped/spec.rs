@@ -7,6 +7,195 @@ use vstd::prelude::*;
 
 verus! {
 
+pub trait SpecMap {
+    type SpecI;
+
+    type SpecO;
+
+    open spec fn wf(&self, i: Self::SpecI) -> bool {
+        true
+    }
+
+    spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO;
+}
+
+impl<I, O> SpecMap for spec_fn(I) -> O {
+    type SpecI = I;
+
+    type SpecO = O;
+
+    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+        (self)(i)
+    }
+}
+
+pub struct BiMap<M, MRev>(pub M, pub MRev);
+
+impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI> {
+    pub open spec fn sound(&self, o: M::SpecO) -> bool
+        recommends
+            self.1.wf(o),
+    {
+        let BiMap(m, mrev) = *self;
+        m.spec_map(mrev.spec_map(o)) == o
+    }
+
+    pub open spec fn lossless(&self, i: M::SpecI) -> bool
+        recommends
+            self.0.wf(i),
+    {
+        let BiMap(m, mrev) = *self;
+        mrev.spec_map(m.spec_map(i)) == i
+    }
+}
+
+impl<Inner, M, MRev> SpecParser for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SpecParser,
+    M: SpecMap<SpecI = Inner::PVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    type PVal = M::SpecO;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match self.inner.spec_parse(ibuf) {
+            Some((n, v)) => Some((n, self.mapper.0.spec_map(v))),
+            None => None,
+        }
+    }
+}
+
+impl<Inner, M, MRev> SafeParser for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SafeParser,
+    M: SpecMap<SpecI = Inner::PVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<Inner, M, MRev> SoundParser for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SoundParser,
+    M: SpecMap<SpecI = Inner::PVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.inner.sound_inv()
+        &&& forall|i: Inner::T| #![auto] self.inner.consistent(i) ==> self.mapper.lossless(i)
+        &&& forall|i: Inner::T|
+            #![auto]
+            self.inner.consistent(i) ==> self.mapper.1.wf(self.mapper.0.spec_map(i))
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_consumption(ibuf);
+        self.inner.lemma_parse_sound_value(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner, M, MRev> Consistency for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: Consistency,
+    M: SpecMap<SpecI = Inner::Val>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    type Val = M::SpecO;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        &&& self.mapper.1.wf(v)
+        &&& self.inner.consistent(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> SpecSerializerDps for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SpecSerializerDps,
+    M: SpecMap<SpecI = Inner::ST>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    type ST = M::SpecO;
+
+    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(self.mapper.1.spec_map(v), obuf)
+    }
+}
+
+impl<Inner, M, MRev> NonTailFmt for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: NonTailFmt,
+    M: SpecMap<SpecI = Inner::ST>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(self.mapper.1.spec_map(v), obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(self.mapper.1.spec_map(v), obuf);
+    }
+}
+
+impl<Inner, M, MRev> SpecSerializer for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SpecSerializer,
+    M: SpecMap<SpecI = Inner::SVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    type SVal = M::SpecO;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        self.inner.spec_serialize(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> GoodSerializer for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: GoodSerializer,
+    M: SpecMap<SpecI = Inner::SVal>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        self.inner.lemma_serialize_len(self.mapper.1.spec_map(v));
+    }
+}
+
+impl<Inner, M, MRev> SpecByteLen for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: SpecByteLen,
+    M: SpecMap<SpecI = Inner::T>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    type T = M::SpecO;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> StaticByteLen for super::Map<Inner, BiMap<M, MRev>> where
+    Inner: StaticByteLen,
+    M: SpecMap<SpecI = Inner::T>,
+    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+ {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(self.mapper.1.spec_map(v));
+    }
+}
+
 /// A bidirectional mapping between two types (forward for parsing, reverse for
 /// serialization). For roundtrip guarantees, implement and prove
 /// [`LossyMapper`] or [`LosslessMapper`] as appropriate.
@@ -389,7 +578,10 @@ impl<Inner, Out> GoodSerializer for super::Mapped<Inner, FnSpecMapper<Inner::SVa
 
 pub type TryMapPred<In> = PredFnSpec<In>;
 
-pub type TryMapInner<Inner, M> = super::Mapped<Refined<Inner, TryMapPred<<M as SpecMapper>::In>>, M>;
+pub type TryMapInner<Inner, M> = super::Mapped<
+    Refined<Inner, TryMapPred<<M as SpecMapper>::In>>,
+    M,
+>;
 
 impl<Inner, M: SpecMapper> super::TryMap<Inner, M> {
     pub open spec fn inner(&self) -> TryMapInner<Inner, M> {
