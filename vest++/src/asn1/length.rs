@@ -83,7 +83,7 @@ pub proof fn lemma_long_len_bytes_consistent(bytes: Seq<u8>)
     ensures
         len_prefixed_bytes().consistent(bytes),
 {
-    NBytesMasks::lemma_mapper_wf_out_in(bytes.len() as u8);
+    NBytesMasks.lemma_mapper_wf_out_in(bytes.len() as u8);
 }
 
 pub proof fn lemma_der_minimal_sufficient(bytes: Seq<u8>)
@@ -123,36 +123,36 @@ impl SpecMapper for NatFromToU8 {
 
     type Out = nat;
 
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         i <= SHORT_FORM_MAX
     }
 
-    open spec fn wf_out(o: Self::Out) -> bool {
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
         o <= SHORT_FORM_MAX
     }
 
-    open spec fn spec_map(i: Self::In) -> Self::Out {
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         i as nat
     }
 
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         o as u8
     }
 }
 
 impl LossyMapper for NatFromToU8 {
-    proof fn lemma_sound_mapper(o: Self::Out) {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
     }
 }
 
 impl LosslessMapper for NatFromToU8 {
-    proof fn lemma_lossless_mapper(i: Self::In) {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -168,53 +168,53 @@ impl SpecMapper for NBytesMasks {
     /// b) bits 7 to 1 shall encode the number of subsequent octets in the length octets, as an unsigned binary integer with
     /// bit 7 as the most significant bit;
     /// c) the value 11111111 shall not be used.
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         0b1000_0000 < i < 0b1111_1111
     }
 
-    open spec fn wf_out(o: Self::Out) -> bool {
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
         LONG_FORM_MIN_COUNT <= o <= LONG_FORM_MAX_COUNT
     }
 
-    open spec fn spec_map(i: Self::In) -> Self::Out {
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         // clear the high bit to get the count
         i & 0b0111_1111
     }
 
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         // set the high bit to indicate long form
         0b1000_0000 | o
     }
 }
 
 impl LossyMapper for NBytesMasks {
-    proof fn lemma_sound_mapper(o: Self::Out) {
-        assert(Self::spec_map(Self::spec_map_rev(o)) == o) by (bit_vector)
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert(self.spec_map(self.spec_map_rev(o)) == o) by (bit_vector)
             requires
-                Self::wf_out(o),
+                self.wf_out(o),
         ;
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
-        assert(Self::wf_in(Self::spec_map_rev(o))) by (bit_vector)
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+        assert(self.wf_in(self.spec_map_rev(o))) by (bit_vector)
             requires
-                Self::wf_out(o),
+                self.wf_out(o),
         ;
     }
 }
 
 impl LosslessMapper for NBytesMasks {
-    proof fn lemma_lossless_mapper(i: Self::In) {
-        assert(Self::spec_map_rev(Self::spec_map(i)) == i) by (bit_vector)
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        assert(self.spec_map_rev(self.spec_map(i)) == i) by (bit_vector)
             requires
-                Self::wf_in(i),
+                self.wf_in(i),
         ;
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
-        assert(Self::wf_out(Self::spec_map(i))) by (bit_vector)
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        assert(self.wf_out(self.spec_map(i))) by (bit_vector)
             requires
-                Self::wf_in(i),
+                self.wf_in(i),
         ;
     }
 }
@@ -224,11 +224,11 @@ impl<const DER: bool> SpecMapper for NatFromToBytes<DER> {
 
     type Out = nat;
 
-    open spec fn wf_in(bytes: Self::In) -> bool {
+    open spec fn wf_in(&self, bytes: Self::In) -> bool {
         long_len_bytes::<DER>().consistent(bytes)
     }
 
-    open spec fn wf_out(v: Self::Out) -> bool {
+    open spec fn wf_out(&self, v: Self::Out) -> bool {
         // the largest representable length is (2^8)^LEN_FORM_MAX_COUNT - 1
         &&& v < pow(256, LONG_FORM_MAX_COUNT as nat)
         &&& if DER {
@@ -239,21 +239,21 @@ impl<const DER: bool> SpecMapper for NatFromToBytes<DER> {
         }
     }
 
-    open spec fn spec_map(i: Self::In) -> Self::Out {
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         nat_from_be_bytes(i)
     }
 
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         nat_to_be_bytes(o)
     }
 }
 
 impl<const DER: bool> LossyMapper for NatFromToBytes<DER> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
         lemma_to_from_be_bytes_roundtrip(o);
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
         lemma_to_be_bytes_len_bound(o, LONG_FORM_MAX_COUNT as nat);
         lemma_long_len_bytes_consistent(nat_to_be_bytes(o));
         if DER {
@@ -263,11 +263,11 @@ impl<const DER: bool> LossyMapper for NatFromToBytes<DER> {
 }
 
 impl LosslessMapper for NatFromToBytes<true> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         lemma_from_to_be_bytes_roundtrip(i);
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
         lemma_from_be_bytes_upper_bound(i);
         lemma_pow_increases(256, i.len(), LONG_FORM_MAX_COUNT as nat);
         lemma_der_minimal_sufficient(i);

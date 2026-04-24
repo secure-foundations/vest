@@ -44,7 +44,7 @@ impl<const DER: bool> SpecMapper for BoolMapper<DER> {
 
     type Out = bool;
 
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         if DER {
             der_bool_byte(i)
         } else {
@@ -52,11 +52,11 @@ impl<const DER: bool> SpecMapper for BoolMapper<DER> {
         }
     }
 
-    open spec fn spec_map(i: Self::In) -> Self::Out {
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         non_zero(i)
     }
 
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         if o {
             true_byte::<DER>()
         } else {
@@ -66,20 +66,20 @@ impl<const DER: bool> SpecMapper for BoolMapper<DER> {
 }
 
 impl<const DER: bool> LossyMapper for BoolMapper<DER> {
-    proof fn lemma_sound_mapper(o: Self::Out) {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
         assert(non_zero(CANONICAL_TRUE_BYTE));
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
         assert(non_zero(CANONICAL_TRUE_BYTE));
     }
 }
 
 impl LosslessMapper for BoolMapper<true> {
-    proof fn lemma_lossless_mapper(i: Self::In) {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 

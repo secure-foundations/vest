@@ -107,10 +107,10 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let inner_v = M::spec_map_rev(v);
+        let inner_v = self.mapper.spec_map_rev(v);
         self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);
-        assert(M::wf_out(v));
-        M::lemma_sound_mapper(v);
+        assert(self.mapper.wf_out(v));
+        self.mapper.lemma_sound_mapper(v);
     }
 }
 
@@ -126,7 +126,7 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()
         &&& self.inner.sound_inv()
-        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> M::wf_in(v)
+        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> self.mapper.wf_in(v)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -137,10 +137,10 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
                     let (i_n2, i_v2) = self.inner.spec_parse(buf2)->0;
                     self.inner.lemma_parse_sound_value(buf1);
                     self.inner.lemma_parse_sound_value(buf2);
-                    assert(M::wf_in(i_v1));
-                    assert(M::wf_in(i_v2));
-                    M::lemma_lossless_mapper(i_v1);
-                    M::lemma_lossless_mapper(i_v2);
+                    assert(self.mapper.wf_in(i_v1));
+                    assert(self.mapper.wf_in(i_v2));
+                    self.mapper.lemma_lossless_mapper(i_v1);
+                    self.mapper.lemma_lossless_mapper(i_v2);
                     self.inner.lemma_parse_non_malleable(buf1, buf2);
                 }
             }
@@ -178,7 +178,7 @@ impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let inner_v = M::spec_map_rev(v);
+        let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv(inner_v, obuf);
     }
 }
@@ -192,7 +192,7 @@ impl<Inner, M> EquivSerializers for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let inner_v = M::spec_map_rev(v);
+        let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv_on_empty(inner_v);
     }
 }

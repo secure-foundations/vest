@@ -48,7 +48,7 @@ impl SpecMapper for MyTagMapper {
 
     type Out = MyTag;
 
-    open spec fn spec_map(i: u8) -> MyTag {
+    open spec fn spec_map(&self, i: u8) -> MyTag {
         match i {
             1u8 => MyTag::A,
             2u8 => MyTag::B,
@@ -57,7 +57,7 @@ impl SpecMapper for MyTagMapper {
         }
     }
 
-    open spec fn spec_map_rev(o: MyTag) -> u8 {
+    open spec fn spec_map_rev(&self, o: MyTag) -> u8 {
         match o {
             MyTag::A => 1u8,
             MyTag::B => 2u8,
@@ -65,24 +65,24 @@ impl SpecMapper for MyTagMapper {
         }
     }
 
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         is_my_tag_byte(i)
     }
 }
 
 impl LossyMapper for MyTagMapper {
-    proof fn lemma_sound_mapper(o: MyTag) {
+    proof fn lemma_sound_mapper(&self, o: MyTag) {
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
     }
 }
 
 impl LosslessMapper for MyTagMapper {
-    proof fn lemma_lossless_mapper(i: u8) {
+    proof fn lemma_lossless_mapper(&self, i: u8) {
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 

@@ -207,22 +207,22 @@ pub trait SpecMapper {
     type Out;
 
     /// Forward mapping (used during parsing).
-    spec fn spec_map(i: Self::In) -> Self::Out;
+    spec fn spec_map(&self, i: Self::In) -> Self::Out;
 
     /// Reverse mapping (used during serialization).
-    spec fn spec_map_rev(o: Self::Out) -> Self::In;
+    spec fn spec_map_rev(&self, o: Self::Out) -> Self::In;
 
     /// Optional refinement predicates on the input type.
     ///
     /// This is the precondition for [`LosslessMapper::lemma_lossless_mapper`].
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         true
     }
 
     /// Optional refinement predicates on the output type.
     ///
     /// This is the precondition for [`LossyMapper::lemma_sound_mapper`].
-    open spec fn wf_out(o: Self::Out) -> bool {
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
         true
     }
 }
@@ -231,18 +231,18 @@ pub trait SpecMapper {
 pub trait LossyMapper: SpecMapper {
     /// A sound mapper should satisfy `spec_map(spec_map_rev(o)) == o` for all well-formed `o`.
     /// That is, once `Self::Out` values are mapped to `Self::In`, `spec_map` should map them back to the original `Self::Out` values.
-    proof fn lemma_sound_mapper(o: Self::Out)
+    proof fn lemma_sound_mapper(&self, o: Self::Out)
         requires
-            Self::wf_out(o),
+            self.wf_out(o),
         ensures
-            Self::spec_map(Self::spec_map_rev(o)) == o,
+            self.spec_map(self.spec_map_rev(o)) == o,
     ;
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out)
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out)
         requires
-            Self::wf_out(o),
+            self.wf_out(o),
         ensures
-            Self::wf_in(Self::spec_map_rev(o)),
+            self.wf_in(self.spec_map_rev(o)),
     ;
 }
 
@@ -250,19 +250,19 @@ pub trait LossyMapper: SpecMapper {
 pub trait LosslessMapper: LossyMapper {
     /// A lossless mapper should satisfy `spec_map_rev(spec_map(i)) == i` for all well-formed `i`.
     /// That is, `spec_map` should be injective on well-formed `Self::In` values, and `spec_map_rev` should be its inverse.
-    proof fn lemma_lossless_mapper(i: Self::In)
+    proof fn lemma_lossless_mapper(&self, i: Self::In)
         requires
-            Self::wf_in(i),
+            self.wf_in(i),
         ensures
-            Self::spec_map_rev(Self::spec_map(i)) == i,
+            self.spec_map_rev(self.spec_map(i)) == i,
     ;
 
     /// For well-formed `i`, `spec_map(i)` should also be well-formed.
-    proof fn lemma_mapper_wf_in_out(i: Self::In)
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In)
         requires
-            Self::wf_in(i),
+            self.wf_in(i),
         ensures
-            Self::wf_out(Self::spec_map(i)),
+            self.wf_out(self.spec_map(i)),
     ;
 }
 
@@ -274,7 +274,7 @@ impl<Inner, M> SpecParser for super::Mapped<Inner, M> where
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, M::Out)> {
         match self.inner.spec_parse(ibuf) {
-            Some((n, v)) => Some((n, M::spec_map(v))),
+            Some((n, v)) => Some((n, self.mapper.spec_map(v))),
             None => None,
         }
     }
@@ -300,25 +300,25 @@ impl<Inner, M> SoundParser for super::Mapped<Inner, M> where
  {
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
-        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> M::wf_in(v)
+        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> self.mapper.wf_in(v)
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_consumption(ibuf);
         self.inner.lemma_parse_sound_value(ibuf);
         if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
-            assert(M::wf_in(inner_v));
-            M::lemma_lossless_mapper(inner_v);
+            assert(self.mapper.wf_in(inner_v));
+            self.mapper.lemma_lossless_mapper(inner_v);
         }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_value(ibuf);
         if let Some((_n, inner_v)) = self.inner.spec_parse(ibuf) {
-            assert(M::wf_in(inner_v));
-            M::lemma_mapper_wf_in_out(inner_v);
-            M::lemma_lossless_mapper(inner_v);
-            assert(self.consistent(M::spec_map(inner_v)));
+            assert(self.mapper.wf_in(inner_v));
+            self.mapper.lemma_mapper_wf_in_out(inner_v);
+            self.mapper.lemma_lossless_mapper(inner_v);
+            assert(self.consistent(self.mapper.spec_map(inner_v)));
         }
     }
 }
@@ -330,8 +330,8 @@ impl<Inner, M> Consistency for super::Mapped<Inner, M> where
     type Val = M::Out;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        &&& M::wf_out(v)
-        &&& self.inner.consistent(M::spec_map_rev(v))
+        &&& self.mapper.wf_out(v)
+        &&& self.inner.consistent(self.mapper.spec_map_rev(v))
     }
 }
 
@@ -342,7 +342,7 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     type ST = M::Out;
 
     open spec fn spec_serialize_dps(&self, v: M::Out, obuf: Seq<u8>) -> Seq<u8> {
-        self.inner.spec_serialize_dps(M::spec_map_rev(v), obuf)
+        self.inner.spec_serialize_dps(self.mapper.spec_map_rev(v), obuf)
     }
 }
 
@@ -355,11 +355,11 @@ impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: M::Out, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_prepend(M::spec_map_rev(v), obuf);
+        self.inner.lemma_serialize_dps_prepend(self.mapper.spec_map_rev(v), obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: M::Out, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_dps_len(M::spec_map_rev(v), obuf);
+        self.inner.lemma_serialize_dps_len(self.mapper.spec_map_rev(v), obuf);
     }
 }
 
@@ -372,7 +372,7 @@ impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_len(&self, v: M::Out) {
-        self.inner.lemma_serialize_len(M::spec_map_rev(v));
+        self.inner.lemma_serialize_len(self.mapper.spec_map_rev(v));
     }
 }
 
@@ -383,20 +383,7 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
     type T = M::Out;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        self.inner.byte_len(M::spec_map_rev(v))
-    }
-}
-
-impl<Inner, M> ValueByteLen for super::Mapped<Inner, M> where
-    Inner: ValueByteLen,
-    M: SpecMapper<In = Inner::T>,
- {
-    open spec fn value_byte_len(v: Self::T) -> nat {
-        Inner::value_byte_len(M::spec_map_rev(v))
-    }
-
-    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        self.inner.lemma_value_len_matches_byte_len(M::spec_map_rev(v));
+        self.inner.byte_len(self.mapper.spec_map_rev(v))
     }
 }
 
@@ -409,7 +396,7 @@ impl<Inner, M> StaticByteLen for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        self.inner.lemma_static_len_matches_byte_len(M::spec_map_rev(v));
+        self.inner.lemma_static_len_matches_byte_len(self.mapper.spec_map_rev(v));
     }
 }
 
@@ -420,7 +407,7 @@ impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     type SVal = M::Out;
 
     open spec fn spec_serialize(&self, v: M::Out) -> Seq<u8> {
-        self.inner.spec_serialize(M::spec_map_rev(v))
+        self.inner.spec_serialize(self.mapper.spec_map_rev(v))
     }
 }
 
@@ -586,7 +573,7 @@ pub type TryMapInner<Inner, M> = super::Mapped<
 impl<Inner, M: SpecMapper> super::TryMap<Inner, M> {
     pub open spec fn inner(&self) -> TryMapInner<Inner, M> {
         super::Mapped {
-            inner: Refined { inner: self.inner, pred: |v: M::In| M::wf_in(v) },
+            inner: Refined { inner: self.inner, pred: |v: M::In| self.mapper.wf_in(v) },
             mapper: self.mapper,
         }
     }
@@ -693,19 +680,6 @@ impl<Inner, M> SpecByteLen for super::TryMap<Inner, M> where
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.inner().byte_len(v)
-    }
-}
-
-impl<Inner, M> ValueByteLen for super::TryMap<Inner, M> where
-    Inner: ValueByteLen,
-    M: SpecMapper<In = Inner::T>,
- {
-    open spec fn value_byte_len(v: Self::T) -> nat {
-        TryMapInner::<Inner, M>::value_byte_len(v)
-    }
-
-    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        self.inner().lemma_value_len_matches_byte_len(v);
     }
 }
 

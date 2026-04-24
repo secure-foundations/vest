@@ -135,25 +135,25 @@ impl SpecMapper for IntFromToBytes {
 
     type Out = int;
 
-    open spec fn wf_in(i: Self::In) -> bool {
+    open spec fn wf_in(&self, i: Self::In) -> bool {
         integer_bytes_wf(i)
     }
 
-    open spec fn wf_out(_o: Self::Out) -> bool {
+    open spec fn wf_out(&self, _o: Self::Out) -> bool {
         true
     }
 
-    open spec fn spec_map(i: Self::In) -> Self::Out {
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         int_from_be_bytes(i)
     }
 
-    open spec fn spec_map_rev(o: Self::Out) -> Self::In {
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         int_to_be_bytes(o)
     }
 }
 
 impl LossyMapper for IntFromToBytes {
-    proof fn lemma_sound_mapper(o: Self::Out) {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
         if o >= 0 {
             let n = o as nat;
             let body = nat_to_be_bytes(n);
@@ -174,7 +174,7 @@ impl LossyMapper for IntFromToBytes {
         }
     }
 
-    proof fn lemma_mapper_wf_out_in(o: Self::Out) {
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
         if o >= 0 {
             let n = o as nat;
             lemma_to_be_bytes_props(n);
@@ -187,7 +187,7 @@ impl LossyMapper for IntFromToBytes {
 }
 
 impl LosslessMapper for IntFromToBytes {
-    proof fn lemma_lossless_mapper(i: Self::In) {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
         if sign_bit_set(i[0]) {
             let c = invert_bytes(i);
             lemma_invert_bytes_involutive(i);
@@ -232,7 +232,7 @@ impl LosslessMapper for IntFromToBytes {
         }
     }
 
-    proof fn lemma_mapper_wf_in_out(i: Self::In) {
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -300,11 +300,10 @@ impl SpecByteLen for super::Integer {
 
 impl ValueByteLen for super::Integer {
     open spec fn value_byte_len(v: Self::T) -> nat {
-        IntegerFmt::value_byte_len(v)
+        integer_fmt().byte_len(v)
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        integer_fmt().lemma_value_len_matches_byte_len(v);
     }
 }
 
