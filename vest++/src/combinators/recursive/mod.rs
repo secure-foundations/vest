@@ -1,4 +1,6 @@
 //! Bounded fixpoint combinator for recursive formats.
+/// Executable trait implementations for this combinator.
+pub mod exec;
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.
@@ -8,6 +10,7 @@ use crate::core::proof::LeafNonMalleable;
 use crate::core::proof::StrictCombinator;
 use vstd::prelude::*;
 
+pub use exec::ParserRecBody;
 pub use proof::{
     EquivSerializersGeneralRecBody, NoLookAheadRecBody, NonMalleableRecBody, SPRoundTripDpsRecBody,
     StrictRecBody,
