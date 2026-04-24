@@ -12,7 +12,11 @@ impl<I: InputBuf> Parser<I> for super::Tail {
 
     fn parse(&self, ibuf: &I) -> PResult<Self::O> {
         let len = ibuf.len();
-        Ok((len, ibuf.take(len)))
+        let tail = ibuf.take(len);
+        proof {
+            assert(tail.deep_view() == ibuf@);
+        }
+        Ok((len, tail))
     }
 }
 
