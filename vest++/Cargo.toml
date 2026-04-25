@@ -15,7 +15,7 @@ vstd = "0.0.0-2026-04-20-1748"
 verify = true
 
 [package.metadata.verus.ide]
-extra_args = "--expand-errors"
+extra_args = "--expand-errors -V new-mut-ref"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }
