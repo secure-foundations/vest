@@ -10,9 +10,9 @@ use vstd::prelude::*;
 verus! {
 
 impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
-    type O = I;
+    type PT = I;
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         if ibuf.len() < N {
             Err(ParseError::unexpected_eof())
         } else {
@@ -22,9 +22,9 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
 }
 
 impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
-    type O = I;
+    type PT = I;
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = self.0.as_usize();
         if ibuf.len() < len {
             Err(ParseError::unexpected_eof())
@@ -39,29 +39,29 @@ impl<I, Len, Inner> Parser<I> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     Inner: Parser<I, PVal = Seq<u8>>,
  {
-    type O = Inner::O;
+    type PT = Inner::PT;
 
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         super::AndThen(super::Varied(self.0), &self.1).parse(ibuf)
     }
 }
 
 impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
-    A: Parser<I, O = I, PVal = Seq<u8>>,
+    A: Parser<I, PT = I, PVal = Seq<u8>>,
     Then: Parser<I>,
  {
-    type O = Then::O;
+    type PT = Then::PT;
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         assert(self.exec_inv());
 
         let (len_a, chunk) = self.0.parse(ibuf)?;

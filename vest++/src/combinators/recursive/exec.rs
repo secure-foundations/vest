@@ -72,9 +72,9 @@ impl<const LIMIT: usize, Body, I> Parser<I> for super::Fix<LIMIT, Body> where
     Body: ParserRecBody<I> + SafeParserRecBody,
     Body::Body: SafeParser,
  {
-    type O = Body::O;
+    type PT = Body::O;
 
-    fn parse(&self, ibuf: &I) -> (r: PResult<Self::O>) {
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         self.parse_gas(LIMIT, ibuf)
     }
 }

@@ -8,13 +8,13 @@ use vstd::prelude::*;
 verus! {
 
 impl Parser<&[u8]> for super::U8 {
-    type O = u8;
+    type PT = u8;
 
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         if ibuf.len() < 1 {
             Err(ParseError::unexpected_eof())
         } else {
@@ -23,4 +23,4 @@ impl Parser<&[u8]> for super::U8 {
     }
 }
 
-}
+} // verus!

@@ -1,5 +1,5 @@
-use crate::combinators::Fixed;
 use crate::combinators::preceded::Preceded;
+use crate::combinators::Fixed;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -53,11 +53,11 @@ impl<A, Pred> SoundParser for super::Refined<A, Pred> where
 
 impl<A, Pred> SpecSerializerDps for super::Refined<A, Pred> where
     A: SpecSerializerDps,
-    Pred: SpecPred<A::ST>,
+    Pred: SpecPred<A::SValue>,
  {
-    type ST = A::ST;
+    type SValue = A::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(v, obuf)
     }
 }
@@ -73,16 +73,19 @@ impl<A, Pred> SpecSerializer for super::Refined<A, Pred> where
     }
 }
 
-impl<A, Pred> NonTailFmt for super::Refined<A, Pred> where A: NonTailFmt, Pred: SpecPred<A::ST> {
+impl<A, Pred> NonTailFmt for super::Refined<A, Pred> where
+    A: NonTailFmt,
+    Pred: SpecPred<A::SValue>,
+ {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -184,10 +187,10 @@ impl<Inner> SoundParser for super::Tag<Inner, Inner::PVal> where Inner: SoundPar
     }
 }
 
-impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::ST> where Inner: SpecSerializerDps {
-    type ST = Inner::ST;
+impl<Inner> SpecSerializerDps for super::Tag<Inner, Inner::SValue> where Inner: SpecSerializerDps {
+    type SValue = Inner::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(v, obuf)
     }
 }
@@ -200,16 +203,16 @@ impl<Inner> SpecSerializer for super::Tag<Inner, Inner::SVal> where Inner: SpecS
     }
 }
 
-impl<Inner> NonTailFmt for super::Tag<Inner, Inner::ST> where Inner: NonTailFmt {
+impl<Inner> NonTailFmt for super::Tag<Inner, Inner::SValue> where Inner: NonTailFmt {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -306,9 +309,9 @@ impl<const N: usize> SoundParser for super::Tag<Fixed::<N>, [u8; N]> {
 }
 
 impl<const N: usize> SpecSerializerDps for super::Tag<Fixed::<N>, [u8; N]> {
-    type ST = Seq<u8>;
+    type SValue = Seq<u8>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(v, obuf)
     }
 }
@@ -326,11 +329,11 @@ impl<const N: usize> NonTailFmt for super::Tag<Fixed::<N>, [u8; N]> {
         self.inner.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.inner.lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -429,12 +432,12 @@ impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
 }
 
 impl<Tg, Of> SpecSerializerDps for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + SpecSerializerDps<ST = Tg::T> + Consistency<Val = Tg::T>,
+    Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T> + Consistency<Val = Tg::T>,
     Of: SpecSerializerDps,
  {
-    type ST = Of::ST;
+    type SValue = Of::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize_dps(v, obuf)
     }
 }
@@ -458,14 +461,14 @@ impl<Tg, Of> NonTailFmt for super::Tagged<Tg, Of> where
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_prepend(
             v,
             obuf,
         );
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_len(
             v,
             obuf,

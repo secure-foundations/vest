@@ -36,14 +36,14 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
     A: Parser<I>,
     B: Parser<I>,
  {
-    type O = super::Sum<A::O, B::O>;
+    type PT = super::Sum<A::PT, B::PT>;
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         match self.0.parse(ibuf) {
             Ok((n, v)) => Ok((n, super::Sum::Inl(v))),
             Err(first_err) => {
@@ -68,16 +68,16 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
 impl<I, A, B> Parser<I> for super::Alt<A, B> where
     I: View<V = Seq<u8>>,
     A: Parser<I>,
-    B: Parser<I, PVal = A::PVal, O = A::O>,
+    B: Parser<I, PVal = A::PVal, PT = A::PT>,
  {
-    type O = A::O;
+    type PT = A::PT;
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         match self.0.parse(ibuf) {
             Ok(r) => Ok(r),
             Err(_) => self.1.parse(ibuf),
@@ -90,7 +90,7 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     A: Parser<I>,
     B: Parser<I>,
  {
-    type O = super::Sum<A::O, B::O>;
+    type PT = super::Sum<A::PT, B::PT>;
 
     open spec fn exec_inv(&self) -> bool {
         match self {
@@ -99,7 +99,7 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
         }
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         match self {
             super::Sum::Inl(a) => {
                 let (n, v) = a.parse(ibuf)?;

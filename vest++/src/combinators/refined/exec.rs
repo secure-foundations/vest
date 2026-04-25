@@ -2,9 +2,9 @@ use crate::combinators::{Fixed, U8};
 use crate::core::spec::SoundParser;
 use crate::core::{
     exec::{
+        fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        fns::Pred,
         ParseError,
     },
     spec::SpecParser,
@@ -16,15 +16,15 @@ verus! {
 impl<I, A, PredFn> Parser<I> for super::Refined<A, PredFn> where
     I: View<V = Seq<u8>>,
     A: Parser<I>,
-    PredFn: Pred<A::O>,
+    PredFn: Pred<A::PT>,
  {
-    type O = A::O;
+    type PT = A::PT;
 
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let (n, v) = self.inner.parse(ibuf)?;
         if self.pred.test(&v) {
             Ok((n, v))
@@ -37,7 +37,7 @@ impl<I, A, PredFn> Parser<I> for super::Refined<A, PredFn> where
 pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined<A, PredFn>) where
     I: View<V = Seq<u8>>,
     A: Parser<I>,
-    PredFn: Pred<A::O>,
+    PredFn: Pred<A::PT>,
 
     requires
         fmt.inner.exec_inv(),
@@ -47,9 +47,9 @@ pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined
 }
 
 impl Parser<&[u8]> for super::Tag<U8, u8> {
-    type O = u8;
+    type PT = u8;
 
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         let (n, v) = self.inner.parse(ibuf)?;
         if v == self.tag {
             Ok((n, v))
@@ -88,9 +88,9 @@ fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
 }
 
 impl<const N: usize> Parser<&[u8]> for super::Tag<Fixed<N>, [u8; N]> {
-    type O = [u8; N];
+    type PT = [u8; N];
 
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         let (n, v) = self.inner.parse(ibuf)?;
         let tag = self.tag.as_slice();
         proof {

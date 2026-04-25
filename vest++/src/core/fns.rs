@@ -43,9 +43,9 @@ impl<T> SpecParser for ParserFnSpec<T> {
 }
 
 impl<T> SpecSerializerDps for SerializerDPSFnSpec<T> {
-    type ST = T;
+    type SValue = T;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         (self)(v, obuf)
     }
 }

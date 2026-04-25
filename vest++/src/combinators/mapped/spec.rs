@@ -190,9 +190,9 @@ impl<Inner, M> Consistency for super::Mapped<Inner, M> where
 
 impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
     Inner: SpecSerializerDps,
-    M: SpecMapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::SValue>,
  {
-    type ST = M::Out;
+    type SValue = M::Out;
 
     open spec fn spec_serialize_dps(&self, v: M::Out, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps(self.mapper.spec_map_rev(v), obuf)
@@ -201,7 +201,7 @@ impl<Inner, M> SpecSerializerDps for super::Mapped<Inner, M> where
 
 impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     Inner: NonTailFmt,
-    M: SpecMapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::SValue>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner.serialize_dps_inv()
@@ -311,11 +311,11 @@ impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<
 
 impl<Inner: SpecSerializerDps, Out> SpecSerializerDps for super::Mapped<
     Inner,
-    spec_fn(Out) -> Inner::ST,
+    spec_fn(Out) -> Inner::SValue,
 > {
-    type ST = Out;
+    type SValue = Out;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.inner.spec_serialize_dps((self.mapper)(v), obuf)
     }
 }
@@ -453,9 +453,9 @@ impl<Inner, M> Consistency for super::TryMap<Inner, M> where
 
 impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
     Inner: SpecSerializerDps,
-    M: SpecMapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::SValue>,
  {
-    type ST = M::Out;
+    type SValue = M::Out;
 
     open spec fn spec_serialize_dps(&self, v: M::Out, obuf: Seq<u8>) -> Seq<u8> {
         self.inner().spec_serialize_dps(v, obuf)
@@ -464,7 +464,7 @@ impl<Inner, M> SpecSerializerDps for super::TryMap<Inner, M> where
 
 impl<Inner, M> NonTailFmt for super::TryMap<Inner, M> where
     Inner: NonTailFmt,
-    M: SpecMapper<In = Inner::ST>,
+    M: SpecMapper<In = Inner::SValue>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         self.inner().serialize_dps_inv()

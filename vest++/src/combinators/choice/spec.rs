@@ -69,9 +69,9 @@ impl<A, B> SpecSerializerDps for super::Choice<A, B> where
     A: SpecSerializerDps,
     B: SpecSerializerDps,
  {
-    type ST = Sum<A::ST, B::ST>;
+    type SValue = Sum<A::SValue, B::SValue>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         match v {
             Sum::Inl(va) => self.0.spec_serialize_dps(va, obuf),
             Sum::Inr(vb) => self.1.spec_serialize_dps(vb, obuf),
@@ -96,7 +96,7 @@ impl<A, B> NonTailFmt for super::Choice<A, B> where A: NonTailFmt, B: NonTailFmt
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         match v {
             Sum::Inl(va) => {
                 self.0.lemma_serialize_dps_prepend(va, obuf);
@@ -107,7 +107,7 @@ impl<A, B> NonTailFmt for super::Choice<A, B> where A: NonTailFmt, B: NonTailFmt
         }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         match v {
             Sum::Inl(va) => {
                 self.0.lemma_serialize_dps_len(va, obuf);
@@ -245,12 +245,12 @@ impl<A, B> SafeParser for super::Alt<A, B> where A: SafeParser, B: SafeParser<PV
 }
 
 impl<A, B> SpecSerializerDps for super::Alt<A, B> where
-    A: SpecSerializerDps + Consistency<Val = A::ST>,
-    B: SpecSerializerDps<ST = A::ST> + Consistency<Val = B::ST>,
+    A: SpecSerializerDps + Consistency<Val = A::SValue>,
+    B: SpecSerializerDps<SValue = A::SValue> + Consistency<Val = B::SValue>,
  {
-    type ST = A::ST;
+    type SValue = A::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         if self.choose_left(v) {
             self.0.spec_serialize_dps(v, obuf)
         } else {
@@ -260,15 +260,15 @@ impl<A, B> SpecSerializerDps for super::Alt<A, B> where
 }
 
 impl<A, B> NonTailFmt for super::Alt<A, B> where
-    A: NonTailFmt + Consistency<Val = A::ST>,
-    B: NonTailFmt<T = A::T> + Consistency<Val = B::ST>,
+    A: NonTailFmt + Consistency<Val = A::SValue>,
+    B: NonTailFmt<T = A::T> + Consistency<Val = B::SValue>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         if self.choose_left(v) {
             self.0.lemma_serialize_dps_prepend(v, obuf)
         } else {
@@ -276,7 +276,7 @@ impl<A, B> NonTailFmt for super::Alt<A, B> where
         }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         if self.choose_left(v) {
             self.0.lemma_serialize_dps_len(v, obuf)
         } else {
@@ -426,9 +426,9 @@ impl<T, C: SoundParser, const N: usize> SoundParser for super::Dispatch<T, C, N>
 }
 
 impl<T, C: SpecSerializerDps, const N: usize> SpecSerializerDps for super::Dispatch<T, C, N> {
-    type ST = C::ST;
+    type SValue = C::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.active_branch().spec_serialize_dps(v, obuf)
     }
 }
@@ -446,11 +446,11 @@ impl<T, C: NonTailFmt, const N: usize> NonTailFmt for super::Dispatch<T, C, N> {
         self.active_branch().serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.active_branch().lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.active_branch().lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -566,9 +566,9 @@ impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
 }
 
 impl<A, B> SpecSerializerDps for Sum<A, B> where A: SpecSerializerDps, B: SpecSerializerDps {
-    type ST = Sum<A::ST, B::ST>;
+    type SValue = Sum<A::SValue, B::SValue>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         match (self, v) {
             (Sum::Inl(a), Sum::Inl(va)) => a.spec_serialize_dps(va, obuf),
             (Sum::Inr(b), Sum::Inr(vb)) => b.spec_serialize_dps(vb, obuf),
@@ -597,7 +597,7 @@ impl<A, B> NonTailFmt for Sum<A, B> where A: NonTailFmt, B: NonTailFmt {
         }
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         match (self, v) {
             (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_dps_prepend(va, obuf),
             (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_dps_prepend(vb, obuf),
@@ -607,7 +607,7 @@ impl<A, B> NonTailFmt for Sum<A, B> where A: NonTailFmt, B: NonTailFmt {
         }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         match (self, v) {
             (Sum::Inl(a), Sum::Inl(va)) => a.lemma_serialize_dps_len(va, obuf),
             (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_serialize_dps_len(vb, obuf),

@@ -35,9 +35,9 @@ impl<P1, P2> SpecSerializerDps for super::Permute2<P1, P2> where
     P1: SpecSerializerDps,
     P2: SpecSerializerDps,
  {
-    type ST = (P1::ST, P2::ST);
+    type SValue = (P1::SValue, P2::SValue);
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Pair(self.0, self.1).spec_serialize_dps(v, obuf)
     }
 }
@@ -59,11 +59,11 @@ impl<P1, P2> NonTailFmt for super::Permute2<P1, P2> where P1: NonTailFmt, P2: No
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, self.1).lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -161,9 +161,9 @@ impl<A, B, C> SpecSerializerDps for super::Permute3<A, B, C> where
     B: SpecSerializerDps,
     C: SpecSerializerDps,
  {
-    type ST = (A::ST, (B::ST, C::ST));
+    type SValue = (A::SValue, (B::SValue, C::SValue));
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Pair(self.0, super::Permute2(self.1, self.2)).spec_serialize_dps(v, obuf)
     }
 }
@@ -191,11 +191,11 @@ impl<A, B, C> NonTailFmt for super::Permute3<A, B, C> where
         &&& self.2.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -316,9 +316,9 @@ impl<A, B, C, D> SpecSerializerDps for super::Permute4<A, B, C, D> where
     C: SpecSerializerDps,
     D: SpecSerializerDps,
  {
-    type ST = (A::ST, (B::ST, (C::ST, D::ST)));
+    type SValue = (A::SValue, (B::SValue, (C::SValue, D::SValue)));
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).spec_serialize_dps(v, obuf)
     }
 }
@@ -349,11 +349,11 @@ impl<A, B, C, D> NonTailFmt for super::Permute4<A, B, C, D> where
         &&& self.3.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_dps_len(v, obuf);
     }
 }

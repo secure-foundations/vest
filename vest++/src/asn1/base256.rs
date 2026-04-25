@@ -1,8 +1,4 @@
-use vstd::arithmetic::{
-    div_mod::*,
-    power::*,
-    power2::*,
-};
+use vstd::arithmetic::{div_mod::*, power::*, power2::*};
 use vstd::bits::*;
 use vstd::{calc, prelude::*};
 

@@ -8,9 +8,9 @@ use vstd::prelude::*;
 verus! {
 
 impl<I: InputBuf> Parser<I> for super::Tail {
-    type O = I;
+    type PT = I;
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = ibuf.len();
         let tail = ibuf.take(len);
         proof {
@@ -21,9 +21,9 @@ impl<I: InputBuf> Parser<I> for super::Tail {
 }
 
 impl<I: InputBuf> Parser<I> for super::Eof {
-    type O = ();
+    type PT = ();
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = ibuf.len();
         if len == 0 {
             Ok((0, ()))

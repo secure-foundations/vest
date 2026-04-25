@@ -269,9 +269,9 @@ impl SoundParser for super::Integer {
 }
 
 impl SpecSerializerDps for super::Integer {
-    type ST = int;
+    type SValue = int;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         integer_fmt().spec_serialize_dps(v, obuf)
     }
 }

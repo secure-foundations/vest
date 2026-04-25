@@ -255,9 +255,9 @@ impl<T> SpecSerializer for BundledSpecs<T> {
 }
 
 impl<T> SpecSerializerDps for BundledSpecs<T> {
-    type ST = T;
+    type SValue = T;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         (self.4)(v, obuf)
     }
 }
@@ -302,13 +302,13 @@ impl<T> NonTailFmt for BundledSpecs<T> {
         non_tail_fmt_dps(s_dps, b)
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         let (_, b, _, _, s_dps) = *self;
         let witness = choose|w: Seq<u8>| (s_dps)(v, obuf) == w + obuf;
         assert((s_dps)(v, obuf) == witness + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         let (_, b, _, _, s_dps) = *self;
         assert((s_dps)(v, obuf).len() - obuf.len() == (b)(v));
     }
@@ -398,9 +398,9 @@ impl<const LIMIT: usize, Body: SpecRecBody> SpecSerializer for super::Fix<LIMIT,
 }
 
 impl<const LIMIT: usize, Body: SpecRecBody> SpecSerializerDps for super::Fix<LIMIT, Body> {
-    type ST = Body::T;
+    type SValue = Body::T;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Self::spec_serialize_dps_gas(LIMIT as nat, v, obuf)
     }
 }
@@ -734,11 +734,11 @@ impl<const LIMIT: usize, Body: NonTailFmtRecBody> super::Fix<LIMIT, Body> where
 impl<const LIMIT: usize, Body: NonTailFmtRecBody> NonTailFmt for super::Fix<LIMIT, Body> where
     Body::Body: NonTailFmt,
  {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.nontail_dps_by_induction(LIMIT as nat, v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.nontail_dps_by_induction(LIMIT as nat, v, obuf);
     }
 }

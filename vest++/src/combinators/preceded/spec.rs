@@ -18,15 +18,15 @@ impl<A, B> SpecParser for super::Preceded<A, B> where A: SpecParser, B: SpecPars
 }
 
 impl<A, B> SpecSerializerDps for super::Preceded<A, B> where
-    A: SpecSerializerDps + Consistency<Val = A::ST>,
+    A: SpecSerializerDps + Consistency<Val = A::SValue>,
     B: SpecSerializerDps,
  {
-    type ST = B::ST;
+    type SValue = B::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Mapped {
             inner: Pair(self.0, self.1),
-            mapper: |b: B::ST| (choose|a: A::ST| self.0.consistent(a), b),
+            mapper: |b: B::SValue| (choose|a: A::SValue| self.0.consistent(a), b),
         }.spec_serialize_dps(v, obuf)
     }
 }
@@ -90,20 +90,20 @@ impl<A, B> SoundParser for super::Preceded<A, B> where
 }
 
 impl<A, B> NonTailFmt for super::Preceded<A, B> where
-    A: NonTailFmt + Consistency<Val = A::ST>,
+    A: NonTailFmt + Consistency<Val = A::SValue>,
     B: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         Pair(self.0, self.1).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
-        let va = choose|va: A::ST| #![auto] self.0.consistent(va);
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+        let va = choose|va: A::SValue| #![auto] self.0.consistent(va);
         Pair(self.0, self.1).lemma_serialize_dps_prepend((va, v), obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
-        let va = choose|va: A::ST| #![auto] self.0.consistent(va);
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+        let va = choose|va: A::SValue| #![auto] self.0.consistent(va);
         Pair(self.0, self.1).lemma_serialize_dps_len((va, v), obuf);
     }
 }

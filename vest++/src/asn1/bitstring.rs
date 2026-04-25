@@ -68,9 +68,9 @@ impl<const DER: bool> SoundParser for super::BitString<DER> {
 }
 
 impl<const DER: bool> SpecSerializerDps for super::BitString<DER> {
-    type ST = BitStringValue;
+    type SValue = BitStringValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         bitstring_fmt::<DER>().spec_serialize_dps(v, obuf)
     }
 }

@@ -60,9 +60,9 @@ impl<const N: usize> SoundParser for super::Fixed<N> {
 }
 
 impl<const N: usize> SpecSerializerDps for super::Fixed<N> {
-    type ST = Seq<u8>;
+    type SValue = Seq<u8>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         v + obuf
     }
 }
@@ -151,9 +151,9 @@ impl<Len: AsLen> SoundParser for super::Varied<Len> {
 }
 
 impl<Len: AsLen> SpecSerializerDps for super::Varied<Len> {
-    type ST = Seq<u8>;
+    type SValue = Seq<u8>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         v + obuf
     }
 }
@@ -255,9 +255,9 @@ impl<Inner: SoundParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len>
 }
 
 impl<Inner: SpecSerializerDps, Len: AsLen> SpecSerializerDps for super::ExactLen<Inner, Len> {
-    type ST = Inner::ST;
+    type SValue = Inner::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         super::AndThen(super::Varied(self.0), self.1).spec_serialize_dps(v, obuf)
     }
 }
@@ -278,11 +278,11 @@ impl<Inner, Len> NonTailFmt for super::ExactLen<Inner, Len> where
         super::AndThen(super::Varied(self.0), self.1).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_serialize_dps_len(v, obuf);
     }
 }
@@ -410,12 +410,12 @@ impl<A, Then> SoundParser for super::AndThen<A, Then> where
 }
 
 impl<A, Then> SpecSerializerDps for super::AndThen<A, Then> where
-    A: SpecSerializerDps<ST = Seq<u8>>,
+    A: SpecSerializerDps<SValue = Seq<u8>>,
     Then: SpecSerializerDps,
  {
-    type ST = Then::ST;
+    type SValue = Then::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.0.spec_serialize_dps(self.1.spec_serialize_dps(v, seq![]), obuf)
     }
 }
@@ -442,11 +442,11 @@ impl<A, Then> NonTailFmt for super::AndThen<A, Then> where
         &&& self.1.equiv_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.0.lemma_serialize_dps_prepend(self.1.spec_serialize_dps(v, seq![]), obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.1.lemma_serialize_equiv_on_empty(v);
         self.1.lemma_serialize_len(v);
         let inner_bytes = self.1.spec_serialize_dps(v, seq![]);

@@ -225,7 +225,7 @@ impl<A> SoundParser for super::Star<A> where A: SoundParser {
 }
 
 impl<A: SpecSerializerDps> super::Star<A> {
-    pub open spec fn rfold_serialize_dps(&self, vs: Seq<A::ST>, obuf: Seq<u8>) -> Seq<u8>
+    pub open spec fn rfold_serialize_dps(&self, vs: Seq<A::SValue>, obuf: Seq<u8>) -> Seq<u8>
         decreases vs.len(),
     {
         vs.fold_right_alt(|elem, buf| self.inner.spec_serialize_dps(elem, buf), obuf)
@@ -233,7 +233,7 @@ impl<A: SpecSerializerDps> super::Star<A> {
 }
 
 impl<A: NonTailFmt> super::Star<A> {
-    proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::ST>, obuf: Seq<u8>)
+    proof fn lemma_rfold_serialize_buf(&self, vs: Seq<A::SValue>, obuf: Seq<u8>)
         requires
             self.serialize_dps_inv(),
         ensures
@@ -262,9 +262,9 @@ impl<A: NonTailFmt> super::Star<A> {
 }
 
 impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps {
-    type ST = Seq<A::ST>;
+    type SValue = Seq<A::SValue>;
 
-    open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, vs: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.rfold_serialize_dps(vs, obuf)
     }
 }
@@ -282,11 +282,11 @@ impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
         self.inner.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, vs: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, vs: Self::SValue, obuf: Seq<u8>) {
         self.lemma_rfold_serialize_buf(vs, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, vs: Self::ST, obuf: Seq<u8>)
+    proof fn lemma_serialize_dps_len(&self, vs: Self::SValue, obuf: Seq<u8>)
         decreases vs.len(),
     {
         use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
@@ -302,7 +302,7 @@ impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
             // induction
             self.lemma_serialize_dps_len(rest, obuf);
             // fold_left lemmas
-            let f = |acc: nat, elem: A::ST| acc + self.inner.byte_len(elem);
+            let f = |acc: nat, elem: A::SValue| acc + self.inner.byte_len(elem);
             vs.lemma_fold_left_alt(0, f);
             rest.lemma_fold_left_alt(self.inner.byte_len(v0), f);
             lemma_fold_left_accumulate_nat(rest, self.inner.byte_len(v0), f);
@@ -486,9 +486,9 @@ impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
 }
 
 impl<C: SpecSerializerDps, N: AsLen> SpecSerializerDps for super::RepeatN<C, N> {
-    type ST = Seq<C::ST>;
+    type SValue = Seq<C::SValue>;
 
-    open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, vs: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         super::Star { inner: self.1 }.spec_serialize_dps(vs, obuf)
     }
 }
@@ -506,11 +506,11 @@ impl<C: NonTailFmt, N: AsLen> NonTailFmt for super::RepeatN<C, N> {
         self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         super::Star { inner: self.1 }.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         assert(self.serialize_dps_inv());
         super::Star { inner: self.1 }.lemma_serialize_dps_len(v, obuf);
     }
@@ -597,9 +597,9 @@ impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
 }
 
 impl<const N: usize, C: SpecSerializerDps> SpecSerializerDps for super::Array<N, C> {
-    type ST = [C::ST; N];
+    type SValue = [C::SValue; N];
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         super::RepeatN(N, self.0).spec_serialize_dps(v@, obuf)
     }
 }
@@ -617,11 +617,11 @@ impl<const N: usize, C: NonTailFmt> NonTailFmt for super::Array<N, C> {
         super::RepeatN(N, self.0).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_serialize_dps_prepend(v@, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_serialize_dps_len(v@, obuf);
     }
 }
@@ -712,9 +712,9 @@ impl<A, B> SoundParser for super::Repeat<A, B> where A: SoundParser, B: SoundPar
 }
 
 impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Repeat<A, B> {
-    type ST = (Seq<A::ST>, B::ST);
+    type SValue = (Seq<A::SValue>, B::SValue);
 
-    open spec fn spec_serialize_dps(&self, vs: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, vs: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Pair(super::Star { inner: self.0 }, self.1).spec_serialize_dps(vs, obuf)
     }
 }
@@ -733,11 +733,11 @@ impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Repeat<A, B> {
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_dps_prepend(v, obuf)
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_dps_len(v, obuf);
     }
 }

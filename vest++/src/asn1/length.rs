@@ -307,9 +307,9 @@ impl SoundParser for super::Length<true> {
 }
 
 impl<const DER: bool> SpecSerializerDps for super::Length<DER> {
-    type ST = nat;
+    type SValue = nat;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         length_fmt::<DER>().spec_serialize_dps(v, obuf)
     }
 }
@@ -323,11 +323,11 @@ impl<const DER: bool> SpecSerializer for super::Length<DER> {
 }
 
 impl<const DER: bool> NonTailFmt for super::Length<DER> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         length_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         length_fmt::<DER>().lemma_serialize_dps_len(v, obuf);
     }
 }

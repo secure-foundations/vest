@@ -17,7 +17,7 @@ impl<I, A, B> Parser<I> for super::Terminated<A, B> where
     A: Parser<I> + SafeParser,
     B: Parser<I> + SafeParser,
  {
-    type O = A::O;
+    type PT = A::PT;
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -26,7 +26,7 @@ impl<I, A, B> Parser<I> for super::Terminated<A, B> where
         &&& self.1.safe_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let (n, (v, _)) = Pair(&self.0, &self.1).parse(ibuf)?;
         Ok((n, v))
     }

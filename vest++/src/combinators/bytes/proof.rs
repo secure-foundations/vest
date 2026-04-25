@@ -195,7 +195,7 @@ impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
 }
 
 impl<A, Then> EquivSerializersGeneral for super::AndThen<A, Then> where
-    A: EquivSerializersGeneral<SVal = Seq<u8>, ST = Seq<u8>>,
+    A: EquivSerializersGeneral<SVal = Seq<u8>, SValue = Seq<u8>>,
     Then: EquivSerializers,
  {
     open spec fn equiv_general_inv(&self) -> bool {
@@ -211,7 +211,7 @@ impl<A, Then> EquivSerializersGeneral for super::AndThen<A, Then> where
 }
 
 impl<A, Then> EquivSerializers for super::AndThen<A, Then> where
-    A: EquivSerializers<SVal = Seq<u8>, ST = Seq<u8>>,
+    A: EquivSerializers<SVal = Seq<u8>, SValue = Seq<u8>>,
     Then: EquivSerializers,
  {
     open spec fn equiv_inv(&self) -> bool {

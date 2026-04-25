@@ -38,7 +38,7 @@
 //!
 //! Type aliases and trait implementations that allow plain Verus `spec_fn`s
 //! to be used as combinators without defining new types.
+pub mod exec;
 pub mod fns;
 pub mod proof;
 pub mod spec;
-pub mod exec;

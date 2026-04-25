@@ -234,7 +234,7 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
     Spec: SpecParser<PVal = O::V>,
     Exec: Fn(&I) -> PResult<O>,
  {
-    type O = O;
+    type PT = O;
 
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| #[trigger] call_requires(self.exec_fn, (i,))

@@ -65,9 +65,9 @@ impl<A, B> SpecSerializerDps for super::Pair<A, B> where
     A: SpecSerializerDps,
     B: SpecSerializerDps,
  {
-    type ST = (A::ST, B::ST);
+    type SValue = (A::SValue, B::SValue);
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.0.spec_serialize_dps(v.0, self.1.spec_serialize_dps(v.1, obuf))
     }
 }
@@ -86,7 +86,7 @@ impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         let serialized0 = self.0.spec_serialize_dps(v.0, serialized1);
         assert(self.serialize_dps_inv());
@@ -98,7 +98,7 @@ impl<A, B> NonTailFmt for super::Pair<A, B> where A: NonTailFmt, B: NonTailFmt {
         assert(serialized0 == witness0 + witness1 + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         assert(self.serialize_dps_inv());
         self.1.lemma_serialize_dps_len(v.1, obuf);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
@@ -234,13 +234,13 @@ impl<A, B> SoundParser for super::DepPair<A, spec_fn(A::PVal) -> B> where
     }
 }
 
-impl<A, B> SpecSerializerDps for super::DepPair<A, spec_fn(A::ST) -> B> where
-    A: SpecSerializerDps + Consistency<Val = A::ST>,
-    B: SpecSerializerDps + Consistency<Val = B::ST>,
+impl<A, B> SpecSerializerDps for super::DepPair<A, spec_fn(A::SValue) -> B> where
+    A: SpecSerializerDps + Consistency<Val = A::SValue>,
+    B: SpecSerializerDps + Consistency<Val = B::SValue>,
  {
-    type ST = (A::ST, B::ST);
+    type SValue = (A::SValue, B::SValue);
 
-    open spec fn spec_serialize_dps(&self, value: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         let (key, val) = value;
         let next = (self.1)(key);
         self.0.spec_serialize_dps(key, next.spec_serialize_dps(val, obuf))
@@ -260,16 +260,16 @@ impl<A, B> SpecSerializer for super::DepPair<A, spec_fn(A::SVal) -> B> where
     }
 }
 
-impl<A, B> NonTailFmt for super::DepPair<A, spec_fn(A::ST) -> B> where
-    A: NonTailFmt + Consistency<Val = A::ST>,
-    B: NonTailFmt + Consistency<Val = B::ST>,
+impl<A, B> NonTailFmt for super::DepPair<A, spec_fn(A::SValue) -> B> where
+    A: NonTailFmt + Consistency<Val = A::SValue>,
+    B: NonTailFmt + Consistency<Val = B::SValue>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
-        &&& forall|key: A::ST| #[trigger] (self.1)(key).serialize_dps_inv()
+        &&& forall|key: A::SValue| #[trigger] (self.1)(key).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
         let (key, val) = value;
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
@@ -284,7 +284,7 @@ impl<A, B> NonTailFmt for super::DepPair<A, spec_fn(A::ST) -> B> where
         assert(self.spec_serialize_dps(value, obuf) == witness_prefix + witness_next + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
         let (key, val) = value;
         let next = (self.1)(key);
         let next_buf = next.spec_serialize_dps(val, obuf);

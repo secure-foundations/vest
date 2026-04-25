@@ -32,16 +32,16 @@ verus! {
 impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,
-    M: Map<I = Inner::O, SpecI = Inner::PVal>,
+    M: Map<I = Inner::PT, SpecI = Inner::PVal>,
     MRev: Map<I = M::O, O = M::I, SpecI = M::SpecO, SpecO = M::SpecI>,
  {
-    type O = M::O;
+    type PT = M::O;
 
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         match self.inner.parse(ibuf) {
             Ok((n, v)) => {
                 let mapped = self.mapper.0.map(v);
@@ -58,7 +58,7 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 ) where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,
-    M: Map<I = Inner::O, SpecI = Inner::PVal>,
+    M: Map<I = Inner::PT, SpecI = Inner::PVal>,
     MRev: Map<I = M::O, O = M::I, SpecI = M::SpecO, SpecO = M::SpecI>,
 
     requires

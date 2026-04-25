@@ -10,13 +10,13 @@ use vstd::prelude::*;
 verus! {
 
 impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> {
-    type O = Option<A::O>;
+    type PT = Option<A::PT>;
 
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         match self.0.parse(ibuf) {
             Ok((n, v)) => Ok((n, Some(v))),
             Err(_) => {
@@ -33,7 +33,7 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     A: Parser<I> + SafeParser,
     B: Parser<I> + SafeParser,
  {
-    type O = (Option<A::O>, B::O);
+    type PT = (Option<A::PT>, B::PT);
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -42,7 +42,7 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
         &&& self.1.safe_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> PResult<Self::O> {
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).parse(ibuf)
     }
 }

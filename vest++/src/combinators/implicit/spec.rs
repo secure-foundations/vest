@@ -102,12 +102,12 @@ impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
 
 impl<Head, Tail> SpecSerializerDps for Implicit<Head, Tail> where
     Head: SpecSerializerDps,
-    Tail: DepCombinator<Key = Head::ST>,
-    Tail::Body: SpecSerializerDps<ST = Tail::Val>,
+    Tail: DepCombinator<Key = Head::SValue>,
+    Tail::Body: SpecSerializerDps<SValue = Tail::Val>,
  {
-    type ST = Tail::Val;
+    type SValue = Tail::Val;
 
-    open spec fn spec_serialize_dps(&self, value: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         let key = self.1.recover(value);
         let body = self.1.apply(key);
         self.0.spec_serialize_dps(key, body.spec_serialize_dps(value, obuf))
@@ -130,15 +130,15 @@ impl<Head, Tail> SpecSerializer for Implicit<Head, Tail> where
 
 impl<Head, Tail> NonTailFmt for Implicit<Head, Tail> where
     Head: NonTailFmt,
-    Tail: DepCombinator<Key = Head::ST>,
+    Tail: DepCombinator<Key = Head::SValue>,
     Tail::Body: NonTailFmt<T = Tail::Val>,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
         &&& self.0.serialize_dps_inv()
-        &&& forall|key: Head::ST| #[trigger] self.1.apply(key).serialize_dps_inv()
+        &&& forall|key: Head::SValue| #[trigger] self.1.apply(key).serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let body = self.1.apply(key);
         let body_buf = body.spec_serialize_dps(value, obuf);
@@ -152,7 +152,7 @@ impl<Head, Tail> NonTailFmt for Implicit<Head, Tail> where
         assert(self.spec_serialize_dps(value, obuf) == witness_prefix + witness_body + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, value: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
         let key = self.1.recover(value);
         let body = self.1.apply(key);
         let body_buf = body.spec_serialize_dps(value, obuf);

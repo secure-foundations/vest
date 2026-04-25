@@ -23,9 +23,9 @@ verus! {
 /// 2. it makes the combinator composable with the rest of the library, which are all built on this stronger property.
 pub trait SPRoundTripDps where
     Self: SpecByteLen +
+          Consistency<Val = Self::T> +
           SpecParser<PVal = Self::T> +
-          SpecSerializerDps<ST = Self::T> +
-          Consistency<Val = Self::T>,
+          SpecSerializerDps<SValue = Self::T>,
  {
     open spec fn unambiguous(&self) -> bool {
         true
@@ -209,7 +209,7 @@ pub trait NoLookAhead: SafeParser {
 /// Full DPS ↔ non-DPS serializer equivalence for *any* output buffer.
 ///
 /// See [`EquivSerializers`] for the weaker empty-buffer variant.
-pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<SValue = Self::SVal> {
     open spec fn equiv_general_inv(&self) -> bool {
         true
     }
@@ -226,7 +226,7 @@ pub trait EquivSerializersGeneral: SpecSerializer + SpecSerializerDps<ST = Self:
 /// DPS ↔ non-DPS serializer equivalence on the empty buffer.
 ///
 /// Sufficient for deriving [`SPRoundTrip`] from [`SPRoundTripDps`].
-pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<ST = Self::SVal> {
+pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<SValue = Self::SVal> {
     open spec fn equiv_inv(&self) -> bool {
         true
     }

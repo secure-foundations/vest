@@ -41,9 +41,9 @@ impl SoundParser for super::Empty {
 }
 
 impl SpecSerializerDps for super::Empty {
-    type ST = ();
+    type SValue = ();
 
-    open spec fn spec_serialize_dps(&self, _v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, _v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         obuf
     }
 }
@@ -57,11 +57,11 @@ impl SpecSerializer for super::Empty {
 }
 
 impl NonTailFmt for super::Empty {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == Seq::<u8>::empty() + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf).len() - obuf.len() == 0);
     }
 }
@@ -133,10 +133,10 @@ impl SoundParser for super::Void {
 }
 
 impl SpecSerializerDps for super::Void {
-    type ST = Never;
+    type SValue = Never;
 
     // It doesn't matter what we put here since there are no consistent values for Void.
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         obuf
     }
 }
@@ -151,12 +151,12 @@ impl SpecSerializer for super::Void {
 }
 
 impl NonTailFmt for super::Void {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         let new_buf = Seq::<u8>::empty();
         assert(obuf == new_buf + obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
     }
 }
 

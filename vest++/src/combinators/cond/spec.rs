@@ -57,9 +57,9 @@ impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
 }
 
 impl<Inner: SpecSerializerDps> SpecSerializerDps for super::Cond<Inner> {
-    type ST = Inner::ST;
+    type SValue = Inner::SValue;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         self.1.spec_serialize_dps(v, obuf)
     }
 }
@@ -77,11 +77,11 @@ impl<Inner: NonTailFmt> NonTailFmt for super::Cond<Inner> {
         self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.1.lemma_serialize_dps_prepend(v, obuf);
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         self.1.lemma_serialize_dps_len(v, obuf);
     }
 }

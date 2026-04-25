@@ -201,7 +201,7 @@ impl Consistency for super::U8 {
 }
 
 impl SpecSerializerDps for super::U8 {
-    type ST = u8;
+    type SValue = u8;
 
     open spec fn spec_serialize_dps(&self, v: u8, obuf: Seq<u8>) -> Seq<u8> {
         seq![v] + obuf
@@ -288,7 +288,7 @@ impl Consistency for super::U16Le {
 }
 
 impl SpecSerializerDps for super::U16Le {
-    type ST = u16;
+    type SValue = u16;
 
     open spec fn spec_serialize_dps(&self, v: u16, obuf: Seq<u8>) -> Seq<u8> {
         u16_le_fmt().spec_serialize_dps(v, obuf)
@@ -384,7 +384,7 @@ impl Consistency for super::U16Be {
 }
 
 impl SpecSerializerDps for super::U16Be {
-    type ST = u16;
+    type SValue = u16;
 
     open spec fn spec_serialize_dps(&self, v: u16, obuf: Seq<u8>) -> Seq<u8> {
         u16_be_fmt().spec_serialize_dps(v, obuf)
@@ -480,7 +480,7 @@ impl Consistency for super::U32Le {
 }
 
 impl SpecSerializerDps for super::U32Le {
-    type ST = u32;
+    type SValue = u32;
 
     open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
         u32_le_fmt().spec_serialize_dps(v, obuf)
@@ -576,7 +576,7 @@ impl Consistency for super::U32Be {
 }
 
 impl SpecSerializerDps for super::U32Be {
-    type ST = u32;
+    type SValue = u32;
 
     open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
         u32_be_fmt().spec_serialize_dps(v, obuf)

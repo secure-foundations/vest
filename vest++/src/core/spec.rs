@@ -140,10 +140,10 @@ impl<T, P: SpecPred<T>> SpecPred<T> for &P {
 /// See [`crate::core::proof::EquivSerializers`] for its relationship to [`SpecSerializer`].
 pub trait SpecSerializerDps {
     /// The type of values to be serialized.
-    type ST;
+    type SValue;
 
     /// Serializes `v` by prepending its encoding onto `obuf`.
-    spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8>;
+    spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8>;
 }
 
 /// Denotes the byte length of a value w.r.t. a combinator's format spec.
@@ -185,7 +185,10 @@ pub trait ValueByteLen: SpecByteLen + Consistency<Val = Self::T> {
 }
 
 /// Broadcast wrapper for [`ValueByteLen::lemma_value_len_matches_byte_len`].
-pub broadcast proof fn lemma_value_len_matches_byte_len<C: ValueByteLen + Consistency>(c: C, v: C::T)
+pub broadcast proof fn lemma_value_len_matches_byte_len<C: ValueByteLen + Consistency>(
+    c: C,
+    v: C::T,
+)
     requires
         c.consistent(v),
     ensures
@@ -222,7 +225,7 @@ pub trait SpecSerializer {
 /// - [`crate::combinators::Eof`]
 /// - [`crate::combinators::OptionalEnd`]
 /// - [`crate::combinators::RepeatTillEnd`]
-pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
+pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<SValue = Self::T> {
     /// Optional invariant for DPS serializer proofs.
     open spec fn serialize_dps_inv(&self) -> bool {
         true
@@ -232,7 +235,7 @@ pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
     ///
     /// Another way to think about this is that the format allows for trailing bytes after itself, whereas a tail format
     /// would only allow for leading bytes before itself.
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>)
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>)
         requires
             self.serialize_dps_inv(),
         ensures
@@ -240,7 +243,7 @@ pub trait NonTailFmt: SpecByteLen + SpecSerializerDps<ST = Self::T> {
     ;
 
     /// number of bytes prepended equals `byte_len(v)`.
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>)
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>)
         requires
             self.serialize_dps_inv(),
         ensures
@@ -267,14 +270,14 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
 /// Marker trait for all specification traits bundled together.
 pub trait SpecCombinator: SpecByteLen + Consistency<Val = Self::T> + SpecParser<
     PVal = Self::T,
-> + SpecSerializer<SVal = Self::T> + SpecSerializerDps<ST = Self::T> {
+> + SpecSerializer<SVal = Self::T> + SpecSerializerDps<SValue = Self::T> {
 
 }
 
 impl<T> SpecCombinator for T where
     T: SpecByteLen + Consistency<Val = Self::T> + SpecParser<PVal = Self::T> + SpecSerializer<
         SVal = Self::T,
-    > + SpecSerializerDps<ST = Self::T>,
+    > + SpecSerializerDps<SValue = Self::T>,
  {
 
 }

@@ -114,9 +114,9 @@ impl<const DER: bool> SoundParser for super::Bool<DER> {
 }
 
 impl<const DER: bool> SpecSerializerDps for super::Bool<DER> {
-    type ST = bool;
+    type SValue = bool;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         bool_fmt::<DER>().spec_serialize_dps(v, obuf)
     }
 }

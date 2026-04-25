@@ -61,9 +61,9 @@ impl<A> SoundParser for super::Opt<A> where A: SoundParser {
 }
 
 impl<A> SpecSerializerDps for super::Opt<A> where A: SpecSerializerDps {
-    type ST = Option<A::ST>;
+    type SValue = Option<A::SValue>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         match v {
             None => obuf,
             Some(vv) => self.0.spec_serialize_dps(vv, obuf),
@@ -87,7 +87,7 @@ impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
         self.0.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         match v {
             None => {
                 assert(self.spec_serialize_dps(v, obuf) == Seq::empty() + obuf);
@@ -98,7 +98,7 @@ impl<A> NonTailFmt for super::Opt<A> where A: NonTailFmt {
         }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         match v {
             None => {},
             Some(vv) => {
@@ -193,9 +193,9 @@ impl<A, B> SoundParser for super::Optional<A, B> where A: SoundParser, B: SoundP
 }
 
 impl<A: SpecSerializerDps, B: SpecSerializerDps> SpecSerializerDps for super::Optional<A, B> {
-    type ST = (Option<A::ST>, B::ST);
+    type SValue = (Option<A::SValue>, B::SValue);
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Pair(super::Opt(self.0), self.1).spec_serialize_dps(v, obuf)
     }
 }
@@ -206,11 +206,11 @@ impl<A: NonTailFmt, B: NonTailFmt> NonTailFmt for super::Optional<A, B> {
         &&& self.1.serialize_dps_inv()
     }
 
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(super::Opt(self.0), self.1).lemma_serialize_dps_prepend(v, obuf)
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::ST, obuf: Seq<u8>) {
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
         Pair(super::Opt(self.0), self.1).lemma_serialize_dps_len(v, obuf);
     }
 }

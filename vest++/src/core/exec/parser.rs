@@ -17,14 +17,14 @@ pub open spec fn parse_matches_spec<O: DeepView>(
     &&& r matches Ok((n, v)) ==> spec_parse == Some((n as int, v.deep_view()))
 }
 
-pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
-    type O: DeepView<V = Self::PVal>;
+pub trait Parser<Input: View<V = Seq<u8>>>: SpecParser {
+    type PT: DeepView<V = Self::PVal>;
 
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
-    fn parse(&self, ibuf: &I) -> (r: PResult<Self::O>)
+    fn parse(&self, ibuf: &Input) -> (r: PResult<Self::PT>)
         requires
             self.exec_inv(),
         ensures
@@ -32,7 +32,7 @@ pub trait Parser<I: View<V = Seq<u8>>>: SpecParser {
     ;
 
     /// This is intended for DSL-generated entry points around user-defined formats.
-    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &I) -> (r: PResult<Self::O>)
+    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &Input) -> (r: PResult<Self::PT>)
         requires
             self.exec_inv(),
         ensures
@@ -69,7 +69,7 @@ impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
     Spec: SpecParser,
     Exec: Fn(&I) -> PResult<T>,
  {
-    type O = T;
+    type PT = T;
 
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| call_requires(self.1, (i,))
@@ -102,13 +102,13 @@ impl<P: SafeParser> SafeParser for &P {
 }
 
 impl<I, P> Parser<I> for &P where I: View<V = Seq<u8>>, P: Parser<I> {
-    type O = P::O;
+    type PT = P::PT;
 
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }
 
-    fn parse(&self, ibuf: &I) -> (r: PResult<Self::O>) {
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         (*self).parse(ibuf)
     }
 }

@@ -37,9 +37,9 @@ impl SoundParser for super::Tail {
 }
 
 impl SpecSerializerDps for super::Tail {
-    type ST = Seq<u8>;
+    type SValue = Seq<u8>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         v
     }
 }
@@ -118,9 +118,9 @@ impl SoundParser for super::Eof {
 }
 
 impl SpecSerializerDps for super::Eof {
-    type ST = ();
+    type SValue = ();
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Seq::empty()
     }
 }
@@ -208,9 +208,9 @@ impl<C> SoundParser for super::OptionalEnd<C> where C: SoundParser {
 }
 
 impl<C: SpecSerializerDps> SpecSerializerDps for super::OptionalEnd<C> {
-    type ST = Option<C::ST>;
+    type SValue = Option<C::SValue>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Optional(self.0, super::Eof).spec_serialize_dps((v, ()), obuf)
     }
 }
@@ -295,9 +295,9 @@ impl<C> SoundParser for super::RepeatTillEnd<C> where C: SoundParser {
 }
 
 impl<C: SpecSerializerDps> SpecSerializerDps for super::RepeatTillEnd<C> {
-    type ST = Seq<C::ST>;
+    type SValue = Seq<C::SValue>;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         Repeat(self.0, super::Eof).spec_serialize_dps((v, ()), obuf)
     }
 }
