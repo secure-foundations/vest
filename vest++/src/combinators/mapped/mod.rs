@@ -20,13 +20,6 @@ pub struct Mapped<Inner, M> {
     pub mapper: M,
 }
 
-pub struct Map<Inner, M> {
-    /// The inner combinator whose values are being transformed.
-    pub inner: Inner,
-    /// The mapping between the inner and outer value types.
-    pub mapper: M,
-}
-
 /// `TryMap { inner, mapper }` is the derived combinator
 /// `Mapped { inner: Refined { inner, pred: |v| mapper.wf_in(v) }, mapper }`.
 ///

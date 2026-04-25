@@ -1,5 +1,5 @@
-use crate::core::exec::fns::Map;
 use super::spec::{BiMap, SpecMap};
+use crate::core::exec::fns::Map;
 use crate::core::spec::SoundParser;
 use crate::core::{
     exec::{
@@ -29,9 +29,7 @@ verus! {
 //         Ok((n, M::map(v)))
 //     }
 // }
-
-
-impl<I, Inner, M, MRev> Parser<I> for super::Map<Inner, BiMap<M, MRev>> where
+impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,
     M: Map<I = Inner::O, SpecI = Inner::PVal>,
@@ -44,15 +42,19 @@ impl<I, Inner, M, MRev> Parser<I> for super::Map<Inner, BiMap<M, MRev>> where
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::O> {
-        let (n, v) = self.inner.parse(ibuf)?;
-        Ok((n, self.mapper.0.map(v)))
-        // Ok((n, M::map(v)))
-
+        match self.inner.parse(ibuf) {
+            Ok((n, v)) => {
+                let mapped = self.mapper.0.map(v);
+                assert(self.spec_parse(ibuf@) == Some((n as int, mapped.deep_view())));
+                Ok((n, mapped))
+            },
+            Err(err) => Err(err),
+        }
     }
 }
 
 pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
-    fmt: &super::Map<Inner, BiMap<M, MRev>>,
+    fmt: &super::Mapped<Inner, BiMap<M, MRev>>,
 ) where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,

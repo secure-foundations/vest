@@ -4,7 +4,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<Inner, M, MRev> SPRoundTripDps for super::Map<Inner, BiMap<M, MRev>> where
+impl<Inner, M, MRev> SPRoundTripDps for super::Mapped<Inner, BiMap<M, MRev>> where
     Inner: SPRoundTripDps,
     M: SpecMap<SpecI = Inner::T>,
     MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
@@ -21,7 +21,7 @@ impl<Inner, M, MRev> SPRoundTripDps for super::Map<Inner, BiMap<M, MRev>> where
     }
 }
 
-impl<Inner, M, MRev> NonMalleable for super::Map<Inner, BiMap<M, MRev>> where
+impl<Inner, M, MRev> NonMalleable for super::Mapped<Inner, BiMap<M, MRev>> where
     Inner: SoundParser + NonMalleable,
     M: SpecMap<SpecI = Inner::PVal>,
     MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
@@ -47,57 +47,6 @@ impl<Inner, M, MRev> NonMalleable for super::Map<Inner, BiMap<M, MRev>> where
     }
 }
 
-impl<Inner, M, MRev> NoLookAhead for super::Map<Inner, BiMap<M, MRev>> where
-    Inner: NoLookAhead,
-    M: SpecMap<SpecI = Inner::PVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
- {
-    open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner.no_lookahead_inv()
-    }
-
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.no_lookahead_inv());
-                    self.inner.lemma_no_lookahead(i1, i2);
-                }
-            }
-        }
-    }
-}
-
-impl<Inner, M, MRev> EquivSerializersGeneral for super::Map<Inner, BiMap<M, MRev>> where
-    Inner: EquivSerializersGeneral,
-    M: SpecMap<SpecI = Inner::SVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
- {
-    open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
-    }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let inner_v = self.mapper.1.spec_map(v);
-        self.inner.lemma_serialize_equiv(inner_v, obuf);
-    }
-}
-
-impl<Inner, M, MRev> EquivSerializers for super::Map<Inner, BiMap<M, MRev>> where
-    Inner: EquivSerializers,
-    M: SpecMap<SpecI = Inner::SVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
- {
-    open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_inv()
-    }
-
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let inner_v = self.mapper.1.spec_map(v);
-        self.inner.lemma_serialize_equiv_on_empty(inner_v);
-    }
-}
-
 impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     Inner: SPRoundTripDps,
     M: LossyMapper<In = Inner::T>,
@@ -114,11 +63,6 @@ impl<Inner, M> SPRoundTripDps for super::Mapped<Inner, M> where
     }
 }
 
-// impl<Inner, M> PSRoundTrip for super::Mapped<Inner, M> where
-//     Inner: PSRoundTrip,
-//     M: LosslessMapper<In = Inner::PVal>,
-//  {
-// }
 impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     Inner: SoundParser + NonMalleable,
     M: LosslessMapper<In = Inner::PVal>,
@@ -150,7 +94,7 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
 
 impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     Inner: NoLookAhead,
-    M: LossyMapper<In = Inner::PVal>,
+    M: SpecMapper<In = Inner::PVal>,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         self.inner.no_lookahead_inv()
@@ -235,51 +179,6 @@ impl<Inner, Out> NonMalleable for super::Mapped<Inner, FnSpecMapper<Inner::PVal,
                 }
             }
         }
-    }
-}
-
-impl<Inner: NoLookAhead, Out> NoLookAhead for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
-    open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner.no_lookahead_inv()
-    }
-
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        if let Some((n, v)) = self.spec_parse(i1) {
-            if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
-                    assert(self.no_lookahead_inv());
-                    self.inner.lemma_no_lookahead(i1, i2);
-                }
-            }
-        }
-    }
-}
-
-impl<Inner: EquivSerializersGeneral, Out> EquivSerializersGeneral for super::Mapped<
-    Inner,
-    FnSpecMapper<Inner::SVal, Out>,
-> {
-    open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
-    }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let inner_v = self.mapper.1(v);
-        self.inner.lemma_serialize_equiv(inner_v, obuf);
-    }
-}
-
-impl<Inner: EquivSerializers, Out> EquivSerializers for super::Mapped<
-    Inner,
-    FnSpecMapper<Inner::SVal, Out>,
-> {
-    open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_inv()
-    }
-
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let inner_v = self.mapper.1(v);
-        self.inner.lemma_serialize_equiv_on_empty(inner_v);
     }
 }
 

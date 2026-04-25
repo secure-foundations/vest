@@ -163,7 +163,7 @@ fn test_map_exec(ibuf: &[u8]) {
             TripleSpec { a, b, c }
         };
     let ghost from_triple_spec = |v: TripleSpec| (v.a, (v.b, v.c));
-    let fmt = crate::combinators::mapped::Map {
+    let fmt = Mapped {
         inner: Pair(U8, Pair(U8, Fixed::<3>)),
         mapper: BiMap(
             FnMap::<_, _, _, spec_fn(TripleSpecInner) -> TripleSpec>::new(

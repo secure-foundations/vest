@@ -88,7 +88,7 @@ impl fns::Map for NestedBracesMapRev {
 #[verifier::allow_in_spec]
 pub fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
     returns
-        (mapped::Map {
+        (Mapped {
             inner: Choice(
                 Terminated(
                     Preceded(Tag { inner: U8, tag: 0x7Bu8 }, rec),
@@ -99,7 +99,7 @@ pub fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
             mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
         }),
 {
-    mapped::Map {
+    Mapped {
         inner: Choice(
             Terminated(
                 Preceded(Tag { inner: U8, tag: 0x7Bu8 }, rec),
@@ -111,7 +111,7 @@ pub fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
     }
 }
 
-type NestedBracesBodyComb<Rec> = mapped::Map<
+type NestedBracesBodyComb<Rec> = Mapped<
     Choice<Terminated<Preceded<Tag<U8, u8>, Rec>, Tag<U8, u8>>, Tag<U8, u8>>,
     BiMap<NestedBracesMap, NestedBracesMapRev>,
 >;
