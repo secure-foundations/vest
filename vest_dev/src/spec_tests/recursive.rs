@@ -123,9 +123,9 @@ impl SoundParser for NestedBracesCombinator {
 }
 
 impl SpecSerializerDps for NestedBracesCombinator {
-    type ST = NestedBracesT;
+    type SValue = NestedBracesT;
 
-    open spec fn spec_serialize_dps(&self, v: Self::ST, obuf: Seq<u8>) -> Seq<u8> {
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
         s_nested_braces(v, obuf)
     }
 }

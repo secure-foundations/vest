@@ -2,6 +2,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
+        serializer::Serializer,
     },
     spec::{SafeParser, SpecParser},
 };
@@ -42,6 +43,23 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
         let pair = (va, vb);
         assert(self.spec_parse(ibuf@) == Some((nab as int, pair.deep_view())));
         Ok((nab, pair))
+    }
+}
+
+impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Pair<A, B> where
+    STA: DeepView<V = A::SVal>,
+    STB: DeepView<V = B::SVal>,
+    A: Serializer<STA>,
+    B: Serializer<STB>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &(STA, STB), obuf: &mut Vec<u8>) {
+        self.0.ex_serialize(&v.0, obuf);
+        self.1.ex_serialize(&v.1, obuf);
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
+        serializer::Serializer,
         ParseErrorKind,
     },
     spec::SpecParser,
@@ -61,6 +62,25 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
                     },
                 }
             },
+        }
+    }
+}
+
+impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Choice<A, B> where
+    STA: DeepView<V = A::SVal>,
+    STB: DeepView<V = B::SVal>,
+    A: Serializer<STA>,
+    B: Serializer<STB>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+        match v {
+            super::Sum::Inl(va) => self.0.ex_serialize(va, obuf),
+            super::Sum::Inr(vb) => self.1.ex_serialize(vb, obuf),
         }
     }
 }

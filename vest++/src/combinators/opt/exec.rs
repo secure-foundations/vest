@@ -2,6 +2,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
+        serializer::Serializer,
     },
     spec::{SafeParser, SpecParser},
 };
@@ -24,6 +25,22 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
                 assert(self.spec_parse(ibuf@) == Some((0int, none.deep_view())));
                 Ok((0, none))
             },
+        }
+    }
+}
+
+impl<A, ST> Serializer<Option<ST>> for super::Opt<A> where
+    ST: DeepView<V = A::SVal>,
+    A: Serializer<ST>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &Option<ST>, obuf: &mut Vec<u8>) {
+        match v {
+            Some(vv) => self.0.ex_serialize(vv, obuf),
+            None => {},
         }
     }
 }

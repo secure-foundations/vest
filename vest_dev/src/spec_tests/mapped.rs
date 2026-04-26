@@ -154,7 +154,7 @@ type TripleFmt = Pair<U8, Pair<U8, Fixed<3>>>;
 // type TripleSpecInner = (u8, (u8, Seq<u8>));
 type TripleSpecInner = <TripleFmt as SpecParser>::PVal;
 
-type TripleInner<'i> = <TripleFmt as Parser<&'i [u8]>>::O;
+type TripleInner<'i> = <TripleFmt as Parser<&'i [u8]>>::PT;
 
 fn test_map_exec(ibuf: &[u8]) {
     let ghost to_triple_spec = |i: TripleSpecInner|

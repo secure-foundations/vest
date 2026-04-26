@@ -1,6 +1,7 @@
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::{
     parser::{PResult, Parser},
+    serializer::Serializer,
     ParseError,
 };
 use vstd::prelude::*;
@@ -20,6 +21,12 @@ impl Parser<&[u8]> for super::U8 {
         } else {
             Ok((1, ibuf[0]))
         }
+    }
+}
+
+impl Serializer<u8> for super::U8 {
+    fn ex_serialize(&self, v: &u8, obuf: &mut Vec<u8>) {
+        obuf.push(*v);
     }
 }
 

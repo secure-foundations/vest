@@ -5,9 +5,10 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
+        serializer::Serializer,
         ParseError,
     },
-    spec::SpecParser,
+    spec::{SpecParser, SpecPred},
 };
 use vstd::prelude::*;
 
@@ -46,6 +47,33 @@ pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined
 {
 }
 
+impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
+    ST: DeepView<V = A::SVal>,
+    A: Serializer<ST>,
+    PredFn: SpecPred<A::SVal>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+        self.inner.ex_serialize(v, obuf);
+    }
+}
+
+impl<Inner, ST> Serializer<ST> for super::Tag<Inner, Inner::SVal> where
+    ST: DeepView<V = Inner::SVal>,
+    Inner: Serializer<ST>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+        self.inner.ex_serialize(v, obuf);
+    }
+}
+
 impl Parser<&[u8]> for super::Tag<U8, u8> {
     type PT = u8;
 
@@ -56,6 +84,15 @@ impl Parser<&[u8]> for super::Tag<U8, u8> {
         } else {
             Err(ParseError::predicate_failed())
         }
+    }
+}
+
+impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
+    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+        let _slice = v.as_slice();
+        obuf.extend_from_slice(v);
+        assert(_slice@ == v@);
+        assert(final(obuf)@ == old(obuf)@ + v.deep_view());
     }
 }
 

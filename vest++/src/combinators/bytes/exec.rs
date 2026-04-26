@@ -1,7 +1,8 @@
 use crate::combinators::AsLen;
-use crate::core::exec::input::InputBuf;
+use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::{
     parser::{PResult, Parser},
+    serializer::Serializer,
     ParseError,
 };
 use crate::core::spec::SpecParser;
@@ -21,6 +22,12 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
     }
 }
 
+impl<'s, const N: usize> Serializer<&'s [u8]> for super::Fixed<N> {
+    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(*v);
+    }
+}
+
 impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     type PT = I;
 
@@ -31,6 +38,12 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
         } else {
             Ok((len, ibuf.take(len)))
         }
+    }
+}
+
+impl<'s, Len: AsLen> Serializer<&'s [u8]> for super::Varied<Len> {
+    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(*v);
     }
 }
 

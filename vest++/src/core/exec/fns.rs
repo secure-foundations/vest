@@ -1,7 +1,8 @@
 //! Executable fn traits.
 use crate::combinators::mapped::spec::{SpecMap, SpecMapper};
 use crate::core::exec::parser::*;
-use crate::core::spec::{SafeParser, SpecParser, SpecPred};
+use crate::core::exec::serializer::Serializer;
+use crate::core::spec::*;
 use core::marker::PhantomData;
 use vstd::prelude::*;
 
@@ -88,6 +89,24 @@ pub trait Map: SpecMap {
         ensures
             self.spec_map(i.deep_view()) == o.deep_view(),
     ;
+}
+
+/// Borrowed executable counterpart of [`SpecMap`], used by serializers.
+pub trait MapRef<I>: SpecMap where I: DeepView<V = Self::SpecI> {
+    type O: DeepView<V = Self::SpecO>;
+
+    fn map_ref(&self, i: &I) -> (o: Self::O)
+        ensures
+            self.spec_map(i.deep_view()) == o.deep_view(),
+    ;
+}
+
+impl<M> MapRef<M::I> for M where M: Map, M::I: Copy {
+    type O = M::O;
+
+    fn map_ref(&self, i: &M::I) -> (o: M::O) {
+        self.map(*i)
+    }
 }
 
 /// Pairs an executable predicate closure with a ghost spec predicate.
@@ -247,6 +266,84 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
 
     fn parse(&self, ibuf: &I) -> (r: PResult<O>) {
         (self.exec_fn)(ibuf)
+    }
+}
+
+/// Pairs an executable fresh-buffer serializer with a ghost serializer spec.
+#[verifier::reject_recursive_types(T)]
+pub struct FnSerializer<T: DeepView, Spec: SpecSerializer<SVal = T::V>, Exec> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnSerializer<T, Spec, Exec> where
+    T: DeepView,
+    Spec: SpecSerializer<SVal = T::V>,
+ {
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
+        ensures
+            serializer.exec_fn == exec_fn,
+            serializer.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> SpecSerializer for FnSerializer<T, Spec, Exec> where
+    T: DeepView,
+    Spec: SpecSerializer<SVal = T::V>,
+ {
+    type SVal = T::V;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.spec_serialize(v)
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnSerializer<T, Spec, Exec> where
+    T: DeepView,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+ {
+    type Val = T::V;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.consistent(v)
+    }
+}
+
+impl<T, Spec, Exec> SpecByteLen for FnSerializer<T, Spec, Exec> where
+    T: DeepView,
+    Spec: SpecSerializer<SVal = T::V> + SpecByteLen<T = T::V>,
+ {
+    type T = T::V;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.byte_len(v)
+    }
+}
+
+impl<T, Spec, Exec> Serializer<T> for FnSerializer<T, Spec, Exec> where
+    T: DeepView,
+    Spec: SpecSerializer<SVal = T::V>,
+    Exec: Fn(&T) -> Vec<u8>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|v: &T| #[trigger] call_requires(self.exec_fn, (v,))
+        &&& forall|v: &T, bytes: Vec<u8>| #[trigger]
+            call_ensures(self.exec_fn, (v,), bytes) ==> bytes@ == self.spec_serialize(v.deep_view())
+    }
+
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        let bytes = (self.exec_fn)(v);
+        let slice = bytes.as_slice();
+        obuf.extend_from_slice(slice);
+        proof {
+            assert(slice@ == bytes@);
+        }
     }
 }
 

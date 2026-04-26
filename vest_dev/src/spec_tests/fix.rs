@@ -7,6 +7,7 @@ use crate::combinators::*;
 use crate::core::exec::fns;
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::parser::*;
+use crate::core::exec::serializer::*;
 use crate::core::proof::*;
 use crate::core::spec::*;
 use vest_derive::DeepView;
@@ -70,14 +71,12 @@ impl SpecMap for NestedBracesMapRev {
     }
 }
 
-impl fns::Map for NestedBracesMapRev {
-    type I = NestedBracesT;
+impl<'s> fns::MapRef<&'s NestedBracesT> for NestedBracesMapRev {
+    type O = Sum<&'s NestedBracesT, u8>;
 
-    type O = Sum<NestedBracesT, u8>;
-
-    fn map(&self, o: Self::I) -> Self::O {
-        match o {
-            NestedBracesT::Brace(inner) => Sum::Inl(*inner),
+    fn map_ref(&self, o: &&'s NestedBracesT) -> Sum<&'s NestedBracesT, u8> {
+        match *o {
+            NestedBracesT::Brace(inner) => Sum::Inl(&**inner),
             NestedBracesT::Eps => Sum::Inr(0x00u8),
         }
     }
@@ -144,6 +143,20 @@ impl<'i> ParserRecBody<&'i [u8]> for NestedBracesBody {
     }
 }
 
+impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
+    fn serialize_body<Exec>(
+        &self,
+        spec_rec: Ghost<BundledSpecs<Self::T>>,
+        exec_rec: Exec,
+        v: &&'s NestedBracesT,
+        obuf: &mut Vec<u8>,
+    ) where Exec: Fn(&&'s NestedBracesT) -> Vec<u8> {
+        let rec = fns::FnSerializer::new(exec_rec, spec_rec);
+        let body = nested_braces_body(rec);
+        body.ex_serialize(v, obuf);
+    }
+}
+
 impl StrictRecBody for NestedBracesBody {
     proof fn lemma_body_all_inv_preservation(rec: BundledSpecs<Self::T>) {
     }
@@ -190,14 +203,34 @@ fn nested_braces_exec_parse() {
 
     println!("input buf: {:?}, parse result: {:?}", input, result);
 
-    match result {
-        Ok((5, NestedBracesT::Brace(inner))) => {
+    let parsed_value = match result {
+        Ok((5, value @ NestedBracesT::Brace(_))) => {
+            let NestedBracesT::Brace(inner) = &value else {
+                unreachable!();
+            };
             assert!(
-                matches!(*inner, NestedBracesT::Brace(inner2) if matches!(*inner2, NestedBracesT::Eps))
+                matches!(inner.as_ref(), NestedBracesT::Brace(inner2) if matches!(inner2.as_ref(), NestedBracesT::Eps))
             );
+            value
         }
         other => panic!("unexpected parse result: {:?}", other),
-    }
+    };
+
+    let parsed_ref = &parsed_value;
+    let mut serialized = Vec::<u8>::new();
+    parser.ex_serialize(&parsed_ref, &mut serialized);
+    println!(
+        "serialized value: {:?}, output buf: {:?}",
+        parsed_value, serialized
+    );
+    assert_eq!(serialized.as_slice(), input);
+
+    let serialized_input = serialized.as_slice();
+    let serialized_parse_result = parser.parse(&serialized_input);
+    println!(
+        "serialized input buf: {:?}, parse result: {:?}",
+        serialized_input, serialized_parse_result
+    );
 
     // Test with recursion limit exceeded
     let bad_input: &[u8] = &[

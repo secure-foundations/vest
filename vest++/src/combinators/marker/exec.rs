@@ -1,4 +1,7 @@
-use crate::core::exec::parser::{PResult, Parser};
+use crate::core::exec::{
+    parser::{PResult, Parser},
+    serializer::Serializer,
+};
 use crate::Never;
 use vstd::prelude::*;
 
@@ -9,6 +12,11 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
 
     fn parse(&self, _ibuf: &I) -> PResult<Self::PT> {
         Ok((0, ()))
+    }
+}
+
+impl Serializer<()> for super::Empty {
+    fn ex_serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
     }
 }
 

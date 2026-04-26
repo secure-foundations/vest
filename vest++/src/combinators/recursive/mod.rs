@@ -10,7 +10,7 @@ use crate::core::proof::LeafNonMalleable;
 use crate::core::proof::StrictCombinator;
 use vstd::prelude::*;
 
-pub use exec::ParserRecBody;
+pub use exec::{ParserRecBody, SerializerRecBody};
 pub use proof::{
     EquivSerializersGeneralRecBody, NoLookAheadRecBody, NonMalleableRecBody, SPRoundTripDpsRecBody,
     StrictRecBody,
