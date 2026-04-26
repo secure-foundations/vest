@@ -101,7 +101,7 @@ pub use mapped::{Mapped, TryMap};
 pub use marker::{Empty, Void};
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
-pub use preceded::Preceded;
+pub use preceded::{Preceded, Preceded2};
 // pub use recursive::{
 //     Fix, GoodRecSBody, NonMalleableRecPBody, NonTailRecSBodyDPS, RecBLenBody, RecCnstcyBody,
 //     RecPBody, RecSBody, RecSBodyDPS, SoundRecPBody,
@@ -109,6 +109,6 @@ pub use preceded::Preceded;
 pub use refined::{Refined, Tag, Tagged};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
-pub use terminated::Terminated;
+pub use terminated::{Terminated, Terminated2};
 pub use tuple::{DepPair, Pair};
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

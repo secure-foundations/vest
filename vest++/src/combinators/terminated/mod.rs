@@ -24,4 +24,10 @@ verus! {
 /// `B` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
 pub struct Terminated<A, B>(pub A, pub B);
 
+pub struct Terminated2<A, B, BVal, const NONMAL: bool = false> {
+    pub a: A,
+    pub b: B,
+    pub b_val: BVal,
+}
+
 } // verus!
