@@ -20,8 +20,8 @@ pub(crate) fn derive(input: TokenStream) -> TokenStream {
 fn expand(input: DeriveInput) -> Result<TokenStream2> {
     let runtime_name = input.ident.clone();
     let spec_name = format_ident!("{}Spec", runtime_name);
+    let helper_name = format_ident!("__{}_deep_view", to_snake_case(&runtime_name.to_string()));
     let type_params = runtime_type_param_names(&input.generics);
-    let runtime_field_types = collect_field_types(&input.data);
 
     let spec_generics = spec_generics_from_runtime(&input.generics);
     let spec_item = expand_spec_item(
@@ -33,37 +33,44 @@ fn expand(input: DeriveInput) -> Result<TokenStream2> {
     )?;
 
     let mut impl_generics = input.generics.clone();
-    add_deep_view_bounds(&mut impl_generics, runtime_field_types.iter().copied());
+    add_deep_view_bounds(&mut impl_generics);
     let (impl_generics, ty_generics, where_clause) = impl_generics.split_for_impl();
 
+    let mut helper_generics = input.generics.clone();
+    add_deep_view_bounds(&mut helper_generics);
+    let helper_generic_params = &helper_generics.params;
+    let helper_generic_params = if helper_generic_params.is_empty() {
+        quote!()
+    } else {
+        quote!(<#helper_generic_params>)
+    };
+    let helper_where_clause = &helper_generics.where_clause;
+
     let spec_ty = spec_type_for_runtime_item(&spec_name, &input.generics);
-    let body = expand_deep_view_body(&runtime_name, &spec_name, &input.data)?;
+    let helper_body = expand_deep_view_body(&runtime_name, &spec_name, &helper_name, &input.data)?;
 
     Ok(quote! {
         ::vstd::prelude::verus! {
             #spec_item
 
+            pub open spec fn #helper_name #helper_generic_params (
+                v: &#runtime_name #ty_generics
+            ) -> #spec_ty
+            #helper_where_clause
+                decreases v,
+            {
+                #helper_body
+            }
+
             impl #impl_generics ::vstd::prelude::DeepView for #runtime_name #ty_generics #where_clause {
                 type V = #spec_ty;
 
                 open spec fn deep_view(&self) -> Self::V {
-                    #body
+                    #helper_name(self)
                 }
             }
         }
     })
-}
-
-fn collect_field_types(data: &Data) -> Vec<&Type> {
-    match data {
-        Data::Struct(data) => data.fields.iter().map(|field| &field.ty).collect(),
-        Data::Enum(data) => data
-            .variants
-            .iter()
-            .flat_map(|variant| variant.fields.iter().map(|field| &field.ty))
-            .collect(),
-        Data::Union(data) => data.fields.named.iter().map(|field| &field.ty).collect(),
-    }
 }
 
 fn runtime_type_param_names(generics: &Generics) -> BTreeSet<String> {
@@ -73,15 +80,33 @@ fn runtime_type_param_names(generics: &Generics) -> BTreeSet<String> {
         .collect()
 }
 
-fn add_deep_view_bounds<'a>(
-    generics: &mut Generics,
-    field_types: impl IntoIterator<Item = &'a Type>,
-) {
+fn to_snake_case(name: &str) -> String {
+    let mut out = String::new();
+    for (i, ch) in name.chars().enumerate() {
+        if ch.is_uppercase() {
+            if i != 0 {
+                out.push('_');
+            }
+            for lower in ch.to_lowercase() {
+                out.push(lower);
+            }
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
+fn add_deep_view_bounds(generics: &mut Generics) {
+    let type_param_idents: Vec<_> = generics
+        .type_params()
+        .map(|type_param| type_param.ident.clone())
+        .collect();
     let where_clause = generics.make_where_clause();
-    for field_ty in field_types {
+    for ident in type_param_idents {
         where_clause
             .predicates
-            .push(parse_quote!(#field_ty: ::vstd::prelude::DeepView));
+            .push(parse_quote!(#ident: ::vstd::prelude::DeepView));
     }
 }
 
@@ -319,9 +344,14 @@ fn spec_type_for_path(type_path: &syn::TypePath, type_params: &BTreeSet<String>)
             Ok(parse_quote!(::vstd::prelude::Seq<#inner>))
         }
         "Box" | "Rc" | "Arc" => {
-            let args = generic_type_args(&last.arguments, &ident, 1)?;
-            let inner = args[0];
-            spec_type_for_field(inner, type_params)
+            let mut spec_path = path.clone();
+            for segment in &mut spec_path.segments {
+                if let PathArguments::AngleBracketed(args) = &mut segment.arguments {
+                    segment.arguments =
+                        PathArguments::AngleBracketed(spec_angle_args(args, type_params)?);
+                }
+            }
+            Ok(Type::Path(parse_quote!(#spec_path)))
         }
         _ => user_defined_spec_type(path, type_params),
     }
@@ -408,11 +438,12 @@ fn spec_angle_args(
 fn expand_deep_view_body(
     runtime_name: &Ident,
     spec_name: &Ident,
+    helper_name: &Ident,
     data: &Data,
 ) -> Result<TokenStream2> {
     match data {
-        Data::Struct(data) => expand_struct_body(spec_name, data),
-        Data::Enum(data) => expand_enum_body(runtime_name, spec_name, data),
+        Data::Struct(data) => expand_struct_body(runtime_name, spec_name, helper_name, data),
+        Data::Enum(data) => expand_enum_body(runtime_name, spec_name, helper_name, data),
         Data::Union(data) => Err(syn::Error::new(
             data.union_token.span(),
             "DeepView derive does not support unions",
@@ -420,26 +451,52 @@ fn expand_deep_view_body(
     }
 }
 
-fn expand_struct_body(spec_name: &Ident, data: &DataStruct) -> Result<TokenStream2> {
+fn expand_struct_body(
+    runtime_name: &Ident,
+    spec_name: &Ident,
+    helper_name: &Ident,
+    data: &DataStruct,
+) -> Result<TokenStream2> {
     match &data.fields {
         Fields::Named(fields) => {
-            let fields = fields.named.iter().map(|field| {
+            let bindings: Vec<_> = fields
+                .named
+                .iter()
+                .map(|field| field.ident.clone().expect("named field"))
+                .collect();
+            let field_exprs = fields.named.iter().zip(bindings.iter()).map(|(field, binding)| {
                 let name = field.ident.as_ref().expect("named field");
-                quote!(#name: self.#name.deep_view())
+                let expr = field_deep_view_expr(
+                    &quote!(#binding),
+                    &field.ty,
+                    runtime_name,
+                    helper_name,
+                );
+                quote!(#name: #expr)
             });
             Ok(quote! {
-                #spec_name {
-                    #(#fields),*
+                match v {
+                    #runtime_name { #(#bindings),* } => #spec_name {
+                        #(#field_exprs),*
+                    }
                 }
             })
         }
         Fields::Unnamed(fields) => {
-            let fields = fields.unnamed.iter().enumerate().map(|(index, _)| {
-                let index = syn::Index::from(index);
-                quote!(self.#index.deep_view())
-            });
+            let bindings: Vec<_> = (0..fields.unnamed.len())
+                .map(|index| Ident::new(&format!("field_{index}"), fields.span()))
+                .collect();
+            let field_exprs = fields
+                .unnamed
+                .iter()
+                .zip(bindings.iter())
+                .map(|(field, binding)| {
+                    field_deep_view_expr(&quote!(#binding), &field.ty, runtime_name, helper_name)
+                });
             Ok(quote! {
-                #spec_name(#(#fields),*)
+                match v {
+                    #runtime_name(#(#bindings),*) => #spec_name(#(#field_exprs),*)
+                }
             })
         }
         Fields::Unit => Ok(quote!(#spec_name)),
@@ -449,6 +506,7 @@ fn expand_struct_body(spec_name: &Ident, data: &DataStruct) -> Result<TokenStrea
 fn expand_enum_body(
     runtime_name: &Ident,
     spec_name: &Ident,
+    helper_name: &Ident,
     data: &DataEnum,
 ) -> Result<TokenStream2> {
     let arms = data
@@ -463,9 +521,17 @@ fn expand_enum_body(
                         .iter()
                         .map(|field| field.ident.clone().expect("named field"))
                         .collect();
-                    let deep_fields = bindings
-                        .iter()
-                        .map(|binding| quote!(#binding: #binding.deep_view()));
+                    let deep_fields = fields.named.iter().zip(bindings.iter()).map(
+                        |(field, binding)| {
+                            let expr = field_deep_view_expr(
+                                &quote!(#binding),
+                                &field.ty,
+                                runtime_name,
+                                helper_name,
+                            );
+                            quote!(#binding: #expr)
+                        },
+                    );
                     Ok(quote! {
                         #runtime_name::#variant_name { #(#bindings),* } => {
                             #spec_name::#variant_name { #(#deep_fields),* }
@@ -476,7 +542,18 @@ fn expand_enum_body(
                     let bindings: Vec<_> = (0..fields.unnamed.len())
                         .map(|index| Ident::new(&format!("field_{index}"), variant.span()))
                         .collect();
-                    let deep_fields = bindings.iter().map(|binding| quote!(#binding.deep_view()));
+                    let deep_fields = fields
+                        .unnamed
+                        .iter()
+                        .zip(bindings.iter())
+                        .map(|(field, binding)| {
+                            field_deep_view_expr(
+                                &quote!(#binding),
+                                &field.ty,
+                                runtime_name,
+                                helper_name,
+                            )
+                        });
                     Ok(quote! {
                         #runtime_name::#variant_name(#(#bindings),*) => {
                             #spec_name::#variant_name(#(#deep_fields),*)
@@ -491,10 +568,67 @@ fn expand_enum_body(
         .collect::<Result<Vec<_>>>()?;
 
     Ok(quote! {
-        match self {
+        match v {
             #(#arms),*
         }
     })
+}
+
+fn field_deep_view_expr(
+    binding_ref: &TokenStream2,
+    ty: &Type,
+    runtime_name: &Ident,
+    helper_name: &Ident,
+) -> TokenStream2 {
+    match ty {
+        Type::Group(group) => field_deep_view_expr(binding_ref, &group.elem, runtime_name, helper_name),
+        Type::Paren(paren) => field_deep_view_expr(binding_ref, &paren.elem, runtime_name, helper_name),
+        Type::Path(type_path) if is_same_runtime_type(type_path, runtime_name) => {
+            quote!(#helper_name(#binding_ref))
+        }
+        Type::Path(type_path) if type_path.qself.is_none() => {
+            let last = type_path.path.segments.last().expect("path segment");
+            match last.ident.to_string().as_str() {
+                "Box" => {
+                    let inner = generic_type_args(&last.arguments, "Box", 1)
+                        .expect("Box generic args")
+                        [0];
+                    let inner_ref = quote!(&**(#binding_ref));
+                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    quote!(::alloc::boxed::Box::new(#inner_expr))
+                }
+                "Rc" => {
+                    let inner = generic_type_args(&last.arguments, "Rc", 1)
+                        .expect("Rc generic args")
+                        [0];
+                    let inner_ref = quote!(&**(#binding_ref));
+                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    quote!(::alloc::rc::Rc::new(#inner_expr))
+                }
+                "Arc" => {
+                    let inner = generic_type_args(&last.arguments, "Arc", 1)
+                        .expect("Arc generic args")
+                        [0];
+                    let inner_ref = quote!(&**(#binding_ref));
+                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    quote!(::alloc::sync::Arc::new(#inner_expr))
+                }
+                _ => quote!((#binding_ref).deep_view()),
+            }
+        }
+        _ => quote!((#binding_ref).deep_view()),
+    }
+}
+
+fn is_same_runtime_type(type_path: &syn::TypePath, runtime_name: &Ident) -> bool {
+    type_path.qself.is_none()
+        && type_path.path.segments.len() == 1
+        && type_path
+            .path
+            .segments
+            .first()
+            .map(|segment| segment.ident == *runtime_name && segment.arguments.is_empty())
+            .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -517,7 +651,8 @@ mod tests {
         assert!(expanded.contains("pub struct TripleSpec"));
         assert!(expanded.contains("pub c : :: vstd :: prelude :: Seq < u8 >"));
         assert!(expanded.contains("type V = TripleSpec"));
-        assert!(expanded.contains("TripleSpec { a : self . a . deep_view ()"));
+        assert!(expanded.contains("match v"));
+        assert!(expanded.contains("__triple_deep_view"));
     }
 
     #[test]
@@ -536,7 +671,7 @@ mod tests {
         assert!(expanded.contains("Borrowed"));
         assert!(expanded.contains(":: vstd :: prelude :: Seq < u8 >"));
         assert!(expanded.contains("Nested"));
-        assert!(expanded.contains("Option < FooSpec < T > >"));
+        assert!(expanded.contains("Option < Box < FooSpec < T > > >"));
         assert!(expanded
             .contains("type V = WrapperSpec < < T as :: vstd :: prelude :: DeepView > :: V >"));
     }
@@ -558,5 +693,23 @@ mod tests {
         assert!(expanded.contains("pub tail : :: vstd :: prelude :: Seq < u8 >"));
         assert!(expanded
             .contains("type V = HolderSpec < < T as :: vstd :: prelude :: DeepView > :: V , N >"));
+    }
+
+    #[test]
+    fn expands_recursive_enum_with_box_indirection() {
+        let input = parse_quote! {
+            pub enum Nested {
+                More(Box<Nested>),
+                Done,
+            }
+        };
+
+        let expanded = expand(input).unwrap().to_string();
+
+        assert!(expanded.contains("pub enum NestedSpec"));
+        assert!(expanded.contains("More"));
+        assert!(expanded.contains("NestedSpec"));
+        assert!(expanded.contains("Box :: new"));
+        assert!(!expanded.contains("where Box < Nested > : :: vstd :: prelude :: DeepView"));
     }
 }
