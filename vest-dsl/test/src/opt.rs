@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -145,6 +146,22 @@ pub fn serialize_a<'a>(v: <ACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::ST
 {
     let combinator = a();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_a_infallible<'a>(v: <ACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a().wf(v@),
+        spec_a().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a().spec_serialize(v@)),
+{
+    let combinator = a();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn a_len<'a>(v: <ACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -364,6 +381,22 @@ pub fn serialize_b<'a>(v: <BCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::ST
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_b_infallible<'a>(v: <BCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_b().wf(v@),
+        spec_b().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_b().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_b().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_b().spec_serialize(v@)),
+{
+    let combinator = b();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn b_len<'a>(v: <BCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_b().wf(v@),
@@ -579,6 +612,22 @@ pub fn serialize_msg<'a>(v: <MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_msg_infallible<'a>(v: <MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_msg().wf(v@),
+        spec_msg().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_msg().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_msg().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_msg().spec_serialize(v@)),
+{
+    let combinator = msg();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn msg_len<'a>(v: <MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_msg().wf(v@),
@@ -695,6 +744,22 @@ pub fn serialize_optmsg<'a>(v: <OptmsgCombinator as Combinator<'a, &'a [u8], Vec
 {
     let combinator = optmsg();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_optmsg_infallible<'a>(v: <OptmsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_optmsg().wf(v@),
+        spec_optmsg().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_optmsg().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_optmsg().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_optmsg().spec_serialize(v@)),
+{
+    let combinator = optmsg();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn optmsg_len<'a>(v: <OptmsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

@@ -326,6 +326,26 @@ impl<C: SecureSpecCombinator> RepeatN<C> {
         self.lemma_spec_serialize_max_length(vs, n);
         assert(vs.take(vs.len() as int) == vs);
     }
+
+    /// Proves that spec_serialize is monotonically non-decreasing in prefix length:
+    /// spec_serialize(vs).len() >= spec_serialize(vs.take(k)).len() for any k <= vs.len().
+    proof fn lemma_spec_serialize_prefix_len(&self, vs: Seq<C::Type>, k: int)
+        requires
+            self.requires(),
+            0 <= k <= vs.len(),
+            forall|i: int| 0 <= i < vs.len() ==> #[trigger] self.0.wf(vs[i]),
+        ensures
+            self.spec_serialize(vs).len() >= self.spec_serialize(vs.take(k)).len(),
+        decreases vs.len() - k,
+    {
+        if k == vs.len() {
+            assert(vs.take(k) =~= vs);
+        } else {
+            assert(vs =~= vs.drop_last().push(vs.last()));
+            assert(vs.drop_last().take(k) =~= vs.take(k));
+            self.lemma_spec_serialize_prefix_len(vs.drop_last(), k);
+        }
+    }
 }
 
 impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
@@ -419,6 +439,7 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
         let old_pos = pos;
         assert(data@ == seq_splice(old(data)@, pos, Seq::<u8>::empty()));
         let ghost _vs = vs@;
+        let mut err: Option<SerializeError> = None;
         for i in 0..vs.0.len()
             invariant
                 data@.len() == old_data.len(),
@@ -427,22 +448,47 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
                 self@.wf(_vs),
                 self.ex_requires(),
                 self@.requires(),
-                (pos - old_pos) == self@.spec_serialize(_vs.take(i as int)).len(),
-                data@ == seq_splice(old_data, old_pos, self@.spec_serialize(_vs.take(i as int))),
+                old_pos <= pos,
+                err is None ==> {
+                    &&& (pos - old_pos) == self@.spec_serialize(_vs.take(i as int)).len()
+                    &&& data@ == seq_splice(old_data, old_pos, self@.spec_serialize(_vs.take(i as int)))
+                },
+                err is Some ==> old_pos + self@.spec_serialize(_vs).len() > old_data.len(),
         {
-            let v = &vs.0[i];
-            assert(v@ == _vs[i as int]);
-            assert(_vs.take((i + 1) as int).drop_last() == _vs.take(i as int));  // <-- this is the key
-            let l = self.0.serialize(v, data, pos)?;
-            pos += l;
-            assert(data@ == seq_splice(
-                old_data,
-                old_pos,
-                self@.spec_serialize(_vs.take((i + 1) as int)),
-            ));
+            if err.is_some() {
+                // already failed, skip remaining iterations
+            } else {
+                let v = &vs.0[i];
+                assert(v@ == _vs[i as int]);
+                assert(_vs.take((i + 1) as int).drop_last() == _vs.take(i as int));
+                match self.0.serialize(v, data, pos) {
+                    Ok(l) => {
+                        pos += l;
+                        assert(data@ == seq_splice(
+                            old_data,
+                            old_pos,
+                            self@.spec_serialize(_vs.take((i + 1) as int)),
+                        ));
+                    }
+                    Err(e) => {
+                        proof {
+                            let take_ip1 = _vs.take((i + 1) as int);
+                            assert(take_ip1.drop_last() =~= _vs.take(i as int));
+                            assert(take_ip1.last() == _vs[i as int]);
+                            self@.lemma_spec_serialize_prefix_len(_vs, (i + 1) as int);
+                        }
+                        err = Some(e);
+                    }
+                }
+            }
         }
-        assert(_vs == _vs.take(vs.0.len() as int));
-        Ok(pos - old_pos)
+        match err {
+            Some(e) => Err(e),
+            None => {
+                assert(_vs == _vs.take(vs.0.len() as int));
+                Ok(pos - old_pos)
+            }
+        }
     }
 }
 

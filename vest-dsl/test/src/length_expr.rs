@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -257,6 +258,22 @@ pub fn serialize_header<'a>(v: <HeaderCombinator as Combinator<'a, &'a [u8], Vec
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_header_infallible<'a>(v: <HeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_header().wf(v@),
+        spec_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_header().spec_serialize(v@)),
+{
+    let combinator = header();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn header_len<'a>(v: <HeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_header().wf(v@),
@@ -404,6 +421,22 @@ pub fn serialize_header_alias<'a>(v: <HeaderAliasCombinator as Combinator<'a, &'
 {
     let combinator = header_alias();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_header_alias_infallible<'a>(v: <HeaderAliasCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_header_alias().wf(v@),
+        spec_header_alias().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_header_alias().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_header_alias().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_header_alias().spec_serialize(v@)),
+{
+    let combinator = header_alias();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn header_alias_len<'a>(v: <HeaderAliasCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -603,6 +636,22 @@ pub fn serialize_divide<'a>(v: <DivideCombinator as Combinator<'a, &'a [u8], Vec
 {
     let combinator = divide( total );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_divide_infallible<'a>(v: <DivideCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, total: u32) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_divide(total@).wf(v@),
+        spec_divide(total@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_divide(total@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_divide(total@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_divide(total@).spec_serialize(v@)),
+{
+    let combinator = divide( total );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn divide_len<'a>(v: <DivideCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, total: u32) -> (serialize_len: usize)
@@ -827,6 +876,22 @@ pub fn serialize_fixed_choice<'a>(v: <FixedChoiceCombinator as Combinator<'a, &'
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_fixed_choice_infallible<'a>(v: <FixedChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_fixed_choice(tag@).wf(v@),
+        spec_fixed_choice(tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_fixed_choice(tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_fixed_choice(tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_fixed_choice(tag@).spec_serialize(v@)),
+{
+    let combinator = fixed_choice( tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn fixed_choice_len<'a>(v: <FixedChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
     requires
         spec_fixed_choice(tag@).wf(v@),
@@ -1030,6 +1095,23 @@ pub fn serialize_simple_sub<'a>(v: <SimpleSubCombinator as Combinator<'a, &'a [u
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_simple_sub_infallible<'a>(v: <SimpleSubCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, len: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_simple_sub(len@).wf(v@),
+        ((len) >= 4 && (len) <= 65535),
+        spec_simple_sub(len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_simple_sub(len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_simple_sub(len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_simple_sub(len@).spec_serialize(v@)),
+{
+    let combinator = simple_sub( len );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn simple_sub_len<'a>(v: <SimpleSubCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u16) -> (serialize_len: usize)
     requires
         spec_simple_sub(len@).wf(v@),
@@ -1226,6 +1308,22 @@ pub fn serialize_alias_size<'a>(v: <AliasSizeCombinator as Combinator<'a, &'a [u
 {
     let combinator = alias_size();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_alias_size_infallible<'a>(v: <AliasSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_alias_size().wf(v@),
+        spec_alias_size().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_alias_size().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_alias_size().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_alias_size().spec_serialize(v@)),
+{
+    let combinator = alias_size();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn alias_size_len<'a>(v: <AliasSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1434,6 +1532,24 @@ pub fn serialize_multi_arith<'a>(v: <MultiArithCombinator as Combinator<'a, &'a 
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_multi_arith_infallible<'a>(v: <MultiArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, total: u32, hdr_len: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_multi_arith(total@, hdr_len@).wf(v@),
+        ((total) >= 263 && (total) <= 4294967295),
+        ((hdr_len) >= 0 && (hdr_len) <= 255),
+        spec_multi_arith(total@, hdr_len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_multi_arith(total@, hdr_len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_multi_arith(total@, hdr_len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_multi_arith(total@, hdr_len@).spec_serialize(v@)),
+{
+    let combinator = multi_arith( total, hdr_len );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn multi_arith_len<'a>(v: <MultiArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, total: u32, hdr_len: u8) -> (serialize_len: usize)
     requires
         spec_multi_arith(total@, hdr_len@).wf(v@),
@@ -1631,6 +1747,22 @@ pub fn serialize_size_arith<'a>(v: <SizeArithCombinator as Combinator<'a, &'a [u
 {
     let combinator = size_arith();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_size_arith_infallible<'a>(v: <SizeArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_size_arith().wf(v@),
+        spec_size_arith().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_size_arith().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_size_arith().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_size_arith().spec_serialize(v@)),
+{
+    let combinator = size_arith();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn size_arith_len<'a>(v: <SizeArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1834,6 +1966,23 @@ pub fn serialize_payload_with_header<'a>(v: <PayloadWithHeaderCombinator as Comb
 {
     let combinator = payload_with_header( hdr );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_payload_with_header_infallible<'a>(v: <PayloadWithHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, hdr: Header) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_payload_with_header(hdr@).wf(v@),
+        spec_header().wf(hdr@),
+        spec_payload_with_header(hdr@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_payload_with_header(hdr@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_payload_with_header(hdr@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_payload_with_header(hdr@).spec_serialize(v@)),
+{
+    let combinator = payload_with_header( hdr );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn payload_with_header_len<'a>(v: <PayloadWithHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, hdr: Header) -> (serialize_len: usize)
@@ -2040,6 +2189,23 @@ pub fn serialize_mixed_const<'a>(v: <MixedConstCombinator as Combinator<'a, &'a 
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_mixed_const_infallible<'a>(v: <MixedConstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, len: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_mixed_const(len@).wf(v@),
+        ((len) >= 4 && (len) <= 65535),
+        spec_mixed_const(len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_mixed_const(len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_mixed_const(len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_mixed_const(len@).spec_serialize(v@)),
+{
+    let combinator = mixed_const( len );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn mixed_const_len<'a>(v: <MixedConstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u16) -> (serialize_len: usize)
     requires
         spec_mixed_const(len@).wf(v@),
@@ -2157,6 +2323,22 @@ pub fn serialize_choice_tag<'a>(v: <ChoiceTagCombinator as Combinator<'a, &'a [u
 {
     let combinator = choice_tag();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_choice_tag_infallible<'a>(v: <ChoiceTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_choice_tag().wf(v@),
+        spec_choice_tag().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_choice_tag().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_choice_tag().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_choice_tag().spec_serialize(v@)),
+{
+    let combinator = choice_tag();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn choice_tag_len<'a>(v: <ChoiceTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2356,6 +2538,22 @@ pub fn serialize_named_size<'a>(v: <NamedSizeCombinator as Combinator<'a, &'a [u
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_named_size_infallible<'a>(v: <NamedSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_named_size().wf(v@),
+        spec_named_size().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_named_size().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_named_size().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_named_size().spec_serialize(v@)),
+{
+    let combinator = named_size();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn named_size_len<'a>(v: <NamedSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_named_size().wf(v@),
@@ -2553,6 +2751,22 @@ pub fn serialize_choice_format_size<'a>(v: <ChoiceFormatSizeCombinator as Combin
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_choice_format_size_infallible<'a>(v: <ChoiceFormatSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_choice_format_size().wf(v@),
+        spec_choice_format_size().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_choice_format_size().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_choice_format_size().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_choice_format_size().spec_serialize(v@)),
+{
+    let combinator = choice_format_size();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn choice_format_size_len<'a>(v: <ChoiceFormatSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_choice_format_size().wf(v@),
@@ -2669,6 +2883,22 @@ pub fn serialize_header_bytes<'a>(v: <HeaderBytesCombinator as Combinator<'a, &'
 {
     let combinator = header_bytes();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_header_bytes_infallible<'a>(v: <HeaderBytesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_header_bytes().wf(v@),
+        spec_header_bytes().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_header_bytes().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_header_bytes().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_header_bytes().spec_serialize(v@)),
+{
+    let combinator = header_bytes();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn header_bytes_len<'a>(v: <HeaderBytesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2872,6 +3102,23 @@ pub fn serialize_multiply<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8],
 {
     let combinator = multiply( count, size );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_multiply_infallible<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, count: u16, size: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_multiply(count@, size@).wf(v@),
+        ((size) == 1),
+        spec_multiply(count@, size@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_multiply(count@, size@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_multiply(count@, size@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_multiply(count@, size@).spec_serialize(v@)),
+{
+    let combinator = multiply( count, size );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn multiply_len<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, count: u16, size: u8) -> (serialize_len: usize)
@@ -3097,6 +3344,22 @@ pub fn serialize_choice_arrays_folded_body<'a>(v: <ChoiceArraysFoldedBodyCombina
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_choice_arrays_folded_body_infallible<'a>(v: <ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: ChoiceTag) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_choice_arrays_folded_body(tag@).wf(v@),
+        spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded_body(tag@).spec_serialize(v@)),
+{
+    let combinator = choice_arrays_folded_body( tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn choice_arrays_folded_body_len<'a>(v: <ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: ChoiceTag) -> (serialize_len: usize)
     requires
         spec_choice_arrays_folded_body(tag@).wf(v@),
@@ -3310,6 +3573,22 @@ pub fn serialize_choice_arrays_folded<'a>(v: <ChoiceArraysFoldedCombinator as Co
 {
     let combinator = choice_arrays_folded();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_choice_arrays_folded_infallible<'a>(v: <ChoiceArraysFoldedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_choice_arrays_folded().wf(v@),
+        spec_choice_arrays_folded().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_choice_arrays_folded().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_choice_arrays_folded().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded().spec_serialize(v@)),
+{
+    let combinator = choice_arrays_folded();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn choice_arrays_folded_len<'a>(v: <ChoiceArraysFoldedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3552,6 +3831,25 @@ pub fn serialize_paren_expr<'a>(v: <ParenExprCombinator as Combinator<'a, &'a [u
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_paren_expr_infallible<'a>(v: <ParenExprCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, a: u16, b: u8, c: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_paren_expr(a@, b@, c@).wf(v@),
+        ((a) >= 255 && (a) <= 65535),
+        ((b) >= 0 && (b) <= 255),
+        ((c) == 1),
+        spec_paren_expr(a@, b@, c@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_paren_expr(a@, b@, c@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_paren_expr(a@, b@, c@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_paren_expr(a@, b@, c@).spec_serialize(v@)),
+{
+    let combinator = paren_expr( a, b, c );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn paren_expr_len<'a>(v: <ParenExprCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, a: u16, b: u8, c: u8) -> (serialize_len: usize)
     requires
         spec_paren_expr(a@, b@, c@).wf(v@),
@@ -3750,6 +4048,22 @@ pub fn serialize_reinterpret_size<'a>(v: <ReinterpretSizeCombinator as Combinato
 {
     let combinator = reinterpret_size();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_reinterpret_size_infallible<'a>(v: <ReinterpretSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_reinterpret_size().wf(v@),
+        spec_reinterpret_size().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_reinterpret_size().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_reinterpret_size().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_reinterpret_size().spec_serialize(v@)),
+{
+    let combinator = reinterpret_size();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn reinterpret_size_len<'a>(v: <ReinterpretSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3957,6 +4271,22 @@ pub fn serialize_primitive_sizes<'a>(v: <PrimitiveSizesCombinator as Combinator<
 {
     let combinator = primitive_sizes();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_primitive_sizes_infallible<'a>(v: <PrimitiveSizesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_primitive_sizes().wf(v@),
+        spec_primitive_sizes().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_primitive_sizes().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_primitive_sizes().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_primitive_sizes().spec_serialize(v@)),
+{
+    let combinator = primitive_sizes();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn primitive_sizes_len<'a>(v: <PrimitiveSizesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

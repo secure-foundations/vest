@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -248,6 +249,23 @@ pub fn serialize_capture_param_and_local_x_a_payload<'a>(v: <CaptureParamAndLoca
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_capture_param_and_local_x_a_payload_infallible<'a>(v: <CaptureParamAndLocalXAPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice2: COrD, len: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local_x_a_payload(choice2@, len@).wf(v@),
+        spec_c_or_d().wf(choice2@),
+        spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local_x_a_payload( choice2, len );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_param_and_local_x_a_payload_len<'a>(v: <CaptureParamAndLocalXAPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD, len: u8) -> (serialize_len: usize)
     requires
         spec_capture_param_and_local_x_a_payload(choice2@, len@).wf(v@),
@@ -468,6 +486,23 @@ pub fn serialize_capture_param_and_local_x_a<'a>(v: <CaptureParamAndLocalXACombi
 {
     let combinator = capture_param_and_local_x_a( choice2 );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_capture_param_and_local_x_a_infallible<'a>(v: <CaptureParamAndLocalXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local_x_a(choice2@).wf(v@),
+        spec_c_or_d().wf(choice2@),
+        spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local_x_a( choice2 );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_param_and_local_x_a_len<'a>(v: <CaptureParamAndLocalXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD) -> (serialize_len: usize)
@@ -730,6 +765,22 @@ pub fn serialize_capture_param_and_local_x_b_y<'a>(v: <CaptureParamAndLocalXBYCo
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_capture_param_and_local_x_b_y_infallible<'a>(v: <CaptureParamAndLocalXBYCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local_x_b_y(tag@).wf(v@),
+        spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local_x_b_y( tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_param_and_local_x_b_y_len<'a>(v: <CaptureParamAndLocalXBYCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
     requires
         spec_capture_param_and_local_x_b_y(tag@).wf(v@),
@@ -943,6 +994,22 @@ pub fn serialize_capture_param_and_local_x_b<'a>(v: <CaptureParamAndLocalXBCombi
 {
     let combinator = capture_param_and_local_x_b();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_capture_param_and_local_x_b_infallible<'a>(v: <CaptureParamAndLocalXBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local_x_b().wf(v@),
+        spec_capture_param_and_local_x_b().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local_x_b().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local_x_b().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b().spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local_x_b();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_param_and_local_x_b_len<'a>(v: <CaptureParamAndLocalXBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1205,6 +1272,24 @@ pub fn serialize_capture_param_and_local_x<'a>(v: <CaptureParamAndLocalXCombinat
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_capture_param_and_local_x_infallible<'a>(v: <CaptureParamAndLocalXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice1: AOrB, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local_x(choice1@, choice2@).wf(v@),
+        spec_a_or_b().wf(choice1@),
+        spec_c_or_d().wf(choice2@),
+        spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local_x( choice1, choice2 );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_param_and_local_x_len<'a>(v: <CaptureParamAndLocalXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
     requires
         spec_capture_param_and_local_x(choice1@, choice2@).wf(v@),
@@ -1433,6 +1518,23 @@ pub fn serialize_nested_inner_choice_x_a<'a>(v: <NestedInnerChoiceXACombinator a
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_nested_inner_choice_x_a_infallible<'a>(v: <NestedInnerChoiceXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nested_inner_choice_x_a(choice2@).wf(v@),
+        spec_c_or_d().wf(choice2@),
+        spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@)),
+{
+    let combinator = nested_inner_choice_x_a( choice2 );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn nested_inner_choice_x_a_len<'a>(v: <NestedInnerChoiceXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD) -> (serialize_len: usize)
     requires
         spec_nested_inner_choice_x_a(choice2@).wf(v@),
@@ -1647,6 +1749,22 @@ pub fn serialize_capture_outer_and_local_payload_anon_inner_body_choice1<'a>(v: 
 {
     let combinator = capture_outer_and_local_payload_anon_inner_body_choice1();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_capture_outer_and_local_payload_anon_inner_body_choice1_infallible<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_outer_and_local_payload_anon_inner_body_choice1().wf(v@),
+        spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@)),
+{
+    let combinator = capture_outer_and_local_payload_anon_inner_body_choice1();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_outer_and_local_payload_anon_inner_body_choice1_len<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1906,6 +2024,23 @@ pub fn serialize_capture_outer_and_local_payload_anon_inner_body<'a>(v: <Capture
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_capture_outer_and_local_payload_anon_inner_body_infallible<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, frame_len: u8, tag: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).wf(v@),
+        ((frame_len) >= 1),
+        spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@)),
+{
+    let combinator = capture_outer_and_local_payload_anon_inner_body( frame_len, tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_outer_and_local_payload_anon_inner_body_len<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, frame_len: u8, tag: u8) -> (serialize_len: usize)
     requires
         spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).wf(v@),
@@ -2126,6 +2261,23 @@ pub fn serialize_capture_outer_and_local_payload<'a>(v: <CaptureOuterAndLocalPay
 {
     let combinator = capture_outer_and_local_payload( frame_len );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_capture_outer_and_local_payload_infallible<'a>(v: <CaptureOuterAndLocalPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, frame_len: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_outer_and_local_payload(frame_len@).wf(v@),
+        ((frame_len) >= 1),
+        spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@)),
+{
+    let combinator = capture_outer_and_local_payload( frame_len );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_outer_and_local_payload_len<'a>(v: <CaptureOuterAndLocalPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, frame_len: u8) -> (serialize_len: usize)
@@ -2401,6 +2553,22 @@ pub fn serialize_capture_outer_and_local<'a>(v: <CaptureOuterAndLocalCombinator 
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_capture_outer_and_local_infallible<'a>(v: <CaptureOuterAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_outer_and_local().wf(v@),
+        spec_capture_outer_and_local().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_outer_and_local().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_outer_and_local().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local().spec_serialize(v@)),
+{
+    let combinator = capture_outer_and_local();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_outer_and_local_len<'a>(v: <CaptureOuterAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_capture_outer_and_local().wf(v@),
@@ -2641,6 +2809,22 @@ pub fn serialize_nested_inner_struct_anon_inner<'a>(v: <NestedInnerStructAnonInn
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_nested_inner_struct_anon_inner_infallible<'a>(v: <NestedInnerStructAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, len: u32) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nested_inner_struct_anon_inner(len@).wf(v@),
+        spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@)),
+{
+    let combinator = nested_inner_struct_anon_inner( len );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn nested_inner_struct_anon_inner_len<'a>(v: <NestedInnerStructAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u32) -> (serialize_len: usize)
     requires
         spec_nested_inner_struct_anon_inner(len@).wf(v@),
@@ -2854,6 +3038,22 @@ pub fn serialize_capture_local_in_anon_struct_wrapper_value_choice0<'a>(v: <Capt
 {
     let combinator = capture_local_in_anon_struct_wrapper_value_choice0();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_capture_local_in_anon_struct_wrapper_value_choice0_infallible<'a>(v: <CaptureLocalInAnonStructWrapperValueChoice0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_local_in_anon_struct_wrapper_value_choice0().wf(v@),
+        spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@)),
+{
+    let combinator = capture_local_in_anon_struct_wrapper_value_choice0();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_local_in_anon_struct_wrapper_value_choice0_len<'a>(v: <CaptureLocalInAnonStructWrapperValueChoice0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3109,6 +3309,22 @@ pub fn serialize_capture_local_in_anon_struct_wrapper_value<'a>(v: <CaptureLocal
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_capture_local_in_anon_struct_wrapper_value_infallible<'a>(v: <CaptureLocalInAnonStructWrapperValueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_local_in_anon_struct_wrapper_value(tag@).wf(v@),
+        spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@)),
+{
+    let combinator = capture_local_in_anon_struct_wrapper_value( tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_local_in_anon_struct_wrapper_value_len<'a>(v: <CaptureLocalInAnonStructWrapperValueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
     requires
         spec_capture_local_in_anon_struct_wrapper_value(tag@).wf(v@),
@@ -3338,6 +3554,24 @@ pub fn serialize_nested_inner_choice_x<'a>(v: <NestedInnerChoiceXCombinator as C
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_nested_inner_choice_x_infallible<'a>(v: <NestedInnerChoiceXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice1: AOrB, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nested_inner_choice_x(choice1@, choice2@).wf(v@),
+        spec_a_or_b().wf(choice1@),
+        spec_c_or_d().wf(choice2@),
+        spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@)),
+{
+    let combinator = nested_inner_choice_x( choice1, choice2 );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn nested_inner_choice_x_len<'a>(v: <NestedInnerChoiceXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
     requires
         spec_nested_inner_choice_x(choice1@, choice2@).wf(v@),
@@ -3546,6 +3780,24 @@ pub fn serialize_nested_inner_choice<'a>(v: <NestedInnerChoiceCombinator as Comb
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_nested_inner_choice_infallible<'a>(v: <NestedInnerChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice1: AOrB, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nested_inner_choice(choice1@, choice2@).wf(v@),
+        spec_a_or_b().wf(choice1@),
+        spec_c_or_d().wf(choice2@),
+        spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@)),
+{
+    let combinator = nested_inner_choice( choice1, choice2 );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn nested_inner_choice_len<'a>(v: <NestedInnerChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
     requires
         spec_nested_inner_choice(choice1@, choice2@).wf(v@),
@@ -3752,6 +4004,24 @@ pub fn serialize_capture_param_and_local<'a>(v: <CaptureParamAndLocalCombinator 
 {
     let combinator = capture_param_and_local( choice1, choice2 );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_capture_param_and_local_infallible<'a>(v: <CaptureParamAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, choice1: AOrB, choice2: COrD) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_param_and_local(choice1@, choice2@).wf(v@),
+        spec_a_or_b().wf(choice1@),
+        spec_c_or_d().wf(choice2@),
+        spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@)),
+{
+    let combinator = capture_param_and_local( choice1, choice2 );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_param_and_local_len<'a>(v: <CaptureParamAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
@@ -3969,6 +4239,22 @@ pub fn serialize_nested_inner_struct<'a>(v: <NestedInnerStructCombinator as Comb
 {
     let combinator = nested_inner_struct();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_nested_inner_struct_infallible<'a>(v: <NestedInnerStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nested_inner_struct().wf(v@),
+        spec_nested_inner_struct().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nested_inner_struct().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nested_inner_struct().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nested_inner_struct().spec_serialize(v@)),
+{
+    let combinator = nested_inner_struct();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn nested_inner_struct_len<'a>(v: <NestedInnerStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4226,6 +4512,22 @@ pub fn serialize_c_or_d<'a>(v: <COrDCombinator as Combinator<'a, &'a [u8], Vec<u
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_c_or_d_infallible<'a>(v: <COrDCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_c_or_d().wf(v@),
+        spec_c_or_d().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_c_or_d().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_c_or_d().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_c_or_d().spec_serialize(v@)),
+{
+    let combinator = c_or_d();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn c_or_d_len<'a>(v: <COrDCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_c_or_d().wf(v@),
@@ -4439,6 +4741,22 @@ pub fn serialize_capture_local_in_anon_struct_wrapper<'a>(v: <CaptureLocalInAnon
 {
     let combinator = capture_local_in_anon_struct_wrapper();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_capture_local_in_anon_struct_wrapper_infallible<'a>(v: <CaptureLocalInAnonStructWrapperCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_local_in_anon_struct_wrapper().wf(v@),
+        spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@)),
+{
+    let combinator = capture_local_in_anon_struct_wrapper();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn capture_local_in_anon_struct_wrapper_len<'a>(v: <CaptureLocalInAnonStructWrapperCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4669,6 +4987,22 @@ pub fn serialize_capture_local_in_anon_struct<'a>(v: <CaptureLocalInAnonStructCo
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_capture_local_in_anon_struct_infallible<'a>(v: <CaptureLocalInAnonStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_capture_local_in_anon_struct().wf(v@),
+        spec_capture_local_in_anon_struct().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_capture_local_in_anon_struct().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_capture_local_in_anon_struct().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct().spec_serialize(v@)),
+{
+    let combinator = capture_local_in_anon_struct();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn capture_local_in_anon_struct_len<'a>(v: <CaptureLocalInAnonStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_capture_local_in_anon_struct().wf(v@),
@@ -4891,6 +5225,22 @@ pub fn serialize_a_or_b<'a>(v: <AOrBCombinator as Combinator<'a, &'a [u8], Vec<u
 {
     let combinator = a_or_b();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_a_or_b_infallible<'a>(v: <AOrBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_or_b().wf(v@),
+        spec_a_or_b().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_or_b().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_or_b().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_or_b().spec_serialize(v@)),
+{
+    let combinator = a_or_b();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn a_or_b_len<'a>(v: <AOrBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -264,6 +265,23 @@ pub fn serialize_a_typed_choose<'a>(v: <ATypedChooseCombinator as Combinator<'a,
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_a_typed_choose_infallible<'a>(v: <ATypedChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, e: ATypedClosedEnum) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_typed_choose(e@).wf(v@),
+        spec_a_typed_closed_enum().wf(e@),
+        spec_a_typed_choose(e@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_typed_choose(e@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_typed_choose(e@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_typed_choose(e@).spec_serialize(v@)),
+{
+    let combinator = a_typed_choose( e );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_typed_choose_len<'a>(v: <ATypedChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, e: ATypedClosedEnum) -> (serialize_len: usize)
     requires
         spec_a_typed_choose(e@).wf(v@),
@@ -387,6 +405,22 @@ pub fn serialize_a_typed_open_enum<'a>(v: <ATypedOpenEnumCombinator as Combinato
 {
     let combinator = a_typed_open_enum();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_a_typed_open_enum_infallible<'a>(v: <ATypedOpenEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_typed_open_enum().wf(v@),
+        spec_a_typed_open_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_typed_open_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_typed_open_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_typed_open_enum().spec_serialize(v@)),
+{
+    let combinator = a_typed_open_enum();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn a_typed_open_enum_len<'a>(v: <ATypedOpenEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -685,6 +719,22 @@ pub fn serialize_a_non_dependent_choose<'a>(v: <ANonDependentChooseCombinator as
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_a_non_dependent_choose_infallible<'a>(v: <ANonDependentChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_non_dependent_choose().wf(v@),
+        spec_a_non_dependent_choose().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_non_dependent_choose().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_non_dependent_choose().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_non_dependent_choose().spec_serialize(v@)),
+{
+    let combinator = a_non_dependent_choose();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_non_dependent_choose_len<'a>(v: <ANonDependentChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_a_non_dependent_choose().wf(v@),
@@ -927,6 +977,23 @@ pub fn serialize_a_regular_choose<'a>(v: <ARegularChooseCombinator as Combinator
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_a_regular_choose_infallible<'a>(v: <ARegularChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, e: AClosedEnum) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_regular_choose(e@).wf(v@),
+        spec_a_closed_enum().wf(e@),
+        spec_a_regular_choose(e@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_regular_choose(e@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_regular_choose(e@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_regular_choose(e@).spec_serialize(v@)),
+{
+    let combinator = a_regular_choose( e );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_regular_choose_len<'a>(v: <ARegularChooseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, e: AClosedEnum) -> (serialize_len: usize)
     requires
         spec_a_regular_choose(e@).wf(v@),
@@ -1157,6 +1224,22 @@ pub fn serialize_a_mixed_typed_enum<'a>(v: <AMixedTypedEnumCombinator as Combina
 {
     let combinator = a_mixed_typed_enum();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_a_mixed_typed_enum_infallible<'a>(v: <AMixedTypedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_mixed_typed_enum().wf(v@),
+        spec_a_mixed_typed_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_mixed_typed_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_mixed_typed_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_mixed_typed_enum().spec_serialize(v@)),
+{
+    let combinator = a_mixed_typed_enum();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn a_mixed_typed_enum_len<'a>(v: <AMixedTypedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1390,6 +1473,22 @@ pub fn serialize_a_closed_enum<'a>(v: <AClosedEnumCombinator as Combinator<'a, &
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_a_closed_enum_infallible<'a>(v: <AClosedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_closed_enum().wf(v@),
+        spec_a_closed_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_closed_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_closed_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_closed_enum().spec_serialize(v@)),
+{
+    let combinator = a_closed_enum();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_closed_enum_len<'a>(v: <AClosedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_a_closed_enum().wf(v@),
@@ -1621,6 +1720,22 @@ pub fn serialize_a_typed_closed_enum<'a>(v: <ATypedClosedEnumCombinator as Combi
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_a_typed_closed_enum_infallible<'a>(v: <ATypedClosedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_typed_closed_enum().wf(v@),
+        spec_a_typed_closed_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_typed_closed_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_typed_closed_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_typed_closed_enum().spec_serialize(v@)),
+{
+    let combinator = a_typed_closed_enum();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_typed_closed_enum_len<'a>(v: <ATypedClosedEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_a_typed_closed_enum().wf(v@),
@@ -1743,6 +1858,22 @@ pub fn serialize_an_open_enum<'a>(v: <AnOpenEnumCombinator as Combinator<'a, &'a
 {
     let combinator = an_open_enum();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_an_open_enum_infallible<'a>(v: <AnOpenEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_an_open_enum().wf(v@),
+        spec_an_open_enum().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_an_open_enum().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_an_open_enum().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_an_open_enum().spec_serialize(v@)),
+{
+    let combinator = an_open_enum();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn an_open_enum_len<'a>(v: <AnOpenEnumCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2003,6 +2134,23 @@ pub fn serialize_a_typed_choose_with_default<'a>(v: <ATypedChooseWithDefaultComb
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_a_typed_choose_with_default_infallible<'a>(v: <ATypedChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, e: u32) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_typed_choose_with_default(e@).wf(v@),
+        spec_a_typed_open_enum().wf(e@),
+        spec_a_typed_choose_with_default(e@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_typed_choose_with_default(e@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_typed_choose_with_default(e@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_typed_choose_with_default(e@).spec_serialize(v@)),
+{
+    let combinator = a_typed_choose_with_default( e );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn a_typed_choose_with_default_len<'a>(v: <ATypedChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, e: u32) -> (serialize_len: usize)
     requires
         spec_a_typed_choose_with_default(e@).wf(v@),
@@ -2260,6 +2408,23 @@ pub fn serialize_a_choose_with_default<'a>(v: <AChooseWithDefaultCombinator as C
 {
     let combinator = a_choose_with_default( e );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_a_choose_with_default_infallible<'a>(v: <AChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, e: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_a_choose_with_default(e@).wf(v@),
+        spec_an_open_enum().wf(e@),
+        spec_a_choose_with_default(e@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_a_choose_with_default(e@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_a_choose_with_default(e@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_a_choose_with_default(e@).spec_serialize(v@)),
+{
+    let combinator = a_choose_with_default( e );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn a_choose_with_default_len<'a>(v: <AChooseWithDefaultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, e: u8) -> (serialize_len: usize)

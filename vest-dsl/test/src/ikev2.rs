@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -144,6 +145,22 @@ pub fn serialize_ike_protocol_id<'a>(v: <IkeProtocolIdCombinator as Combinator<'
 {
     let combinator = ike_protocol_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ike_protocol_id_infallible<'a>(v: <IkeProtocolIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ike_protocol_id().wf(v@),
+        spec_ike_protocol_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ike_protocol_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ike_protocol_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ike_protocol_id().spec_serialize(v@)),
+{
+    let combinator = ike_protocol_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ike_protocol_id_len<'a>(v: <IkeProtocolIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -284,6 +301,22 @@ pub fn serialize_proposal_spi_size_byte<'a>(v: <ProposalSpiSizeByteCombinator as
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_proposal_spi_size_byte_infallible<'a>(v: <ProposalSpiSizeByteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_spi_size_byte().wf(v@),
+        spec_proposal_spi_size_byte().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal_spi_size_byte().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal_spi_size_byte().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal_spi_size_byte().spec_serialize(v@)),
+{
+    let combinator = proposal_spi_size_byte();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn proposal_spi_size_byte_len<'a>(v: <ProposalSpiSizeByteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_proposal_spi_size_byte().wf(v@),
@@ -410,6 +443,22 @@ pub fn serialize_transform_type<'a>(v: <TransformTypeCombinator as Combinator<'a
 {
     let combinator = transform_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_transform_type_infallible<'a>(v: <TransformTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_type().wf(v@),
+        spec_transform_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_type().spec_serialize(v@)),
+{
+    let combinator = transform_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn transform_type_len<'a>(v: <TransformTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -554,6 +603,22 @@ pub fn serialize_encr_id<'a>(v: <EncrIdCombinator as Combinator<'a, &'a [u8], Ve
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_encr_id_infallible<'a>(v: <EncrIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_encr_id().wf(v@),
+        spec_encr_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_encr_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_encr_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_encr_id().spec_serialize(v@)),
+{
+    let combinator = encr_id();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn encr_id_len<'a>(v: <EncrIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_encr_id().wf(v@),
@@ -676,6 +741,22 @@ pub fn serialize_prf_id<'a>(v: <PrfIdCombinator as Combinator<'a, &'a [u8], Vec<
 {
     let combinator = prf_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_prf_id_infallible<'a>(v: <PrfIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_prf_id().wf(v@),
+        spec_prf_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_prf_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_prf_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_prf_id().spec_serialize(v@)),
+{
+    let combinator = prf_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn prf_id_len<'a>(v: <PrfIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -806,6 +887,22 @@ pub fn serialize_integ_id<'a>(v: <IntegIdCombinator as Combinator<'a, &'a [u8], 
 {
     let combinator = integ_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_integ_id_infallible<'a>(v: <IntegIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_integ_id().wf(v@),
+        spec_integ_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_integ_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_integ_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_integ_id().spec_serialize(v@)),
+{
+    let combinator = integ_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn integ_id_len<'a>(v: <IntegIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -944,6 +1041,22 @@ pub fn serialize_dh_id<'a>(v: <DhIdCombinator as Combinator<'a, &'a [u8], Vec<u8
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_dh_id_infallible<'a>(v: <DhIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_dh_id().wf(v@),
+        spec_dh_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_dh_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_dh_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_dh_id().spec_serialize(v@)),
+{
+    let combinator = dh_id();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn dh_id_len<'a>(v: <DhIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_dh_id().wf(v@),
@@ -1064,6 +1177,22 @@ pub fn serialize_esn_id<'a>(v: <EsnIdCombinator as Combinator<'a, &'a [u8], Vec<
 {
     let combinator = esn_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_esn_id_infallible<'a>(v: <EsnIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_esn_id().wf(v@),
+        spec_esn_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_esn_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_esn_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_esn_id().spec_serialize(v@)),
+{
+    let combinator = esn_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn esn_id_len<'a>(v: <EsnIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1356,6 +1485,23 @@ pub fn serialize_transform_id_value<'a>(v: <TransformIdValueCombinator as Combin
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_transform_id_value_infallible<'a>(v: <TransformIdValueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, kind: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_id_value(kind@).wf(v@),
+        spec_transform_type().wf(kind@),
+        spec_transform_id_value(kind@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_id_value(kind@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_id_value(kind@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_id_value(kind@).spec_serialize(v@)),
+{
+    let combinator = transform_id_value( kind );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn transform_id_value_len<'a>(v: <TransformIdValueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, kind: u8) -> (serialize_len: usize)
     requires
         spec_transform_id_value(kind@).wf(v@),
@@ -1563,6 +1709,22 @@ pub fn serialize_transform_attr_key_length<'a>(v: <TransformAttrKeyLengthCombina
 {
     let combinator = transform_attr_key_length();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_transform_attr_key_length_infallible<'a>(v: <TransformAttrKeyLengthCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_attr_key_length().wf(v@),
+        spec_transform_attr_key_length().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_attr_key_length().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_attr_key_length().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_attr_key_length().spec_serialize(v@)),
+{
+    let combinator = transform_attr_key_length();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn transform_attr_key_length_len<'a>(v: <TransformAttrKeyLengthCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1798,6 +1960,22 @@ pub fn serialize_transform_attr_tv<'a>(v: <TransformAttrTvCombinator as Combinat
 {
     let combinator = transform_attr_tv();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_transform_attr_tv_infallible<'a>(v: <TransformAttrTvCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_attr_tv().wf(v@),
+        spec_transform_attr_tv().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_attr_tv().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_attr_tv().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_attr_tv().spec_serialize(v@)),
+{
+    let combinator = transform_attr_tv();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn transform_attr_tv_len<'a>(v: <TransformAttrTvCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2082,6 +2260,22 @@ pub fn serialize_transform_attr_tlv<'a>(v: <TransformAttrTlvCombinator as Combin
 {
     let combinator = transform_attr_tlv();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_transform_attr_tlv_infallible<'a>(v: <TransformAttrTlvCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_attr_tlv().wf(v@),
+        spec_transform_attr_tlv().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_attr_tlv().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_attr_tlv().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_attr_tlv().spec_serialize(v@)),
+{
+    let combinator = transform_attr_tlv();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn transform_attr_tlv_len<'a>(v: <TransformAttrTlvCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2404,6 +2598,22 @@ pub fn serialize_transform_attr<'a>(v: <TransformAttrCombinator as Combinator<'a
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_transform_attr_infallible<'a>(v: <TransformAttrCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform_attr().wf(v@),
+        spec_transform_attr().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform_attr().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform_attr().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform_attr().spec_serialize(v@)),
+{
+    let combinator = transform_attr();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn transform_attr_len<'a>(v: <TransformAttrCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_transform_attr().wf(v@),
@@ -2691,6 +2901,22 @@ pub fn serialize_transform<'a>(v: <TransformCombinator as Combinator<'a, &'a [u8
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_transform_infallible<'a>(v: <TransformCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_transform().wf(v@),
+        spec_transform().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_transform().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_transform().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_transform().spec_serialize(v@)),
+{
+    let combinator = transform();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn transform_len<'a>(v: <TransformCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_transform().wf(v@),
@@ -2968,6 +3194,23 @@ pub fn serialize_proposal_body_spi0<'a>(v: <ProposalBodySpi0Combinator as Combin
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_proposal_body_spi0_infallible<'a>(v: <ProposalBodySpi0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_body_spi0(num_transforms@).wf(v@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_body_spi0(num_transforms@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal_body_spi0(num_transforms@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal_body_spi0(num_transforms@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal_body_spi0(num_transforms@).spec_serialize(v@)),
+{
+    let combinator = proposal_body_spi0( num_transforms );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn proposal_body_spi0_len<'a>(v: <ProposalBodySpi0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8) -> (serialize_len: usize)
     requires
         spec_proposal_body_spi0(num_transforms@).wf(v@),
@@ -3182,6 +3425,23 @@ pub fn serialize_proposal_body_spi4<'a>(v: <ProposalBodySpi4Combinator as Combin
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_proposal_body_spi4_infallible<'a>(v: <ProposalBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_body_spi4(num_transforms@).wf(v@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_body_spi4(num_transforms@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal_body_spi4(num_transforms@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal_body_spi4(num_transforms@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal_body_spi4(num_transforms@).spec_serialize(v@)),
+{
+    let combinator = proposal_body_spi4( num_transforms );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn proposal_body_spi4_len<'a>(v: <ProposalBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8) -> (serialize_len: usize)
     requires
         spec_proposal_body_spi4(num_transforms@).wf(v@),
@@ -3394,6 +3654,23 @@ pub fn serialize_proposal_body_spi8<'a>(v: <ProposalBodySpi8Combinator as Combin
 {
     let combinator = proposal_body_spi8( num_transforms );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_proposal_body_spi8_infallible<'a>(v: <ProposalBodySpi8Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_body_spi8(num_transforms@).wf(v@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        spec_proposal_body_spi8(num_transforms@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal_body_spi8(num_transforms@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal_body_spi8(num_transforms@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal_body_spi8(num_transforms@).spec_serialize(v@)),
+{
+    let combinator = proposal_body_spi8( num_transforms );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn proposal_body_spi8_len<'a>(v: <ProposalBodySpi8Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8) -> (serialize_len: usize)
@@ -3643,6 +3920,25 @@ pub fn serialize_proposal_body<'a>(v: <ProposalBodyCombinator as Combinator<'a, 
 {
     let combinator = proposal_body( num_transforms, proposal_length, spi_size );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_proposal_body_infallible<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal_body(num_transforms@, proposal_length@, spi_size@).wf(v@),
+        ((num_transforms) >= 1 && (num_transforms) <= 255),
+        ((proposal_length) >= 8 && (proposal_length) <= 65535),
+        spec_proposal_spi_size_byte().wf(spi_size@),
+        spec_proposal_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal_body(num_transforms@, proposal_length@, spi_size@).spec_serialize(v@)),
+{
+    let combinator = proposal_body( num_transforms, proposal_length, spi_size );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn proposal_body_len<'a>(v: <ProposalBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_transforms: u8, proposal_length: u16, spi_size: ProposalSpiSizeByte) -> (serialize_len: usize)
@@ -3987,6 +4283,22 @@ pub fn serialize_proposal<'a>(v: <ProposalCombinator as Combinator<'a, &'a [u8],
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_proposal_infallible<'a>(v: <ProposalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_proposal().wf(v@),
+        spec_proposal().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_proposal().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_proposal().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_proposal().spec_serialize(v@)),
+{
+    let combinator = proposal();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn proposal_len<'a>(v: <ProposalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_proposal().wf(v@),
@@ -4326,6 +4638,23 @@ pub fn serialize_sa_payload_body<'a>(v: <SaPayloadBodyCombinator as Combinator<'
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_sa_payload_body_infallible<'a>(v: <SaPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_sa_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 4 && (payload_length) <= 65535),
+        spec_sa_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_sa_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_sa_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_sa_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = sa_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn sa_payload_body_len<'a>(v: <SaPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_sa_payload_body(payload_length@).wf(v@),
@@ -4596,6 +4925,22 @@ pub fn serialize_ts_ipv6<'a>(v: <TsIpv6Combinator as Combinator<'a, &'a [u8], Ve
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ts_ipv6_infallible<'a>(v: <TsIpv6Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_ipv6().wf(v@),
+        spec_ts_ipv6().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_ipv6().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_ipv6().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_ipv6().spec_serialize(v@)),
+{
+    let combinator = ts_ipv6();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ts_ipv6_len<'a>(v: <TsIpv6Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ts_ipv6().wf(v@),
@@ -4791,6 +5136,22 @@ pub fn serialize_ikev2_sa_payload_inner<'a>(v: <Ikev2SaPayloadInnerCombinator as
 {
     let combinator = ikev2_sa_payload_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ikev2_sa_payload_inner_infallible<'a>(v: <Ikev2SaPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_sa_payload_inner().wf(v@),
+        spec_ikev2_sa_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_sa_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_sa_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_sa_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_sa_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_sa_payload_inner_len<'a>(v: <Ikev2SaPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4996,6 +5357,23 @@ pub fn serialize_nonce_payload_body<'a>(v: <NoncePayloadBodyCombinator as Combin
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_nonce_payload_body_infallible<'a>(v: <NoncePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_nonce_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 20 && (payload_length) <= 260),
+        spec_nonce_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_nonce_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_nonce_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_nonce_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = nonce_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn nonce_payload_body_len<'a>(v: <NoncePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_nonce_payload_body(payload_length@).wf(v@),
@@ -5127,6 +5505,22 @@ pub fn serialize_id_type<'a>(v: <IdTypeCombinator as Combinator<'a, &'a [u8], Ve
 {
     let combinator = id_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_id_type_infallible<'a>(v: <IdTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_id_type().wf(v@),
+        spec_id_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_id_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_id_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_id_type().spec_serialize(v@)),
+{
+    let combinator = id_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn id_type_len<'a>(v: <IdTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5355,6 +5749,22 @@ pub fn serialize_ikev2_id_payload_inner<'a>(v: <Ikev2IdPayloadInnerCombinator as
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_id_payload_inner_infallible<'a>(v: <Ikev2IdPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_id_payload_inner().wf(v@),
+        spec_ikev2_id_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_id_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_id_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_id_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_id_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_id_payload_inner_len<'a>(v: <Ikev2IdPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_id_payload_inner().wf(v@),
@@ -5562,6 +5972,22 @@ pub fn serialize_notify_payload_body_spi0<'a>(v: <NotifyPayloadBodySpi0Combinato
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_notify_payload_body_spi0_infallible<'a>(v: <NotifyPayloadBodySpi0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body_spi0().wf(v@),
+        spec_notify_payload_body_spi0().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_payload_body_spi0().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_payload_body_spi0().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_spi0().spec_serialize(v@)),
+{
+    let combinator = notify_payload_body_spi0();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn notify_payload_body_spi0_len<'a>(v: <NotifyPayloadBodySpi0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_notify_payload_body_spi0().wf(v@),
@@ -5678,6 +6104,22 @@ pub fn serialize_cfg_attr_type_word<'a>(v: <CfgAttrTypeWordCombinator as Combina
 {
     let combinator = cfg_attr_type_word();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_cfg_attr_type_word_infallible<'a>(v: <CfgAttrTypeWordCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cfg_attr_type_word().wf(v@),
+        spec_cfg_attr_type_word().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cfg_attr_type_word().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cfg_attr_type_word().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cfg_attr_type_word().spec_serialize(v@)),
+{
+    let combinator = cfg_attr_type_word();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn cfg_attr_type_word_len<'a>(v: <CfgAttrTypeWordCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5913,6 +6355,22 @@ pub fn serialize_cfg_attribute<'a>(v: <CfgAttributeCombinator as Combinator<'a, 
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_cfg_attribute_infallible<'a>(v: <CfgAttributeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cfg_attribute().wf(v@),
+        spec_cfg_attribute().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cfg_attribute().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cfg_attribute().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cfg_attribute().spec_serialize(v@)),
+{
+    let combinator = cfg_attribute();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn cfg_attribute_len<'a>(v: <CfgAttributeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_cfg_attribute().wf(v@),
@@ -6097,6 +6555,22 @@ pub fn serialize_ts_type<'a>(v: <TsTypeCombinator as Combinator<'a, &'a [u8], Ve
 {
     let combinator = ts_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ts_type_infallible<'a>(v: <TsTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_type().wf(v@),
+        spec_ts_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_type().spec_serialize(v@)),
+{
+    let combinator = ts_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ts_type_len<'a>(v: <TsTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -6355,6 +6829,22 @@ pub fn serialize_ts_ipv4_selector_body<'a>(v: <TsIpv4SelectorBodyCombinator as C
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ts_ipv4_selector_body_infallible<'a>(v: <TsIpv4SelectorBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_ipv4_selector_body().wf(v@),
+        spec_ts_ipv4_selector_body().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_ipv4_selector_body().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_ipv4_selector_body().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_ipv4_selector_body().spec_serialize(v@)),
+{
+    let combinator = ts_ipv4_selector_body();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ts_ipv4_selector_body_len<'a>(v: <TsIpv4SelectorBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ts_ipv4_selector_body().wf(v@),
@@ -6611,6 +7101,22 @@ pub fn serialize_ts_ipv6_selector_body<'a>(v: <TsIpv6SelectorBodyCombinator as C
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ts_ipv6_selector_body_infallible<'a>(v: <TsIpv6SelectorBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_ipv6_selector_body().wf(v@),
+        spec_ts_ipv6_selector_body().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_ipv6_selector_body().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_ipv6_selector_body().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_ipv6_selector_body().spec_serialize(v@)),
+{
+    let combinator = ts_ipv6_selector_body();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ts_ipv6_selector_body_len<'a>(v: <TsIpv6SelectorBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ts_ipv6_selector_body().wf(v@),
@@ -6847,6 +7353,22 @@ pub fn serialize_ts_unknown_inner<'a>(v: <TsUnknownInnerCombinator as Combinator
 {
     let combinator = ts_unknown_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ts_unknown_inner_infallible<'a>(v: <TsUnknownInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_unknown_inner().wf(v@),
+        spec_ts_unknown_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_unknown_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_unknown_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_unknown_inner().spec_serialize(v@)),
+{
+    let combinator = ts_unknown_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ts_unknown_inner_len<'a>(v: <TsUnknownInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -7122,6 +7644,23 @@ pub fn serialize_traffic_selector_ts_body<'a>(v: <TrafficSelectorTsBodyCombinato
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_traffic_selector_ts_body_infallible<'a>(v: <TrafficSelectorTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ts_type_byte: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_traffic_selector_ts_body(ts_type_byte@).wf(v@),
+        spec_ts_type().wf(ts_type_byte@),
+        spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_traffic_selector_ts_body(ts_type_byte@).spec_serialize(v@)),
+{
+    let combinator = traffic_selector_ts_body( ts_type_byte );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn traffic_selector_ts_body_len<'a>(v: <TrafficSelectorTsBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ts_type_byte: u8) -> (serialize_len: usize)
     requires
         spec_traffic_selector_ts_body(ts_type_byte@).wf(v@),
@@ -7336,6 +7875,22 @@ pub fn serialize_traffic_selector<'a>(v: <TrafficSelectorCombinator as Combinato
 {
     let combinator = traffic_selector();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_traffic_selector_infallible<'a>(v: <TrafficSelectorCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_traffic_selector().wf(v@),
+        spec_traffic_selector().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_traffic_selector().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_traffic_selector().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_traffic_selector().spec_serialize(v@)),
+{
+    let combinator = traffic_selector();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn traffic_selector_len<'a>(v: <TrafficSelectorCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -7594,6 +8149,22 @@ pub fn serialize_ikev2_ts_payload_inner<'a>(v: <Ikev2TsPayloadInnerCombinator as
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_ts_payload_inner_infallible<'a>(v: <Ikev2TsPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_ts_payload_inner().wf(v@),
+        spec_ikev2_ts_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_ts_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_ts_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_ts_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_ts_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_ts_payload_inner_len<'a>(v: <Ikev2TsPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_ts_payload_inner().wf(v@),
@@ -7833,6 +8404,22 @@ pub fn serialize_eap_success_rest<'a>(v: <EapSuccessRestCombinator as Combinator
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_eap_success_rest_infallible<'a>(v: <EapSuccessRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_success_rest().wf(v@),
+        spec_eap_success_rest().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_success_rest().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_success_rest().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_success_rest().spec_serialize(v@)),
+{
+    let combinator = eap_success_rest();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn eap_success_rest_len<'a>(v: <EapSuccessRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_eap_success_rest().wf(v@),
@@ -7971,6 +8558,22 @@ pub fn serialize_ipsec_spi_size_or_none<'a>(v: <IpsecSpiSizeOrNoneCombinator as 
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ipsec_spi_size_or_none_infallible<'a>(v: <IpsecSpiSizeOrNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ipsec_spi_size_or_none().wf(v@),
+        spec_ipsec_spi_size_or_none().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ipsec_spi_size_or_none().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ipsec_spi_size_or_none().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ipsec_spi_size_or_none().spec_serialize(v@)),
+{
+    let combinator = ipsec_spi_size_or_none();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ipsec_spi_size_or_none_len<'a>(v: <IpsecSpiSizeOrNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ipsec_spi_size_or_none().wf(v@),
@@ -8095,6 +8698,22 @@ pub fn serialize_eap_code<'a>(v: <EapCodeCombinator as Combinator<'a, &'a [u8], 
 {
     let combinator = eap_code();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_eap_code_infallible<'a>(v: <EapCodeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_code().wf(v@),
+        spec_eap_code().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_code().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_code().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_code().spec_serialize(v@)),
+{
+    let combinator = eap_code();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn eap_code_len<'a>(v: <EapCodeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8303,6 +8922,22 @@ pub fn serialize_eap_failure_rest<'a>(v: <EapFailureRestCombinator as Combinator
 {
     let combinator = eap_failure_rest();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_eap_failure_rest_infallible<'a>(v: <EapFailureRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_failure_rest().wf(v@),
+        spec_eap_failure_rest().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_failure_rest().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_failure_rest().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_failure_rest().spec_serialize(v@)),
+{
+    let combinator = eap_failure_rest();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn eap_failure_rest_len<'a>(v: <EapFailureRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8544,6 +9179,22 @@ pub fn serialize_eap_req_resp_rest<'a>(v: <EapReqRespRestCombinator as Combinato
 {
     let combinator = eap_req_resp_rest();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_eap_req_resp_rest_infallible<'a>(v: <EapReqRespRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_req_resp_rest().wf(v@),
+        spec_eap_req_resp_rest().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_req_resp_rest().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_req_resp_rest().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_req_resp_rest().spec_serialize(v@)),
+{
+    let combinator = eap_req_resp_rest();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn eap_req_resp_rest_len<'a>(v: <EapReqRespRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8835,6 +9486,23 @@ pub fn serialize_ikev2_eap_payload_inner_eap_rest<'a>(v: <Ikev2EapPayloadInnerEa
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_ikev2_eap_payload_inner_eap_rest_infallible<'a>(v: <Ikev2EapPayloadInnerEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_eap_payload_inner_eap_rest(code@).wf(v@),
+        spec_eap_code().wf(code@),
+        spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_eap_payload_inner_eap_rest(code@).spec_serialize(v@)),
+{
+    let combinator = ikev2_eap_payload_inner_eap_rest( code );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_eap_payload_inner_eap_rest_len<'a>(v: <Ikev2EapPayloadInnerEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
     requires
         spec_ikev2_eap_payload_inner_eap_rest(code@).wf(v@),
@@ -9051,6 +9719,22 @@ pub fn serialize_ikev2_eap_payload_inner<'a>(v: <Ikev2EapPayloadInnerCombinator 
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_eap_payload_inner_infallible<'a>(v: <Ikev2EapPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_eap_payload_inner().wf(v@),
+        spec_ikev2_eap_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_eap_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_eap_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_eap_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_eap_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_eap_payload_inner_len<'a>(v: <Ikev2EapPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_eap_payload_inner().wf(v@),
@@ -9222,6 +9906,22 @@ pub fn serialize_cert_encoding<'a>(v: <CertEncodingCombinator as Combinator<'a, 
 {
     let combinator = cert_encoding();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_cert_encoding_infallible<'a>(v: <CertEncodingCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cert_encoding().wf(v@),
+        spec_cert_encoding().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cert_encoding().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cert_encoding().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cert_encoding().spec_serialize(v@)),
+{
+    let combinator = cert_encoding();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn cert_encoding_len<'a>(v: <CertEncodingCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -9435,6 +10135,23 @@ pub fn serialize_certreq_payload_body<'a>(v: <CertreqPayloadBodyCombinator as Co
 {
     let combinator = certreq_payload_body( payload_length );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_certreq_payload_body_infallible<'a>(v: <CertreqPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_certreq_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 5 && (payload_length) <= 65535),
+        spec_certreq_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_certreq_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_certreq_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_certreq_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = certreq_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn certreq_payload_body_len<'a>(v: <CertreqPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
@@ -9696,6 +10413,23 @@ pub fn serialize_eap_payload_body_eap_rest<'a>(v: <EapPayloadBodyEapRestCombinat
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_eap_payload_body_eap_rest_infallible<'a>(v: <EapPayloadBodyEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, code: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_payload_body_eap_rest(code@).wf(v@),
+        spec_eap_code().wf(code@),
+        spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_payload_body_eap_rest(code@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_payload_body_eap_rest(code@).spec_serialize(v@)),
+{
+    let combinator = eap_payload_body_eap_rest( code );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn eap_payload_body_eap_rest_len<'a>(v: <EapPayloadBodyEapRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, code: u8) -> (serialize_len: usize)
     requires
         spec_eap_payload_body_eap_rest(code@).wf(v@),
@@ -9821,6 +10555,22 @@ pub fn serialize_cfg_type<'a>(v: <CfgTypeCombinator as Combinator<'a, &'a [u8], 
 {
     let combinator = cfg_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_cfg_type_infallible<'a>(v: <CfgTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cfg_type().wf(v@),
+        spec_cfg_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cfg_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cfg_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cfg_type().spec_serialize(v@)),
+{
+    let combinator = cfg_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn cfg_type_len<'a>(v: <CfgTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10055,6 +10805,23 @@ pub fn serialize_cp_payload_body<'a>(v: <CpPayloadBodyCombinator as Combinator<'
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_cp_payload_body_infallible<'a>(v: <CpPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cp_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_cp_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cp_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cp_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cp_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = cp_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn cp_payload_body_len<'a>(v: <CpPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_cp_payload_body(payload_length@).wf(v@),
@@ -10277,6 +11044,23 @@ pub fn serialize_eap_payload_body<'a>(v: <EapPayloadBodyCombinator as Combinator
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_eap_payload_body_infallible<'a>(v: <EapPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_eap_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = eap_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn eap_payload_body_len<'a>(v: <EapPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_eap_payload_body(payload_length@).wf(v@),
@@ -10439,6 +11223,22 @@ pub fn serialize_exchange_type<'a>(v: <ExchangeTypeCombinator as Combinator<'a, 
 {
     let combinator = exchange_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_exchange_type_infallible<'a>(v: <ExchangeTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_exchange_type().wf(v@),
+        spec_exchange_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_exchange_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_exchange_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_exchange_type().spec_serialize(v@)),
+{
+    let combinator = exchange_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn exchange_type_len<'a>(v: <ExchangeTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10615,6 +11415,22 @@ pub fn serialize_notify_msg_type<'a>(v: <NotifyMsgTypeCombinator as Combinator<'
 {
     let combinator = notify_msg_type();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_notify_msg_type_infallible<'a>(v: <NotifyMsgTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_msg_type().wf(v@),
+        spec_notify_msg_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_msg_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_msg_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_msg_type().spec_serialize(v@)),
+{
+    let combinator = notify_msg_type();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn notify_msg_type_len<'a>(v: <NotifyMsgTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10843,6 +11659,23 @@ pub fn serialize_ke_payload_body<'a>(v: <KePayloadBodyCombinator as Combinator<'
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_ke_payload_body_infallible<'a>(v: <KePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ke_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ke_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ke_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ke_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ke_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = ke_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ke_payload_body_len<'a>(v: <KePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_ke_payload_body(payload_length@).wf(v@),
@@ -10996,6 +11829,22 @@ pub fn serialize_next_payload_type<'a>(v: <NextPayloadTypeCombinator as Combinat
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_next_payload_type_infallible<'a>(v: <NextPayloadTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_next_payload_type().wf(v@),
+        spec_next_payload_type().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_next_payload_type().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_next_payload_type().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_next_payload_type().spec_serialize(v@)),
+{
+    let combinator = next_payload_type();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn next_payload_type_len<'a>(v: <NextPayloadTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_next_payload_type().wf(v@),
@@ -11132,6 +11981,22 @@ pub fn serialize_ike_version_byte<'a>(v: <IkeVersionByteCombinator as Combinator
 {
     let combinator = ike_version_byte();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ike_version_byte_infallible<'a>(v: <IkeVersionByteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ike_version_byte().wf(v@),
+        spec_ike_version_byte().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ike_version_byte().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ike_version_byte().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ike_version_byte().spec_serialize(v@)),
+{
+    let combinator = ike_version_byte();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ike_version_byte_len<'a>(v: <IkeVersionByteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11370,6 +12235,22 @@ pub fn serialize_ike_flags<'a>(v: <IkeFlagsCombinator as Combinator<'a, &'a [u8]
 {
     let combinator = ike_flags();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ike_flags_infallible<'a>(v: <IkeFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ike_flags().wf(v@),
+        spec_ike_flags().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ike_flags().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ike_flags().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ike_flags().spec_serialize(v@)),
+{
+    let combinator = ike_flags();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ike_flags_len<'a>(v: <IkeFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11671,6 +12552,22 @@ pub fn serialize_ike_header<'a>(v: <IkeHeaderCombinator as Combinator<'a, &'a [u
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ike_header_infallible<'a>(v: <IkeHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ike_header().wf(v@),
+        spec_ike_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ike_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ike_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ike_header().spec_serialize(v@)),
+{
+    let combinator = ike_header();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ike_header_len<'a>(v: <IkeHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ike_header().wf(v@),
@@ -11787,6 +12684,22 @@ pub fn serialize_delete_payload_spis_none<'a>(v: <DeletePayloadSpisNoneCombinato
 {
     let combinator = delete_payload_spis_none();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_delete_payload_spis_none_infallible<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_spis_none().wf(v@),
+        spec_delete_payload_spis_none().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_delete_payload_spis_none().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_delete_payload_spis_none().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_none().spec_serialize(v@)),
+{
+    let combinator = delete_payload_spis_none();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn delete_payload_spis_none_len<'a>(v: <DeletePayloadSpisNoneCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12027,6 +12940,22 @@ pub fn serialize_eap_message_success_failure<'a>(v: <EapMessageSuccessFailureCom
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_eap_message_success_failure_infallible<'a>(v: <EapMessageSuccessFailureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_message_success_failure().wf(v@),
+        spec_eap_message_success_failure().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_message_success_failure().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_message_success_failure().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_message_success_failure().spec_serialize(v@)),
+{
+    let combinator = eap_message_success_failure();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn eap_message_success_failure_len<'a>(v: <EapMessageSuccessFailureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_eap_message_success_failure().wf(v@),
@@ -12234,6 +13163,22 @@ pub fn serialize_ikev2_cert_payload_inner<'a>(v: <Ikev2CertPayloadInnerCombinato
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_cert_payload_inner_infallible<'a>(v: <Ikev2CertPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_cert_payload_inner().wf(v@),
+        spec_ikev2_cert_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_cert_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_cert_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_cert_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_cert_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_cert_payload_inner_len<'a>(v: <Ikev2CertPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_cert_payload_inner().wf(v@),
@@ -12356,6 +13301,22 @@ pub fn serialize_auth_method<'a>(v: <AuthMethodCombinator as Combinator<'a, &'a 
 {
     let combinator = auth_method();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_auth_method_infallible<'a>(v: <AuthMethodCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_auth_method().wf(v@),
+        spec_auth_method().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_auth_method().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_auth_method().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_auth_method().spec_serialize(v@)),
+{
+    let combinator = auth_method();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn auth_method_len<'a>(v: <AuthMethodCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12584,6 +13545,22 @@ pub fn serialize_ikev2_auth_payload_inner<'a>(v: <Ikev2AuthPayloadInnerCombinato
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_auth_payload_inner_infallible<'a>(v: <Ikev2AuthPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_auth_payload_inner().wf(v@),
+        spec_ikev2_auth_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_auth_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_auth_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_auth_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_auth_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_auth_payload_inner_len<'a>(v: <Ikev2AuthPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_auth_payload_inner().wf(v@),
@@ -12781,6 +13758,22 @@ pub fn serialize_ikev2_nonce_payload_inner<'a>(v: <Ikev2NoncePayloadInnerCombina
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_nonce_payload_inner_infallible<'a>(v: <Ikev2NoncePayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_nonce_payload_inner().wf(v@),
+        spec_ikev2_nonce_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_nonce_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_nonce_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_nonce_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_nonce_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_nonce_payload_inner_len<'a>(v: <Ikev2NoncePayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_nonce_payload_inner().wf(v@),
@@ -12976,6 +13969,22 @@ pub fn serialize_ikev2_vendor_id_payload_inner<'a>(v: <Ikev2VendorIdPayloadInner
 {
     let combinator = ikev2_vendor_id_payload_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ikev2_vendor_id_payload_inner_infallible<'a>(v: <Ikev2VendorIdPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_vendor_id_payload_inner().wf(v@),
+        spec_ikev2_vendor_id_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_vendor_id_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_vendor_id_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_vendor_id_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_vendor_id_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_vendor_id_payload_inner_len<'a>(v: <Ikev2VendorIdPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13179,6 +14188,23 @@ pub fn serialize_sk_payload_body<'a>(v: <SkPayloadBodyCombinator as Combinator<'
 {
     let combinator = sk_payload_body( payload_length );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_sk_payload_body_infallible<'a>(v: <SkPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_sk_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 4 && (payload_length) <= 65535),
+        spec_sk_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_sk_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_sk_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_sk_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = sk_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn sk_payload_body_len<'a>(v: <SkPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
@@ -13411,6 +14437,22 @@ pub fn serialize_notify_protocol_id<'a>(v: <NotifyProtocolIdCombinator as Combin
 {
     let combinator = notify_protocol_id();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_notify_protocol_id_infallible<'a>(v: <NotifyProtocolIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_protocol_id().wf(v@),
+        spec_notify_protocol_id().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_protocol_id().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_protocol_id().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_protocol_id().spec_serialize(v@)),
+{
+    let combinator = notify_protocol_id();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn notify_protocol_id_len<'a>(v: <NotifyProtocolIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13652,6 +14694,22 @@ pub fn serialize_ikev2_notify_payload_inner<'a>(v: <Ikev2NotifyPayloadInnerCombi
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_notify_payload_inner_infallible<'a>(v: <Ikev2NotifyPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_notify_payload_inner().wf(v@),
+        spec_ikev2_notify_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_notify_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_notify_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_notify_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_notify_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_notify_payload_inner_len<'a>(v: <Ikev2NotifyPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_notify_payload_inner().wf(v@),
@@ -13834,6 +14892,22 @@ pub fn serialize_delete_payload_spis_ipsec<'a>(v: <DeletePayloadSpisIpsecCombina
 {
     let combinator = delete_payload_spis_ipsec( num_spis );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_delete_payload_spis_ipsec_infallible<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_spis_ipsec(num_spis@).wf(v@),
+        spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_delete_payload_spis_ipsec(num_spis@).spec_serialize(v@)),
+{
+    let combinator = delete_payload_spis_ipsec( num_spis );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn delete_payload_spis_ipsec_len<'a>(v: <DeletePayloadSpisIpsecCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16) -> (serialize_len: usize)
@@ -14078,6 +15152,22 @@ pub fn serialize_eap_message_req_resp<'a>(v: <EapMessageReqRespCombinator as Com
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_eap_message_req_resp_infallible<'a>(v: <EapMessageReqRespCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_eap_message_req_resp().wf(v@),
+        spec_eap_message_req_resp().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_eap_message_req_resp().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_eap_message_req_resp().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_eap_message_req_resp().spec_serialize(v@)),
+{
+    let combinator = eap_message_req_resp();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn eap_message_req_resp_len<'a>(v: <EapMessageReqRespCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_eap_message_req_resp().wf(v@),
@@ -14316,6 +15406,22 @@ pub fn serialize_notify_payload_body_spi4<'a>(v: <NotifyPayloadBodySpi4Combinato
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_notify_payload_body_spi4_infallible<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body_spi4().wf(v@),
+        spec_notify_payload_body_spi4().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_payload_body_spi4().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_payload_body_spi4().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_spi4().spec_serialize(v@)),
+{
+    let combinator = notify_payload_body_spi4();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn notify_payload_body_spi4_len<'a>(v: <NotifyPayloadBodySpi4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_notify_payload_body_spi4().wf(v@),
@@ -14543,6 +15649,24 @@ pub fn serialize_notify_payload_body_rest<'a>(v: <NotifyPayloadBodyRestCombinato
 {
     let combinator = notify_payload_body_rest( payload_length, spi_size );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_notify_payload_body_rest_infallible<'a>(v: <NotifyPayloadBodyRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body_rest(payload_length@, spi_size@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+        spec_notify_payload_body_rest(payload_length@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_payload_body_rest(payload_length@, spi_size@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_payload_body_rest(payload_length@, spi_size@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_payload_body_rest(payload_length@, spi_size@).spec_serialize(v@)),
+{
+    let combinator = notify_payload_body_rest( payload_length, spi_size );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn notify_payload_body_rest_len<'a>(v: <NotifyPayloadBodyRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
@@ -14787,6 +15911,23 @@ pub fn serialize_notify_payload_body<'a>(v: <NotifyPayloadBodyCombinator as Comb
 {
     let combinator = notify_payload_body( payload_length );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_notify_payload_body_infallible<'a>(v: <NotifyPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_notify_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_notify_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_notify_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_notify_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_notify_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = notify_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn notify_payload_body_len<'a>(v: <NotifyPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
@@ -15079,6 +16220,23 @@ pub fn serialize_cert_payload_body<'a>(v: <CertPayloadBodyCombinator as Combinat
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_cert_payload_body_infallible<'a>(v: <CertPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_cert_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 5 && (payload_length) <= 65535),
+        spec_cert_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_cert_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_cert_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_cert_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = cert_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn cert_payload_body_len<'a>(v: <CertPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_cert_payload_body(payload_length@).wf(v@),
@@ -15309,6 +16467,23 @@ pub fn serialize_ts_payload_body<'a>(v: <TsPayloadBodyCombinator as Combinator<'
 {
     let combinator = ts_payload_body( payload_length );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_ts_payload_body_infallible<'a>(v: <TsPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_ts_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = ts_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ts_payload_body_len<'a>(v: <TsPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
@@ -15552,6 +16727,23 @@ pub fn serialize_vendor_id_payload_body<'a>(v: <VendorIdPayloadBodyCombinator as
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_vendor_id_payload_body_infallible<'a>(v: <VendorIdPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_vendor_id_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 4 && (payload_length) <= 65535),
+        spec_vendor_id_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_vendor_id_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_vendor_id_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_vendor_id_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = vendor_id_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn vendor_id_payload_body_len<'a>(v: <VendorIdPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_vendor_id_payload_body(payload_length@).wf(v@),
@@ -15775,6 +16967,22 @@ pub fn serialize_payload_critical<'a>(v: <PayloadCriticalCombinator as Combinato
 {
     let combinator = payload_critical();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_payload_critical_infallible<'a>(v: <PayloadCriticalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_payload_critical().wf(v@),
+        spec_payload_critical().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_payload_critical().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_payload_critical().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_payload_critical().spec_serialize(v@)),
+{
+    let combinator = payload_critical();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn payload_critical_len<'a>(v: <PayloadCriticalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -16001,6 +17209,23 @@ pub fn serialize_delete_payload_body_spis<'a>(v: <DeletePayloadBodySpisCombinato
 {
     let combinator = delete_payload_body_spis( num_spis, spi_size );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_delete_payload_body_spis_infallible<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_body_spis(num_spis@, spi_size@).wf(v@),
+        spec_ipsec_spi_size_or_none().wf(spi_size@),
+        spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_delete_payload_body_spis(num_spis@, spi_size@).spec_serialize(v@)),
+{
+    let combinator = delete_payload_body_spis( num_spis, spi_size );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn delete_payload_body_spis_len<'a>(v: <DeletePayloadBodySpisCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, num_spis: u16, spi_size: IpsecSpiSizeOrNone) -> (serialize_len: usize)
@@ -16253,6 +17478,22 @@ pub fn serialize_delete_payload_body<'a>(v: <DeletePayloadBodyCombinator as Comb
 {
     let combinator = delete_payload_body();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_delete_payload_body_infallible<'a>(v: <DeletePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_delete_payload_body().wf(v@),
+        spec_delete_payload_body().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_delete_payload_body().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_delete_payload_body().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_delete_payload_body().spec_serialize(v@)),
+{
+    let combinator = delete_payload_body();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn delete_payload_body_len<'a>(v: <DeletePayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -16569,6 +17810,22 @@ pub fn serialize_ike_message<'a>(v: <IkeMessageCombinator as Combinator<'a, &'a 
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ike_message_infallible<'a>(v: <IkeMessageCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ike_message().wf(v@),
+        spec_ike_message().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ike_message().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ike_message().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ike_message().spec_serialize(v@)),
+{
+    let combinator = ike_message();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ike_message_len<'a>(v: <IkeMessageCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ike_message().wf(v@),
@@ -16817,6 +18074,22 @@ pub fn serialize_generic_payload_header<'a>(v: <GenericPayloadHeaderCombinator a
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_generic_payload_header_infallible<'a>(v: <GenericPayloadHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_generic_payload_header().wf(v@),
+        spec_generic_payload_header().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_generic_payload_header().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_generic_payload_header().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_generic_payload_header().spec_serialize(v@)),
+{
+    let combinator = generic_payload_header();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn generic_payload_header_len<'a>(v: <GenericPayloadHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_generic_payload_header().wf(v@),
@@ -17012,6 +18285,22 @@ pub fn serialize_ikev2_sk_payload_inner<'a>(v: <Ikev2SkPayloadInnerCombinator as
 {
     let combinator = ikev2_sk_payload_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ikev2_sk_payload_inner_infallible<'a>(v: <Ikev2SkPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_sk_payload_inner().wf(v@),
+        spec_ikev2_sk_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_sk_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_sk_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_sk_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_sk_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_sk_payload_inner_len<'a>(v: <Ikev2SkPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -17283,6 +18572,22 @@ pub fn serialize_ts_ipv4<'a>(v: <TsIpv4Combinator as Combinator<'a, &'a [u8], Ve
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ts_ipv4_infallible<'a>(v: <TsIpv4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ts_ipv4().wf(v@),
+        spec_ts_ipv4().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ts_ipv4().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ts_ipv4().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ts_ipv4().spec_serialize(v@)),
+{
+    let combinator = ts_ipv4();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ts_ipv4_len<'a>(v: <TsIpv4Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ts_ipv4().wf(v@),
@@ -17509,6 +18814,22 @@ pub fn serialize_ikev2_cp_payload_inner<'a>(v: <Ikev2CpPayloadInnerCombinator as
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
 }
 
+pub fn serialize_ikev2_cp_payload_inner_infallible<'a>(v: <Ikev2CpPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_cp_payload_inner().wf(v@),
+        spec_ikev2_cp_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_cp_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_cp_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_cp_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_cp_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_cp_payload_inner_len<'a>(v: <Ikev2CpPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
     requires
         spec_ikev2_cp_payload_inner().wf(v@),
@@ -17727,6 +19048,22 @@ pub fn serialize_ikev2_ke_payload_inner<'a>(v: <Ikev2KePayloadInnerCombinator as
 {
     let combinator = ikev2_ke_payload_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ikev2_ke_payload_inner_infallible<'a>(v: <Ikev2KePayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_ke_payload_inner().wf(v@),
+        spec_ikev2_ke_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_ke_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_ke_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_ke_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_ke_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_ke_payload_inner_len<'a>(v: <Ikev2KePayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -17959,6 +19296,23 @@ pub fn serialize_auth_payload_body<'a>(v: <AuthPayloadBodyCombinator as Combinat
 {
     let combinator = auth_payload_body( payload_length );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_auth_payload_body_infallible<'a>(v: <AuthPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_auth_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_auth_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_auth_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_auth_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_auth_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = auth_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn auth_payload_body_len<'a>(v: <AuthPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
@@ -18194,6 +19548,23 @@ pub fn serialize_id_payload_body<'a>(v: <IdPayloadBodyCombinator as Combinator<'
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_id_payload_body_infallible<'a>(v: <IdPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, payload_length: u16) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_id_payload_body(payload_length@).wf(v@),
+        ((payload_length) >= 8 && (payload_length) <= 65535),
+        spec_id_payload_body(payload_length@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_id_payload_body(payload_length@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_id_payload_body(payload_length@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_id_payload_body(payload_length@).spec_serialize(v@)),
+{
+    let combinator = id_payload_body( payload_length );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn id_payload_body_len<'a>(v: <IdPayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, payload_length: u16) -> (serialize_len: usize)
     requires
         spec_id_payload_body(payload_length@).wf(v@),
@@ -18400,6 +19771,22 @@ pub fn serialize_ikev2_certreq_payload_inner<'a>(v: <Ikev2CertreqPayloadInnerCom
 {
     let combinator = ikev2_certreq_payload_inner();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_ikev2_certreq_payload_inner_infallible<'a>(v: <Ikev2CertreqPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_certreq_payload_inner().wf(v@),
+        spec_ikev2_certreq_payload_inner().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_certreq_payload_inner().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_certreq_payload_inner().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_certreq_payload_inner().spec_serialize(v@)),
+{
+    let combinator = ikev2_certreq_payload_inner();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_certreq_payload_inner_len<'a>(v: <Ikev2CertreqPayloadInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -18868,6 +20255,23 @@ pub fn serialize_ikev2_payload_body<'a>(v: <Ikev2PayloadBodyCombinator as Combin
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_ikev2_payload_body_infallible<'a>(v: <Ikev2PayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, next_pt: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_payload_body(next_pt@).wf(v@),
+        spec_next_payload_type().wf(next_pt@),
+        spec_ikev2_payload_body(next_pt@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_payload_body(next_pt@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_payload_body(next_pt@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_payload_body(next_pt@).spec_serialize(v@)),
+{
+    let combinator = ikev2_payload_body( next_pt );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn ikev2_payload_body_len<'a>(v: <Ikev2PayloadBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, next_pt: u8) -> (serialize_len: usize)
     requires
         spec_ikev2_payload_body(next_pt@).wf(v@),
@@ -19088,6 +20492,23 @@ pub fn serialize_ikev2_payload<'a>(v: <Ikev2PayloadCombinator as Combinator<'a, 
 {
     let combinator = ikev2_payload( next_pt );
     combinator.serialize(v, data, pos)
+}
+
+pub fn serialize_ikev2_payload_infallible<'a>(v: <Ikev2PayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, next_pt: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_ikev2_payload(next_pt@).wf(v@),
+        spec_next_payload_type().wf(next_pt@),
+        spec_ikev2_payload(next_pt@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_ikev2_payload(next_pt@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_ikev2_payload(next_pt@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_ikev2_payload(next_pt@).spec_serialize(v@)),
+{
+    let combinator = ikev2_payload( next_pt );
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn ikev2_payload_len<'a>(v: <Ikev2PayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, next_pt: u8) -> (serialize_len: usize)

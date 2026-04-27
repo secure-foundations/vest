@@ -298,8 +298,24 @@ impl<'x, I, O, Fst, Snd, Cont> Combinator<'x, I, O> for Pair<Fst, Snd, Cont> whe
             assert(self.fst@.wf(v.0@));
         }
         let snd = self.snd.apply(POrSType::S(v.0));
-        let n = self.fst.serialize(v.0, data, pos)?;
-        let m = snd.serialize(v.1, data, pos + n)?;
+        let n = match self.fst.serialize(v.0, data, pos) {
+            Ok(n) => n,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() >= self.fst@.spec_serialize(v.0@).len());
+                }
+                return Err(e);
+            }
+        };
+        let m = match snd.serialize(v.1, data, pos + n) {
+            Ok(m) => m,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() == self.fst@.spec_serialize(v.0@).len() + (self.snd@)(v.0@).spec_serialize(v.1@).len());
+                }
+                return Err(e);
+            }
+        };
         assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
         Ok(n + m)
     }
@@ -400,8 +416,24 @@ impl<'x, Fst, Snd, I, O> Combinator<'x, I, O> for (Fst, Snd) where
         proof {
             assert(self.0@.wf(v.0@));
         }
-        let n = self.0.serialize(v.0, data, pos)?;
-        let m = self.1.serialize(v.1, data, pos + n)?;
+        let n = match self.0.serialize(v.0, data, pos) {
+            Ok(n) => n,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() >= self.0@.spec_serialize(v.0@).len());
+                }
+                return Err(e);
+            }
+        };
+        let m = match self.1.serialize(v.1, data, pos + n) {
+            Ok(m) => m,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() == self.0@.spec_serialize(v.0@).len() + self.1@.spec_serialize(v.1@).len());
+                }
+                return Err(e);
+            }
+        };
         assert(data@ == seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
         Ok(n + m)
     }

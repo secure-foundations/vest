@@ -27,3 +27,5 @@ pub mod utils;
 /// Error types
 #[allow(missing_docs)]
 pub mod errors;
+/// Infallible serialization support.
+pub mod infallible;

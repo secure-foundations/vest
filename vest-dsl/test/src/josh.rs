@@ -12,6 +12,7 @@ use vest_lib::regular::tag::*;
 use vest_lib::regular::uints::*;
 use vest_lib::utils::*;
 use vest_lib::properties::*;
+use vest_lib::infallible::*;
 use vest_lib::bitcoin::varint::{BtcVarint, VarInt};
 use vest_lib::regular::leb128::*;
 
@@ -200,6 +201,22 @@ pub fn serialize_tst_tag<'a>(v: <TstTagCombinator as Combinator<'a, &'a [u8], Ve
 {
     let combinator = tst_tag();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_tst_tag_infallible<'a>(v: <TstTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_tst_tag().wf(v@),
+        spec_tst_tag().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_tst_tag().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_tst_tag().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_tst_tag().spec_serialize(v@)),
+{
+    let combinator = tst_tag();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn tst_tag_len<'a>(v: <TstTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -407,6 +424,22 @@ pub fn serialize_mydata<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec
 {
     let combinator = mydata();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_mydata_infallible<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_mydata().wf(v@),
+        spec_mydata().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_mydata().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_mydata().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_mydata().spec_serialize(v@)),
+{
+    let combinator = mydata();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn mydata_len<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1099,6 +1132,23 @@ pub fn serialize_tst_mydata<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u
     combinator.serialize(v, data, pos)
 }
 
+pub fn serialize_tst_mydata_infallible<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, tag: u8) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_tst_mydata(tag@).wf(v@),
+        spec_tst_tag().wf(tag@),
+        spec_tst_mydata(tag@).spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_tst_mydata(tag@).spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_tst_mydata(tag@).spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_tst_mydata(tag@).spec_serialize(v@)),
+{
+    let combinator = tst_mydata( tag );
+    serialize_infallible(&combinator, v, data, pos)
+}
+
 pub fn tst_mydata_len<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
     requires
         spec_tst_mydata(tag@).wf(v@),
@@ -1313,6 +1363,22 @@ pub fn serialize_tst<'a>(v: <TstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>
 {
     let combinator = tst();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_tst_infallible<'a>(v: <TstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_tst().wf(v@),
+        spec_tst().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_tst().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_tst().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_tst().spec_serialize(v@)),
+{
+    let combinator = tst();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn tst_len<'a>(v: <TstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1707,6 +1773,22 @@ pub fn serialize_pair_stress<'a>(v: <PairStressCombinator as Combinator<'a, &'a 
 {
     let combinator = pair_stress();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+}
+
+pub fn serialize_pair_stress_infallible<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (n: usize)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_pair_stress().wf(v@),
+        spec_pair_stress().spec_serialize(v@).len() <= usize::MAX,
+        pos + spec_pair_stress().spec_serialize(v@).len() <= old(data)@.len(),
+    ensures
+        data@.len() == old(data)@.len(),
+        pos <= usize::MAX - n && pos + n <= data@.len(),
+        n == spec_pair_stress().spec_serialize(v@).len(),
+        data@ == seq_splice(old(data)@, pos, spec_pair_stress().spec_serialize(v@)),
+{
+    let combinator = pair_stress();
+    serialize_infallible(&combinator, v, data, pos)
 }
 
 pub fn pair_stress_len<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
