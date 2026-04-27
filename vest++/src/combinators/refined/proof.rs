@@ -1,4 +1,4 @@
-use crate::combinators::preceded::Preceded;
+use super::spec::*;
 use crate::combinators::Fixed;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -198,79 +198,149 @@ impl<const N: usize> EquivSerializers for super::Tag<Fixed::<N>, [u8; N]> {
     }
 }
 
-impl<Tg, Of> SPRoundTripDps for super::Tagged<Tg, Of> where
+impl<Tg, Of> SPRoundTripDps for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SPRoundTripDps,
  {
     open spec fn unambiguous(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).unambiguous()
+        with_prefix_tag(self.0, self.1, self.2).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let tag = super::Tag { inner: self.0, tag: self.1 };
-        assert(tag.consistent(self.1));
-        Preceded(tag, self.2).theorem_serialize_dps_parse_roundtrip(v, obuf);
+        with_prefix_tag(self.0, self.1, self.2).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl<Tg, Of> NonMalleable for super::Tagged<Tg, Of> where
-    Tg: SoundParser + NonMalleable,
+impl<Tg, Of> NonMalleable for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + SoundParser + NonMalleable,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).nonmal_inv()
+        with_prefix_tag(self.0, self.1, self.2).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_non_malleable(
-            buf1,
-            buf2,
-        );
+        with_prefix_tag(self.0, self.1, self.2).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl<Tg, Of> NoLookAhead for super::Tagged<Tg, Of> where
+impl<Tg, Of> NoLookAhead for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).no_lookahead_inv()
+        with_prefix_tag(self.0, self.1, self.2).no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_no_lookahead(i1, i2);
+        with_prefix_tag(self.0, self.1, self.2).lemma_no_lookahead(i1, i2);
     }
 }
 
-impl<Tg, Of> EquivSerializersGeneral for super::Tagged<Tg, Of> where
+impl<Tg, Of> EquivSerializersGeneral for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
+    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).equiv_general_inv()
+        with_prefix_tag(self.0, self.1, self.2).equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_equiv(v, obuf);
+        with_prefix_tag(self.0, self.1, self.2).lemma_serialize_equiv(v, obuf);
     }
 }
 
-impl<Tg, Of> EquivSerializers for super::Tagged<Tg, Of> where
+impl<Tg, Of> EquivSerializers for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
+    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializers,
  {
     open spec fn equiv_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).equiv_inv()
+        with_prefix_tag(self.0, self.1, self.2).equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_equiv_on_empty(
-            v,
-        );
+        with_prefix_tag(self.0, self.1, self.2).lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+impl<Tg, Of> SPRoundTripDps for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SPRoundTripDps,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SPRoundTripDps + NonTailFmt,
+ {
+    open spec fn unambiguous(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).unambiguous()
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl<Tg, Of> NonMalleable for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SoundParser + NonMalleable,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SoundParser + NonMalleable,
+ {
+    open spec fn nonmal_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<Tg, Of> NoLookAhead for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: NoLookAhead,
+ {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).no_lookahead_inv()
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<Tg, Of> EquivSerializersGeneral for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
+        Val = Tg::T,
+    >,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: EquivSerializersGeneral,
+ {
+    open spec fn equiv_general_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<Tg, Of> EquivSerializers for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + EquivSerializers<SVal = Tg::T, SValue = Tg::T> + Consistency<Val = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: EquivSerializersGeneral,
+ {
+    open spec fn equiv_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_equiv_on_empty(v);
     }
 }
 

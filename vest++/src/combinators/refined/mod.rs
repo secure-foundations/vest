@@ -37,6 +37,11 @@ pub struct Tag<Inner, Tag> {
 }
 
 /// Sugar for `Preceded(Tag { inner, tag }, body)`.
-pub struct Tagged<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
+pub struct WithPrefixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
+
+/// Sugar for `Terminated(body, Tag { inner, tag })`.
+pub struct WithSuffixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
 
 } // verus!
+/// Backward-compatible name for [`WithPrefixTag`].
+pub use WithPrefixTag as Tagged;

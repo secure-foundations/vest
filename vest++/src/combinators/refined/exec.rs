@@ -1,5 +1,7 @@
-use crate::combinators::{Fixed, U8};
-use crate::core::spec::SoundParser;
+use crate::combinators::{Fixed, Preceded2, Terminated2};
+use crate::core::exec::cmp_byte_slices;
+use crate::core::exec::input::InputBuf;
+use crate::core::exec::{DeepEq, SelfView};
 use crate::core::{
     exec::{
         fns::Pred,
@@ -8,7 +10,7 @@ use crate::core::{
         serializer::Serializer,
         ParseError,
     },
-    spec::{SpecParser, SpecPred},
+    spec::{SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
 };
 use vstd::prelude::*;
 
@@ -61,9 +63,30 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
     }
 }
 
-impl<Inner, ST> Serializer<ST> for super::Tag<Inner, Inner::SVal> where
+impl<I, Inner> Parser<I> for super::Tag<Inner, Inner::PVal> where
+    I: InputBuf,
+    Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
+    Inner::PVal: SelfView,
+ {
+    type PT = Inner::PVal;
+
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        let (n, v) = self.inner.parse(ibuf)?;
+        if SelfView::eq(&v, &self.tag) {
+            Ok((n, v))
+        } else {
+            Err(ParseError::invalid_tag())
+        }
+    }
+}
+
+impl<Inner, ST> Serializer<ST> for super::Tag<Inner, ST> where
     ST: DeepView<V = Inner::SVal>,
-    Inner: Serializer<ST>,
+    Inner: Serializer<ST, SVal = ST>,
  {
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
@@ -74,25 +97,9 @@ impl<Inner, ST> Serializer<ST> for super::Tag<Inner, Inner::SVal> where
     }
 }
 
-impl Parser<&[u8]> for super::Tag<U8, u8> {
-    type PT = u8;
-
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-        let (n, v) = self.inner.parse(ibuf)?;
-        if v == self.tag {
-            Ok((n, v))
-        } else {
-            Err(ParseError::predicate_failed())
-        }
-    }
-}
-
 impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
-        let _slice = v.as_slice();
         obuf.extend_from_slice(v);
-        assert(_slice@ == v@);
-        assert(final(obuf)@ == old(obuf)@ + v.deep_view());
     }
 }
 
@@ -112,18 +119,6 @@ impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
 //     //     // r == (a@ == b@),
 //     //     r == (a.deep_view() == b.deep_view()),
 // ;
-#[verifier::external_body]
-#[inline(always)]
-fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
-    requires
-        a.len() == b.len(),
-    ensures
-        r == (a@ == b@),
-        r == (a.deep_view() == b.deep_view()),
-{
-    a == b
-}
-
 impl<const N: usize> Parser<&[u8]> for super::Tag<Fixed<N>, [u8; N]> {
     type PT = [u8; N];
 
@@ -138,13 +133,110 @@ impl<const N: usize> Parser<&[u8]> for super::Tag<Fixed<N>, [u8; N]> {
             tag.deep_view_eq_view();
         }
         if cmp_byte_slices(tag, v) {
-            proof {
-                assert(self.tag.deep_view() == v.deep_view());
-            }
             Ok((n, self.tag))
         } else {
             Err(ParseError::invalid_tag())
         }
+    }
+}
+
+impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
+    I: InputBuf,
+    Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
+    Tg::T: SelfView + Copy,
+    Of: Parser<I> + SafeParser,
+ {
+    type PT = Of::PT;
+
+    open spec fn exec_inv(&self) -> bool {
+        Preceded2::<_, _, _, false> {
+            a: super::Tag { inner: &self.0, tag: self.1 },
+            b: &self.2,
+            a_val: self.1,
+        }.exec_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        let fmt = Preceded2::<_, _, _, false> {
+            a: super::Tag { inner: &self.0, tag: self.1 },
+            b: &self.2,
+            a_val: self.1,
+        };
+        fmt.parse(ibuf)
+    }
+}
+
+impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T> + Copy,
+    ST: DeepView<V = Of::SVal>,
+    Of: Serializer<ST>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        Preceded2::<_, _, _, false> {
+            a: super::Tag { inner: &self.0, tag: self.1 },
+            b: &self.2,
+            a_val: self.1,
+        }.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+        let fmt = Preceded2::<_, _, _, false> {
+            a: super::Tag { inner: &self.0, tag: self.1 },
+            b: &self.2,
+            a_val: self.1,
+        };
+        fmt.ex_serialize(v, obuf);
+    }
+}
+
+impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
+    I: InputBuf,
+    Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
+    Tg::T: SelfView + Copy,
+    Of: Parser<I> + SafeParser,
+ {
+    type PT = Of::PT;
+
+    open spec fn exec_inv(&self) -> bool {
+        Terminated2::<_, _, _, false> {
+            a: &self.2,
+            b: super::Tag { inner: &self.0, tag: self.1 },
+            b_val: self.1,
+        }.exec_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        let fmt = Terminated2::<_, _, _, false> {
+            a: &self.2,
+            b: super::Tag { inner: &self.0, tag: self.1 },
+            b_val: self.1,
+        };
+        fmt.parse(ibuf)
+    }
+}
+
+impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T> + Copy,
+    ST: DeepView<V = Of::SVal>,
+    Of: Serializer<ST>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        Terminated2::<_, _, _, false> {
+            a: &self.2,
+            b: super::Tag { inner: &self.0, tag: self.1 },
+            b_val: self.1,
+        }.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+        let fmt = Terminated2::<_, _, _, false> {
+            a: &self.2,
+            b: super::Tag { inner: &self.0, tag: self.1 },
+            b_val: self.1,
+        };
+        fmt.ex_serialize(v, obuf);
     }
 }
 

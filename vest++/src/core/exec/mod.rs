@@ -23,6 +23,8 @@ pub trait SelfView: DeepEq<V = Self> + Sized {
     fn eq(&self, other: &Self) -> (eq: bool)
         ensures
             eq == (self == other),
+            self.deep_view() == *self,
+            other.deep_view() == *other,
     ;
 }
 

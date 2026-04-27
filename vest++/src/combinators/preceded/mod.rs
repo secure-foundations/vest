@@ -24,7 +24,7 @@ verus! {
 /// `A` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
 pub struct Preceded<A, B>(pub A, pub B);
 
-pub struct Preceded2<A, AVal, B, const NONMAL: bool = false> {
+pub struct Preceded2<A, AVal, B, const CHECK: bool = false> {
     pub a: A,
     pub b: B,
     pub a_val: AVal,

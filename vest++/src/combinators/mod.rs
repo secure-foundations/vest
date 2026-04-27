@@ -106,7 +106,7 @@ pub use preceded::{Preceded, Preceded2};
 //     Fix, GoodRecSBody, NonMalleableRecPBody, NonTailRecSBodyDPS, RecBLenBody, RecCnstcyBody,
 //     RecPBody, RecSBody, RecSBodyDPS, SoundRecPBody,
 // };
-pub use refined::{Refined, Tag, Tagged};
+pub use refined::{Refined, Tag, Tagged, WithPrefixTag, WithSuffixTag};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::{Terminated, Terminated2};

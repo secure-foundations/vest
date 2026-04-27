@@ -1,5 +1,4 @@
-use crate::combinators::preceded::Preceded;
-use crate::combinators::Fixed;
+use crate::combinators::{Fixed, Preceded2, Terminated2};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -376,151 +375,323 @@ impl<const N: usize> ValueByteLen for super::Tag<Fixed::<N>, [u8; N]> {
     }
 }
 
-impl<Tg, Of> SpecParser for super::Tagged<Tg, Of> where
+pub open spec fn with_prefix_tag<Tg: SpecByteLen, Of>(
+    tag_inner: Tg,
+    tag: Tg::T,
+    of: Of,
+) -> Preceded2<super::Tag<Tg, Tg::T>, Tg::T, Of, false> {
+    Preceded2 { a: super::Tag { inner: tag_inner, tag }, b: of, a_val: tag }
+}
+
+pub open spec fn with_suffix_tag<Tg: SpecByteLen, Of>(
+    tag_inner: Tg,
+    tag: Tg::T,
+    of: Of,
+) -> Terminated2<Of, super::Tag<Tg, Tg::T>, Tg::T, false> {
+    Terminated2 { a: of, b: super::Tag { inner: tag_inner, tag }, b_val: tag }
+}
+
+impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SpecParser,
  {
     type PVal = Of::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_parse(ibuf)
+        with_prefix_tag(self.0, self.1, self.2).spec_parse(ibuf)
     }
 }
 
-impl<Tg, Of> Consistency for super::Tagged<Tg, Of> where
+impl<Tg, Of> Consistency for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: Consistency,
  {
     type Val = Of::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        &&& self.0.consistent(self.1)
-        &&& self.2.consistent(v)
+        with_prefix_tag(self.0, self.1, self.2).consistent(v)
     }
 }
 
-impl<Tg, Of> SafeParser for super::Tagged<Tg, Of> where
+impl<Tg, Of> SafeParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SafeParser,
  {
     open spec fn safe_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).safe_inv()
+        with_prefix_tag(self.0, self.1, self.2).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_safe(ibuf)
+        with_prefix_tag(self.0, self.1, self.2).lemma_parse_safe(ibuf)
     }
 }
 
-impl<Tg, Of> SoundParser for super::Tagged<Tg, Of> where
+impl<Tg, Of> SoundParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).sound_inv()
+        with_prefix_tag(self.0, self.1, self.2).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_sound_consumption(
-            ibuf,
-        )
+        with_prefix_tag(self.0, self.1, self.2).lemma_parse_sound_consumption(ibuf)
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_parse_sound_value(ibuf)
+        with_prefix_tag(self.0, self.1, self.2).lemma_parse_sound_value(ibuf)
     }
 }
 
-impl<Tg, Of> SpecSerializerDps for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T> + Consistency<Val = Tg::T>,
+impl<Tg, Of> SpecSerializerDps for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializerDps,
  {
     type SValue = Of::SValue;
 
     open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize_dps(v, obuf)
+        with_prefix_tag(self.0, self.1, self.2).spec_serialize_dps(v, obuf)
     }
 }
 
-impl<Tg, Of> SpecSerializer for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + SpecSerializer<SVal = Tg::T> + Consistency<Val = Tg::T>,
+impl<Tg, Of> SpecSerializer for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializer,
  {
     type SVal = Of::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).spec_serialize(v)
+        with_prefix_tag(self.0, self.1, self.2).spec_serialize(v)
     }
 }
 
-impl<Tg, Of> NonTailFmt for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + NonTailFmt + Consistency<Val = Tg::T>,
+impl<Tg, Of> NonTailFmt for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + NonTailFmt,
+    Tg::T: DeepView<V = Tg::T>,
     Of: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).serialize_dps_inv()
+        with_prefix_tag(self.0, self.1, self.2).serialize_dps_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_prepend(
-            v,
-            obuf,
-        );
+        with_prefix_tag(self.0, self.1, self.2).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_dps_len(
-            v,
-            obuf,
-        );
+        with_prefix_tag(self.0, self.1, self.2).lemma_serialize_dps_len(v, obuf);
     }
 }
 
-impl<Tg, Of> GoodSerializer for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + GoodSerializer + Consistency<Val = Tg::T>,
+impl<Tg, Of> GoodSerializer for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + GoodSerializer,
+    Tg::T: DeepView<V = Tg::T>,
     Of: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).serialize_inv()
+        with_prefix_tag(self.0, self.1, self.2).serialize_inv()
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).lemma_serialize_len(v);
+        with_prefix_tag(self.0, self.1, self.2).lemma_serialize_len(v);
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::Tagged<Tg, Of> where
-    Tg: SpecByteLen + Consistency<Val = Tg::T>,
+impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen,
+    Tg::T: DeepView<V = Tg::T>,
     Of: SpecByteLen,
  {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2).byte_len(v)
+        with_prefix_tag(self.0, self.1, self.2).byte_len(v)
     }
 }
 
-impl<Tg, Of> StaticByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of: StaticByteLen {
+impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
+    Tg: StaticByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: StaticByteLen,
+ {
     open spec fn static_byte_len() -> nat {
         Tg::static_byte_len() + Of::static_byte_len()
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        let fmt = Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2);
-        assert(fmt.0.consistent(self.1));
-        fmt.lemma_static_len_matches_byte_len(v);
+        with_prefix_tag(self.0, self.1, self.2).lemma_static_len_matches_byte_len(v);
     }
 }
 
-impl<Tg, Of> ValueByteLen for super::Tagged<Tg, Of> where Tg: StaticByteLen, Of: ValueByteLen {
+impl<Tg, Of> ValueByteLen for super::WithPrefixTag<Tg, Of> where
+    Tg: StaticByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: ValueByteLen,
+ {
     open spec fn value_byte_len(v: Self::T) -> nat {
         Tg::static_byte_len() + Of::value_byte_len(v)
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        let fmt = Preceded(super::Tag { inner: self.0, tag: self.1 }, self.2);
-        assert(fmt.0.consistent(self.1));
-        fmt.lemma_value_len_matches_byte_len(v);
+        with_prefix_tag(self.0, self.1, self.2).lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<Tg, Of> SpecParser for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SpecParser,
+ {
+    type PVal = Of::PVal;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        with_suffix_tag(self.0, self.1, self.2).spec_parse(ibuf)
+    }
+}
+
+impl<Tg, Of> Consistency for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + Consistency<Val = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: Consistency,
+ {
+    type Val = Of::Val;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).consistent(v)
+    }
+}
+
+impl<Tg, Of> SafeParser for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SafeParser,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_parse_safe(ibuf)
+    }
+}
+
+impl<Tg, Of> SoundParser for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SoundParser,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SoundParser,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).sound_inv()
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_parse_sound_consumption(ibuf)
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<Tg, Of> SpecSerializerDps for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SpecSerializerDps,
+ {
+    type SValue = Of::SValue;
+
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        with_suffix_tag(self.0, self.1, self.2).spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<Tg, Of> SpecSerializer for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SpecSerializer,
+ {
+    type SVal = Of::SVal;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        with_suffix_tag(self.0, self.1, self.2).spec_serialize(v)
+    }
+}
+
+impl<Tg, Of> NonTailFmt for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + NonTailFmt,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: NonTailFmt,
+ {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<Tg, Of> GoodSerializer for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + GoodSerializer,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: GoodSerializer,
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_len(v);
+    }
+}
+
+impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: SpecByteLen,
+ {
+    type T = Of::T;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        with_suffix_tag(self.0, self.1, self.2).byte_len(v)
+    }
+}
+
+impl<Tg, Of> StaticByteLen for super::WithSuffixTag<Tg, Of> where
+    Tg: StaticByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: StaticByteLen,
+ {
+    open spec fn static_byte_len() -> nat {
+        Of::static_byte_len() + Tg::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Tg, Of> ValueByteLen for super::WithSuffixTag<Tg, Of> where
+    Tg: StaticByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: ValueByteLen,
+ {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Of::value_byte_len(v) + Tg::static_byte_len()
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_value_len_matches_byte_len(v);
     }
 }
 
