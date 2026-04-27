@@ -333,7 +333,7 @@ impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PVal> {
 
 impl<A: ProductiveParser, AVal: DeepView<V = A::PVal>, B: ProductiveParser, const CHECK: bool>
     ProductiveParser for
-    Preceded2<A, AVal, B, CHECK>
+    Preceded<A, AVal, B, CHECK>
 {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);
@@ -346,7 +346,7 @@ impl<A: ProductiveParser, AVal: DeepView<V = A::PVal>, B: ProductiveParser, cons
 
 impl<A: ProductiveParser, B: ProductiveParser, BVal: DeepView<V = B::PVal>, const CHECK: bool>
     ProductiveParser for
-    Terminated2<A, B, BVal, CHECK>
+    Terminated<A, B, BVal, CHECK>
 {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);

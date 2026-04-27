@@ -16,7 +16,7 @@ verus! {
 ///
 /// When `CHECK` is `false`, parsing is malleable in the discarded prefix unless `A` admits a unique consistent value.
 /// When `CHECK` is `true`, parsing additionally checks that the parsed prefix equals `a_val`.
-pub struct Preceded2<A, AVal, B, const CHECK: bool = false> {
+pub struct Preceded<A, AVal, B, const CHECK: bool = false> {
     pub a: A,
     pub b: B,
     pub a_val: AVal,

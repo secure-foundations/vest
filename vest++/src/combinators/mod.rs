@@ -23,8 +23,8 @@
 //! | [`Repeat<A, B>`] | Same as `Pair(Star<A>, B)`, but disambiguates `A` and `B` |
 //! | [`RepeatN<C, Len>`] | Fixed number of repetitions determined by a length parameter |
 //! | [`Array<N, C>`] | Array of values of length `N` |
-//! | [`Preceded2<A, AVal, B>`] | Same as `Pair(A, B)`, but discards A's value and uses `a_val` as its serialization witness |
-//! | [`Terminated2<A, B, BVal>`] | Same as `Pair(A, B)`, but discards B's value and uses `b_val` as its serialization witness |
+//! | [`Preceded<A, AVal, B>`] | Same as `Pair(A, B)`, but discards A's value and uses `a_val` as its serialization witness |
+//! | [`Terminated<A, B, BVal>`] | Same as `Pair(A, B)`, but discards B's value and uses `b_val` as its serialization witness |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
@@ -101,11 +101,11 @@ pub use mapped::{Mapped, TryMap};
 pub use marker::{Empty, Void};
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
-pub use preceded::Preceded2;
+pub use preceded::Preceded;
 pub use recursive::Fix;
 pub use refined::{Refined, Tag, Tagged, WithPrefixTag, WithSuffixTag};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
-pub use terminated::Terminated2;
+pub use terminated::Terminated;
 pub use tuple::{DepPair, Pair};
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

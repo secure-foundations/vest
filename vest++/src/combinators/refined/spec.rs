@@ -1,4 +1,4 @@
-use crate::combinators::{Fixed, Preceded2, Terminated2};
+use crate::combinators::{Fixed, Preceded, Terminated};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -379,16 +379,16 @@ pub open spec fn with_prefix_tag<Tg: SpecByteLen, Of>(
     tag_inner: Tg,
     tag: Tg::T,
     of: Of,
-) -> Preceded2<super::Tag<Tg, Tg::T>, Tg::T, Of, false> {
-    Preceded2 { a: super::Tag { inner: tag_inner, tag }, b: of, a_val: tag }
+) -> Preceded<super::Tag<Tg, Tg::T>, Tg::T, Of, false> {
+    Preceded { a: super::Tag { inner: tag_inner, tag }, b: of, a_val: tag }
 }
 
 pub open spec fn with_suffix_tag<Tg: SpecByteLen, Of>(
     tag_inner: Tg,
     tag: Tg::T,
     of: Of,
-) -> Terminated2<Of, super::Tag<Tg, Tg::T>, Tg::T, false> {
-    Terminated2 { a: of, b: super::Tag { inner: tag_inner, tag }, b_val: tag }
+) -> Terminated<Of, super::Tag<Tg, Tg::T>, Tg::T, false> {
+    Terminated { a: of, b: super::Tag { inner: tag_inner, tag }, b_val: tag }
 }
 
 impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where

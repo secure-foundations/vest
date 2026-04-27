@@ -104,7 +104,7 @@ pub trait Consistency {
 
 /// Combinators whose consistency admits at most one value.
 ///
-/// Used by e.g., [`crate::combinators::Preceded2`] and [`crate::combinators::Terminated2`] to
+/// Used by e.g., [`crate::combinators::Preceded`] and [`crate::combinators::Terminated`] to
 /// recover non-malleability when the discarded side is not checked explicitly.
 pub trait AdmitsUniqueVal: Consistency {
     /// Any two consistent values must be equal.

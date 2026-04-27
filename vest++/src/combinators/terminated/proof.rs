@@ -7,7 +7,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, B, BVal, const CHECK: bool> SPRoundTripDps for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> SPRoundTripDps for super::Terminated<A, B, BVal, CHECK> where
     A: SPRoundTripDps + NonTailFmt,
     B: SPRoundTripDps,
     BVal: DeepView<V = B::SValue>,
@@ -22,7 +22,7 @@ impl<A, B, BVal, const CHECK: bool> SPRoundTripDps for super::Terminated2<A, B, 
     }
 }
 
-impl<A, B, BVal> NonMalleable for super::Terminated2<A, B, BVal, true> where
+impl<A, B, BVal> NonMalleable for super::Terminated<A, B, BVal, true> where
     A: SoundParser + NonMalleable,
     B: SoundParser + NonMalleable,
     BVal: DeepView<V = B::PVal>,
@@ -38,7 +38,7 @@ impl<A, B, BVal> NonMalleable for super::Terminated2<A, B, BVal, true> where
     }
 }
 
-impl<A, B, BVal> NonMalleable for super::Terminated2<A, B, BVal, false> where
+impl<A, B, BVal> NonMalleable for super::Terminated<A, B, BVal, false> where
     A: SoundParser + NonMalleable,
     B: SoundParser + NonMalleable + AdmitsUniqueVal,
     BVal: DeepView<V = B::PVal>,
@@ -65,7 +65,7 @@ impl<A, B, BVal> NonMalleable for super::Terminated2<A, B, BVal, false> where
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> NoLookAhead for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> NoLookAhead for super::Terminated<A, B, BVal, CHECK> where
     A: NoLookAhead,
     B: NoLookAhead,
     BVal: DeepView<V = B::PVal>,
@@ -81,7 +81,7 @@ impl<A, B, BVal, const CHECK: bool> NoLookAhead for super::Terminated2<A, B, BVa
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> EquivSerializersGeneral for super::Terminated2<
+impl<A, B, BVal, const CHECK: bool> EquivSerializersGeneral for super::Terminated<
     A,
     B,
     BVal,
@@ -102,7 +102,7 @@ impl<A, B, BVal, const CHECK: bool> EquivSerializersGeneral for super::Terminate
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> EquivSerializers for super::Terminated2<
+impl<A, B, BVal, const CHECK: bool> EquivSerializers for super::Terminated<
     A,
     B,
     BVal,

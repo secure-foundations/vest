@@ -29,7 +29,7 @@ pub open spec fn preceded<FmtA, FmtB, A, B, const CHECK: bool>(
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> SpecParser for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SpecParser for super::Preceded<A, AVal, B, CHECK> where
     A: SpecParser,
     AVal: DeepView<V = A::PVal>,
     B: SpecParser,
@@ -42,7 +42,7 @@ impl<A, AVal, B, const CHECK: bool> SpecParser for super::Preceded2<A, AVal, B, 
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> SpecSerializerDps for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SpecSerializerDps for super::Preceded<A, AVal, B, CHECK> where
     A: SpecSerializerDps,
     AVal: DeepView<V = A::SValue>,
     B: SpecSerializerDps,
@@ -55,7 +55,7 @@ impl<A, AVal, B, const CHECK: bool> SpecSerializerDps for super::Preceded2<A, AV
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> SpecSerializer for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SpecSerializer for super::Preceded<A, AVal, B, CHECK> where
     A: SpecSerializer,
     AVal: DeepView<V = A::SVal>,
     B: SpecSerializer,
@@ -68,7 +68,7 @@ impl<A, AVal, B, const CHECK: bool> SpecSerializer for super::Preceded2<A, AVal,
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> Consistency for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> Consistency for super::Preceded<A, AVal, B, CHECK> where
     A: Consistency,
     AVal: DeepView<V = A::Val>,
     B: Consistency,
@@ -81,7 +81,7 @@ impl<A, AVal, B, const CHECK: bool> Consistency for super::Preceded2<A, AVal, B,
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> SafeParser for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SafeParser for super::Preceded<A, AVal, B, CHECK> where
     A: SafeParser,
     AVal: DeepView<V = A::PVal>,
     B: SafeParser,
@@ -97,7 +97,7 @@ impl<A, AVal, B, const CHECK: bool> SafeParser for super::Preceded2<A, AVal, B, 
     }
 }
 
-impl<A, AVal, B> SoundParser for super::Preceded2<A, AVal, B, true> where
+impl<A, AVal, B> SoundParser for super::Preceded<A, AVal, B, true> where
     A: SoundParser,
     AVal: DeepView<V = A::PVal>,
     B: SoundParser,
@@ -120,7 +120,7 @@ impl<A, AVal, B> SoundParser for super::Preceded2<A, AVal, B, true> where
     }
 }
 
-impl<A, AVal, B> SoundParser for super::Preceded2<A, AVal, B, false> where
+impl<A, AVal, B> SoundParser for super::Preceded<A, AVal, B, false> where
     A: SoundParser + AdmitsUniqueVal,
     AVal: DeepView<V = A::PVal>,
     B: SoundParser,
@@ -146,7 +146,7 @@ impl<A, AVal, B> SoundParser for super::Preceded2<A, AVal, B, false> where
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> NonTailFmt for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> NonTailFmt for super::Preceded<A, AVal, B, CHECK> where
     A: NonTailFmt,
     AVal: DeepView<V = A::SValue>,
     B: NonTailFmt,
@@ -167,7 +167,7 @@ impl<A, AVal, B, const CHECK: bool> NonTailFmt for super::Preceded2<A, AVal, B, 
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> GoodSerializer for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> GoodSerializer for super::Preceded<A, AVal, B, CHECK> where
     A: GoodSerializer,
     AVal: DeepView<V = A::SVal>,
     B: GoodSerializer,
@@ -183,7 +183,7 @@ impl<A, AVal, B, const CHECK: bool> GoodSerializer for super::Preceded2<A, AVal,
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> SpecByteLen for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SpecByteLen for super::Preceded<A, AVal, B, CHECK> where
     A: SpecByteLen,
     AVal: DeepView<V = A::T>,
     B: SpecByteLen,
@@ -196,7 +196,7 @@ impl<A, AVal, B, const CHECK: bool> SpecByteLen for super::Preceded2<A, AVal, B,
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> StaticByteLen for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> StaticByteLen for super::Preceded<A, AVal, B, CHECK> where
     A: StaticByteLen,
     AVal: DeepView<V = A::T>,
     B: StaticByteLen,
@@ -211,7 +211,7 @@ impl<A, AVal, B, const CHECK: bool> StaticByteLen for super::Preceded2<A, AVal, 
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> ValueByteLen for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> ValueByteLen for super::Preceded<A, AVal, B, CHECK> where
     A: StaticByteLen,
     AVal: DeepView<V = A::T>,
     B: ValueByteLen,

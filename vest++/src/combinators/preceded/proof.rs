@@ -7,7 +7,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<A, AVal, B, const CHECK: bool> SPRoundTripDps for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> SPRoundTripDps for super::Preceded<A, AVal, B, CHECK> where
     A: SPRoundTripDps + NonTailFmt,
     AVal: DeepView<V = A::SValue>,
     B: SPRoundTripDps,
@@ -25,7 +25,7 @@ impl<A, AVal, B, const CHECK: bool> SPRoundTripDps for super::Preceded2<A, AVal,
     }
 }
 
-impl<A, AVal, B> NonMalleable for super::Preceded2<A, AVal, B, true> where
+impl<A, AVal, B> NonMalleable for super::Preceded<A, AVal, B, true> where
     A: SoundParser + NonMalleable,
     AVal: DeepView<V = A::PVal>,
     B: SoundParser + NonMalleable,
@@ -44,7 +44,7 @@ impl<A, AVal, B> NonMalleable for super::Preceded2<A, AVal, B, true> where
     }
 }
 
-impl<A, AVal, B> NonMalleable for super::Preceded2<A, AVal, B, false> where
+impl<A, AVal, B> NonMalleable for super::Preceded<A, AVal, B, false> where
     A: SoundParser + NonMalleable + AdmitsUniqueVal,
     AVal: DeepView<V = A::PVal>,
     B: SoundParser + NonMalleable,
@@ -71,7 +71,7 @@ impl<A, AVal, B> NonMalleable for super::Preceded2<A, AVal, B, false> where
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> NoLookAhead for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> NoLookAhead for super::Preceded<A, AVal, B, CHECK> where
     A: NoLookAhead,
     AVal: DeepView<V = A::PVal>,
     B: NoLookAhead,
@@ -87,7 +87,7 @@ impl<A, AVal, B, const CHECK: bool> NoLookAhead for super::Preceded2<A, AVal, B,
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> EquivSerializersGeneral for super::Preceded2<
+impl<A, AVal, B, const CHECK: bool> EquivSerializersGeneral for super::Preceded<
     A,
     AVal,
     B,
@@ -108,7 +108,7 @@ impl<A, AVal, B, const CHECK: bool> EquivSerializersGeneral for super::Preceded2
     }
 }
 
-impl<A, AVal, B, const CHECK: bool> EquivSerializers for super::Preceded2<A, AVal, B, CHECK> where
+impl<A, AVal, B, const CHECK: bool> EquivSerializers for super::Preceded<A, AVal, B, CHECK> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     AVal: DeepView<V = A::SValue>,
     B: EquivSerializers,

@@ -28,7 +28,7 @@ pub open spec fn terminated<FmtA, FmtB, A, B, const NON_MALLEABLE: bool>(
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> SpecParser for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> SpecParser for super::Terminated<A, B, BVal, CHECK> where
     A: SpecParser,
     B: SpecParser,
     BVal: DeepView<V = B::PVal>,
@@ -41,7 +41,7 @@ impl<A, B, BVal, const CHECK: bool> SpecParser for super::Terminated2<A, B, BVal
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> SpecSerializerDps for super::Terminated2<
+impl<A, B, BVal, const CHECK: bool> SpecSerializerDps for super::Terminated<
     A,
     B,
     BVal,
@@ -55,7 +55,7 @@ impl<A, B, BVal, const CHECK: bool> SpecSerializerDps for super::Terminated2<
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> SpecSerializer for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> SpecSerializer for super::Terminated<A, B, BVal, CHECK> where
     A: SpecSerializer,
     B: SpecSerializer,
     BVal: DeepView<V = B::SVal>,
@@ -68,7 +68,7 @@ impl<A, B, BVal, const CHECK: bool> SpecSerializer for super::Terminated2<A, B, 
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> Consistency for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> Consistency for super::Terminated<A, B, BVal, CHECK> where
     A: Consistency,
     B: Consistency,
     BVal: DeepView<V = B::Val>,
@@ -81,7 +81,7 @@ impl<A, B, BVal, const CHECK: bool> Consistency for super::Terminated2<A, B, BVa
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> SafeParser for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> SafeParser for super::Terminated<A, B, BVal, CHECK> where
     A: SafeParser,
     B: SafeParser,
     BVal: DeepView<V = B::PVal>,
@@ -97,7 +97,7 @@ impl<A, B, BVal, const CHECK: bool> SafeParser for super::Terminated2<A, B, BVal
     }
 }
 
-impl<A, B, BVal> SoundParser for super::Terminated2<A, B, BVal, true> where
+impl<A, B, BVal> SoundParser for super::Terminated<A, B, BVal, true> where
     A: SoundParser,
     B: SoundParser,
     BVal: DeepView<V = B::PVal>,
@@ -117,7 +117,7 @@ impl<A, B, BVal> SoundParser for super::Terminated2<A, B, BVal, true> where
     }
 }
 
-impl<A, B, BVal> SoundParser for super::Terminated2<A, B, BVal, false> where
+impl<A, B, BVal> SoundParser for super::Terminated<A, B, BVal, false> where
     A: SoundParser,
     B: SoundParser + AdmitsUniqueVal,
     BVal: DeepView<V = B::PVal>,
@@ -143,7 +143,7 @@ impl<A, B, BVal> SoundParser for super::Terminated2<A, B, BVal, false> where
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> NonTailFmt for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> NonTailFmt for super::Terminated<A, B, BVal, CHECK> where
     A: NonTailFmt,
     B: NonTailFmt,
     BVal: DeepView<V = B::SValue>,
@@ -164,7 +164,7 @@ impl<A, B, BVal, const CHECK: bool> NonTailFmt for super::Terminated2<A, B, BVal
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> GoodSerializer for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> GoodSerializer for super::Terminated<A, B, BVal, CHECK> where
     A: GoodSerializer,
     B: GoodSerializer,
     BVal: DeepView<V = B::SVal>,
@@ -180,7 +180,7 @@ impl<A, B, BVal, const CHECK: bool> GoodSerializer for super::Terminated2<A, B, 
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> SpecByteLen for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> SpecByteLen for super::Terminated<A, B, BVal, CHECK> where
     A: SpecByteLen,
     B: SpecByteLen,
     BVal: DeepView<V = B::T>,
@@ -193,7 +193,7 @@ impl<A, B, BVal, const CHECK: bool> SpecByteLen for super::Terminated2<A, B, BVa
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> StaticByteLen for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> StaticByteLen for super::Terminated<A, B, BVal, CHECK> where
     A: StaticByteLen,
     B: StaticByteLen,
     BVal: DeepView<V = B::T>,
@@ -208,7 +208,7 @@ impl<A, B, BVal, const CHECK: bool> StaticByteLen for super::Terminated2<A, B, B
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> ValueByteLen for super::Terminated2<A, B, BVal, CHECK> where
+impl<A, B, BVal, const CHECK: bool> ValueByteLen for super::Terminated<A, B, BVal, CHECK> where
     A: ValueByteLen,
     B: StaticByteLen,
     BVal: DeepView<V = B::T>,

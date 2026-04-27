@@ -16,7 +16,7 @@ verus! {
 ///
 /// When `CHECK` is `false`, parsing is malleable in the discarded suffix unless `B` admits a unique consistent value.
 /// When `CHECK` is `true`, parsing additionally checks that the parsed suffix equals `b_val`.
-pub struct Terminated2<A, B, BVal, const CHECK: bool = false> {
+pub struct Terminated<A, B, BVal, const CHECK: bool = false> {
     pub a: A,
     pub b: B,
     pub b_val: BVal,

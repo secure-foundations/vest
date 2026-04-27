@@ -15,7 +15,7 @@ use vstd::prelude::*;
 verus! {
 
 // Malleable version
-impl<I, A, AVal, B> Parser<I> for super::Preceded2<A, AVal, B, false> where
+impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, false> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
     B: Parser<I> + SafeParser,
@@ -34,7 +34,7 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded2<A, AVal, B, false> where
 }
 
 // Non-malleable version
-impl<I, A, AVal, B> Parser<I> for super::Preceded2<A, AVal, B, true> where
+impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
     I: InputBuf,
     A: Parser<I, PT = AVal> + SafeParser,
     B: Parser<I> + SafeParser,
@@ -56,7 +56,7 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded2<A, AVal, B, true> where
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded2<
+impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
     A,
     AVal,
     B,
