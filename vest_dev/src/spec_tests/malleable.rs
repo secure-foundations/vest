@@ -99,8 +99,7 @@ proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
 proof fn test_preceded_tag_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let tag = Tag { inner: U8, tag: 0u8 };
     let combinator = Preceded::<_, _, _, false> { a: tag, b: U8, a_val: 0u8 };
-    assert(combinator.ps_roundtrip_inv()) by {
-    }
+    assert(combinator.ps_roundtrip_inv()) by {}
     combinator.theorem_parse_serialize_roundtrip(ibuf);  // Should pass: Tag has AdmitsUniqueVal
 }
 
@@ -146,10 +145,8 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let tag2_bytes = [val2, val2];
     let tag1 = Tag { inner: Fixed::<2>, tag: tag1_bytes };
     let tag2 = Tag { inner: Fixed::<2>, tag: tag2_bytes };
-    let inner =
-        Terminated::<_, _, _, false> { a: U8, b: tag1, b_val: tag1_bytes };
-    let outer =
-        Terminated::<_, _, _, false> { a: inner, b: tag2, b_val: tag2_bytes };
+    let inner = Terminated::<_, _, _, false> { a: U8, b: tag1, b_val: tag1_bytes };
+    let outer = Terminated::<_, _, _, false> { a: inner, b: tag2, b_val: tag2_bytes };
 
     let footer_buf = tag2.spec_serialize_dps(seq![val2, val2], obuf);
     let inner_buf = tag1.spec_serialize_dps(seq![val1, val1], footer_buf);
@@ -223,8 +220,7 @@ proof fn test_large_format_with_berbools() {
     }
     assert(format.a.a.consistent(header));
     assert(format.b.consistent(0xFFu8));
-    assert(format.consistent(v)) by {
-    }
+    assert(format.consistent(v)) by {}
     requires_sp_roundtrip(format, v, obuf);
     // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
 

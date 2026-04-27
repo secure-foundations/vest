@@ -45,12 +45,10 @@ impl SpecMap for NestedBracesMap {
     }
 }
 
-impl fns::Map for NestedBracesMap {
-    type I = Sum<NestedBracesT, u8>;
-
+impl fns::Map<Sum<NestedBracesT, u8>> for NestedBracesMap {
     type O = NestedBracesT;
 
-    fn map(&self, i: Self::I) -> Self::O {
+    fn map(&self, i: Sum<NestedBracesT, u8>) -> Self::O {
         match i {
             Sum::Inl(inner) => NestedBracesT::Brace(Box::new(inner)),
             Sum::Inr(_) => NestedBracesT::Eps,

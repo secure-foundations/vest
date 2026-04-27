@@ -365,11 +365,16 @@ impl<Inner, M, MRev> SoundParser for super::Mapped<Inner, BiMap<M, MRev>> where
     M: SpecMap<SpecI = Inner::PVal>,
     MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
  {
+    #[verifier::inline]
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
-        &&& forall|i: Inner::T| #![auto] self.inner.consistent(i) ==> self.mapper.lossless(i)
         &&& forall|i: Inner::T|
-            #![auto]
+            #![trigger self.inner.consistent(i)]
+            #![trigger self.mapper.lossless(i)]
+            self.inner.consistent(i) ==> self.mapper.lossless(i)
+        &&& forall|i: Inner::T|
+            #![trigger self.inner.consistent(i)]
+            #![trigger self.mapper.0.spec_map(i)]
             self.inner.consistent(i) ==> self.mapper.1.wf(self.mapper.0.spec_map(i))
     }
 

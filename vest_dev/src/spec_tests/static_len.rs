@@ -67,11 +67,13 @@ proof fn test_static_byte_len_trait_surface() {
     requires_static(Array::<2, _>(Tagged(U8, 0xa0u8, U16Le)));
     requires_static(Permute3(U8, DerBool, U32Le));
     requires_static(Permute4(U8, U16Le, U32Be, BerBool));
-    requires_static(Preceded::<_, _, _, false> {
-        a: Empty,
-        b: Terminated::<_, _, _, false> { a: U32Be, b: Eof, b_val: () },
-        a_val: (),
-    });
+    requires_static(
+        Preceded::<_, _, _, false> {
+            a: Empty,
+            b: Terminated::<_, _, _, false> { a: U32Be, b: Eof, b_val: () },
+            a_val: (),
+        },
+    );
 }
 
 proof fn test_static_byte_len_values() {

@@ -331,10 +331,12 @@ impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PVal> {
     }
 }
 
-impl<A: ProductiveParser, AVal: DeepView<V = A::PVal>, B: ProductiveParser, const CHECK: bool>
-    ProductiveParser for
-    Preceded<A, AVal, B, CHECK>
-{
+impl<
+    A: ProductiveParser,
+    AVal: DeepView<V = A::PVal>,
+    B: ProductiveParser,
+    const CHECK: bool,
+> ProductiveParser for Preceded<A, AVal, B, CHECK> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);
         if let Some((n1, _)) = self.a.spec_parse(ibuf) {
@@ -344,10 +346,12 @@ impl<A: ProductiveParser, AVal: DeepView<V = A::PVal>, B: ProductiveParser, cons
     }
 }
 
-impl<A: ProductiveParser, B: ProductiveParser, BVal: DeepView<V = B::PVal>, const CHECK: bool>
-    ProductiveParser for
-    Terminated<A, B, BVal, CHECK>
-{
+impl<
+    A: ProductiveParser,
+    B: ProductiveParser,
+    BVal: DeepView<V = B::PVal>,
+    const CHECK: bool,
+> ProductiveParser for Terminated<A, B, BVal, CHECK> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);
         if let Some((n1, _v1)) = self.a.spec_parse(ibuf) {

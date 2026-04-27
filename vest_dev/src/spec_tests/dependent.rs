@@ -4,9 +4,7 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::implicit::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
-use crate::combinators::{
-    disjoint::*, Alt, DepPair, Empty, Refined, RepeatN, Void, VoidTag,
-};
+use crate::combinators::{disjoint::*, Alt, DepPair, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
     Choice, Cond, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
     TVLeaf, TVOr, Tag, Tagged, Tail, U16Le, U32Le, Varied, U8,

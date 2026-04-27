@@ -2,8 +2,10 @@ use crate::combinators::mapped::exec::*;
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::combinators::{Mapped, Refined, U8};
+use crate::core::exec::fns;
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::Parser;
+use crate::core::exec::serializer::Serializer;
 
 use crate::core::{proof::*, spec::*};
 use vest_derive::DeepView;
@@ -126,36 +128,56 @@ pub struct Triple<'i> {
     pub c: &'i [u8],
 }
 
-// pub struct TripleRefMap;
-// pub struct TripleRefMapRev;
-// impl SpecMap for TripleRefMap {
-//     type SpecI = (u8, (u8, Seq<u8>));
-//     type SpecO = TripleSpec;
-//     open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
-//         TripleSpec { a: i.0, b: i.1.0, c: i.1.1 }
-//     }
-// }
-// impl SpecMap for TripleRefMapRev {
-//     type SpecI = TripleSpec;
-//     type SpecO = (u8, (u8, Seq<u8>));
-//     open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
-//         (i.a, (i.b, i.c))
-//     }
-// }
-// impl Map for TripleRefMap {
-//     type I = (u8, (u8, &[u8]));
-//     type O = TripleRef;
-//     fn map(i: Self::I) -> Self::O {
-//         TripleRef { a: i.0, b: i.1.0, c: i.1.1 }
-//     }
-// }
+pub struct TripleMap;
+
+pub struct TripleMapRev;
+
+impl SpecMap for TripleMap {
+    type SpecI = TripleSpecInner;
+
+    type SpecO = TripleSpec;
+
+    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+        let (a, (b, c)) = i;
+        TripleSpec { a, b, c }
+    }
+}
+
+impl SpecMap for TripleMapRev {
+    type SpecI = TripleSpec;
+
+    type SpecO = TripleSpecInner;
+
+    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+        (i.a, (i.b, i.c))
+    }
+}
+
+impl<'i> fns::Map<TripleInner<'i>> for TripleMap {
+    type O = Triple<'i>;
+
+    fn map(&self, i: TripleInner<'i>) -> Self::O {
+        let (a, (b, c)) = i;
+        Triple { a, b, c }
+    }
+}
+
+impl<'s> MapRef<&'s Triple<'s>> for TripleMapRev {
+    type O = TripleInner<'s>;
+
+    fn map_ref(&self, i: &&'s Triple<'s>) -> Self::O {
+        (i.a, (i.b, i.c))
+    }
+}
+
 type TripleFmt = Pair<U8, Pair<U8, Fixed<3>>>;
 
-// type TripleSpecInner = (u8, (u8, Seq<u8>));
-type TripleSpecInner = <TripleFmt as SpecParser>::PVal;
+type TripleSpecInner = (u8, (u8, Seq<u8>));
 
-type TripleInner<'i> = <TripleFmt as Parser<&'i [u8]>>::PT;
+// type TripleSpecInner = <TripleFmt as SpecParser>::PVal;
+type TripleInner<'i> = (u8, (u8, &'i [u8]));
 
+// type TripleInner<'i> = <TripleFmt as Parser<&'i [u8]>>::PT;
 fn test_map_exec(ibuf: &[u8]) {
     let ghost to_triple_spec = |i: TripleSpecInner|
         {
@@ -176,8 +198,8 @@ fn test_map_exec(ibuf: &[u8]) {
                     },
                 Ghost(to_triple_spec),
             ),
-            FnMap::<_, _, _, spec_fn(TripleSpec) -> TripleSpecInner>::new(
-                |i: Triple| -> (o: TripleInner)
+            FnMap::<_, _, _, spec_fn(TripleSpec) -> TripleSpecInner>::new_ref(
+                |i: &Triple| -> (o: TripleInner)
                     ensures
                         o.deep_view() == from_triple_spec(i.deep_view()),
                     { (i.a, (i.b, i.c)) },
@@ -189,8 +211,29 @@ fn test_map_exec(ibuf: &[u8]) {
     proof {
         lemma_map_exec_inv::<&[u8], _, _, _>(&fmt);
     }
-
     let _ = fmt.parse(&ibuf);
+
+    let fmt2 = Mapped {
+        inner: Pair(U8, Pair(U8, Fixed::<3>)),
+        mapper: BiMap(TripleMap, TripleMapRev),
+    };
+
+    proof {
+        assert(forall|v: TripleSpecInner| fmt2.mapper.lossless(v));
+        fmt2.lemma_parse_safe(ibuf@);
+        assert(fmt2.nonmal_inv());
+        assert(fmt2.sound_inv());
+        assert(fmt2.unambiguous());
+        fmt2.lemma_parse_sound_consumption(ibuf@);
+        fmt2.lemma_parse_sound_value(ibuf@);
+    }
+
+    let _ = fmt2.parse(&ibuf);
+
+    let triple_v = Triple { a: 1u8, b: 2u8, c: &[3u8, 4u8, 5u8] };
+    let mut obuf = Vec::<u8>::new();
+    assert(fmt2.consistent(triple_v.deep_view()));
+    fmt2.serialize(&&triple_v, &mut obuf);
 }
 
 } // verus!
