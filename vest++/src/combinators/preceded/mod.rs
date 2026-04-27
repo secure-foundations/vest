@@ -12,18 +12,10 @@ verus! {
 
 /// Parsing semantics: like `(A, B)`, but discards the value parsed by `A` and returns only the value parsed by `B`.
 ///
-/// Serialization semantics: chooses an arbitrary value `a` consistent with `A`, and delegates to `(A, B)`'s serialization.
+/// Serialization semantics: reuses `a_val` as the serialized witness for `A`, then serializes `B`.
 ///
-/// ## Consistency
-///
-/// `B.consistent(v)` and a consistent value for `A` exists.
-///
-/// ## Malleability
-///
-/// This combinator introduces malleability by default: the parser loses information about `A`'s value.
-/// `A` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
-pub struct Preceded<A, B>(pub A, pub B);
-
+/// When `CHECK` is `false`, parsing is malleable in the discarded prefix unless `A` admits a unique consistent value.
+/// When `CHECK` is `true`, parsing additionally checks that the parsed prefix equals `a_val`.
 pub struct Preceded2<A, AVal, B, const CHECK: bool = false> {
     pub a: A,
     pub b: B,

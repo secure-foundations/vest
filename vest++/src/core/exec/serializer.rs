@@ -130,14 +130,14 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 //         self.0.byte_len_for(&binary_fmt.0) + self.1.byte_len_for(&binary_fmt.1)
 //     }
 // }
-// // impl<FmtA, FmtB, A, B> ByteLen<Preceded<FmtA, FmtB>> for B where
+// // impl<FmtA, FmtB, A, B> ByteLen<Preceded2<FmtA, A, FmtB>> for B where
 // //     A: ByteLen<FmtA>,
 // //     B: ByteLen<FmtB>,
 // //     FmtA: ValueByteLen<T = A::V>,
 // //     FmtB: ValueByteLen<T = B::V>,
 // //  {
-// //     fn byte_len_for(&self, binary_fmt: &Preceded<FmtA, FmtB>) -> usize {
-// //         self.byte_len_for(&binary_fmt.1)
+// //     fn byte_len_for(&self, binary_fmt: &Preceded2<FmtA, A, FmtB>) -> usize {
+// //         self.byte_len_for(&binary_fmt.b)
 // //     }
 // // }
 // impl<FmtA, FmtB, A, B> ByteLen<Choice<FmtA, FmtB>> for Sum<A, B> where

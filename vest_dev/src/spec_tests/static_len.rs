@@ -1,8 +1,8 @@
 use crate::asn1::{BerBool, DerBool};
 use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{
-    Array, Cond, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded, Refined, Tag,
-    Tagged, Terminated, U16Le, U32Be, U32Le, U8,
+    Array, Cond, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded2, Refined,
+    Tag, Tagged, Terminated2, U16Le, U32Be, U32Le, U8,
 };
 use crate::core::spec::*;
 use vstd::prelude::*;
@@ -14,9 +14,9 @@ proof fn requires_static<C: StaticByteLen>(c: C) {
 
 type PairFmt = Pair<U8, U16Le>;
 
-type PrecededFmt = Preceded<U8, U16Le>;
+type PrecededFmt = Preceded2<U8, u8, U16Le>;
 
-type TerminatedFmt = Terminated<U16Le, U8>;
+type TerminatedFmt = Terminated2<U16Le, U8, u8>;
 
 type TaggedFmt = Tagged<U8, U16Le>;
 
@@ -39,14 +39,14 @@ type Permute3Fmt = Permute3<U8, DerBool, U32Le>;
 
 type Permute4Fmt = Permute4<U8, U16Le, U32Be, BerBool>;
 
-type ZeroWrappedFmt = Preceded<Empty, Terminated<U32Be, Eof>>;
+type ZeroWrappedFmt = Preceded2<Empty, (), Terminated2<U32Be, Eof, ()>>;
 
 proof fn test_static_byte_len_trait_surface() {
     requires_static(U8);
     requires_static(U16Le);
     requires_static(Pair(U8, U16Le));
-    requires_static(Preceded(U8, U16Le));
-    requires_static(Terminated(U16Le, U8));
+    requires_static(Preceded2::<_, _, _, false> { a: U8, b: U16Le, a_val: 0u8 });
+    requires_static(Terminated2::<_, _, _, false> { a: U16Le, b: U8, b_val: 0u8 });
     requires_static(Cond(true, U16Le));
     requires_static(Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) });
     requires_static(Refined { inner: U8, pred: |b: u8| b <= 10u8 });
@@ -67,7 +67,11 @@ proof fn test_static_byte_len_trait_surface() {
     requires_static(Array::<2, _>(Tagged(U8, 0xa0u8, U16Le)));
     requires_static(Permute3(U8, DerBool, U32Le));
     requires_static(Permute4(U8, U16Le, U32Be, BerBool));
-    requires_static(Preceded(Empty, Terminated(U32Be, Eof)));
+    requires_static(Preceded2::<_, _, _, false> {
+        a: Empty,
+        b: Terminated2::<_, _, _, false> { a: U32Be, b: Eof, b_val: () },
+        a_val: (),
+    });
 }
 
 proof fn test_static_byte_len_values() {

@@ -5,7 +5,7 @@ use crate::combinators::implicit::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    disjoint::*, Alt, DepPair, Empty, Preceded, Refined, RepeatN, Void, VoidTag,
+    disjoint::*, Alt, DepPair, Empty, Refined, RepeatN, Void, VoidTag,
 };
 use crate::combinators::{
     Choice, Cond, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
@@ -310,7 +310,7 @@ proof fn test_bitcoin_tx() {
     // }
     #[verusfmt::skip]
     let tx_segwit_fmt =
-        Preceded(Tag { inner: U8, tag: 1u8 },
+        Tagged(U8, 1u8,
         DepPair(varint, |txin_count: u32|
         Pair(RepeatN(txin_count, U8),
         DepPair(varint, |txout_count: u32|

@@ -12,18 +12,10 @@ verus! {
 
 /// Parsing semantics: like `(A, B)`, but discards the value parsed by `B` and returns only the value parsed by `A`.
 ///
-/// Serialization semantics: chooses an arbitrary value `b` consistent with `B`, and delegates to `(A, B)`'s serialization.
+/// Serialization semantics: serializes `A` and then reuses `b_val` as the serialized witness for `B`.
 ///
-/// ## Consistency
-///
-/// `A.consistent(v)` and a consistent value for `B` exists.
-///
-/// ## Malleability
-///
-/// This combinator introduces malleability by default: the parser loses information about `B`'s value.
-/// `B` must implement [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal) to recover non-malleability.
-pub struct Terminated<A, B>(pub A, pub B);
-
+/// When `CHECK` is `false`, parsing is malleable in the discarded suffix unless `B` admits a unique consistent value.
+/// When `CHECK` is `true`, parsing additionally checks that the parsed suffix equals `b_val`.
 pub struct Terminated2<A, B, BVal, const CHECK: bool = false> {
     pub a: A,
     pub b: B,

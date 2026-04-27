@@ -31,7 +31,7 @@
 //!
 //! The same format can be expressed using combinators as
 //!
-//! ```rust
+//! ```text
 //! let tlv =
 //!     Implicit(
 //!     (U8, U16Le),

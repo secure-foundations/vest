@@ -54,14 +54,14 @@ pub type FnDepCombinator<Key, Val, Body> = (spec_fn(Key) -> Body, spec_fn(Val) -
 /// ## Consistency
 ///
 /// A value `v: Tail::Val` is consistent with `Implicit(Head, Tail)` iff
-/// ```rust
+/// ```text
 /// let key = self.1.recover(v);
 /// self.0.consistent(key) && self.1.apply(key).consistent(v)
 /// ```
 ///
 /// ## Unambiguity
 ///
-/// ```rust
+/// ```text
 /// self.0.unambiguous() &&
 /// forall|key: Head::PVal| #[trigger] (self.1.apply(key)).unambiguous()
 /// ```

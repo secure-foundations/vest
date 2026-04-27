@@ -5,10 +5,10 @@ use super::cond::Cond;
 use super::mapped::spec::SpecMapper;
 use super::mapped::Mapped;
 use super::opt::Optional;
-use super::preceded::Preceded;
+use super::preceded::Preceded2;
 use super::refined::{Refined, Tag};
 use super::tail::Eof;
-use super::terminated::Terminated;
+use super::terminated::Terminated2;
 use super::tuple::Pair;
 use super::Repeat;
 use crate::core::spec::SpecPred;
@@ -86,25 +86,37 @@ pub broadcast proof fn lemma_disjoint_tuple_2<
 {
 }
 
-/// A [`Preceded`] parser is disjoint from another parser if its prefix is.
-pub broadcast proof fn lemma_disjoint_preceded<U: SpecParser, U1: SpecParser, V1: SpecParser>(
+/// A [`Preceded2`] parser is disjoint from another parser if its prefix is.
+pub broadcast proof fn lemma_disjoint_preceded<
+    U: SpecParser,
+    U1: SpecParser,
+    AVal: DeepView<V = U1::PVal>,
+    V1: SpecParser,
+    const CHECK: bool,
+>(
     p: U,
-    p1: Preceded<U1, V1>,
+    p1: Preceded2<U1, AVal, V1, CHECK>,
 )
     requires
-        disjoint_domains(p, p1.0),
+        disjoint_domains(p, p1.a),
     ensures
         #[trigger] disjoint_domains(p, p1),
 {
 }
 
-/// A [`Terminated`] parser is disjoint from another parser if its prefix is.
-pub broadcast proof fn lemma_disjoint_terminated<U: SpecParser, U1: SpecParser, V1: SpecParser>(
+/// A [`Terminated2`] parser is disjoint from another parser if its prefix is.
+pub broadcast proof fn lemma_disjoint_terminated<
+    U: SpecParser,
+    U1: SpecParser,
+    V1: SpecParser,
+    BVal: DeepView<V = V1::PVal>,
+    const CHECK: bool,
+>(
     p: U,
-    p1: Terminated<U1, V1>,
+    p1: Terminated2<U1, V1, BVal, CHECK>,
 )
     requires
-        disjoint_domains(p, p1.0),
+        disjoint_domains(p, p1.a),
     ensures
         #[trigger] disjoint_domains(p, p1),
 {

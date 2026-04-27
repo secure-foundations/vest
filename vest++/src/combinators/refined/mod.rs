@@ -36,10 +36,10 @@ pub struct Tag<Inner, Tag> {
     pub tag: Tag,
 }
 
-/// Sugar for `Preceded(Tag { inner, tag }, body)`.
+/// Sugar for `Preceded2 { a: Tag { inner, tag }, a_val: tag, b: body }`.
 pub struct WithPrefixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
 
-/// Sugar for `Terminated(body, Tag { inner, tag })`.
+/// Sugar for `Terminated2 { a: body, b: Tag { inner, tag }, b_val: tag }`.
 pub struct WithSuffixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
 
 } // verus!

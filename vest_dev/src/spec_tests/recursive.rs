@@ -213,10 +213,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
 //         };
 //         let combinator = Mapped {
 //             inner: Choice(
-//                 Terminated(
-//                     Preceded(Tag { inner: U16Le, tag: 0x7Bu16 }, spec_fns),
-//                     Tag { inner: U8, tag: 0x7Du8 },
-//                 ),
+//                 WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, spec_fns)),
 //                 Tag { inner: U8, tag: 0x00u8 },
 //             ),
 //             mapper: NestedBracesMapper,
@@ -246,10 +243,7 @@ pub open spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
         };
     Mapped {
         inner: Choice(
-            Terminated(
-                Preceded(Tag { inner: U16Le, tag: 0x7Bu16 }, parse_fn),
-                Tag { inner: U8, tag: 0x7Du8 },
-            ),
+            WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, parse_fn)),
             Tag { inner: U8, tag: 0x00u8 },
         ),
         mapper: NestedBracesMapper,
@@ -269,10 +263,7 @@ pub open spec fn s_nested_braces(v: NestedBracesT, buf: Seq<u8>) -> Seq<u8>
         };
     Mapped {
         inner: Choice(
-            Terminated(
-                Preceded(Tag { inner: U16Le, tag: 0x7Bu16 }, serialize_fn),
-                Tag { inner: U8, tag: 0x7Du8 },
-            ),
+            WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, serialize_fn)),
             Tag { inner: U8, tag: 0x00u8 },
         ),
         mapper: NestedBracesMapper,
@@ -299,10 +290,7 @@ pub trait ProductiveParser: SpecParser {
 //         };
 //     Mapped {
 //         inner: Choice(
-//             Terminated(
-//                 Preceded(Tag { inner: U8, tag: 0x7Bu8 }, serializable_fn),
-//                 Tag { inner: U8, tag: 0x7Du8 },
-//             ),
+//             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, serializable_fn)),
 //             Tag { inner: U8, tag: 0x00u8 },
 //         ),
 //         mapper: NestedBracesMapper,
@@ -321,10 +309,7 @@ pub trait ProductiveParser: SpecParser {
 //     };
 //     Mapped {
 //         inner: Choice(
-//             Terminated(
-//                 Preceded(Tag { inner: U8, tag: 0x7Bu8 }, lemma_fn),
-//                 Tag { inner: U8, tag: 0x7Du8 },
-//             ),
+//             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, lemma_fn)),
 //             Tag { inner: U8, tag: 0x00u8 },
 //         ),
 //         mapper: NestedBracesMapper,
@@ -346,22 +331,28 @@ impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PVal> {
     }
 }
 
-impl<A: ProductiveParser, B: ProductiveParser> ProductiveParser for Preceded<A, B> {
+impl<A: ProductiveParser, AVal: DeepView<V = A::PVal>, B: ProductiveParser, const CHECK: bool>
+    ProductiveParser for
+    Preceded2<A, AVal, B, CHECK>
+{
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_productive(ibuf);
-        if let Some((n1, _)) = self.0.spec_parse(ibuf) {
+        self.a.lemma_parse_productive(ibuf);
+        if let Some((n1, _)) = self.a.spec_parse(ibuf) {
             let rem = ibuf.skip(n1);
-            self.1.lemma_parse_productive(rem);
+            self.b.lemma_parse_productive(rem);
         }
     }
 }
 
-impl<A: ProductiveParser, B: ProductiveParser> ProductiveParser for Terminated<A, B> {
+impl<A: ProductiveParser, B: ProductiveParser, BVal: DeepView<V = B::PVal>, const CHECK: bool>
+    ProductiveParser for
+    Terminated2<A, B, BVal, CHECK>
+{
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_productive(ibuf);
-        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
+        self.a.lemma_parse_productive(ibuf);
+        if let Some((n1, _v1)) = self.a.spec_parse(ibuf) {
             let rem = ibuf.skip(n1);
-            self.1.lemma_parse_productive(rem);
+            self.b.lemma_parse_productive(rem);
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::asn1::{BerBool, DerBool};
 use crate::combinators::bytes::spec::*;
 use crate::combinators::refined::Tag;
 use crate::combinators::tuple::Pair;
-use crate::combinators::{Fixed, Preceded, Refined, Terminated, U16Le, U8};
+use crate::combinators::{Fixed, Preceded2, Refined, Terminated2, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -45,48 +45,48 @@ proof fn requires_deterministic<T: EquivSerializersGeneral>(
 }
 
 // These compositions fail to implement `PSRoundTrip`, `NonMalleable`, or `EquivSerializers`
-// traits because they involve `Preceded` or `Terminated` with combinators that lack
-// `AdmitsUniqueVal`.
+// traits because they use `Preceded2` or `Terminated2` without `CHECK`, and the discarded
+// side does not admit a unique consistent value.
 proof fn test_preceded_non_unique_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
     let val0 = 0u8;
     let val1 = 0u8;
-    let parser = Preceded(U8, U8);
+    let parser = Preceded2::<_, _, _, false> { a: U8, b: U8, a_val: 0u8 };
     assert(parser.consistent(val0)) by {
-        assert(parser.1.consistent(val0));
+        assert(parser.b.consistent(val0));
     }
     requires_sp_roundtrip(parser, val1, obuf);
     // requires_ps_roundtrip(parser, ibuf, obuf); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_non_unique_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = Preceded(U8, U8);
+    let parser = Preceded2::<_, _, _, false> { a: U8, b: U8, a_val: 0u8 };
     // requires_non_malleable(parser, buf1, buf2); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_non_unique_prefix_deterministic(v: Seq<u8>, obuf: Seq<u8>) {
-    let combinator = Preceded(U8, U8);
+    let combinator = Preceded2::<_, _, _, false> { a: U8, b: U8, a_val: 0u8 };
     // requires_deterministic(combinator, v, obuf); // Should fail: A does not have AdmitsUniqueVal
 }
 
 proof fn test_terminated_non_unique_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = Terminated(U8, U8);
+    let parser = Terminated2::<_, _, _, false> { a: U8, b: U8, b_val: 0u8 };
     // requires_non_malleable(parser, buf1, buf2); // Should fail: B does not have AdmitsUniqueVal
 }
 
 proof fn test_terminated_refined_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let refined = Refined { inner: U8, pred: |v: u8| v == 0 };
-    let parser = Terminated(U8, refined);
+    let parser = Terminated2::<_, _, _, false> { a: U8, b: refined, b_val: 0u8 };
     // requires_non_malleable(parser, buf1, buf2); // Should fail: Refined does not have AdmitsUniqueVal
 }
 
 proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let inner = Terminated(U8, U8);
-    let outer = Preceded(U8, inner);
+    let inner = Terminated2::<_, _, _, false> { a: U8, b: U8, b_val: 0u8 };
+    let outer = Preceded2::<_, _, _, false> { a: U8, b: inner, a_val: 0u8 };
     // requires_non_malleable(outer, buf1, buf2); // Should fail: multiple sources of non-uniqueness
     let val1 = 0u8;
     let val2 = 0u8;
-    assert(inner.1.consistent(0u8));
-    assert(outer.0.consistent(0u8));
+    assert(inner.b.consistent(0u8));
+    assert(outer.a.consistent(0u8));
     assert(outer.consistent(val1));
     assert(outer.consistent(val2));
     let obuf = Seq::empty();
@@ -97,22 +97,23 @@ proof fn test_preceded_terminated_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
 // Tag has AdmitsUniqueVal because it restricts
 // its consistent values to exactly one value (the tag).
 proof fn test_preceded_tag_prefix_ps(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let tag = Tag { inner: Fixed::<2>, tag: seq![0u8, 0u8] };
-    let combinator = Preceded(tag, U8);
-    assert(combinator.unambiguous());
-    requires_ps_roundtrip(combinator, ibuf);  // Should pass: Tag has AdmitsUniqueVal
+    let tag = Tag { inner: U8, tag: 0u8 };
+    let combinator = Preceded2::<_, _, _, false> { a: tag, b: U8, a_val: 0u8 };
+    assert(combinator.ps_roundtrip_inv()) by {
+    }
+    combinator.theorem_parse_serialize_roundtrip(ibuf);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_preceded_tag_prefix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let tag = Tag { inner: U8, tag: 0u8 };
-    let parser = Preceded(tag, U8);
+    let parser = Preceded2::<_, _, _, false> { a: tag, b: U8, a_val: 0u8 };
     requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
     let val = 0u8;
     let tag = Tag { inner: U8, tag: val };
-    let serializer = Preceded(tag, U8);
+    let serializer = Preceded2::<_, _, _, false> { a: tag, b: U8, a_val: val };
 
     assert(serializer.unambiguous()) by {
         unambiguous_pair(Pair(tag, U8));
@@ -122,15 +123,15 @@ proof fn test_preceded_tag_prefix_deterministic(v: u8, obuf: Seq<u8>) {
 
 proof fn test_terminated_tag_suffix_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let tag = Tag { inner: U8, tag: 0xFFu8 };
-    let parser = Terminated(U8, tag);
+    let parser = Terminated2::<_, _, _, false> { a: U8, b: tag, b_val: 0xFFu8 };
     requires_non_malleable(parser, buf1, buf2);  // Should pass: Tag has AdmitsUniqueVal
 }
 
 proof fn test_mixed_preceded_terminated_with_tag_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
     let tag1 = Tag { inner: U8, tag: 0x01u8 };
     let tag2 = Tag { inner: U8, tag: 0x02u8 };
-    let inner = Terminated(U8, tag1);
-    let outer = Preceded(tag2, inner);
+    let inner = Terminated2::<_, _, _, false> { a: U8, b: tag1, b_val: 0x01u8 };
+    let outer = Preceded2::<_, _, _, false> { a: tag2, b: inner, a_val: 0x02u8 };
     requires_non_malleable(outer, buf1, buf2);  // Should pass: both Tags have AdmitsUniqueVal
 }
 
@@ -141,10 +142,14 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let val1 = 0x00u8;
     let val2 = 0xFFu8;
     let obuf = Seq::empty();
-    let tag1 = Tag { inner: Fixed::<2>, tag: seq![val1, val1] };
-    let tag2 = Tag { inner: Fixed::<2>, tag: seq![val2, val2] };
-    let inner = Terminated(U8, tag1);
-    let outer = Terminated(inner, tag2);
+    let tag1_bytes = [val1, val1];
+    let tag2_bytes = [val2, val2];
+    let tag1 = Tag { inner: Fixed::<2>, tag: tag1_bytes };
+    let tag2 = Tag { inner: Fixed::<2>, tag: tag2_bytes };
+    let inner =
+        Terminated2::<_, _, _, false> { a: U8, b: tag1, b_val: tag1_bytes };
+    let outer =
+        Terminated2::<_, _, _, false> { a: inner, b: tag2, b_val: tag2_bytes };
 
     let footer_buf = tag2.spec_serialize_dps(seq![val2, val2], obuf);
     let inner_buf = tag1.spec_serialize_dps(seq![val1, val1], footer_buf);
@@ -192,33 +197,34 @@ proof fn unambiguous_pair<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps>(pai
 
 proof fn test_large_format_with_berbools() {
     // Format: [Header 0xAA] [(BerBool, BerBool, Fixed::<2>)] [Footer 0xFF]
-    let val1 = 0x00u8;
+    let header = 0xAAu8;
     let format_inner = Pair(Pair(BerBool, BerBool), Fixed::<2>);
-    let format = Terminated(
-        Preceded(Tag { inner: Fixed::<2>, tag: seq![val1, val1] }, format_inner),
-        Tag { inner: U8, tag: 0xFFu8 },
-    );
+    let format = Terminated2::<_, _, _, false> {
+        a: Preceded2::<_, _, _, false> {
+            a: Tag { inner: U8, tag: header },
+            b: format_inner,
+            a_val: header,
+        },
+        b: Tag { inner: U8, tag: 0xFFu8 },
+        b_val: 0xFFu8,
+    };
 
     let v = ((true, false), seq![0x11u8, 0x22u8]);
     let obuf = Seq::empty();
 
-    // establish well-formedness of header and footer (for serializability)
-    let header_val = 0xAAu8;
-    let footer_val = 0xFFu8;
-    assert(format_inner.unambiguous());
+    assert(format.a.a.unambiguous());
+    assert(format.a.b.unambiguous());
 
-    assert(format.0.0.unambiguous());
-    assert(format.0.1.unambiguous());
-
-    assert(format.0.unambiguous()) by {
-        unambiguous_pair(Pair(format.0.0, format.0.1));
+    assert(format.a.unambiguous()) by {
+        unambiguous_pair(Pair(format.a.a, format.a.b));
     }
     assert(format.unambiguous()) by {
-        unambiguous_pair(Pair(format.0, format.1));
+        unambiguous_pair(Pair(format.a, format.b));
     }
-    assert(format.0.0.consistent(seq![val1, val1]));
-    assert(format.1.consistent(0xFFu8));
-    assert(format.consistent(v));
+    assert(format.a.a.consistent(header));
+    assert(format.b.consistent(0xFFu8));
+    assert(format.consistent(v)) by {
+    }
     requires_sp_roundtrip(format, v, obuf);
     // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
 
@@ -227,9 +233,9 @@ proof fn test_large_format_with_berbools() {
     // [0xAA] [0xFF] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0xFF
     // [0xAA] [0x42] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0x42
 
-    let buf1 = seq![0xAAu8, 0x01u8, 0x00u8, 0x11u8, 0xFFu8];
-    let buf2 = seq![0xAAu8, 0xFFu8, 0x00u8, 0x11u8, 0xFFu8];
-    let buf3 = seq![0xAAu8, 0x42u8, 0x00u8, 0x11u8, 0xFFu8];
+    let buf1 = seq![0xAAu8, 0x01u8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
+    let buf2 = seq![0xAAu8, 0xFFu8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
+    let buf3 = seq![0xAAu8, 0x42u8, 0x00u8, 0x11u8, 0x22u8, 0xFFu8];
 
     if let Some((n1, v1)) = format.spec_parse(buf1) {
         if let Some((n2, v2)) = format.spec_parse(buf2) {

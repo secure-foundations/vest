@@ -64,7 +64,7 @@ pub struct Permute2<P1, P2>(pub P1, pub P2);
 
 /// `Permute3<A, B, C>` parses any permutation of A, B, C and produces `(A::PVal, (B::PVal, C::PVal))`
 ///
-/// ```
+/// ```text
 /// Permute3(A, B, C) ::= Alt(
 ///     (A, Permute2(B, C)),
 ///     Alt(
@@ -77,7 +77,7 @@ pub struct Permute3<A, B, C>(pub A, pub B, pub C);
 
 /// `Permute4<A, B, C, D>` parses any permutation and produces `(A::PVal, (B::PVal, (C::PVal, D::PVal)))`
 ///
-/// ```
+/// ```text
 /// Permute4(A, B, C, D) ::= Alt(
 ///     (A, Permute3(B, C, D)),
 ///     Alt(

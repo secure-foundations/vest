@@ -3,7 +3,7 @@ use crate::combinators::choice::spec::*;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
-    Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, Terminated, U16Le, U32Le, U8,
+    Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::pervasive::*;

@@ -32,10 +32,10 @@ proof fn test_disjointness_tags() {
     let c1 = Choice(t1, t2);
     assert(c1.unambiguous());
 
-    let p1 = Preceded(tag1, tag2);
+    let p1 = Preceded2::<_, _, _, false> { a: tag1, b: tag2, a_val: 1u8 };
     assert(p1.unambiguous());
 
-    let term1 = Terminated(tag3, tag4);
+    let term1 = Terminated2::<_, _, _, false> { a: tag3, b: tag4, b_val: 4u8 };
     assert(term1.unambiguous());
 
     let c2 = Choice(p1, term1);
