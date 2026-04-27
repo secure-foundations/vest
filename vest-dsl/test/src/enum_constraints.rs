@@ -31,11 +31,6 @@ macro_rules! impl_wrapper_combinator {
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
             }
-
-            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
-                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-            }
         } // verus!
     };
 }
@@ -206,10 +201,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MyTypedEnumCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for MyTypedEnumCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type MyTypedEnumCombinatorAlias = TryMap<U16Le, MyTypedEnumMapper>;
 
@@ -457,10 +448,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MyEnumCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for MyEnumCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type MyEnumCombinatorAlias = TryMap<U8, MyEnumMapper>;
 
@@ -755,10 +742,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TypedEnumConstraintsCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TypedEnumConstraintsCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TypedEnumConstraintsCombinatorAlias = Mapped<TypedEnumConstraintsCombinator3, TypedEnumConstraintsMapper>;
 
@@ -1061,10 +1044,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EnumConstraintsCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EnumConstraintsCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EnumConstraintsCombinatorAlias = Mapped<EnumConstraintsCombinator3, EnumConstraintsMapper>;
 

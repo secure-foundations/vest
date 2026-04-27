@@ -31,11 +31,6 @@ macro_rules! impl_wrapper_combinator {
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
             }
-
-            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
-                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-            }
         } // verus!
     };
 }
@@ -206,10 +201,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GenericHeaderCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for GenericHeaderCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type GenericHeaderCombinatorAlias = Mapped<GenericHeaderCombinator2, GenericHeaderMapper>;
 
@@ -434,10 +425,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OuterHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for OuterHeaderCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type OuterHeaderCombinatorAlias = Mapped<OuterHeaderCombinator1, OuterHeaderMapper>;
 
 
@@ -653,10 +640,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PayloadWithHeaderCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for PayloadWithHeaderCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type PayloadWithHeaderCombinatorAlias = Mapped<Pair<GenericHeaderCombinator, bytes::Variable, PayloadWithHeaderCont0>, PayloadWithHeaderMapper>;
 
@@ -918,10 +901,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeepNestedCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeepNestedCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type DeepNestedCombinatorAlias = Mapped<Pair<OuterHeaderCombinator, bytes::Variable, DeepNestedCont0>, DeepNestedMapper>;
 
 
@@ -1181,10 +1160,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CombinedExampleCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CombinedExampleCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CombinedExampleCombinatorAlias = Mapped<Pair<GenericHeaderCombinator, bytes::Variable, CombinedExampleCont0>, CombinedExampleMapper>;
 

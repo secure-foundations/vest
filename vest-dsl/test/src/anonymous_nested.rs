@@ -31,11 +31,6 @@ macro_rules! impl_wrapper_combinator {
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
             }
-
-            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
-                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-            }
         } // verus!
     };
 }
@@ -195,10 +190,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXAPayloadComb
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXAPayloadCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureParamAndLocalXAPayloadCombinatorAlias = Mapped<CaptureParamAndLocalXAPayloadCombinator1, CaptureParamAndLocalXAPayloadMapper>;
 
@@ -415,10 +406,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXACombinator 
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXACombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureParamAndLocalXACombinatorAlias = Mapped<Pair<U8, CaptureParamAndLocalXAPayloadCombinator, CaptureParamAndLocalXACont0>, CaptureParamAndLocalXAMapper>;
 
@@ -724,10 +711,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBYCombinator
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBYCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureParamAndLocalXBYCombinatorAlias = Mapped<CaptureParamAndLocalXBYCombinator1, CaptureParamAndLocalXBYMapper>;
 
 
@@ -937,10 +920,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBCombinator 
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureParamAndLocalXBCombinatorAlias = Mapped<Pair<U8, CaptureParamAndLocalXBYCombinator, CaptureParamAndLocalXBCont0>, CaptureParamAndLocalXBMapper>;
 
@@ -1232,10 +1211,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureParamAndLocalXCombinatorAlias = Mapped<CaptureParamAndLocalXCombinator1, CaptureParamAndLocalXMapper>;
 
 
@@ -1485,10 +1460,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXACombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXACombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NestedInnerChoiceXACombinatorAlias = Mapped<NestedInnerChoiceXACombinator1, NestedInnerChoiceXAMapper>;
 
 
@@ -1704,10 +1675,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonIn
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureOuterAndLocalPayloadAnonInnerBodyChoice1CombinatorAlias = Mapped<Pair<U8, bytes::Variable, CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Cont0>, CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Mapper>;
 
@@ -1999,10 +1966,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonIn
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonInnerBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureOuterAndLocalPayloadAnonInnerBodyCombinatorAlias = Mapped<CaptureOuterAndLocalPayloadAnonInnerBodyCombinator1, CaptureOuterAndLocalPayloadAnonInnerBodyMapper>;
 
 
@@ -2218,10 +2181,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadCombin
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureOuterAndLocalPayloadCombinatorAlias = AndThen<bytes::Variable, Mapped<Pair<U8, CaptureOuterAndLocalPayloadAnonInnerBodyCombinator, CaptureOuterAndLocalPayloadCont0>, CaptureOuterAndLocalPayloadMapper>>;
 
@@ -2519,10 +2478,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureOuterAndLocalCombinatorAlias = Mapped<Pair<Refined<U8, Predicate2172399096230090262>, CaptureOuterAndLocalPayloadCombinator, CaptureOuterAndLocalCont0>, CaptureOuterAndLocalMapper>;
 
 
@@ -2792,10 +2747,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerStructAnonInnerCombina
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NestedInnerStructAnonInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NestedInnerStructAnonInnerCombinatorAlias = AndThen<bytes::Variable, Mapped<NestedInnerStructAnonInnerCombinator1, NestedInnerStructAnonInnerMapper>>;
 
 
@@ -3013,10 +2964,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperVa
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperValueChoice0Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureLocalInAnonStructWrapperValueChoice0CombinatorAlias = Mapped<Pair<U8, bytes::Variable, CaptureLocalInAnonStructWrapperValueChoice0Cont0>, CaptureLocalInAnonStructWrapperValueChoice0Mapper>;
 
@@ -3308,10 +3255,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperVa
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperValueCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureLocalInAnonStructWrapperValueCombinatorAlias = Mapped<CaptureLocalInAnonStructWrapperValueCombinator1, CaptureLocalInAnonStructWrapperValueMapper>;
 
 
@@ -3550,10 +3493,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NestedInnerChoiceXCombinatorAlias = Mapped<NestedInnerChoiceXCombinator1, NestedInnerChoiceXMapper>;
 
 
@@ -3771,10 +3710,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type NestedInnerChoiceCombinatorAlias = Mapped<NestedInnerChoiceXCombinator, NestedInnerChoiceMapper>;
 
@@ -4001,10 +3936,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureParamAndLocalCombinatorAlias = Mapped<CaptureParamAndLocalXCombinator, CaptureParamAndLocalMapper>;
 
@@ -4234,10 +4165,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerStructCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NestedInnerStructCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type NestedInnerStructCombinatorAlias = Mapped<Pair<U32Le, NestedInnerStructAnonInnerCombinator, NestedInnerStructCont0>, NestedInnerStructMapper>;
 
@@ -4533,10 +4460,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for COrDCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for COrDCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type COrDCombinatorAlias = TryMap<U8, COrDMapper>;
 
 
@@ -4744,10 +4667,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperCo
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CaptureLocalInAnonStructWrapperCombinatorAlias = Mapped<Pair<U8, CaptureLocalInAnonStructWrapperValueCombinator, CaptureLocalInAnonStructWrapperCont0>, CaptureLocalInAnonStructWrapperMapper>;
 
@@ -5008,10 +4927,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructCombinato
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CaptureLocalInAnonStructCombinatorAlias = Mapped<CaptureLocalInAnonStructWrapperCombinator, CaptureLocalInAnonStructMapper>;
 
 
@@ -5259,10 +5174,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AOrBCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for AOrBCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type AOrBCombinatorAlias = TryMap<U8, AOrBMapper>;
 

@@ -288,6 +288,10 @@ pub trait Combinator<'x, I, O>: View where
                 &&& n == self@.spec_serialize(v@).len()
                 &&& buf@ == seq_splice(old(buf)@, pos, self@.spec_serialize(v@))
             },
+            res is Err ==> {
+                &&& buf@.len() == old(buf)@.len()
+                &&& pos + self@.spec_serialize(v@).len() > old(buf)@.len()
+            },
     ;
 }
 

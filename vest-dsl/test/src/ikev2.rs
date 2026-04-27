@@ -31,11 +31,6 @@ macro_rules! impl_wrapper_combinator {
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
             }
-
-            impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for $combinator {
-                fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-                { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-            }
         } // verus!
     };
 }
@@ -99,10 +94,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IkeProtocolIdCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IkeProtocolIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type IkeProtocolIdCombinatorAlias = U8;
 
@@ -258,10 +249,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalSpiSizeByteCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalSpiSizeByteCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type ProposalSpiSizeByteCombinatorAlias = Refined<U8, Predicate7607843399309189603>;
 
 
@@ -405,10 +392,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformTypeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TransformTypeCombinatorAlias = U8;
 
@@ -568,10 +551,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EncrIdCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EncrIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type EncrIdCombinatorAlias = U16Be;
 
 
@@ -711,10 +690,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrfIdCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for PrfIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type PrfIdCombinatorAlias = U16Be;
 
@@ -861,10 +836,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IntegIdCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IntegIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type IntegIdCombinatorAlias = U16Be;
 
@@ -1018,10 +989,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DhIdCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DhIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type DhIdCombinatorAlias = U16Be;
 
 
@@ -1159,10 +1126,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EsnIdCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EsnIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EsnIdCombinatorAlias = U16Be;
 
@@ -1464,10 +1427,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformIdValueCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformIdValueCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TransformIdValueCombinatorAlias = Mapped<TransformIdValueCombinator5, TransformIdValueMapper>;
 
 
@@ -1691,10 +1650,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformAttrKeyLengthCombinator 
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformAttrKeyLengthCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TransformAttrKeyLengthCombinatorAlias = Mapped<TransformAttrKeyLengthCombinator1, TransformAttrKeyLengthMapper>;
 
@@ -1931,10 +1886,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformAttrTvCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformAttrTvCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TransformAttrTvCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate11909926070075194211>, U16Be, TransformAttrTvCont0>, TransformAttrTvMapper>;
 
@@ -2220,10 +2171,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformAttrTlvCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformAttrTlvCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TransformAttrTlvCombinatorAlias = Mapped<Pair<Pair<Refined<U16Be, Predicate5630542192344936318>, U16Be, TransformAttrTlvCont1>, bytes::Variable, TransformAttrTlvCont0>, TransformAttrTlvMapper>;
 
@@ -2599,10 +2546,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformAttrCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformAttrCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TransformAttrCombinatorAlias = Mapped<TransformAttrCombinator2, TransformAttrMapper>;
 
 
@@ -2867,10 +2810,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TransformCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TransformCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TransformCombinatorAlias = Mapped<Pair<Pair<(Refined<U8, Predicate11363499016643468509>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), TransformTypeCombinator, TransformCont1>, (Refined<U8, TagPred<u8>>, (TransformIdValueCombinator, AndThen<bytes::Variable, Repeat<TransformAttrCombinator>>)), TransformCont0>, TransformMapper>;
 
@@ -3189,10 +3128,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodySpi0Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalBodySpi0Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type ProposalBodySpi0CombinatorAlias = Mapped<ProposalBodySpi0Combinator1, ProposalBodySpi0Mapper>;
 
 
@@ -3424,10 +3359,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodySpi4Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalBodySpi4Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type ProposalBodySpi4CombinatorAlias = Mapped<ProposalBodySpi4Combinator1, ProposalBodySpi4Mapper>;
 
 
@@ -3658,10 +3589,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodySpi8Combinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalBodySpi8Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type ProposalBodySpi8CombinatorAlias = Mapped<ProposalBodySpi8Combinator1, ProposalBodySpi8Mapper>;
 
@@ -3930,10 +3857,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type ProposalBodyCombinatorAlias = AndThen<bytes::Variable, Mapped<ProposalBodyCombinator2, ProposalBodyMapper>>;
 
@@ -4239,10 +4162,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProposalCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ProposalCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type ProposalCombinatorAlias = Mapped<Pair<Pair<Pair<Pair<(Refined<U8, Predicate7277979220772363767>, (Refined<U8, TagPred<u8>>, Refined<U16Be, Predicate18193225726552524852>)), (Refined<U8, Predicate2172399096230090262>, IkeProtocolIdCombinator), ProposalCont3>, ProposalSpiSizeByteCombinator, ProposalCont2>, Refined<U8, Predicate3651688686135228051>, ProposalCont1>, ProposalBodyCombinator, ProposalCont0>, ProposalMapper>;
 
@@ -4653,10 +4572,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SaPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for SaPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type SaPayloadBodyCombinatorAlias = Mapped<AndThen<bytes::Variable, Repeat<ProposalCombinator>>, SaPayloadBodyMapper>;
 
 
@@ -4950,10 +4865,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsIpv6Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsIpv6Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TsIpv6CombinatorAlias = Mapped<TsIpv6Combinator6, TsIpv6Mapper>;
 
 
@@ -5166,10 +5077,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2SaPayloadInnerCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2SaPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2SaPayloadInnerCombinatorAlias = Mapped<AndThen<bytes::Tail, Repeat<ProposalCombinator>>, Ikev2SaPayloadInnerMapper>;
 
@@ -5384,10 +5291,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NoncePayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NoncePayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NoncePayloadBodyCombinatorAlias = Mapped<bytes::Variable, NoncePayloadBodyMapper>;
 
 
@@ -5551,10 +5454,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IdTypeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IdTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type IdTypeCombinatorAlias = U8;
 
@@ -5790,10 +5689,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2IdPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2IdPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2IdPayloadInnerCombinatorAlias = Mapped<Ikev2IdPayloadInnerCombinator2, Ikev2IdPayloadInnerMapper>;
 
 
@@ -6017,10 +5912,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi0Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi0Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NotifyPayloadBodySpi0CombinatorAlias = Mapped<NotifyPayloadBodySpi0Combinator1, NotifyPayloadBodySpi0Mapper>;
 
 
@@ -6162,10 +6053,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CfgAttrTypeWordCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CfgAttrTypeWordCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CfgAttrTypeWordCombinatorAlias = Refined<U16Be, Predicate5630542192344936318>;
 
@@ -6377,10 +6264,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CfgAttributeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CfgAttributeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CfgAttributeCombinatorAlias = Mapped<Pair<Pair<CfgAttrTypeWordCombinator, U16Be, CfgAttributeCont1>, bytes::Variable, CfgAttributeCont0>, CfgAttributeMapper>;
 
@@ -6621,10 +6504,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsTypeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TsTypeCombinatorAlias = U8;
 
@@ -6889,10 +6768,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsIpv4SelectorBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsIpv4SelectorBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TsIpv4SelectorBodyCombinatorAlias = Mapped<TsIpv4SelectorBodyCombinator5, TsIpv4SelectorBodyMapper>;
 
@@ -7166,10 +7041,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsIpv6SelectorBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsIpv6SelectorBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TsIpv6SelectorBodyCombinatorAlias = Mapped<TsIpv6SelectorBodyCombinator5, TsIpv6SelectorBodyMapper>;
 
 
@@ -7408,10 +7279,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsUnknownInnerCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsUnknownInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TsUnknownInnerCombinatorAlias = Mapped<Pair<(U8, Refined<U16Be, Predicate17149271707383182075>), bytes::Variable, TsUnknownInnerCont0>, TsUnknownInnerMapper>;
 
@@ -7719,10 +7586,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorTsBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TrafficSelectorTsBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TrafficSelectorTsBodyCombinatorAlias = Mapped<TrafficSelectorTsBodyCombinator2, TrafficSelectorTsBodyMapper>;
 
 
@@ -7938,10 +7801,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TrafficSelectorCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TrafficSelectorCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TrafficSelectorCombinatorAlias = Mapped<Pair<TsTypeCombinator, TrafficSelectorTsBodyCombinator, TrafficSelectorCont0>, TrafficSelectorMapper>;
 
@@ -8215,10 +8074,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2TsPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2TsPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2TsPayloadInnerCombinatorAlias = Mapped<Pair<Refined<U8, Predicate3651688686135228051>, (Refined<bytes::Fixed<3>, TagPred<[u8; 3]>>, AndThen<bytes::Tail, RepeatN<TrafficSelectorCombinator>>), Ikev2TsPayloadInnerCont0>, Ikev2TsPayloadInnerMapper>;
 
 
@@ -8489,10 +8344,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapSuccessRestCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapSuccessRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type EapSuccessRestCombinatorAlias = Mapped<EapSuccessRestCombinator1, EapSuccessRestMapper>;
 
 
@@ -8655,10 +8506,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IpsecSpiSizeOrNoneCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IpsecSpiSizeOrNoneCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type IpsecSpiSizeOrNoneCombinatorAlias = Refined<U8, Predicate15445621259281350129>;
 
 
@@ -8800,10 +8647,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapCodeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapCodeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EapCodeCombinatorAlias = U8;
 
@@ -9020,10 +8863,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapFailureRestCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapFailureRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EapFailureRestCombinatorAlias = Mapped<EapFailureRestCombinator1, EapFailureRestMapper>;
 
@@ -9266,10 +9105,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapReqRespRestCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapReqRespRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EapReqRespRestCombinatorAlias = Mapped<Pair<(U8, Refined<U16Be, Predicate7010197279221949030>), (U8, bytes::Variable), EapReqRespRestCont0>, EapReqRespRestMapper>;
 
@@ -9593,10 +9428,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerEapRestCombin
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerEapRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2EapPayloadInnerEapRestCombinatorAlias = Mapped<Ikev2EapPayloadInnerEapRestCombinator3, Ikev2EapPayloadInnerEapRestMapper>;
 
 
@@ -9813,10 +9644,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2EapPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2EapPayloadInnerCombinatorAlias = Mapped<Pair<EapCodeCombinator, Ikev2EapPayloadInnerEapRestCombinator, Ikev2EapPayloadInnerCont0>, Ikev2EapPayloadInnerMapper>;
 
 
@@ -10028,10 +9855,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertEncodingCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CertEncodingCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CertEncodingCombinatorAlias = U8;
 
@@ -10247,10 +10070,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertreqPayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CertreqPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CertreqPayloadBodyCombinatorAlias = Mapped<CertreqPayloadBodyCombinator1, CertreqPayloadBodyMapper>;
 
@@ -10536,10 +10355,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapPayloadBodyEapRestCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapPayloadBodyEapRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type EapPayloadBodyEapRestCombinatorAlias = Mapped<EapPayloadBodyEapRestCombinator3, EapPayloadBodyEapRestMapper>;
 
 
@@ -10689,10 +10504,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CfgTypeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CfgTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type CfgTypeCombinatorAlias = U8;
 
@@ -10928,10 +10739,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CpPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CpPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CpPayloadBodyCombinatorAlias = Mapped<CpPayloadBodyCombinator2, CpPayloadBodyMapper>;
 
 
@@ -11156,10 +10963,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type EapPayloadBodyCombinatorAlias = Mapped<Pair<EapCodeCombinator, EapPayloadBodyEapRestCombinator, EapPayloadBodyCont0>, EapPayloadBodyMapper>;
 
 
@@ -11370,10 +11173,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ExchangeTypeCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for ExchangeTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type ExchangeTypeCombinatorAlias = U8;
 
 
@@ -11565,10 +11364,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyMsgTypeCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyMsgTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type NotifyMsgTypeCombinatorAlias = U16Be;
 
@@ -11798,10 +11593,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for KePayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for KePayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type KePayloadBodyCombinatorAlias = Mapped<KePayloadBodyCombinator2, KePayloadBodyMapper>;
 
 
@@ -11986,10 +11777,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NextPayloadTypeCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NextPayloadTypeCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NextPayloadTypeCombinatorAlias = U8;
 
 
@@ -12143,10 +11930,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IkeVersionByteCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IkeVersionByteCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type IkeVersionByteCombinatorAlias = Refined<U8, Predicate10005340194363141588>;
 
@@ -12401,10 +12184,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IkeFlagsCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IkeFlagsCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type IkeFlagsCombinatorAlias = TryMap<U8, IkeFlagsMapper>;
 
@@ -12713,10 +12492,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IkeHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IkeHeaderCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type IkeHeaderCombinatorAlias = Mapped<IkeHeaderCombinator7, IkeHeaderMapper>;
 
 
@@ -12858,10 +12633,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisNoneCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisNoneCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type DeletePayloadSpisNoneCombinatorAlias = bytes::Fixed<0>;
 
@@ -13109,10 +12880,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapMessageSuccessFailureCombinato
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapMessageSuccessFailureCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type EapMessageSuccessFailureCombinatorAlias = Mapped<EapMessageSuccessFailureCombinator2, EapMessageSuccessFailureMapper>;
 
 
@@ -13336,10 +13103,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2CertPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2CertPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2CertPayloadInnerCombinatorAlias = Mapped<Ikev2CertPayloadInnerCombinator1, Ikev2CertPayloadInnerMapper>;
 
 
@@ -13487,10 +13250,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AuthMethodCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for AuthMethodCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type AuthMethodCombinatorAlias = U8;
 
@@ -13726,10 +13485,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2AuthPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2AuthPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2AuthPayloadInnerCombinatorAlias = Mapped<Ikev2AuthPayloadInnerCombinator2, Ikev2AuthPayloadInnerMapper>;
 
 
@@ -13942,10 +13697,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2NoncePayloadInnerCombinator 
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2NoncePayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2NoncePayloadInnerCombinatorAlias = Mapped<bytes::Tail, Ikev2NoncePayloadInnerMapper>;
 
@@ -14160,10 +13911,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2VendorIdPayloadInnerCombinat
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2VendorIdPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2VendorIdPayloadInnerCombinatorAlias = Mapped<bytes::Tail, Ikev2VendorIdPayloadInnerMapper>;
 
 
@@ -14376,10 +14123,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SkPayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for SkPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type SkPayloadBodyCombinatorAlias = Mapped<bytes::Variable, SkPayloadBodyMapper>;
 
@@ -14644,10 +14387,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyProtocolIdCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyProtocolIdCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NotifyProtocolIdCombinatorAlias = TryMap<U8, NotifyProtocolIdMapper>;
 
 
@@ -14864,10 +14603,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2NotifyPayloadInnerCombinator
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2NotifyPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2NotifyPayloadInnerCombinatorAlias = Mapped<Pair<Pair<NotifyProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, Ikev2NotifyPayloadInnerCont1>, (NotifyMsgTypeCombinator, (bytes::Variable, bytes::Tail)), Ikev2NotifyPayloadInnerCont0>, Ikev2NotifyPayloadInnerMapper>;
 
@@ -15105,10 +14840,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisIpsecCombinator 
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeletePayloadSpisIpsecCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type DeletePayloadSpisIpsecCombinatorAlias = RepeatN<U32Be>;
 
 
@@ -15345,10 +15076,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EapMessageReqRespCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for EapMessageReqRespCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type EapMessageReqRespCombinatorAlias = Mapped<Pair<(Refined<EapCodeCombinator, Predicate8053454275691315570>, (U8, Refined<U16Be, Predicate7010197279221949030>)), (U8, bytes::Variable), EapMessageReqRespCont0>, EapMessageReqRespMapper>;
 
@@ -15619,10 +15346,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi4Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodySpi4Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NotifyPayloadBodySpi4CombinatorAlias = Mapped<NotifyPayloadBodySpi4Combinator1, NotifyPayloadBodySpi4Mapper>;
 
 
@@ -15867,10 +15590,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyRestCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyRestCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type NotifyPayloadBodyRestCombinatorAlias = AndThen<bytes::Variable, Mapped<NotifyPayloadBodyRestCombinator1, NotifyPayloadBodyRestMapper>>;
 
 
@@ -16097,10 +15816,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for NotifyPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type NotifyPayloadBodyCombinatorAlias = Mapped<Pair<Pair<NotifyProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, NotifyPayloadBodyCont1>, (NotifyMsgTypeCombinator, NotifyPayloadBodyRestCombinator), NotifyPayloadBodyCont0>, NotifyPayloadBodyMapper>;
 
@@ -16439,10 +16154,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for CertPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type CertPayloadBodyCombinatorAlias = Mapped<CertPayloadBodyCombinator1, CertPayloadBodyMapper>;
 
 
@@ -16676,10 +16387,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsPayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type TsPayloadBodyCombinatorAlias = Mapped<Pair<Refined<U8, Predicate3651688686135228051>, (Refined<bytes::Fixed<3>, TagPred<[u8; 3]>>, AndThen<bytes::Variable, RepeatN<TrafficSelectorCombinator>>), TsPayloadBodyCont0>, TsPayloadBodyMapper>;
 
@@ -16954,10 +16661,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VendorIdPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for VendorIdPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type VendorIdPayloadBodyCombinatorAlias = Mapped<bytes::Variable, VendorIdPayloadBodyMapper>;
 
 
@@ -17214,10 +16917,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PayloadCriticalCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for PayloadCriticalCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type PayloadCriticalCombinatorAlias = TryMap<U8, PayloadCriticalMapper>;
 
 
@@ -17454,10 +17153,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodySpisCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeletePayloadBodySpisCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type DeletePayloadBodySpisCombinatorAlias = Mapped<DeletePayloadBodySpisCombinator1, DeletePayloadBodySpisMapper>;
 
 
@@ -17679,10 +17374,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DeletePayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for DeletePayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type DeletePayloadBodyCombinatorAlias = Mapped<Pair<Pair<Pair<IkeProtocolIdCombinator, IpsecSpiSizeOrNoneCombinator, DeletePayloadBodyCont2>, U16Be, DeletePayloadBodyCont1>, DeletePayloadBodySpisCombinator, DeletePayloadBodyCont0>, DeletePayloadBodyMapper>;
 
@@ -18044,10 +17735,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IkeMessageCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IkeMessageCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type IkeMessageCombinatorAlias = Mapped<Pair<IkeHeaderCombinator, bytes::Variable, IkeMessageCont0>, IkeMessageMapper>;
 
 
@@ -18327,10 +18014,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GenericPayloadHeaderCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for GenericPayloadHeaderCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type GenericPayloadHeaderCombinatorAlias = Mapped<GenericPayloadHeaderCombinator2, GenericPayloadHeaderMapper>;
 
 
@@ -18543,10 +18226,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2SkPayloadInnerCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2SkPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2SkPayloadInnerCombinatorAlias = Mapped<bytes::Tail, Ikev2SkPayloadInnerMapper>;
 
@@ -18833,10 +18512,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TsIpv4Combinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for TsIpv4Combinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type TsIpv4CombinatorAlias = Mapped<TsIpv4Combinator6, TsIpv4Mapper>;
 
 
@@ -19079,10 +18754,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2CpPayloadInnerCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2CpPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2CpPayloadInnerCombinatorAlias = Mapped<Ikev2CpPayloadInnerCombinator2, Ikev2CpPayloadInnerMapper>;
 
 
@@ -19318,10 +18989,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2KePayloadInnerCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2KePayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2KePayloadInnerCombinatorAlias = Mapped<Ikev2KePayloadInnerCombinator2, Ikev2KePayloadInnerMapper>;
 
@@ -19564,10 +19231,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AuthPayloadBodyCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for AuthPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type AuthPayloadBodyCombinatorAlias = Mapped<AuthPayloadBodyCombinator2, AuthPayloadBodyMapper>;
 
@@ -19819,10 +19482,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IdPayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for IdPayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type IdPayloadBodyCombinatorAlias = Mapped<IdPayloadBodyCombinator2, IdPayloadBodyMapper>;
 
 
@@ -20053,10 +19712,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2CertreqPayloadInnerCombinato
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2CertreqPayloadInnerCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2CertreqPayloadInnerCombinatorAlias = Mapped<Ikev2CertreqPayloadInnerCombinator1, Ikev2CertreqPayloadInnerMapper>;
 
@@ -20542,10 +20197,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2PayloadBodyCombinator {
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
 }
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2PayloadBodyCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
-}
 pub type Ikev2PayloadBodyCombinatorAlias = Mapped<Ikev2PayloadBodyCombinator16, Ikev2PayloadBodyMapper>;
 
 
@@ -20761,10 +20412,6 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Ikev2PayloadCombinator {
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-}
-impl<'a> SecureSerialize<'a, &'a [u8], Vec<u8>> for Ikev2PayloadCombinator {
-    fn secure_serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    { <_ as SecureSerialize<'a, &'a [u8], Vec<u8>>>::secure_serialize(&self.0, v, data, pos) }
 }
 pub type Ikev2PayloadCombinatorAlias = Mapped<Pair<GenericPayloadHeaderCombinator, AndThen<bytes::Variable, Ikev2PayloadBodyCombinator>, Ikev2PayloadCont0>, Ikev2PayloadMapper>;
 

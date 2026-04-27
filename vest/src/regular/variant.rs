@@ -595,8 +595,24 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for OptThen<Fst, Snd> where
         usize,
         SerializeError,
     >) {
-        let n = self.0.0.serialize(&v.0, data, pos)?;
-        let m = self.0.1.serialize(v.1, data, pos + n)?;
+        let n = match self.0.0.serialize(&v.0, data, pos) {
+            Ok(n) => n,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() >= self.0.0@.spec_serialize(v.0@).len());
+                }
+                return Err(e);
+            }
+        };
+        let m = match self.0.1.serialize(v.1, data, pos + n) {
+            Ok(m) => m,
+            Err(e) => {
+                proof {
+                    assert(self@.spec_serialize(v@).len() == self.0.0@.spec_serialize(v.0@).len() + self.0.1@.spec_serialize(v.1@).len());
+                }
+                return Err(e);
+            }
+        };
         Ok(n + m)
     }
 }
