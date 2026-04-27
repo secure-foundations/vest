@@ -23,8 +23,8 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
 }
 
 impl<'s, const N: usize> Serializer<&'s [u8]> for super::Fixed<N> {
-    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(*v);
+    fn ex_serialize(&self, v: &'s [u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 
@@ -42,8 +42,8 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
 }
 
 impl<'s, Len: AsLen> Serializer<&'s [u8]> for super::Varied<Len> {
-    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(*v);
+    fn ex_serialize(&self, v: &'s [u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 

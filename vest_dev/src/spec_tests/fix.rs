@@ -69,11 +69,11 @@ impl SpecMap for NestedBracesMapRev {
     }
 }
 
-impl<'s> fns::MapRef<&'s NestedBracesT> for NestedBracesMapRev {
+impl<'s> fns::Map<&'s NestedBracesT> for NestedBracesMapRev {
     type O = Sum<&'s NestedBracesT, u8>;
 
-    fn map_ref(&self, o: &&'s NestedBracesT) -> Sum<&'s NestedBracesT, u8> {
-        match *o {
+    fn map(&self, o: &'s NestedBracesT) -> Sum<&'s NestedBracesT, u8> {
+        match o {
             NestedBracesT::Brace(inner) => Sum::Inl(&**inner),
             NestedBracesT::Eps => Sum::Inr(0x00u8),
         }
@@ -140,9 +140,9 @@ impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
         &self,
         spec_rec: Ghost<BundledSpecs<Self::T>>,
         exec_rec: Exec,
-        v: &&'s NestedBracesT,
+        v: &'s NestedBracesT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&&'s NestedBracesT) -> Vec<u8> {
+    ) where Exec: Fn(&'s NestedBracesT) -> Vec<u8> {
         let rec = fns::FnSerializer::new(exec_rec, spec_rec);
         let body = nested_braces_body(rec);
         body.ex_serialize(v, obuf);

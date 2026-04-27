@@ -57,9 +57,9 @@ impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Pair<A, B> where
         &&& self.1.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &(STA, STB), obuf: &mut Vec<u8>) {
-        self.0.ex_serialize(&v.0, obuf);
-        self.1.ex_serialize(&v.1, obuf);
+    fn ex_serialize(&self, v: (STA, STB), obuf: &mut Vec<u8>) {
+        self.0.ex_serialize(v.0, obuf);
+        self.1.ex_serialize(v.1, obuf);
     }
 }
 

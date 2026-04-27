@@ -102,12 +102,7 @@ impl<A, B, BVal, const CHECK: bool> EquivSerializersGeneral for super::Terminate
     }
 }
 
-impl<A, B, BVal, const CHECK: bool> EquivSerializers for super::Terminated<
-    A,
-    B,
-    BVal,
-    CHECK,
-> where
+impl<A, B, BVal, const CHECK: bool> EquivSerializers for super::Terminated<A, B, BVal, CHECK> where
     A: EquivSerializersGeneral,
     B: EquivSerializers + Consistency<Val = B::SVal>,
     BVal: DeepView<V = B::SValue>,

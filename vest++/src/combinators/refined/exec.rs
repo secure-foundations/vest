@@ -58,7 +58,7 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
         self.inner.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.inner.ex_serialize(v, obuf);
     }
 }
@@ -92,14 +92,14 @@ impl<Inner, ST> Serializer<ST> for super::Tag<Inner, ST> where
         self.inner.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.inner.ex_serialize(v, obuf);
     }
 }
 
 impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
-    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
+    fn ex_serialize(&self, v: [u8; N], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(&v);
     }
 }
 
@@ -180,7 +180,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
         }.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Tag { inner: &self.0, tag: self.1 },
             b: &self.2,
@@ -230,7 +230,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
         }.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.2,
             b: super::Tag { inner: &self.0, tag: self.1 },

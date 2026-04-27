@@ -25,8 +25,8 @@ impl Parser<&[u8]> for super::U8 {
 }
 
 impl Serializer<u8> for super::U8 {
-    fn ex_serialize(&self, v: &u8, obuf: &mut Vec<u8>) {
-        obuf.push(*v);
+    fn ex_serialize(&self, v: u8, obuf: &mut Vec<u8>) {
+        obuf.push(v);
     }
 }
 

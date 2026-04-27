@@ -10,14 +10,14 @@ pub trait Serializer<ST>: SpecSerializer where ST: DeepView<V = Self::SVal> {
         true
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>)
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>)
         requires
             self.exec_inv(),
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
     ;
 
-    fn serialize(&self, v: &ST, obuf: &mut Vec<u8>) where Self: Consistency<Val = Self::SVal>
+    fn serialize(&self, v: ST, obuf: &mut Vec<u8>) where Self: Consistency<Val = Self::SVal>
         requires
             self.exec_inv(),
             self.consistent(v.deep_view()),
@@ -57,7 +57,7 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
         (*self).exec_inv()
     }
 
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         (*self).ex_serialize(v, obuf)
     }
 }

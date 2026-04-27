@@ -77,7 +77,7 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Choice<A, B> wh
         &&& self.1.exec_inv()
     }
 
-    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
         match v {
             super::Sum::Inl(va) => self.0.ex_serialize(va, obuf),
             super::Sum::Inr(vb) => self.1.ex_serialize(vb, obuf),
@@ -146,7 +146,7 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Sum<A, B> where
         }
     }
 
-    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.ex_serialize(vb, obuf),

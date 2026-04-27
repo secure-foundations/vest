@@ -176,18 +176,18 @@ impl<'i> fns::Map<TripleInner<'i>> for TripleMap {
     }
 }
 
-impl<'s> MapRef<&'s Triple<'s>> for TripleMapRev {
+impl<'s> fns::Map<&'s Triple<'s>> for TripleMapRev {
     type O = TripleInner<'s>;
 
-    fn map_ref(&self, i: &&'s Triple<'s>) -> Self::O {
+    fn map(&self, i: &'s Triple<'s>) -> Self::O {
         (i.a, (i.b, i.c))
     }
 }
 
-impl<'s> MapRef<&'s TripleOwned> for TripleMapRev {
+impl<'s> fns::Map<&'s TripleOwned> for TripleMapRev {
     type O = TripleInner<'s>;
 
-    fn map_ref(&self, i: &&'s TripleOwned) -> Self::O {
+    fn map(&self, i: &'s TripleOwned) -> Self::O {
         (i.a, (i.b, i.c.as_slice()))
     }
 }
@@ -220,8 +220,8 @@ fn test_map_exec(ibuf: &[u8]) {
                     },
                 Ghost(to_triple_spec),
             ),
-            FnMap::<_, _, _, spec_fn(TripleSpec) -> TripleSpecInner>::new_ref(
-                |i: &Triple| -> (o: TripleInner)
+            FnMap::<_, _, _, spec_fn(TripleSpec) -> TripleSpecInner>::new(
+                |i: Triple| -> (o: TripleInner)
                     ensures
                         o.deep_view() == from_triple_spec(i.deep_view()),
                     { (i.a, (i.b, i.c)) },
@@ -255,14 +255,14 @@ fn test_map_exec(ibuf: &[u8]) {
     let triple_v = Triple { a: 1u8, b: 2u8, c: &[3u8, 4u8, 5u8] };
     let mut obuf = Vec::<u8>::new();
     assert(fmt2.consistent(triple_v.deep_view()));
-    fmt2.serialize(&&triple_v, &mut obuf);
+    fmt2.serialize(&triple_v, &mut obuf);
 
     let mut c = Vec::<u8>::new();
     c.extend_from_slice(&[3u8, 4u8, 5u8]);
     let triple_owned = TripleOwned { a: 1u8, b: 2u8, c };
     let mut obuf = Vec::<u8>::new();
     assert(fmt2.consistent(triple_owned.deep_view()));
-    fmt2.serialize(&&triple_owned, &mut obuf);
+    fmt2.serialize(&triple_owned, &mut obuf);
 }
 
 } // verus!

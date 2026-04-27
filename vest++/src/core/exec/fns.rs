@@ -95,22 +95,6 @@ pub trait Map<I>: SpecMap where I: DeepView<V = Self::SpecI> {
     ;
 }
 
-/// Borrowed executable counterpart of [`SpecMap`], used by serializers.
-pub trait MapRef<I>: SpecMap where I: DeepView<V = Self::SpecI> {
-    type O: DeepView<V = Self::SpecO>;
-
-    open spec fn exec_inv(&self) -> bool {
-        true
-    }
-
-    fn map_ref(&self, i: &I) -> (o: Self::O)
-        requires
-            self.exec_inv(),
-        ensures
-            self.spec_map(i.deep_view()) == o.deep_view(),
-    ;
-}
-
 /// Pairs an executable predicate closure with a ghost spec predicate.
 #[verifier::reject_recursive_types(O)]
 pub struct FnMap<I: DeepView, O: DeepView, Exec, Spec> {
@@ -129,23 +113,6 @@ impl<I: DeepView, O: DeepView, Exec, Spec> FnMap<I, O, Exec, Spec> {
         requires
             forall|i: I| #[trigger] call_requires(exec_fn, (i,)),
             forall|i: I, o: O| #[trigger]
-                call_ensures(exec_fn, (i,), o) ==> o.deep_view() == spec_fn.spec_map(i.deep_view()),
-        ensures
-            fnmap.exec_inv(),
-            fnmap.spec_fn == spec_fn,
-    {
-        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
-    }
-
-    pub fn new_ref(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (fnmap: Self) where
-        I: DeepView,
-        O: DeepView,
-        Exec: Fn(&I) -> O,
-        Spec: SpecMap<SpecI = I::V, SpecO = O::V>,
-
-        requires
-            forall|i: &I| #[trigger] call_requires(exec_fn, (i,)),
-            forall|i: &I, o: O| #[trigger]
                 call_ensures(exec_fn, (i,), o) ==> o.deep_view() == spec_fn.spec_map(i.deep_view()),
         ensures
             fnmap.exec_inv(),
@@ -188,28 +155,6 @@ impl<I, O, Exec, Spec> Map<I> for FnMap<I, O, Exec, Spec> where
     }
 
     fn map(&self, i: I) -> (o: Self::O) {
-        (self.exec_fn)(i)
-    }
-}
-
-impl<I, O, Exec, Spec> MapRef<I> for FnMap<I, O, Exec, Spec> where
-    I: DeepView,
-    O: DeepView,
-    Exec: Fn(&I) -> O,
-    Spec: SpecMap<SpecI = I::V, SpecO = O::V>,
- {
-    type O = O;
-
-    open spec fn exec_inv(&self) -> bool {
-        &&& forall|i: &I| #[trigger] call_requires(self.exec_fn, (i,))
-        &&& forall|i: &I, o: O| #[trigger]
-            call_ensures(self.exec_fn, (i,), o) ==> o.deep_view() == {
-                let Ghost(spec_fn) = self.spec_fn;
-                spec_fn.spec_map(i.deep_view())
-            }
-    }
-
-    fn map_ref(&self, i: &I) -> (o: Self::O) {
         (self.exec_fn)(i)
     }
 }
@@ -361,15 +306,15 @@ impl<T, Spec, Exec> SpecByteLen for FnSerializer<T, Spec, Exec> where
 impl<T, Spec, Exec> Serializer<T> for FnSerializer<T, Spec, Exec> where
     T: DeepView,
     Spec: SpecSerializer<SVal = T::V>,
-    Exec: Fn(&T) -> Vec<u8>,
+    Exec: Fn(T) -> Vec<u8>,
  {
     open spec fn exec_inv(&self) -> bool {
-        &&& forall|v: &T| #[trigger] call_requires(self.exec_fn, (v,))
-        &&& forall|v: &T, bytes: Vec<u8>| #[trigger]
+        &&& forall|v: T| #[trigger] call_requires(self.exec_fn, (v,))
+        &&& forall|v: T, bytes: Vec<u8>| #[trigger]
             call_ensures(self.exec_fn, (v,), bytes) ==> bytes@ == self.spec_serialize(v.deep_view())
     }
 
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: T, obuf: &mut Vec<u8>) {
         let bytes = (self.exec_fn)(v);
         let slice = bytes.as_slice();
         obuf.extend_from_slice(slice);

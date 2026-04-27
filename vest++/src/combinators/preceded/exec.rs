@@ -62,7 +62,7 @@ impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
     B,
     CHECK,
 > where
-    AVal: DeepView<V = A::SVal>,
+    AVal: DeepView<V = A::SVal> + Copy,
     BVal: DeepView<V = B::SVal>,
     A: Serializer<AVal>,
     B: Serializer<BVal>,
@@ -71,9 +71,8 @@ impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
         Pair(&self.a, &self.b).exec_inv()
     }
 
-    fn ex_serialize(&self, v: &BVal, obuf: &mut Vec<u8>) {
-        self.a.ex_serialize(&self.a_val, obuf);
-        self.b.ex_serialize(v, obuf);
+    fn ex_serialize(&self, v: BVal, obuf: &mut Vec<u8>) {
+        Pair(&self.a, &self.b).ex_serialize((self.a_val, v), obuf);
     }
 }
 

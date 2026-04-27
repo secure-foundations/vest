@@ -16,7 +16,7 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
 }
 
 impl Serializer<()> for super::Empty {
-    fn ex_serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, _v: (), _obuf: &mut Vec<u8>) {
     }
 }
 
