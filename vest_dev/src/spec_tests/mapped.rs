@@ -128,6 +128,20 @@ pub struct Triple<'i> {
     pub c: &'i [u8],
 }
 
+pub struct TripleOwned {
+    pub a: u8,
+    pub b: u8,
+    pub c: Vec<u8>,
+}
+
+impl DeepView for TripleOwned {
+    type V = TripleSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        TripleSpec { a: self.a, b: self.b, c: self.c.deep_view() }
+    }
+}
+
 pub struct TripleMap;
 
 pub struct TripleMapRev;
@@ -167,6 +181,14 @@ impl<'s> MapRef<&'s Triple<'s>> for TripleMapRev {
 
     fn map_ref(&self, i: &&'s Triple<'s>) -> Self::O {
         (i.a, (i.b, i.c))
+    }
+}
+
+impl<'s> MapRef<&'s TripleOwned> for TripleMapRev {
+    type O = TripleInner<'s>;
+
+    fn map_ref(&self, i: &&'s TripleOwned) -> Self::O {
+        (i.a, (i.b, i.c.as_slice()))
     }
 }
 
@@ -234,6 +256,13 @@ fn test_map_exec(ibuf: &[u8]) {
     let mut obuf = Vec::<u8>::new();
     assert(fmt2.consistent(triple_v.deep_view()));
     fmt2.serialize(&&triple_v, &mut obuf);
+
+    let mut c = Vec::<u8>::new();
+    c.extend_from_slice(&[3u8, 4u8, 5u8]);
+    let triple_owned = TripleOwned { a: 1u8, b: 2u8, c };
+    let mut obuf = Vec::<u8>::new();
+    assert(fmt2.consistent(triple_owned.deep_view()));
+    fmt2.serialize(&&triple_owned, &mut obuf);
 }
 
 } // verus!
