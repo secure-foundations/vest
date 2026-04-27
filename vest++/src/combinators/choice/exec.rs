@@ -133,4 +133,26 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     }
 }
 
+impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Sum<A, B> where
+    STA: DeepView<V = A::SVal>,
+    STB: DeepView<V = B::SVal>,
+    A: Serializer<STA>,
+    B: Serializer<STB>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        match self {
+            super::Sum::Inl(a) => a.exec_inv(),
+            super::Sum::Inr(b) => b.exec_inv(),
+        }
+    }
+
+    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+        match (self, v) {
+            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),
+            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.ex_serialize(vb, obuf),
+            _ => (),
+        }
+    }
+}
+
 } // verus!
