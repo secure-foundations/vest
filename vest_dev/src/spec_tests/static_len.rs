@@ -1,7 +1,7 @@
 use crate::asn1::{BerBool, DerBool};
 use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{
-    Array, Cond, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded, Refined, Tag,
+    Array, Cond, Const, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded, Refined,
     Tagged, Terminated, U16Le, U32Be, U32Le, U8,
 };
 use crate::core::spec::*;
@@ -49,8 +49,8 @@ proof fn test_static_byte_len_trait_surface() {
     requires_static(Terminated::<_, _, _, false> { a: U16Le, b: U8, b_val: 0u8 });
     requires_static(Cond(true, U16Le));
     requires_static(Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) });
-    requires_static(Refined { inner: U8, pred: |b: u8| b <= 10u8 });
-    requires_static(Tag { inner: U8, tag: 0x7fu8 });
+    requires_static(Refined(U8, |b: u8| b <= 10u8));
+    requires_static(Const(U8, 0x7fu8));
     requires_static(Tagged(U8, 0xa1u8, U16Le));
     requires_static(Dispatch(0x01u8, [(0x01u8, U16Le), (0x02u8, U16Le)]));
     requires_static(Array::<3, _>(U8));

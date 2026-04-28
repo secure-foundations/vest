@@ -398,7 +398,7 @@ pub type TryMapInner<Inner, M> = super::Mapped<
 impl<Inner, M: SpecMapper> super::TryMap<Inner, M> {
     pub open spec fn inner(&self) -> TryMapInner<Inner, M> {
         super::Mapped {
-            inner: Refined { inner: self.inner, pred: |v: M::In| self.mapper.wf_in(v) },
+            inner: Refined(self.inner, |v: M::In| self.mapper.wf_in(v)),
             mapper: self.mapper,
         }
     }

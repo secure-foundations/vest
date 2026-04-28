@@ -6,7 +6,7 @@ use super::mapped::spec::SpecMapper;
 use super::mapped::Mapped;
 use super::opt::Optional;
 use super::preceded::Preceded;
-use super::refined::{Refined, Tag};
+use super::refined::{Const, Refined};
 use super::tail::Eof;
 use super::terminated::Terminated;
 use super::tuple::Pair;
@@ -17,14 +17,14 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Two [`Tag`] parsers with the same inner parser but different tag values are disjoint.
-pub broadcast proof fn lemma_disjoint_tag<Inner: SpecParser>(
-    tag1: Tag<Inner, Inner::PVal>,
-    tag2: Tag<Inner, Inner::PVal>,
+/// Two [`Const`] parsers with the same inner parser but different values are disjoint.
+pub broadcast proof fn lemma_disjoint_const<Inner: SpecParser>(
+    tag1: Const<Inner, Inner::PVal>,
+    tag2: Const<Inner, Inner::PVal>,
 )
     requires
-        tag1.inner == tag2.inner,
-        tag1.tag != tag2.tag,
+        tag1.0 == tag2.0,
+        tag1.1 != tag2.1,
     ensures
         #[trigger] disjoint_domains(tag1, tag2),
 {
@@ -37,8 +37,8 @@ pub broadcast proof fn lemma_disjoint_refined<
     P2: SpecPred<Inner::PVal>,
 >(r1: Refined<Inner, P1>, r2: Refined<Inner, P2>)
     requires
-        r1.inner == r2.inner,
-        forall|v: Inner::PVal| r1.pred.apply(v) ==> !r2.pred.apply(v),
+        r1.0 == r2.0,
+        forall|v: Inner::PVal| r1.1.apply(v) ==> !r2.1.apply(v),
     ensures
         #[trigger] disjoint_domains(r1, r2),
 {

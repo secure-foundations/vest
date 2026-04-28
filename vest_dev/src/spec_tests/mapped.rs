@@ -89,10 +89,7 @@ impl LosslessMapper for MyTagMapper {
 }
 
 proof fn my_tag_roundtrip() {
-    let my_tag = Mapped {
-        inner: Refined { inner: U8, pred: |x| is_my_tag_byte(x) },
-        mapper: MyTagMapper,
-    };
+    let my_tag = Mapped { inner: Refined(U8, |x| is_my_tag_byte(x)), mapper: MyTagMapper };
 
     assert(my_tag.unambiguous());
     assert(my_tag.consistent(MyTag::A));
@@ -113,7 +110,7 @@ spec fn test() -> () {
     let m1 = Mapped { inner: U8, mapper: |x: u8| x as u16 };
     let m2 = Mapped { inner: U8, mapper: |x: u16| x as u8 };
     let m3 = Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) };
-    let m4 = Mapped { inner: Refined { inner: U8, pred: IsMyTagByte }, mapper: MyTagMapper };
+    let m4 = Mapped { inner: Refined(U8, IsMyTagByte), mapper: MyTagMapper };
     needs_spec_parser(m1);
     needs_spec_serializer(m2);
     needs_spec_combinator(m3);

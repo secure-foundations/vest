@@ -214,7 +214,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
 //         let combinator = Mapped {
 //             inner: Choice(
 //                 WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, spec_fns)),
-//                 Tag { inner: U8, tag: 0x00u8 },
+//                 Const(U8, 0x00u8),
 //             ),
 //             mapper: NestedBracesMapper,
 //         };
@@ -244,7 +244,7 @@ pub open spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
     Mapped {
         inner: Choice(
             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, parse_fn)),
-            Tag { inner: U8, tag: 0x00u8 },
+            Const(U8, 0x00u8),
         ),
         mapper: NestedBracesMapper,
     }.spec_parse(input)
@@ -264,7 +264,7 @@ pub open spec fn s_nested_braces(v: NestedBracesT, buf: Seq<u8>) -> Seq<u8>
     Mapped {
         inner: Choice(
             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, serialize_fn)),
-            Tag { inner: U8, tag: 0x00u8 },
+            Const(U8, 0x00u8),
         ),
         mapper: NestedBracesMapper,
     }.spec_serialize_dps(v, buf)
@@ -291,7 +291,7 @@ pub trait ProductiveParser: SpecParser {
 //     Mapped {
 //         inner: Choice(
 //             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, serializable_fn)),
-//             Tag { inner: U8, tag: 0x00u8 },
+//             Const(U8, 0x00u8),
 //         ),
 //         mapper: NestedBracesMapper,
 //     }.serializable(v, obuf)
@@ -310,7 +310,7 @@ pub trait ProductiveParser: SpecParser {
 //     Mapped {
 //         inner: Choice(
 //             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, lemma_fn)),
-//             Tag { inner: U8, tag: 0x00u8 },
+//             Const(U8, 0x00u8),
 //         ),
 //         mapper: NestedBracesMapper,
 //     }.lemma_parse_length(ibuf);
@@ -325,9 +325,9 @@ impl ProductiveParser for U16Le {
     }
 }
 
-impl<Inner: ProductiveParser> ProductiveParser for Tag<Inner, Inner::PVal> {
+impl<Inner: ProductiveParser> ProductiveParser for Const<Inner, Inner::PVal> {
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
-        self.inner.lemma_parse_productive(ibuf);
+        self.0.lemma_parse_productive(ibuf);
     }
 }
 

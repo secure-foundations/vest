@@ -6,8 +6,8 @@ use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Alt, DepPair, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
-    Choice, Cond, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
-    TVLeaf, TVOr, Tag, Tagged, Tail, U16Le, U32Le, Varied, U8,
+    Choice, Cond, Const, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
+    TVLeaf, TVOr, Tagged, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use crate::Never;
@@ -53,14 +53,11 @@ proof fn test_dependent_nary_tagval() {
 
 proof fn test_dependent_nary_custom_tag() {
     broadcast use lemma_disjoint_cond;
-    broadcast use lemma_disjoint_tag;
+    broadcast use lemma_disjoint_const;
     broadcast use lemma_disjoint_choice;
 
     let my_tag = Mapped {
-        inner: Choice(
-            Tag { inner: U8, tag: 1u8 },
-            Choice(Tag { inner: U8, tag: 2u8 }, Tag { inner: U8, tag: 3u8 }),
-        ),
+        inner: Choice(Const(U8, 1u8), Choice(Const(U8, 2u8), Const(U8, 3u8))),
         mapper: MyTagMapper,
     };
 
@@ -191,10 +188,7 @@ impl DepCombinator for TLVRest {
         let padding_fmt = Fixed::<3>;
         let v1_fmt = VLData().apply(len1);
         let v2_fmt = v2_fmt().apply((tag, len2));
-        let magic_fmt = Refined {
-            inner: Fixed::<4>,
-            pred: |x: Seq<u8>| x == seq![0x12u8, 0x34u8, 0x56u8, 0x78u8],
-        };
+        let magic_fmt = Refined(Fixed::<4>, |x: Seq<u8>| x == seq![0x12u8, 0x34u8, 0x56u8, 0x78u8]);
         Pair(padding_fmt, Pair(v1_fmt, Pair(v2_fmt, magic_fmt)))
     }
 
@@ -272,9 +266,9 @@ proof fn test_bitcoin_tx() {
         varint_u8_form,
     };
 
-    let u8_form = Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) };
-    let u16_form = Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) };
-    let u32_form = Refined { inner: varint_u32_form(), pred: |v| canonical_u32_varint_value(v) };
+    let u8_form = Refined(varint_u8_form(), |v| canonical_u8_varint_value(v));
+    let u16_form = Refined(varint_u16_form(), |v| canonical_u16_varint_value(v));
+    let u32_form = Refined(varint_u32_form(), |v| canonical_u32_varint_value(v));
 
     let varint = Alt(u32_form, Alt(u16_form, u8_form));
     // tx_segwit = {

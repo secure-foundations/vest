@@ -88,22 +88,19 @@ pub fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
         (Mapped {
             inner: Choice(
                 WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)),
-                Tag { inner: U8, tag: 0x00u8 },
+                Const(U8, 0x00u8),
             ),
             mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
         }),
 {
     Mapped {
-        inner: Choice(
-            WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)),
-            Tag { inner: U8, tag: 0x00u8 },
-        ),
+        inner: Choice(WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)), Const(U8, 0x00u8)),
         mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
     }
 }
 
 type NestedBracesBodyComb<Rec> = Mapped<
-    Choice<WithSuffixTag<U8, WithPrefixTag<U8, Rec>>, Tag<U8, u8>>,
+    Choice<WithSuffixTag<U8, WithPrefixTag<U8, Rec>>, Const<U8, u8>>,
     BiMap<NestedBracesMap, NestedBracesMapRev>,
 >;
 

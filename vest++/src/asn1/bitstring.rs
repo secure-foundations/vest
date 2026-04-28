@@ -20,18 +20,18 @@ pub open spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<DER> {
     DepPair(
         // 8.6.2.2 The initial octet shall encode, as an unsigned binary integer with bit 1 as the least significant bit, the number of
         // unused bits in the final subsequent octet. The number shall be in the range zero to seven.
-        Refined { inner: U8, pred: |unused: u8| unused <= 7 },
+        Refined(U8, |unused: u8| unused <= 7),
         |unused: u8|
-            Refined {
-                inner: Tail,
-                pred: |payload: Seq<u8>|
+            Refined(
+                Tail,
+                |payload: Seq<u8>|
                     {
                         // 8.6.2.3 If the bitstring is empty, there shall be no subsequent octets, and the initial octet shall be zero.
                         &&& payload.len() == 0 ==> unused == 0
                         // 11.2.1 Each unused bit in the final octet of the encoding of a bit string value shall be set to zero.
                         &&& payload.len() > 0 ==> DER ==> payload.last().trailing_zeros() >= unused
                     },
-            },
+            ),
     )
 }
 

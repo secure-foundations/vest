@@ -3,7 +3,7 @@ use crate::combinators::disjoint::*;
 use crate::combinators::implicit::*;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Cond, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tag, Tagged, Tail,
+    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tagged, Tail,
     U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};

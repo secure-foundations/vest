@@ -1,5 +1,5 @@
 use crate::combinators::tuple::Pair;
-use crate::combinators::{Choice, Optional, Refined, Sum, Tag, U8};
+use crate::combinators::{Choice, Const, Optional, Refined, Sum, U8};
 use crate::core::{proof::*, spec::*};
 
 use vstd::prelude::*;
@@ -25,12 +25,9 @@ proof fn test() {
     use crate::core::spec::*;
     let pred0 = |v: u8| v == 0;
     let pred1 = |v: u8| v == 1;
-    let opt = Optional(Refined { inner: U8, pred: pred0 }, Refined { inner: U8, pred: pred1 });
-    let opt2 = Optional(Refined { inner: U8, pred: Pred0 }, Refined { inner: U8, pred: Pred1 });
-    let choice1 = Choice(
-        Tag { inner: U8, tag: 0 },
-        Choice(Tag { inner: U8, tag: 1 }, Pair(Tag { inner: U8, tag: 10 }, U8)),
-    );
+    let opt = Optional(Refined(U8, pred0), Refined(U8, pred1));
+    let opt2 = Optional(Refined(U8, Pred0), Refined(U8, Pred1));
+    let choice1 = Choice(Const(U8, 0), Choice(Const(U8, 1), Pair(Const(U8, 10), U8)));
     // assert forall|vb: Subset<u8, PredFnSpec<u8>>, va: Subset<u8, PredFnSpec<u8>>| #![auto] mutual_exclusive(vb, va) by {}
     // assert forall|vb: Subset<u8, Pred0>, va: Subset<u8, Pred1>| #![auto] va.wf() implies !vb.wf() by {}
 

@@ -50,9 +50,9 @@ pub open spec fn long_len_fmt<const DER: bool>() -> LongLenFmt<DER> {
 }
 
 pub open spec fn long_len_bytes<const DER: bool>() -> LongLenBytes<DER> {
-    Refined {
-        inner: len_prefixed_bytes(),
-        pred: |bytes: Seq<u8>|
+    Refined(
+        len_prefixed_bytes(),
+        |bytes: Seq<u8>|
             {
                 // by `inner.consistent(bytes)` we already know:
                 // 0 < bytes.len() <= LONG_FORM_MAX_COUNT
@@ -62,7 +62,7 @@ pub open spec fn long_len_bytes<const DER: bool>() -> LongLenBytes<DER> {
                     true
                 }
             },
-    }
+    )
 }
 
 pub open spec fn len_prefixed_bytes() -> LenPrefixedBytes {

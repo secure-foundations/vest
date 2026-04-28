@@ -2,7 +2,6 @@ use crate::{
     combinators::{mapped::spec::*, Mapped, Pair, Refined, TryMap},
     core::{proof::*, spec::*},
 };
-use core::marker::PhantomData;
 use vstd::prelude::*;
 
 verus! {
@@ -16,15 +15,15 @@ pub open spec fn preceded<FmtA, FmtB, A, B, const CHECK: bool>(
     BiMap<spec_fn((A, B)) -> B, spec_fn(B) -> (A, B)>,
 > {
     Mapped {
-        inner: Refined {
-            inner: Pair(a, b),
-            pred: |pair: (A, B)|
+        inner: Refined(
+            Pair(a, b),
+            |pair: (A, B)|
                 if CHECK {
                     pair.0 == a_val
                 } else {
                     true
                 },
-        },
+        ),
         mapper: BiMap(|pair: (A, B)| pair.1, |b| (a_val, b)),
     }
 }

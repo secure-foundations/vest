@@ -21,7 +21,7 @@ pub struct Mapped<Inner, M> {
 }
 
 /// `TryMap { inner, mapper }` is the derived combinator
-/// `Mapped { inner: Refined { inner, pred: |v| mapper.wf_in(v) }, mapper }`.
+/// `Mapped { inner: Refined(inner, |v| mapper.wf_in(v)), mapper }`.
 ///
 /// Parsing fails when the parsed inner value does not satisfy `mapper.wf_in`.
 /// Serialization maps values back with `mapper.spec_map_rev`, and consistency

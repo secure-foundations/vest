@@ -15,15 +15,15 @@ pub open spec fn terminated<FmtA, FmtB, A, B, const NON_MALLEABLE: bool>(
     BiMap<spec_fn((A, B)) -> A, spec_fn(A) -> (A, B)>,
 > {
     Mapped {
-        inner: Refined {
-            inner: Pair(a, b),
-            pred: |pair: (A, B)|
+        inner: Refined(
+            Pair(a, b),
+            |pair: (A, B)|
                 if NON_MALLEABLE {
                     pair.1 == b_val
                 } else {
                     true
                 },
-        },
+        ),
         mapper: BiMap(|pair: (A, B)| pair.0, |a| (a, b_val)),
     }
 }

@@ -1,5 +1,5 @@
 use crate::combinators::disjoint::*;
-use crate::combinators::{Eof, Opt, Optional, Refined, Tag, U16Le, U8};
+use crate::combinators::{Const, Eof, Opt, Optional, Refined, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -32,10 +32,7 @@ impl SpecPred<u8> for Pred3 {
 proof fn test_opt_compose() {
     let pred1 = |x: u8| x == 1u8;
     let pred2 = |x: u8| x == 2u8;
-    let c = Optional(
-        Refined { inner: U8, pred: Pred2 },
-        Optional(Refined { inner: U8, pred: Pred1 }, Refined { inner: U8, pred: Pred3 }),
-    );
+    let c = Optional(Refined(U8, Pred2), Optional(Refined(U8, Pred1), Refined(U8, Pred3)));
     let obuf = seq![0u8; 10];
     // let v = ((Some(seq![2u8]), Some(seq![1u8])), Some(seq![2u8]));
     let v = (Some(2u8), (None, 3u8));
@@ -61,19 +58,19 @@ proof fn test_opt_compose() {
 }
 
 proof fn test_chaining_end_with_eof() {
-    broadcast use lemma_disjoint_tag, lemma_disjoint_eof, lemma_disjoint_optional;
+    broadcast use lemma_disjoint_const, lemma_disjoint_eof, lemma_disjoint_optional;
 
     #[verusfmt::skip]
-    let c = Optional(Refined { inner: U8, pred: |x: u8| x == 1u8 },
-            Optional(Refined { inner: U8, pred: |x: u8| x == 2u8 },
-            Optional(Refined { inner: U8, pred: |x: u8| x == 3u8 },
+    let c = Optional(Refined(U8, |x: u8| x == 1u8),
+            Optional(Refined(U8, |x: u8| x == 2u8),
+            Optional(Refined(U8, |x: u8| x == 3u8),
             Eof)));
     assert(c.unambiguous());
 
     #[verusfmt::skip]
-    let tag0 = Tag { inner: U16Le, tag: 0 };
-    let tag1 = Tag { inner: U16Le, tag: 1 };
-    let tag2 = Tag { inner: U16Le, tag: 2 };
+    let tag0 = Const(U16Le, 0);
+    let tag1 = Const(U16Le, 1);
+    let tag2 = Const(U16Le, 2);
     let d = Optional(tag0, Optional(tag1, Optional(tag2, Eof)));
 
     assert(d.unambiguous());

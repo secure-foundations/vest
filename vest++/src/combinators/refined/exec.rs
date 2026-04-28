@@ -24,12 +24,12 @@ impl<I, A, PredFn> Parser<I> for super::Refined<A, PredFn> where
     type PT = A::PT;
 
     open spec fn exec_inv(&self) -> bool {
-        self.inner.exec_inv()
+        self.0.exec_inv()
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
-        let (n, v) = self.inner.parse(ibuf)?;
-        if self.pred.test(&v) {
+        let (n, v) = self.0.parse(ibuf)?;
+        if self.1.test(&v) {
             Ok((n, v))
         } else {
             Err(ParseError::predicate_failed())
@@ -43,7 +43,7 @@ pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined
     PredFn: Pred<A::PT>,
 
     requires
-        fmt.inner.exec_inv(),
+        fmt.0.exec_inv(),
     ensures
         #[trigger] fmt.exec_inv(),
 {
@@ -55,15 +55,15 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
     PredFn: SpecPred<A::SVal>,
  {
     open spec fn exec_inv(&self) -> bool {
-        self.inner.exec_inv()
+        self.0.exec_inv()
     }
 
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
-        self.inner.ex_serialize(v, obuf);
+        self.0.ex_serialize(v, obuf);
     }
 }
 
-impl<I, Inner> Parser<I> for super::Tag<Inner, Inner::PVal> where
+impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     I: InputBuf,
     Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
     Inner::PVal: SelfView,
@@ -71,12 +71,12 @@ impl<I, Inner> Parser<I> for super::Tag<Inner, Inner::PVal> where
     type PT = Inner::PVal;
 
     open spec fn exec_inv(&self) -> bool {
-        self.inner.exec_inv()
+        self.0.exec_inv()
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
-        let (n, v) = self.inner.parse(ibuf)?;
-        if SelfView::eq(&v, &self.tag) {
+        let (n, v) = self.0.parse(ibuf)?;
+        if SelfView::eq(&v, &self.1) {
             Ok((n, v))
         } else {
             Err(ParseError::invalid_tag())
@@ -84,20 +84,20 @@ impl<I, Inner> Parser<I> for super::Tag<Inner, Inner::PVal> where
     }
 }
 
-impl<Inner, ST> Serializer<ST> for super::Tag<Inner, ST> where
+impl<Inner, ST> Serializer<ST> for super::Const<Inner, ST> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST, SVal = ST>,
  {
     open spec fn exec_inv(&self) -> bool {
-        self.inner.exec_inv()
+        self.0.exec_inv()
     }
 
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
-        self.inner.ex_serialize(v, obuf);
+        self.0.ex_serialize(v, obuf);
     }
 }
 
-impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
+impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     fn ex_serialize(&self, v: [u8; N], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(&v);
     }
@@ -119,21 +119,21 @@ impl<const N: usize> Serializer<[u8; N]> for super::Tag<Fixed<N>, [u8; N]> {
 //     //     // r == (a@ == b@),
 //     //     r == (a.deep_view() == b.deep_view()),
 // ;
-impl<const N: usize> Parser<&[u8]> for super::Tag<Fixed<N>, [u8; N]> {
+impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
     type PT = [u8; N];
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-        let (n, v) = self.inner.parse(ibuf)?;
-        let tag = self.tag.as_slice();
+        let (n, v) = self.0.parse(ibuf)?;
+        let tag = self.1.as_slice();
         proof {
-            self.inner.lemma_parse_sound_consumption(ibuf@);
+            self.0.lemma_parse_sound_consumption(ibuf@);
             assert(v.len() == N);
             assert(tag.len() == N);
             v.deep_view_eq_view();
             tag.deep_view_eq_view();
         }
         if cmp_byte_slices(tag, v) {
-            Ok((n, self.tag))
+            Ok((n, self.1))
         } else {
             Err(ParseError::invalid_tag())
         }
@@ -150,7 +150,7 @@ impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
 
     open spec fn exec_inv(&self) -> bool {
         Preceded::<_, _, _, false> {
-            a: super::Tag { inner: &self.0, tag: self.1 },
+            a: super::Const(&self.0, self.1),
             b: &self.2,
             a_val: self.1,
         }.exec_inv()
@@ -158,7 +158,7 @@ impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let fmt = Preceded::<_, _, _, false> {
-            a: super::Tag { inner: &self.0, tag: self.1 },
+            a: super::Const(&self.0, self.1),
             b: &self.2,
             a_val: self.1,
         };
@@ -174,7 +174,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
  {
     open spec fn exec_inv(&self) -> bool {
         Preceded::<_, _, _, false> {
-            a: super::Tag { inner: &self.0, tag: self.1 },
+            a: super::Const(&self.0, self.1),
             b: &self.2,
             a_val: self.1,
         }.exec_inv()
@@ -182,7 +182,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
 
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
-            a: super::Tag { inner: &self.0, tag: self.1 },
+            a: super::Const(&self.0, self.1),
             b: &self.2,
             a_val: self.1,
         };
@@ -201,7 +201,7 @@ impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
     open spec fn exec_inv(&self) -> bool {
         Terminated::<_, _, _, false> {
             a: &self.2,
-            b: super::Tag { inner: &self.0, tag: self.1 },
+            b: super::Const(&self.0, self.1),
             b_val: self.1,
         }.exec_inv()
     }
@@ -209,7 +209,7 @@ impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.2,
-            b: super::Tag { inner: &self.0, tag: self.1 },
+            b: super::Const(&self.0, self.1),
             b_val: self.1,
         };
         fmt.parse(ibuf)
@@ -225,7 +225,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
     open spec fn exec_inv(&self) -> bool {
         Terminated::<_, _, _, false> {
             a: &self.2,
-            b: super::Tag { inner: &self.0, tag: self.1 },
+            b: super::Const(&self.0, self.1),
             b_val: self.1,
         }.exec_inv()
     }
@@ -233,7 +233,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.2,
-            b: super::Tag { inner: &self.0, tag: self.1 },
+            b: super::Const(&self.0, self.1),
             b_val: self.1,
         };
         fmt.ex_serialize(v, obuf);

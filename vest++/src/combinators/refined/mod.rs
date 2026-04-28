@@ -1,4 +1,4 @@
-//! Value refinement and constant-tag combinators.
+//! Value refinement and constant-value combinators.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.
@@ -15,32 +15,22 @@ verus! {
 ///
 /// ## Consistency
 ///
-/// `inner.consistent(v) && pred.apply(v)`.
-pub struct Refined<Inner, Pred> {
-    /// The inner combinator whose values are being refined.
-    pub inner: Inner,
-    /// The predicate that parsed values must satisfy.
-    pub pred: Pred,
-}
+/// `inner.consistent(v) && predicate.apply(v)`.
+pub struct Refined<Inner, Predicate>(pub Inner, pub Predicate);
 
-/// Constant-tag combinator: matches a specific constant value.
+/// Constant-value combinator: matches a specific constant value.
 ///
-/// Parsing semantics: parses with `inner` and succeeds only if the result equals `tag`.
-/// The matched tag value itself is returned.
+/// Parsing semantics: parses with `inner` and succeeds only if the result equals the expected value.
+/// The matched constant value itself is returned.
 ///
 /// Implements [`AdmitsUniqueVal`](crate::core::spec::AdmitsUniqueVal).
-pub struct Tag<Inner, Tag> {
-    /// The inner combinator used to parse/serialize the tag value.
-    pub inner: Inner,
-    /// The expected constant value.
-    pub tag: Tag,
-}
+pub struct Const<Inner, Value>(pub Inner, pub Value);
 
-/// Sugar for `Preceded { a: Tag { inner, tag }, a_val: tag, b: body }`.
-pub struct WithPrefixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
+/// Sugar for `Preceded { a: Const(inner, tag), a_val: tag, b: body }`.
+pub struct WithPrefixTag<Tg: SpecByteLen, Of>(pub Tg, pub Tg::T, pub Of);
 
-/// Sugar for `Terminated { a: body, b: Tag { inner, tag }, b_val: tag }`.
-pub struct WithSuffixTag<Tag: SpecByteLen, Of>(pub Tag, pub Tag::T, pub Of);
+/// Sugar for `Terminated { a: body, b: Const(inner, tag), b_val: tag }`.
+pub struct WithSuffixTag<Tg: SpecByteLen, Of>(pub Tg, pub Tg::T, pub Of);
 
 } // verus!
 /// Backward-compatible name for [`WithPrefixTag`].

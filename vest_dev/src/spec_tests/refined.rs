@@ -30,7 +30,7 @@ impl Pred<u8> for SmallNonZero {
 }
 
 proof fn test_refined_pred_roundtrip() {
-    let fmt = Refined { inner: U8, pred: SmallNonZero };
+    let fmt = Refined(U8, SmallNonZero);
 
     assert(fmt.unambiguous());
     assert(fmt.consistent(5u8));
@@ -44,19 +44,19 @@ proof fn test_refined_pred_roundtrip() {
 }
 
 fn test_refined_pred_exec(ibuf: &[u8]) {
-    let fmt = Refined { inner: U8, pred: SmallNonZero };
+    let fmt = Refined(U8, SmallNonZero);
     let magic = 11u8;
-    let fmt2 = Refined {
-        inner: U8,
+    let fmt2 = Refined(
+        U8,
         // pred: FnPred::<_, _, PredFnSpec<u8>>::new(small_nonzero, Ghost(|v| small_nonzero(&v))),
-        pred: FnPred::<_, _, PredFnSpec<u8>>::new(
+        FnPred::<_, _, PredFnSpec<u8>>::new(
             |v| -> (ok: bool)
                 ensures
                     ok == (*v != magic),
                 { *v != magic },
             Ghost(|v| v != magic),
         ),
-    };
+    );
 
     proof {
         lemma_refined_exec_inv::<&[u8], _, _>(&fmt2);

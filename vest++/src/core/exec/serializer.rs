@@ -105,8 +105,8 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 //         2
 //     }
 // }
-// impl ByteLen<Tag<U8, u8>> for u8 {
-//     fn byte_len_for(&self, _binary_fmt: &Tag<U8, u8>) -> usize {
+// impl ByteLen<Const<U8, u8>> for u8 {
+//     fn byte_len_for(&self, _binary_fmt: &Const<U8, u8>) -> usize {
 //         1
 //     }
 // }
@@ -159,7 +159,7 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 //     Predicate: Pred<T>,
 //  {
 //     fn byte_len_for(&self, binary_fmt: &Refined<Fmt, Predicate>) -> usize {
-//         self.byte_len_for(&binary_fmt.inner)
+//         self.byte_len_for(&binary_fmt.0)
 //     }
 // }
 // impl<Fmt, Map, T> ByteLen<Mapped<Fmt, Map>> for T where
@@ -266,18 +266,18 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 // }
 // fn test_fmt_len() {
 //     // let x = (0u8, (2u16, 4u8));
-//     // let my_fmt = Pair(U8, Pair(Refined { inner: U16Le, pred: SmallNonZero }, U8));
+//     // let my_fmt = Pair(U8, Pair(Refined(U16Le, SmallNonZero), U8));
 //     // let x = Triple { a: 0u8, b: 2u16, c: 4u8 };
 //     // let my_fmt = Mapped {
-//     //     inner: Pair(U8, Pair(Refined { inner: U16Le, pred: SmallNonZero }, U8)),
+//     //     inner: Pair(U8, Pair(Refined(U16Le, SmallNonZero), U8)),
 //     //     mapper: TripleMapper,
 //     // };
 //     let arr = [1u8, 0u8, 2u8, 4u8];
 //     let x = TripleRef { a: 0u8, b: 2u16, c: &arr };
 //     let my_fmt = Mapped {
 //         inner: Pair(
-//             Tag { inner: U8, tag: 0 },
-//             Pair(Refined { inner: U16Le, pred: SmallNonZero }, Fixed::<4>),
+//             Const(U8, 0),
+//             Pair(Refined(U16Le, SmallNonZero), Fixed::<4>),
 //         ),
 //         mapper: TripleRefMapper,
 //     };

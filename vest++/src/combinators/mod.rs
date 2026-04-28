@@ -28,7 +28,7 @@
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
-//! | [`Tag<Inner, T>`] | Matches and returns a specific constant value |
+//! | [`Const<Inner, T>`] | Matches and returns a specific constant value |
 //! | [`Tagged<T, Of>`] | Same as `WithPrefixTag<T, Of>` (for convenience) |
 //! | [`Cond<Inner>`] | Boolean-gated combinator (most often used in branches of `Choice` / `Alt`) |
 //!
@@ -103,7 +103,7 @@ pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
 pub use recursive::Fix;
-pub use refined::{Refined, Tag, Tagged, WithPrefixTag, WithSuffixTag};
+pub use refined::{Const, Refined, Tagged, WithPrefixTag, WithSuffixTag};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;

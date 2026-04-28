@@ -10,32 +10,32 @@ impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
     Pred: SpecPred<A::PVal>,
  {
     open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
+        self.0.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf)
+        self.0.theorem_serialize_dps_parse_roundtrip(v, obuf)
     }
 }
 
 // impl<A: PSRoundTrip, Pred: SpecPred<A::PVal>> PSRoundTrip for super::Refined<A, Pred> {
 //     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         self.inner.theorem_parse_serialize_roundtrip(ibuf);
+//         self.0.theorem_parse_serialize_roundtrip(ibuf);
 //     }
 // }
 impl<A: NonMalleable, Pred: SpecPred<A::PVal>> NonMalleable for super::Refined<A, Pred> {
     open spec fn nonmal_inv(&self) -> bool {
-        self.inner.nonmal_inv()
+        self.0.nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        self.inner.lemma_parse_non_malleable(buf1, buf2);
+        self.0.lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
 impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, Pred> {
     open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner.no_lookahead_inv()
+        self.0.no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
@@ -43,8 +43,8 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
                     assert(self.no_lookahead_inv());
-                    self.inner.lemma_no_lookahead(i1, i2);
-                    assert(self.inner.spec_parse(i2) == Some((n, v)));
+                    self.0.lemma_no_lookahead(i1, i2);
+                    assert(self.0.spec_parse(i2) == Some((n, v)));
                     assert(self.spec_parse(i2) == Some((n, v)));
                 }
             }
@@ -57,11 +57,11 @@ impl<A, Pred> EquivSerializersGeneral for super::Refined<A, Pred> where
     Pred: SpecPred<A::SVal>,
  {
     open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
+        self.0.equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v, obuf);
+        self.0.lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -70,131 +70,131 @@ impl<A, Pred> EquivSerializers for super::Refined<A, Pred> where
     Pred: SpecPred<A::SVal>,
  {
     open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_inv()
+        self.0.equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
-        self.inner.lemma_serialize_equiv_on_empty(v);
+        self.0.lemma_serialize_equiv_on_empty(v);
     }
 }
 
-impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Tag<Inner, Inner::PVal> {
+impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Const<Inner, Inner::PVal> {
     open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
+        self.0.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::SValue, obuf: Seq<u8>) {
-        assert(v == self.tag);
-        self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        assert(v == self.1);
+        self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-// impl<Inner: PSRoundTrip> PSRoundTrip for super::Tag<Inner, Inner::PVal> {
+// impl<Inner: PSRoundTrip> PSRoundTrip for super::Const<Inner, Inner::PVal> {
 //     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         self.inner.theorem_parse_serialize_roundtrip(ibuf);
+//         self.0.theorem_parse_serialize_roundtrip(ibuf);
 //     }
 // }
-impl<Inner: NonMalleable> NonMalleable for super::Tag<Inner, Inner::PVal> {
+impl<Inner: NonMalleable> NonMalleable for super::Const<Inner, Inner::PVal> {
     open spec fn nonmal_inv(&self) -> bool {
-        self.inner.nonmal_inv()
+        self.0.nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        self.inner.lemma_parse_non_malleable(buf1, buf2);
+        self.0.lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl<Inner: NoLookAhead> NoLookAhead for super::Tag<Inner, Inner::PVal> {
+impl<Inner: NoLookAhead> NoLookAhead for super::Const<Inner, Inner::PVal> {
     open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner.no_lookahead_inv()
+        self.0.no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
-                    self.inner.lemma_no_lookahead(i1, i2);
+                    self.0.lemma_no_lookahead(i1, i2);
                 }
             }
         }
     }
 }
 
-impl<Inner> EquivSerializersGeneral for super::Tag<Inner, Inner::SVal> where
+impl<Inner> EquivSerializersGeneral for super::Const<Inner, Inner::SVal> where
     Inner: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
+        self.0.equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v, obuf);
+        self.0.lemma_serialize_equiv(v, obuf);
     }
 }
 
-impl<Inner> EquivSerializers for super::Tag<Inner, Inner::SVal> where Inner: EquivSerializers {
+impl<Inner> EquivSerializers for super::Const<Inner, Inner::SVal> where Inner: EquivSerializers {
     open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_inv()
+        self.0.equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
-        self.inner.lemma_serialize_equiv_on_empty(v);
+        self.0.lemma_serialize_equiv_on_empty(v);
     }
 }
 
-impl<const N: usize> SPRoundTripDps for super::Tag<Fixed::<N>, [u8; N]> {
+impl<const N: usize> SPRoundTripDps for super::Const<Fixed::<N>, [u8; N]> {
     open spec fn unambiguous(&self) -> bool {
-        self.inner.unambiguous()
+        self.0.unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::SValue, obuf: Seq<u8>) {
-        self.inner.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        self.0.theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl<const N: usize> NonMalleable for super::Tag<Fixed::<N>, [u8; N]> {
+impl<const N: usize> NonMalleable for super::Const<Fixed::<N>, [u8; N]> {
     open spec fn nonmal_inv(&self) -> bool {
-        self.inner.nonmal_inv()
+        self.0.nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        self.inner.lemma_parse_non_malleable(buf1, buf2);
+        self.0.lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl<const N: usize> NoLookAhead for super::Tag<Fixed::<N>, [u8; N]> {
+impl<const N: usize> NoLookAhead for super::Const<Fixed::<N>, [u8; N]> {
     open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner.no_lookahead_inv()
+        self.0.no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
-                    self.inner.lemma_no_lookahead(i1, i2);
+                    self.0.lemma_no_lookahead(i1, i2);
                 }
             }
         }
     }
 }
 
-impl<const N: usize> EquivSerializersGeneral for super::Tag<Fixed::<N>, [u8; N]> {
+impl<const N: usize> EquivSerializersGeneral for super::Const<Fixed::<N>, [u8; N]> {
     open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
+        self.0.equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
-        self.inner.lemma_serialize_equiv(v, obuf);
+        self.0.lemma_serialize_equiv(v, obuf);
     }
 }
 
-impl<const N: usize> EquivSerializers for super::Tag<Fixed::<N>, [u8; N]> {
+impl<const N: usize> EquivSerializers for super::Const<Fixed::<N>, [u8; N]> {
     open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_inv()
+        self.0.equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
-        self.inner.lemma_serialize_equiv_on_empty(v);
+        self.0.lemma_serialize_equiv_on_empty(v);
     }
 }
 

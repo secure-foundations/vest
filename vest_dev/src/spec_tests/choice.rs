@@ -3,7 +3,7 @@ use crate::combinators::choice::spec::*;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
-    Alt, Choice, Dispatch, Fixed, Mapped, Refined, Sum, Tag, Tagged, U16Le, U32Le, U8,
+    Alt, Choice, Const, Dispatch, Fixed, Mapped, Refined, Sum, Tagged, U16Le, U32Le, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::pervasive::*;
@@ -12,7 +12,7 @@ use vstd::prelude::*;
 verus! {
 
 proof fn test_choice_compose() {
-    let c = Choice(Tag { inner: U8, tag: 0u8 }, Tag { inner: U8, tag: 2u8 });
+    let c = Choice(Const(U8, 0u8), Const(U8, 2u8));
     let obuf = Seq::empty();
     let v = Sum::Inr(2u8);
     assert(c.unambiguous());
@@ -22,8 +22,8 @@ proof fn test_choice_compose() {
 }
 
 proof fn test_choice_compose1() {
-    let tag1 = Tag { inner: U16Le, tag: 0u16 };
-    let tag2 = Tag { inner: U16Le, tag: 2u16 };
+    let tag1 = Const(U16Le, 0u16);
+    let tag2 = Const(U16Le, 2u16);
     let c = Choice(tag1, tag2);
     let obuf = Seq::empty();
     let v = Sum::Inr(2u16);
@@ -36,10 +36,10 @@ proof fn test_choice_compose1() {
 }
 
 proof fn test_choice_balanced() {
-    let tag1 = Tag { inner: U16Le, tag: 1u16 };
-    let tag2 = Tag { inner: U16Le, tag: 2u16 };
-    let tag3 = Tag { inner: U16Le, tag: 3u16 };
-    let tag4 = Tag { inner: U16Le, tag: 4u16 };
+    let tag1 = Const(U16Le, 1u16);
+    let tag2 = Const(U16Le, 2u16);
+    let tag3 = Const(U16Le, 3u16);
+    let tag4 = Const(U16Le, 4u16);
     let c = Choice(Choice(tag1, tag2), Choice(tag3, tag4));
     broadcast use lemma_disjoint_choice;
 
@@ -47,8 +47,8 @@ proof fn test_choice_balanced() {
 }
 
 proof fn test_alt_tag() {
-    let tag_v1 = Tag { inner: U8, tag: 0x01u8 };
-    let tag_v2 = Tag { inner: U8, tag: 0x02u8 };
+    let tag_v1 = Const(U8, 0x01u8);
+    let tag_v2 = Const(U8, 0x02u8);
     let alt_parser = Alt(tag_v1, tag_v2);
     assert(alt_parser.unambiguous());
 
@@ -163,7 +163,7 @@ proof fn test_dispatch_tag() {
 }
 
 proof fn test_alt_flexible_length_encoding() {
-    let not_81 = Refined { inner: U8, pred: |value: u8| value != 0x81u8 };
+    let not_81 = Refined(U8, |value: u8| value != 0x81u8);
     let short_form = not_81;
     let long_form = Tagged(U8, 0x81u8, not_81);
     let alt_parser = Alt(long_form, short_form);
@@ -276,10 +276,10 @@ impl LosslessMapper for U16AsU32 {
 
 // Direct one-byte form: every byte except VARINT_TAG_U16 and VARINT_TAG_U32 is encoded directly as a u8
 pub open spec fn varint_u8_form() -> Refined<Mapped<U8, U8AsU32>, spec_fn(u32) -> bool> {
-    Refined {
-        inner: Mapped { inner: U8, mapper: U8AsU32 },
-        pred: |v: u32| v != VARINT_TAG_U16 as u32 && v != VARINT_TAG_U32 as u32,
-    }
+    Refined(
+        Mapped { inner: U8, mapper: U8AsU32 },
+        |v: u32| v != VARINT_TAG_U16 as u32 && v != VARINT_TAG_U32 as u32,
+    )
 }
 
 // u16 form: 0xFD prefix + 2 bytes little-endian
@@ -333,9 +333,9 @@ proof fn test_malleable_varint() {
     }
 
     // Trigger the exsistential quantifiers
-    let tag = Tag { inner: U8, tag: VARINT_TAG_U16 };
+    let tag = Const(U8, VARINT_TAG_U16);
     assert(tag.consistent(VARINT_TAG_U16));
-    let tag = Tag { inner: U8, tag: VARINT_TAG_U32 };
+    let tag = Const(U8, VARINT_TAG_U32);
     assert(tag.consistent(VARINT_TAG_U32));
 
     // Invoke the roundtrip theorems for u16 and u32 forms
@@ -406,15 +406,15 @@ pub type CanonicalVarintU16Form = Refined<
 pub type CanonicalVarintU32Form = Refined<Tagged<U8, U32Le>, spec_fn(u32) -> bool>;
 
 pub open spec fn canonical_varint_u8_form() -> CanonicalVarintU8Form {
-    Refined { inner: varint_u8_form(), pred: |v| canonical_u8_varint_value(v) }
+    Refined(varint_u8_form(), |v| canonical_u8_varint_value(v))
 }
 
 pub open spec fn canonical_varint_u16_form() -> CanonicalVarintU16Form {
-    Refined { inner: varint_u16_form(), pred: |v| canonical_u16_varint_value(v) }
+    Refined(varint_u16_form(), |v| canonical_u16_varint_value(v))
 }
 
 pub open spec fn canonical_varint_u32_form() -> CanonicalVarintU32Form {
-    Refined { inner: varint_u32_form(), pred: |v| canonical_u32_varint_value(v) }
+    Refined(varint_u32_form(), |v| canonical_u32_varint_value(v))
 }
 
 proof fn test_canonical_varint_roundtrip() {

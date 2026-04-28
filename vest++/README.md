@@ -27,7 +27,7 @@ usability and expressivity. The main issues include:
     disjoint given some conditions, thus allowing the composition of choice of
     combinators of the same type, as well as nested choices. However,
     the composition of choice of combinators of *different types* (e.g.,
-    `Choice<Pair<A, B>, Tag<C>`), albeit secure, is not possible. Moreover,
+    `Choice<Pair<A, B>, Const<C>`), albeit secure, is not possible. Moreover,
     ordered choice in the original PEG semantics allows choices that are not
     disjoint (whether that's helpful or causing more confusion is another
     question), but the current design precludes that possibility.
@@ -312,9 +312,9 @@ possible before:
 // now we can sequentially compose multiple optional combinators!
 let c0 = Pair(
           Pair(
-            Opt(Tag(0x01)),
-            Opt(Tag(0x02))),
-            Opt(Tag(0x03))
+            Opt(Const(0x01)),
+            Opt(Const(0x02))),
+            Opt(Const(0x03))
           );
 let v = ((Some(seq![0x01]), Some(seq![0x02])), Some(seq![0x03]));
 let obuf = Seq::empty();
@@ -326,9 +326,9 @@ assert(c0.spec_parse(c0.spec_serialize(v, obuf)) == Some((3int, v)));
 // we can even safely reuse tags, as long as reused tags are not adjacent!
 let c1 = Pair(
           Pair(
-            Opt(Tag(0x01)),
-            Opt(Tag(0x02))),
-            Opt(Tag(0x01)) // <-- note the reused tag
+            Opt(Const(0x01)),
+            Opt(Const(0x02))),
+            Opt(Const(0x01)) // <-- note the reused tag
           );
 let v = ((Some(seq![0x01]), None), Some(seq![0x01]));
 let obuf = Seq::empty();
@@ -340,9 +340,9 @@ assert(c1.spec_parse(c1.spec_serialize(v, obuf)) == Some((2int, v)));
 // to push the envelope further, we actually allow using the same tag consecutively!
 let c1_ = Pair(
             Pair(
-              Opt(Tag(0x01)),
-              Opt(Tag(0x01))),
-              Opt(Tag(0x01))
+              Opt(Const(0x01)),
+              Opt(Const(0x01))),
+              Opt(Const(0x01))
           );
 let v_ok = ((Some(seq![0x01]), Some(seq![0x01])), Some(seq![0x01]));
 let obuf = Seq::empty();
@@ -355,9 +355,9 @@ assert(!(c1_.serializable(v_bad, obuf))); // <-- (v_bad, obuf) is *not* serializ
 // we can even have non-disjoint choices, recovering PEG's original semantics!
 let c2 = Choice(
           Choice(
-            Tag(0x00),
-            Tag(0x02)),
-            Tag(0x02) // <-- note the non-disjoint choice arm
+            Const(0x00),
+            Const(0x02)),
+            Const(0x02) // <-- note the non-disjoint choice arm
           );
 let v1 = Either::Left(Either::Right(seq![2u8]));
 let obuf = Seq::empty();
@@ -531,10 +531,10 @@ combinator is malleable and why:
 ```rust
 let format = Terminated(
         Preceded(
-            Tag { inner: Fixed::<1>, tag: seq![0xAAu8] },
+            Const(Fixed::<1>, seq![0xAAu8]),
             ((BerBool, BerBool), Fixed::<2>)
         ),
-        Tag { inner: Fixed::<1>, tag: seq![0xFFu8] }
+        Const(Fixed::<1>, seq![0xFFu8])
     );
 requires_non_malleable(format, seq![], seq![]); // Should fail: BerBool is malleable
 
@@ -565,7 +565,7 @@ help: the trait `core::proof::NonMalleable` is not implemented for `combinators:
               combinators::opt::Opt<A>
               combinators::preceded::Preceded<A, B>
               combinators::refined::Refined<A>
-              combinators::refined::Tag<Inner>
+              combinators::refined::Const<Inner>
               combinators::star::Star<A>
             and 2 others
 note: required for `(combinators::berbool::BerBool, combinators::berbool::BerBool)` to implement `core::proof::NonMalleable`
@@ -576,7 +576,7 @@ note: required for `(combinators::berbool::BerBool, combinators::berbool::BerBoo
     |         |
     |         unsatisfied trait bound introduced here
     = note: 3 redundant requirements hidden
-    = note: required for `Terminated<Preceded<Tag<Fixed<1>>, (..., ...)>, ...>` to implement `core::proof::NonMalleable`
+    = note: required for `Terminated<Preceded<Const<Fixed<1>>, (..., ...)>, ...>` to implement `core::proof::NonMalleable`
 note: required by a bound in `tests::malleable::requires_non_malleable`
    --> src/tests/malleable.rs:24:36
     |
@@ -609,14 +609,14 @@ nested_braces = choose {
 In an entirely trait-based combinator library, combinators are nominal Rust types (`struct` types) with generic type parameters. When attempting to naively construct recursive combinator specs like the following:
 
 ```rust
-struct NestedBraceCombinator(Mapped<Choice<Terminated<Preceded<Tag<U8>, Box<NestedBraceCombinator>, Tag<U8>>, Empty>>, NestedBracesMapper>);
+struct NestedBraceCombinator(Mapped<Choice<Terminated<Preceded<Const<U8>, Box<NestedBraceCombinator>, Const<U8>>, Empty>>, NestedBracesMapper>);
 
 spec fn nested_braces_combinator() -> NestedBraceCombinator {
     Mapped {
         inner: Choice(
             Terminated(
-                Preceded(Tag { inner: U8, tag: 0x7B }, Box::new(nested_braces_combinator())),
-                Tag { inner: U8, tag: 0x7D},
+                Preceded(Const(U8, 0x7B), Box::new(nested_braces_combinator())),
+                Const(U8, 0x7D),
             ),
             Empty,
         ),
@@ -691,8 +691,8 @@ spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
     Mapped {
         inner: Choice(
             Terminated(
-                Preceded(Tag { inner: U8, tag: 0x7B }, rec),
-                Tag { inner: U8, tag: 0x7D },
+                Preceded(Const(U8, 0x7B), rec),
+                Const(U8, 0x7D),
             ),
             Empty
         ),
@@ -905,8 +905,8 @@ spec fn nested_braces_parser_inner(rec: ParserSpecFn<NestedBracesT>) -> ParserSp
     Mapped {
         inner: Choice(
             Terminated(
-                Preceded(Tag { inner: U8, tag: 0x7B }, rec),
-                Tag { inner: U8, tag: 0x7D},
+                Preceded(Const(U8, 0x7B), rec),
+                Const(U8, 0x7D),
             ),
             Empty,
         ),
