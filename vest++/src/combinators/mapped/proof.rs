@@ -6,12 +6,12 @@ verus! {
 
 impl<Inner, M, MRev> SPRoundTripDps for super::Mapped<Inner, BiMap<M, MRev>> where
     Inner: SPRoundTripDps,
-    M: SpecMap<SpecI = Inner::T>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: SpecMap<Input = Inner::T>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
     open spec fn unambiguous(&self) -> bool {
         &&& self.inner.unambiguous()
-        &&& forall|o: M::SpecO| #![auto] self.mapper.1.wf(o) ==> self.mapper.sound(o)
+        &&& forall|o: M::Output| #![auto] self.mapper.1.wf(o) ==> self.mapper.sound(o)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -23,8 +23,8 @@ impl<Inner, M, MRev> SPRoundTripDps for super::Mapped<Inner, BiMap<M, MRev>> whe
 
 impl<Inner, M, MRev> NonMalleable for super::Mapped<Inner, BiMap<M, MRev>> where
     Inner: SoundParser + NonMalleable,
-    M: SpecMap<SpecI = Inner::PVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: SpecMap<Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()

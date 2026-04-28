@@ -33,8 +33,8 @@ verus! {
 impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,
-    M: Map<Inner::PT, SpecI = Inner::PVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: Map<Inner::PT, Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
     type PT = M::O;
 
@@ -60,8 +60,8 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 ) where
     I: View<V = Seq<u8>>,
     Inner: Parser<I>,
-    M: Map<Inner::PT, SpecI = Inner::PVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: Map<Inner::PT, Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
 
     requires
         fmt.inner.exec_inv(),
@@ -73,8 +73,8 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 
 impl<Inner, M, MRev, ST> Serializer<ST> for super::Mapped<Inner, BiMap<M, MRev>> where
     ST: DeepView,
-    M: SpecMap<SpecI = Inner::SVal, SpecO = ST::V>,
-    MRev: Map<ST, SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: SpecMap<Input = Inner::SVal, Output = ST::V>,
+    MRev: Map<ST, Input = M::Output, Output = M::Input>,
     Inner: Serializer<<MRev as Map<ST>>::O>,
  {
     open spec fn exec_inv(&self) -> bool {
@@ -92,8 +92,8 @@ pub broadcast proof fn lemma_map_ref_exec_inv<Inner, M, MRev, ST>(
     fmt: &super::Mapped<Inner, BiMap<M, MRev>>,
 ) where
     ST: DeepView,
-    M: SpecMap<SpecI = Inner::SVal, SpecO = ST::V>,
-    MRev: Map<ST, SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: SpecMap<Input = Inner::SVal, Output = ST::V>,
+    MRev: Map<ST, Input = M::Output, Output = M::Input>,
     Inner: Serializer<<MRev as Map<ST>>::O>,
 
     requires

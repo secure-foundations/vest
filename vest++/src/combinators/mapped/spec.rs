@@ -8,31 +8,31 @@ use vstd::prelude::*;
 verus! {
 
 pub trait SpecMap {
-    type SpecI;
+    type Input;
 
-    type SpecO;
+    type Output;
 
-    open spec fn wf(&self, i: Self::SpecI) -> bool {
+    open spec fn wf(&self, i: Self::Input) -> bool {
         true
     }
 
-    spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO;
+    spec fn spec_map(&self, i: Self::Input) -> Self::Output;
 }
 
 impl<I, O> SpecMap for spec_fn(I) -> O {
-    type SpecI = I;
+    type Input = I;
 
-    type SpecO = O;
+    type Output = O;
 
-    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
         (self)(i)
     }
 }
 
 pub struct BiMap<M, MRev>(pub M, pub MRev);
 
-impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI> {
-    pub open spec fn sound(&self, o: M::SpecO) -> bool
+impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<Input = M::Output, Output = M::Input> {
+    pub open spec fn sound(&self, o: M::Output) -> bool
         recommends
             self.1.wf(o),
     {
@@ -40,7 +40,7 @@ impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<SpecI = M::SpecO, S
         m.spec_map(mrev.spec_map(o)) == o
     }
 
-    pub open spec fn lossless(&self, i: M::SpecI) -> bool
+    pub open spec fn lossless(&self, i: M::Input) -> bool
         recommends
             self.0.wf(i),
     {
@@ -333,11 +333,11 @@ impl<Inner: SpecSerializer, Out> SpecSerializer for super::Mapped<
 
 impl<M, MRev> SpecMapper for BiMap<M, MRev> where
     M: SpecMap,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
-    type In = M::SpecI;
+    type In = M::Input;
 
-    type Out = M::SpecO;
+    type Out = M::Output;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         let BiMap(m, _mrev) = *self;
@@ -362,8 +362,8 @@ impl<M, MRev> SpecMapper for BiMap<M, MRev> where
 
 impl<Inner, M, MRev> SoundParser for super::Mapped<Inner, BiMap<M, MRev>> where
     Inner: SoundParser,
-    M: SpecMap<SpecI = Inner::PVal>,
-    MRev: SpecMap<SpecI = M::SpecO, SpecO = M::SpecI>,
+    M: SpecMap<Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
     #[verifier::inline]
     open spec fn sound_inv(&self) -> bool {

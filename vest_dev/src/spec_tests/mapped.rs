@@ -147,22 +147,22 @@ pub struct TripleMap;
 pub struct TripleMapRev;
 
 impl SpecMap for TripleMap {
-    type SpecI = TripleSpecInner;
+    type Input = TripleSpecInner;
 
-    type SpecO = TripleSpec;
+    type Output = TripleSpec;
 
-    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
         let (a, (b, c)) = i;
         TripleSpec { a, b, c }
     }
 }
 
 impl SpecMap for TripleMapRev {
-    type SpecI = TripleSpec;
+    type Input = TripleSpec;
 
-    type SpecO = TripleSpecInner;
+    type Output = TripleSpecInner;
 
-    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
         (i.a, (i.b, i.c))
     }
 }

@@ -33,11 +33,11 @@ pub struct NestedBracesMap;
 pub struct NestedBracesMapRev;
 
 impl SpecMap for NestedBracesMap {
-    type SpecI = Sum<NestedBracesTSpec, u8>;
+    type Input = Sum<NestedBracesTSpec, u8>;
 
-    type SpecO = NestedBracesTSpec;
+    type Output = NestedBracesTSpec;
 
-    open spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
         match i {
             Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
             Sum::Inr(_) => NestedBracesTSpec::Eps,
@@ -57,11 +57,11 @@ impl fns::Map<Sum<NestedBracesT, u8>> for NestedBracesMap {
 }
 
 impl SpecMap for NestedBracesMapRev {
-    type SpecI = NestedBracesTSpec;
+    type Input = NestedBracesTSpec;
 
-    type SpecO = Sum<NestedBracesTSpec, u8>;
+    type Output = Sum<NestedBracesTSpec, u8>;
 
-    open spec fn spec_map(&self, o: Self::SpecI) -> Self::SpecO {
+    open spec fn spec_map(&self, o: Self::Input) -> Self::Output {
         match o {
             NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
             NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
