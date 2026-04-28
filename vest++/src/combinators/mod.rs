@@ -36,8 +36,8 @@
 //!
 //! | Combinator | Description |
 //! |---|---|
-//! | [`DepPair<A, B>`] | Like `Pair<A, B>`, but `B` can depend on `A`'s value |
-//! | [`Implicit<A, B>`] | Like `DepPair<A, B>`, but omits `A`'s value |
+//! | [`Bind<A, B>`] | Like `Pair<A, B>`, but `B` can depend on `A`'s value |
+//! | [`Implicit<A, B>`] | Like `Bind<A, B>`, but omits `A`'s value |
 //!
 //! ## Dependent family of combinators
 //!
@@ -107,5 +107,5 @@ pub use refined::{Const, Refined, Tagged, WithPrefixTag, WithSuffixTag};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
-pub use tuple::{DepPair, Pair};
+pub use tuple::{Bind, Pair};
 pub use uints::{U16Be, U16Le, U32Be, U32Le, U8};

@@ -1,5 +1,5 @@
 use crate::{
-    combinators::{bytes::ExactLen, length::AsLen, DepPair, Refined, Tail, U8},
+    combinators::{bytes::ExactLen, length::AsLen, Bind, Refined, Tail, U8},
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
@@ -10,14 +10,14 @@ verus! {
 /// `(number_of_unused_bits_in_final_octet, payload_octets)`.
 pub type BitStringValue = (u8, Seq<u8>);
 
-pub type BitStringFmt<const DER: bool> = DepPair<
+pub type BitStringFmt<const DER: bool> = Bind<
     Refined<U8, PredFnSpec<u8>>,
     spec_fn(u8) -> Refined<Tail, PredFnSpec<Seq<u8>>>,
 >;
 
 pub open spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<DER> {
     #[verusfmt::skip]
-    DepPair(
+    Bind(
         // 8.6.2.2 The initial octet shall encode, as an unsigned binary integer with bit 1 as the least significant bit, the number of
         // unused bits in the final subsequent octet. The number shall be in the range zero to seven.
         Refined(U8, |unused: u8| unused <= 7),

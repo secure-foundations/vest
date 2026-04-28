@@ -1,6 +1,6 @@
 use crate::asn1::BerBool;
 use crate::combinators::{
-    Choice, DepPair, Eof, Pair, Repeat, RepeatTillEnd, Star, Sum, Tagged, U16Le, Varied, U8,
+    Bind, Choice, Eof, Pair, Repeat, RepeatTillEnd, Star, Sum, Tagged, U16Le, Varied, U8,
 };
 use crate::core::spec::*;
 use vstd::prelude::*;
@@ -11,14 +11,14 @@ type DemoFmt1 = Pair<BerBool, Choice<Tagged<U8, U16Le>, RepeatTillEnd<U16Le>>>;
 
 type DemoFmt2 = Pair<
     BerBool,
-    Choice<Tagged<U8, U16Le>, RepeatTillEnd<DepPair<U16Le, spec_fn(u16) -> Varied<u16>>>>,
+    Choice<Tagged<U8, U16Le>, RepeatTillEnd<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>>,
 >;
 
 proof fn test_value_byte_len_demo() {
     let fmt: DemoFmt1 = Pair(BerBool, Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(U16Le)));
     let fmt2: DemoFmt2 = Pair(
         BerBool,
-        Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(DepPair(U16Le, |x| Varied(x)))),
+        Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(Bind(U16Le, |x| Varied(x)))),
     );
 
     let tagged_v = (false, Sum::Inl(0x3456u16));
@@ -45,7 +45,7 @@ proof fn test_value_byte_len_demo() {
         seq![0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16],
     ) == 10) by (compute);
     assert(DemoFmt1::value_byte_len(repeated_v) == 11);
-    assert(Star::<DepPair<U16Le, spec_fn(u16) -> Varied<u16>>>::value_byte_len(
+    assert(Star::<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>::value_byte_len(
         seq![
             (0x01u16, seq![0x00u8]),
             (0x02u16, seq![0x00u8, 0x01u8]),

@@ -2,14 +2,14 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::mapped::spec::{LosslessMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Dispatch, Eof, Fixed, Repeat, Star, Tail};
-use crate::combinators::{Choice, Cond, DepPair, Implicit, Mapped, Sum, U16Le, U32Le, Varied, U8};
+use crate::combinators::{Bind, Choice, Cond, Implicit, Mapped, Sum, U16Le, U32Le, Varied, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
-proof fn test_dep_pair_fmt1_roundtrip() {
-    let fmt1 = DepPair(U8, |len: u8| Varied(len));
+proof fn test_bind_fmt1_roundtrip() {
+    let fmt1 = Bind(U8, |len: u8| Varied(len));
     let v = (3u8, seq![0xAAu8, 0xBBu8, 0xCCu8]);
 
     assert(fmt1.unambiguous());
@@ -20,10 +20,10 @@ proof fn test_dep_pair_fmt1_roundtrip() {
     assert(fmt1.spec_parse(ibuf) == Some((ibuf.len() as int, v)));
 }
 
-proof fn test_dep_pair_fmt3_roundtrip() {
+proof fn test_bind_fmt3_roundtrip() {
     broadcast use lemma_disjoint_cond;
 
-    let fmt3 = DepPair(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
+    let fmt3 = Bind(U8, |tag: u8| { Choice(Cond(tag == 0u8, U16Le), Cond(tag == 1u8, U32Le)) });
 
     let v0 = (0u8, Sum::Inl(0x1234u16));
     let v1 = (1u8, Sum::Inr(0x78563412u32));
@@ -220,10 +220,10 @@ proof fn test_tlv_implicit_inferred_choice_exactlen_roundtrip() {
     // };
     #[verusfmt::skip]
     let tlv2 =
-        DepPair(U8, |tag: u8|
-        DepPair(U8, |len1: u8|
+        Bind(U8, |tag: u8|
+        Bind(U8, |len1: u8|
         Pair(Fixed::<3>,
-        DepPair(U16Le, |len2: u16|
+        Bind(U16Le, |len2: u16|
         Pair(Varied(len1),
         payload_fmt(tag, len2))))));
 

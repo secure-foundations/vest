@@ -4,7 +4,7 @@ use crate::combinators::bytes::ExactLen;
 use crate::combinators::implicit::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
-use crate::combinators::{disjoint::*, Alt, DepPair, Empty, Refined, RepeatN, Void, VoidTag};
+use crate::combinators::{disjoint::*, Alt, Bind, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
     Choice, Cond, Const, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
     TVLeaf, TVOr, Tagged, Tail, U16Le, U32Le, Varied, U8,
@@ -303,9 +303,9 @@ proof fn test_bitcoin_tx() {
     #[verusfmt::skip]
     let tx_segwit_fmt =
         Tagged(U8, 1u8,
-        DepPair(varint, |txin_count: u32|
+        Bind(varint, |txin_count: u32|
         Pair(RepeatN(txin_count, U8),
-        DepPair(varint, |txout_count: u32|
+        Bind(varint, |txout_count: u32|
         Pair(RepeatN(txout_count, U16Le),
         Pair(RepeatN(txin_count, U32Le),
         U32Le))))));

@@ -1,3 +1,4 @@
+use crate::combinators::mapped::spec::SpecMap;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -156,19 +157,20 @@ impl<A, B> EquivSerializers for super::Pair<A, B> where
     }
 }
 
-impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
+impl<A, B> SPRoundTripDps for super::Bind<A, B> where
     A: SPRoundTripDps + NonTailFmt,
-    B: SPRoundTripDps,
+    B: SpecMap<Input = A::T>,
+    B::Output: SPRoundTripDps,
  {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.0.unambiguous()
-        &&& forall|key: A::T| #[trigger] (self.1)(key).unambiguous()
+        &&& forall|key: A::T| #[trigger] self.1.spec_map(key).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
         let (key, val) = value;
-        let next = (self.1)(key);
+        let next = self.1.spec_map(key);
         let next_buf = next.spec_serialize_dps(val, obuf);
         let serialized = self.0.spec_serialize_dps(key, next_buf);
         assert(self.unambiguous());
@@ -183,13 +185,14 @@ impl<A, B> SPRoundTripDps for super::DepPair<A, spec_fn(A::T) -> B> where
     }
 }
 
-impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
+impl<A, B> NoLookAhead for super::Bind<A, B> where
     A: NoLookAhead,
-    B: NoLookAhead,
+    B: SpecMap<Input = A::PVal>,
+    B::Output: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
-        &&& forall|key: A::PVal| #[trigger] (self.1)(key).no_lookahead_inv()
+        &&& forall|key: A::PVal| #[trigger] self.1.spec_map(key).no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
@@ -201,8 +204,8 @@ impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
             if 0 <= n <= i2.len() {
                 if i2.take(n) == i1.take(n) {
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
-                        let next = (self.1)(key);
-                        if let Some((n2, val)) = next.spec_parse(i1.skip(n1)) {
+                        let next = self.1.spec_map(key);
+                        if let Some((n2, _val)) = next.spec_parse(i1.skip(n1)) {
                             assert(self.no_lookahead_inv());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
@@ -223,15 +226,16 @@ impl<A, B> NoLookAhead for super::DepPair<A, spec_fn(A::PVal) -> B> where
     }
 }
 
-impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
+impl<A, B> NonMalleable for super::Bind<A, B> where
     A: NonMalleable,
-    B: NonMalleable,
+    B: SpecMap<Input = A::PVal>,
+    B::Output: NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
         &&& self.0.safe_inv()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).nonmal_inv()
-        &&& forall|a: A::PVal| #[trigger] (self.1)(a).safe_inv()
+        &&& forall|key: A::PVal| #[trigger] self.1.spec_map(key).nonmal_inv()
+        &&& forall|key: A::PVal| #[trigger] self.1.spec_map(key).safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -241,10 +245,10 @@ impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
                     assert(self.nonmal_inv());
                     let (n1a, key1) = self.0.spec_parse(buf1)->0;
                     let (n2a, key2) = self.0.spec_parse(buf2)->0;
-                    let next1 = (self.1)(key1);
-                    let next2 = (self.1)(key2);
-                    let (n1b, val) = next1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, val) = next2.spec_parse(buf2.skip(n2a))->0;
+                    let next1 = self.1.spec_map(key1);
+                    let next2 = self.1.spec_map(key2);
+                    let (n1b, _val) = next1.spec_parse(buf1.skip(n1a))->0;
+                    let (n2b, _val) = next2.spec_parse(buf2.skip(n2a))->0;
                     assert(key1 == key2 && next1 == next2);
                     let next = next1;
                     self.0.lemma_parse_safe(buf1);
@@ -264,18 +268,19 @@ impl<A, B> NonMalleable for super::DepPair<A, spec_fn(A::PVal) -> B> where
     }
 }
 
-impl<A, B> EquivSerializersGeneral for super::DepPair<A, spec_fn(A::SVal) -> B> where
-    A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
-    B: EquivSerializersGeneral + Consistency<Val = B::SVal>,
+impl<A, B> EquivSerializersGeneral for super::Bind<A, B> where
+    A: EquivSerializersGeneral,
+    B: SpecMap<Input = A::SVal>,
+    B::Output: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
         &&& self.0.equiv_general_inv()
-        &&& forall|key: A::SVal| #[trigger] (self.1)(key).equiv_general_inv()
+        &&& forall|key: A::SVal| #[trigger] self.1.spec_map(key).equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
         let (key, val) = value;
-        let next = (self.1)(key);
+        let next = self.1.spec_map(key);
         let obuf1 = next.spec_serialize_dps(val, obuf);
         assert(self.equiv_general_inv());
         next.lemma_serialize_equiv(val, obuf);
@@ -283,18 +288,19 @@ impl<A, B> EquivSerializersGeneral for super::DepPair<A, spec_fn(A::SVal) -> B> 
     }
 }
 
-impl<A, B> EquivSerializers for super::DepPair<A, spec_fn(A::SVal) -> B> where
-    A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
-    B: EquivSerializers + Consistency<Val = B::SVal>,
+impl<A, B> EquivSerializers for super::Bind<A, B> where
+    A: EquivSerializersGeneral,
+    B: SpecMap<Input = A::SVal>,
+    B::Output: EquivSerializers,
  {
     open spec fn equiv_inv(&self) -> bool {
         &&& self.0.equiv_general_inv()
-        &&& forall|key: A::SVal| #[trigger] (self.1)(key).equiv_inv()
+        &&& forall|key: A::SVal| #[trigger] self.1.spec_map(key).equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         let (key, val) = value;
-        let next = (self.1)(key);
+        let next = self.1.spec_map(key);
         let empty = Seq::empty();
         let obuf = next.spec_serialize_dps(val, empty);
         assert(self.equiv_inv());
