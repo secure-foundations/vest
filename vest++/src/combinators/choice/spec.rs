@@ -4,6 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 /// The sum type.
+#[verifier::ext_equal]
 pub enum Sum<A, B> {
     /// Left injection.
     Inl(A),
