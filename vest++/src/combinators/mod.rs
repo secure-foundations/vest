@@ -31,6 +31,7 @@
 //! | [`Const<Inner, T>`] | Matches and returns a specific constant value |
 //! | [`Tagged<T, Of>`] | Same as `WithPrefixTag<T, Of>` (for convenience) |
 //! | [`Cond<Inner>`] | Boolean-gated combinator (most often used in branches of `Choice` / `Alt`) |
+//! | [`Named<Inner>`] | Like `Inner`, but annotates runtime parse errors with a static format name |
 //!
 //! # Dependent combinators
 //!
@@ -81,6 +82,7 @@ pub mod implicit;
 pub mod length;
 pub mod mapped;
 pub mod marker;
+pub mod named;
 pub mod opt;
 pub mod permute;
 pub mod preceded;
@@ -99,6 +101,7 @@ pub use implicit::{DepCombinator, FnDepCombinator, Implicit, TVLeaf, TVOr, VoidT
 pub use length::AsLen;
 pub use mapped::{Mapped, TryMap};
 pub use marker::{Empty, Void};
+pub use named::Named;
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;

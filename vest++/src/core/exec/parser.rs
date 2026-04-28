@@ -30,19 +30,6 @@ pub trait Parser<Input: View<V = Seq<u8>>>: SpecParser {
         ensures
             parse_matches_spec(r, self.spec_parse(ibuf@)),
     ;
-
-    /// This is intended for DSL-generated entry points around user-defined formats.
-    fn parse_with_fmt(&self, current_fmt: &'static str, ibuf: &Input) -> (r: PResult<Self::PT>)
-        requires
-            self.exec_inv(),
-        ensures
-            parse_matches_spec(r, self.spec_parse(ibuf@)),
-    {
-        match self.parse(ibuf) {
-            Ok((n, v)) => Ok((n, v)),
-            Err(err) => Err(err.push_format(current_fmt)),
-        }
-    }
 }
 
 impl<Spec, Exec> SpecParser for (Spec, Exec) where Spec: SpecParser {

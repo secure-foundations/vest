@@ -84,6 +84,11 @@ impl<Inner, M, MRev, ST> Serializer<ST> for super::Mapped<Inner, BiMap<M, MRev>>
 
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let inner_v = self.mapper.1.map(v);
+        proof {
+            assert(self.spec_serialize(v.deep_view()) == self.inner.spec_serialize(
+                inner_v.deep_view(),
+            ));
+        }
         self.inner.ex_serialize(inner_v, obuf);
     }
 }

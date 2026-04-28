@@ -257,7 +257,7 @@ type TXSegwitRest = FnDepCombinator<
 >;
 
 proof fn test_bitcoin_tx() {
-    use super::choice::{
+    use super::btcvarint::{
         canonical_u16_varint_value,
         canonical_u32_varint_value,
         canonical_u8_varint_value,
