@@ -50,11 +50,11 @@ pub trait SafeParser: SpecParser {
     }
 
     /// For any successful parse `Some((n, _))`, `0 <= n <= ibuf.len()`.
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>)
+    broadcast proof fn lemma_parse_safe(&self, ibuf: Seq<u8>)
         requires
             self.safe_inv(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
+            #[trigger] self.spec_parse(ibuf) matches Some((n, _)) ==> 0 <= n <= ibuf.len(),
     ;
 }
 
