@@ -42,7 +42,7 @@ pub trait DepCombinator {
 }
 
 /// Dependent family encoded by a pair of pure spec closures `(apply, recover)`.
-pub type FnDepCombinator<Key, Val, Body> = (spec_fn(Key) -> Body, spec_fn(Val) -> Key);
+pub type KVFormat<Key, Value, Fmt> = (spec_fn(Key) -> Fmt, spec_fn(Value) -> Key);
 
 /// Dependent sequential combinator with deterministic key recovery.
 ///

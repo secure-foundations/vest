@@ -94,10 +94,10 @@ pub mod terminated;
 pub mod tuple;
 pub mod uints;
 
-pub use bytes::{Fixed, Varied};
+pub use bytes::{AndThen, ExactLen, Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
-pub use implicit::{DepCombinator, FnDepCombinator, Implicit, TVLeaf, TVOr, VoidTag};
+pub use implicit::{DepCombinator, Implicit, KVFormat, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
 pub use mapped::{Mapped, TryMap};
 pub use marker::{Empty, Void};
