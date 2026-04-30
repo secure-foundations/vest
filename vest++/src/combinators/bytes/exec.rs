@@ -50,7 +50,7 @@ impl<'s, Len: AsLen> Serializer<&'s [u8]> for super::Varied<Len> {
 impl<I, Len, Inner> Parser<I> for super::ExactLen<Inner, Len> where
     I: InputBuf,
     Len: AsLen,
-    Inner: Parser<I, PVal = Seq<u8>>,
+    Inner: Parser<I>,
  {
     type PT = Inner::PT;
 
