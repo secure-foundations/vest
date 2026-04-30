@@ -6,7 +6,7 @@ use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Alt, Bind, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
-    Choice, Cond, Const, DepCombinator, Eof, Fixed, FnDepCombinator, Implicit, Mapped, Repeat, Sum,
+    Choice, Cond, Const, DepCombinator, Eof, Fixed, Implicit, KVFormat, Mapped, Repeat, Sum,
     TVLeaf, TVOr, Tagged, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
@@ -248,13 +248,9 @@ type TXSegwitRestRestVal = (Seq<u8>, (Seq<u8>, u32));
 
 type TXSegwitRestVal = (Seq<u8>, TXSegwitRestRestVal);
 
-type TXSegwitRestRest = FnDepCombinator<u8, TXSegwitRestRestVal, Pair<Varied, Pair<Varied, U32Le>>>;
+type TXSegwitRestRest = KVFormat<u8, TXSegwitRestRestVal, Pair<Varied, Pair<Varied, U32Le>>>;
 
-type TXSegwitRest = FnDepCombinator<
-    u8,
-    TXSegwitRestVal,
-    Pair<Varied, Implicit<U8, TXSegwitRestRest>>,
->;
+type TXSegwitRest = KVFormat<u8, TXSegwitRestVal, Pair<Varied, Implicit<U8, TXSegwitRestRest>>>;
 
 proof fn test_bitcoin_tx() {
     use super::btcvarint::{
