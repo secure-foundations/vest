@@ -80,8 +80,8 @@ impl<T, Exec, Spec> Pred<T> for FnPred<T, Exec, Spec> where
     }
 }
 
-pub trait Map<I>: SpecMap where I: DeepView<V = Self::SpecI> {
-    type O: DeepView<V = Self::SpecO>;
+pub trait Map<I>: SpecMap where I: DeepView<V = Self::Input> {
+    type O: DeepView<V = Self::Output>;
 
     open spec fn exec_inv(&self) -> bool {
         true
@@ -95,6 +95,50 @@ pub trait Map<I>: SpecMap where I: DeepView<V = Self::SpecI> {
     ;
 }
 
+pub trait MapRef<I>: SpecMap<Output = Self::O> where I: DeepView<V = Self::Input> {
+    type O;
+
+    fn map(&self, i: &I) -> (o: Self::O)
+        ensures
+            self.spec_map(i.deep_view()) == o,
+    ;
+}
+
+// pub trait MapRef<I> where I: DeepView {
+//     type O;
+//     open spec fn pre(&self, i: &I) -> bool {
+//         true
+//     }
+//     spec fn post(&self, i: &I, o: Self::O) -> bool;
+//     fn map(&self, i: &I) -> (o: Self::O)
+//         requires
+//             self.pre(i),
+//         ensures
+//             self.post(i, o),
+//     ;
+// }
+// pub type ClsWithSpec<I, O, F> = (F, Ghost<spec_fn(I) -> O>);
+// // implement MapRef for any `Fn(&I) -> O` that satisfies the pre/post conditions
+// impl<I, O, F> MapRef<I> for ClsWithSpec<I, O, F> where I: DeepView, F: Fn(&I) -> O {
+//     type O = O;
+//     open spec fn pre(&self, i: &I) -> bool {
+//         call_requires(self.0, (i,))
+//     }
+//     open spec fn post(&self, i: &I, o: O) -> bool {
+//         call_ensures(self.0, (i,), o)
+//     }
+//     fn map(&self, i: &I) -> (o: O) {
+//         (self.0)(i)
+//     }
+// }
+// impl<I, O, F> SpecMap for ClsWithSpec<I, O, F> where I: DeepView, F: Fn(&I) -> O {
+//     type Input = I;
+//     type Output = O;
+//     open spec fn spec_map(&self, i: I) -> O {
+//         let Ghost(spec_fn) = self.1;
+//         spec_fn(i)
+//     }
+// }
 /// Pairs an executable predicate closure with a ghost spec predicate.
 #[verifier::reject_recursive_types(O)]
 pub struct FnMap<I: DeepView, O: DeepView, Exec, Spec> {
@@ -108,7 +152,7 @@ impl<I: DeepView, O: DeepView, Exec, Spec> FnMap<I, O, Exec, Spec> {
         I: DeepView,
         O: DeepView,
         Exec: Fn(I) -> O,
-        Spec: SpecMap<SpecI = I::V, SpecO = O::V>,
+        Spec: SpecMap<Input = I::V, Output = O::V>,
 
         requires
             forall|i: I| #[trigger] call_requires(exec_fn, (i,)),
@@ -125,13 +169,13 @@ impl<I: DeepView, O: DeepView, Exec, Spec> FnMap<I, O, Exec, Spec> {
 impl<I, O, Exec, Spec> SpecMap for FnMap<I, O, Exec, Spec> where
     I: DeepView,
     O: DeepView,
-    Spec: SpecMap<SpecI = I::V, SpecO = O::V>,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
  {
-    type SpecI = I::V;
+    type Input = I::V;
 
-    type SpecO = O::V;
+    type Output = O::V;
 
-    closed spec fn spec_map(&self, i: Self::SpecI) -> Self::SpecO {
+    closed spec fn spec_map(&self, i: Self::Input) -> Self::Output {
         let Ghost(spec_fn) = self.spec_fn;
         spec_fn.spec_map(i)
     }
@@ -141,7 +185,7 @@ impl<I, O, Exec, Spec> Map<I> for FnMap<I, O, Exec, Spec> where
     I: DeepView,
     O: DeepView,
     Exec: Fn(I) -> O,
-    Spec: SpecMap<SpecI = I::V, SpecO = O::V>,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
  {
     type O = O;
 
