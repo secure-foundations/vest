@@ -1,13 +1,5 @@
 use crate::{
-    combinators::{
-        mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
-        recursive::{
-            BundledSpecs, EquivSerializersGeneralRecBody, GoodSerializerRecBody,
-            NoLookAheadRecBody, NonMalleableRecBody, NonTailFmtRecBody, SPRoundTripDpsRecBody,
-            SafeParserRecBody, SoundParserRecBody, SpecRecBody,
-        },
-        Alt, Fix, Mapped, Pair, Refined, U8,
-    },
+    combinators::{mapped::spec::*, recursive::*, Alt, Fix, Mapped, Pair, Refined, U8},
     core::{proof::*, spec::*},
 };
 use vstd::arithmetic::div_mod::*;
