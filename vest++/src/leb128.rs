@@ -96,22 +96,6 @@ impl SpecMapper for TermByteFromToNat {
     }
 }
 
-impl LossyMapper for TermByteFromToNat {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for TermByteFromToNat {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
 pub struct LowBitsMask;
 
 impl SpecMapper for LowBitsMask {
@@ -137,22 +121,6 @@ impl SpecMapper for LowBitsMask {
         // Set the high bit to get the continuation wire format
         // o | LEB128_CONT_BIT
         (o + LEB128_CONT_BIT) as u8
-    }
-}
-
-impl LossyMapper for LowBitsMask {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for LowBitsMask {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
@@ -183,6 +151,38 @@ impl SpecMapper for PairFromToNat {
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         // low = o & 0x7F, rest = o >> 7
         ((o % 128) as u8, o / 128)
+    }
+}
+
+impl LossyMapper for TermByteFromToNat {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for TermByteFromToNat {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    }
+}
+
+impl LossyMapper for LowBitsMask {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for LowBitsMask {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
     }
 }
 
