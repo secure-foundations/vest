@@ -188,21 +188,14 @@ impl SpecMapper for PairFromToNat {
 
 impl LossyMapper for PairFromToNat {
     proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        broadcast use lemma_fundamental_div_mod;
-
     }
 
     proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        broadcast use lemma_fundamental_div_mod;
-
     }
 }
 
 impl LosslessMapper for PairFromToNat {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        let (low, rest) = i;
-        let value = 128 * rest + low as nat;
-        lemma_fundamental_div_mod_converse(value as int, 128, rest as int, low as int);
     }
 
     proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
