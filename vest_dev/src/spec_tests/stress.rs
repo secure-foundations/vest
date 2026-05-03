@@ -5,46 +5,30 @@ use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::parser::{PResult, Parser};
 use crate::core::exec::ParseError;
 use crate::core::{proof::*, spec::*};
+use vest_lib::macros::with_deep_view;
 use vstd::prelude::*;
-use vest_lib::macros::with_deep_view_and_mapper;
 
-with_deep_view_and_mapper! {
+with_deep_view! {
     pub struct PerfHeader<'i> {
         pub version: u8,
         pub flags: u8,
         pub token: &'i [u8],
     }
 
-    #[verifier::ext_equal]
-    pub struct PerfHeaderSpec {
-        pub version: u8,
-        pub flags: u8,
-        pub token: Seq<u8>,
-    }
-
-    type PerfHeaderInner;
-    pub struct PerfHeaderMapper;
+    type PerfHeaderSpec = (u8, (u8, Seq<u8>));
 }
 
-with_deep_view_and_mapper! {
+with_deep_view! {
     pub struct PerfPayload<'i> {
         pub code: u8,
         pub counter: u16,
         pub blob: &'i [u8],
     }
 
-    #[verifier::ext_equal]
-    pub struct PerfPayloadSpec {
-        pub code: u8,
-        pub counter: u16,
-        pub blob: Seq<u8>,
-    }
-
-    type PerfPayloadInner;
-    pub struct PerfPayloadMapper;
+    type PerfPayloadSpec = (u8, (u16, Seq<u8>));
 }
 
-with_deep_view_and_mapper! {
+with_deep_view! {
     pub enum PerfBody20<'i> {
         Tag1(PerfPayload<'i>),
         Tag2(PerfPayload<'i>),
@@ -68,35 +52,11 @@ with_deep_view_and_mapper! {
         Tag20(PerfPayload<'i>),
     }
 
-    #[verifier::ext_equal]
-    pub enum PerfBody20Spec {
-        Tag1(PerfPayloadSpec),
-        Tag2(PerfPayloadSpec),
-        Tag3(PerfPayloadSpec),
-        Tag4(PerfPayloadSpec),
-        Tag5(PerfPayloadSpec),
-        Tag6(PerfPayloadSpec),
-        Tag7(PerfPayloadSpec),
-        Tag8(PerfPayloadSpec),
-        Tag9(PerfPayloadSpec),
-        Tag10(PerfPayloadSpec),
-        Tag11(PerfPayloadSpec),
-        Tag12(PerfPayloadSpec),
-        Tag13(PerfPayloadSpec),
-        Tag14(PerfPayloadSpec),
-        Tag15(PerfPayloadSpec),
-        Tag16(PerfPayloadSpec),
-        Tag17(PerfPayloadSpec),
-        Tag18(PerfPayloadSpec),
-        Tag19(PerfPayloadSpec),
-        Tag20(PerfPayloadSpec),
-    }
-
-    type PerfBody20Inner;
-    pub struct PerfBody20Mapper;
+    type PerfBody20Spec =
+        Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, PerfPayloadSpec, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >;
 }
 
-with_deep_view_and_mapper! {
+with_deep_view! {
     pub struct PerfMessage20<'i> {
         pub header: PerfHeader<'i>,
         pub body: PerfBody20<'i>,
@@ -120,48 +80,17 @@ with_deep_view_and_mapper! {
         pub checksum18: u16,
     }
 
-    #[verifier::ext_equal]
-    pub struct PerfMessage20Spec {
-        pub header: PerfHeaderSpec,
-        pub body: PerfBody20Spec,
-        pub checksum01: u16,
-        pub checksum02: u16,
-        pub checksum03: u16,
-        pub checksum04: u16,
-        pub checksum05: u16,
-        pub checksum06: u16,
-        pub checksum07: u16,
-        pub checksum08: u16,
-        pub checksum09: u16,
-        pub checksum10: u16,
-        pub checksum11: u16,
-        pub checksum12: u16,
-        pub checksum13: u16,
-        pub checksum14: u16,
-        pub checksum15: u16,
-        pub checksum16: u16,
-        pub checksum17: u16,
-        pub checksum18: u16,
-    }
-
-    type PerfMessage20Inner;
-    pub struct PerfMessage20Mapper;
+    type PerfMessage20Spec =
+        ( PerfHeaderSpec, ( PerfBody20Spec, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, u16, ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), );
 }
 
-with_deep_view_and_mapper! {
+with_deep_view! {
     pub struct PerfPair20<'i> {
         pub left: PerfMessage20<'i>,
         pub right: PerfMessage20<'i>,
     }
 
-    #[verifier::ext_equal]
-    pub struct PerfPair20Spec {
-        pub left: PerfMessage20Spec,
-        pub right: PerfMessage20Spec,
-    }
-
-    type PerfPair20Inner;
-    pub struct PerfPair20Mapper;
+    type PerfPair20Spec = (PerfMessage20Spec, PerfMessage20Spec);
 }
 
 verus! {
@@ -210,8 +139,8 @@ impl<'i> Parser<&'i [u8]> for PerfU16LeFmt {
 }
 
 
-pub open spec fn perf_header_fmt() -> Mapped<Pair<U8, Pair<U8, Fixed<2>>>, PerfHeaderMapper> {
-    Mapped { inner: Pair(U8, Pair(U8, Fixed::<2>)), mapper: PerfHeaderMapper }
+pub open spec fn perf_header_fmt() -> Pair<U8, Pair<U8, Fixed<2>>> {
+    Pair(U8, Pair(U8, Fixed::<2>))
 }
 
 pub struct PerfHeaderFmt;
@@ -250,8 +179,8 @@ impl<'i> Parser<&'i [u8]> for PerfHeaderFmt {
 }
 
 
-pub open spec fn perf_payload_fmt() -> Mapped<Pair<U8, Pair<PerfU16LeFmt, Fixed<3>>>, PerfPayloadMapper> {
-    Mapped { inner: Pair(U8, Pair(PerfU16LeFmt, Fixed::<3>)), mapper: PerfPayloadMapper }
+pub open spec fn perf_payload_fmt() -> Pair<U8, Pair<PerfU16LeFmt, Fixed<3>>> {
+    Pair(U8, Pair(PerfU16LeFmt, Fixed::<3>))
 }
 
 pub struct PerfPayloadFmt;
@@ -294,12 +223,9 @@ impl<'i> Parser<&'i [u8]> for PerfPayloadFmt {
 type PerfBody20Choice =
     Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, WithPrefixTag<U8, PerfPayloadFmt>>>>>>>>>>>>>>>>>>>>;
 
-pub open spec fn perf_body20_fmt() -> Mapped<PerfBody20Choice, PerfBody20Mapper> {
+pub open spec fn perf_body20_fmt() -> PerfBody20Choice {
     #[verusfmt::skip]
-    Mapped {
-        inner: Choice(WithPrefixTag(U8, 1u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 2u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 3u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 4u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 5u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 6u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 7u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 8u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 9u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 10u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 11u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 12u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 13u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 14u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 15u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 16u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 17u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 18u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 19u8, PerfPayloadFmt), WithPrefixTag(U8, 20u8, PerfPayloadFmt)))))))))))))))))))),
-        mapper: PerfBody20Mapper,
-    }
+    Choice(WithPrefixTag(U8, 1u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 2u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 3u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 4u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 5u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 6u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 7u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 8u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 9u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 10u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 11u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 12u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 13u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 14u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 15u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 16u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 17u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 18u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 19u8, PerfPayloadFmt), WithPrefixTag(U8, 20u8, PerfPayloadFmt))))))))))))))))))))
 }
 
 pub struct PerfBody20Fmt;
@@ -425,11 +351,8 @@ impl<'i> Parser<&'i [u8]> for PerfBody20Fmt {
 type PerfMessage20Chain =
     Pair<PerfHeaderFmt, Pair<PerfBody20Fmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, PerfU16LeFmt>>>>>>>>>>>>>>>>>>>;
 
-pub open spec fn perf_message20_fmt() -> Mapped<PerfMessage20Chain, PerfMessage20Mapper> {
-    Mapped {
-        inner: Pair(PerfHeaderFmt, Pair(PerfBody20Fmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, PerfU16LeFmt))))))))))))))))))),
-        mapper: PerfMessage20Mapper,
-    }
+pub open spec fn perf_message20_fmt() -> PerfMessage20Chain {
+    Pair(PerfHeaderFmt, Pair(PerfBody20Fmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, PerfU16LeFmt)))))))))))))))))))
 }
 
 pub struct PerfMessage20Fmt;
@@ -528,8 +451,8 @@ impl<'i> Parser<&'i [u8]> for PerfMessage20Fmt {
 }
 
 
-pub open spec fn perf_pair20_fmt() -> Mapped<Pair<PerfMessage20Fmt, PerfMessage20Fmt>, PerfPair20Mapper> {
-    Mapped { inner: Pair(PerfMessage20Fmt, PerfMessage20Fmt), mapper: PerfPair20Mapper }
+pub open spec fn perf_pair20_fmt() -> Pair<PerfMessage20Fmt, PerfMessage20Fmt> {
+    Pair(PerfMessage20Fmt, PerfMessage20Fmt)
 }
 
 pub struct PerfPair20Fmt;
