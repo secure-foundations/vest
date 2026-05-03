@@ -269,11 +269,15 @@ impl<A> SpecSerializerDps for super::Star<A> where A: SpecSerializerDps {
     }
 }
 
+pub open spec fn spec_serialize_seq<A: SpecSerializer>(inner: &A, vs: Seq<A::SVal>) -> Seq<u8> {
+    vs.fold_left(Seq::empty(), |buf: Seq<u8>, elem| buf + inner.spec_serialize(elem))
+}
+
 impl<A> SpecSerializer for super::Star<A> where A: SpecSerializer {
     type SVal = Seq<A::SVal>;
 
     open spec fn spec_serialize(&self, vs: Self::SVal) -> Seq<u8> {
-        vs.fold_left(Seq::empty(), |buf: Seq<u8>, elem| buf + self.inner.spec_serialize(elem))
+        spec_serialize_seq(&self.inner, vs)
     }
 }
 
@@ -497,7 +501,7 @@ impl<C: SpecSerializer, N: AsLen> SpecSerializer for super::RepeatN<C, N> {
     type SVal = Seq<C::SVal>;
 
     open spec fn spec_serialize(&self, vs: Self::SVal) -> Seq<u8> {
-        super::Star { inner: self.1 }.spec_serialize(vs)
+        spec_serialize_seq(&self.1, vs)
     }
 }
 

@@ -1,6 +1,8 @@
 //! Zero-or-more repetition combinators.
 /// Correctness proofs for this combinator.
 pub mod proof;
+/// Executable trait implementations for this combinator.
+pub mod exec;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
