@@ -65,3 +65,4 @@ pub mod asn1;
 pub mod combinators;
 pub mod core;
 pub mod macros;
+pub mod leb128;
