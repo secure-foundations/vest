@@ -549,23 +549,18 @@ impl<C: ValueByteLen, N: AsLen> ValueByteLen for super::RepeatN<C, N> {
 }
 
 impl<const N: usize, C: SpecParser> SpecParser for super::Array<N, C> {
-    type PVal = [C::PVal; N];
+    type PVal = Seq<C::PVal>;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        use crate::combinators::bytes::spec::array_from_seq;
-
-        match super::RepeatN(N, self.0).spec_parse(ibuf) {
-            Some((n, vs)) => Some((n, array_from_seq::<N, C::PVal>(vs))),
-            _ => None,
-        }
+        super::RepeatN(N, self.0).spec_parse(ibuf)
     }
 }
 
 impl<const N: usize, C: Consistency> Consistency for super::Array<N, C> {
-    type Val = [C::Val; N];
+    type Val = Seq<C::Val>;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        super::RepeatN(N, self.0).consistent(v@)
+        super::RepeatN(N, self.0).consistent(v)
     }
 }
 
@@ -585,34 +580,27 @@ impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use super::super::bytes::spec::axiom_array_from_seq;
-
-        let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_sound_consumption(ibuf);
-        rep.lemma_parse_exactly_n_times(ibuf);
+        super::RepeatN(N, self.0).lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        broadcast use super::super::bytes::spec::axiom_array_from_seq;
-
-        let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_sound_value(ibuf);
+        super::RepeatN(N, self.0).lemma_parse_sound_value(ibuf);
     }
 }
 
 impl<const N: usize, C: SpecSerializerDps> SpecSerializerDps for super::Array<N, C> {
-    type SValue = [C::SValue; N];
+    type SValue = Seq<C::SValue>;
 
     open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        super::RepeatN(N, self.0).spec_serialize_dps(v@, obuf)
+        super::RepeatN(N, self.0).spec_serialize_dps(v, obuf)
     }
 }
 
 impl<const N: usize, C: SpecSerializer> SpecSerializer for super::Array<N, C> {
-    type SVal = [C::SVal; N];
+    type SVal = Seq<C::SVal>;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        super::RepeatN(N, self.0).spec_serialize(v@)
+        super::RepeatN(N, self.0).spec_serialize(v)
     }
 }
 
@@ -622,11 +610,11 @@ impl<const N: usize, C: NonTailFmt> NonTailFmt for super::Array<N, C> {
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_serialize_dps_prepend(v@, obuf);
+        super::RepeatN(N, self.0).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_serialize_dps_len(v@, obuf);
+        super::RepeatN(N, self.0).lemma_serialize_dps_len(v, obuf);
     }
 }
 
@@ -636,15 +624,15 @@ impl<const N: usize, C: GoodSerializer> GoodSerializer for super::Array<N, C> {
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        super::RepeatN(N, self.0).lemma_serialize_len(v@);
+        super::RepeatN(N, self.0).lemma_serialize_len(v);
     }
 }
 
 impl<const N: usize, C: SpecByteLen> SpecByteLen for super::Array<N, C> {
-    type T = [C::T; N];
+    type T = Seq<C::T>;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        super::RepeatN(N, self.0).byte_len(v@)
+        super::RepeatN(N, self.0).byte_len(v)
     }
 }
 
@@ -655,21 +643,21 @@ impl<const N: usize, C: StaticByteLen> StaticByteLen for super::Array<N, C> {
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
         let star = super::Star { inner: self.0 };
-        lemma_static_seq_byte_len(star.inner, v@);
-        assert(self.byte_len(v) == star.byte_len(v@));
-        assert(v@.len() == N as nat);
-        assert(self.byte_len(v) == v@.len() * C::static_byte_len());
+        lemma_static_seq_byte_len(star.inner, v);
+        assert(self.byte_len(v) == star.byte_len(v));
+        assert(v.len() == N as nat);
+        assert(self.byte_len(v) == v.len() * C::static_byte_len());
     }
 }
 
 impl<const N: usize, C: ValueByteLen> ValueByteLen for super::Array<N, C> {
     open spec fn value_byte_len(v: Self::T) -> nat {
-        <super::Star<C> as ValueByteLen>::value_byte_len(v@)
+        <super::Star<C> as ValueByteLen>::value_byte_len(v)
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        lemma_value_seq_byte_len(self.0, v@);
-        assert(self.byte_len(v) == (super::Star { inner: self.0 }).byte_len(v@));
+        lemma_value_seq_byte_len(self.0, v);
+        assert(self.byte_len(v) == (super::Star { inner: self.0 }).byte_len(v));
     }
 }
 

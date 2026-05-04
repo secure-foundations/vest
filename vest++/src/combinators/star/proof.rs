@@ -486,12 +486,7 @@ impl<const N: usize, C> SPRoundTripDps for super::Array<N, C> where C: SPRoundTr
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        use crate::combinators::bytes::spec::axiom_array_from_seq;
-
-        broadcast use axiom_array_from_seq;
-
-        let rep = super::RepeatN(N, self.0);
-        rep.theorem_serialize_dps_parse_roundtrip(v@, obuf);
+        super::RepeatN(N, self.0).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
@@ -501,14 +496,7 @@ impl<const N: usize, C: NonMalleable> NonMalleable for super::Array<N, C> {
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        use crate::combinators::bytes::spec::axiom_array_from_seq;
-
-        broadcast use axiom_array_from_seq;
-
-        let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_exactly_n_times(buf1);
-        rep.lemma_parse_exactly_n_times(buf2);
-        rep.lemma_parse_non_malleable(buf1, buf2);
+        super::RepeatN(N, self.0).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
@@ -518,14 +506,7 @@ impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        use crate::combinators::bytes::spec::axiom_array_from_seq;
-
-        broadcast use axiom_array_from_seq;
-
-        let rep = super::RepeatN(N, self.0);
-        rep.lemma_parse_exactly_n_times(i1);
-        rep.lemma_no_lookahead(i1, i2);
-        rep.lemma_parse_exactly_n_times(i2);
+        super::RepeatN(N, self.0).lemma_no_lookahead(i1, i2);
     }
 }
 
@@ -535,7 +516,7 @@ impl<const N: usize, C: EquivSerializersGeneral> EquivSerializersGeneral for sup
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_serialize_equiv(v@, obuf);
+        super::RepeatN(N, self.0).lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -545,7 +526,7 @@ impl<const N: usize, C: EquivSerializersGeneral> EquivSerializers for super::Arr
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        super::RepeatN(N, self.0).lemma_serialize_equiv_on_empty(v@);
+        super::RepeatN(N, self.0).lemma_serialize_equiv_on_empty(v);
     }
 }
 

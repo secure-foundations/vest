@@ -78,7 +78,7 @@ proof fn test_repeatn_roundtrip_basic() {
 proof fn test_array_roundtrip_basic() {
     let inner = Refined(U8, |x: u8| x != 0xFFu8);
     let arr = Array::<3, _>(inner);
-    let v: [u8; 3] = [0x10u8, 0x20u8, 0x30u8];
+    let v: Seq<u8> = seq![0x10u8, 0x20u8, 0x30u8];
 
     assert(arr.consistent(v));
     assert(arr.unambiguous());
