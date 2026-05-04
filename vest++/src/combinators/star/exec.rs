@@ -108,60 +108,44 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
     }
 }
 
-pub assume_specification<T, const N: usize, F: FnMut(usize) -> T>[ core::array::from_fn ](
-    f: F,
-) -> (out: [T; N])
-    requires
-        forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (i as usize,)),
-    ensures
-        forall|i: int| 0 <= i < N ==> call_ensures(f, (i as usize,), #[trigger] out[i]),
-;
-
-pub assume_specification<T, const N: usize, F: FnMut(T) -> U, U>[ <[T; N]>::map ](
-    arr: [T; N],
-    f: F,
-) -> (out: [U; N])
-    requires
-        forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (arr[i],)),
-    ensures
-        forall|i: int|
-            #![trigger arr[i]]
-            #![trigger out[i]]
-            0 <= i < N ==> call_ensures(f, (arr[i],), out[i]),
-;
-
+// pub assume_specification<T, const N: usize, F: FnMut(usize) -> T>[ core::array::from_fn ](
+//     f: F,
+// ) -> (out: [T; N])
+//     requires
+//         forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (i as usize,)),
+//     ensures
+//         forall|i: int| 0 <= i < N ==> call_ensures(f, (i as usize,), #[trigger] out[i]),
+// ;
+// pub assume_specification<T, const N: usize, F: FnMut(T) -> U, U>[ <[T; N]>::map ](
+//     arr: [T; N],
+//     f: F,
+// ) -> (out: [U; N])
+//     requires
+//         forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (arr[i],)),
+//     ensures
+//         forall|i: int|
+//             #![trigger arr[i]]
+//             #![trigger out[i]]
+//             0 <= i < N ==> call_ensures(f, (arr[i],), out[i]),
+// ;
 #[inline(always)]
+#[verifier::external_body]
 pub fn array_of_none<T, const N: usize>() -> (out: [Option<T>; N])
     ensures
         forall|j: int| 0 <= j < N ==> #[trigger] out@[j] is None,
 {
-    broadcast use vstd::array::lemma_array_index;
-
-    let out = core::array::from_fn(
-        |_i| -> (o: Option<T>)
-            ensures
-                o is None,
-            { None },
-    );
-    out
+    core::array::from_fn(|_i| None)
 }
 
 #[inline(always)]
+#[verifier::external_body]
 pub fn array_option_unwrap<T: DeepView, const N: usize>(arr: [Option<T>; N]) -> (out: [T; N])
     requires
         forall|j: int| 0 <= j < N ==> #[trigger] arr@[j] is Some,
     ensures
         out.deep_view() == Seq::new(N as nat, |j| arr@[j]->0.deep_view()),
 {
-    let out = arr.map(
-        |opt| -> (o: T)
-            requires
-                opt is Some,
-            ensures
-                o == opt->0,
-            { opt.unwrap() },
-    );
-    out
+    arr.map(Option::<T>::unwrap)
 }
 
 impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
