@@ -147,7 +147,7 @@ pub fn array_of_none<T, const N: usize>() -> (out: [Option<T>; N])
 }
 
 #[inline(always)]
-pub fn array_option_transpose<T: DeepView, const N: usize>(arr: [Option<T>; N]) -> (out: [T; N])
+pub fn array_option_unwrap<T: DeepView, const N: usize>(arr: [Option<T>; N]) -> (out: [T; N])
     requires
         forall|j: int| 0 <= j < N ==> #[trigger] arr@[j] is Some,
     ensures
@@ -208,7 +208,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
             consumed += n;
         }
 
-        let arr = array_option_transpose(arr);
+        let arr = array_option_unwrap(arr);
 
         Ok((consumed, arr))
     }
