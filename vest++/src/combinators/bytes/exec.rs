@@ -90,4 +90,18 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
     }
 }
 
+impl<Len, Inner, InnerST> Serializer<InnerST> for super::ExactLen<Inner, Len> where
+    Len: AsLen,
+    Inner: Serializer<InnerST>,
+    InnerST: DeepView<V = Inner::SVal>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: InnerST, obuf: &mut Vec<u8>) {
+        self.1.ex_serialize(v, obuf);
+    }
+}
+
 } // verus!
