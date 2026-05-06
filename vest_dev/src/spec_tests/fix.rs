@@ -8,6 +8,7 @@ use crate::core::exec::fns;
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::*;
+use crate::core::exec::ParseError;
 use crate::core::proof::*;
 use crate::core::spec::*;
 use vest_derive::DeepView;
@@ -74,7 +75,7 @@ impl<'s> fns::Map<&'s NestedBracesT> for NestedBracesMapRev {
 
     fn map(&self, o: &'s NestedBracesT) -> Sum<&'s NestedBracesT, u8> {
         match o {
-            NestedBracesT::Brace(inner) => Sum::Inl(&**inner),
+            NestedBracesT::Brace(inner) => Sum::Inl(inner),
             NestedBracesT::Eps => Sum::Inr(0x00u8),
         }
     }
@@ -82,17 +83,7 @@ impl<'s> fns::Map<&'s NestedBracesT> for NestedBracesMapRev {
 
 /// One level of the nested-braces format: `'{' rec '}' | '\0'`.
 // pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
-#[verifier::allow_in_spec]
-pub fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
-    returns
-        (Mapped {
-            inner: Choice(
-                WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)),
-                Const(U8, 0x00u8),
-            ),
-            mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
-        }),
-{
+pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> {
     Mapped {
         inner: Choice(WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)), Const(U8, 0x00u8)),
         mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
@@ -108,59 +99,93 @@ type NestedBracesBodyComb<Rec> = Mapped<
 pub struct NestedBracesBody;
 
 impl SpecRecBody for NestedBracesBody {
+    type Param = ();
+
     type T = NestedBracesTSpec;
 
     type Body = NestedBracesBodyComb<BundledSpecs<Self::T>>;
 
-    open spec fn spec_body(rec: BundledSpecs<Self::T>) -> Self::Body {
-        nested_braces_body(rec)
+    open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+        nested_braces_body(rec(()))
     }
 }
 
 impl<'i> ParserRecBody<&'i [u8]> for NestedBracesBody {
+    type EP = ();
+
     type O = NestedBracesT;
 
     fn parse_body<Exec>(
         &self,
-        spec_rec: Ghost<BundledSpecs<Self::T>>,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         ibuf: &&'i [u8],
-    ) -> PResult<Self::O> where Exec: Fn(&&'i [u8]) -> PResult<Self::O> {
-        let rec = fns::FnParser::new(exec_rec, spec_rec);
-        let body = nested_braces_body(rec);
-        body.parse(ibuf)
+    ) -> PResult<Self::O> where Exec: Fn(&(), &&'i [u8]) -> PResult<Self::O> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _total_len = ibuf.len();
+        let (n1, first) = U8.parse(ibuf)?;
+        match first {
+            0x00u8 => {
+                let value = NestedBracesT::Eps;
+                Ok((n1, value))
+            },
+            0x7Bu8 => {
+                let rest = ibuf.skip(n1);
+                let (n2, inner) = exec_rec(&(), &rest)?;
+                let rest2 = rest.skip(n2);
+                let (n3, _) = Const(U8, 0x7Du8).parse(&rest2)?;
+                let total = n1 + n2 + n3;
+                let value = NestedBracesT::Brace(Box::new(inner));
+                Ok((total, value))
+            },
+            _ => { Err(ParseError::invalid_tag()) },
+        }
     }
 }
 
 impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
+    type EP = ();
+
     fn serialize_body<Exec>(
         &self,
-        spec_rec: Ghost<BundledSpecs<Self::T>>,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &'s NestedBracesT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&'s NestedBracesT) -> Vec<u8> {
-        let rec = fns::FnSerializer::new(exec_rec, spec_rec);
-        let body = nested_braces_body(rec);
-        body.ex_serialize(v, obuf);
+    ) where Exec: Fn(&(), &'s NestedBracesT) -> Vec<u8> {
+        match v {
+            NestedBracesT::Eps => {
+                U8.ex_serialize(0x00u8, obuf);
+            },
+            NestedBracesT::Brace(inner) => {
+                U8.ex_serialize(0x7Bu8, obuf);
+                let bytes = exec_rec(&(), inner);
+                let slice = bytes.as_slice();
+                obuf.extend_from_slice(slice);
+                U8.ex_serialize(0x7Du8, obuf);
+            },
+        }
     }
 }
 
 impl StrictRecBody for NestedBracesBody {
-    proof fn lemma_body_all_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_all_inv_preservation(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
     }
 }
 
 proof fn nested_braces_sound_parser() {
-    let nested_braces = Fix::<10, _>(NestedBracesBody);
+    let nested_braces = FixWith::<10, _, _>(NestedBracesBody, ());
 
     let input = seq![0x7Bu8, 0x00u8, 0x7Du8];
 
     assert(nested_braces.spec_parse(input) == Some(
         (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
     )) by {
-        let cb = Fix::<10, NestedBracesBody>::specs_callback(10);
-        let body10 = nested_braces_body(cb);
+        let cb = FixWith::<10, NestedBracesBody, ()>::specs_callback(10);
+        let body10 = nested_braces_body(cb(()));
         assert(body10.spec_parse(input) == Some(
             (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
         ));
@@ -183,10 +208,195 @@ proof fn nested_braces_sound_parser() {
     nested_braces.theorem_parse_serialize_roundtrip(input);
 }
 
+/*
+* Example parameterized recursive parser: tag-threaded chain
+*/
+
+#[derive(Debug, DeepView)]
+pub enum TaggedChainT {
+    End,
+    Step(u8, Box<TaggedChainT>),
+}
+
+pub struct TaggedChainMap;
+
+pub struct TaggedChainMapRev;
+
+impl SpecMap for TaggedChainMap {
+    type Input = Sum<(u8, TaggedChainTSpec), u8>;
+
+    type Output = TaggedChainTSpec;
+
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
+        match i {
+            Sum::Inl((next_tag, tail)) => TaggedChainTSpec::Step(next_tag, Box::new(tail)),
+            Sum::Inr(_) => TaggedChainTSpec::End,
+        }
+    }
+}
+
+impl fns::Map<Sum<(u8, TaggedChainT), u8>> for TaggedChainMap {
+    type O = TaggedChainT;
+
+    fn map(&self, i: Sum<(u8, TaggedChainT), u8>) -> Self::O {
+        match i {
+            Sum::Inl((next_tag, tail)) => TaggedChainT::Step(next_tag, Box::new(tail)),
+            Sum::Inr(_) => TaggedChainT::End,
+        }
+    }
+}
+
+impl SpecMap for TaggedChainMapRev {
+    type Input = TaggedChainTSpec;
+
+    type Output = Sum<(u8, TaggedChainTSpec), u8>;
+
+    open spec fn spec_map(&self, o: Self::Input) -> Self::Output {
+        match o {
+            TaggedChainTSpec::Step(next_tag, tail) => Sum::Inl((next_tag, *tail)),
+            TaggedChainTSpec::End => Sum::Inr(0x00u8),
+        }
+    }
+}
+
+impl<'s> fns::Map<&'s TaggedChainT> for TaggedChainMapRev {
+    type O = Sum<(u8, &'s TaggedChainT), u8>;
+
+    fn map(&self, o: &'s TaggedChainT) -> Self::O {
+        match o {
+            TaggedChainT::Step(next_tag, tail) => Sum::Inl((*next_tag, &**tail)),
+            TaggedChainT::End => Sum::Inr(0x00u8),
+        }
+    }
+}
+
+type TaggedChainBodyComb<Rec> = Mapped<
+    Choice<Cond<WithPrefixTag<U8, Bind<U8, Rec>>>, Cond<Const<U8, u8>>>,
+    BiMap<TaggedChainMap, TaggedChainMapRev>,
+>;
+
+pub struct TaggedChainBody;
+
+impl SpecRecBody for TaggedChainBody {
+    type Param = u8;
+
+    type T = TaggedChainTSpec;
+
+    type Body = TaggedChainBodyComb<ParamRecSpecs<Self::Param, Self::T>>;
+
+    open spec fn spec_body(
+        current_tag: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        Mapped {
+            inner: Choice(
+                Cond(
+                    current_tag != 0u8,
+                    WithPrefixTag(U8, current_tag, Bind(U8, |next_tag: u8| rec(next_tag))),
+                ),
+                Cond(current_tag == 0u8, Const(U8, 0x00u8)),
+            ),
+            mapper: BiMap(TaggedChainMap, TaggedChainMapRev),
+        }
+    }
+}
+
+impl<'i> ParserRecBody<&'i [u8]> for TaggedChainBody {
+    type EP = u8;
+
+    type O = TaggedChainT;
+
+    fn parse_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<Self::O> where Exec: Fn(&u8, &&'i [u8]) -> PResult<Self::O> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use vstd::seq_lib::lemma_seq_skip_of_skip;
+
+        let _total_len = ibuf.len();
+
+        match *current_tag {
+            0u8 => {
+                let (n1, _) = Const(U8, 0x00u8).parse(ibuf)?;
+                let value = TaggedChainT::End;
+                Ok((n1, value))
+            },
+            _ => {
+                let (n1, _) = Const(U8, *current_tag).parse(ibuf)?;
+                let rest = ibuf.skip(n1);
+                let (n2, next_tag) = U8.parse(&rest)?;
+                let rest2 = rest.skip(n2);
+                let (n3, tail) = exec_rec(&next_tag, &rest2)?;
+                let total = n1 + n2 + n3;
+                let value = TaggedChainT::Step(next_tag, Box::new(tail));
+                Ok((total, value))
+            },
+        }
+    }
+}
+
+impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
+    type EP = u8;
+
+    fn serialize_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &'s TaggedChainT,
+        obuf: &mut Vec<u8>,
+    ) where Exec: Fn(&u8, &'s TaggedChainT) -> Vec<u8> {
+        match v {
+            TaggedChainT::End => {
+                U8.ex_serialize(0x00u8, obuf);
+            },
+            TaggedChainT::Step(next_tag, tail) => {
+                U8.ex_serialize(*current_tag, obuf);
+                U8.ex_serialize(*next_tag, obuf);
+                let bytes = exec_rec(next_tag, tail);
+                let slice = bytes.as_slice();
+                obuf.extend_from_slice(slice);
+            },
+        }
+    }
+}
+
+impl StrictRecBody for TaggedChainBody {
+    proof fn lemma_body_all_inv_preservation(
+        _param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
+proof fn tagged_chain_sound_parser() {
+    let tagged_chain = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
+
+    let input = seq![0x7Au8, 0x5Au8, 0x5Au8, 0x33u8, 0x33u8, 0x00u8, 0x00u8];
+    let value = TaggedChainTSpec::Step(
+        0x5Au8,
+        Box::new(
+            TaggedChainTSpec::Step(
+                0x33u8,
+                Box::new(TaggedChainTSpec::Step(0x00u8, Box::new(TaggedChainTSpec::End))),
+            ),
+        ),
+    );
+
+    tagged_chain.lemma_parse_safe(input);
+    tagged_chain.lemma_parse_sound_value(input);
+    tagged_chain.lemma_parse_sound_consumption(input);
+    tagged_chain.lemma_serialize_len(value);
+    tagged_chain.theorem_parse_serialize_roundtrip(input);
+}
+
 } // verus!
 #[test]
 fn nested_braces_exec_parse() {
-    let parser = Fix::<10, _>(NestedBracesBody);
+    let parser = FixWith::<10, _, _>(NestedBracesBody, ());
     let input: &[u8] = &[0x7b, 0x7b, 0x00, 0x7d, 0x7d];
     let result = parser.parse(&input);
 
@@ -243,4 +453,37 @@ fn nested_braces_exec_parse() {
         }
         other => panic!("expected recursion limit error, got {:?}", other),
     }
+}
+
+#[test]
+fn tagged_chain_exec_parse_serialize() {
+    let parser = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
+    let input: &[u8] = &[0x7A, 0x5A, 0x5A, 0x33, 0x33, 0x00, 0x00];
+    let result = parser.parse(&input);
+
+    println!(
+        "tagged-chain input buf: {:?}, parse result: {:?}",
+        input, result
+    );
+
+    let parsed_value = match result {
+        Ok((7, TaggedChainT::Step(0x5A, tail1))) => {
+            assert!(matches!(
+                tail1.as_ref(),
+                TaggedChainT::Step(0x33, tail2)
+                    if matches!(tail2.as_ref(), TaggedChainT::Step(0x00, tail3)
+                        if matches!(tail3.as_ref(), TaggedChainT::End))
+            ));
+            TaggedChainT::Step(0x5A, tail1)
+        }
+        other => panic!("unexpected tagged-chain parse result: {:?}", other),
+    };
+
+    let mut serialized = Vec::<u8>::new();
+    parser.ex_serialize(&parsed_value, &mut serialized);
+    println!(
+        "tagged-chain parsed value: {:?}, serialized buf: {:?}",
+        parsed_value, serialized
+    );
+    assert_eq!(serialized.as_slice(), input);
 }
