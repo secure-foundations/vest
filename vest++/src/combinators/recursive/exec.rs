@@ -50,13 +50,13 @@ pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
         exec_rec: Exec,
         v: ST,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&Self::EP, ST) -> Vec<u8>
+    ) where Exec: Fn(&Self::EP, ST, &mut Vec<u8>)
         requires
-            forall|pp: &Self::EP, vv: ST| call_requires(exec_rec, (pp, vv)),
-            forall|pp: &Self::EP, vv: ST, bytes: Vec<u8>|
-                call_ensures(exec_rec, (pp, vv), bytes) ==> bytes@ == spec_rec(pp.deep_view()).3(
-                    vv.deep_view(),
-                ),
+            forall|pp: &Self::EP, vv: ST, out: &mut Vec<u8>| call_requires(exec_rec, (pp, vv, out)),
+            forall|pp: &Self::EP, vv: ST, out: &mut Vec<u8>|
+                call_ensures(exec_rec, (pp, vv, out), ()) ==> final(out)@ == out@ + spec_rec(
+                    pp.deep_view(),
+                ).3(vv.deep_view()),
         ensures
             final(obuf)@ == old(obuf)@ + Self::spec_body(
                 param.deep_view(),
@@ -121,15 +121,15 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             ),
         decreases gas,
     {
-        let exec_callback = |pp: &Param, vv: ST| -> (bytes: Vec<u8>)
+        let exec_callback = |pp: &Param, vv: ST, oo: &mut Vec<u8>| -> ()
             ensures
-                bytes@ == Self::spec_serialize_callback(gas as nat, pp.deep_view())(vv.deep_view()),
+                final(oo)@ == old(oo)@ + Self::spec_serialize_callback(gas as nat, pp.deep_view())(
+                    vv.deep_view(),
+                ),
             {
-                let mut bytes = Vec::<u8>::new();
                 if gas > 0 {
-                    self.serialize_gas((gas - 1) as usize, pp, vv, &mut bytes);
+                    self.serialize_gas((gas - 1) as usize, pp, vv, oo);
                 }
-                bytes
             };
 
         let ghost spec_callback = Self::specs_callback(gas as nat);

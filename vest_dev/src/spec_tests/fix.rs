@@ -155,16 +155,14 @@ impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
         exec_rec: Exec,
         v: &'s NestedBracesT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&(), &'s NestedBracesT) -> Vec<u8> {
+    ) where Exec: Fn(&(), &'s NestedBracesT, &mut Vec<u8>) {
         match v {
             NestedBracesT::Eps => {
                 U8.ex_serialize(0x00u8, obuf);
             },
             NestedBracesT::Brace(inner) => {
                 U8.ex_serialize(0x7Bu8, obuf);
-                let bytes = exec_rec(&(), inner);
-                let slice = bytes.as_slice();
-                obuf.extend_from_slice(slice);
+                exec_rec(&(), inner, obuf);
                 U8.ex_serialize(0x7Du8, obuf);
             },
         }
@@ -348,7 +346,7 @@ impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
         exec_rec: Exec,
         v: &'s TaggedChainT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&u8, &'s TaggedChainT) -> Vec<u8> {
+    ) where Exec: Fn(&u8, &'s TaggedChainT, &mut Vec<u8>) {
         match v {
             TaggedChainT::End => {
                 U8.ex_serialize(0x00u8, obuf);
@@ -356,9 +354,7 @@ impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
             TaggedChainT::Step(next_tag, tail) => {
                 U8.ex_serialize(*current_tag, obuf);
                 U8.ex_serialize(*next_tag, obuf);
-                let bytes = exec_rec(next_tag, tail);
-                let slice = bytes.as_slice();
-                obuf.extend_from_slice(slice);
+                exec_rec(next_tag, tail, obuf);
             },
         }
     }
