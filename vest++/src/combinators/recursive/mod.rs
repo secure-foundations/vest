@@ -13,21 +13,24 @@ use vstd::prelude::*;
 pub use exec::{ParserRecBody, SerializerRecBody};
 pub use proof::{
     EquivSerializersGeneralRecBody, NoLookAheadRecBody, NonMalleableRecBody, SPRoundTripDpsRecBody,
-    StrictRecBody,
+     StrictRecBody,
 };
 pub use spec::{
-    BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SafeParserRecBody, SoundParserRecBody,
-    SpecRecBody,
+    BundledSpecs, ParamRecSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SafeParserRecBody,
+    SoundParserRecBody, SpecRecBody,
 };
 
 verus! {
 
-/// Bounded fixpoint combinator: recursive format up to `LIMIT` levels of nesting.
+/// Bounded fixpoint combinator for parameterized recursive formats.
 ///
-/// Parsing semantics: parses with `Body`, which may recursively refer to `Fix` (up to `LIMIT` times).
-pub struct Fix<const LIMIT: usize, Body>(pub Body);
+/// `Param` is the starting parameter for the recursive `Body`.
+/// Context-free recursive formats use `Param = ()`.
+pub struct FixWith<const LIMIT: usize, Body, Param>(pub Body, pub Param);
 
-impl<const N: usize, Body: StrictRecBody> LeafNonMalleable for Fix<N, Body> where
+impl<const N: usize, Body, Param> LeafNonMalleable for FixWith<N, Body, Param> where
+    Param: DeepView<V = Body::Param>,
+    Body: StrictRecBody,
     Body::Body: StrictCombinator,
  {
     proof fn nonmal_leaf_inv(&self) {

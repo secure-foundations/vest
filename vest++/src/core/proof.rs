@@ -273,7 +273,7 @@ impl<Body> StrictCombinator for Body where
 ///
 /// Built-in combinators that are "leaves" include [Fixed](crate::combinators::bytes::Fixed), [Varied](crate::combinators::bytes::Varied),
 /// [U8](crate::combinators::uints::U8)/[U16Le](crate::combinators::uints::U16Le)/[U32Le](crate::combinators::uints::U32Le),
-/// [Fix](crate::combinators::recursive::Fix), [Empty](crate::combinators::marker::Empty), and [Void](crate::combinators::marker::Void).
+/// [FixWith](crate::combinators::recursive::FixWith), [Empty](crate::combinators::marker::Empty), and [Void](crate::combinators::marker::Void).
 ///
 /// In addition, any dedrived/composed combinator that is proven to satisfy [`Leaf::leaf_inv`] can also be marked as a leaf combinator.
 pub trait Leaf:

@@ -1,5 +1,5 @@
 use crate::{
-    combinators::{mapped::spec::*, recursive::*, Alt, Fix, Mapped, Pair, Refined, U8},
+    combinators::{mapped::spec::*, recursive::*, Alt, FixWith, Mapped, Pair, Refined, U8},
     core::{proof::*, spec::*},
 };
 use vstd::arithmetic::div_mod::*;
@@ -8,18 +8,21 @@ use vstd::prelude::*;
 
 verus! {
 
-pub type ULeb128Fmt<const MINIMAL: bool, const RECLIMIT: usize> = Fix<
+pub type ULeb128Fmt<const MINIMAL: bool, const RECLIMIT: usize> = FixWith<
     RECLIMIT,
     ULeb128RecBody<MINIMAL>,
+    (),
 >;
 
 pub open spec fn uleb128_fmt<const MINIMAL: bool, const N: usize>() -> ULeb128Fmt<MINIMAL, N> {
-    Fix(ULeb128RecBody::<MINIMAL>)
+    FixWith(ULeb128RecBody::<MINIMAL>, ())
 }
 
 pub struct ULeb128RecBody<const MINIMAL: bool>;
 
 impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
+    type Param = ();
+
     type T = nat;
 
     type Body = Alt<
@@ -33,12 +36,12 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     /// 𝚞𝑁	::=	𝑛:𝚋𝚢𝚝𝚎          		⇒		𝑛		if 𝑛 < 2^7
     ///
     /// |	𝑛:𝚋𝚢𝚝𝚎  𝑚:𝚞(𝑁−7)		⇒		2^7 * 𝑚 + (𝑛 − 2^7)		  if 𝑛 >= 2^7
-    open spec fn spec_body(rec: BundledSpecs<Self::T>) -> Self::Body {
+    open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
         Alt(
             terminal_byte(),
             Mapped {
                 inner: Refined(
-                    Pair(continuation_byte(), rec),
+                    Pair(continuation_byte(), rec(())),
                     // No trailing zeros (e.g., 0x80 0x00) allowed if MINIMAL
                     |x: (u8, nat)| MINIMAL ==> x.1 > 0,
                 ),
@@ -195,42 +198,66 @@ impl LosslessMapper for PairFromToNat {
 }
 
 impl<const MINIMAL: bool> SafeParserRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_safe_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_safe_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
     }
 }
 
 impl SoundParserRecBody for ULeb128RecBody<true> {
-    proof fn lemma_body_sound_inv_preservation(rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl<const MINIMAL: bool> GoodSerializerRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_serialize_inv_preservation(rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl<const MINIMAL: bool> NonTailFmtRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(rec: BundledSpecs<Self::T>) {
-    }
-}
-
-impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_sound_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
     }
 }
 
 impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_no_lookahead_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_no_lookahead_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
     }
 }
 
 impl NonMalleableRecBody for ULeb128RecBody<true> {
-    proof fn lemma_body_nonmal_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_body_nonmal_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
+impl<const MINIMAL: bool> GoodSerializerRecBody for ULeb128RecBody<MINIMAL> {
+    proof fn lemma_s_body_serialize_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
+impl<const MINIMAL: bool> NonTailFmtRecBody for ULeb128RecBody<MINIMAL> {
+    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
+impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
+    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
     }
 }
 
 impl<const MINIMAL: bool> EquivSerializersGeneralRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_equiv_general_inv_preservation(rec: BundledSpecs<Self::T>) {
+    proof fn lemma_s_body_equiv_general_inv_preservation(
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
     }
 }
 

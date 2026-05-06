@@ -1,4 +1,4 @@
-use super::{BundledSpecs, SafeParserRecBody, SpecRecBody};
+use super::{ParamRecSpecs, SafeParserRecBody, SpecRecBody};
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::Serializer;
 use crate::core::exec::{input::InputBuf, ParseError};
@@ -9,6 +9,8 @@ verus! {
 
 /// Executable parsing for one recursive unfolding.
 pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
+    type EP: DeepView<V = Self::Param>;
+
     type O: DeepView<V = Self::T>;
 
     /// Execute one recursive unfolding, using `exec_rec` for all recursive positions in the body.
@@ -16,57 +18,73 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
     /// `spec_rec` is the ghost/spec callback bundle corresponding to `exec_rec`.
     fn parse_body<Exec>(
         &self,
-        Ghost(spec_rec): Ghost<BundledSpecs<Self::T>>,
+        param: &Self::EP,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         ibuf: &I,
-    ) -> (r: PResult<Self::O>) where Exec: Fn(&I) -> PResult<Self::O>
+    ) -> (r: PResult<Self::O>) where Exec: Fn(&Self::EP, &I) -> PResult<Self::O>
         requires
-            spec_rec.safe_inv(),
-            forall|i: &I| call_requires(exec_rec, (i,)),
-            forall|i: &I, rr: PResult<Self::O>|
-                call_ensures(exec_rec, (i,), rr) ==> parse_matches_spec(rr, spec_rec.2(i@)),
+            forall|p: Self::Param| #[trigger] spec_rec(p).safe_inv(),
+            forall|pp: &Self::EP, i: &I| call_requires(exec_rec, (pp, i)),
+            forall|pp: &Self::EP, i: &I, rr: PResult<Self::O>|
+                call_ensures(exec_rec, (pp, i), rr) ==> parse_matches_spec(
+                    rr,
+                    spec_rec(pp.deep_view()).2(i@),
+                ),
         ensures
-            parse_matches_spec(r, Self::spec_body(spec_rec).spec_parse(ibuf@)),
+            parse_matches_spec(r, Self::spec_body(param.deep_view(), spec_rec).spec_parse(ibuf@)),
     ;
 }
 
 /// Executable serialization for one recursive unfolding.
 pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
+    type EP: DeepView<V = Self::Param>;
+
     /// Execute one recursive unfolding, using `exec_rec` for all recursive positions in the body.
     ///
     /// `spec_rec` is the ghost/spec callback bundle corresponding to `exec_rec`.
     fn serialize_body<Exec>(
         &self,
-        Ghost(spec_rec): Ghost<BundledSpecs<Self::T>>,
+        param: &Self::EP,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: ST,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(ST) -> Vec<u8>
+    ) where Exec: Fn(&Self::EP, ST) -> Vec<u8>
         requires
-            forall|vv: ST| call_requires(exec_rec, (vv,)),
-            forall|vv: ST, bytes: Vec<u8>|
-                call_ensures(exec_rec, (vv,), bytes) ==> bytes@ == spec_rec.3(vv.deep_view()),
+            forall|pp: &Self::EP, vv: ST| call_requires(exec_rec, (pp, vv)),
+            forall|pp: &Self::EP, vv: ST, bytes: Vec<u8>|
+                call_ensures(exec_rec, (pp, vv), bytes) ==> bytes@ == spec_rec(pp.deep_view()).3(
+                    vv.deep_view(),
+                ),
         ensures
-            final(obuf)@ == old(obuf)@ + Self::spec_body(spec_rec).spec_serialize(v.deep_view()),
+            final(obuf)@ == old(obuf)@ + Self::spec_body(
+                param.deep_view(),
+                spec_rec,
+            ).spec_serialize(v.deep_view()),
     ;
 }
 
-impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> {
-    fn parse_gas<I>(&self, gas: usize, ibuf: &I) -> (r: PResult<Body::O>) where
+impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
+    Body: SpecRecBody,
+    Param: DeepView<V = Body::Param>,
+ {
+    fn parse_gas<I>(&self, gas: usize, param: &Param, ibuf: &I) -> (r: PResult<Body::O>) where
         I: InputBuf,
-        Body: ParserRecBody<I> + SafeParserRecBody,
+        Param: DeepView<V = Body::Param>,
+        Body: ParserRecBody<I, EP = Param> + SafeParserRecBody,
         Body::Body: SafeParser,
 
         ensures
-            parse_matches_spec(r, Self::spec_parse_gas(gas as nat, ibuf@)),
+            parse_matches_spec(r, Self::spec_parse_gas(gas as nat, param.deep_view(), ibuf@)),
         decreases gas,
     {
-        let exec_callback = |i: &I| -> (rr: PResult<Body::O>)
+        let exec_callback = |pp: &Param, i: &I| -> (rr: PResult<Body::O>)
             ensures
-                parse_matches_spec(rr, Self::spec_parse_callback(gas as nat)(i@)),
+                parse_matches_spec(rr, Self::spec_parse_callback(gas as nat, pp.deep_view())(i@)),
             {
                 if gas > 0 {
-                    self.parse_gas((gas - 1) as usize, i)
+                    self.parse_gas((gas - 1) as usize, pp, i)
                 } else {
                     Err(ParseError::recursion_limit_exceeded())
                 }
@@ -74,62 +92,75 @@ impl<const LIMIT: usize, Body> super::Fix<LIMIT, Body> {
 
         let ghost spec_callback = Self::specs_callback(gas as nat);
         proof {
-            assert forall|input: Seq<u8>| #[trigger]
-                spec_callback.2(input) matches Some((n, _v)) ==> 0 <= n <= input.len() by {
-                if let Some((n, v)) = spec_callback.2(input) {
+            assert forall|p: Body::Param, input: Seq<u8>| #[trigger]
+                spec_callback(p).2(input) matches Some((n, _v)) ==> 0 <= n <= input.len() by {
+                if let Some((n, v)) = spec_callback(p).2(input) {
                     if gas > 0 {
-                        self.safe_parser_by_induction((gas - 1) as nat, input, n, v);
+                        self.safe_parser_by_induction((gas - 1) as nat, p, input, n, v);
                     }
                 }
             }
-            assert(spec_callback.safe_inv());
+            assert forall|p: Body::Param| #[trigger] spec_callback(p).safe_inv() by {
+                assert(spec_callback(p).safe_inv());
+            }
         }
 
-        self.0.parse_body(Ghost(spec_callback), exec_callback, ibuf)
+        self.0.parse_body(param, Ghost(spec_callback), exec_callback, ibuf)
     }
 
-    fn serialize_gas<ST>(&self, gas: usize, v: ST, obuf: &mut Vec<u8>) where
+    fn serialize_gas<ST>(&self, gas: usize, param: &Param, v: ST, obuf: &mut Vec<u8>) where
         ST: DeepView<V = Body::T>,
-        Body: SerializerRecBody<ST>,
+        Param: DeepView<V = Body::Param>,
+        Body: SerializerRecBody<ST, EP = Param>,
 
         ensures
-            final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(gas as nat, v.deep_view()),
+            final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
+                gas as nat,
+                param.deep_view(),
+                v.deep_view(),
+            ),
         decreases gas,
     {
-        let exec_callback = |vv: ST| -> (bytes: Vec<u8>)
+        let exec_callback = |pp: &Param, vv: ST| -> (bytes: Vec<u8>)
             ensures
-                bytes@ == Self::spec_serialize_callback(gas as nat)(vv.deep_view()),
+                bytes@ == Self::spec_serialize_callback(gas as nat, pp.deep_view())(vv.deep_view()),
             {
                 let mut bytes = Vec::<u8>::new();
                 if gas > 0 {
-                    self.serialize_gas((gas - 1) as usize, vv, &mut bytes);
+                    self.serialize_gas((gas - 1) as usize, pp, vv, &mut bytes);
                 }
                 bytes
             };
 
         let ghost spec_callback = Self::specs_callback(gas as nat);
-        self.0.serialize_body(Ghost(spec_callback), exec_callback, v, obuf)
+        self.0.serialize_body(param, Ghost(spec_callback), exec_callback, v, obuf)
     }
 }
 
-impl<const LIMIT: usize, Body, I> Parser<I> for super::Fix<LIMIT, Body> where
+impl<const LIMIT: usize, Body, Param, I> Parser<I> for super::FixWith<LIMIT, Body, Param> where
     I: InputBuf,
-    Body: ParserRecBody<I> + SafeParserRecBody,
+    Param: DeepView<V = Body::Param>,
+    Body: ParserRecBody<I, EP = Param> + SafeParserRecBody,
     Body::Body: SafeParser,
  {
     type PT = Body::O;
 
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
-        self.parse_gas(LIMIT, ibuf)
+        self.parse_gas(LIMIT, &self.1, ibuf)
     }
 }
 
-impl<ST, const LIMIT: usize, Body> Serializer<ST> for super::Fix<LIMIT, Body> where
+impl<ST, const LIMIT: usize, Body, Param> Serializer<ST> for super::FixWith<
+    LIMIT,
+    Body,
+    Param,
+> where
     ST: DeepView<V = Body::T>,
-    Body: SerializerRecBody<ST>,
+    Param: DeepView<V = Body::Param>,
+    Body: SerializerRecBody<ST, EP = Param>,
  {
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf)
+        self.serialize_gas(LIMIT, &self.1, v, obuf)
     }
 }
 

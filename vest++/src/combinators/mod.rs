@@ -73,7 +73,7 @@
 //!
 //! | Combinator | Description |
 //! |---|---|
-//! | [`Fix<LIMIT, Body>`] | (Compile-time) bounded fixpoint for recursive formats |
+//! | [`FixWith<LIMIT, Body, Param>`] | Bounded fixpoint for recursive formats; use `Param = ()` for context-free recursion |
 pub mod bytes;
 pub mod choice;
 pub mod cond;
@@ -105,7 +105,7 @@ pub use named::Named;
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
-pub use recursive::Fix;
+pub use recursive::FixWith;
 pub use refined::{Const, Refined, Tagged, WithPrefixTag, WithSuffixTag};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
