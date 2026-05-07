@@ -27,7 +27,10 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
 
     type Body = Alt<
         TerminalByte,
-        Mapped<Pair<ContinuationByte, Refined<BundledSpecs<nat>, PredFnSpec<nat>>>, PairFromToNat>,
+        Mapped<
+            Pair<ContinuationByte, Refined<BundledSpecs<nat>, PredFnSpec<nat>>>,
+            BiMapper<(u8, nat), nat>,
+        >,
     >;
 
     /// 𝚞𝑁	::=	𝑛:𝚋𝚢𝚝𝚎          		⇒		𝑛		if 𝑛 < 2^7
@@ -39,7 +42,12 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
             Mapped {
                 // No trailing zeros (e.g., 0x80 0x00) allowed if MINIMAL
                 inner: Pair(continuation_byte(), Refined(rec(()), |v: nat| MINIMAL ==> v > 0)),
-                mapper: PairFromToNat,
+                // map: (lsb, rest) -> lsb | (rest << 7)
+                // map_rev: o -> (lsb = o & 0x7F, rest = o >> 7)
+                mapper: BiMap(
+                    |pair: (u8, nat)| 128 * pair.1 + pair.0 as nat,
+                    |o: nat| ((o % 128) as u8, o / 128),
+                ),
             },
         )
     }
@@ -113,36 +121,6 @@ impl SpecMapper for LowBitsMask {
     }
 }
 
-pub struct PairFromToNat;
-
-impl SpecMapper for PairFromToNat {
-    type In = (u8, nat);
-
-    type Out = nat;
-
-    // NOTE: the check `MINIMAL ==> x.1 > 0` in `ULeb128RecBody`'s
-    // `spec_body` ensures that if MINIMAL is true, then rest > 0, so we don't need to check that here.
-    open spec fn wf_in(&self, i: Self::In) -> bool {
-        let (low, rest) = i;
-        low < CONTINUATION_BIT
-    }
-
-    // NOTE: the check `MINIMAL ==> x.1 > 0` in `ULeb128RecBody`'s `spec_body` ensures that if `MINIMAL` is true, then the output of the mapper is always at least 128, so we don't need to check that here.
-    // open spec fn wf_out(&self, o: Self::Out) -> bool {
-    //     MINIMAL ==> o >= LEB128_CONT_BIT as nat
-    // }
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        let (low, rest) = i;
-        // low | (rest << 7)
-        128 * rest + low as nat
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        // low = o & 0x7F, rest = o >> 7
-        ((o % 128) as u8, o / 128)
-    }
-}
-
 impl LossyMapper for TermByteFromToNat {
     proof fn lemma_sound_mapper(&self, o: Self::Out) {
     }
@@ -168,22 +146,6 @@ impl LossyMapper for LowBitsMask {
 }
 
 impl LosslessMapper for LowBitsMask {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
-impl LossyMapper for PairFromToNat {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for PairFromToNat {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
     }
 

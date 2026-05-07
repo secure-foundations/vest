@@ -31,6 +31,8 @@ impl<I, O> SpecMap for spec_fn(I) -> O {
 
 pub struct BiMap<M, MRev>(pub M, pub MRev);
 
+pub type BiMapper<In, Out> = BiMap<spec_fn(In) -> Out, spec_fn(Out) -> In>;
+
 impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<Input = M::Output, Output = M::Input> {
     pub open spec fn sound(&self, o: M::Output) -> bool
         recommends
