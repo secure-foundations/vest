@@ -27,10 +27,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
 
     type Body = Alt<
         TerminalByte,
-        Mapped<
-            Refined<Pair<ContinuationByte, BundledSpecs<nat>>, PredFnSpec<(u8, nat)>>,
-            PairFromToNat,
-        >,
+        Mapped<Pair<ContinuationByte, Refined<BundledSpecs<nat>, PredFnSpec<nat>>>, PairFromToNat>,
     >;
 
     /// 𝚞𝑁	::=	𝑛:𝚋𝚢𝚝𝚎          		⇒		𝑛		if 𝑛 < 2^7
@@ -40,11 +37,8 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
         Alt(
             terminal_byte(),
             Mapped {
-                inner: Refined(
-                    Pair(continuation_byte(), rec(())),
-                    // No trailing zeros (e.g., 0x80 0x00) allowed if MINIMAL
-                    |x: (u8, nat)| MINIMAL ==> x.1 > 0,
-                ),
+                // No trailing zeros (e.g., 0x80 0x00) allowed if MINIMAL
+                inner: Pair(continuation_byte(), Refined(rec(()), |v: nat| MINIMAL ==> v > 0)),
                 mapper: PairFromToNat,
             },
         )
@@ -55,16 +49,16 @@ pub type TerminalByte = Mapped<Refined<U8, PredFnSpec<u8>>, TermByteFromToNat>;
 
 pub type ContinuationByte = Mapped<Refined<U8, PredFnSpec<u8>>, LowBitsMask>;
 
-pub const LEB128_CONT_BIT: u8 = 0x80;
+pub const CONTINUATION_BIT: u8 = 0x80;
 
 /// Check that high bit is not set, and map to the corresponding nat value.
 pub open spec fn terminal_byte() -> TerminalByte {
-    Mapped { inner: Refined(U8, |b: u8| b < LEB128_CONT_BIT), mapper: TermByteFromToNat }
+    Mapped { inner: Refined(U8, |b: u8| b < CONTINUATION_BIT), mapper: TermByteFromToNat }
 }
 
 /// Check that high bit is set, and map to the corresponding low 7 bits.
 pub open spec fn continuation_byte() -> ContinuationByte {
-    Mapped { inner: Refined(U8, |b: u8| b >= LEB128_CONT_BIT), mapper: LowBitsMask }
+    Mapped { inner: Refined(U8, |b: u8| b >= CONTINUATION_BIT), mapper: LowBitsMask }
 }
 
 pub struct TermByteFromToNat;
@@ -75,11 +69,11 @@ impl SpecMapper for TermByteFromToNat {
     type Out = nat;
 
     open spec fn wf_in(&self, i: Self::In) -> bool {
-        i < LEB128_CONT_BIT
+        i < CONTINUATION_BIT
     }
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o < LEB128_CONT_BIT
+        o < CONTINUATION_BIT
     }
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
@@ -99,23 +93,23 @@ impl SpecMapper for LowBitsMask {
     type Out = u8;
 
     open spec fn wf_in(&self, i: Self::In) -> bool {
-        i >= LEB128_CONT_BIT
+        i >= CONTINUATION_BIT
     }
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o < LEB128_CONT_BIT
+        o < CONTINUATION_BIT
     }
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         // Mask off the high bit to get the low 7 bits as a nat value
         // i & 0x7Fu8
-        (i - LEB128_CONT_BIT) as u8
+        (i - CONTINUATION_BIT) as u8
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         // Set the high bit to get the continuation wire format
         // o | LEB128_CONT_BIT
-        (o + LEB128_CONT_BIT) as u8
+        (o + CONTINUATION_BIT) as u8
     }
 }
 
@@ -130,7 +124,7 @@ impl SpecMapper for PairFromToNat {
     // `spec_body` ensures that if MINIMAL is true, then rest > 0, so we don't need to check that here.
     open spec fn wf_in(&self, i: Self::In) -> bool {
         let (low, rest) = i;
-        low < LEB128_CONT_BIT
+        low < CONTINUATION_BIT
     }
 
     // NOTE: the check `MINIMAL ==> x.1 > 0` in `ULeb128RecBody`'s `spec_body` ensures that if `MINIMAL` is true, then the output of the mapper is always at least 128, so we don't need to check that here.
