@@ -26,7 +26,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     type T = nat;
 
     type Body = Alt<
-        TerminalByte,
+        TerminalByteNat,
         Mapped<
             Pair<ContinuationByte, Refined<BundledSpecs<nat>, PredFnSpec<nat>>>,
             BiMapper<(u8, nat), nat>,
@@ -38,7 +38,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     /// |	𝑛:𝚋𝚢𝚝𝚎  𝑚:𝚞(𝑁−7)		⇒		2^7 * 𝑚 + (𝑛 − 2^7)		  if 𝑛 >= 2^7
     open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
         Alt(
-            terminal_byte(),
+            terminal_byte_nat(),
             Mapped {
                 // No trailing zeros (e.g., 0x80 0x00) allowed if MINIMAL
                 inner: Pair(continuation_byte(), Refined(rec(()), |v: nat| MINIMAL ==> v > 0)),
@@ -53,15 +53,22 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     }
 }
 
-pub type TerminalByte = Mapped<Refined<U8, PredFnSpec<u8>>, TermByteFromToNat>;
+pub type TerminalByteNat = Mapped<TerminalByte, TermByteFromToNat>;
+
+pub type TerminalByte = Refined<U8, PredFnSpec<u8>>;
 
 pub type ContinuationByte = Mapped<Refined<U8, PredFnSpec<u8>>, LowBitsMask>;
 
 pub const CONTINUATION_BIT: u8 = 0x80;
 
 /// Check that high bit is not set, and map to the corresponding nat value.
+pub open spec fn terminal_byte_nat() -> TerminalByteNat {
+    Mapped { inner: terminal_byte(), mapper: TermByteFromToNat }
+}
+
+/// Check that high bit is not set.
 pub open spec fn terminal_byte() -> TerminalByte {
-    Mapped { inner: Refined(U8, |b: u8| b < CONTINUATION_BIT), mapper: TermByteFromToNat }
+    Refined(U8, |b: u8| b < CONTINUATION_BIT)
 }
 
 /// Check that high bit is set, and map to the corresponding low 7 bits.
