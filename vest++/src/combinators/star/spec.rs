@@ -196,7 +196,7 @@ impl<A> Consistency for super::Star<A> where A: Consistency {
     type Val = Seq<A::Val>;
 
     open spec fn consistent(&self, vs: Self::Val) -> bool {
-        forall|i: int| 0 <= i < vs.len() ==> #[trigger] self.inner.consistent(vs[i])
+        forall|i: int| 0 <= i < vs.len() ==> self.inner.consistent(#[trigger] vs[i])
     }
 }
 
