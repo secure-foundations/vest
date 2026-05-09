@@ -1,5 +1,5 @@
 use crate::combinators::tail::PairRev;
-use crate::combinators::{Eof, ExactLen, Repeat};
+use crate::combinators::{Eof, ExactLen, Repeat, Star};
 use crate::leb128::*;
 use crate::{
     combinators::{
@@ -13,7 +13,7 @@ use vstd::prelude::*;
 
 verus! {
 
-pub type Base128Fmt<const MINIMAL: bool> = Mapped<Base128WireFmt<MINIMAL>, NatFromToBE128>;
+pub type Base128Fmt<const MINIMAL: bool> = Mapped<Base128WireFmt<MINIMAL>, NatFromToBE128<MINIMAL>>;
 
 pub type Base128WireFmt<const MINIMAL: bool> = Mapped<
     Refined<Repeat<ContinuationByte, TerminalByte>, PredFnSpec<(Seq<u8>, u8)>>,
@@ -21,16 +21,17 @@ pub type Base128WireFmt<const MINIMAL: bool> = Mapped<
 >;
 
 pub open spec fn base128_fmt<const MINIMAL: bool>() -> Base128Fmt<MINIMAL> {
+    Mapped { inner: base128_wire_fmt::<MINIMAL>(), mapper: NatFromToBE128::<MINIMAL> }
+}
+
+pub open spec fn base128_wire_fmt<const MINIMAL: bool>() -> Base128WireFmt<MINIMAL> {
     Mapped {
-        inner: Mapped {
-            inner: Refined(
-                Repeat(continuation_byte(), terminal_byte()),
-                // No leading zeros allowed if MINIMAL
-                |pair: (Seq<u8>, u8)| MINIMAL ==> (pair.0.len() > 0 ==> pair.0[0] != 0),
-            ),
-            mapper: BiMap(|pair: (Seq<u8>, u8)| pair.0.push(pair.1), SplitSeqAtLast),
-        },
-        mapper: NatFromToBE128,
+        inner: Refined(
+            Repeat(continuation_byte(), terminal_byte()),
+            // No leading zeros allowed if MINIMAL
+            |pair: (Seq<u8>, u8)| MINIMAL ==> (pair.0.len() > 0 ==> pair.0[0] != 0),
+        ),
+        mapper: BiMap(|pair: (Seq<u8>, u8)| pair.0.push(pair.1), SplitSeqAtLast),
     }
 }
 
@@ -50,17 +51,17 @@ impl SpecMap for SplitSeqAtLast {
     }
 }
 
-pub struct NatFromToBE128;
+pub struct NatFromToBE128<const MINIMAL: bool>;
 
-impl SpecMapper for NatFromToBE128 {
+impl<const MINIMAL: bool> SpecMapper for NatFromToBE128<MINIMAL> {
     type In = Seq<u8>;
 
     type Out = nat;
 
     open spec fn wf_in(&self, bytes: Self::In) -> bool {
-        &&& bytes.len() > 0
-        &&& bytes.len() > 1 ==> bytes[0] != 0
         &&& forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128
+        &&& bytes.len() > 0
+        &&& MINIMAL ==> (bytes.len() > 1 ==> bytes[0] != 0)
     }
 
     open spec fn spec_map(&self, bytes: Self::In) -> Self::Out {
@@ -72,7 +73,7 @@ impl SpecMapper for NatFromToBE128 {
     }
 }
 
-impl LossyMapper for NatFromToBE128 {
+impl<const MINIMAL: bool> LossyMapper for NatFromToBE128<MINIMAL> {
     proof fn lemma_sound_mapper(&self, o: Self::Out) {
         lemma_to_from_base128_roundtrip(o);
     }
@@ -82,7 +83,7 @@ impl LossyMapper for NatFromToBE128 {
     }
 }
 
-impl LosslessMapper for NatFromToBE128 {
+impl LosslessMapper for NatFromToBE128<true> {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
         lemma_from_to_base128_roundtrip(i);
     }
@@ -139,9 +140,9 @@ pub proof fn lemma_to_from_base128_roundtrip(n: nat)
 
 pub proof fn lemma_from_to_base128_roundtrip(bytes: Seq<u8>)
     requires
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
         bytes.len() > 0,
         bytes.len() > 1 ==> bytes[0] != 0,
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
     ensures
         nat_to_base128(nat_from_base128(bytes)) == bytes,
     decreases bytes.len(),
@@ -166,6 +167,23 @@ pub proof fn lemma_nat_to_base128_props(n: nat)
     } else {
         let q = (n / 128) as nat;
         lemma_nat_to_base128_props(q);
+    }
+}
+
+pub broadcast proof fn lemma_base128_wire_fmt_props<const MINIMAL: bool>(bytes: Seq<u8>)
+    requires
+        #[trigger] base128_wire_fmt::<MINIMAL>().consistent(bytes),
+    ensures
+        #[trigger] NatFromToBE128::<MINIMAL>.wf_in(bytes),
+{
+    let pair = SplitSeqAtLast.spec_map(bytes);
+
+    assert forall|i: int| 0 <= i < bytes.len() implies bytes[i] < 128 by {
+        if i < bytes.len() - 1 {
+            assert(pair.0[i] < 128);
+        } else {
+            assert(pair.1 < 128);
+        }
     }
 }
 
@@ -195,11 +213,18 @@ impl<const MINIMAL: bool> SafeParser for Base128<MINIMAL> {
 
 impl SoundParser for Base128<true> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
         assert(base128_fmt::<true>().sound_inv());
         base128_fmt::<true>().lemma_parse_sound_consumption(ibuf);
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
+        assert(base128_fmt::<true>().sound_inv());
         base128_fmt::<true>().lemma_parse_sound_value(ibuf);
     }
 }
@@ -246,6 +271,8 @@ impl<const MINIMAL: bool> SpecByteLen for Base128<MINIMAL> {
 
 impl<const MINIMAL: bool> SPRoundTripDps for Base128<MINIMAL> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert forall|s: Seq<u8>| #![auto] s.len() > 0 ==> s.drop_last().push(s.last()) == s by {}
+        assert(base128_fmt::<MINIMAL>().inner.unambiguous());
         base128_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -258,6 +285,10 @@ impl<const MINIMAL: bool> NoLookAhead for Base128<MINIMAL> {
 
 impl NonMalleable for Base128<true> {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
+        assert(base128_fmt::<true>().nonmal_inv());
         base128_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
     }
 }
