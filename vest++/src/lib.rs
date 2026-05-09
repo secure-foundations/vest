@@ -62,6 +62,7 @@ pub type Never = !;
 pub type Never = ::core::convert::Infallible;
 
 pub mod asn1;
+pub mod base128;
 pub mod combinators;
 pub mod core;
 pub mod macros;
