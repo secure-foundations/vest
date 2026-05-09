@@ -356,18 +356,11 @@ impl<A, Then> SafeParser for super::AndThen<A, Then> where
     Then: SafeParser,
  {
     open spec fn safe_inv(&self) -> bool {
-        self.0.safe_inv() && self.1.safe_inv()
+        self.0.safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_safe(ibuf);
-        match self.0.spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, _)) if len_a == len_b => self.1.lemma_parse_safe(chunk),
-                _ => {},
-            },
-        }
     }
 }
 

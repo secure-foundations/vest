@@ -146,7 +146,10 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
     Then: NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        self.0.nonmal_inv() && self.1.nonmal_inv() && self.0.sound_inv()
+        &&& self.0.nonmal_inv()
+        &&& self.0.sound_inv()
+        &&& self.1.nonmal_inv()
+        &&& self.1.safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
