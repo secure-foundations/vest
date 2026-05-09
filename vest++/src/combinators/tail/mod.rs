@@ -32,6 +32,11 @@ pub struct Tail;
 /// should only appear at the end of a format (and the trait system enforces this).
 pub struct Eof;
 
+/// Sequential composition of formats `A` and `B`, where the direction of parsing is reversed compared to [`super::Pair`].
+///
+/// Parsing semantics: parses `B` from the back, consumes the tail part of the input, then parses `A`.
+pub struct PairRev<A, B>(pub B, pub A);
+
 /// Sugar for `Optional(C, Eof)`.
 pub struct OptionalEnd<C>(pub C);
 

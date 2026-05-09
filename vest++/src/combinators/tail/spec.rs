@@ -1,3 +1,4 @@
+use crate::combinators::Pair;
 use crate::{
     combinators::marker::spec::ZERO_BYTE_LEN,
     combinators::{Optional, Repeat},
@@ -172,6 +173,133 @@ impl<C: SpecParser> SpecParser for super::OptionalEnd<C> {
             Some((n, (v, _))) => Some((n, v)),
             None => None,
         }
+    }
+}
+
+// /// Parsing semantics: parses `B` from the back, consumes the tail of the input, then parses `A`.
+// pub struct PairRev<A, B>(pub B, pub A);
+impl<A, B> SpecParser for super::PairRev<A, B> where
+    A: SpecParser,
+    B: StaticByteLen + SpecParser<PVal = B::T>,
+ {
+    type PVal = (A::PVal, B::PVal);
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        if ibuf.len() < B::static_byte_len() {
+            None
+        } else {
+            let prefix = ibuf.len() - B::static_byte_len();
+            match self.1.spec_parse(ibuf.take(prefix)) {
+                Some((n1, v1)) if n1 == prefix => {
+                    match self.0.spec_parse(ibuf.skip(prefix)) {
+                        Some((n2, v2)) if n2 == B::static_byte_len() => Some((n1 + n2, (v1, v2))),
+                        _ => None,
+                    }
+                },
+                _ => None,
+            }
+        }
+    }
+}
+
+impl<A, B> Consistency for super::PairRev<A, B> where A: Consistency, B: Consistency {
+    type Val = (A::Val, B::Val);
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        Pair(self.1, self.0).consistent((v.0, v.1))
+    }
+}
+
+impl<A, B> SafeParser for super::PairRev<A, B> where
+    A: SafeParser,
+    B: StaticByteLen + SafeParser<PVal = B::T>,
+ {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl<A, B> SoundParser for super::PairRev<A, B> where
+    A: SoundParser,
+    B: StaticByteLen + SoundParser,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        if ibuf.len() >= B::static_byte_len() {
+            let prefix = ibuf.len() - B::static_byte_len();
+            self.0.lemma_parse_sound_consumption(ibuf.skip(prefix));
+            self.1.lemma_parse_sound_consumption(ibuf.take(prefix));
+        }
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        if ibuf.len() >= B::static_byte_len() {
+            let prefix = ibuf.len() - B::static_byte_len();
+            self.0.lemma_parse_sound_value(ibuf.skip(prefix));
+            self.1.lemma_parse_sound_value(ibuf.take(prefix));
+        }
+    }
+}
+
+impl<A, B> SpecSerializerDps for super::PairRev<A, B> where
+    A: SpecSerializerDps,
+    B: SpecSerializerDps,
+ {
+    type SValue = (A::SValue, B::SValue);
+
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        self.1.spec_serialize_dps(v.0, self.0.spec_serialize_dps(v.1, seq![]))
+    }
+}
+
+impl<A, B> SpecSerializer for super::PairRev<A, B> where A: SpecSerializer, B: SpecSerializer {
+    type SVal = (A::SVal, B::SVal);
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        Pair(self.1, self.0).spec_serialize((v.0, v.1))
+    }
+}
+
+impl<A, B> GoodSerializer for super::PairRev<A, B> where A: GoodSerializer, B: GoodSerializer {
+    open spec fn serialize_inv(&self) -> bool {
+        Pair(self.1, self.0).serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        Pair(self.1, self.0).lemma_serialize_len((v.0, v.1));
+    }
+}
+
+impl<A, B> SpecByteLen for super::PairRev<A, B> where A: SpecByteLen, B: SpecByteLen {
+    type T = (A::T, B::T);
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.1.byte_len(v.0) + self.0.byte_len(v.1)
+    }
+}
+
+impl<A, B> ValueByteLen for super::PairRev<A, B> where A: ValueByteLen, B: ValueByteLen {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        A::value_byte_len(v.0) + B::value_byte_len(v.1)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.1.lemma_value_len_matches_byte_len(v.0);
+        self.0.lemma_value_len_matches_byte_len(v.1);
+    }
+}
+
+impl<A, B> StaticByteLen for super::PairRev<A, B> where A: StaticByteLen, B: StaticByteLen {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + B::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.1.lemma_static_len_matches_byte_len(v.0);
+        self.0.lemma_static_len_matches_byte_len(v.1);
     }
 }
 
