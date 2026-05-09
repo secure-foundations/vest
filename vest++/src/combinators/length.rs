@@ -20,9 +20,6 @@ pub trait AsLen: Sized + Copy {
     ;
 
     /// Construct from a `nat`.
-    ///
-    /// This is total for convenience, but the roundtrip law from `nat` only holds when
-    /// `fits_nat(n)` is true.
     spec fn from_nat(n: nat) -> Self;
 
     /// `from_nat(v.as_nat()) == v`.
