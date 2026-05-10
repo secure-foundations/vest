@@ -128,6 +128,21 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Pair<A, B> {
     }
 }
 
+impl<A: MinMaxByteLen, B: MinMaxByteLen> MinMaxByteLen for super::Pair<A, B> {
+    open spec fn max(&self) -> nat {
+        self.0.max() + self.1.max()
+    }
+
+    open spec fn min(&self) -> nat {
+        self.0.min() + self.1.min()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.0.lemma_min_max_byte_len(v.0);
+        self.1.lemma_min_max_byte_len(v.1);
+    }
+}
+
 impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Pair<A, B> {
     open spec fn value_byte_len(v: Self::T) -> nat {
         A::value_byte_len(v.0) + B::value_byte_len(v.1)

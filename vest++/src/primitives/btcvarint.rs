@@ -260,6 +260,20 @@ impl<const MINIMAL: bool> SpecByteLen for VarInt<MINIMAL> {
     }
 }
 
+impl<const MINIMAL: bool> MinMaxByteLen for VarInt<MINIMAL> {
+    open spec fn min(&self) -> nat {
+        varint_fmt::<MINIMAL>().min()
+    }
+
+    open spec fn max(&self) -> nat {
+        varint_fmt::<MINIMAL>().max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        varint_fmt::<MINIMAL>().lemma_min_max_byte_len(v);
+    }
+}
+
 impl<const MINIMAL: bool> SPRoundTripDps for VarInt<MINIMAL> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         varint_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);

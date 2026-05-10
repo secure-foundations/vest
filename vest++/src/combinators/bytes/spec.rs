@@ -99,6 +99,19 @@ impl<const N: usize> SpecByteLen for super::Fixed<N> {
     }
 }
 
+impl<const N: usize> MinMaxByteLen for super::Fixed<N> {
+    open spec fn min(&self) -> nat {
+        N as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        N as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl<const N: usize> StaticByteLen for super::Fixed<N> {
     open spec fn static_byte_len() -> nat {
         N as nat
@@ -187,6 +200,19 @@ impl<Len: AsLen> SpecByteLen for super::Varied<Len> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         v.len()
+    }
+}
+
+impl<Len: AsLen> MinMaxByteLen for super::Varied<Len> {
+    open spec fn min(&self) -> nat {
+        self.0.as_nat()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.as_nat()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -302,6 +328,23 @@ impl<Inner: SpecByteLen, Len: AsLen> SpecByteLen for super::ExactLen<Inner, Len>
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         super::AndThen(super::Varied(self.0), self.1).byte_len(v)
+    }
+}
+
+impl<Inner, Len> MinMaxByteLen for super::ExactLen<Inner, Len> where
+    Inner: SpecByteLen + Consistency<Val = Inner::T>,
+    Len: AsLen,
+ {
+    open spec fn min(&self) -> nat {
+        self.0.as_nat()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.as_nat()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        assert(self.0.as_nat() == self.1.byte_len(v));
     }
 }
 
@@ -470,6 +513,23 @@ impl<A, Then: SpecByteLen> SpecByteLen for super::AndThen<A, Then> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.1.byte_len(v)
+    }
+}
+
+impl<A, Then> MinMaxByteLen for super::AndThen<A, Then> where
+    A: BytesCombinator + Consistency<Val = Seq<u8>>,
+    Then: MinMaxByteLen,
+ {
+    open spec fn min(&self) -> nat {
+        self.1.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.1.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.1.lemma_min_max_byte_len(v);
     }
 }
 

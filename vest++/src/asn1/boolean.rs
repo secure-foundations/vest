@@ -153,6 +153,19 @@ impl<const DER: bool> SpecByteLen for super::Bool<DER> {
     }
 }
 
+impl<const DER: bool> MinMaxByteLen for super::Bool<DER> {
+    open spec fn min(&self) -> nat {
+        BOOL_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        BOOL_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl<const DER: bool> StaticByteLen for super::Bool<DER> {
     open spec fn static_byte_len() -> nat {
         BOOL_BYTE_LEN as nat

@@ -193,6 +193,28 @@ impl<A, B, BVal, const CHECK: bool> SpecByteLen for super::Terminated<A, B, BVal
     }
 }
 
+impl<A, B, BVal, const CHECK: bool> MinMaxByteLen for super::Terminated<A, B, BVal, CHECK> where
+    A: MinMaxByteLen,
+    B: MinMaxByteLen,
+    BVal: DeepView<V = B::T>,
+ {
+    open spec fn min(&self) -> nat {
+        terminated::<_, _, _, _, CHECK>(self.a, self.b, self.b_val.deep_view()).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        terminated::<_, _, _, _, CHECK>(self.a, self.b, self.b_val.deep_view()).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        terminated::<_, _, _, _, CHECK>(
+            self.a,
+            self.b,
+            self.b_val.deep_view(),
+        ).lemma_min_max_byte_len(v);
+    }
+}
+
 impl<A, B, BVal, const CHECK: bool> StaticByteLen for super::Terminated<A, B, BVal, CHECK> where
     A: StaticByteLen,
     B: StaticByteLen,

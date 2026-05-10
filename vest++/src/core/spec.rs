@@ -155,6 +155,20 @@ pub trait SpecByteLen {
     spec fn byte_len(&self, v: Self::T) -> nat;
 }
 
+/// Denotes the min/max byte length of a value w.r.t. a combinator's format spec.
+pub trait MinMaxByteLen: SpecByteLen + Consistency<Val = Self::T> {
+    spec fn min(&self) -> nat;
+
+    spec fn max(&self) -> nat;
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T)
+        requires
+            self.consistent(v),
+        ensures
+            self.min() <= self.byte_len(v) <= self.max(),
+    ;
+}
+
 /// Static byte length for fixed-size combinators.
 pub trait StaticByteLen: SpecByteLen + Consistency<Val = Self::T> {
     /// The statically known serialized length.

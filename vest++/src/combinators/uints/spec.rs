@@ -387,6 +387,19 @@ impl SpecByteLen for super::U8 {
     }
 }
 
+impl MinMaxByteLen for super::U8 {
+    open spec fn min(&self) -> nat {
+        U8_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U8_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::U8 {
     open spec fn static_byte_len() -> nat {
         U8_BYTE_LEN as nat
@@ -480,6 +493,19 @@ impl SpecByteLen for super::U16Le {
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
         U16_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::U16Le {
+    open spec fn min(&self) -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -579,6 +605,19 @@ impl SpecByteLen for super::U16Be {
     }
 }
 
+impl MinMaxByteLen for super::U16Be {
+    open spec fn min(&self) -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U16_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::U16Be {
     open spec fn static_byte_len() -> nat {
         U16_BYTE_LEN as nat
@@ -672,6 +711,19 @@ impl SpecByteLen for super::U32Le {
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
         U32_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::U32Le {
+    open spec fn min(&self) -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 
@@ -771,6 +823,19 @@ impl SpecByteLen for super::U32Be {
     }
 }
 
+impl MinMaxByteLen for super::U32Be {
+    open spec fn min(&self) -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U32_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::U32Be {
     open spec fn static_byte_len() -> nat {
         U32_BYTE_LEN as nat
@@ -867,6 +932,19 @@ impl SpecByteLen for super::U64Le {
     }
 }
 
+impl MinMaxByteLen for super::U64Le {
+    open spec fn min(&self) -> nat {
+        U64_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U64_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::U64Le {
     open spec fn static_byte_len() -> nat {
         U64_BYTE_LEN as nat
@@ -960,6 +1038,19 @@ impl SpecByteLen for super::U64Be {
 
     open spec fn byte_len(&self, _v: Self::T) -> nat {
         U64_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::U64Be {
+    open spec fn min(&self) -> nat {
+        U64_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U64_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 

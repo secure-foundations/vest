@@ -4,7 +4,7 @@ use crate::{
         implicit::*,
         length::AsLen,
         mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
-        Alt, Implicit, Mapped, Refined, TryMap, U8,
+        Alt, Implicit, Mapped, Refined, TryMap, Varied, U8,
     },
     core::{proof::*, spec::*},
 };
@@ -343,6 +343,19 @@ impl<const DER: bool> SpecByteLen for super::Length<DER> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         length_fmt::<DER>().byte_len(v)
+    }
+}
+
+impl<const DER: bool> MinMaxByteLen for super::Length<DER> {
+    open spec fn min(&self) -> nat {
+        1
+    }
+
+    open spec fn max(&self) -> nat {
+        1 + LONG_FORM_MAX_COUNT as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 

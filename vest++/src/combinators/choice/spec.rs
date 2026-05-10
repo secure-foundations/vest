@@ -149,6 +149,31 @@ impl<A, B> SpecByteLen for super::Choice<A, B> where A: SpecByteLen, B: SpecByte
     }
 }
 
+impl<A: MinMaxByteLen, B: MinMaxByteLen> MinMaxByteLen for super::Choice<A, B> {
+    open spec fn min(&self) -> nat {
+        if self.0.min() <= self.1.min() {
+            self.0.min()
+        } else {
+            self.1.min()
+        }
+    }
+
+    open spec fn max(&self) -> nat {
+        if self.0.max() <= self.1.max() {
+            self.1.max()
+        } else {
+            self.0.max()
+        }
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        match v {
+            Sum::Inl(va) => self.0.lemma_min_max_byte_len(va),
+            Sum::Inr(vb) => self.1.lemma_min_max_byte_len(vb),
+        }
+    }
+}
+
 impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Choice<A, B> {
     open spec fn value_byte_len(v: Self::T) -> nat {
         match v {
@@ -334,6 +359,32 @@ impl<A, B> SpecByteLen for super::Alt<A, B> where
     }
 }
 
+impl<A, B> MinMaxByteLen for super::Alt<A, B> where A: MinMaxByteLen, B: MinMaxByteLen<T = A::T> {
+    open spec fn min(&self) -> nat {
+        if self.0.min() <= self.1.min() {
+            self.0.min()
+        } else {
+            self.1.min()
+        }
+    }
+
+    open spec fn max(&self) -> nat {
+        if self.0.max() <= self.1.max() {
+            self.1.max()
+        } else {
+            self.0.max()
+        }
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        if self.choose_left(v) {
+            self.0.lemma_min_max_byte_len(v);
+        } else {
+            self.1.lemma_min_max_byte_len(v);
+        }
+    }
+}
+
 pub open spec fn branch_exists<T, C>(tag: T, branches: Seq<(T, C)>) -> bool {
     exists|i: nat| i < branches.len() && #[trigger] branches[i as int].0 == tag
 }
@@ -471,6 +522,28 @@ impl<T, C: SpecByteLen, const N: usize> SpecByteLen for super::Dispatch<T, C, N>
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.active_branch().byte_len(v)
+    }
+}
+
+impl<T, C: MinMaxByteLen, const N: usize> MinMaxByteLen for super::Dispatch<T, C, N> {
+    open spec fn min(&self) -> nat {
+        if self.has_active_branch() {
+            self.active_branch().min()
+        } else {
+            0
+        }
+    }
+
+    open spec fn max(&self) -> nat {
+        if self.has_active_branch() {
+            self.active_branch().max()
+        } else {
+            0
+        }
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.active_branch().lemma_min_max_byte_len(v);
     }
 }
 
@@ -642,6 +715,30 @@ impl<A, B> SpecByteLen for Sum<A, B> where A: SpecByteLen, B: SpecByteLen {
             (Sum::Inl(a), Sum::Inl(va)) => a.byte_len(va),
             (Sum::Inr(b), Sum::Inr(vb)) => b.byte_len(vb),
             _ => 0,
+        }
+    }
+}
+
+impl<A: MinMaxByteLen, B: MinMaxByteLen> MinMaxByteLen for Sum<A, B> {
+    open spec fn min(&self) -> nat {
+        match self {
+            Sum::Inl(a) => a.min(),
+            Sum::Inr(b) => b.min(),
+        }
+    }
+
+    open spec fn max(&self) -> nat {
+        match self {
+            Sum::Inl(a) => a.max(),
+            Sum::Inr(b) => b.max(),
+        }
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        match (self, v) {
+            (Sum::Inl(a), Sum::Inl(va)) => a.lemma_min_max_byte_len(va),
+            (Sum::Inr(b), Sum::Inr(vb)) => b.lemma_min_max_byte_len(vb),
+            _ => (),
         }
     }
 }

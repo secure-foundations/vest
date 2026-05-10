@@ -80,6 +80,19 @@ impl SpecByteLen for super::Empty {
     }
 }
 
+impl MinMaxByteLen for super::Empty {
+    open spec fn min(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::Empty {
     open spec fn static_byte_len() -> nat {
         ZERO_BYTE_LEN as nat
@@ -170,6 +183,19 @@ impl SpecByteLen for super::Void {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         ZERO_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::Void {
+    open spec fn min(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
     }
 }
 

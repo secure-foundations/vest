@@ -134,6 +134,23 @@ impl<Inner: SpecByteLen> SpecByteLen for super::Opt<Inner> {
     }
 }
 
+impl<Inner: MinMaxByteLen> MinMaxByteLen for super::Opt<Inner> {
+    open spec fn min(&self) -> nat {
+        0
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        match v {
+            None => (),
+            Some(vv) => self.0.lemma_min_max_byte_len(vv),
+        }
+    }
+}
+
 impl<Inner: ValueByteLen> ValueByteLen for super::Opt<Inner> {
     open spec fn value_byte_len(v: Self::T) -> nat {
         match v {
@@ -231,6 +248,20 @@ impl<A: SpecByteLen, B: SpecByteLen> SpecByteLen for super::Optional<A, B> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(super::Opt(self.0), self.1).byte_len(v)
+    }
+}
+
+impl<A: MinMaxByteLen, B: MinMaxByteLen> MinMaxByteLen for super::Optional<A, B> {
+    open spec fn min(&self) -> nat {
+        Pair(super::Opt(self.0), self.1).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Pair(super::Opt(self.0), self.1).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Pair(super::Opt(self.0), self.1).lemma_min_max_byte_len(v);
     }
 }
 

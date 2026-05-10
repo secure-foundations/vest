@@ -195,6 +195,28 @@ impl<A, AVal, B, const CHECK: bool> SpecByteLen for super::Preceded<A, AVal, B, 
     }
 }
 
+impl<A, AVal, B, const CHECK: bool> MinMaxByteLen for super::Preceded<A, AVal, B, CHECK> where
+    A: MinMaxByteLen,
+    AVal: DeepView<V = A::T>,
+    B: MinMaxByteLen,
+ {
+    open spec fn min(&self) -> nat {
+        preceded::<_, _, _, _, CHECK>(self.a, self.b, self.a_val.deep_view()).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        preceded::<_, _, _, _, CHECK>(self.a, self.b, self.a_val.deep_view()).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        preceded::<_, _, _, _, CHECK>(
+            self.a,
+            self.b,
+            self.a_val.deep_view(),
+        ).lemma_min_max_byte_len(v);
+    }
+}
+
 impl<A, AVal, B, const CHECK: bool> StaticByteLen for super::Preceded<A, AVal, B, CHECK> where
     A: StaticByteLen,
     AVal: DeepView<V = A::T>,

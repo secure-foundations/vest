@@ -110,6 +110,23 @@ impl<A, Pred> SpecByteLen for super::Refined<A, Pred> where A: SpecByteLen, Pred
     }
 }
 
+impl<A, Pred> MinMaxByteLen for super::Refined<A, Pred> where
+    A: MinMaxByteLen,
+    Pred: SpecPred<A::T>,
+ {
+    open spec fn min(&self) -> nat {
+        self.0.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.0.lemma_min_max_byte_len(v);
+    }
+}
+
 impl<A, Pred> StaticByteLen for super::Refined<A, Pred> where
     A: StaticByteLen,
     Pred: SpecPred<A::T>,
@@ -236,6 +253,20 @@ impl<Inner> SpecByteLen for super::Const<Inner, Inner::T> where Inner: SpecByteL
     }
 }
 
+impl<Inner> MinMaxByteLen for super::Const<Inner, Inner::T> where Inner: MinMaxByteLen {
+    open spec fn min(&self) -> nat {
+        self.0.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.0.lemma_min_max_byte_len(v);
+    }
+}
+
 impl<Inner> StaticByteLen for super::Const<Inner, Inner::T> where Inner: StaticByteLen {
     open spec fn static_byte_len() -> nat {
         Inner::static_byte_len()
@@ -354,6 +385,20 @@ impl<const N: usize> SpecByteLen for super::Const<Fixed::<N>, [u8; N]> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.0.byte_len(v)
+    }
+}
+
+impl<const N: usize> MinMaxByteLen for super::Const<Fixed::<N>, [u8; N]> {
+    open spec fn min(&self) -> nat {
+        self.0.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.0.lemma_min_max_byte_len(v);
     }
 }
 
@@ -517,6 +562,24 @@ impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where
     }
 }
 
+impl<Tg, Of> MinMaxByteLen for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + MinMaxByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: MinMaxByteLen,
+ {
+    open spec fn min(&self) -> nat {
+        with_prefix_tag(self.0, self.1, self.2).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        with_prefix_tag(self.0, self.1, self.2).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        with_prefix_tag(self.0, self.1, self.2).lemma_min_max_byte_len(v);
+    }
+}
+
 impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
     Tg: StaticByteLen,
     Tg::T: DeepView<V = Tg::T>,
@@ -666,6 +729,24 @@ impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         with_suffix_tag(self.0, self.1, self.2).byte_len(v)
+    }
+}
+
+impl<Tg, Of> MinMaxByteLen for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + MinMaxByteLen,
+    Tg::T: DeepView<V = Tg::T>,
+    Of: MinMaxByteLen,
+ {
+    open spec fn min(&self) -> nat {
+        with_suffix_tag(self.0, self.1, self.2).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        with_suffix_tag(self.0, self.1, self.2).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_min_max_byte_len(v);
     }
 }
 

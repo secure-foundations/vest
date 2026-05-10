@@ -142,6 +142,19 @@ impl SpecByteLen for super::Eof {
     }
 }
 
+impl MinMaxByteLen for super::Eof {
+    open spec fn min(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        ZERO_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
 impl StaticByteLen for super::Eof {
     open spec fn static_byte_len() -> nat {
         ZERO_BYTE_LEN as nat
@@ -281,6 +294,21 @@ impl<A, B> SpecByteLen for super::PairRev<A, B> where A: SpecByteLen, B: SpecByt
     }
 }
 
+impl<A: MinMaxByteLen, B: MinMaxByteLen> MinMaxByteLen for super::PairRev<A, B> {
+    open spec fn min(&self) -> nat {
+        self.1.min() + self.0.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.1.max() + self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.1.lemma_min_max_byte_len(v.0);
+        self.0.lemma_min_max_byte_len(v.1);
+    }
+}
+
 impl<A, B> ValueByteLen for super::PairRev<A, B> where A: ValueByteLen, B: ValueByteLen {
     open spec fn value_byte_len(v: Self::T) -> nat {
         A::value_byte_len(v.0) + B::value_byte_len(v.1)
@@ -366,6 +394,20 @@ impl<C: SpecByteLen> SpecByteLen for super::OptionalEnd<C> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Optional(self.0, super::Eof).byte_len((v, ()))
+    }
+}
+
+impl<C: MinMaxByteLen> MinMaxByteLen for super::OptionalEnd<C> {
+    open spec fn min(&self) -> nat {
+        Optional(self.0, super::Eof).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Optional(self.0, super::Eof).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Optional(self.0, super::Eof).lemma_min_max_byte_len((v, ()));
     }
 }
 

@@ -90,6 +90,20 @@ impl<P1: SpecByteLen, P2: SpecByteLen> SpecByteLen for super::Permute2<P1, P2> {
     }
 }
 
+impl<P1: MinMaxByteLen, P2: MinMaxByteLen> MinMaxByteLen for super::Permute2<P1, P2> {
+    open spec fn min(&self) -> nat {
+        Pair(self.0, self.1).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Pair(self.0, self.1).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Pair(self.0, self.1).lemma_min_max_byte_len(v);
+    }
+}
+
 impl<P1: ValueByteLen, P2: ValueByteLen> ValueByteLen for super::Permute2<P1, P2> {
     open spec fn value_byte_len(v: Self::T) -> nat {
         <crate::combinators::Pair<P1, P2> as ValueByteLen>::value_byte_len(v)
@@ -221,6 +235,24 @@ impl<A: SpecByteLen, B: SpecByteLen, C: SpecByteLen> SpecByteLen for super::Perm
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(self.0, super::Permute2(self.1, self.2)).byte_len(v)
+    }
+}
+
+impl<A: MinMaxByteLen, B: MinMaxByteLen, C: MinMaxByteLen> MinMaxByteLen for super::Permute3<
+    A,
+    B,
+    C,
+> {
+    open spec fn min(&self) -> nat {
+        Pair(self.0, super::Permute2(self.1, self.2)).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Pair(self.0, super::Permute2(self.1, self.2)).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Pair(self.0, super::Permute2(self.1, self.2)).lemma_min_max_byte_len(v);
     }
 }
 
@@ -386,6 +418,25 @@ impl<
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).byte_len(v)
+    }
+}
+
+impl<
+    A: MinMaxByteLen,
+    B: MinMaxByteLen,
+    C: MinMaxByteLen,
+    D: MinMaxByteLen,
+> MinMaxByteLen for super::Permute4<A, B, C, D> {
+    open spec fn min(&self) -> nat {
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_min_max_byte_len(v);
     }
 }
 

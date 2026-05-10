@@ -13,42 +13,17 @@ proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
         (super::Star { inner }).byte_len(vs) == vs.len() * A::static_byte_len(),
     decreases vs.len(),
 {
-    use crate::combinators::star::proof::lemma_fold_left_accumulate_nat;
-
     let star = super::Star { inner };
     if vs.len() == 0 {
     } else {
         let v0 = vs[0];
         let rest = vs.skip(1);
         let k = A::static_byte_len();
-        let f = |acc: nat, elem: A::T| acc + inner.byte_len(elem);
-
-        calc! {
-            (==)
-            star.byte_len(vs); {
-                assert(vs == seq![v0] + rest);
-            }
-            (seq![v0] + rest).fold_left(0, f); {
-                (seq![v0] + rest).lemma_fold_left_alt(0, f);
-            }
-            (seq![v0] + rest).fold_left_alt(0, f); {}
-            rest.fold_left_alt(inner.byte_len(v0), f); {
-                rest.lemma_fold_left_alt(inner.byte_len(v0), f);
-            }
-            rest.fold_left(inner.byte_len(v0), f); {
-                lemma_fold_left_accumulate_nat(rest, inner.byte_len(v0), f);
-            }
-            inner.byte_len(v0) + rest.fold_left(0, f); {}
-            inner.byte_len(v0) + star.byte_len(rest); {
-                inner.lemma_static_len_matches_byte_len(v0);
-            }
-            k + star.byte_len(rest); {
-                lemma_static_seq_byte_len(inner, rest);
-            }
-            k + rest.len() * k;
-        }
+        assert(vs == seq![v0] + rest);
+        star.lemma_byte_len_cons(v0, rest);
+        inner.lemma_static_len_matches_byte_len(v0);
+        lemma_static_seq_byte_len(inner, rest);
         assert(k + rest.len() * k == (rest.len() + 1) * k) by (nonlinear_arith);
-        assert((rest.len() + 1) * k == vs.len() * k);
     }
 }
 
@@ -98,6 +73,29 @@ proof fn lemma_value_seq_byte_len<A: ValueByteLen>(inner: A, vs: Seq<A::T>)
         lemma_fold_left_accumulate_nat(rest, A::value_byte_len(v0), g);
         rest.lemma_fold_left_alt(A::value_byte_len(v0), g);
         (seq![v0] + rest).lemma_fold_left_alt(0, g);
+    }
+}
+
+proof fn lemma_seq_min_max_byte_len<A: MinMaxByteLen>(inner: A, vs: Seq<A::T>)
+    requires
+        forall|i: int| 0 <= i < vs.len() ==> #[trigger] inner.consistent(vs[i]),
+    ensures
+        vs.len() * inner.min() <= (super::Star { inner }).byte_len(vs) <= vs.len() * inner.max(),
+    decreases vs.len(),
+{
+    let star = super::Star { inner };
+    if vs.len() == 0 {
+    } else {
+        let v0 = vs[0];
+        let rest = vs.skip(1);
+        assert(vs == seq![v0] + rest);
+        inner.lemma_min_max_byte_len(v0);
+        lemma_seq_min_max_byte_len(inner, rest);
+        star.lemma_byte_len_cons(v0, rest);
+        assert((rest.len() + 1) * inner.min() == rest.len() * inner.min() + inner.min())
+            by (nonlinear_arith);
+        assert((rest.len() + 1) * inner.max() == rest.len() * inner.max() + inner.max())
+            by (nonlinear_arith);
     }
 }
 
@@ -538,6 +536,21 @@ impl<C: SpecByteLen, N: AsLen> SpecByteLen for super::RepeatN<C, N> {
     }
 }
 
+impl<C: MinMaxByteLen, N: AsLen> MinMaxByteLen for super::RepeatN<C, N> {
+    open spec fn min(&self) -> nat {
+        self.0.as_nat() * self.1.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.as_nat() * self.1.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, vs: Self::T) {
+        lemma_seq_min_max_byte_len(self.1, vs);
+        assert(vs.len() == self.0.as_nat());
+    }
+}
+
 impl<C: ValueByteLen, N: AsLen> ValueByteLen for super::RepeatN<C, N> {
     open spec fn value_byte_len(vs: Self::T) -> nat {
         <super::Star<C> as ValueByteLen>::value_byte_len(vs)
@@ -633,6 +646,20 @@ impl<const N: usize, C: SpecByteLen> SpecByteLen for super::Array<N, C> {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         super::RepeatN(N, self.0).byte_len(v)
+    }
+}
+
+impl<const N: usize, C: MinMaxByteLen> MinMaxByteLen for super::Array<N, C> {
+    open spec fn min(&self) -> nat {
+        super::RepeatN(N, self.0).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        super::RepeatN(N, self.0).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        super::RepeatN(N, self.0).lemma_min_max_byte_len(v);
     }
 }
 

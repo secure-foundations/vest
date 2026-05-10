@@ -242,6 +242,23 @@ impl<Inner, M> SpecByteLen for super::Mapped<Inner, M> where
     }
 }
 
+impl<Inner, M> MinMaxByteLen for super::Mapped<Inner, M> where
+    Inner: MinMaxByteLen,
+    M: SpecMapper<In = Inner::T>,
+ {
+    open spec fn min(&self) -> nat {
+        self.inner.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.inner.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.inner.lemma_min_max_byte_len(self.mapper.spec_map_rev(v));
+    }
+}
+
 impl<Inner, M> StaticByteLen for super::Mapped<Inner, M> where
     Inner: StaticByteLen,
     M: SpecMapper<In = Inner::T>,
@@ -507,6 +524,23 @@ impl<Inner, M> SpecByteLen for super::TryMap<Inner, M> where
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         self.inner().byte_len(v)
+    }
+}
+
+impl<Inner, M> MinMaxByteLen for super::TryMap<Inner, M> where
+    Inner: MinMaxByteLen,
+    M: SpecMapper<In = Inner::T>,
+ {
+    open spec fn min(&self) -> nat {
+        self.inner().min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.inner().max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.inner().lemma_min_max_byte_len(v);
     }
 }
 

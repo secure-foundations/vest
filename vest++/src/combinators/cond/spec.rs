@@ -104,6 +104,20 @@ impl<Inner: SpecByteLen> SpecByteLen for super::Cond<Inner> {
     }
 }
 
+impl<Inner: MinMaxByteLen> MinMaxByteLen for super::Cond<Inner> {
+    open spec fn min(&self) -> nat {
+        self.1.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.1.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.1.lemma_min_max_byte_len(v);
+    }
+}
+
 impl<Inner: StaticByteLen> StaticByteLen for super::Cond<Inner> {
     open spec fn static_byte_len() -> nat {
         Inner::static_byte_len()
