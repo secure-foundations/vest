@@ -11,7 +11,7 @@ impl<Inner, M, MRev> SPRoundTripDps for super::Mapped<Inner, BiMap<M, MRev>> whe
  {
     open spec fn unambiguous(&self) -> bool {
         &&& self.inner.unambiguous()
-        &&& forall|o: M::Output| #![auto] self.mapper.1.wf(o) ==> self.mapper.sound(o)
+        &&& forall|o: M::Output| #![auto] self.consistent(o) ==> self.mapper.sound(o)
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
