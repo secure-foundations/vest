@@ -36,6 +36,16 @@ pub struct U32Le;
 /// Defined as `Mapped { inner: Fixed::<4>, mapper: (u32_be_from_bytes, u32_be_to_bytes) }`.
 pub struct U32Be;
 
+/// Little-endian unsigned 64-bit integer.
+///
+/// Defined as `Mapped { inner: Fixed::<8>, mapper: (u64_le_from_bytes, u64_le_to_bytes) }`.
+pub struct U64Le;
+
+/// Big-endian unsigned 64-bit integer.
+///
+/// Defined as `Mapped { inner: Fixed::<8>, mapper: (u64_be_from_bytes, u64_be_to_bytes) }`.
+pub struct U64Be;
+
 impl LeafNonMalleable for U8 {
     proof fn nonmal_leaf_inv(&self) {
     }
@@ -57,6 +67,16 @@ impl LeafNonMalleable for U32Le {
 }
 
 impl LeafNonMalleable for U32Be {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+impl LeafNonMalleable for U64Le {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+impl LeafNonMalleable for U64Be {
     proof fn nonmal_leaf_inv(&self) {
     }
 }
