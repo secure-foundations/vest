@@ -1,6 +1,6 @@
+use super::leb128::*;
 use crate::combinators::tail::PairRev;
 use crate::combinators::{Eof, ExactLen, Repeat, Star};
-use crate::leb128::*;
 use crate::{
     combinators::{
         implicit::KVFormat, mapped::spec::*, recursive::*, Alt, FixWith, Implicit, Mapped, Pair,

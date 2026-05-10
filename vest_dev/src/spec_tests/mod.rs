@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
 
-mod btcvarint;
 mod choice;
 mod dependent;
 mod disjoint;

@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals)]
 
 //! ASN.1 formats.
-pub(crate) mod base256;
+
 /// ASN.1 BIT STRING contents octets.
 pub mod bitstring;
 /// ASN.1 BOOLEAN contents octet.

@@ -1,4 +1,4 @@
-use super::base256::*;
+use crate::primitives::base256::*;
 use crate::{
     combinators::{
         implicit::*,
