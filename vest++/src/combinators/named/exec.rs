@@ -9,10 +9,7 @@ use vstd::prelude::*;
 
 verus! {
 
-impl<I, Inner> Parser<I> for super::Named<Inner> where
-    I: View<V = Seq<u8>>,
-    Inner: Parser<I>,
- {
+impl<I, Inner> Parser<I> for super::Named<Inner> where I: View<V = Seq<u8>>, Inner: Parser<I> {
     type PT = Inner::PT;
 
     open spec fn exec_inv(&self) -> bool {

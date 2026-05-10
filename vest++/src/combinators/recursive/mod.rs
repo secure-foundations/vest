@@ -13,10 +13,10 @@ use vstd::prelude::*;
 pub use exec::{ParserRecBody, SerializerRecBody};
 pub use proof::{
     EquivSerializersGeneralRecBody, NoLookAheadRecBody, NonMalleableRecBody, SPRoundTripDpsRecBody,
-     StrictRecBody,
+    StrictRecBody,
 };
 pub use spec::{
-    BundledSpecs, ParamRecSpecs, GoodSerializerRecBody, NonTailFmtRecBody, SafeParserRecBody,
+    BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, ParamRecSpecs, SafeParserRecBody,
     SoundParserRecBody, SpecRecBody,
 };
 

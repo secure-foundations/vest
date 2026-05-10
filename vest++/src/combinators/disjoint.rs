@@ -90,10 +90,9 @@ pub broadcast proof fn lemma_disjoint_tuple_2<
 pub broadcast proof fn lemma_disjoint_preceded<
     U: SpecParser,
     U1: SpecParser,
-    AVal: DeepView<V = U1::PVal>,
     V1: SpecParser,
     const CHECK: bool,
->(p: U, p1: Preceded<U1, AVal, V1, CHECK>)
+>(p: U, p1: Preceded<U1, U1::PVal, V1, CHECK>)
     requires
         disjoint_domains(p, p1.a),
     ensures
@@ -106,9 +105,8 @@ pub broadcast proof fn lemma_disjoint_terminated<
     U: SpecParser,
     U1: SpecParser,
     V1: SpecParser,
-    BVal: DeepView<V = V1::PVal>,
     const CHECK: bool,
->(p: U, p1: Terminated<U1, V1, BVal, CHECK>)
+>(p: U, p1: Terminated<U1, V1, V1::PVal, CHECK>)
     requires
         disjoint_domains(p, p1.a),
     ensures

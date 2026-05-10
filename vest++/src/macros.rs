@@ -1,5 +1,4 @@
 //! Utility macros.
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __vest_build_tuple_ty {

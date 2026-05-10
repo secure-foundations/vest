@@ -20,6 +20,11 @@ pub trait DeepEq: PartialEq + DeepView {
 }
 
 pub trait SelfView: DeepEq<V = Self> + Sized {
+    proof fn self_view(&self)
+        ensures
+            self == self.deep_view(),
+    ;
+
     fn eq(&self, other: &Self) -> (eq: bool)
         ensures
             eq == (self == other),
@@ -28,24 +33,32 @@ pub trait SelfView: DeepEq<V = Self> + Sized {
     ;
 }
 
+} // verus!
 macro_rules! impl_self_view_for {
     ($($t:ty),*) => {
         $(
-            impl DeepEq for $t {
-                fn deep_eq(&self, other: &Self) -> bool {
-                    *self == *other
+            verus! {
+                impl DeepEq for $t {
+                    fn deep_eq(&self, other: &Self) -> bool {
+                        *self == *other
+                    }
+                }
+                impl SelfView for $t {
+                    proof fn self_view(&self) {
+                    }
+
+                    fn eq(&self, other: &Self) -> bool {
+                        *self == *other
+                    }
                 }
             }
-            impl SelfView for $t {
-                fn eq(&self, other: &Self) -> bool {
-                    *self == *other
-                }
-            }
-        )*
+            )*
     };
 }
 
-impl_self_view_for!(u8, u16, u32, u64, usize, bool, ());
+impl_self_view_for!(u8, u16, u32, u64, usize, bool);
+
+verus! {
 
 #[verifier::external_body]
 #[inline(always)]

@@ -168,7 +168,7 @@ impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T> + Copy,
+    Tg::T: SelfView + Copy,
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {
@@ -218,7 +218,7 @@ impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T> + Copy,
+    Tg::T: SelfView + Copy,
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {

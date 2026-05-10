@@ -256,9 +256,7 @@ impl<Head, Nested> DepCombinator for Implicit<Head, Nested> where
     }
 }
 
-impl<Key, Val, Body> DepCombinator for KVFormat<Key, Val, Body> where
-    Body: Consistency<Val = Val>,
- {
+impl<Key, Val, Body> DepCombinator for KVFormat<Key, Val, Body> where Body: Consistency<Val = Val> {
     type Key = Key;
 
     type Val = Val;

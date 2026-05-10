@@ -5,9 +5,9 @@ use crate::{
             input::InputBuf,
             parser::{PResult, Parser},
             serializer::Serializer,
-            DeepEq, ParseError,
+            ParseError, SelfView,
         },
-        spec::SafeParser,
+        spec::{SafeParser, SpecParser, SpecSerializer},
     },
 };
 use vstd::prelude::*;
@@ -17,9 +17,9 @@ verus! {
 // Malleable version
 impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, false> where
     I: InputBuf,
-    A: Parser<I> + SafeParser,
+    A: Parser<I, PT = AVal> + SafeParser<PVal = AVal>,
     B: Parser<I> + SafeParser,
-    AVal: DeepView<V = A::PVal>,
+    AVal: DeepView<V = AVal>,
  {
     type PT = B::PT;
 
@@ -36,9 +36,9 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, false> where
 // Non-malleable version
 impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
     I: InputBuf,
-    A: Parser<I, PT = AVal> + SafeParser,
+    A: Parser<I, PT = AVal> + SafeParser<PVal = AVal>,
     B: Parser<I> + SafeParser,
-    AVal: DeepEq<V = A::PVal>,
+    AVal: SelfView,
  {
     type PT = B::PT;
 
@@ -48,7 +48,7 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let (n, (va, v)) = Pair(&self.a, &self.b).parse(ibuf)?;
-        if va.deep_eq(&self.a_val) {
+        if SelfView::eq(&va, &self.a_val) {
             Ok((n, v))
         } else {
             Err(ParseError::non_canonical())
@@ -62,9 +62,9 @@ impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
     B,
     CHECK,
 > where
-    AVal: DeepView<V = A::SVal> + Copy,
+    AVal: SelfView + Copy,
     BVal: DeepView<V = B::SVal>,
-    A: Serializer<AVal>,
+    A: Serializer<AVal, SVal = AVal>,
     B: Serializer<BVal>,
  {
     open spec fn exec_inv(&self) -> bool {
@@ -72,6 +72,9 @@ impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
     }
 
     fn ex_serialize(&self, v: BVal, obuf: &mut Vec<u8>) {
+        proof {
+            self.a_val.self_view();
+        }
         Pair(&self.a, &self.b).ex_serialize((self.a_val, v), obuf);
     }
 }

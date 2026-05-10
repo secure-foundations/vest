@@ -143,13 +143,15 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     let obuf = Seq::empty();
     let tag1_bytes = [val1, val1];
     let tag2_bytes = [val2, val2];
+    let tag1_spec = seq![val1, val1];
+    let tag2_spec = seq![val2, val2];
     let tag1 = Const(Fixed::<2>, tag1_bytes);
     let tag2 = Const(Fixed::<2>, tag2_bytes);
-    let inner = Terminated::<_, _, _, false> { a: U8, b: tag1, b_val: tag1_bytes };
-    let outer = Terminated::<_, _, _, false> { a: inner, b: tag2, b_val: tag2_bytes };
+    let inner = Terminated::<_, _, _, false> { a: U8, b: tag1, b_val: tag1_spec };
+    let outer = Terminated::<_, _, _, false> { a: inner, b: tag2, b_val: tag2_spec };
 
-    let footer_buf = tag2.spec_serialize_dps(seq![val2, val2], obuf);
-    let inner_buf = tag1.spec_serialize_dps(seq![val1, val1], footer_buf);
+    let footer_buf = tag2.spec_serialize_dps(tag2_spec, obuf);
+    let inner_buf = tag1.spec_serialize_dps(tag1_spec, footer_buf);
 
     assert(inner.unambiguous());
     assert(outer.unambiguous());

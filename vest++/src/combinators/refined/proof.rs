@@ -200,7 +200,6 @@ impl<const N: usize> EquivSerializers for super::Const<Fixed::<N>, [u8; N]> {
 
 impl<Tg, Of> SPRoundTripDps for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SPRoundTripDps,
  {
     open spec fn unambiguous(&self) -> bool {
@@ -214,7 +213,6 @@ impl<Tg, Of> SPRoundTripDps for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> NonMalleable for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
@@ -228,7 +226,6 @@ impl<Tg, Of> NonMalleable for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> NoLookAhead for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
@@ -244,7 +241,6 @@ impl<Tg, Of> EquivSerializersGeneral for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
-    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
@@ -260,7 +256,6 @@ impl<Tg, Of> EquivSerializers for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
-    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializers,
  {
     open spec fn equiv_inv(&self) -> bool {
@@ -274,7 +269,6 @@ impl<Tg, Of> EquivSerializers for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SPRoundTripDps for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SPRoundTripDps + NonTailFmt,
  {
     open spec fn unambiguous(&self) -> bool {
@@ -288,7 +282,6 @@ impl<Tg, Of> SPRoundTripDps for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> NonMalleable for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
@@ -302,7 +295,6 @@ impl<Tg, Of> NonMalleable for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> NoLookAhead for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
@@ -318,7 +310,6 @@ impl<Tg, Of> EquivSerializersGeneral for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
-    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
@@ -332,7 +323,6 @@ impl<Tg, Of> EquivSerializersGeneral for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> EquivSerializers for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + EquivSerializers<SVal = Tg::T, SValue = Tg::T> + Consistency<Val = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_inv(&self) -> bool {

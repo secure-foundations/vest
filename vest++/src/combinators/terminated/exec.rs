@@ -5,9 +5,9 @@ use crate::{
             input::InputBuf,
             parser::{PResult, Parser},
             serializer::Serializer,
-            DeepEq, ParseError,
+            ParseError, SelfView,
         },
-        spec::SafeParser,
+        spec::{SafeParser, SpecParser, SpecSerializer},
     },
 };
 use vstd::prelude::*;
@@ -18,8 +18,8 @@ verus! {
 impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, false> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
-    B: Parser<I> + SafeParser,
-    BVal: DeepView<V = B::PVal>,
+    B: Parser<I, PT = BVal> + SafeParser<PVal = BVal>,
+    BVal: DeepView<V = BVal>,
  {
     type PT = A::PT;
 
@@ -37,8 +37,8 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, false> where
 impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
-    B: Parser<I, PT = BVal> + SafeParser,
-    BVal: DeepEq<V = B::PVal>,
+    B: Parser<I, PT = BVal> + SafeParser<PVal = BVal>,
+    BVal: SelfView,
  {
     type PT = A::PT;
 
@@ -48,7 +48,7 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let (n, (v, vb)) = Pair(&self.a, &self.b).parse(ibuf)?;
-        if vb.deep_eq(&self.b_val) {
+        if SelfView::eq(&vb, &self.b_val) {
             Ok((n, v))
         } else {
             Err(ParseError::non_canonical())
@@ -63,15 +63,18 @@ impl<A, B, BVal, AVal, const CHECK: bool> Serializer<AVal> for super::Terminated
     CHECK,
 > where
     AVal: DeepView<V = A::SVal>,
-    BVal: DeepView<V = B::SVal> + Copy,
+    BVal: SelfView + Copy,
     A: Serializer<AVal>,
-    B: Serializer<BVal>,
+    B: Serializer<BVal, SVal = BVal>,
  {
     open spec fn exec_inv(&self) -> bool {
         Pair(&self.a, &self.b).exec_inv()
     }
 
     fn ex_serialize(&self, v: AVal, obuf: &mut Vec<u8>) {
+        proof {
+            self.b_val.self_view();
+        }
         Pair(&self.a, &self.b).ex_serialize((v, self.b_val), obuf);
     }
 }

@@ -64,5 +64,5 @@ pub type Never = ::core::convert::Infallible;
 pub mod asn1;
 pub mod combinators;
 pub mod core;
-pub mod primitives;
 pub mod macros;
+pub mod primitives;

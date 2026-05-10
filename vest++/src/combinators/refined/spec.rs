@@ -440,7 +440,6 @@ pub open spec fn with_suffix_tag<Tg: SpecByteLen, Of>(
 
 impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecParser,
  {
     type PVal = Of::PVal;
@@ -452,7 +451,6 @@ impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> Consistency for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: Consistency,
  {
     type Val = Of::Val;
@@ -464,7 +462,6 @@ impl<Tg, Of> Consistency for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SafeParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SafeParser,
  {
     open spec fn safe_inv(&self) -> bool {
@@ -478,7 +475,6 @@ impl<Tg, Of> SafeParser for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SoundParser for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
@@ -496,7 +492,6 @@ impl<Tg, Of> SoundParser for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SpecSerializerDps for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializerDps,
  {
     type SValue = Of::SValue;
@@ -508,7 +503,6 @@ impl<Tg, Of> SpecSerializerDps for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SpecSerializer for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializer,
  {
     type SVal = Of::SVal;
@@ -520,7 +514,6 @@ impl<Tg, Of> SpecSerializer for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> NonTailFmt for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + NonTailFmt,
-    Tg::T: DeepView<V = Tg::T>,
     Of: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
@@ -538,7 +531,6 @@ impl<Tg, Of> NonTailFmt for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> GoodSerializer for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + GoodSerializer,
-    Tg::T: DeepView<V = Tg::T>,
     Of: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
@@ -550,11 +542,7 @@ impl<Tg, Of> GoodSerializer for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where
-    Tg: SpecByteLen,
-    Tg::T: DeepView<V = Tg::T>,
-    Of: SpecByteLen,
- {
+impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -564,7 +552,6 @@ impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> MinMaxByteLen for super::WithPrefixTag<Tg, Of> where
     Tg: SpecByteLen + MinMaxByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: MinMaxByteLen,
  {
     open spec fn min(&self) -> nat {
@@ -582,7 +569,6 @@ impl<Tg, Of> MinMaxByteLen for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
     Tg: StaticByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: StaticByteLen,
  {
     open spec fn static_byte_len() -> nat {
@@ -596,7 +582,6 @@ impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> ValueByteLen for super::WithPrefixTag<Tg, Of> where
     Tg: StaticByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: ValueByteLen,
  {
     open spec fn value_byte_len(v: Self::T) -> nat {
@@ -610,7 +595,6 @@ impl<Tg, Of> ValueByteLen for super::WithPrefixTag<Tg, Of> where
 
 impl<Tg, Of> SpecParser for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecParser,
  {
     type PVal = Of::PVal;
@@ -622,7 +606,6 @@ impl<Tg, Of> SpecParser for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> Consistency for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: Consistency,
  {
     type Val = Of::Val;
@@ -634,7 +617,6 @@ impl<Tg, Of> Consistency for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> SafeParser for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SafeParser,
  {
     open spec fn safe_inv(&self) -> bool {
@@ -648,7 +630,6 @@ impl<Tg, Of> SafeParser for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> SoundParser for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
@@ -666,7 +647,6 @@ impl<Tg, Of> SoundParser for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> SpecSerializerDps for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializerDps,
  {
     type SValue = Of::SValue;
@@ -678,7 +658,6 @@ impl<Tg, Of> SpecSerializerDps for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> SpecSerializer for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
-    Tg::T: DeepView<V = Tg::T>,
     Of: SpecSerializer,
  {
     type SVal = Of::SVal;
@@ -690,7 +669,6 @@ impl<Tg, Of> SpecSerializer for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> NonTailFmt for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + NonTailFmt,
-    Tg::T: DeepView<V = Tg::T>,
     Of: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
@@ -708,7 +686,6 @@ impl<Tg, Of> NonTailFmt for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> GoodSerializer for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + GoodSerializer,
-    Tg::T: DeepView<V = Tg::T>,
     Of: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
@@ -720,11 +697,7 @@ impl<Tg, Of> GoodSerializer for super::WithSuffixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where
-    Tg: SpecByteLen,
-    Tg::T: DeepView<V = Tg::T>,
-    Of: SpecByteLen,
- {
+impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -734,7 +707,6 @@ impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> MinMaxByteLen for super::WithSuffixTag<Tg, Of> where
     Tg: SpecByteLen + MinMaxByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: MinMaxByteLen,
  {
     open spec fn min(&self) -> nat {
@@ -752,7 +724,6 @@ impl<Tg, Of> MinMaxByteLen for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> StaticByteLen for super::WithSuffixTag<Tg, Of> where
     Tg: StaticByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: StaticByteLen,
  {
     open spec fn static_byte_len() -> nat {
@@ -766,7 +737,6 @@ impl<Tg, Of> StaticByteLen for super::WithSuffixTag<Tg, Of> where
 
 impl<Tg, Of> ValueByteLen for super::WithSuffixTag<Tg, Of> where
     Tg: StaticByteLen,
-    Tg::T: DeepView<V = Tg::T>,
     Of: ValueByteLen,
  {
     open spec fn value_byte_len(v: Self::T) -> nat {

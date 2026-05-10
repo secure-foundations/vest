@@ -114,5 +114,4 @@ impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Bind<A, B> where
     }
 }
 
-
 } // verus!
