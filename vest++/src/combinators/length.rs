@@ -14,18 +14,18 @@ pub trait AsLen: Sized + Copy {
     spec fn as_nat(self) -> nat;
 
     /// The runtime length represented by this value.
-    fn as_usize(self) -> (len: usize)
+    fn get(self) -> (len: usize)
         ensures
             len as nat == self.as_nat(),
     ;
 
     /// Construct from a `nat`.
-    spec fn from_nat(n: nat) -> Self;
+    spec fn as_self(n: nat) -> Self;
 
-    /// `from_nat(v.as_nat()) == v`.
+    /// `as_self(v.as_nat()) == v`.
     proof fn lemma_lossless_casting(v: Self)
         ensures
-            Self::from_nat(v.as_nat()) == v,
+            Self::as_self(v.as_nat()) == v,
     ;
 }
 
@@ -38,11 +38,11 @@ macro_rules! impl_as_len_for_uint {
                     self as nat
                 }
 
-                fn as_usize(self) -> (len: usize) {
+                fn get(self) -> (len: usize) {
                     self as usize
                 }
 
-                open spec fn from_nat(n: nat) -> Self {
+                open spec fn as_self(n: nat) -> Self {
                     n as $ty
                 }
 
@@ -57,3 +57,26 @@ impl_as_len_for_uint!(u8);
 impl_as_len_for_uint!(u16);
 impl_as_len_for_uint!(u32);
 impl_as_len_for_uint!(usize);
+
+verus! {
+
+global size_of usize == 8;
+
+impl AsLen for u64 {
+    open spec fn as_nat(self) -> nat {
+        self as nat
+    }
+
+    fn get(self) -> (len: usize) {
+        self as usize
+    }
+
+    open spec fn as_self(n: nat) -> Self {
+        n as u64
+    }
+
+    proof fn lemma_lossless_casting(v: Self) {
+    }
+}
+
+} // verus!

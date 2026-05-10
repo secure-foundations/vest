@@ -252,51 +252,10 @@ type TXSegwitRestRest = KVFormat<u8, TXSegwitRestRestVal, Pair<Varied, Pair<Vari
 
 type TXSegwitRest = KVFormat<u8, TXSegwitRestVal, Pair<Varied, Implicit<U8, TXSegwitRestRest>>>;
 
-struct U64AsU32;
-
-impl SpecMapper for U64AsU32 {
-    type In = u64;
-
-    type Out = u32;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        i as u32
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        o as u64
-    }
-
-    open spec fn wf_in(&self, i: Self::In) -> bool {
-        i <= u32::MAX as u64
-    }
-}
-
-impl LossyMapper for U64AsU32 {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        assert(self.wf_in(self.spec_map_rev(o)));
-    }
-}
-
-impl LosslessMapper for U64AsU32 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        assert(i == i as u32 as u64) by (bit_vector)
-            requires
-                self.wf_in(i),
-        ;
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, _i: Self::In) {
-    }
-}
-
 use crate::primitives::btcvarint::VarInt;
 type Varint = crate::primitives::btcvarint::VarIntFmt<false>;
 proof fn test_bitcoin_tx() {
-    let varint = Mapped { inner: VarInt::<true>, mapper: U64AsU32 };
+    let varint = VarInt::<true>;
     // tx_segwit = {
     //   const flag: u8 = 1,
     //   @txin_count: btc_varint,

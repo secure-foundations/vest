@@ -299,7 +299,7 @@ impl<Len: AsLen> DepCombinator for VariedLen<Len> {
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        Len::from_nat(value.len())
+        Len::as_self(value.len())
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
@@ -326,7 +326,7 @@ impl<Len, Then> DepCombinator for NBytesOf<Len, Then> where
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
-        Len::from_nat(self.1.byte_len(value))
+        Len::as_self(self.1.byte_len(value))
     }
 
     proof fn lemma_recover_consistent(&self, key: Self::Key, value: Self::Val) {
@@ -504,7 +504,7 @@ impl<Tag, Len, V> DepCombinator for TLVal<Tag, Len, V> where
     open spec fn recover(&self, value: Self::Val) -> Self::Key {
         let tag = self.0.recover(value);
         let body = self.0.apply(tag);
-        (tag, Len::from_nat(body.byte_len(value)))
+        (tag, Len::as_self(body.byte_len(value)))
     }
 
     open spec fn recover_inv(&self) -> bool {

@@ -77,7 +77,7 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
-        let count = self.0.as_usize();
+        let count = self.0.get();
         let _total_len = ibuf.len();
         let mut consumed: usize = 0;
         let mut rest = ibuf.skip(0);

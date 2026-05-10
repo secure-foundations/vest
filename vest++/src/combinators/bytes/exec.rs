@@ -32,7 +32,7 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     type PT = I;
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
-        let len = self.0.as_usize();
+        let len = self.0.get();
         if ibuf.len() < len {
             Err(ParseError::unexpected_eof())
         } else {
