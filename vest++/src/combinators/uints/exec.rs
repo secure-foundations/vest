@@ -4,7 +4,7 @@ use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::Serializer,
+    serializer::{ByteLen, Compliance, Serializer},
     ParseError,
 };
 use crate::core::spec::{SpecParser, SpecSerializer};
@@ -142,6 +142,18 @@ impl Serializer<u8> for super::U8 {
     }
 }
 
+impl Compliance<u8> for super::U8 {
+    fn check_compliance(&self, _v: u8) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u8> for super::U8 {
+    fn length(&self, _v: u8) -> (len: usize) {
+        1
+    }
+}
+
 impl Parser<&[u8]> for super::U16Le {
     type PT = u16;
 
@@ -165,6 +177,18 @@ impl Serializer<u16> for super::U16Le {
         let bytes = u16_to_le_bytes(v);
 
         obuf.extend_from_slice(&bytes);
+    }
+}
+
+impl Compliance<u16> for super::U16Le {
+    fn check_compliance(&self, _v: u16) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u16> for super::U16Le {
+    fn length(&self, _v: u16) -> (len: usize) {
+        U16_BYTE_LEN
     }
 }
 
@@ -193,6 +217,18 @@ impl Serializer<u16> for super::U16Be {
     }
 }
 
+impl Compliance<u16> for super::U16Be {
+    fn check_compliance(&self, _v: u16) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u16> for super::U16Be {
+    fn length(&self, _v: u16) -> (len: usize) {
+        U16_BYTE_LEN
+    }
+}
+
 impl Parser<&[u8]> for super::U32Le {
     type PT = u32;
 
@@ -218,6 +254,18 @@ impl Serializer<u32> for super::U32Le {
     }
 }
 
+impl Compliance<u32> for super::U32Le {
+    fn check_compliance(&self, _v: u32) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u32> for super::U32Le {
+    fn length(&self, _v: u32) -> (len: usize) {
+        U32_BYTE_LEN
+    }
+}
+
 impl Parser<&[u8]> for super::U32Be {
     type PT = u32;
 
@@ -240,6 +288,18 @@ impl Serializer<u32> for super::U32Be {
     fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
         let bytes = u32_to_be_bytes(v);
         obuf.extend_from_slice(&bytes);
+    }
+}
+
+impl Compliance<u32> for super::U32Be {
+    fn check_compliance(&self, _v: u32) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u32> for super::U32Be {
+    fn length(&self, _v: u32) -> (len: usize) {
+        U32_BYTE_LEN
     }
 }
 
@@ -277,6 +337,18 @@ impl Serializer<u64> for super::U64Le {
     }
 }
 
+impl Compliance<u64> for super::U64Le {
+    fn check_compliance(&self, _v: u64) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u64> for super::U64Le {
+    fn length(&self, _v: u64) -> (len: usize) {
+        U64_BYTE_LEN
+    }
+}
+
 impl Parser<&[u8]> for super::U64Be {
     type PT = u64;
 
@@ -308,6 +380,18 @@ impl Serializer<u64> for super::U64Be {
     fn ex_serialize(&self, v: u64, obuf: &mut Vec<u8>) {
         let bytes = u64_to_be_bytes(v);
         obuf.extend_from_slice(&bytes);
+    }
+}
+
+impl Compliance<u64> for super::U64Be {
+    fn check_compliance(&self, _v: u64) -> (yes: bool) {
+        true
+    }
+}
+
+impl ByteLen<u64> for super::U64Be {
+    fn length(&self, _v: u64) -> (len: usize) {
+        U64_BYTE_LEN
     }
 }
 

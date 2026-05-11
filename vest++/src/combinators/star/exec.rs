@@ -4,10 +4,10 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::Serializer,
+        serializer::{ByteLen, Compliance, Serializer},
         ParseError,
     },
-    spec::{SafeParser, SpecParser, SpecSerializer},
+    spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
 
@@ -223,6 +223,61 @@ pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: 
     }
 }
 
+pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: bool) where
+    Inner: Compliance<InnerST>,
+    InnerST: DeepView + Copy,
+
+    ensures
+        yes == (super::Star { inner: *fmt }).consistent(values.deep_view()),
+{
+    let ghost vs = values.deep_view();
+
+    let mut yes = true;
+    for i in 0..values.len()
+        invariant
+            vs == values.deep_view(),
+            yes == (forall|j: int| 0 <= j < i ==> fmt.consistent(#[trigger] vs[j])),
+    {
+        assert(((forall|j: int| #![auto] 0 <= j < i ==> fmt.consistent(vs[j])) && fmt.consistent(
+            vs[i as int],
+        )) ==> (forall|j: int| #![auto] 0 <= j < i + 1 ==> fmt.consistent(vs[j])));
+
+        yes = yes && fmt.check_compliance(values[i]);
+    }
+    yes
+}
+
+pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: usize) where
+    Inner: ByteLen<InnerST>,
+    InnerST: DeepView + Copy,
+
+    requires
+        (super::Star { inner: *fmt }).byte_len(values.deep_view()) <= usize::MAX,
+    ensures
+        len == (super::Star { inner: *fmt }).byte_len(values.deep_view()),
+{
+    let ghost vs = values.deep_view();
+    let ghost star = super::Star { inner: *fmt };
+
+    let mut len = 0usize;
+    for i in 0..values.len()
+        invariant
+            values.deep_view() == vs,
+            star == (super::Star { inner: *fmt }),
+            star.byte_len(vs) <= usize::MAX,
+            len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
+    {
+        proof {
+            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
+            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
+        }
+        let elem = values[i];
+        let l = fmt.length(elem);
+        len += l;
+    }
+    len
+}
+
 impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
@@ -233,6 +288,24 @@ impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
 
     fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
         serialize_slice(&self.inner, v, obuf);
+    }
+}
+
+impl<Inner, InnerST> Compliance<&[InnerST]> for super::Star<Inner> where
+    Inner: Compliance<InnerST>,
+    InnerST: DeepView + Copy,
+ {
+    fn check_compliance(&self, v: &[InnerST]) -> (yes: bool) {
+        check_slice(&self.inner, v)
+    }
+}
+
+impl<Inner, InnerST> ByteLen<&[InnerST]> for super::Star<Inner> where
+    Inner: ByteLen<InnerST>,
+    InnerST: DeepView + Copy,
+ {
+    fn length(&self, v: &[InnerST]) -> (len: usize) {
+        length_slice(&self.inner, v)
     }
 }
 
@@ -250,6 +323,28 @@ impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> wher
     }
 }
 
+impl<Inner, N, InnerST> Compliance<&[InnerST]> for super::RepeatN<Inner, N> where
+    Inner: Compliance<InnerST>,
+    InnerST: DeepView + Copy,
+    N: AsLen,
+ {
+    fn check_compliance(&self, v: &[InnerST]) -> (yes: bool) {
+        let count = self.0.get();
+        let ok = check_slice(&self.1, v);
+        v.len() == count && ok
+    }
+}
+
+impl<Inner, N, InnerST> ByteLen<&[InnerST]> for super::RepeatN<Inner, N> where
+    Inner: ByteLen<InnerST>,
+    InnerST: DeepView + Copy,
+    N: AsLen,
+ {
+    fn length(&self, v: &[InnerST]) -> (len: usize) {
+        length_slice(&self.1, v)
+    }
+}
+
 impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<N, Inner> where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
@@ -259,11 +354,26 @@ impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<
     }
 
     fn ex_serialize(&self, v: &[InnerST; N], obuf: &mut Vec<u8>) {
+        serialize_slice(&self.0, v.as_slice(), obuf);
+    }
+}
+
+impl<Inner, InnerST, const N: usize> Compliance<&[InnerST; N]> for super::Array<N, Inner> where
+    Inner: Compliance<InnerST>,
+    InnerST: DeepView + Copy,
+ {
+    fn check_compliance(&self, v: &[InnerST; N]) -> (yes: bool) {
         let slice = v.as_slice();
-        proof {
-            assert(slice.deep_view() == v.deep_view());
-        }
-        serialize_slice(&self.0, slice, obuf);
+        slice.len() == N && check_slice(&self.0, slice)
+    }
+}
+
+impl<Inner, InnerST, const N: usize> ByteLen<&[InnerST; N]> for super::Array<N, Inner> where
+    Inner: ByteLen<InnerST>,
+    InnerST: DeepView + Copy,
+ {
+    fn length(&self, v: &[InnerST; N]) -> (len: usize) {
+        length_slice(&self.0, v.as_slice())
     }
 }
 

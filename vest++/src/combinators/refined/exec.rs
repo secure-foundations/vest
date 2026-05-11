@@ -7,10 +7,10 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        serializer::Serializer,
+        serializer::{ByteLen, Compliance, Serializer},
         ParseError,
     },
-    spec::{SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
+    spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
 };
 use vstd::prelude::*;
 
@@ -63,6 +63,26 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
     }
 }
 
+impl<A, PredFn, ST> Compliance<ST> for super::Refined<A, PredFn> where
+    ST: DeepView + Copy,
+    A: Compliance<ST>,
+    PredFn: Pred<ST>,
+ {
+    fn check_compliance(&self, v: ST) -> (yes: bool) {
+        self.0.check_compliance(v) && self.1.test(&v)
+    }
+}
+
+impl<A, PredFn, ST> ByteLen<ST> for super::Refined<A, PredFn> where
+    ST: DeepView,
+    A: ByteLen<ST>,
+    PredFn: Pred<ST>,
+ {
+    fn length(&self, v: ST) -> (len: usize) {
+        self.0.length(v)
+    }
+}
+
 impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     I: InputBuf,
     Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
@@ -97,9 +117,50 @@ impl<Inner, ST> Serializer<ST> for super::Const<Inner, ST> where
     }
 }
 
+impl<Inner, ST> Compliance<ST> for super::Const<Inner, ST> where
+    ST: SelfView + Copy,
+    Inner: Compliance<ST>,
+ {
+    fn check_compliance(&self, v: ST) -> (yes: bool) {
+        proof {
+            self.1.self_view();
+        }
+        self.0.check_compliance(v) && SelfView::eq(&v, &self.1)
+    }
+}
+
+impl<Inner, V, ST> ByteLen<ST> for super::Const<Inner, V> where
+    ST: DeepView<V = V>,
+    Inner: SpecByteLen<T = V> + ByteLen<ST>,
+ {
+    fn length(&self, v: ST) -> (len: usize) {
+        self.0.length(v)
+    }
+}
+
 impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     fn ex_serialize(&self, v: [u8; N], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(&v);
+    }
+}
+
+impl<const N: usize> Compliance<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
+    fn check_compliance(&self, v: [u8; N]) -> (yes: bool) {
+        let v_slice = v.as_slice();
+        let tag_slice = self.1.as_slice();
+        let eq = cmp_byte_slices(v_slice, tag_slice);
+        proof {
+            assert(v_slice.deep_view() == v.deep_view());
+            assert(tag_slice.deep_view() == self.1@);
+            assert(eq == (v.deep_view() == self.1@));
+        }
+        eq
+    }
+}
+
+impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
+    fn length(&self, _v: [u8; N]) -> (len: usize) {
+        N
     }
 }
 
@@ -190,6 +251,38 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
+impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: Compliance<ST>,
+ {
+    fn check_compliance(&self, v: ST) -> (yes: bool) {
+        let fmt = Preceded::<_, _, _, false> {
+            a: super::Const(&self.0, self.1),
+            b: &self.2,
+            a_val: self.1,
+        };
+        fmt.check_compliance(v)
+    }
+}
+
+impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: ByteLen<ST>,
+ {
+    fn length(&self, v: ST) -> (len: usize) {
+        let fmt = Preceded::<_, _, _, false> {
+            a: super::Const(&self.0, self.1),
+            b: &self.2,
+            a_val: self.1,
+        };
+        fmt.length(v)
+    }
+}
+
 impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
     I: InputBuf,
     Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
@@ -237,6 +330,38 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
             b_val: self.1,
         };
         fmt.ex_serialize(v, obuf);
+    }
+}
+
+impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: Compliance<ST>,
+ {
+    fn check_compliance(&self, v: ST) -> (yes: bool) {
+        let fmt = Terminated::<_, _, _, false> {
+            a: &self.2,
+            b: super::Const(&self.0, self.1),
+            b_val: self.1,
+        };
+        fmt.check_compliance(v)
+    }
+}
+
+impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: ByteLen<ST>,
+ {
+    fn length(&self, v: ST) -> (len: usize) {
+        let fmt = Terminated::<_, _, _, false> {
+            a: &self.2,
+            b: super::Const(&self.0, self.1),
+            b_val: self.1,
+        };
+        fmt.length(v)
     }
 }
 

@@ -28,6 +28,55 @@ pub trait Serializer<ST>: SpecSerializer where ST: DeepView<V = Self::SVal> {
     }
 }
 
+pub trait Compliance<T>: Consistency<Val = T::V> where T: DeepView {
+    fn check_compliance(&self, v: T) -> (yes: bool)
+        ensures
+            yes == self.consistent(v.deep_view()),
+    ;
+}
+
+pub enum PreSerializeError {
+    LengthTooLarge,
+    NotCompliant(&'static str),
+}
+
+pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: DeepView {
+    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>)
+        ensures
+            checked matches Ok(len) ==> {
+                &&& self.consistent(v.deep_view())
+                &&& len == self.byte_len(v.deep_view())
+            },
+    ;
+}
+
+pub trait ByteLen<T>: SpecByteLen<T = T::V> where T: DeepView {
+    fn length(&self, v: T) -> (len: usize)
+        requires
+            self.byte_len(v.deep_view()) <= usize::MAX,
+        ensures
+            len == self.byte_len(v.deep_view()),
+    ;
+}
+
+impl<T, S> Compliance<T> for &S where T: DeepView, S: Compliance<T> {
+    fn check_compliance(&self, v: T) -> (yes: bool) {
+        (*self).check_compliance(v)
+    }
+}
+
+impl<T, S> Prepare<T> for &S where T: DeepView, S: Prepare<T> {
+    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
+        (*self).prepare(v)
+    }
+}
+
+impl<T, S> ByteLen<T> for &S where T: DeepView, S: ByteLen<T> {
+    fn length(&self, v: T) -> (len: usize) {
+        (*self).length(v)
+    }
+}
+
 impl<S: SpecSerializer> SpecSerializer for &S {
     type SVal = S::SVal;
 

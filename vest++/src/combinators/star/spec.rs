@@ -116,7 +116,7 @@ impl<A: SpecParser> super::Star<A> {
 }
 
 impl<A: SpecByteLen> super::Star<A> {
-    proof fn lemma_byte_len_cons(&self, v: A::T, vs: Seq<A::T>)
+    pub proof fn lemma_byte_len_cons(&self, v: A::T, vs: Seq<A::T>)
         ensures
             self.byte_len(seq![v] + vs) == self.inner.byte_len(v) + self.byte_len(vs),
     {

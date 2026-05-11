@@ -4,7 +4,7 @@ use crate::{
         exec::{
             input::InputBuf,
             parser::{PResult, Parser},
-            serializer::Serializer,
+            serializer::{ByteLen, Compliance, Serializer},
             ParseError, SelfView,
         },
         spec::{SafeParser, SpecParser, SpecSerializer},
@@ -76,6 +76,34 @@ impl<A, B, BVal, AVal, const CHECK: bool> Serializer<AVal> for super::Terminated
             self.b_val.self_view();
         }
         Pair(&self.a, &self.b).ex_serialize((v, self.b_val), obuf);
+    }
+}
+
+impl<A, AVal, B, BVal, const CHECK: bool> Compliance<AVal> for super::Terminated<
+    A,
+    B,
+    BVal,
+    CHECK,
+> where AVal: DeepView, BVal: SelfView + Copy, A: Compliance<AVal>, B: Compliance<BVal> {
+    fn check_compliance(&self, v: AVal) -> (yes: bool) {
+        proof {
+            self.b_val.self_view();
+        }
+        Pair(&self.a, &self.b).check_compliance((v, self.b_val))
+    }
+}
+
+impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<AVal> for super::Terminated<
+    A,
+    B,
+    BVal,
+    CHECK,
+> where AVal: DeepView, BVal: SelfView + Copy, A: ByteLen<AVal>, B: ByteLen<BVal> {
+    fn length(&self, v: AVal) -> (len: usize) {
+        proof {
+            self.b_val.self_view();
+        }
+        Pair(&self.a, &self.b).length((v, self.b_val))
     }
 }
 

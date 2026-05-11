@@ -4,7 +4,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::Serializer,
+        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     },
     spec::{SafeParser, SpecParser, SpecSerializer},
 };
@@ -62,6 +62,47 @@ impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Pair<A, B> where
     }
 }
 
+impl<A, B, STA, STB> Compliance<(STA, STB)> for super::Pair<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Compliance<STA>,
+    B: Compliance<STB>,
+ {
+    fn check_compliance(&self, v: (STA, STB)) -> (yes: bool) {
+        self.0.check_compliance(v.0) && self.1.check_compliance(v.1)
+    }
+}
+
+impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Pair<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Prepare<STA>,
+    B: Prepare<STB>,
+ {
+    fn prepare(&self, v: (STA, STB)) -> Result<usize, PreSerializeError> {
+        let la = self.0.prepare(v.0)?;
+        let lb = self.1.prepare(v.1)?;
+        if let Some(total) = la.checked_add(lb) {
+            Ok(total)
+        } else {
+            Err(PreSerializeError::LengthTooLarge)
+        }
+    }
+}
+
+impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Pair<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: ByteLen<STA>,
+    B: ByteLen<STB>,
+ {
+    fn length(&self, v: (STA, STB)) -> (len: usize) {
+        let la = self.0.length(v.0);
+        let lb = self.1.length(v.1);
+        la + lb
+    }
+}
+
 impl<I, A, B> Parser<I> for super::Bind<A, B> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
@@ -111,6 +152,34 @@ impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Bind<A, B> where
         let next = self.1.map(&v.0);
         self.0.ex_serialize(v.0, obuf);
         next.ex_serialize(v.1, obuf);
+    }
+}
+
+impl<A, B, STA, STB> Compliance<(STA, STB)> for super::Bind<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Compliance<STA>,
+    B::O: Compliance<STB>,
+    B: MapRef<STA, Input = STA::V>,
+ {
+    fn check_compliance(&self, v: (STA, STB)) -> (yes: bool) {
+        let next = self.1.map(&v.0);
+        self.0.check_compliance(v.0) && next.check_compliance(v.1)
+    }
+}
+
+impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: ByteLen<STA>,
+    B::O: ByteLen<STB>,
+    B: MapRef<STA, Input = STA::V>,
+ {
+    fn length(&self, v: (STA, STB)) -> (len: usize) {
+        let next = self.1.map(&v.0);
+        let la = self.0.length(v.0);
+        let lb = next.length(v.1);
+        la + lb
     }
 }
 

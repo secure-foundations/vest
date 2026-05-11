@@ -2,7 +2,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::Serializer,
+        serializer::{ByteLen, Compliance, Serializer},
     },
     spec::{SafeParser, SpecParser},
 };
@@ -45,6 +45,24 @@ impl<A, ST> Serializer<Option<ST>> for super::Opt<A> where
     }
 }
 
+impl<A, ST> Compliance<Option<ST>> for super::Opt<A> where ST: DeepView, A: Compliance<ST> {
+    fn check_compliance(&self, v: Option<ST>) -> (yes: bool) {
+        match v {
+            Some(vv) => self.0.check_compliance(vv),
+            None => true,
+        }
+    }
+}
+
+impl<A, ST> ByteLen<Option<ST>> for super::Opt<A> where ST: DeepView, A: ByteLen<ST> {
+    fn length(&self, v: Option<ST>) -> (len: usize) {
+        match v {
+            Some(vv) => self.0.length(vv),
+            None => 0,
+        }
+    }
+}
+
 impl<I, A, B> Parser<I> for super::Optional<A, B> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
@@ -61,6 +79,28 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).parse(ibuf)
+    }
+}
+
+impl<A, B, STA, STB> Compliance<(Option<STA>, STB)> for super::Optional<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Compliance<STA>,
+    B: Compliance<STB>,
+ {
+    fn check_compliance(&self, v: (Option<STA>, STB)) -> (yes: bool) {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).check_compliance(v)
+    }
+}
+
+impl<A, B, STA, STB> ByteLen<(Option<STA>, STB)> for super::Optional<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: ByteLen<STA>,
+    B: ByteLen<STB>,
+ {
+    fn length(&self, v: (Option<STA>, STB)) -> (len: usize) {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).length(v)
     }
 }
 
