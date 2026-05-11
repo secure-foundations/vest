@@ -403,9 +403,9 @@ pub trait FromToBytes where Self: ViewReflex + core::marker::Sized + Copy {
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
-            old(s)@.len() == s@.len(),
+            old(s)@.len() == final(s)@.len(),
             self.spec_to_le_bytes().len() == size_of::<Self>(),
-            s@ == seq_splice(old(s)@, pos, self.spec_to_le_bytes()),
+            final(s)@ == seq_splice(old(s)@, pos, self.spec_to_le_bytes()),
     ;
 
     /// Converts a sequence of bytes to an integer in big-endian byte order.
@@ -424,9 +424,9 @@ pub trait FromToBytes where Self: ViewReflex + core::marker::Sized + Copy {
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
-            old(s)@.len() == s@.len(),
+            old(s)@.len() == final(s)@.len(),
             self.spec_to_be_bytes().len() == size_of::<Self>(),
-            s@ == seq_splice(old(s)@, pos, self.spec_to_be_bytes()),
+            final(s)@ == seq_splice(old(s)@, pos, self.spec_to_be_bytes()),
     ;
 
     /// Compares two integers for equality.
