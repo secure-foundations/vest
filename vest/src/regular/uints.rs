@@ -1004,9 +1004,9 @@ impl u24 {
             o == self.spec_as_u32(),
     {
         let mut bytes = [0;4];
-        bytes.set(1, self.0[0]);
-        bytes.set(2, self.0[1]);
-        bytes.set(3, self.0[2]);
+        bytes[1] = self.0[0];
+        bytes[2] = self.0[1];
+        bytes[3] = self.0[2];
         u32::ex_from_be_bytes(bytes.as_slice())
     }
 }
