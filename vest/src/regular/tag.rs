@@ -218,7 +218,7 @@ impl<'x, const N: usize> Combinator<'x, &'x [u8], Vec<u8>> for Tag<
         usize,
         SerializeError,
     > {
-        self.0.serialize(&self.0.predicate.0.as_slice(), data, pos)
+        self.0.serialize(&self.0.predicate.0.as_slice(), &mut *data, pos)
     }
 }
 

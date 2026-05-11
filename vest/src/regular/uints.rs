@@ -1103,7 +1103,7 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize(
             &Fixed::<3>,
             &[v.0[2], v.0[1], v.0[0]].as_slice(),
-            data,
+            &mut *data,
             pos,
         )
     }
@@ -1203,7 +1203,7 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), data, pos)
+        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), &mut *data, pos)
     }
 }
 
