@@ -28,7 +28,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -192,7 +192,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AlertLevelCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type AlertLevelCombinatorAlias = TryMap<U8, AlertLevelMapper>;
 
@@ -236,14 +236,14 @@ pub fn serialize_alert_level<'a>(v: <AlertLevelCombinator as Combinator<'a, &'a 
         spec_alert_level().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_alert_level().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_alert_level().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_alert_level().spec_serialize(v@))
         },
 {
     let combinator = alert_level();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn alert_level_len<'a>(v: <AlertLevelCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -310,7 +310,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EmptyCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EmptyCombinatorAlias = bytes::Fixed<0>;
 
@@ -354,14 +354,14 @@ pub fn serialize_empty<'a>(v: <EmptyCombinator as Combinator<'a, &'a [u8], Vec<u
         spec_empty().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_empty().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_empty().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_empty().spec_serialize(v@))
         },
 {
     let combinator = empty();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn empty_len<'a>(v: <EmptyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -502,7 +502,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque0FfffCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque0FfffCombinatorAlias = Mapped<Pair<U16Be, bytes::Variable, Opaque0FfffCont0>, Opaque0FfffMapper>;
 
@@ -569,14 +569,14 @@ pub fn serialize_opaque_0_ffff<'a>(v: <Opaque0FfffCombinator as Combinator<'a, &
         spec_opaque_0_ffff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_0_ffff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_0_ffff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_0_ffff().spec_serialize(v@))
         },
 {
     let combinator = opaque_0_ffff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_0_ffff_len<'a>(v: <Opaque0FfffCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -674,7 +674,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OcspExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OcspExtensionsCombinatorAlias = Opaque0FfffCombinator;
 
@@ -718,14 +718,14 @@ pub fn serialize_ocsp_extensions<'a>(v: <OcspExtensionsCombinator as Combinator<
         spec_ocsp_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_ocsp_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_ocsp_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_ocsp_extensions().spec_serialize(v@))
         },
 {
     let combinator = ocsp_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn ocsp_extensions_len<'a>(v: <OcspExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -846,7 +846,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ExtensionTypeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ExtensionTypeCombinatorAlias = U16Be;
 
@@ -890,14 +890,14 @@ pub fn serialize_extension_type<'a>(v: <ExtensionTypeCombinator as Combinator<'a
         spec_extension_type().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_extension_type().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_extension_type().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_extension_type().spec_serialize(v@))
         },
 {
     let combinator = extension_type();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn extension_type_len<'a>(v: <ExtensionTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1000,7 +1000,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SignatureSchemeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SignatureSchemeCombinatorAlias = U16Be;
 
@@ -1044,14 +1044,14 @@ pub fn serialize_signature_scheme<'a>(v: <SignatureSchemeCombinator as Combinato
         spec_signature_scheme().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_signature_scheme().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_signature_scheme().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_signature_scheme().spec_serialize(v@))
         },
 {
     let combinator = signature_scheme();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn signature_scheme_len<'a>(v: <SignatureSchemeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1212,7 +1212,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SignatureSchemeListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SignatureSchemeListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate15206902916018849611>, AndThen<bytes::Variable, Repeat<SignatureSchemeCombinator>>, SignatureSchemeListCont0>, SignatureSchemeListMapper>;
 
@@ -1279,14 +1279,14 @@ pub fn serialize_signature_scheme_list<'a>(v: <SignatureSchemeListCombinator as 
         spec_signature_scheme_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_signature_scheme_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_signature_scheme_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_signature_scheme_list().spec_serialize(v@))
         },
 {
     let combinator = signature_scheme_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn signature_scheme_list_len<'a>(v: <SignatureSchemeListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1478,7 +1478,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque1FfffCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque1FfffCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate17626095872143391426>, bytes::Variable, Opaque1FfffCont0>, Opaque1FfffMapper>;
 
@@ -1545,14 +1545,14 @@ pub fn serialize_opaque_1_ffff<'a>(v: <Opaque1FfffCombinator as Combinator<'a, &
         spec_opaque_1_ffff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_1_ffff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_1_ffff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_1_ffff().spec_serialize(v@))
         },
 {
     let combinator = opaque_1_ffff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_1_ffff_len<'a>(v: <Opaque1FfffCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1650,7 +1650,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DistinguishedNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type DistinguishedNameCombinatorAlias = Opaque1FfffCombinator;
 
@@ -1694,14 +1694,14 @@ pub fn serialize_distinguished_name<'a>(v: <DistinguishedNameCombinator as Combi
         spec_distinguished_name().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_distinguished_name().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_distinguished_name().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_distinguished_name().spec_serialize(v@))
         },
 {
     let combinator = distinguished_name();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn distinguished_name_len<'a>(v: <DistinguishedNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1862,7 +1862,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateAuthoritiesExtensionCo
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateAuthoritiesExtensionCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate7402808336413996182>, AndThen<bytes::Variable, Repeat<DistinguishedNameCombinator>>, CertificateAuthoritiesExtensionCont0>, CertificateAuthoritiesExtensionMapper>;
 
@@ -1929,14 +1929,14 @@ pub fn serialize_certificate_authorities_extension<'a>(v: <CertificateAuthoritie
         spec_certificate_authorities_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_authorities_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_authorities_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_authorities_extension().spec_serialize(v@))
         },
 {
     let combinator = certificate_authorities_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_authorities_extension_len<'a>(v: <CertificateAuthoritiesExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2034,7 +2034,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ResponderIdCombinatorAlias = Opaque1FfffCombinator;
 
@@ -2078,14 +2078,14 @@ pub fn serialize_responder_id<'a>(v: <ResponderIdCombinator as Combinator<'a, &'
         spec_responder_id().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_responder_id().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_responder_id().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_responder_id().spec_serialize(v@))
         },
 {
     let combinator = responder_id();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn responder_id_len<'a>(v: <ResponderIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2226,7 +2226,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ResponderIdListCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<ResponderIdCombinator>>, ResponderIdListCont0>, ResponderIdListMapper>;
 
@@ -2293,14 +2293,14 @@ pub fn serialize_responder_id_list<'a>(v: <ResponderIdListCombinator as Combinat
         spec_responder_id_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_responder_id_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_responder_id_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_responder_id_list().spec_serialize(v@))
         },
 {
     let combinator = responder_id_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn responder_id_list_len<'a>(v: <ResponderIdListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2479,7 +2479,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OscpStatusRequestCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OscpStatusRequestCombinatorAlias = Mapped<OscpStatusRequestCombinator1, OscpStatusRequestMapper>;
 
@@ -2531,14 +2531,14 @@ pub fn serialize_oscp_status_request<'a>(v: <OscpStatusRequestCombinator as Comb
         spec_oscp_status_request().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_oscp_status_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_oscp_status_request().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_oscp_status_request().spec_serialize(v@))
         },
 {
     let combinator = oscp_status_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn oscp_status_request_len<'a>(v: <OscpStatusRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2687,7 +2687,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateStatusRequestCombinato
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateStatusRequestCombinatorAlias = Mapped<CertificateStatusRequestCombinator1, CertificateStatusRequestMapper>;
 
@@ -2739,14 +2739,14 @@ pub fn serialize_certificate_status_request<'a>(v: <CertificateStatusRequestComb
         spec_certificate_status_request().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_status_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_status_request().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_status_request().spec_serialize(v@))
         },
 {
     let combinator = certificate_status_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_status_request_len<'a>(v: <CertificateStatusRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2813,7 +2813,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SerializedSctCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SerializedSctCombinatorAlias = Opaque1FfffCombinator;
 
@@ -2857,14 +2857,14 @@ pub fn serialize_serialized_sct<'a>(v: <SerializedSctCombinator as Combinator<'a
         spec_serialized_sct().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_serialized_sct().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_serialized_sct().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_serialized_sct().spec_serialize(v@))
         },
 {
     let combinator = serialized_sct();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn serialized_sct_len<'a>(v: <SerializedSctCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3025,7 +3025,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SignedCertificateTimestampListCom
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SignedCertificateTimestampListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate16977634203518580913>, AndThen<bytes::Variable, Repeat<SerializedSctCombinator>>, SignedCertificateTimestampListCont0>, SignedCertificateTimestampListMapper>;
 
@@ -3092,14 +3092,14 @@ pub fn serialize_signed_certificate_timestamp_list<'a>(v: <SignedCertificateTime
         spec_signed_certificate_timestamp_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_signed_certificate_timestamp_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_signed_certificate_timestamp_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_signed_certificate_timestamp_list().spec_serialize(v@))
         },
 {
     let combinator = signed_certificate_timestamp_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn signed_certificate_timestamp_list_len<'a>(v: <SignedCertificateTimestampListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3291,7 +3291,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque1FfCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque1FfCombinatorAlias = Mapped<Pair<Refined<U8, Predicate3651688686135228051>, bytes::Variable, Opaque1FfCont0>, Opaque1FfMapper>;
 
@@ -3358,14 +3358,14 @@ pub fn serialize_opaque_1_ff<'a>(v: <Opaque1FfCombinator as Combinator<'a, &'a [
         spec_opaque_1_ff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_1_ff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_1_ff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_1_ff().spec_serialize(v@))
         },
 {
     let combinator = opaque_1_ff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_1_ff_len<'a>(v: <Opaque1FfCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3544,7 +3544,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OidFilterCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OidFilterCombinatorAlias = Mapped<OidFilterCombinator1, OidFilterMapper>;
 
@@ -3596,14 +3596,14 @@ pub fn serialize_oid_filter<'a>(v: <OidFilterCombinator as Combinator<'a, &'a [u
         spec_oid_filter().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_oid_filter().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_oid_filter().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_oid_filter().spec_serialize(v@))
         },
 {
     let combinator = oid_filter();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn oid_filter_len<'a>(v: <OidFilterCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3744,7 +3744,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OidFilterExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OidFilterExtensionCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<OidFilterCombinator>>, OidFilterExtensionCont0>, OidFilterExtensionMapper>;
 
@@ -3811,14 +3811,14 @@ pub fn serialize_oid_filter_extension<'a>(v: <OidFilterExtensionCombinator as Co
         spec_oid_filter_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_oid_filter_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_oid_filter_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_oid_filter_extension().spec_serialize(v@))
         },
 {
     let combinator = oid_filter_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn oid_filter_extension_len<'a>(v: <OidFilterExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4098,7 +4098,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateRequestExtensionExtens
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateRequestExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<CertificateRequestExtensionExtensionDataCombinator6, CertificateRequestExtensionExtensionDataMapper>>;
 
@@ -4148,14 +4148,14 @@ pub fn serialize_certificate_request_extension_extension_data<'a>(v: <Certificat
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_request_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_request_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_request_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
     let combinator = certificate_request_extension_extension_data( ext_len, extension_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn certificate_request_extension_extension_data_len<'a>(v: <CertificateRequestExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
@@ -4300,7 +4300,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateRequestExtensionCombin
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateRequestExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, CertificateRequestExtensionCont1>, CertificateRequestExtensionExtensionDataCombinator, CertificateRequestExtensionCont0>, CertificateRequestExtensionMapper>;
 
@@ -4382,14 +4382,14 @@ pub fn serialize_certificate_request_extension<'a>(v: <CertificateRequestExtensi
         spec_certificate_request_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_request_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_request_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_request_extension().spec_serialize(v@))
         },
 {
     let combinator = certificate_request_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_request_extension_len<'a>(v: <CertificateRequestExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4522,7 +4522,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NameTypeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NameTypeCombinatorAlias = U8;
 
@@ -4566,14 +4566,14 @@ pub fn serialize_name_type<'a>(v: <NameTypeCombinator as Combinator<'a, &'a [u8]
         spec_name_type().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_name_type().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_name_type().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_name_type().spec_serialize(v@))
         },
 {
     let combinator = name_type();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn name_type_len<'a>(v: <NameTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4734,7 +4734,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SessionIdCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SessionIdCombinatorAlias = Mapped<Pair<Refined<U8, Predicate14254733753739482027>, bytes::Variable, SessionIdCont0>, SessionIdMapper>;
 
@@ -4801,14 +4801,14 @@ pub fn serialize_session_id<'a>(v: <SessionIdCombinator as Combinator<'a, &'a [u
         spec_session_id().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_session_id().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_session_id().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_session_id().spec_serialize(v@))
         },
 {
     let combinator = session_id();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn session_id_len<'a>(v: <SessionIdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4916,7 +4916,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CipherSuiteCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CipherSuiteCombinatorAlias = U16Be;
 
@@ -4960,14 +4960,14 @@ pub fn serialize_cipher_suite<'a>(v: <CipherSuiteCombinator as Combinator<'a, &'
         spec_cipher_suite().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_cipher_suite().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_cipher_suite().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_cipher_suite().spec_serialize(v@))
         },
 {
     let combinator = cipher_suite();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn cipher_suite_len<'a>(v: <CipherSuiteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5044,7 +5044,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProtocolVersionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ProtocolVersionCombinatorAlias = U16Be;
 
@@ -5088,14 +5088,14 @@ pub fn serialize_protocol_version<'a>(v: <ProtocolVersionCombinator as Combinato
         spec_protocol_version().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_protocol_version().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_protocol_version().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_protocol_version().spec_serialize(v@))
         },
 {
     let combinator = protocol_version();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn protocol_version_len<'a>(v: <ProtocolVersionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5159,7 +5159,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SupportedVersionsServerCombinator
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SupportedVersionsServerCombinatorAlias = ProtocolVersionCombinator;
 
@@ -5203,14 +5203,14 @@ pub fn serialize_supported_versions_server<'a>(v: <SupportedVersionsServerCombin
         spec_supported_versions_server().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_supported_versions_server().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_supported_versions_server().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_supported_versions_server().spec_serialize(v@))
         },
 {
     let combinator = supported_versions_server();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn supported_versions_server_len<'a>(v: <SupportedVersionsServerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5277,7 +5277,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CookieCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CookieCombinatorAlias = Opaque1FfffCombinator;
 
@@ -5321,14 +5321,14 @@ pub fn serialize_cookie<'a>(v: <CookieCombinator as Combinator<'a, &'a [u8], Vec
         spec_cookie().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_cookie().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_cookie().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_cookie().spec_serialize(v@))
         },
 {
     let combinator = cookie();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn cookie_len<'a>(v: <CookieCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5459,7 +5459,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NamedGroupCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NamedGroupCombinatorAlias = U16Be;
 
@@ -5503,14 +5503,14 @@ pub fn serialize_named_group<'a>(v: <NamedGroupCombinator as Combinator<'a, &'a 
         spec_named_group().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_named_group().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_named_group().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_named_group().spec_serialize(v@))
         },
 {
     let combinator = named_group();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn named_group_len<'a>(v: <NamedGroupCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -5711,76 +5711,76 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HelloRetryExtensionExtensionDataC
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HelloRetryExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<HelloRetryExtensionExtensionDataCombinator3, HelloRetryExtensionExtensionDataMapper>>;
 
 
-pub open spec fn spec_hello_retry_extension_extension_data(extension_type: u16, ext_len: u16) -> SpecHelloRetryExtensionExtensionDataCombinator {
+pub open spec fn spec_hello_retry_extension_extension_data(ext_len: u16, extension_type: u16) -> SpecHelloRetryExtensionExtensionDataCombinator {
     SpecHelloRetryExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::spec_from(ext_len)) as usize), Mapped { inner: Choice(Cond { cond: extension_type == ExtensionType::SPEC_SupportedVersions, inner: spec_supported_versions_server() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_Cookie, inner: spec_cookie() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_KeyShare, inner: spec_named_group() }, Cond { cond: !(extension_type == ExtensionType::SPEC_SupportedVersions || extension_type == ExtensionType::SPEC_Cookie || extension_type == ExtensionType::SPEC_KeyShare), inner: bytes::Variable((usize::spec_from(ext_len)) as usize) }))), mapper: HelloRetryExtensionExtensionDataMapper }))
 }
 
-pub fn hello_retry_extension_extension_data<'a>(extension_type: u16, ext_len: u16) -> (o: HelloRetryExtensionExtensionDataCombinator)
+pub fn hello_retry_extension_extension_data<'a>(ext_len: u16, extension_type: u16) -> (o: HelloRetryExtensionExtensionDataCombinator)
     requires
         spec_extension_type().wf(extension_type@),
 
-    ensures o@ == spec_hello_retry_extension_extension_data(extension_type@, ext_len@),
+    ensures o@ == spec_hello_retry_extension_extension_data(ext_len@, extension_type@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = HelloRetryExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::ex_from(ext_len)) as usize), Mapped { inner: HelloRetryExtensionExtensionDataCombinator3(Choice::new(Cond { cond: extension_type == ExtensionType::SupportedVersions, inner: supported_versions_server() }, HelloRetryExtensionExtensionDataCombinator2(Choice::new(Cond { cond: extension_type == ExtensionType::Cookie, inner: cookie() }, HelloRetryExtensionExtensionDataCombinator1(Choice::new(Cond { cond: extension_type == ExtensionType::KeyShare, inner: named_group() }, Cond { cond: !(extension_type == ExtensionType::SupportedVersions || extension_type == ExtensionType::Cookie || extension_type == ExtensionType::KeyShare), inner: bytes::Variable((usize::ex_from(ext_len)) as usize) })))))), mapper: HelloRetryExtensionExtensionDataMapper }));
     // assert({
-    //     &&& combinator@ == spec_hello_retry_extension_extension_data(extension_type@, ext_len@)
+    //     &&& combinator@ == spec_hello_retry_extension_extension_data(ext_len@, extension_type@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_hello_retry_extension_extension_data<'a>(input: &'a [u8], extension_type: u16, ext_len: u16) -> (res: PResult<<HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_hello_retry_extension_extension_data<'a>(input: &'a [u8], ext_len: u16, extension_type: u16) -> (res: PResult<<HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) == Some((n as int, v@)),
-        spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) == Some((n as int, v@)),
+        spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None,
-        spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None,
+        spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = hello_retry_extension_extension_data( extension_type, ext_len );
+    let combinator = hello_retry_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_hello_retry_extension_extension_data<'a>(v: <HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, extension_type: u16, ext_len: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_hello_retry_extension_extension_data<'a>(v: <HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ext_len: u16, extension_type: u16) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_hello_retry_extension_extension_data(extension_type@, ext_len@).wf(v@),
+        spec_hello_retry_extension_extension_data(ext_len@, extension_type@).wf(v@),
         spec_extension_type().wf(extension_type@),
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@))
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
-    let combinator = hello_retry_extension_extension_data( extension_type, ext_len );
-    combinator.serialize(v, data, pos)
+    let combinator = hello_retry_extension_extension_data( ext_len, extension_type );
+    combinator.serialize(v, &mut *data, pos)
 }
 
-pub fn hello_retry_extension_extension_data_len<'a>(v: <HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, extension_type: u16, ext_len: u16) -> (serialize_len: usize)
+pub fn hello_retry_extension_extension_data_len<'a>(v: <HelloRetryExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
     requires
-        spec_hello_retry_extension_extension_data(extension_type@, ext_len@).wf(v@),
-        spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len() <= usize::MAX,
+        spec_hello_retry_extension_extension_data(ext_len@, extension_type@).wf(v@),
+        spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        serialize_len == spec_hello_retry_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len(),
+        serialize_len == spec_hello_retry_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len(),
 {
-    let combinator = hello_retry_extension_extension_data( extension_type, ext_len );
+    let combinator = hello_retry_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -5913,7 +5913,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HelloRetryExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HelloRetryExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, HelloRetryExtensionCont1>, HelloRetryExtensionExtensionDataCombinator, HelloRetryExtensionCont0>, HelloRetryExtensionMapper>;
 
@@ -5943,7 +5943,7 @@ impl View for HelloRetryExtensionCont1 {
 
 pub open spec fn spec_hello_retry_extension_cont0(deps: (u16, u16)) -> SpecHelloRetryExtensionExtensionDataCombinator {
     let (extension_type, ext_len) = deps;
-    spec_hello_retry_extension_extension_data(extension_type, ext_len)
+    spec_hello_retry_extension_extension_data(ext_len, extension_type)
 }
 
 impl View for HelloRetryExtensionCont0 {
@@ -5995,14 +5995,14 @@ pub fn serialize_hello_retry_extension<'a>(v: <HelloRetryExtensionCombinator as 
         spec_hello_retry_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_hello_retry_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_hello_retry_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_hello_retry_extension().spec_serialize(v@))
         },
 {
     let combinator = hello_retry_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn hello_retry_extension_len<'a>(v: <HelloRetryExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -6069,13 +6069,13 @@ impl<'a, 'b, 'x> Continuation<HelloRetryExtensionCont0Input<'a, 'b, 'x>> for Hel
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                hello_retry_extension_extension_data(extension_type, ext_len)
+                hello_retry_extension_extension_data(ext_len, extension_type)
             }
             POrSType::S(deps) => {
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                hello_retry_extension_extension_data(extension_type, ext_len)
+                hello_retry_extension_extension_data(ext_len, extension_type)
             }
         }
     }
@@ -6227,7 +6227,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HelloRetryExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HelloRetryExtensionsCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate14496530480760116989>, AndThen<bytes::Variable, Repeat<HelloRetryExtensionCombinator>>, HelloRetryExtensionsCont0>, HelloRetryExtensionsMapper>;
 
@@ -6294,14 +6294,14 @@ pub fn serialize_hello_retry_extensions<'a>(v: <HelloRetryExtensionsCombinator a
         spec_hello_retry_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_hello_retry_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_hello_retry_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_hello_retry_extensions().spec_serialize(v@))
         },
 {
     let combinator = hello_retry_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn hello_retry_extensions_len<'a>(v: <HelloRetryExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -6505,7 +6505,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HelloRetryRequestCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HelloRetryRequestCombinatorAlias = Mapped<HelloRetryRequestCombinator3, HelloRetryRequestMapper>;
 
@@ -6557,14 +6557,14 @@ pub fn serialize_hello_retry_request<'a>(v: <HelloRetryRequestCombinator as Comb
         spec_hello_retry_request().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_hello_retry_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_hello_retry_request().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_hello_retry_request().spec_serialize(v@))
         },
 {
     let combinator = hello_retry_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn hello_retry_request_len<'a>(v: <HelloRetryRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -6702,7 +6702,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PreSharedKeyServerExtensionCombin
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PreSharedKeyServerExtensionCombinatorAlias = Mapped<U16Be, PreSharedKeyServerExtensionMapper>;
 
@@ -6754,14 +6754,14 @@ pub fn serialize_pre_shared_key_server_extension<'a>(v: <PreSharedKeyServerExten
         spec_pre_shared_key_server_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_pre_shared_key_server_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_pre_shared_key_server_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_pre_shared_key_server_extension().spec_serialize(v@))
         },
 {
     let combinator = pre_shared_key_server_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn pre_shared_key_server_extension_len<'a>(v: <PreSharedKeyServerExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -6905,7 +6905,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for KeyShareEntryCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type KeyShareEntryCombinatorAlias = Mapped<Pair<Pair<NamedGroupCombinator, Refined<U16Be, Predicate16977634203518580913>, KeyShareEntryCont1>, bytes::Variable, KeyShareEntryCont0>, KeyShareEntryMapper>;
 
@@ -6987,14 +6987,14 @@ pub fn serialize_key_share_entry<'a>(v: <KeyShareEntryCombinator as Combinator<'
         spec_key_share_entry().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_key_share_entry().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_key_share_entry().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_key_share_entry().spec_serialize(v@))
         },
 {
     let combinator = key_share_entry();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn key_share_entry_len<'a>(v: <KeyShareEntryCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -7259,7 +7259,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SeverHelloExtensionExtensionDataC
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SeverHelloExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<SeverHelloExtensionExtensionDataCombinator3, SeverHelloExtensionExtensionDataMapper>>;
 
@@ -7309,14 +7309,14 @@ pub fn serialize_sever_hello_extension_extension_data<'a>(v: <SeverHelloExtensio
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_sever_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_sever_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_sever_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
     let combinator = sever_hello_extension_extension_data( ext_len, extension_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn sever_hello_extension_extension_data_len<'a>(v: <SeverHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
@@ -7461,7 +7461,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SeverHelloExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SeverHelloExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, SeverHelloExtensionCont1>, SeverHelloExtensionExtensionDataCombinator, SeverHelloExtensionCont0>, SeverHelloExtensionMapper>;
 
@@ -7543,14 +7543,14 @@ pub fn serialize_sever_hello_extension<'a>(v: <SeverHelloExtensionCombinator as 
         spec_sever_hello_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_sever_hello_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_sever_hello_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_sever_hello_extension().spec_serialize(v@))
         },
 {
     let combinator = sever_hello_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn sever_hello_extension_len<'a>(v: <SeverHelloExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -7755,7 +7755,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerExtensionsCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate14496530480760116989>, AndThen<bytes::Variable, Repeat<SeverHelloExtensionCombinator>>, ServerExtensionsCont0>, ServerExtensionsMapper>;
 
@@ -7822,14 +7822,14 @@ pub fn serialize_server_extensions<'a>(v: <ServerExtensionsCombinator as Combina
         spec_server_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_extensions().spec_serialize(v@))
         },
 {
     let combinator = server_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_extensions_len<'a>(v: <ServerExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8033,7 +8033,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerHelloCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerHelloCombinatorAlias = Mapped<ServerHelloCombinator3, ServerHelloMapper>;
 
@@ -8085,14 +8085,14 @@ pub fn serialize_server_hello<'a>(v: <ServerHelloCombinator as Combinator<'a, &'
         spec_server_hello().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_hello().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_hello().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_hello().spec_serialize(v@))
         },
 {
     let combinator = server_hello();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_hello_len<'a>(v: <ServerHelloCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8261,7 +8261,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ShOrHrrPayloadCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ShOrHrrPayloadCombinatorAlias = Mapped<ShOrHrrPayloadCombinator1, ShOrHrrPayloadMapper>;
 
@@ -8307,14 +8307,14 @@ pub fn serialize_sh_or_hrr_payload<'a>(v: <ShOrHrrPayloadCombinator as Combinato
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_sh_or_hrr_payload(random@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_sh_or_hrr_payload(random@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_sh_or_hrr_payload(random@).spec_serialize(v@))
         },
 {
     let combinator = sh_or_hrr_payload( random );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn sh_or_hrr_payload_len<'a>(v: <ShOrHrrPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, random: &'a [u8]) -> (serialize_len: usize)
@@ -8459,7 +8459,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ShOrHrrCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ShOrHrrCombinatorAlias = Mapped<Pair<(Refined<U16Be, TagPred<u16>>, bytes::Fixed<32>), ShOrHrrPayloadCombinator, ShOrHrrCont0>, ShOrHrrMapper>;
 
@@ -8526,14 +8526,14 @@ pub fn serialize_sh_or_hrr<'a>(v: <ShOrHrrCombinator as Combinator<'a, &'a [u8],
         spec_sh_or_hrr().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_sh_or_hrr().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_sh_or_hrr().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_sh_or_hrr().spec_serialize(v@))
         },
 {
     let combinator = sh_or_hrr();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn sh_or_hrr_len<'a>(v: <ShOrHrrCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8793,7 +8793,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HandshakeTypeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HandshakeTypeCombinatorAlias = TryMap<U8, HandshakeTypeMapper>;
 
@@ -8837,14 +8837,14 @@ pub fn serialize_handshake_type<'a>(v: <HandshakeTypeCombinator as Combinator<'a
         spec_handshake_type().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_handshake_type().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_handshake_type().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_handshake_type().spec_serialize(v@))
         },
 {
     let combinator = handshake_type();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn handshake_type_len<'a>(v: <HandshakeTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -8985,7 +8985,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CipherSuiteListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CipherSuiteListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate15206902916018849611>, AndThen<bytes::Variable, Repeat<CipherSuiteCombinator>>, CipherSuiteListCont0>, CipherSuiteListMapper>;
 
@@ -9052,14 +9052,14 @@ pub fn serialize_cipher_suite_list<'a>(v: <CipherSuiteListCombinator as Combinat
         spec_cipher_suite_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_cipher_suite_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_cipher_suite_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_cipher_suite_list().spec_serialize(v@))
         },
 {
     let combinator = cipher_suite_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn cipher_suite_list_len<'a>(v: <CipherSuiteListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -9157,7 +9157,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HostNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HostNameCombinatorAlias = Opaque1FfffCombinator;
 
@@ -9201,14 +9201,14 @@ pub fn serialize_host_name<'a>(v: <HostNameCombinator as Combinator<'a, &'a [u8]
         spec_host_name().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_host_name().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_host_name().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_host_name().spec_serialize(v@))
         },
 {
     let combinator = host_name();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn host_name_len<'a>(v: <HostNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -9275,7 +9275,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UnknownNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type UnknownNameCombinatorAlias = Opaque1FfffCombinator;
 
@@ -9319,14 +9319,14 @@ pub fn serialize_unknown_name<'a>(v: <UnknownNameCombinator as Combinator<'a, &'
         spec_unknown_name().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_unknown_name().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_unknown_name().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_unknown_name().spec_serialize(v@))
         },
 {
     let combinator = unknown_name();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn unknown_name_len<'a>(v: <UnknownNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -9495,7 +9495,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerNameNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerNameNameCombinatorAlias = Mapped<ServerNameNameCombinator1, ServerNameNameMapper>;
 
@@ -9545,14 +9545,14 @@ pub fn serialize_server_name_name<'a>(v: <ServerNameNameCombinator as Combinator
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_name_name(name_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_name_name(name_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_name_name(name_type@).spec_serialize(v@))
         },
 {
     let combinator = server_name_name( name_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn server_name_name_len<'a>(v: <ServerNameNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, name_type: u8) -> (serialize_len: usize)
@@ -9694,7 +9694,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerNameCombinatorAlias = Mapped<Pair<NameTypeCombinator, ServerNameNameCombinator, ServerNameCont0>, ServerNameMapper>;
 
@@ -9761,14 +9761,14 @@ pub fn serialize_server_name<'a>(v: <ServerNameCombinator as Combinator<'a, &'a 
         spec_server_name().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_name().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_name().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_name().spec_serialize(v@))
         },
 {
     let combinator = server_name();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_name_len<'a>(v: <ServerNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -9940,7 +9940,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerNameListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerNameListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate16977634203518580913>, AndThen<bytes::Variable, Repeat<ServerNameCombinator>>, ServerNameListCont0>, ServerNameListMapper>;
 
@@ -10007,14 +10007,14 @@ pub fn serialize_server_name_list<'a>(v: <ServerNameListCombinator as Combinator
         spec_server_name_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_name_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_name_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_name_list().spec_serialize(v@))
         },
 {
     let combinator = server_name_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_name_list_len<'a>(v: <ServerNameListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10206,7 +10206,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NamedGroupListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NamedGroupListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate8195707947578446211>, AndThen<bytes::Variable, Repeat<NamedGroupCombinator>>, NamedGroupListCont0>, NamedGroupListMapper>;
 
@@ -10273,14 +10273,14 @@ pub fn serialize_named_group_list<'a>(v: <NamedGroupListCombinator as Combinator
         spec_named_group_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_named_group_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_named_group_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_named_group_list().spec_serialize(v@))
         },
 {
     let combinator = named_group_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn named_group_list_len<'a>(v: <NamedGroupListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10378,7 +10378,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProtocolNameCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ProtocolNameCombinatorAlias = Opaque1FfCombinator;
 
@@ -10422,14 +10422,14 @@ pub fn serialize_protocol_name<'a>(v: <ProtocolNameCombinator as Combinator<'a, 
         spec_protocol_name().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_protocol_name().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_protocol_name().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_protocol_name().spec_serialize(v@))
         },
 {
     let combinator = protocol_name();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn protocol_name_len<'a>(v: <ProtocolNameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10570,7 +10570,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProtocolNameListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ProtocolNameListCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate8195707947578446211>, AndThen<bytes::Variable, Repeat<ProtocolNameCombinator>>, ProtocolNameListCont0>, ProtocolNameListMapper>;
 
@@ -10637,14 +10637,14 @@ pub fn serialize_protocol_name_list<'a>(v: <ProtocolNameListCombinator as Combin
         spec_protocol_name_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_protocol_name_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_protocol_name_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_protocol_name_list().spec_serialize(v@))
         },
 {
     let combinator = protocol_name_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn protocol_name_list_len<'a>(v: <ProtocolNameListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -10836,7 +10836,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SupportedVersionsClientCombinator
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SupportedVersionsClientCombinatorAlias = Mapped<Pair<Refined<U8, Predicate7470776374180795781>, AndThen<bytes::Variable, Repeat<ProtocolVersionCombinator>>, SupportedVersionsClientCont0>, SupportedVersionsClientMapper>;
 
@@ -10903,14 +10903,14 @@ pub fn serialize_supported_versions_client<'a>(v: <SupportedVersionsClientCombin
         spec_supported_versions_client().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_supported_versions_client().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_supported_versions_client().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_supported_versions_client().spec_serialize(v@))
         },
 {
     let combinator = supported_versions_client();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn supported_versions_client_len<'a>(v: <SupportedVersionsClientCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11082,7 +11082,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for KeyShareClientHelloCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type KeyShareClientHelloCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<KeyShareEntryCombinator>>, KeyShareClientHelloCont0>, KeyShareClientHelloMapper>;
 
@@ -11149,14 +11149,14 @@ pub fn serialize_key_share_client_hello<'a>(v: <KeyShareClientHelloCombinator as
         spec_key_share_client_hello().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_key_share_client_hello().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_key_share_client_hello().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_key_share_client_hello().spec_serialize(v@))
         },
 {
     let combinator = key_share_client_hello();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn key_share_client_hello_len<'a>(v: <KeyShareClientHelloCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11258,7 +11258,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskKeyExchangeModeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskKeyExchangeModeCombinatorAlias = U8;
 
@@ -11302,14 +11302,14 @@ pub fn serialize_psk_key_exchange_mode<'a>(v: <PskKeyExchangeModeCombinator as C
         spec_psk_key_exchange_mode().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_key_exchange_mode().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_key_exchange_mode().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_key_exchange_mode().spec_serialize(v@))
         },
 {
     let combinator = psk_key_exchange_mode();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_key_exchange_mode_len<'a>(v: <PskKeyExchangeModeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11470,7 +11470,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskKeyExchangeModesCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskKeyExchangeModesCombinatorAlias = Mapped<Pair<Refined<U8, Predicate13984338198318635021>, AndThen<bytes::Variable, Repeat<PskKeyExchangeModeCombinator>>, PskKeyExchangeModesCont0>, PskKeyExchangeModesMapper>;
 
@@ -11537,14 +11537,14 @@ pub fn serialize_psk_key_exchange_modes<'a>(v: <PskKeyExchangeModesCombinator as
         spec_psk_key_exchange_modes().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_key_exchange_modes().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_key_exchange_modes().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_key_exchange_modes().spec_serialize(v@))
         },
 {
     let combinator = psk_key_exchange_modes();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_key_exchange_modes_len<'a>(v: <PskKeyExchangeModesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11723,7 +11723,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskIdentityCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskIdentityCombinatorAlias = Mapped<PskIdentityCombinator1, PskIdentityMapper>;
 
@@ -11775,14 +11775,14 @@ pub fn serialize_psk_identity<'a>(v: <PskIdentityCombinator as Combinator<'a, &'
         spec_psk_identity().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_identity().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_identity().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_identity().spec_serialize(v@))
         },
 {
     let combinator = psk_identity();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_identity_len<'a>(v: <PskIdentityCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -11943,7 +11943,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskIdentitiesCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskIdentitiesCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate22012019403780218>, AndThen<bytes::Variable, Repeat<PskIdentityCombinator>>, PskIdentitiesCont0>, PskIdentitiesMapper>;
 
@@ -12010,14 +12010,14 @@ pub fn serialize_psk_identities<'a>(v: <PskIdentitiesCombinator as Combinator<'a
         spec_psk_identities().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_identities().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_identities().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_identities().spec_serialize(v@))
         },
 {
     let combinator = psk_identities();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_identities_len<'a>(v: <PskIdentitiesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12209,7 +12209,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskBinderEntryCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskBinderEntryCombinatorAlias = Mapped<Pair<Refined<U8, Predicate12415296748708102903>, bytes::Variable, PskBinderEntryCont0>, PskBinderEntryMapper>;
 
@@ -12276,14 +12276,14 @@ pub fn serialize_psk_binder_entry<'a>(v: <PskBinderEntryCombinator as Combinator
         spec_psk_binder_entry().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_binder_entry().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_binder_entry().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_binder_entry().spec_serialize(v@))
         },
 {
     let combinator = psk_binder_entry();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_binder_entry_len<'a>(v: <PskBinderEntryCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12475,7 +12475,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PskBinderEntriesCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PskBinderEntriesCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate2895184764579107747>, AndThen<bytes::Variable, Repeat<PskBinderEntryCombinator>>, PskBinderEntriesCont0>, PskBinderEntriesMapper>;
 
@@ -12542,14 +12542,14 @@ pub fn serialize_psk_binder_entries<'a>(v: <PskBinderEntriesCombinator as Combin
         spec_psk_binder_entries().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_psk_binder_entries().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_psk_binder_entries().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_psk_binder_entries().spec_serialize(v@))
         },
 {
     let combinator = psk_binder_entries();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn psk_binder_entries_len<'a>(v: <PskBinderEntriesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12728,7 +12728,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OfferedPsksCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OfferedPsksCombinatorAlias = Mapped<OfferedPsksCombinator1, OfferedPsksMapper>;
 
@@ -12780,14 +12780,14 @@ pub fn serialize_offered_psks<'a>(v: <OfferedPsksCombinator as Combinator<'a, &'
         spec_offered_psks().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_offered_psks().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_offered_psks().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_offered_psks().spec_serialize(v@))
         },
 {
     let combinator = offered_psks();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn offered_psks_len<'a>(v: <OfferedPsksCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -12925,7 +12925,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PreSharedKeyClientExtensionCombin
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PreSharedKeyClientExtensionCombinatorAlias = Mapped<OfferedPsksCombinator, PreSharedKeyClientExtensionMapper>;
 
@@ -12977,14 +12977,14 @@ pub fn serialize_pre_shared_key_client_extension<'a>(v: <PreSharedKeyClientExten
         spec_pre_shared_key_client_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_pre_shared_key_client_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_pre_shared_key_client_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_pre_shared_key_client_extension().spec_serialize(v@))
         },
 {
     let combinator = pre_shared_key_client_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn pre_shared_key_client_extension_len<'a>(v: <PreSharedKeyClientExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13059,7 +13059,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MaxFragmentLengthCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type MaxFragmentLengthCombinatorAlias = U8;
 
@@ -13103,14 +13103,14 @@ pub fn serialize_max_fragment_length<'a>(v: <MaxFragmentLengthCombinator as Comb
         spec_max_fragment_length().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_max_fragment_length().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_max_fragment_length().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_max_fragment_length().spec_serialize(v@))
         },
 {
     let combinator = max_fragment_length();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn max_fragment_length_len<'a>(v: <MaxFragmentLengthCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13181,7 +13181,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HeartbeatModeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HeartbeatModeCombinatorAlias = U8;
 
@@ -13225,14 +13225,14 @@ pub fn serialize_heartbeat_mode<'a>(v: <HeartbeatModeCombinator as Combinator<'a
         spec_heartbeat_mode().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_heartbeat_mode().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_heartbeat_mode().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_heartbeat_mode().spec_serialize(v@))
         },
 {
     let combinator = heartbeat_mode();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn heartbeat_mode_len<'a>(v: <HeartbeatModeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13303,7 +13303,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateTypeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateTypeCombinatorAlias = U8;
 
@@ -13347,14 +13347,14 @@ pub fn serialize_certificate_type<'a>(v: <CertificateTypeCombinator as Combinato
         spec_certificate_type().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_type().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_type().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_type().spec_serialize(v@))
         },
 {
     let combinator = certificate_type();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_type_len<'a>(v: <CertificateTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13495,7 +13495,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientCertTypeClientExtensionComb
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientCertTypeClientExtensionCombinatorAlias = Mapped<Pair<Refined<U8, Predicate13984338198318635021>, AndThen<bytes::Variable, Repeat<CertificateTypeCombinator>>, ClientCertTypeClientExtensionCont0>, ClientCertTypeClientExtensionMapper>;
 
@@ -13562,14 +13562,14 @@ pub fn serialize_client_cert_type_client_extension<'a>(v: <ClientCertTypeClientE
         spec_client_cert_type_client_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_cert_type_client_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_cert_type_client_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_cert_type_client_extension().spec_serialize(v@))
         },
 {
     let combinator = client_cert_type_client_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn client_cert_type_client_extension_len<'a>(v: <ClientCertTypeClientExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -13741,7 +13741,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerCertTypeClientExtensionComb
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerCertTypeClientExtensionCombinatorAlias = Mapped<Pair<Refined<U8, Predicate13984338198318635021>, AndThen<bytes::Variable, Repeat<CertificateTypeCombinator>>, ServerCertTypeClientExtensionCont0>, ServerCertTypeClientExtensionMapper>;
 
@@ -13808,14 +13808,14 @@ pub fn serialize_server_cert_type_client_extension<'a>(v: <ServerCertTypeClientE
         spec_server_cert_type_client_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_cert_type_client_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_cert_type_client_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_cert_type_client_extension().spec_serialize(v@))
         },
 {
     let combinator = server_cert_type_client_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_cert_type_client_extension_len<'a>(v: <ServerCertTypeClientExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -14159,7 +14159,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientHelloExtensionRestCombinato
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientHelloExtensionRestCombinatorAlias = Mapped<ClientHelloExtensionRestCombinator10, ClientHelloExtensionRestMapper>;
 
@@ -14209,14 +14209,14 @@ pub fn serialize_client_hello_extension_rest<'a>(v: <ClientHelloExtensionRestCom
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_hello_extension_rest(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello_extension_rest(ext_len@, extension_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_hello_extension_rest(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
     let combinator = client_hello_extension_rest( ext_len, extension_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn client_hello_extension_rest_len<'a>(v: <ClientHelloExtensionRestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
@@ -14514,76 +14514,76 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientHelloExtensionExtensionData
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientHelloExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<ClientHelloExtensionExtensionDataCombinator9, ClientHelloExtensionExtensionDataMapper>>;
 
 
-pub open spec fn spec_client_hello_extension_extension_data(extension_type: u16, ext_len: u16) -> SpecClientHelloExtensionExtensionDataCombinator {
+pub open spec fn spec_client_hello_extension_extension_data(ext_len: u16, extension_type: u16) -> SpecClientHelloExtensionExtensionDataCombinator {
     SpecClientHelloExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::spec_from(ext_len)) as usize), Mapped { inner: Choice(Cond { cond: extension_type == ExtensionType::SPEC_ServerName, inner: spec_server_name_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SignatureAlgorithms, inner: spec_signature_scheme_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SupportedGroups, inner: spec_named_group_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_StatusRequest, inner: spec_certificate_status_request() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_ApplicationLayerProtocolNegotiation, inner: spec_protocol_name_list() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_SupportedVersions, inner: spec_supported_versions_client() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_KeyShare, inner: spec_key_share_client_hello() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_PskKeyExchangeModes, inner: spec_psk_key_exchange_modes() }, Choice(Cond { cond: extension_type == ExtensionType::SPEC_PreSharedKey, inner: spec_pre_shared_key_client_extension() }, Cond { cond: !(extension_type == ExtensionType::SPEC_ServerName || extension_type == ExtensionType::SPEC_SignatureAlgorithms || extension_type == ExtensionType::SPEC_SupportedGroups || extension_type == ExtensionType::SPEC_StatusRequest || extension_type == ExtensionType::SPEC_ApplicationLayerProtocolNegotiation || extension_type == ExtensionType::SPEC_SupportedVersions || extension_type == ExtensionType::SPEC_KeyShare || extension_type == ExtensionType::SPEC_PskKeyExchangeModes || extension_type == ExtensionType::SPEC_PreSharedKey), inner: spec_client_hello_extension_rest(ext_len, extension_type) }))))))))), mapper: ClientHelloExtensionExtensionDataMapper }))
 }
 
-pub fn client_hello_extension_extension_data<'a>(extension_type: u16, ext_len: u16) -> (o: ClientHelloExtensionExtensionDataCombinator)
+pub fn client_hello_extension_extension_data<'a>(ext_len: u16, extension_type: u16) -> (o: ClientHelloExtensionExtensionDataCombinator)
     requires
         spec_extension_type().wf(extension_type@),
 
-    ensures o@ == spec_client_hello_extension_extension_data(extension_type@, ext_len@),
+    ensures o@ == spec_client_hello_extension_extension_data(ext_len@, extension_type@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = ClientHelloExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::ex_from(ext_len)) as usize), Mapped { inner: ClientHelloExtensionExtensionDataCombinator9(Choice::new(Cond { cond: extension_type == ExtensionType::ServerName, inner: server_name_list() }, ClientHelloExtensionExtensionDataCombinator8(Choice::new(Cond { cond: extension_type == ExtensionType::SignatureAlgorithms, inner: signature_scheme_list() }, ClientHelloExtensionExtensionDataCombinator7(Choice::new(Cond { cond: extension_type == ExtensionType::SupportedGroups, inner: named_group_list() }, ClientHelloExtensionExtensionDataCombinator6(Choice::new(Cond { cond: extension_type == ExtensionType::StatusRequest, inner: certificate_status_request() }, ClientHelloExtensionExtensionDataCombinator5(Choice::new(Cond { cond: extension_type == ExtensionType::ApplicationLayerProtocolNegotiation, inner: protocol_name_list() }, ClientHelloExtensionExtensionDataCombinator4(Choice::new(Cond { cond: extension_type == ExtensionType::SupportedVersions, inner: supported_versions_client() }, ClientHelloExtensionExtensionDataCombinator3(Choice::new(Cond { cond: extension_type == ExtensionType::KeyShare, inner: key_share_client_hello() }, ClientHelloExtensionExtensionDataCombinator2(Choice::new(Cond { cond: extension_type == ExtensionType::PskKeyExchangeModes, inner: psk_key_exchange_modes() }, ClientHelloExtensionExtensionDataCombinator1(Choice::new(Cond { cond: extension_type == ExtensionType::PreSharedKey, inner: pre_shared_key_client_extension() }, Cond { cond: !(extension_type == ExtensionType::ServerName || extension_type == ExtensionType::SignatureAlgorithms || extension_type == ExtensionType::SupportedGroups || extension_type == ExtensionType::StatusRequest || extension_type == ExtensionType::ApplicationLayerProtocolNegotiation || extension_type == ExtensionType::SupportedVersions || extension_type == ExtensionType::KeyShare || extension_type == ExtensionType::PskKeyExchangeModes || extension_type == ExtensionType::PreSharedKey), inner: client_hello_extension_rest(ext_len, extension_type) })))))))))))))))))), mapper: ClientHelloExtensionExtensionDataMapper }));
     // assert({
-    //     &&& combinator@ == spec_client_hello_extension_extension_data(extension_type@, ext_len@)
+    //     &&& combinator@ == spec_client_hello_extension_extension_data(ext_len@, extension_type@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_client_hello_extension_extension_data<'a>(input: &'a [u8], extension_type: u16, ext_len: u16) -> (res: PResult<<ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_client_hello_extension_extension_data<'a>(input: &'a [u8], ext_len: u16, extension_type: u16) -> (res: PResult<<ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) == Some((n as int, v@)),
-        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) == Some((n as int, v@)),
+        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None,
-        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None,
+        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
+    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_client_hello_extension_extension_data<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, extension_type: u16, ext_len: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_client_hello_extension_extension_data<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ext_len: u16, extension_type: u16) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_client_hello_extension_extension_data(extension_type@, ext_len@).wf(v@),
+        spec_client_hello_extension_extension_data(ext_len@, extension_type@).wf(v@),
         spec_extension_type().wf(extension_type@),
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@))
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
-    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
-    combinator.serialize(v, data, pos)
+    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
+    combinator.serialize(v, &mut *data, pos)
 }
 
-pub fn client_hello_extension_extension_data_len<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, extension_type: u16, ext_len: u16) -> (serialize_len: usize)
+pub fn client_hello_extension_extension_data_len<'a>(v: <ClientHelloExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
     requires
-        spec_client_hello_extension_extension_data(extension_type@, ext_len@).wf(v@),
-        spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len() <= usize::MAX,
+        spec_client_hello_extension_extension_data(ext_len@, extension_type@).wf(v@),
+        spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        serialize_len == spec_client_hello_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len(),
+        serialize_len == spec_client_hello_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len(),
 {
-    let combinator = client_hello_extension_extension_data( extension_type, ext_len );
+    let combinator = client_hello_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -14716,7 +14716,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientHelloExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientHelloExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, ClientHelloExtensionCont1>, ClientHelloExtensionExtensionDataCombinator, ClientHelloExtensionCont0>, ClientHelloExtensionMapper>;
 
@@ -14746,7 +14746,7 @@ impl View for ClientHelloExtensionCont1 {
 
 pub open spec fn spec_client_hello_extension_cont0(deps: (u16, u16)) -> SpecClientHelloExtensionExtensionDataCombinator {
     let (extension_type, ext_len) = deps;
-    spec_client_hello_extension_extension_data(extension_type, ext_len)
+    spec_client_hello_extension_extension_data(ext_len, extension_type)
 }
 
 impl View for ClientHelloExtensionCont0 {
@@ -14798,14 +14798,14 @@ pub fn serialize_client_hello_extension<'a>(v: <ClientHelloExtensionCombinator a
         spec_client_hello_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_hello_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_hello_extension().spec_serialize(v@))
         },
 {
     let combinator = client_hello_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn client_hello_extension_len<'a>(v: <ClientHelloExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -14872,13 +14872,13 @@ impl<'a, 'b, 'x> Continuation<ClientHelloExtensionCont0Input<'a, 'b, 'x>> for Cl
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                client_hello_extension_extension_data(extension_type, ext_len)
+                client_hello_extension_extension_data(ext_len, extension_type)
             }
             POrSType::S(deps) => {
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                client_hello_extension_extension_data(extension_type, ext_len)
+                client_hello_extension_extension_data(ext_len, extension_type)
             }
         }
     }
@@ -15030,7 +15030,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientExtensionsCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate9952414989822543135>, AndThen<bytes::Variable, Repeat<ClientHelloExtensionCombinator>>, ClientExtensionsCont0>, ClientExtensionsMapper>;
 
@@ -15097,14 +15097,14 @@ pub fn serialize_client_extensions<'a>(v: <ClientExtensionsCombinator as Combina
         spec_client_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_extensions().spec_serialize(v@))
         },
 {
     let combinator = client_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn client_extensions_len<'a>(v: <ClientExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -15332,7 +15332,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientHelloCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientHelloCombinatorAlias = Mapped<ClientHelloCombinator5, ClientHelloMapper>;
 
@@ -15384,14 +15384,14 @@ pub fn serialize_client_hello<'a>(v: <ClientHelloCombinator as Combinator<'a, &'
         spec_client_hello().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_hello().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_hello().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_hello().spec_serialize(v@))
         },
 {
     let combinator = client_hello();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn client_hello_len<'a>(v: <ClientHelloCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -15532,7 +15532,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque0FfCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque0FfCombinatorAlias = Mapped<Pair<U8, bytes::Variable, Opaque0FfCont0>, Opaque0FfMapper>;
 
@@ -15599,14 +15599,14 @@ pub fn serialize_opaque_0_ff<'a>(v: <Opaque0FfCombinator as Combinator<'a, &'a [
         spec_opaque_0_ff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_0_ff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_0_ff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_0_ff().spec_serialize(v@))
         },
 {
     let combinator = opaque_0_ff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_0_ff_len<'a>(v: <Opaque0FfCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -15775,7 +15775,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EarlyDataIndicationNewSessionTick
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EarlyDataIndicationNewSessionTicketCombinatorAlias = Mapped<U32Be, EarlyDataIndicationNewSessionTicketMapper>;
 
@@ -15827,14 +15827,14 @@ pub fn serialize_early_data_indication_new_session_ticket<'a>(v: <EarlyDataIndic
         spec_early_data_indication_new_session_ticket().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_early_data_indication_new_session_ticket().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_early_data_indication_new_session_ticket().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_early_data_indication_new_session_ticket().spec_serialize(v@))
         },
 {
     let combinator = early_data_indication_new_session_ticket();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn early_data_indication_new_session_ticket_len<'a>(v: <EarlyDataIndicationNewSessionTicketCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -16003,76 +16003,76 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NewSessionTicketExtensionExtensio
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NewSessionTicketExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<NewSessionTicketExtensionExtensionDataCombinator1, NewSessionTicketExtensionExtensionDataMapper>>;
 
 
-pub open spec fn spec_new_session_ticket_extension_extension_data(extension_type: u16, ext_len: u16) -> SpecNewSessionTicketExtensionExtensionDataCombinator {
+pub open spec fn spec_new_session_ticket_extension_extension_data(ext_len: u16, extension_type: u16) -> SpecNewSessionTicketExtensionExtensionDataCombinator {
     SpecNewSessionTicketExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::spec_from(ext_len)) as usize), Mapped { inner: Choice(Cond { cond: extension_type == ExtensionType::SPEC_EarlyData, inner: spec_early_data_indication_new_session_ticket() }, Cond { cond: !(extension_type == ExtensionType::SPEC_EarlyData), inner: bytes::Variable((usize::spec_from(ext_len)) as usize) }), mapper: NewSessionTicketExtensionExtensionDataMapper }))
 }
 
-pub fn new_session_ticket_extension_extension_data<'a>(extension_type: u16, ext_len: u16) -> (o: NewSessionTicketExtensionExtensionDataCombinator)
+pub fn new_session_ticket_extension_extension_data<'a>(ext_len: u16, extension_type: u16) -> (o: NewSessionTicketExtensionExtensionDataCombinator)
     requires
         spec_extension_type().wf(extension_type@),
 
-    ensures o@ == spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@),
+    ensures o@ == spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = NewSessionTicketExtensionExtensionDataCombinator(AndThen(bytes::Variable((usize::ex_from(ext_len)) as usize), Mapped { inner: NewSessionTicketExtensionExtensionDataCombinator1(Choice::new(Cond { cond: extension_type == ExtensionType::EarlyData, inner: early_data_indication_new_session_ticket() }, Cond { cond: !(extension_type == ExtensionType::EarlyData), inner: bytes::Variable((usize::ex_from(ext_len)) as usize) })), mapper: NewSessionTicketExtensionExtensionDataMapper }));
     // assert({
-    //     &&& combinator@ == spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@)
+    //     &&& combinator@ == spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@)
     //     &&& combinator@.requires()
     //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
     // });
     combinator
 }
 
-pub fn parse_new_session_ticket_extension_extension_data<'a>(input: &'a [u8], extension_type: u16, ext_len: u16) -> (res: PResult<<NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+pub fn parse_new_session_ticket_extension_extension_data<'a>(input: &'a [u8], ext_len: u16, extension_type: u16) -> (res: PResult<<NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        res matches Ok((n, v)) ==> spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) == Some((n as int, v@)),
-        spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) matches Some((n, v))
+        res matches Ok((n, v)) ==> spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) == Some((n as int, v@)),
+        spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) matches Some((n, v))
             ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None,
-        spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_parse(input@) is None ==> res is Err,
+        res is Err ==> spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None,
+        spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_parse(input@) is None ==> res is Err,
 {
-    let combinator = new_session_ticket_extension_extension_data( extension_type, ext_len );
+    let combinator = new_session_ticket_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
 }
 
-pub fn serialize_new_session_ticket_extension_extension_data<'a>(v: <NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, extension_type: u16, ext_len: u16) -> (o: SResult<usize, SerializeError>)
+pub fn serialize_new_session_ticket_extension_extension_data<'a>(v: <NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, ext_len: u16, extension_type: u16) -> (o: SResult<usize, SerializeError>)
     requires
         pos <= old(data)@.len() <= usize::MAX,
-        spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).wf(v@),
+        spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).wf(v@),
         spec_extension_type().wf(extension_type@),
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@))
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
-    let combinator = new_session_ticket_extension_extension_data( extension_type, ext_len );
-    combinator.serialize(v, data, pos)
+    let combinator = new_session_ticket_extension_extension_data( ext_len, extension_type );
+    combinator.serialize(v, &mut *data, pos)
 }
 
-pub fn new_session_ticket_extension_extension_data_len<'a>(v: <NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, extension_type: u16, ext_len: u16) -> (serialize_len: usize)
+pub fn new_session_ticket_extension_extension_data_len<'a>(v: <NewSessionTicketExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
     requires
-        spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).wf(v@),
-        spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len() <= usize::MAX,
+        spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).wf(v@),
+        spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len() <= usize::MAX,
         spec_extension_type().wf(extension_type@),
 
     ensures
-        serialize_len == spec_new_session_ticket_extension_extension_data(extension_type@, ext_len@).spec_serialize(v@).len(),
+        serialize_len == spec_new_session_ticket_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len(),
 {
-    let combinator = new_session_ticket_extension_extension_data( extension_type, ext_len );
+    let combinator = new_session_ticket_extension_extension_data( ext_len, extension_type );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -16205,7 +16205,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NewSessionTicketExtensionCombinat
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NewSessionTicketExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, NewSessionTicketExtensionCont1>, NewSessionTicketExtensionExtensionDataCombinator, NewSessionTicketExtensionCont0>, NewSessionTicketExtensionMapper>;
 
@@ -16235,7 +16235,7 @@ impl View for NewSessionTicketExtensionCont1 {
 
 pub open spec fn spec_new_session_ticket_extension_cont0(deps: (u16, u16)) -> SpecNewSessionTicketExtensionExtensionDataCombinator {
     let (extension_type, ext_len) = deps;
-    spec_new_session_ticket_extension_extension_data(extension_type, ext_len)
+    spec_new_session_ticket_extension_extension_data(ext_len, extension_type)
 }
 
 impl View for NewSessionTicketExtensionCont0 {
@@ -16287,14 +16287,14 @@ pub fn serialize_new_session_ticket_extension<'a>(v: <NewSessionTicketExtensionC
         spec_new_session_ticket_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_new_session_ticket_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extension().spec_serialize(v@))
         },
 {
     let combinator = new_session_ticket_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn new_session_ticket_extension_len<'a>(v: <NewSessionTicketExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -16361,13 +16361,13 @@ impl<'a, 'b, 'x> Continuation<NewSessionTicketExtensionCont0Input<'a, 'b, 'x>> f
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                new_session_ticket_extension_extension_data(extension_type, ext_len)
+                new_session_ticket_extension_extension_data(ext_len, extension_type)
             }
             POrSType::S(deps) => {
                 let (extension_type, ext_len) = deps;
                 let extension_type = *extension_type;
                 let ext_len = *ext_len;
-                new_session_ticket_extension_extension_data(extension_type, ext_len)
+                new_session_ticket_extension_extension_data(ext_len, extension_type)
             }
         }
     }
@@ -16519,7 +16519,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NewSessionTicketExtensionsCombina
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NewSessionTicketExtensionsCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate14514213152276180162>, AndThen<bytes::Variable, Repeat<NewSessionTicketExtensionCombinator>>, NewSessionTicketExtensionsCont0>, NewSessionTicketExtensionsMapper>;
 
@@ -16586,14 +16586,14 @@ pub fn serialize_new_session_ticket_extensions<'a>(v: <NewSessionTicketExtension
         spec_new_session_ticket_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_new_session_ticket_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_new_session_ticket_extensions().spec_serialize(v@))
         },
 {
     let combinator = new_session_ticket_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn new_session_ticket_extensions_len<'a>(v: <NewSessionTicketExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -16808,7 +16808,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NewSessionTicketCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NewSessionTicketCombinatorAlias = Mapped<NewSessionTicketCombinator4, NewSessionTicketMapper>;
 
@@ -16860,14 +16860,14 @@ pub fn serialize_new_session_ticket<'a>(v: <NewSessionTicketCombinator as Combin
         spec_new_session_ticket().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_new_session_ticket().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_new_session_ticket().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_new_session_ticket().spec_serialize(v@))
         },
 {
     let combinator = new_session_ticket();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn new_session_ticket_len<'a>(v: <NewSessionTicketCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -17148,7 +17148,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EncryptedExtensionExtensionDataCo
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EncryptedExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<EncryptedExtensionExtensionDataCombinator8, EncryptedExtensionExtensionDataMapper>>;
 
@@ -17198,14 +17198,14 @@ pub fn serialize_encrypted_extension_extension_data<'a>(v: <EncryptedExtensionEx
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_encrypted_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_encrypted_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_encrypted_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
     let combinator = encrypted_extension_extension_data( ext_len, extension_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn encrypted_extension_extension_data_len<'a>(v: <EncryptedExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
@@ -17350,7 +17350,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EncryptedExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EncryptedExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, EncryptedExtensionCont1>, EncryptedExtensionExtensionDataCombinator, EncryptedExtensionCont0>, EncryptedExtensionMapper>;
 
@@ -17432,14 +17432,14 @@ pub fn serialize_encrypted_extension<'a>(v: <EncryptedExtensionCombinator as Com
         spec_encrypted_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_encrypted_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_encrypted_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_encrypted_extension().spec_serialize(v@))
         },
 {
     let combinator = encrypted_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn encrypted_extension_len<'a>(v: <EncryptedExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -17644,7 +17644,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EncryptedExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EncryptedExtensionsCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<EncryptedExtensionCombinator>>, EncryptedExtensionsCont0>, EncryptedExtensionsMapper>;
 
@@ -17711,14 +17711,14 @@ pub fn serialize_encrypted_extensions<'a>(v: <EncryptedExtensionsCombinator as C
         spec_encrypted_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_encrypted_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_encrypted_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_encrypted_extensions().spec_serialize(v@))
         },
 {
     let combinator = encrypted_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn encrypted_extensions_len<'a>(v: <EncryptedExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -17910,7 +17910,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque1FfffffCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque1FfffffCombinatorAlias = Mapped<Pair<Refined<U24Be, Predicate15036445817960576151>, bytes::Variable, Opaque1FfffffCont0>, Opaque1FfffffMapper>;
 
@@ -17977,14 +17977,14 @@ pub fn serialize_opaque_1_ffffff<'a>(v: <Opaque1FfffffCombinator as Combinator<'
         spec_opaque_1_ffffff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_1_ffffff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_1_ffffff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_1_ffffff().spec_serialize(v@))
         },
 {
     let combinator = opaque_1_ffffff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_1_ffffff_len<'a>(v: <Opaque1FfffffCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -18082,7 +18082,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OcspResponseCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type OcspResponseCombinatorAlias = Opaque1FfffffCombinator;
 
@@ -18126,14 +18126,14 @@ pub fn serialize_ocsp_response<'a>(v: <OcspResponseCombinator as Combinator<'a, 
         spec_ocsp_response().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_ocsp_response().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_ocsp_response().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_ocsp_response().spec_serialize(v@))
         },
 {
     let combinator = ocsp_response();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn ocsp_response_len<'a>(v: <OcspResponseCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -18282,7 +18282,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateStatusCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateStatusCombinatorAlias = Mapped<CertificateStatusCombinator1, CertificateStatusMapper>;
 
@@ -18334,14 +18334,14 @@ pub fn serialize_certificate_status<'a>(v: <CertificateStatusCombinator as Combi
         spec_certificate_status().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_status().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_status().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_status().spec_serialize(v@))
         },
 {
     let combinator = certificate_status();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_status_len<'a>(v: <CertificateStatusCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -18526,7 +18526,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateExtensionExtensionData
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateExtensionExtensionDataCombinatorAlias = AndThen<bytes::Variable, Mapped<CertificateExtensionExtensionDataCombinator2, CertificateExtensionExtensionDataMapper>>;
 
@@ -18576,14 +18576,14 @@ pub fn serialize_certificate_extension_extension_data<'a>(v: <CertificateExtensi
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_extension_extension_data(ext_len@, extension_type@).spec_serialize(v@))
         },
 {
     let combinator = certificate_extension_extension_data( ext_len, extension_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn certificate_extension_extension_data_len<'a>(v: <CertificateExtensionExtensionDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16, extension_type: u16) -> (serialize_len: usize)
@@ -18728,7 +18728,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateExtensionCombinatorAlias = Mapped<Pair<Pair<ExtensionTypeCombinator, U16Be, CertificateExtensionCont1>, CertificateExtensionExtensionDataCombinator, CertificateExtensionCont0>, CertificateExtensionMapper>;
 
@@ -18810,14 +18810,14 @@ pub fn serialize_certificate_extension<'a>(v: <CertificateExtensionCombinator as
         spec_certificate_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_extension().spec_serialize(v@))
         },
 {
     let combinator = certificate_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_extension_len<'a>(v: <CertificateExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -19022,7 +19022,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateExtensionsCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateExtensionsCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<CertificateExtensionCombinator>>, CertificateExtensionsCont0>, CertificateExtensionsMapper>;
 
@@ -19089,14 +19089,14 @@ pub fn serialize_certificate_extensions<'a>(v: <CertificateExtensionsCombinator 
         spec_certificate_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_extensions().spec_serialize(v@))
         },
 {
     let combinator = certificate_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_extensions_len<'a>(v: <CertificateExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -19275,7 +19275,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateEntryOpaqueCombinator 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateEntryOpaqueCombinatorAlias = Mapped<CertificateEntryOpaqueCombinator1, CertificateEntryOpaqueMapper>;
 
@@ -19327,14 +19327,14 @@ pub fn serialize_certificate_entry_opaque<'a>(v: <CertificateEntryOpaqueCombinat
         spec_certificate_entry_opaque().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_entry_opaque().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_entry_opaque().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_entry_opaque().spec_serialize(v@))
         },
 {
     let combinator = certificate_entry_opaque();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_entry_opaque_len<'a>(v: <CertificateEntryOpaqueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -19475,7 +19475,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateListCombinatorAlias = Mapped<Pair<U24Be, AndThen<bytes::Variable, Repeat<CertificateEntryOpaqueCombinator>>, CertificateListCont0>, CertificateListMapper>;
 
@@ -19542,14 +19542,14 @@ pub fn serialize_certificate_list<'a>(v: <CertificateListCombinator as Combinato
         spec_certificate_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_list().spec_serialize(v@))
         },
 {
     let combinator = certificate_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_list_len<'a>(v: <CertificateListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -19728,7 +19728,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateCombinatorAlias = Mapped<CertificateCombinator1, CertificateMapper>;
 
@@ -19780,14 +19780,14 @@ pub fn serialize_certificate<'a>(v: <CertificateCombinator as Combinator<'a, &'a
         spec_certificate().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate().spec_serialize(v@))
         },
 {
     let combinator = certificate();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_len<'a>(v: <CertificateCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -19928,7 +19928,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateRequestExtensionsCombi
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateRequestExtensionsCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate8195707947578446211>, AndThen<bytes::Variable, Repeat<CertificateRequestExtensionCombinator>>, CertificateRequestExtensionsCont0>, CertificateRequestExtensionsMapper>;
 
@@ -19995,14 +19995,14 @@ pub fn serialize_certificate_request_extensions<'a>(v: <CertificateRequestExtens
         spec_certificate_request_extensions().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_request_extensions().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_request_extensions().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_request_extensions().spec_serialize(v@))
         },
 {
     let combinator = certificate_request_extensions();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_request_extensions_len<'a>(v: <CertificateRequestExtensionsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -20181,7 +20181,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateRequestCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateRequestCombinatorAlias = Mapped<CertificateRequestCombinator1, CertificateRequestMapper>;
 
@@ -20233,14 +20233,14 @@ pub fn serialize_certificate_request<'a>(v: <CertificateRequestCombinator as Com
         spec_certificate_request().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_request().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_request().spec_serialize(v@))
         },
 {
     let combinator = certificate_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_request_len<'a>(v: <CertificateRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -20388,7 +20388,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateVerifyCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateVerifyCombinatorAlias = Mapped<CertificateVerifyCombinator1, CertificateVerifyMapper>;
 
@@ -20440,14 +20440,14 @@ pub fn serialize_certificate_verify<'a>(v: <CertificateVerifyCombinator as Combi
         spec_certificate_verify().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_verify().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_verify().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_verify().spec_serialize(v@))
         },
 {
     let combinator = certificate_verify();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn certificate_verify_len<'a>(v: <CertificateVerifyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -20680,7 +20680,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for FinishedCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type FinishedCombinatorAlias = Mapped<FinishedCombinator5, FinishedMapper>;
 
@@ -20730,14 +20730,14 @@ pub fn serialize_finished<'a>(v: <FinishedCombinator as Combinator<'a, &'a [u8],
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_finished(size@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_finished(size@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_finished(size@).spec_serialize(v@))
         },
 {
     let combinator = finished( size );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn finished_len<'a>(v: <FinishedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, size: u24) -> (serialize_len: usize)
@@ -20911,7 +20911,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for KeyUpdateRequestCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type KeyUpdateRequestCombinatorAlias = TryMap<U8, KeyUpdateRequestMapper>;
 
@@ -20955,14 +20955,14 @@ pub fn serialize_key_update_request<'a>(v: <KeyUpdateRequestCombinator as Combin
         spec_key_update_request().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_key_update_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_key_update_request().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_key_update_request().spec_serialize(v@))
         },
 {
     let combinator = key_update_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn key_update_request_len<'a>(v: <KeyUpdateRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -21100,7 +21100,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for KeyUpdateCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type KeyUpdateCombinatorAlias = Mapped<KeyUpdateRequestCombinator, KeyUpdateMapper>;
 
@@ -21152,14 +21152,14 @@ pub fn serialize_key_update<'a>(v: <KeyUpdateCombinator as Combinator<'a, &'a [u
         spec_key_update().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_key_update().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_key_update().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_key_update().spec_serialize(v@))
         },
 {
     let combinator = key_update();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn key_update_len<'a>(v: <KeyUpdateCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -21456,7 +21456,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HandshakeMsgCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HandshakeMsgCombinatorAlias = AndThen<bytes::Variable, Mapped<HandshakeMsgCombinator9, HandshakeMsgMapper>>;
 
@@ -21506,14 +21506,14 @@ pub fn serialize_handshake_msg<'a>(v: <HandshakeMsgCombinator as Combinator<'a, 
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_handshake_msg(length@, msg_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_handshake_msg(length@, msg_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_handshake_msg(length@, msg_type@).spec_serialize(v@))
         },
 {
     let combinator = handshake_msg( length, msg_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn handshake_msg_len<'a>(v: <HandshakeMsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, length: u24, msg_type: HandshakeType) -> (serialize_len: usize)
@@ -21658,7 +21658,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HandshakeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HandshakeCombinatorAlias = Mapped<Pair<Pair<HandshakeTypeCombinator, U24Be, HandshakeCont1>, HandshakeMsgCombinator, HandshakeCont0>, HandshakeMapper>;
 
@@ -21740,14 +21740,14 @@ pub fn serialize_handshake<'a>(v: <HandshakeCombinator as Combinator<'a, &'a [u8
         spec_handshake().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_handshake().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_handshake().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_handshake().spec_serialize(v@))
         },
 {
     let combinator = handshake();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn handshake_len<'a>(v: <HandshakeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -21950,7 +21950,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ZeroByteCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ZeroByteCombinatorAlias = Mapped<Refined<U8, TagPred<u8>>, ZeroByteMapper>;
 
@@ -22002,14 +22002,14 @@ pub fn serialize_zero_byte<'a>(v: <ZeroByteCombinator as Combinator<'a, &'a [u8]
         spec_zero_byte().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_zero_byte().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_zero_byte().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_zero_byte().spec_serialize(v@))
         },
 {
     let combinator = zero_byte();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn zero_byte_len<'a>(v: <ZeroByteCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -22150,7 +22150,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PaddingExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PaddingExtensionCombinatorAlias = Mapped<Pair<U16Be, AndThen<bytes::Variable, Repeat<ZeroByteCombinator>>, PaddingExtensionCont0>, PaddingExtensionMapper>;
 
@@ -22219,14 +22219,14 @@ pub fn serialize_padding_extension<'a>(v: <PaddingExtensionCombinator as Combina
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_padding_extension(ext_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_padding_extension(ext_len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_padding_extension(ext_len@).spec_serialize(v@))
         },
 {
     let combinator = padding_extension( ext_len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn padding_extension_len<'a>(v: <PaddingExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, ext_len: u16) -> (serialize_len: usize)
@@ -22410,7 +22410,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ExtensionCombinatorAlias = Mapped<ExtensionCombinator1, ExtensionMapper>;
 
@@ -22462,14 +22462,14 @@ pub fn serialize_extension<'a>(v: <ExtensionCombinator as Combinator<'a, &'a [u8
         spec_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_extension().spec_serialize(v@))
         },
 {
     let combinator = extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn extension_len<'a>(v: <ExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -22607,7 +22607,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ClientCertTypeServerExtensionComb
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ClientCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ClientCertTypeServerExtensionMapper>;
 
@@ -22659,14 +22659,14 @@ pub fn serialize_client_cert_type_server_extension<'a>(v: <ClientCertTypeServerE
         spec_client_cert_type_server_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_client_cert_type_server_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_client_cert_type_server_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_client_cert_type_server_extension().spec_serialize(v@))
         },
 {
     let combinator = client_cert_type_server_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn client_cert_type_server_extension_len<'a>(v: <ClientCertTypeServerExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -22860,7 +22860,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ContentTypeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ContentTypeCombinatorAlias = TryMap<U8, ContentTypeMapper>;
 
@@ -22904,14 +22904,14 @@ pub fn serialize_content_type<'a>(v: <ContentTypeCombinator as Combinator<'a, &'
         spec_content_type().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_content_type().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_content_type().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_content_type().spec_serialize(v@))
         },
 {
     let combinator = content_type();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn content_type_len<'a>(v: <ContentTypeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -23071,7 +23071,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TlsPlaintextCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type TlsPlaintextCombinatorAlias = Mapped<TlsPlaintextCombinator2, TlsPlaintextMapper>;
 
@@ -23123,14 +23123,14 @@ pub fn serialize_tls_plaintext<'a>(v: <TlsPlaintextCombinator as Combinator<'a, 
         spec_tls_plaintext().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_tls_plaintext().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tls_plaintext().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_tls_plaintext().spec_serialize(v@))
         },
 {
     let combinator = tls_plaintext();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn tls_plaintext_len<'a>(v: <TlsPlaintextCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -23478,7 +23478,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AlertDescriptionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type AlertDescriptionCombinatorAlias = TryMap<U8, AlertDescriptionMapper>;
 
@@ -23522,14 +23522,14 @@ pub fn serialize_alert_description<'a>(v: <AlertDescriptionCombinator as Combina
         spec_alert_description().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_alert_description().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_alert_description().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_alert_description().spec_serialize(v@))
         },
 {
     let combinator = alert_description();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn alert_description_len<'a>(v: <AlertDescriptionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -23596,7 +23596,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SrtpProtectionProfileCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SrtpProtectionProfileCombinatorAlias = bytes::Fixed<2>;
 
@@ -23640,14 +23640,14 @@ pub fn serialize_srtp_protection_profile<'a>(v: <SrtpProtectionProfileCombinator
         spec_srtp_protection_profile().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_srtp_protection_profile().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_srtp_protection_profile().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_srtp_protection_profile().spec_serialize(v@))
         },
 {
     let combinator = srtp_protection_profile();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn srtp_protection_profile_len<'a>(v: <SrtpProtectionProfileCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -23788,7 +23788,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SrtpProtectionProfilesCombinator 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SrtpProtectionProfilesCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate8195707947578446211>, AndThen<bytes::Variable, Repeat<SrtpProtectionProfileCombinator>>, SrtpProtectionProfilesCont0>, SrtpProtectionProfilesMapper>;
 
@@ -23855,14 +23855,14 @@ pub fn serialize_srtp_protection_profiles<'a>(v: <SrtpProtectionProfilesCombinat
         spec_srtp_protection_profiles().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_srtp_protection_profiles().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_srtp_protection_profiles().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_srtp_protection_profiles().spec_serialize(v@))
         },
 {
     let combinator = srtp_protection_profiles();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn srtp_protection_profiles_len<'a>(v: <SrtpProtectionProfilesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -24041,7 +24041,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UseSrtpDataCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type UseSrtpDataCombinatorAlias = Mapped<UseSrtpDataCombinator1, UseSrtpDataMapper>;
 
@@ -24093,14 +24093,14 @@ pub fn serialize_use_srtp_data<'a>(v: <UseSrtpDataCombinator as Combinator<'a, &
         spec_use_srtp_data().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_use_srtp_data().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_use_srtp_data().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_use_srtp_data().spec_serialize(v@))
         },
 {
     let combinator = use_srtp_data();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn use_srtp_data_len<'a>(v: <UseSrtpDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -24167,7 +24167,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for FinishedOpaqueCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type FinishedOpaqueCombinatorAlias = bytes::Variable;
 
@@ -24213,14 +24213,14 @@ pub fn serialize_finished_opaque<'a>(v: <FinishedOpaqueCombinator as Combinator<
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_finished_opaque(digest_size@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_finished_opaque(digest_size@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_finished_opaque(digest_size@).spec_serialize(v@))
         },
 {
     let combinator = finished_opaque( digest_size );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn finished_opaque_len<'a>(v: <FinishedOpaqueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, digest_size: u24) -> (serialize_len: usize)
@@ -24381,7 +24381,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque2FfffCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque2FfffCombinatorAlias = Mapped<Pair<Refined<U16Be, Predicate3016150102856496288>, bytes::Variable, Opaque2FfffCont0>, Opaque2FfffMapper>;
 
@@ -24448,14 +24448,14 @@ pub fn serialize_opaque_2_ffff<'a>(v: <Opaque2FfffCombinator as Combinator<'a, &
         spec_opaque_2_ffff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_2_ffff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_2_ffff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_2_ffff().spec_serialize(v@))
         },
 {
     let combinator = opaque_2_ffff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_2_ffff_len<'a>(v: <Opaque2FfffCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -24634,7 +24634,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AlertCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type AlertCombinatorAlias = Mapped<AlertCombinator1, AlertMapper>;
 
@@ -24686,14 +24686,14 @@ pub fn serialize_alert<'a>(v: <AlertCombinator as Combinator<'a, &'a [u8], Vec<u
         spec_alert().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_alert().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_alert().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_alert().spec_serialize(v@))
         },
 {
     let combinator = alert();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn alert_len<'a>(v: <AlertCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -24831,7 +24831,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ServerCertTypeServerExtensionComb
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ServerCertTypeServerExtensionCombinatorAlias = Mapped<CertificateTypeCombinator, ServerCertTypeServerExtensionMapper>;
 
@@ -24883,14 +24883,14 @@ pub fn serialize_server_cert_type_server_extension<'a>(v: <ServerCertTypeServerE
         spec_server_cert_type_server_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_server_cert_type_server_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_server_cert_type_server_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_server_cert_type_server_extension().spec_serialize(v@))
         },
 {
     let combinator = server_cert_type_server_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn server_cert_type_server_extension_len<'a>(v: <ServerCertTypeServerExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -24957,7 +24957,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UnknownExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type UnknownExtensionCombinatorAlias = Opaque0FfffCombinator;
 
@@ -25001,14 +25001,14 @@ pub fn serialize_unknown_extension<'a>(v: <UnknownExtensionCombinator as Combina
         spec_unknown_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_unknown_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_unknown_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_unknown_extension().spec_serialize(v@))
         },
 {
     let combinator = unknown_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn unknown_extension_len<'a>(v: <UnknownExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -25087,7 +25087,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DigestSizeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type DigestSizeCombinatorAlias = U24Be;
 
@@ -25131,14 +25131,14 @@ pub fn serialize_digest_size<'a>(v: <DigestSizeCombinator as Combinator<'a, &'a 
         spec_digest_size().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_digest_size().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_digest_size().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_digest_size().spec_serialize(v@))
         },
 {
     let combinator = digest_size();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn digest_size_len<'a>(v: <DigestSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -25276,7 +25276,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HeartbeatExtensionCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HeartbeatExtensionCombinatorAlias = Mapped<HeartbeatModeCombinator, HeartbeatExtensionMapper>;
 
@@ -25328,14 +25328,14 @@ pub fn serialize_heartbeat_extension<'a>(v: <HeartbeatExtensionCombinator as Com
         spec_heartbeat_extension().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_heartbeat_extension().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_heartbeat_extension().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_heartbeat_extension().spec_serialize(v@))
         },
 {
     let combinator = heartbeat_extension();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn heartbeat_extension_len<'a>(v: <HeartbeatExtensionCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -25408,7 +25408,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EcPointFormatCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EcPointFormatCombinatorAlias = U8;
 
@@ -25452,14 +25452,14 @@ pub fn serialize_ec_point_format<'a>(v: <EcPointFormatCombinator as Combinator<'
         spec_ec_point_format().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_ec_point_format().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_ec_point_format().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_ec_point_format().spec_serialize(v@))
         },
 {
     let combinator = ec_point_format();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn ec_point_format_len<'a>(v: <EcPointFormatCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -25600,7 +25600,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for EcPointFormatListCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type EcPointFormatListCombinatorAlias = Mapped<Pair<Refined<U8, Predicate13984338198318635021>, AndThen<bytes::Variable, Repeat<EcPointFormatCombinator>>, EcPointFormatListCont0>, EcPointFormatListMapper>;
 
@@ -25667,14 +25667,14 @@ pub fn serialize_ec_point_format_list<'a>(v: <EcPointFormatListCombinator as Com
         spec_ec_point_format_list().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_ec_point_format_list().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_ec_point_format_list().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_ec_point_format_list().spec_serialize(v@))
         },
 {
     let combinator = ec_point_format_list();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn ec_point_format_list_len<'a>(v: <EcPointFormatListCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -25874,7 +25874,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateEntryDataCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateEntryDataCombinatorAlias = Mapped<CertificateEntryDataCombinator1, CertificateEntryDataMapper>;
 
@@ -25924,14 +25924,14 @@ pub fn serialize_certificate_entry_data<'a>(v: <CertificateEntryDataCombinator a
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_entry_data(cert_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_entry_data(cert_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_entry_data(cert_type@).spec_serialize(v@))
         },
 {
     let combinator = certificate_entry_data( cert_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn certificate_entry_data_len<'a>(v: <CertificateEntryDataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, cert_type: u8) -> (serialize_len: usize)
@@ -26080,7 +26080,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CertificateEntryCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CertificateEntryCombinatorAlias = Mapped<CertificateEntryCombinator1, CertificateEntryMapper>;
 
@@ -26138,14 +26138,14 @@ pub fn serialize_certificate_entry<'a>(v: <CertificateEntryCombinator as Combina
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_certificate_entry(cert_type@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_certificate_entry(cert_type@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_certificate_entry(cert_type@).spec_serialize(v@))
         },
 {
     let combinator = certificate_entry( cert_type );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn certificate_entry_len<'a>(v: <CertificateEntryCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, cert_type: u8) -> (serialize_len: usize)
@@ -26306,7 +26306,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TlsCiphertextCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type TlsCiphertextCombinatorAlias = Mapped<TlsCiphertextCombinator2, TlsCiphertextMapper>;
 
@@ -26358,14 +26358,14 @@ pub fn serialize_tls_ciphertext<'a>(v: <TlsCiphertextCombinator as Combinator<'a
         spec_tls_ciphertext().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_tls_ciphertext().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tls_ciphertext().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_tls_ciphertext().spec_serialize(v@))
         },
 {
     let combinator = tls_ciphertext();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn tls_ciphertext_len<'a>(v: <TlsCiphertextCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -26506,7 +26506,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Opaque0FfffffCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type Opaque0FfffffCombinatorAlias = Mapped<Pair<U24Be, bytes::Variable, Opaque0FfffffCont0>, Opaque0FfffffMapper>;
 
@@ -26573,14 +26573,14 @@ pub fn serialize_opaque_0_ffffff<'a>(v: <Opaque0FfffffCombinator as Combinator<'
         spec_opaque_0_ffffff().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_opaque_0_ffffff().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_opaque_0_ffffff().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_opaque_0_ffffff().spec_serialize(v@))
         },
 {
     let combinator = opaque_0_ffffff();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn opaque_0_ffffff_len<'a>(v: <Opaque0FfffffCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
