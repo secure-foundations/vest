@@ -484,7 +484,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BtcVarint {
         usize,
         SerializeError,
     >) {
-        btc_varint_inner().serialize(v, data, pos)
+        btc_varint_inner().serialize(v, &mut *data, pos)
     }
 }
 

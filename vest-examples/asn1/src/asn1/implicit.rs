@@ -99,7 +99,7 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ImplicitTag<T> where
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        self.1.serialize(v, data, pos)
+        self.1.serialize(v, &mut *data, pos)
     }
 }
 

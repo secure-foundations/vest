@@ -240,8 +240,8 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Optional<C1, C2> where
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let len = match v {
-            (OptionDeep::Some(v1), v2) => (&self.0, &self.1).serialize((v1, v2), data, pos),
-            (OptionDeep::None, v2) => self.1.serialize(v2, data, pos),
+            (OptionDeep::Some(v1), v2) => (&self.0, &self.1).serialize((v1, v2), &mut *data, pos),
+            (OptionDeep::None, v2) => self.1.serialize(v2, &mut *data, pos),
         }?;
 
         proof {

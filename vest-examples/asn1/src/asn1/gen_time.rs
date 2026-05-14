@@ -107,7 +107,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for GeneralizedTime {
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        LengthWrapped(GeneralizedTimeInner).serialize(v, data, pos)
+        LengthWrapped(GeneralizedTimeInner).serialize(v, &mut *data, pos)
     }
 }
 

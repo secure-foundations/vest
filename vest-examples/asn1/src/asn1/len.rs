@@ -214,7 +214,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Length {
         }
 
         data.set(pos, (0x80 + bytes) as u8);
-        let len = VarUInt(bytes as usize).serialize(v as VarUIntResult, data, pos + 1)?;
+        let len = VarUInt(bytes as usize).serialize(v as VarUIntResult, &mut *data, pos + 1)?;
 
         proof {
             lemma_min_num_bytes_unsigned(v as VarUIntResult);

@@ -110,7 +110,7 @@ impl<'a, C> Combinator<'a, &'a [u8], Vec<u8>> for SequenceOf<C> where
 
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
-        ExplicitTag(self.tag(), Repeat(&self.0)).serialize(v, data, pos)
+        ExplicitTag(self.tag(), Repeat(&self.0)).serialize(v, &mut *data, pos)
     }
 }
 

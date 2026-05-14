@@ -433,7 +433,7 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for RepeatN<C> where
             let v = &vs.0[i];
             assert(v@ == _vs[i as int]);
             assert(_vs.take((i + 1) as int).drop_last() == _vs.take(i as int));  // <-- this is the key
-            let l = self.0.serialize(v, data, pos)?;
+            let l = self.0.serialize(v, &mut *data, pos)?;
             pos += l;
             assert(data@ == seq_splice(
                 old_data,
@@ -689,7 +689,7 @@ impl<I, O, C, 'x> Combinator<'x, I, O> for Repeat<C> where
         usize,
         SerializeError,
     >) {
-        RepeatN(&self.0, vs.0.len()).serialize(vs, data, pos)
+        RepeatN(&self.0, vs.0.len()).serialize(vs, &mut *data, pos)
     }
 }
 

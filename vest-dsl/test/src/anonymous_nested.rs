@@ -28,7 +28,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -188,7 +188,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXAPayloadComb
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalXAPayloadCombinatorAlias = Mapped<CaptureParamAndLocalXAPayloadCombinator1, CaptureParamAndLocalXAPayloadMapper>;
 
@@ -238,14 +238,14 @@ pub fn serialize_capture_param_and_local_x_a_payload<'a>(v: <CaptureParamAndLoca
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a_payload(choice2@, len@).spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local_x_a_payload( choice2, len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_x_a_payload_len<'a>(v: <CaptureParamAndLocalXAPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD, len: u8) -> (serialize_len: usize)
@@ -387,7 +387,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXACombinator 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalXACombinatorAlias = Mapped<Pair<U8, CaptureParamAndLocalXAPayloadCombinator, CaptureParamAndLocalXACont0>, CaptureParamAndLocalXAMapper>;
 
@@ -460,14 +460,14 @@ pub fn serialize_capture_param_and_local_x_a<'a>(v: <CaptureParamAndLocalXACombi
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_a(choice2@).spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local_x_a( choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_x_a_len<'a>(v: <CaptureParamAndLocalXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD) -> (serialize_len: usize)
@@ -674,7 +674,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBYCombinator
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalXBYCombinatorAlias = Mapped<CaptureParamAndLocalXBYCombinator1, CaptureParamAndLocalXBYMapper>;
 
@@ -720,14 +720,14 @@ pub fn serialize_capture_param_and_local_x_b_y<'a>(v: <CaptureParamAndLocalXBYCo
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b_y(tag@).spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local_x_b_y( tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_x_b_y_len<'a>(v: <CaptureParamAndLocalXBYCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
@@ -868,7 +868,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXBCombinator 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalXBCombinatorAlias = Mapped<Pair<U8, CaptureParamAndLocalXBYCombinator, CaptureParamAndLocalXBCont0>, CaptureParamAndLocalXBMapper>;
 
@@ -935,14 +935,14 @@ pub fn serialize_capture_param_and_local_x_b<'a>(v: <CaptureParamAndLocalXBCombi
         spec_capture_param_and_local_x_b().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local_x_b().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x_b().spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local_x_b();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_x_b_len<'a>(v: <CaptureParamAndLocalXBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1142,7 +1142,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalXCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalXCombinatorAlias = Mapped<CaptureParamAndLocalXCombinator1, CaptureParamAndLocalXMapper>;
 
@@ -1195,14 +1195,14 @@ pub fn serialize_capture_param_and_local_x<'a>(v: <CaptureParamAndLocalXCombinat
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local_x(choice1@, choice2@).spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local_x( choice1, choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_x_len<'a>(v: <CaptureParamAndLocalXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
@@ -1373,7 +1373,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXACombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NestedInnerChoiceXACombinatorAlias = Mapped<NestedInnerChoiceXACombinator1, NestedInnerChoiceXAMapper>;
 
@@ -1423,14 +1423,14 @@ pub fn serialize_nested_inner_choice_x_a<'a>(v: <NestedInnerChoiceXACombinator a
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x_a(choice2@).spec_serialize(v@))
         },
 {
     let combinator = nested_inner_choice_x_a( choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn nested_inner_choice_x_a_len<'a>(v: <NestedInnerChoiceXACombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice2: COrD) -> (serialize_len: usize)
@@ -1572,7 +1572,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonIn
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureOuterAndLocalPayloadAnonInnerBodyChoice1CombinatorAlias = Mapped<Pair<U8, bytes::Variable, CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Cont0>, CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Mapper>;
 
@@ -1639,14 +1639,14 @@ pub fn serialize_capture_outer_and_local_payload_anon_inner_body_choice1<'a>(v: 
         spec_capture_outer_and_local_payload_anon_inner_body_choice1().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body_choice1().spec_serialize(v@))
         },
 {
     let combinator = capture_outer_and_local_payload_anon_inner_body_choice1();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_outer_and_local_payload_anon_inner_body_choice1_len<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1846,7 +1846,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadAnonIn
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureOuterAndLocalPayloadAnonInnerBodyCombinatorAlias = Mapped<CaptureOuterAndLocalPayloadAnonInnerBodyCombinator1, CaptureOuterAndLocalPayloadAnonInnerBodyMapper>;
 
@@ -1896,14 +1896,14 @@ pub fn serialize_capture_outer_and_local_payload_anon_inner_body<'a>(v: <Capture
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload_anon_inner_body(frame_len@, tag@).spec_serialize(v@))
         },
 {
     let combinator = capture_outer_and_local_payload_anon_inner_body( frame_len, tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_outer_and_local_payload_anon_inner_body_len<'a>(v: <CaptureOuterAndLocalPayloadAnonInnerBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, frame_len: u8, tag: u8) -> (serialize_len: usize)
@@ -2045,7 +2045,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalPayloadCombin
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureOuterAndLocalPayloadCombinatorAlias = AndThen<bytes::Variable, Mapped<Pair<U8, CaptureOuterAndLocalPayloadAnonInnerBodyCombinator, CaptureOuterAndLocalPayloadCont0>, CaptureOuterAndLocalPayloadMapper>>;
 
@@ -2118,14 +2118,14 @@ pub fn serialize_capture_outer_and_local_payload<'a>(v: <CaptureOuterAndLocalPay
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local_payload(frame_len@).spec_serialize(v@))
         },
 {
     let combinator = capture_outer_and_local_payload( frame_len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_outer_and_local_payload_len<'a>(v: <CaptureOuterAndLocalPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, frame_len: u8) -> (serialize_len: usize)
@@ -2324,7 +2324,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureOuterAndLocalCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureOuterAndLocalCombinatorAlias = Mapped<Pair<Refined<U8, Predicate2172399096230090262>, CaptureOuterAndLocalPayloadCombinator, CaptureOuterAndLocalCont0>, CaptureOuterAndLocalMapper>;
 
@@ -2391,14 +2391,14 @@ pub fn serialize_capture_outer_and_local<'a>(v: <CaptureOuterAndLocalCombinator 
         spec_capture_outer_and_local().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_outer_and_local().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_outer_and_local().spec_serialize(v@))
         },
 {
     let combinator = capture_outer_and_local();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_outer_and_local_len<'a>(v: <CaptureOuterAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2577,7 +2577,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerStructAnonInnerCombina
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NestedInnerStructAnonInnerCombinatorAlias = AndThen<bytes::Variable, Mapped<NestedInnerStructAnonInnerCombinator1, NestedInnerStructAnonInnerMapper>>;
 
@@ -2631,14 +2631,14 @@ pub fn serialize_nested_inner_struct_anon_inner<'a>(v: <NestedInnerStructAnonInn
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_nested_inner_struct_anon_inner(len@).spec_serialize(v@))
         },
 {
     let combinator = nested_inner_struct_anon_inner( len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn nested_inner_struct_anon_inner_len<'a>(v: <NestedInnerStructAnonInnerCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u32) -> (serialize_len: usize)
@@ -2779,7 +2779,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperVa
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureLocalInAnonStructWrapperValueChoice0CombinatorAlias = Mapped<Pair<U8, bytes::Variable, CaptureLocalInAnonStructWrapperValueChoice0Cont0>, CaptureLocalInAnonStructWrapperValueChoice0Mapper>;
 
@@ -2846,14 +2846,14 @@ pub fn serialize_capture_local_in_anon_struct_wrapper_value_choice0<'a>(v: <Capt
         spec_capture_local_in_anon_struct_wrapper_value_choice0().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value_choice0().spec_serialize(v@))
         },
 {
     let combinator = capture_local_in_anon_struct_wrapper_value_choice0();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_local_in_anon_struct_wrapper_value_choice0_len<'a>(v: <CaptureLocalInAnonStructWrapperValueChoice0Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3053,7 +3053,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperVa
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureLocalInAnonStructWrapperValueCombinatorAlias = Mapped<CaptureLocalInAnonStructWrapperValueCombinator1, CaptureLocalInAnonStructWrapperValueMapper>;
 
@@ -3099,14 +3099,14 @@ pub fn serialize_capture_local_in_anon_struct_wrapper_value<'a>(v: <CaptureLocal
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper_value(tag@).spec_serialize(v@))
         },
 {
     let combinator = capture_local_in_anon_struct_wrapper_value( tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_local_in_anon_struct_wrapper_value_len<'a>(v: <CaptureLocalInAnonStructWrapperValueCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
@@ -3275,7 +3275,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceXCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NestedInnerChoiceXCombinatorAlias = Mapped<NestedInnerChoiceXCombinator1, NestedInnerChoiceXMapper>;
 
@@ -3328,14 +3328,14 @@ pub fn serialize_nested_inner_choice_x<'a>(v: <NestedInnerChoiceXCombinator as C
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_nested_inner_choice_x(choice1@, choice2@).spec_serialize(v@))
         },
 {
     let combinator = nested_inner_choice_x( choice1, choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn nested_inner_choice_x_len<'a>(v: <NestedInnerChoiceXCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
@@ -3475,7 +3475,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerChoiceCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NestedInnerChoiceCombinatorAlias = Mapped<NestedInnerChoiceXCombinator, NestedInnerChoiceMapper>;
 
@@ -3536,14 +3536,14 @@ pub fn serialize_nested_inner_choice<'a>(v: <NestedInnerChoiceCombinator as Comb
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_nested_inner_choice(choice1@, choice2@).spec_serialize(v@))
         },
 {
     let combinator = nested_inner_choice( choice1, choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn nested_inner_choice_len<'a>(v: <NestedInnerChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
@@ -3683,7 +3683,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureParamAndLocalCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureParamAndLocalCombinatorAlias = Mapped<CaptureParamAndLocalXCombinator, CaptureParamAndLocalMapper>;
 
@@ -3744,14 +3744,14 @@ pub fn serialize_capture_param_and_local<'a>(v: <CaptureParamAndLocalCombinator 
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_param_and_local(choice1@, choice2@).spec_serialize(v@))
         },
 {
     let combinator = capture_param_and_local( choice1, choice2 );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn capture_param_and_local_len<'a>(v: <CaptureParamAndLocalCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, choice1: AOrB, choice2: COrD) -> (serialize_len: usize)
@@ -3894,7 +3894,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NestedInnerStructCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NestedInnerStructCombinatorAlias = Mapped<Pair<U32Le, NestedInnerStructAnonInnerCombinator, NestedInnerStructCont0>, NestedInnerStructMapper>;
 
@@ -3961,14 +3961,14 @@ pub fn serialize_nested_inner_struct<'a>(v: <NestedInnerStructCombinator as Comb
         spec_nested_inner_struct().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_nested_inner_struct().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_nested_inner_struct().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_nested_inner_struct().spec_serialize(v@))
         },
 {
     let combinator = nested_inner_struct();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn nested_inner_struct_len<'a>(v: <NestedInnerStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4172,7 +4172,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for COrDCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type COrDCombinatorAlias = TryMap<U8, COrDMapper>;
 
@@ -4216,14 +4216,14 @@ pub fn serialize_c_or_d<'a>(v: <COrDCombinator as Combinator<'a, &'a [u8], Vec<u
         spec_c_or_d().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_c_or_d().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_c_or_d().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_c_or_d().spec_serialize(v@))
         },
 {
     let combinator = c_or_d();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn c_or_d_len<'a>(v: <COrDCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4364,7 +4364,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructWrapperCo
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureLocalInAnonStructWrapperCombinatorAlias = Mapped<Pair<U8, CaptureLocalInAnonStructWrapperValueCombinator, CaptureLocalInAnonStructWrapperCont0>, CaptureLocalInAnonStructWrapperMapper>;
 
@@ -4431,14 +4431,14 @@ pub fn serialize_capture_local_in_anon_struct_wrapper<'a>(v: <CaptureLocalInAnon
         spec_capture_local_in_anon_struct_wrapper().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct_wrapper().spec_serialize(v@))
         },
 {
     let combinator = capture_local_in_anon_struct_wrapper();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_local_in_anon_struct_wrapper_len<'a>(v: <CaptureLocalInAnonStructWrapperCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4607,7 +4607,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CaptureLocalInAnonStructCombinato
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type CaptureLocalInAnonStructCombinatorAlias = Mapped<CaptureLocalInAnonStructWrapperCombinator, CaptureLocalInAnonStructMapper>;
 
@@ -4659,14 +4659,14 @@ pub fn serialize_capture_local_in_anon_struct<'a>(v: <CaptureLocalInAnonStructCo
         spec_capture_local_in_anon_struct().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_capture_local_in_anon_struct().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_capture_local_in_anon_struct().spec_serialize(v@))
         },
 {
     let combinator = capture_local_in_anon_struct();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn capture_local_in_anon_struct_len<'a>(v: <CaptureLocalInAnonStructCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4839,7 +4839,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AOrBCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type AOrBCombinatorAlias = TryMap<U8, AOrBMapper>;
 
@@ -4883,14 +4883,14 @@ pub fn serialize_a_or_b<'a>(v: <AOrBCombinator as Combinator<'a, &'a [u8], Vec<u
         spec_a_or_b().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_a_or_b().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_a_or_b().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_a_or_b().spec_serialize(v@))
         },
 {
     let combinator = a_or_b();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn a_or_b_len<'a>(v: <AOrBCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

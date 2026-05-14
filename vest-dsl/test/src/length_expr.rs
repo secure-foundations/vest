@@ -28,7 +28,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -180,7 +180,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HeaderCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HeaderCombinatorAlias = Mapped<Pair<Refined<U16Le, Predicate12905524399844557818>, U8, HeaderCont0>, HeaderMapper>;
 
@@ -247,14 +247,14 @@ pub fn serialize_header<'a>(v: <HeaderCombinator as Combinator<'a, &'a [u8], Vec
         spec_header().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_header().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_header().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_header().spec_serialize(v@))
         },
 {
     let combinator = header();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn header_len<'a>(v: <HeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -352,7 +352,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HeaderAliasCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HeaderAliasCombinatorAlias = HeaderCombinator;
 
@@ -396,14 +396,14 @@ pub fn serialize_header_alias<'a>(v: <HeaderAliasCombinator as Combinator<'a, &'
         spec_header_alias().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_header_alias().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_header_alias().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_header_alias().spec_serialize(v@))
         },
 {
     let combinator = header_alias();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn header_alias_len<'a>(v: <HeaderAliasCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -541,7 +541,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for DivideCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type DivideCombinatorAlias = Mapped<bytes::Variable, DivideMapper>;
 
@@ -595,14 +595,14 @@ pub fn serialize_divide<'a>(v: <DivideCombinator as Combinator<'a, &'a [u8], Vec
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_divide(total@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_divide(total@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_divide(total@).spec_serialize(v@))
         },
 {
     let combinator = divide( total );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn divide_len<'a>(v: <DivideCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, total: u32) -> (serialize_len: usize)
@@ -771,7 +771,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for FixedChoiceCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type FixedChoiceCombinatorAlias = Mapped<FixedChoiceCombinator1, FixedChoiceMapper>;
 
@@ -817,14 +817,14 @@ pub fn serialize_fixed_choice<'a>(v: <FixedChoiceCombinator as Combinator<'a, &'
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_fixed_choice(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_fixed_choice(tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_fixed_choice(tag@).spec_serialize(v@))
         },
 {
     let combinator = fixed_choice( tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn fixed_choice_len<'a>(v: <FixedChoiceCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
@@ -962,7 +962,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SimpleSubCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SimpleSubCombinatorAlias = Mapped<bytes::Variable, SimpleSubMapper>;
 
@@ -1020,14 +1020,14 @@ pub fn serialize_simple_sub<'a>(v: <SimpleSubCombinator as Combinator<'a, &'a [u
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_simple_sub(len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_simple_sub(len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_simple_sub(len@).spec_serialize(v@))
         },
 {
     let combinator = simple_sub( len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn simple_sub_len<'a>(v: <SimpleSubCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u16) -> (serialize_len: usize)
@@ -1166,7 +1166,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for AliasSizeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type AliasSizeCombinatorAlias = Mapped<bytes::Fixed<3>, AliasSizeMapper>;
 
@@ -1218,14 +1218,14 @@ pub fn serialize_alias_size<'a>(v: <AliasSizeCombinator as Combinator<'a, &'a [u
         spec_alias_size().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_alias_size().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_alias_size().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_alias_size().spec_serialize(v@))
         },
 {
     let combinator = alias_size();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn alias_size_len<'a>(v: <AliasSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1363,7 +1363,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MultiArithCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type MultiArithCombinatorAlias = Mapped<bytes::Variable, MultiArithMapper>;
 
@@ -1424,14 +1424,14 @@ pub fn serialize_multi_arith<'a>(v: <MultiArithCombinator as Combinator<'a, &'a 
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_multi_arith(total@, hdr_len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_multi_arith(total@, hdr_len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_multi_arith(total@, hdr_len@).spec_serialize(v@))
         },
 {
     let combinator = multi_arith( total, hdr_len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn multi_arith_len<'a>(v: <MultiArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, total: u32, hdr_len: u8) -> (serialize_len: usize)
@@ -1571,7 +1571,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for SizeArithCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type SizeArithCombinatorAlias = Mapped<bytes::Fixed<4>, SizeArithMapper>;
 
@@ -1623,14 +1623,14 @@ pub fn serialize_size_arith<'a>(v: <SizeArithCombinator as Combinator<'a, &'a [u
         spec_size_arith().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_size_arith().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_size_arith().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_size_arith().spec_serialize(v@))
         },
 {
     let combinator = size_arith();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn size_arith_len<'a>(v: <SizeArithCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1768,7 +1768,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PayloadWithHeaderCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PayloadWithHeaderCombinatorAlias = Mapped<bytes::Variable, PayloadWithHeaderMapper>;
 
@@ -1826,14 +1826,14 @@ pub fn serialize_payload_with_header<'a>(v: <PayloadWithHeaderCombinator as Comb
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_payload_with_header(hdr@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_payload_with_header(hdr@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_payload_with_header(hdr@).spec_serialize(v@))
         },
 {
     let combinator = payload_with_header( hdr );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn payload_with_header_len<'a>(v: <PayloadWithHeaderCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, hdr: Header) -> (serialize_len: usize)
@@ -1972,7 +1972,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MixedConstCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type MixedConstCombinatorAlias = Mapped<bytes::Variable, MixedConstMapper>;
 
@@ -2030,14 +2030,14 @@ pub fn serialize_mixed_const<'a>(v: <MixedConstCombinator as Combinator<'a, &'a 
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mixed_const(len@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mixed_const(len@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mixed_const(len@).spec_serialize(v@))
         },
 {
     let combinator = mixed_const( len );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn mixed_const_len<'a>(v: <MixedConstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u16) -> (serialize_len: usize)
@@ -2105,7 +2105,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceTagCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ChoiceTagCombinatorAlias = bytes::Fixed<2>;
 
@@ -2149,14 +2149,14 @@ pub fn serialize_choice_tag<'a>(v: <ChoiceTagCombinator as Combinator<'a, &'a [u
         spec_choice_tag().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_choice_tag().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_choice_tag().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_choice_tag().spec_serialize(v@))
         },
 {
     let combinator = choice_tag();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn choice_tag_len<'a>(v: <ChoiceTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2294,7 +2294,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for NamedSizeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type NamedSizeCombinatorAlias = Mapped<bytes::Fixed<3>, NamedSizeMapper>;
 
@@ -2346,14 +2346,14 @@ pub fn serialize_named_size<'a>(v: <NamedSizeCombinator as Combinator<'a, &'a [u
         spec_named_size().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_named_size().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_named_size().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_named_size().spec_serialize(v@))
         },
 {
     let combinator = named_size();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn named_size_len<'a>(v: <NamedSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2491,7 +2491,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceFormatSizeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ChoiceFormatSizeCombinatorAlias = Mapped<bytes::Fixed<2>, ChoiceFormatSizeMapper>;
 
@@ -2543,14 +2543,14 @@ pub fn serialize_choice_format_size<'a>(v: <ChoiceFormatSizeCombinator as Combin
         spec_choice_format_size().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_choice_format_size().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_choice_format_size().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_choice_format_size().spec_serialize(v@))
         },
 {
     let combinator = choice_format_size();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn choice_format_size_len<'a>(v: <ChoiceFormatSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2617,7 +2617,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for HeaderBytesCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type HeaderBytesCombinatorAlias = AndThen<bytes::Variable, HeaderCombinator>;
 
@@ -2661,14 +2661,14 @@ pub fn serialize_header_bytes<'a>(v: <HeaderBytesCombinator as Combinator<'a, &'
         spec_header_bytes().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_header_bytes().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_header_bytes().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_header_bytes().spec_serialize(v@))
         },
 {
     let combinator = header_bytes();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn header_bytes_len<'a>(v: <HeaderBytesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2806,7 +2806,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MultiplyCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type MultiplyCombinatorAlias = Mapped<bytes::Variable, MultiplyMapper>;
 
@@ -2864,14 +2864,14 @@ pub fn serialize_multiply<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8],
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_multiply(count@, size@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_multiply(count@, size@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_multiply(count@, size@).spec_serialize(v@))
         },
 {
     let combinator = multiply( count, size );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn multiply_len<'a>(v: <MultiplyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, count: u16, size: u8) -> (serialize_len: usize)
@@ -3041,7 +3041,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedBodyCombinator 
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ChoiceArraysFoldedBodyCombinatorAlias = Mapped<ChoiceArraysFoldedBodyCombinator1, ChoiceArraysFoldedBodyMapper>;
 
@@ -3087,14 +3087,14 @@ pub fn serialize_choice_arrays_folded_body<'a>(v: <ChoiceArraysFoldedBodyCombina
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_choice_arrays_folded_body(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded_body(tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded_body(tag@).spec_serialize(v@))
         },
 {
     let combinator = choice_arrays_folded_body( tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn choice_arrays_folded_body_len<'a>(v: <ChoiceArraysFoldedBodyCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: ChoiceTag) -> (serialize_len: usize)
@@ -3235,7 +3235,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ChoiceArraysFoldedCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ChoiceArraysFoldedCombinatorAlias = Mapped<Pair<ChoiceTagCombinator, ChoiceArraysFoldedBodyCombinator, ChoiceArraysFoldedCont0>, ChoiceArraysFoldedMapper>;
 
@@ -3302,14 +3302,14 @@ pub fn serialize_choice_arrays_folded<'a>(v: <ChoiceArraysFoldedCombinator as Co
         spec_choice_arrays_folded().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_choice_arrays_folded().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_choice_arrays_folded().spec_serialize(v@))
         },
 {
     let combinator = choice_arrays_folded();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn choice_arrays_folded_len<'a>(v: <ChoiceArraysFoldedCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3478,7 +3478,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ParenExprCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ParenExprCombinatorAlias = Mapped<bytes::Variable, ParenExprMapper>;
 
@@ -3542,14 +3542,14 @@ pub fn serialize_paren_expr<'a>(v: <ParenExprCombinator as Combinator<'a, &'a [u
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_paren_expr(a@, b@, c@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_paren_expr(a@, b@, c@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_paren_expr(a@, b@, c@).spec_serialize(v@))
         },
 {
     let combinator = paren_expr( a, b, c );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn paren_expr_len<'a>(v: <ParenExprCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, a: u16, b: u8, c: u8) -> (serialize_len: usize)
@@ -3690,7 +3690,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ReinterpretSizeCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type ReinterpretSizeCombinatorAlias = Mapped<bytes::Fixed<3>, ReinterpretSizeMapper>;
 
@@ -3742,14 +3742,14 @@ pub fn serialize_reinterpret_size<'a>(v: <ReinterpretSizeCombinator as Combinato
         spec_reinterpret_size().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_reinterpret_size().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_reinterpret_size().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_reinterpret_size().spec_serialize(v@))
         },
 {
     let combinator = reinterpret_size();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn reinterpret_size_len<'a>(v: <ReinterpretSizeCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3897,7 +3897,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrimitiveSizesCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PrimitiveSizesCombinatorAlias = Mapped<PrimitiveSizesCombinator1, PrimitiveSizesMapper>;
 
@@ -3949,14 +3949,14 @@ pub fn serialize_primitive_sizes<'a>(v: <PrimitiveSizesCombinator as Combinator<
         spec_primitive_sizes().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_primitive_sizes().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_primitive_sizes().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_primitive_sizes().spec_serialize(v@))
         },
 {
     let combinator = primitive_sizes();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn primitive_sizes_len<'a>(v: <PrimitiveSizesCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

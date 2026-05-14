@@ -380,7 +380,7 @@ impl<'x, I, O, T> Combinator<'x, I, O> for Opt<T> where
         SerializeError,
     >) {
         match &v.0 {
-            Some(v) => self.0.serialize(v, data, pos),
+            Some(v) => self.0.serialize(v, &mut *data, pos),
             None => {
                 if pos <= data.len() {
                     assert(seq_splice(old(data)@, pos, Seq::<u8>::empty()) == data@);
@@ -595,8 +595,8 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for OptThen<Fst, Snd> where
         usize,
         SerializeError,
     >) {
-        let n = self.0.0.serialize(&v.0, data, pos)?;
-        let m = self.0.1.serialize(v.1, data, pos + n)?;
+        let n = self.0.0.serialize(&v.0, &mut *data, pos)?;
+        let m = self.0.1.serialize(v.1, &mut *data, pos + n)?;
         Ok(n + m)
     }
 }

@@ -28,7 +28,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -261,7 +261,7 @@ impl SpecPartialIso for MavFrameMapper {
 }
 
 impl SpecPartialIsoProof for MavFrameMapper {
-    proof fn spec_iso(s: Self::Src) { 
+    proof fn spec_iso(s: Self::Src) {
         assert(
             Self::spec_apply(s) matches Ok(v) ==> {
             &&& Self::spec_rev_apply(v) is Ok
@@ -269,7 +269,7 @@ impl SpecPartialIsoProof for MavFrameMapper {
         });
     }
 
-    proof fn spec_iso_rev(s: Self::Dst) { 
+    proof fn spec_iso_rev(s: Self::Dst) {
         assert(
             Self::spec_rev_apply(s) matches Ok(v) ==> {
             &&& Self::spec_apply(v) is Ok
@@ -293,13 +293,13 @@ impl SpecCombinator for SpecMavFrameCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavFrameCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavFrameCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -307,11 +307,11 @@ impl SecureSpecCombinator for SpecMavFrameCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavFrameCombinatorAlias = TryMap<U8, MavFrameMapper>;
@@ -327,13 +327,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavFrameCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavFrameCombinatorAlias = TryMap<U8, MavFrameMapper>;
 
 
@@ -348,11 +348,11 @@ pub fn mav_frame<'a>() -> (o: MavFrameCombinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = MavFrameCombinator(TryMap { inner: U8, mapper: MavFrameMapper });
-    assert({
-        &&& combinator@ == spec_mav_frame()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mav_frame()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -376,14 +376,14 @@ pub fn serialize_mav_frame<'a>(v: <MavFrameCombinator as Combinator<'a, &'a [u8]
         spec_mav_frame().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mav_frame().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mav_frame().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mav_frame().spec_serialize(v@))
         },
 {
     let combinator = mav_frame();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mav_frame_len<'a>(v: <MavFrameCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -413,13 +413,13 @@ impl SpecCombinator for SpecMavCmdCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavCmdCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavCmdCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -427,11 +427,11 @@ impl SecureSpecCombinator for SpecMavCmdCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavCmdCombinatorAlias = U16Le;
@@ -447,13 +447,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavCmdCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavCmdCombinatorAlias = U16Le;
 
 
@@ -468,11 +468,11 @@ pub fn mav_cmd<'a>() -> (o: MavCmdCombinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = MavCmdCombinator(U16Le);
-    assert({
-        &&& combinator@ == spec_mav_cmd()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mav_cmd()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -496,14 +496,14 @@ pub fn serialize_mav_cmd<'a>(v: <MavCmdCombinator as Combinator<'a, &'a [u8], Ve
         spec_mav_cmd().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mav_cmd().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mav_cmd().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mav_cmd().spec_serialize(v@))
         },
 {
     let combinator = mav_cmd();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mav_cmd_len<'a>(v: <MavCmdCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -649,13 +649,13 @@ impl SpecCombinator for SpecCommandIntCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecCommandIntCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecCommandIntCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -663,11 +663,11 @@ impl SecureSpecCombinator for SpecCommandIntCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecCommandIntCombinatorAlias = Mapped<SpecCommandIntCombinatorAlias12, CommandIntMapper>;
@@ -798,13 +798,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CommandIntCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type CommandIntCombinatorAlias = Mapped<CommandIntCombinator12, CommandIntMapper>;
 
 
@@ -827,11 +827,11 @@ pub fn command_int<'a>() -> (o: CommandIntCombinator)
         inner: CommandIntCombinator12((U8, CommandIntCombinator11((U8, CommandIntCombinator10((mav_frame(), CommandIntCombinator9((mav_cmd(), CommandIntCombinator8((U8, CommandIntCombinator7((Refined { inner: U8, predicate: Predicate2576612288366319398 }, CommandIntCombinator6((U32Le, CommandIntCombinator5((U32Le, CommandIntCombinator4((U32Le, CommandIntCombinator3((U32Le, CommandIntCombinator2((U32Le, CommandIntCombinator1((U32Le, U32Le)))))))))))))))))))))))),
         mapper: CommandIntMapper,
     });
-    assert({
-        &&& combinator@ == spec_command_int()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_command_int()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -855,14 +855,14 @@ pub fn serialize_command_int<'a>(v: <CommandIntCombinator as Combinator<'a, &'a 
         spec_command_int().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_command_int().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_command_int().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_command_int().spec_serialize(v@))
         },
 {
     let combinator = command_int();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn command_int_len<'a>(v: <CommandIntCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -873,1303 +873,6 @@ pub fn command_int_len<'a>(v: <CommandIntCombinator as Combinator<'a, &'a [u8], 
         serialize_len == spec_command_int().spec_serialize(v@).len(),
 {
     let combinator = command_int();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-
-pub struct SpecTerrainRequest {
-    pub lat: u32,
-    pub lon: u32,
-    pub grid_spacing: u16,
-    pub mask: u64,
-}
-
-pub type SpecTerrainRequestInner = (u32, (u32, (u16, u64)));
-
-
-impl SpecFrom<SpecTerrainRequest> for SpecTerrainRequestInner {
-    open spec fn spec_from(m: SpecTerrainRequest) -> SpecTerrainRequestInner {
-        (m.lat, (m.lon, (m.grid_spacing, m.mask)))
-    }
-}
-
-impl SpecFrom<SpecTerrainRequestInner> for SpecTerrainRequest {
-    open spec fn spec_from(m: SpecTerrainRequestInner) -> SpecTerrainRequest {
-        let (lat, (lon, (grid_spacing, mask))) = m;
-        SpecTerrainRequest { lat, lon, grid_spacing, mask }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct TerrainRequest {
-    pub lat: u32,
-    pub lon: u32,
-    pub grid_spacing: u16,
-    pub mask: u64,
-}
-
-impl View for TerrainRequest {
-    type V = SpecTerrainRequest;
-
-    open spec fn view(&self) -> Self::V {
-        SpecTerrainRequest {
-            lat: self.lat@,
-            lon: self.lon@,
-            grid_spacing: self.grid_spacing@,
-            mask: self.mask@,
-        }
-    }
-}
-pub type TerrainRequestInner = (u32, (u32, (u16, u64)));
-
-pub type TerrainRequestInnerRef<'a> = (&'a u32, (&'a u32, (&'a u16, &'a u64)));
-impl<'a> From<&'a TerrainRequest> for TerrainRequestInnerRef<'a> {
-    fn ex_from(m: &'a TerrainRequest) -> TerrainRequestInnerRef<'a> {
-        (&m.lat, (&m.lon, (&m.grid_spacing, &m.mask)))
-    }
-}
-
-impl From<TerrainRequestInner> for TerrainRequest {
-    fn ex_from(m: TerrainRequestInner) -> TerrainRequest {
-        let (lat, (lon, (grid_spacing, mask))) = m;
-        TerrainRequest { lat, lon, grid_spacing, mask }
-    }
-}
-
-pub struct TerrainRequestMapper;
-impl View for TerrainRequestMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for TerrainRequestMapper {
-    type Src = SpecTerrainRequestInner;
-    type Dst = SpecTerrainRequest;
-}
-impl SpecIsoProof for TerrainRequestMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for TerrainRequestMapper {
-    type Src = TerrainRequestInner;
-    type Dst = TerrainRequest;
-    type RefSrc = TerrainRequestInnerRef<'a>;
-}
-type SpecTerrainRequestCombinatorAlias1 = (U16Le, U64Le);
-type SpecTerrainRequestCombinatorAlias2 = (U32Le, SpecTerrainRequestCombinatorAlias1);
-type SpecTerrainRequestCombinatorAlias3 = (U32Le, SpecTerrainRequestCombinatorAlias2);
-pub struct SpecTerrainRequestCombinator(pub SpecTerrainRequestCombinatorAlias);
-
-impl SpecCombinator for SpecTerrainRequestCombinator {
-    type Type = SpecTerrainRequest;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecTerrainRequestCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecTerrainRequestCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecTerrainRequestCombinatorAlias = Mapped<SpecTerrainRequestCombinatorAlias3, TerrainRequestMapper>;
-type TerrainRequestCombinatorAlias1 = (U16Le, U64Le);
-type TerrainRequestCombinatorAlias2 = (U32Le, TerrainRequestCombinator1);
-type TerrainRequestCombinatorAlias3 = (U32Le, TerrainRequestCombinator2);
-pub struct TerrainRequestCombinator1(pub TerrainRequestCombinatorAlias1);
-impl View for TerrainRequestCombinator1 {
-    type V = SpecTerrainRequestCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(TerrainRequestCombinator1, TerrainRequestCombinatorAlias1);
-
-pub struct TerrainRequestCombinator2(pub TerrainRequestCombinatorAlias2);
-impl View for TerrainRequestCombinator2 {
-    type V = SpecTerrainRequestCombinatorAlias2;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(TerrainRequestCombinator2, TerrainRequestCombinatorAlias2);
-
-pub struct TerrainRequestCombinator3(pub TerrainRequestCombinatorAlias3);
-impl View for TerrainRequestCombinator3 {
-    type V = SpecTerrainRequestCombinatorAlias3;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(TerrainRequestCombinator3, TerrainRequestCombinatorAlias3);
-
-pub struct TerrainRequestCombinator(pub TerrainRequestCombinatorAlias);
-
-impl View for TerrainRequestCombinator {
-    type V = SpecTerrainRequestCombinator;
-    open spec fn view(&self) -> Self::V { SpecTerrainRequestCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TerrainRequestCombinator {
-    type Type = TerrainRequest;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type TerrainRequestCombinatorAlias = Mapped<TerrainRequestCombinator3, TerrainRequestMapper>;
-
-
-pub open spec fn spec_terrain_request() -> SpecTerrainRequestCombinator {
-    SpecTerrainRequestCombinator(
-    Mapped {
-        inner: (U32Le, (U32Le, (U16Le, U64Le))),
-        mapper: TerrainRequestMapper,
-    })
-}
-
-                
-pub fn terrain_request<'a>() -> (o: TerrainRequestCombinator)
-    ensures o@ == spec_terrain_request(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = TerrainRequestCombinator(
-    Mapped {
-        inner: TerrainRequestCombinator3((U32Le, TerrainRequestCombinator2((U32Le, TerrainRequestCombinator1((U16Le, U64Le)))))),
-        mapper: TerrainRequestMapper,
-    });
-    assert({
-        &&& combinator@ == spec_terrain_request()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_terrain_request<'a>(input: &'a [u8]) -> (res: PResult<<TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_terrain_request().spec_parse(input@) == Some((n as int, v@)),
-        spec_terrain_request().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_terrain_request().spec_parse(input@) is None,
-        spec_terrain_request().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = terrain_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_terrain_request<'a>(v: <TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_terrain_request().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_terrain_request().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_terrain_request().spec_serialize(v@))
-        },
-{
-    let combinator = terrain_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn terrain_request_len<'a>(v: <TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_terrain_request().wf(v@),
-        spec_terrain_request().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_terrain_request().spec_serialize(v@).len(),
-{
-    let combinator = terrain_request();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-
-pub spec const SPEC_ProtocolMagic_MavLink1: u8 = 254;
-pub spec const SPEC_ProtocolMagic_MavLink2: u8 = 253;
-pub exec static EXEC_ProtocolMagic_MavLink1: u8 ensures EXEC_ProtocolMagic_MavLink1 == SPEC_ProtocolMagic_MavLink1 { 254 }
-pub exec static EXEC_ProtocolMagic_MavLink2: u8 ensures EXEC_ProtocolMagic_MavLink2 == SPEC_ProtocolMagic_MavLink2 { 253 }
-
-#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ProtocolMagic {
-    MavLink1 = 254,
-MavLink2 = 253
-}
-pub type SpecProtocolMagic = ProtocolMagic;
-
-pub type ProtocolMagicInner = u8;
-
-pub type ProtocolMagicInnerRef<'a> = &'a u8;
-
-impl View for ProtocolMagic {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecTryFrom<ProtocolMagicInner> for ProtocolMagic {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ProtocolMagicInner) -> Result<ProtocolMagic, ()> {
-        match v {
-            254u8 => Ok(ProtocolMagic::MavLink1),
-            253u8 => Ok(ProtocolMagic::MavLink2),
-            _ => Err(()),
-        }
-    }
-}
-
-impl SpecTryFrom<ProtocolMagic> for ProtocolMagicInner {
-    type Error = ();
-
-    open spec fn spec_try_from(v: ProtocolMagic) -> Result<ProtocolMagicInner, ()> {
-        match v {
-            ProtocolMagic::MavLink1 => Ok(SPEC_ProtocolMagic_MavLink1),
-            ProtocolMagic::MavLink2 => Ok(SPEC_ProtocolMagic_MavLink2),
-        }
-    }
-}
-
-impl TryFrom<ProtocolMagicInner> for ProtocolMagic {
-    type Error = ();
-
-    fn ex_try_from(v: ProtocolMagicInner) -> Result<ProtocolMagic, ()> {
-        match v {
-            254u8 => Ok(ProtocolMagic::MavLink1),
-            253u8 => Ok(ProtocolMagic::MavLink2),
-            _ => Err(()),
-        }
-    }
-}
-
-impl<'a> TryFrom<&'a ProtocolMagic> for ProtocolMagicInnerRef<'a> {
-    type Error = ();
-
-    fn ex_try_from(v: &'a ProtocolMagic) -> Result<ProtocolMagicInnerRef<'a>, ()> {
-        match v {
-            ProtocolMagic::MavLink1 => Ok(&EXEC_ProtocolMagic_MavLink1),
-            ProtocolMagic::MavLink2 => Ok(&EXEC_ProtocolMagic_MavLink2),
-        }
-    }
-}
-
-pub struct ProtocolMagicMapper;
-
-impl View for ProtocolMagicMapper {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-
-impl SpecPartialIso for ProtocolMagicMapper {
-    type Src = ProtocolMagicInner;
-    type Dst = ProtocolMagic;
-}
-
-impl SpecPartialIsoProof for ProtocolMagicMapper {
-    proof fn spec_iso(s: Self::Src) { 
-        assert(
-            Self::spec_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_rev_apply(v) is Ok
-            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-
-    proof fn spec_iso_rev(s: Self::Dst) { 
-        assert(
-            Self::spec_rev_apply(s) matches Ok(v) ==> {
-            &&& Self::spec_apply(v) is Ok
-            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
-        });
-    }
-}
-
-impl<'a> PartialIso<'a> for ProtocolMagicMapper {
-    type Src = ProtocolMagicInner;
-    type Dst = ProtocolMagic;
-    type RefSrc = ProtocolMagicInnerRef<'a>;
-}
-
-
-pub struct SpecProtocolMagicCombinator(pub SpecProtocolMagicCombinatorAlias);
-
-impl SpecCombinator for SpecProtocolMagicCombinator {
-    type Type = SpecProtocolMagic;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecProtocolMagicCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecProtocolMagicCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecProtocolMagicCombinatorAlias = TryMap<U8, ProtocolMagicMapper>;
-
-pub struct ProtocolMagicCombinator(pub ProtocolMagicCombinatorAlias);
-
-impl View for ProtocolMagicCombinator {
-    type V = SpecProtocolMagicCombinator;
-    open spec fn view(&self) -> Self::V { SpecProtocolMagicCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProtocolMagicCombinator {
-    type Type = ProtocolMagic;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type ProtocolMagicCombinatorAlias = TryMap<U8, ProtocolMagicMapper>;
-
-
-pub open spec fn spec_protocol_magic() -> SpecProtocolMagicCombinator {
-    SpecProtocolMagicCombinator(TryMap { inner: U8, mapper: ProtocolMagicMapper })
-}
-
-                
-pub fn protocol_magic<'a>() -> (o: ProtocolMagicCombinator)
-    ensures o@ == spec_protocol_magic(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = ProtocolMagicCombinator(TryMap { inner: U8, mapper: ProtocolMagicMapper });
-    assert({
-        &&& combinator@ == spec_protocol_magic()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_protocol_magic<'a>(input: &'a [u8]) -> (res: PResult<<ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_protocol_magic().spec_parse(input@) == Some((n as int, v@)),
-        spec_protocol_magic().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_protocol_magic().spec_parse(input@) is None,
-        spec_protocol_magic().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = protocol_magic();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_protocol_magic<'a>(v: <ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_protocol_magic().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_protocol_magic().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_protocol_magic().spec_serialize(v@))
-        },
-{
-    let combinator = protocol_magic();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn protocol_magic_len<'a>(v: <ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_protocol_magic().wf(v@),
-        spec_protocol_magic().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_protocol_magic().spec_serialize(v@).len(),
-{
-    let combinator = protocol_magic();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-
-pub struct SpecMavlinkV1Msg {
-    pub len: u8,
-    pub seq: u8,
-    pub sysid: u8,
-    pub compid: u8,
-    pub msgid: u8,
-    pub payload: Seq<u8>,
-    pub checksum: u16,
-}
-
-pub type SpecMavlinkV1MsgInner = (u8, (u8, (u8, (u8, (u8, (Seq<u8>, u16))))));
-
-
-impl SpecFrom<SpecMavlinkV1Msg> for SpecMavlinkV1MsgInner {
-    open spec fn spec_from(m: SpecMavlinkV1Msg) -> SpecMavlinkV1MsgInner {
-        (m.len, (m.seq, (m.sysid, (m.compid, (m.msgid, (m.payload, m.checksum))))))
-    }
-}
-
-impl SpecFrom<SpecMavlinkV1MsgInner> for SpecMavlinkV1Msg {
-    open spec fn spec_from(m: SpecMavlinkV1MsgInner) -> SpecMavlinkV1Msg {
-        let (len, (seq, (sysid, (compid, (msgid, (payload, checksum)))))) = m;
-        SpecMavlinkV1Msg { len, seq, sysid, compid, msgid, payload, checksum }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct MavlinkV1Msg<'a> {
-    pub len: u8,
-    pub seq: u8,
-    pub sysid: u8,
-    pub compid: u8,
-    pub msgid: u8,
-    pub payload: &'a [u8],
-    pub checksum: u16,
-}
-
-impl View for MavlinkV1Msg<'_> {
-    type V = SpecMavlinkV1Msg;
-
-    open spec fn view(&self) -> Self::V {
-        SpecMavlinkV1Msg {
-            len: self.len@,
-            seq: self.seq@,
-            sysid: self.sysid@,
-            compid: self.compid@,
-            msgid: self.msgid@,
-            payload: self.payload@,
-            checksum: self.checksum@,
-        }
-    }
-}
-pub type MavlinkV1MsgInner<'a> = (u8, (u8, (u8, (u8, (u8, (&'a [u8], u16))))));
-
-pub type MavlinkV1MsgInnerRef<'a> = (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a &'a [u8], &'a u16))))));
-impl<'a> From<&'a MavlinkV1Msg<'a>> for MavlinkV1MsgInnerRef<'a> {
-    fn ex_from(m: &'a MavlinkV1Msg) -> MavlinkV1MsgInnerRef<'a> {
-        (&m.len, (&m.seq, (&m.sysid, (&m.compid, (&m.msgid, (&m.payload, &m.checksum))))))
-    }
-}
-
-impl<'a> From<MavlinkV1MsgInner<'a>> for MavlinkV1Msg<'a> {
-    fn ex_from(m: MavlinkV1MsgInner) -> MavlinkV1Msg {
-        let (len, (seq, (sysid, (compid, (msgid, (payload, checksum)))))) = m;
-        MavlinkV1Msg { len, seq, sysid, compid, msgid, payload, checksum }
-    }
-}
-
-pub struct MavlinkV1MsgMapper;
-impl View for MavlinkV1MsgMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MavlinkV1MsgMapper {
-    type Src = SpecMavlinkV1MsgInner;
-    type Dst = SpecMavlinkV1Msg;
-}
-impl SpecIsoProof for MavlinkV1MsgMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for MavlinkV1MsgMapper {
-    type Src = MavlinkV1MsgInner<'a>;
-    type Dst = MavlinkV1Msg<'a>;
-    type RefSrc = MavlinkV1MsgInnerRef<'a>;
-}
-
-pub struct SpecMavlinkV1MsgCombinator(pub SpecMavlinkV1MsgCombinatorAlias);
-
-impl SpecCombinator for SpecMavlinkV1MsgCombinator {
-    type Type = SpecMavlinkV1Msg;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMavlinkV1MsgCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMavlinkV1MsgCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMavlinkV1MsgCombinatorAlias = Mapped<SpecPair<U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))))>, MavlinkV1MsgMapper>;
-pub struct Predicate3768926651291043512;
-impl View for Predicate3768926651291043512 {
-    type V = Self;
-
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl Pred<u8> for Predicate3768926651291043512 {
-    fn apply(&self, i: &u8) -> bool {
-        let i = (*i);
-        (i >= 1)
-    }
-}
-impl SpecPred<u8> for Predicate3768926651291043512 {
-    open spec fn spec_apply(&self, i: &u8) -> bool {
-        let i = (*i);
-        (i >= 1)
-    }
-}
-
-pub struct MavlinkV1MsgCombinator(pub MavlinkV1MsgCombinatorAlias);
-
-impl View for MavlinkV1MsgCombinator {
-    type V = SpecMavlinkV1MsgCombinator;
-    open spec fn view(&self) -> Self::V { SpecMavlinkV1MsgCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV1MsgCombinator {
-    type Type = MavlinkV1Msg<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MavlinkV1MsgCombinatorAlias = Mapped<Pair<U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le))))), MavlinkV1MsgCont0>, MavlinkV1MsgMapper>;
-
-
-pub open spec fn spec_mavlink_v1_msg() -> SpecMavlinkV1MsgCombinator {
-    SpecMavlinkV1MsgCombinator(
-    Mapped {
-        inner: Pair::spec_new(U8, |deps| spec_mavlink_v1_msg_cont0(deps)),
-        mapper: MavlinkV1MsgMapper,
-    })
-}
-
-pub open spec fn spec_mavlink_v1_msg_cont0(deps: u8) -> (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le))))) {
-    let len = deps;
-    (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable(len.spec_into()), U16Le)))))
-}
-
-impl View for MavlinkV1MsgCont0 {
-    type V = spec_fn(u8) -> (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))));
-
-    open spec fn view(&self) -> Self::V {
-        |deps: u8| {
-            spec_mavlink_v1_msg_cont0(deps)
-        }
-    }
-}
-
-                
-pub fn mavlink_v1_msg<'a>() -> (o: MavlinkV1MsgCombinator)
-    ensures o@ == spec_mavlink_v1_msg(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = MavlinkV1MsgCombinator(
-    Mapped {
-        inner: Pair::new(U8, MavlinkV1MsgCont0),
-        mapper: MavlinkV1MsgMapper,
-    });
-    assert({
-        &&& combinator@ == spec_mavlink_v1_msg()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_mavlink_v1_msg<'a>(input: &'a [u8]) -> (res: PResult<<MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_mavlink_v1_msg().spec_parse(input@) == Some((n as int, v@)),
-        spec_mavlink_v1_msg().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_mavlink_v1_msg().spec_parse(input@) is None,
-        spec_mavlink_v1_msg().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = mavlink_v1_msg();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_mavlink_v1_msg<'a>(v: <MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_mavlink_v1_msg().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_mavlink_v1_msg().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_v1_msg().spec_serialize(v@))
-        },
-{
-    let combinator = mavlink_v1_msg();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn mavlink_v1_msg_len<'a>(v: <MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_mavlink_v1_msg().wf(v@),
-        spec_mavlink_v1_msg().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_mavlink_v1_msg().spec_serialize(v@).len(),
-{
-    let combinator = mavlink_v1_msg();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-pub struct MavlinkV1MsgCont0;
-type MavlinkV1MsgCont0Type<'a, 'b> = &'b u8;
-type MavlinkV1MsgCont0SType<'a, 'x> = &'x u8;
-type MavlinkV1MsgCont0Input<'a, 'b, 'x> = POrSType<MavlinkV1MsgCont0Type<'a, 'b>, MavlinkV1MsgCont0SType<'a, 'x>>;
-impl<'a, 'b, 'x> Continuation<MavlinkV1MsgCont0Input<'a, 'b, 'x>> for MavlinkV1MsgCont0 {
-    type Output = (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))));
-
-    open spec fn requires(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>) -> bool { true }
-
-    open spec fn ensures(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_mavlink_v1_msg_cont0(deps@)
-    }
-
-    fn apply(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>) -> Self::Output {
-        match deps {
-            POrSType::P(deps) => {
-                let len = *deps;
-                (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable(len.ex_into()), U16Le)))))
-            }
-            POrSType::S(deps) => {
-                let len = deps;
-                let len = *len;
-                (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable(len.ex_into()), U16Le)))))
-            }
-        }
-    }
-}
-                
-pub mod IncompatFlags {
-    use super::*;
-    pub spec const SPEC_Signed: u8 = 1;
-    pub exec const Signed: u8 ensures Signed == SPEC_Signed { 1 }
-}
-
-
-pub struct SpecIncompatFlagsCombinator(pub SpecIncompatFlagsCombinatorAlias);
-
-impl SpecCombinator for SpecIncompatFlagsCombinator {
-    type Type = u8;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecIncompatFlagsCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecIncompatFlagsCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecIncompatFlagsCombinatorAlias = U8;
-
-pub struct IncompatFlagsCombinator(pub IncompatFlagsCombinatorAlias);
-
-impl View for IncompatFlagsCombinator {
-    type V = SpecIncompatFlagsCombinator;
-    open spec fn view(&self) -> Self::V { SpecIncompatFlagsCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IncompatFlagsCombinator {
-    type Type = u8;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type IncompatFlagsCombinatorAlias = U8;
-
-
-pub open spec fn spec_incompat_flags() -> SpecIncompatFlagsCombinator {
-    SpecIncompatFlagsCombinator(U8)
-}
-
-                
-pub fn incompat_flags<'a>() -> (o: IncompatFlagsCombinator)
-    ensures o@ == spec_incompat_flags(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = IncompatFlagsCombinator(U8);
-    assert({
-        &&& combinator@ == spec_incompat_flags()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_incompat_flags<'a>(input: &'a [u8]) -> (res: PResult<<IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_incompat_flags().spec_parse(input@) == Some((n as int, v@)),
-        spec_incompat_flags().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_incompat_flags().spec_parse(input@) is None,
-        spec_incompat_flags().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = incompat_flags();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_incompat_flags<'a>(v: <IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_incompat_flags().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_incompat_flags().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_incompat_flags().spec_serialize(v@))
-        },
-{
-    let combinator = incompat_flags();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn incompat_flags_len<'a>(v: <IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_incompat_flags().wf(v@),
-        spec_incompat_flags().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_incompat_flags().spec_serialize(v@).len(),
-{
-    let combinator = incompat_flags();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-pub mod MessageIds {
-    use super::*;
-    pub spec const SPEC_CommandInt: u32 = 75;
-    pub spec const SPEC_CommandLong: u32 = 76;
-    pub spec const SPEC_CommandAck: u32 = 77;
-    pub spec const SPEC_CommandCancel: u32 = 80;
-    pub spec const SPEC_TerrainRequest: u32 = 134;
-    pub spec const SPEC_Reserved: u32 = 8388608;
-    pub exec const CommandInt: u32 ensures CommandInt == SPEC_CommandInt { 75 }
-    pub exec const CommandLong: u32 ensures CommandLong == SPEC_CommandLong { 76 }
-    pub exec const CommandAck: u32 ensures CommandAck == SPEC_CommandAck { 77 }
-    pub exec const CommandCancel: u32 ensures CommandCancel == SPEC_CommandCancel { 80 }
-    pub exec const TerrainRequest: u32 ensures TerrainRequest == SPEC_TerrainRequest { 134 }
-    pub exec const Reserved: u32 ensures Reserved == SPEC_Reserved { 8388608 }
-}
-
-
-pub struct SpecMessageIdsCombinator(pub SpecMessageIdsCombinatorAlias);
-
-impl SpecCombinator for SpecMessageIdsCombinator {
-    type Type = u24;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMessageIdsCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMessageIdsCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMessageIdsCombinatorAlias = U24Le;
-
-pub struct MessageIdsCombinator(pub MessageIdsCombinatorAlias);
-
-impl View for MessageIdsCombinator {
-    type V = SpecMessageIdsCombinator;
-    open spec fn view(&self) -> Self::V { SpecMessageIdsCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MessageIdsCombinator {
-    type Type = u24;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MessageIdsCombinatorAlias = U24Le;
-
-
-pub open spec fn spec_message_ids() -> SpecMessageIdsCombinator {
-    SpecMessageIdsCombinator(U24Le)
-}
-
-                
-pub fn message_ids<'a>() -> (o: MessageIdsCombinator)
-    ensures o@ == spec_message_ids(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = MessageIdsCombinator(U24Le);
-    assert({
-        &&& combinator@ == spec_message_ids()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_message_ids<'a>(input: &'a [u8]) -> (res: PResult<<MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_message_ids().spec_parse(input@) == Some((n as int, v@)),
-        spec_message_ids().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_message_ids().spec_parse(input@) is None,
-        spec_message_ids().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = message_ids();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_message_ids<'a>(v: <MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_message_ids().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_message_ids().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_message_ids().spec_serialize(v@))
-        },
-{
-    let combinator = message_ids();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn message_ids_len<'a>(v: <MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_message_ids().wf(v@),
-        spec_message_ids().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_message_ids().spec_serialize(v@).len(),
-{
-    let combinator = message_ids();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-                
-
-pub struct SpecCommandLong {
-    pub target_system: u8,
-    pub target_component: u8,
-    pub command: u16,
-    pub confirmation: u8,
-    pub param1: u32,
-    pub param2: u32,
-    pub param3: u32,
-    pub param4: u32,
-    pub param5: u32,
-    pub param6: u32,
-    pub param7: u32,
-}
-
-pub type SpecCommandLongInner = (u8, (u8, (u16, (u8, (u32, (u32, (u32, (u32, (u32, (u32, u32))))))))));
-
-
-impl SpecFrom<SpecCommandLong> for SpecCommandLongInner {
-    open spec fn spec_from(m: SpecCommandLong) -> SpecCommandLongInner {
-        (m.target_system, (m.target_component, (m.command, (m.confirmation, (m.param1, (m.param2, (m.param3, (m.param4, (m.param5, (m.param6, m.param7))))))))))
-    }
-}
-
-impl SpecFrom<SpecCommandLongInner> for SpecCommandLong {
-    open spec fn spec_from(m: SpecCommandLongInner) -> SpecCommandLong {
-        let (target_system, (target_component, (command, (confirmation, (param1, (param2, (param3, (param4, (param5, (param6, param7)))))))))) = m;
-        SpecCommandLong { target_system, target_component, command, confirmation, param1, param2, param3, param4, param5, param6, param7 }
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-
-pub struct CommandLong {
-    pub target_system: u8,
-    pub target_component: u8,
-    pub command: u16,
-    pub confirmation: u8,
-    pub param1: u32,
-    pub param2: u32,
-    pub param3: u32,
-    pub param4: u32,
-    pub param5: u32,
-    pub param6: u32,
-    pub param7: u32,
-}
-
-impl View for CommandLong {
-    type V = SpecCommandLong;
-
-    open spec fn view(&self) -> Self::V {
-        SpecCommandLong {
-            target_system: self.target_system@,
-            target_component: self.target_component@,
-            command: self.command@,
-            confirmation: self.confirmation@,
-            param1: self.param1@,
-            param2: self.param2@,
-            param3: self.param3@,
-            param4: self.param4@,
-            param5: self.param5@,
-            param6: self.param6@,
-            param7: self.param7@,
-        }
-    }
-}
-pub type CommandLongInner = (u8, (u8, (u16, (u8, (u32, (u32, (u32, (u32, (u32, (u32, u32))))))))));
-
-pub type CommandLongInnerRef<'a> = (&'a u8, (&'a u8, (&'a u16, (&'a u8, (&'a u32, (&'a u32, (&'a u32, (&'a u32, (&'a u32, (&'a u32, &'a u32))))))))));
-impl<'a> From<&'a CommandLong> for CommandLongInnerRef<'a> {
-    fn ex_from(m: &'a CommandLong) -> CommandLongInnerRef<'a> {
-        (&m.target_system, (&m.target_component, (&m.command, (&m.confirmation, (&m.param1, (&m.param2, (&m.param3, (&m.param4, (&m.param5, (&m.param6, &m.param7))))))))))
-    }
-}
-
-impl From<CommandLongInner> for CommandLong {
-    fn ex_from(m: CommandLongInner) -> CommandLong {
-        let (target_system, (target_component, (command, (confirmation, (param1, (param2, (param3, (param4, (param5, (param6, param7)))))))))) = m;
-        CommandLong { target_system, target_component, command, confirmation, param1, param2, param3, param4, param5, param6, param7 }
-    }
-}
-
-pub struct CommandLongMapper;
-impl View for CommandLongMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for CommandLongMapper {
-    type Src = SpecCommandLongInner;
-    type Dst = SpecCommandLong;
-}
-impl SpecIsoProof for CommandLongMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for CommandLongMapper {
-    type Src = CommandLongInner;
-    type Dst = CommandLong;
-    type RefSrc = CommandLongInnerRef<'a>;
-}
-type SpecCommandLongCombinatorAlias1 = (U32Le, U32Le);
-type SpecCommandLongCombinatorAlias2 = (U32Le, SpecCommandLongCombinatorAlias1);
-type SpecCommandLongCombinatorAlias3 = (U32Le, SpecCommandLongCombinatorAlias2);
-type SpecCommandLongCombinatorAlias4 = (U32Le, SpecCommandLongCombinatorAlias3);
-type SpecCommandLongCombinatorAlias5 = (U32Le, SpecCommandLongCombinatorAlias4);
-type SpecCommandLongCombinatorAlias6 = (U32Le, SpecCommandLongCombinatorAlias5);
-type SpecCommandLongCombinatorAlias7 = (U8, SpecCommandLongCombinatorAlias6);
-type SpecCommandLongCombinatorAlias8 = (SpecMavCmdCombinator, SpecCommandLongCombinatorAlias7);
-type SpecCommandLongCombinatorAlias9 = (U8, SpecCommandLongCombinatorAlias8);
-type SpecCommandLongCombinatorAlias10 = (U8, SpecCommandLongCombinatorAlias9);
-pub struct SpecCommandLongCombinator(pub SpecCommandLongCombinatorAlias);
-
-impl SpecCombinator for SpecCommandLongCombinator {
-    type Type = SpecCommandLong;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecCommandLongCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecCommandLongCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecCommandLongCombinatorAlias = Mapped<SpecCommandLongCombinatorAlias10, CommandLongMapper>;
-type CommandLongCombinatorAlias1 = (U32Le, U32Le);
-type CommandLongCombinatorAlias2 = (U32Le, CommandLongCombinator1);
-type CommandLongCombinatorAlias3 = (U32Le, CommandLongCombinator2);
-type CommandLongCombinatorAlias4 = (U32Le, CommandLongCombinator3);
-type CommandLongCombinatorAlias5 = (U32Le, CommandLongCombinator4);
-type CommandLongCombinatorAlias6 = (U32Le, CommandLongCombinator5);
-type CommandLongCombinatorAlias7 = (U8, CommandLongCombinator6);
-type CommandLongCombinatorAlias8 = (MavCmdCombinator, CommandLongCombinator7);
-type CommandLongCombinatorAlias9 = (U8, CommandLongCombinator8);
-type CommandLongCombinatorAlias10 = (U8, CommandLongCombinator9);
-pub struct CommandLongCombinator1(pub CommandLongCombinatorAlias1);
-impl View for CommandLongCombinator1 {
-    type V = SpecCommandLongCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator1, CommandLongCombinatorAlias1);
-
-pub struct CommandLongCombinator2(pub CommandLongCombinatorAlias2);
-impl View for CommandLongCombinator2 {
-    type V = SpecCommandLongCombinatorAlias2;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator2, CommandLongCombinatorAlias2);
-
-pub struct CommandLongCombinator3(pub CommandLongCombinatorAlias3);
-impl View for CommandLongCombinator3 {
-    type V = SpecCommandLongCombinatorAlias3;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator3, CommandLongCombinatorAlias3);
-
-pub struct CommandLongCombinator4(pub CommandLongCombinatorAlias4);
-impl View for CommandLongCombinator4 {
-    type V = SpecCommandLongCombinatorAlias4;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator4, CommandLongCombinatorAlias4);
-
-pub struct CommandLongCombinator5(pub CommandLongCombinatorAlias5);
-impl View for CommandLongCombinator5 {
-    type V = SpecCommandLongCombinatorAlias5;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator5, CommandLongCombinatorAlias5);
-
-pub struct CommandLongCombinator6(pub CommandLongCombinatorAlias6);
-impl View for CommandLongCombinator6 {
-    type V = SpecCommandLongCombinatorAlias6;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator6, CommandLongCombinatorAlias6);
-
-pub struct CommandLongCombinator7(pub CommandLongCombinatorAlias7);
-impl View for CommandLongCombinator7 {
-    type V = SpecCommandLongCombinatorAlias7;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator7, CommandLongCombinatorAlias7);
-
-pub struct CommandLongCombinator8(pub CommandLongCombinatorAlias8);
-impl View for CommandLongCombinator8 {
-    type V = SpecCommandLongCombinatorAlias8;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator8, CommandLongCombinatorAlias8);
-
-pub struct CommandLongCombinator9(pub CommandLongCombinatorAlias9);
-impl View for CommandLongCombinator9 {
-    type V = SpecCommandLongCombinatorAlias9;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator9, CommandLongCombinatorAlias9);
-
-pub struct CommandLongCombinator10(pub CommandLongCombinatorAlias10);
-impl View for CommandLongCombinator10 {
-    type V = SpecCommandLongCombinatorAlias10;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(CommandLongCombinator10, CommandLongCombinatorAlias10);
-
-pub struct CommandLongCombinator(pub CommandLongCombinatorAlias);
-
-impl View for CommandLongCombinator {
-    type V = SpecCommandLongCombinator;
-    open spec fn view(&self) -> Self::V { SpecCommandLongCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CommandLongCombinator {
-    type Type = CommandLong;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type CommandLongCombinatorAlias = Mapped<CommandLongCombinator10, CommandLongMapper>;
-
-
-pub open spec fn spec_command_long() -> SpecCommandLongCombinator {
-    SpecCommandLongCombinator(
-    Mapped {
-        inner: (U8, (U8, (spec_mav_cmd(), (U8, (U32Le, (U32Le, (U32Le, (U32Le, (U32Le, (U32Le, U32Le)))))))))),
-        mapper: CommandLongMapper,
-    })
-}
-
-                
-pub fn command_long<'a>() -> (o: CommandLongCombinator)
-    ensures o@ == spec_command_long(),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = CommandLongCombinator(
-    Mapped {
-        inner: CommandLongCombinator10((U8, CommandLongCombinator9((U8, CommandLongCombinator8((mav_cmd(), CommandLongCombinator7((U8, CommandLongCombinator6((U32Le, CommandLongCombinator5((U32Le, CommandLongCombinator4((U32Le, CommandLongCombinator3((U32Le, CommandLongCombinator2((U32Le, CommandLongCombinator1((U32Le, U32Le)))))))))))))))))))),
-        mapper: CommandLongMapper,
-    });
-    assert({
-        &&& combinator@ == spec_command_long()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_command_long<'a>(input: &'a [u8]) -> (res: PResult<<CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_command_long().spec_parse(input@) == Some((n as int, v@)),
-        spec_command_long().spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_command_long().spec_parse(input@) is None,
-        spec_command_long().spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = command_long();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_command_long<'a>(v: <CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_command_long().wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_command_long().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_command_long().spec_serialize(v@))
-        },
-{
-    let combinator = command_long();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
-}
-
-pub fn command_long_len<'a>(v: <CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
-    requires
-        spec_command_long().wf(v@),
-        spec_command_long().spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_command_long().spec_serialize(v@).len(),
-{
-    let combinator = command_long();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -2324,7 +1027,7 @@ impl SpecPartialIso for MavResultMapper {
 }
 
 impl SpecPartialIsoProof for MavResultMapper {
-    proof fn spec_iso(s: Self::Src) { 
+    proof fn spec_iso(s: Self::Src) {
         assert(
             Self::spec_apply(s) matches Ok(v) ==> {
             &&& Self::spec_rev_apply(v) is Ok
@@ -2332,7 +1035,7 @@ impl SpecPartialIsoProof for MavResultMapper {
         });
     }
 
-    proof fn spec_iso_rev(s: Self::Dst) { 
+    proof fn spec_iso_rev(s: Self::Dst) {
         assert(
             Self::spec_rev_apply(s) matches Ok(v) ==> {
             &&& Self::spec_apply(v) is Ok
@@ -2356,13 +1059,13 @@ impl SpecCombinator for SpecMavResultCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavResultCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavResultCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -2370,11 +1073,11 @@ impl SecureSpecCombinator for SpecMavResultCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavResultCombinatorAlias = TryMap<U8, MavResultMapper>;
@@ -2390,13 +1093,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavResultCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavResultCombinatorAlias = TryMap<U8, MavResultMapper>;
 
 
@@ -2411,11 +1114,11 @@ pub fn mav_result<'a>() -> (o: MavResultCombinator)
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = MavResultCombinator(TryMap { inner: U8, mapper: MavResultMapper });
-    assert({
-        &&& combinator@ == spec_mav_result()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mav_result()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -2439,14 +1142,14 @@ pub fn serialize_mav_result<'a>(v: <MavResultCombinator as Combinator<'a, &'a [u
         spec_mav_result().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mav_result().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mav_result().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mav_result().spec_serialize(v@))
         },
 {
     let combinator = mav_result();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mav_result_len<'a>(v: <MavResultCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2457,6 +1160,1303 @@ pub fn mav_result_len<'a>(v: <MavResultCombinator as Combinator<'a, &'a [u8], Ve
         serialize_len == spec_mav_result().spec_serialize(v@).len(),
 {
     let combinator = mav_result();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub enum SpecMavlinkV2MsgSignature {
+    Variant0(Seq<u8>),
+    Variant1(Seq<u8>),
+}
+
+pub type SpecMavlinkV2MsgSignatureInner = Either<Seq<u8>, Seq<u8>>;
+
+impl SpecFrom<SpecMavlinkV2MsgSignature> for SpecMavlinkV2MsgSignatureInner {
+    open spec fn spec_from(m: SpecMavlinkV2MsgSignature) -> SpecMavlinkV2MsgSignatureInner {
+        match m {
+            SpecMavlinkV2MsgSignature::Variant0(m) => Either::Left(m),
+            SpecMavlinkV2MsgSignature::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+                
+impl SpecFrom<SpecMavlinkV2MsgSignatureInner> for SpecMavlinkV2MsgSignature {
+    open spec fn spec_from(m: SpecMavlinkV2MsgSignatureInner) -> SpecMavlinkV2MsgSignature {
+        match m {
+            Either::Left(m) => SpecMavlinkV2MsgSignature::Variant0(m),
+            Either::Right(m) => SpecMavlinkV2MsgSignature::Variant1(m),
+        }
+    }
+
+}
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MavlinkV2MsgSignature<'a> {
+    Variant0(&'a [u8]),
+    Variant1(&'a [u8]),
+}
+
+pub type MavlinkV2MsgSignatureInner<'a> = Either<&'a [u8], &'a [u8]>;
+
+pub type MavlinkV2MsgSignatureInnerRef<'a> = Either<&'a &'a [u8], &'a &'a [u8]>;
+
+
+impl<'a> View for MavlinkV2MsgSignature<'a> {
+    type V = SpecMavlinkV2MsgSignature;
+    open spec fn view(&self) -> Self::V {
+        match self {
+            MavlinkV2MsgSignature::Variant0(m) => SpecMavlinkV2MsgSignature::Variant0(m@),
+            MavlinkV2MsgSignature::Variant1(m) => SpecMavlinkV2MsgSignature::Variant1(m@),
+        }
+    }
+}
+
+
+impl<'a> From<&'a MavlinkV2MsgSignature<'a>> for MavlinkV2MsgSignatureInnerRef<'a> {
+    fn ex_from(m: &'a MavlinkV2MsgSignature<'a>) -> MavlinkV2MsgSignatureInnerRef<'a> {
+        match m {
+            MavlinkV2MsgSignature::Variant0(m) => Either::Left(m),
+            MavlinkV2MsgSignature::Variant1(m) => Either::Right(m),
+        }
+    }
+
+}
+
+impl<'a> From<MavlinkV2MsgSignatureInner<'a>> for MavlinkV2MsgSignature<'a> {
+    fn ex_from(m: MavlinkV2MsgSignatureInner<'a>) -> MavlinkV2MsgSignature<'a> {
+        match m {
+            Either::Left(m) => MavlinkV2MsgSignature::Variant0(m),
+            Either::Right(m) => MavlinkV2MsgSignature::Variant1(m),
+        }
+    }
+    
+}
+
+
+pub struct MavlinkV2MsgSignatureMapper;
+impl View for MavlinkV2MsgSignatureMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MavlinkV2MsgSignatureMapper {
+    type Src = SpecMavlinkV2MsgSignatureInner;
+    type Dst = SpecMavlinkV2MsgSignature;
+}
+impl SpecIsoProof for MavlinkV2MsgSignatureMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for MavlinkV2MsgSignatureMapper {
+    type Src = MavlinkV2MsgSignatureInner<'a>;
+    type Dst = MavlinkV2MsgSignature<'a>;
+    type RefSrc = MavlinkV2MsgSignatureInnerRef<'a>;
+}
+
+type SpecMavlinkV2MsgSignatureCombinatorAlias1 = Choice<Cond<bytes::Fixed<13>>, Cond<bytes::Fixed<0>>>;
+pub struct SpecMavlinkV2MsgSignatureCombinator(pub SpecMavlinkV2MsgSignatureCombinatorAlias);
+
+impl SpecCombinator for SpecMavlinkV2MsgSignatureCombinator {
+    type Type = SpecMavlinkV2MsgSignature;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMavlinkV2MsgSignatureCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecMavlinkV2MsgSignatureCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMavlinkV2MsgSignatureCombinatorAlias = Mapped<SpecMavlinkV2MsgSignatureCombinatorAlias1, MavlinkV2MsgSignatureMapper>;
+type MavlinkV2MsgSignatureCombinatorAlias1 = Choice<Cond<bytes::Fixed<13>>, Cond<bytes::Fixed<0>>>;
+pub struct MavlinkV2MsgSignatureCombinator1(pub MavlinkV2MsgSignatureCombinatorAlias1);
+impl View for MavlinkV2MsgSignatureCombinator1 {
+    type V = SpecMavlinkV2MsgSignatureCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(MavlinkV2MsgSignatureCombinator1, MavlinkV2MsgSignatureCombinatorAlias1);
+
+pub struct MavlinkV2MsgSignatureCombinator(pub MavlinkV2MsgSignatureCombinatorAlias);
+
+impl View for MavlinkV2MsgSignatureCombinator {
+    type V = SpecMavlinkV2MsgSignatureCombinator;
+    open spec fn view(&self) -> Self::V { SpecMavlinkV2MsgSignatureCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV2MsgSignatureCombinator {
+    type Type = MavlinkV2MsgSignature<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type MavlinkV2MsgSignatureCombinatorAlias = Mapped<MavlinkV2MsgSignatureCombinator1, MavlinkV2MsgSignatureMapper>;
+
+
+pub open spec fn spec_mavlink_v2_msg_signature(incompat_flags: u8) -> SpecMavlinkV2MsgSignatureCombinator {
+    SpecMavlinkV2MsgSignatureCombinator(Mapped { inner: Choice(Cond { cond: incompat_flags == 1, inner: bytes::Fixed::<13> }, Cond { cond: !(incompat_flags == 1), inner: bytes::Fixed::<0> }), mapper: MavlinkV2MsgSignatureMapper })
+}
+
+pub fn mavlink_v2_msg_signature<'a>(incompat_flags: u8) -> (o: MavlinkV2MsgSignatureCombinator)
+    requires
+        spec_incompat_flags().wf(incompat_flags@),
+
+    ensures o@ == spec_mavlink_v2_msg_signature(incompat_flags@),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = MavlinkV2MsgSignatureCombinator(Mapped { inner: MavlinkV2MsgSignatureCombinator1(Choice::new(Cond { cond: incompat_flags == 1, inner: bytes::Fixed::<13> }, Cond { cond: !(incompat_flags == 1), inner: bytes::Fixed::<0> })), mapper: MavlinkV2MsgSignatureMapper });
+    // assert({
+    //     &&& combinator@ == spec_mavlink_v2_msg_signature(incompat_flags@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_mavlink_v2_msg_signature<'a>(input: &'a [u8], incompat_flags: u8) -> (res: PResult<<MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+        spec_incompat_flags().wf(incompat_flags@),
+
+    ensures
+        res matches Ok((n, v)) ==> spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) == Some((n as int, v@)),
+        spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) is None,
+        spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = mavlink_v2_msg_signature( incompat_flags );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_mavlink_v2_msg_signature<'a>(v: <MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, incompat_flags: u8) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_mavlink_v2_msg_signature(incompat_flags@).wf(v@),
+        spec_incompat_flags().wf(incompat_flags@),
+
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@))
+        },
+{
+    let combinator = mavlink_v2_msg_signature( incompat_flags );
+    combinator.serialize(v, &mut *data, pos)
+}
+
+pub fn mavlink_v2_msg_signature_len<'a>(v: <MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, incompat_flags: u8) -> (serialize_len: usize)
+    requires
+        spec_mavlink_v2_msg_signature(incompat_flags@).wf(v@),
+        spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len() <= usize::MAX,
+        spec_incompat_flags().wf(incompat_flags@),
+
+    ensures
+        serialize_len == spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len(),
+{
+    let combinator = mavlink_v2_msg_signature( incompat_flags );
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+pub mod MessageIds {
+    use super::*;
+    pub spec const SPEC_CommandInt: u32 = 75;
+    pub spec const SPEC_CommandLong: u32 = 76;
+    pub spec const SPEC_CommandAck: u32 = 77;
+    pub spec const SPEC_CommandCancel: u32 = 80;
+    pub spec const SPEC_TerrainRequest: u32 = 134;
+    pub spec const SPEC_Reserved: u32 = 8388608;
+    pub exec const CommandInt: u32 ensures CommandInt == SPEC_CommandInt { 75 }
+    pub exec const CommandLong: u32 ensures CommandLong == SPEC_CommandLong { 76 }
+    pub exec const CommandAck: u32 ensures CommandAck == SPEC_CommandAck { 77 }
+    pub exec const CommandCancel: u32 ensures CommandCancel == SPEC_CommandCancel { 80 }
+    pub exec const TerrainRequest: u32 ensures TerrainRequest == SPEC_TerrainRequest { 134 }
+    pub exec const Reserved: u32 ensures Reserved == SPEC_Reserved { 8388608 }
+}
+
+
+pub struct SpecMessageIdsCombinator(pub SpecMessageIdsCombinatorAlias);
+
+impl SpecCombinator for SpecMessageIdsCombinator {
+    type Type = u24;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMessageIdsCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecMessageIdsCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMessageIdsCombinatorAlias = U24Le;
+
+pub struct MessageIdsCombinator(pub MessageIdsCombinatorAlias);
+
+impl View for MessageIdsCombinator {
+    type V = SpecMessageIdsCombinator;
+    open spec fn view(&self) -> Self::V { SpecMessageIdsCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MessageIdsCombinator {
+    type Type = u24;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type MessageIdsCombinatorAlias = U24Le;
+
+
+pub open spec fn spec_message_ids() -> SpecMessageIdsCombinator {
+    SpecMessageIdsCombinator(U24Le)
+}
+
+                
+pub fn message_ids<'a>() -> (o: MessageIdsCombinator)
+    ensures o@ == spec_message_ids(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = MessageIdsCombinator(U24Le);
+    // assert({
+    //     &&& combinator@ == spec_message_ids()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_message_ids<'a>(input: &'a [u8]) -> (res: PResult<<MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_message_ids().spec_parse(input@) == Some((n as int, v@)),
+        spec_message_ids().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_message_ids().spec_parse(input@) is None,
+        spec_message_ids().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = message_ids();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_message_ids<'a>(v: <MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_message_ids().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_message_ids().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_message_ids().spec_serialize(v@))
+        },
+{
+    let combinator = message_ids();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn message_ids_len<'a>(v: <MessageIdsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_message_ids().wf(v@),
+        spec_message_ids().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_message_ids().spec_serialize(v@).len(),
+{
+    let combinator = message_ids();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub struct SpecCommandLong {
+    pub target_system: u8,
+    pub target_component: u8,
+    pub command: u16,
+    pub confirmation: u8,
+    pub param1: u32,
+    pub param2: u32,
+    pub param3: u32,
+    pub param4: u32,
+    pub param5: u32,
+    pub param6: u32,
+    pub param7: u32,
+}
+
+pub type SpecCommandLongInner = (u8, (u8, (u16, (u8, (u32, (u32, (u32, (u32, (u32, (u32, u32))))))))));
+
+
+impl SpecFrom<SpecCommandLong> for SpecCommandLongInner {
+    open spec fn spec_from(m: SpecCommandLong) -> SpecCommandLongInner {
+        (m.target_system, (m.target_component, (m.command, (m.confirmation, (m.param1, (m.param2, (m.param3, (m.param4, (m.param5, (m.param6, m.param7))))))))))
+    }
+}
+
+impl SpecFrom<SpecCommandLongInner> for SpecCommandLong {
+    open spec fn spec_from(m: SpecCommandLongInner) -> SpecCommandLong {
+        let (target_system, (target_component, (command, (confirmation, (param1, (param2, (param3, (param4, (param5, (param6, param7)))))))))) = m;
+        SpecCommandLong { target_system, target_component, command, confirmation, param1, param2, param3, param4, param5, param6, param7 }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct CommandLong {
+    pub target_system: u8,
+    pub target_component: u8,
+    pub command: u16,
+    pub confirmation: u8,
+    pub param1: u32,
+    pub param2: u32,
+    pub param3: u32,
+    pub param4: u32,
+    pub param5: u32,
+    pub param6: u32,
+    pub param7: u32,
+}
+
+impl View for CommandLong {
+    type V = SpecCommandLong;
+
+    open spec fn view(&self) -> Self::V {
+        SpecCommandLong {
+            target_system: self.target_system@,
+            target_component: self.target_component@,
+            command: self.command@,
+            confirmation: self.confirmation@,
+            param1: self.param1@,
+            param2: self.param2@,
+            param3: self.param3@,
+            param4: self.param4@,
+            param5: self.param5@,
+            param6: self.param6@,
+            param7: self.param7@,
+        }
+    }
+}
+pub type CommandLongInner = (u8, (u8, (u16, (u8, (u32, (u32, (u32, (u32, (u32, (u32, u32))))))))));
+
+pub type CommandLongInnerRef<'a> = (&'a u8, (&'a u8, (&'a u16, (&'a u8, (&'a u32, (&'a u32, (&'a u32, (&'a u32, (&'a u32, (&'a u32, &'a u32))))))))));
+impl<'a> From<&'a CommandLong> for CommandLongInnerRef<'a> {
+    fn ex_from(m: &'a CommandLong) -> CommandLongInnerRef<'a> {
+        (&m.target_system, (&m.target_component, (&m.command, (&m.confirmation, (&m.param1, (&m.param2, (&m.param3, (&m.param4, (&m.param5, (&m.param6, &m.param7))))))))))
+    }
+}
+
+impl From<CommandLongInner> for CommandLong {
+    fn ex_from(m: CommandLongInner) -> CommandLong {
+        let (target_system, (target_component, (command, (confirmation, (param1, (param2, (param3, (param4, (param5, (param6, param7)))))))))) = m;
+        CommandLong { target_system, target_component, command, confirmation, param1, param2, param3, param4, param5, param6, param7 }
+    }
+}
+
+pub struct CommandLongMapper;
+impl View for CommandLongMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for CommandLongMapper {
+    type Src = SpecCommandLongInner;
+    type Dst = SpecCommandLong;
+}
+impl SpecIsoProof for CommandLongMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for CommandLongMapper {
+    type Src = CommandLongInner;
+    type Dst = CommandLong;
+    type RefSrc = CommandLongInnerRef<'a>;
+}
+type SpecCommandLongCombinatorAlias1 = (U32Le, U32Le);
+type SpecCommandLongCombinatorAlias2 = (U32Le, SpecCommandLongCombinatorAlias1);
+type SpecCommandLongCombinatorAlias3 = (U32Le, SpecCommandLongCombinatorAlias2);
+type SpecCommandLongCombinatorAlias4 = (U32Le, SpecCommandLongCombinatorAlias3);
+type SpecCommandLongCombinatorAlias5 = (U32Le, SpecCommandLongCombinatorAlias4);
+type SpecCommandLongCombinatorAlias6 = (U32Le, SpecCommandLongCombinatorAlias5);
+type SpecCommandLongCombinatorAlias7 = (U8, SpecCommandLongCombinatorAlias6);
+type SpecCommandLongCombinatorAlias8 = (SpecMavCmdCombinator, SpecCommandLongCombinatorAlias7);
+type SpecCommandLongCombinatorAlias9 = (U8, SpecCommandLongCombinatorAlias8);
+type SpecCommandLongCombinatorAlias10 = (U8, SpecCommandLongCombinatorAlias9);
+pub struct SpecCommandLongCombinator(pub SpecCommandLongCombinatorAlias);
+
+impl SpecCombinator for SpecCommandLongCombinator {
+    type Type = SpecCommandLong;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecCommandLongCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecCommandLongCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecCommandLongCombinatorAlias = Mapped<SpecCommandLongCombinatorAlias10, CommandLongMapper>;
+type CommandLongCombinatorAlias1 = (U32Le, U32Le);
+type CommandLongCombinatorAlias2 = (U32Le, CommandLongCombinator1);
+type CommandLongCombinatorAlias3 = (U32Le, CommandLongCombinator2);
+type CommandLongCombinatorAlias4 = (U32Le, CommandLongCombinator3);
+type CommandLongCombinatorAlias5 = (U32Le, CommandLongCombinator4);
+type CommandLongCombinatorAlias6 = (U32Le, CommandLongCombinator5);
+type CommandLongCombinatorAlias7 = (U8, CommandLongCombinator6);
+type CommandLongCombinatorAlias8 = (MavCmdCombinator, CommandLongCombinator7);
+type CommandLongCombinatorAlias9 = (U8, CommandLongCombinator8);
+type CommandLongCombinatorAlias10 = (U8, CommandLongCombinator9);
+pub struct CommandLongCombinator1(pub CommandLongCombinatorAlias1);
+impl View for CommandLongCombinator1 {
+    type V = SpecCommandLongCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator1, CommandLongCombinatorAlias1);
+
+pub struct CommandLongCombinator2(pub CommandLongCombinatorAlias2);
+impl View for CommandLongCombinator2 {
+    type V = SpecCommandLongCombinatorAlias2;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator2, CommandLongCombinatorAlias2);
+
+pub struct CommandLongCombinator3(pub CommandLongCombinatorAlias3);
+impl View for CommandLongCombinator3 {
+    type V = SpecCommandLongCombinatorAlias3;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator3, CommandLongCombinatorAlias3);
+
+pub struct CommandLongCombinator4(pub CommandLongCombinatorAlias4);
+impl View for CommandLongCombinator4 {
+    type V = SpecCommandLongCombinatorAlias4;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator4, CommandLongCombinatorAlias4);
+
+pub struct CommandLongCombinator5(pub CommandLongCombinatorAlias5);
+impl View for CommandLongCombinator5 {
+    type V = SpecCommandLongCombinatorAlias5;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator5, CommandLongCombinatorAlias5);
+
+pub struct CommandLongCombinator6(pub CommandLongCombinatorAlias6);
+impl View for CommandLongCombinator6 {
+    type V = SpecCommandLongCombinatorAlias6;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator6, CommandLongCombinatorAlias6);
+
+pub struct CommandLongCombinator7(pub CommandLongCombinatorAlias7);
+impl View for CommandLongCombinator7 {
+    type V = SpecCommandLongCombinatorAlias7;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator7, CommandLongCombinatorAlias7);
+
+pub struct CommandLongCombinator8(pub CommandLongCombinatorAlias8);
+impl View for CommandLongCombinator8 {
+    type V = SpecCommandLongCombinatorAlias8;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator8, CommandLongCombinatorAlias8);
+
+pub struct CommandLongCombinator9(pub CommandLongCombinatorAlias9);
+impl View for CommandLongCombinator9 {
+    type V = SpecCommandLongCombinatorAlias9;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator9, CommandLongCombinatorAlias9);
+
+pub struct CommandLongCombinator10(pub CommandLongCombinatorAlias10);
+impl View for CommandLongCombinator10 {
+    type V = SpecCommandLongCombinatorAlias10;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(CommandLongCombinator10, CommandLongCombinatorAlias10);
+
+pub struct CommandLongCombinator(pub CommandLongCombinatorAlias);
+
+impl View for CommandLongCombinator {
+    type V = SpecCommandLongCombinator;
+    open spec fn view(&self) -> Self::V { SpecCommandLongCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CommandLongCombinator {
+    type Type = CommandLong;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type CommandLongCombinatorAlias = Mapped<CommandLongCombinator10, CommandLongMapper>;
+
+
+pub open spec fn spec_command_long() -> SpecCommandLongCombinator {
+    SpecCommandLongCombinator(
+    Mapped {
+        inner: (U8, (U8, (spec_mav_cmd(), (U8, (U32Le, (U32Le, (U32Le, (U32Le, (U32Le, (U32Le, U32Le)))))))))),
+        mapper: CommandLongMapper,
+    })
+}
+
+                
+pub fn command_long<'a>() -> (o: CommandLongCombinator)
+    ensures o@ == spec_command_long(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = CommandLongCombinator(
+    Mapped {
+        inner: CommandLongCombinator10((U8, CommandLongCombinator9((U8, CommandLongCombinator8((mav_cmd(), CommandLongCombinator7((U8, CommandLongCombinator6((U32Le, CommandLongCombinator5((U32Le, CommandLongCombinator4((U32Le, CommandLongCombinator3((U32Le, CommandLongCombinator2((U32Le, CommandLongCombinator1((U32Le, U32Le)))))))))))))))))))),
+        mapper: CommandLongMapper,
+    });
+    // assert({
+    //     &&& combinator@ == spec_command_long()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_command_long<'a>(input: &'a [u8]) -> (res: PResult<<CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_command_long().spec_parse(input@) == Some((n as int, v@)),
+        spec_command_long().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_command_long().spec_parse(input@) is None,
+        spec_command_long().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = command_long();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_command_long<'a>(v: <CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_command_long().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_command_long().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_command_long().spec_serialize(v@))
+        },
+{
+    let combinator = command_long();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn command_long_len<'a>(v: <CommandLongCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_command_long().wf(v@),
+        spec_command_long().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_command_long().spec_serialize(v@).len(),
+{
+    let combinator = command_long();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub spec const SPEC_ProtocolMagic_MavLink1: u8 = 254;
+pub spec const SPEC_ProtocolMagic_MavLink2: u8 = 253;
+pub exec static EXEC_ProtocolMagic_MavLink1: u8 ensures EXEC_ProtocolMagic_MavLink1 == SPEC_ProtocolMagic_MavLink1 { 254 }
+pub exec static EXEC_ProtocolMagic_MavLink2: u8 ensures EXEC_ProtocolMagic_MavLink2 == SPEC_ProtocolMagic_MavLink2 { 253 }
+
+#[derive(Structural, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ProtocolMagic {
+    MavLink1 = 254,
+MavLink2 = 253
+}
+pub type SpecProtocolMagic = ProtocolMagic;
+
+pub type ProtocolMagicInner = u8;
+
+pub type ProtocolMagicInnerRef<'a> = &'a u8;
+
+impl View for ProtocolMagic {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecTryFrom<ProtocolMagicInner> for ProtocolMagic {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ProtocolMagicInner) -> Result<ProtocolMagic, ()> {
+        match v {
+            254u8 => Ok(ProtocolMagic::MavLink1),
+            253u8 => Ok(ProtocolMagic::MavLink2),
+            _ => Err(()),
+        }
+    }
+}
+
+impl SpecTryFrom<ProtocolMagic> for ProtocolMagicInner {
+    type Error = ();
+
+    open spec fn spec_try_from(v: ProtocolMagic) -> Result<ProtocolMagicInner, ()> {
+        match v {
+            ProtocolMagic::MavLink1 => Ok(SPEC_ProtocolMagic_MavLink1),
+            ProtocolMagic::MavLink2 => Ok(SPEC_ProtocolMagic_MavLink2),
+        }
+    }
+}
+
+impl TryFrom<ProtocolMagicInner> for ProtocolMagic {
+    type Error = ();
+
+    fn ex_try_from(v: ProtocolMagicInner) -> Result<ProtocolMagic, ()> {
+        match v {
+            254u8 => Ok(ProtocolMagic::MavLink1),
+            253u8 => Ok(ProtocolMagic::MavLink2),
+            _ => Err(()),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a ProtocolMagic> for ProtocolMagicInnerRef<'a> {
+    type Error = ();
+
+    fn ex_try_from(v: &'a ProtocolMagic) -> Result<ProtocolMagicInnerRef<'a>, ()> {
+        match v {
+            ProtocolMagic::MavLink1 => Ok(&EXEC_ProtocolMagic_MavLink1),
+            ProtocolMagic::MavLink2 => Ok(&EXEC_ProtocolMagic_MavLink2),
+        }
+    }
+}
+
+pub struct ProtocolMagicMapper;
+
+impl View for ProtocolMagicMapper {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl SpecPartialIso for ProtocolMagicMapper {
+    type Src = ProtocolMagicInner;
+    type Dst = ProtocolMagic;
+}
+
+impl SpecPartialIsoProof for ProtocolMagicMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(
+            Self::spec_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_rev_apply(v) is Ok
+            &&& Self::spec_rev_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(
+            Self::spec_rev_apply(s) matches Ok(v) ==> {
+            &&& Self::spec_apply(v) is Ok
+            &&& Self::spec_apply(v) matches Ok(s_) && s == s_
+        });
+    }
+}
+
+impl<'a> PartialIso<'a> for ProtocolMagicMapper {
+    type Src = ProtocolMagicInner;
+    type Dst = ProtocolMagic;
+    type RefSrc = ProtocolMagicInnerRef<'a>;
+}
+
+
+pub struct SpecProtocolMagicCombinator(pub SpecProtocolMagicCombinatorAlias);
+
+impl SpecCombinator for SpecProtocolMagicCombinator {
+    type Type = SpecProtocolMagic;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecProtocolMagicCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecProtocolMagicCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecProtocolMagicCombinatorAlias = TryMap<U8, ProtocolMagicMapper>;
+
+pub struct ProtocolMagicCombinator(pub ProtocolMagicCombinatorAlias);
+
+impl View for ProtocolMagicCombinator {
+    type V = SpecProtocolMagicCombinator;
+    open spec fn view(&self) -> Self::V { SpecProtocolMagicCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ProtocolMagicCombinator {
+    type Type = ProtocolMagic;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type ProtocolMagicCombinatorAlias = TryMap<U8, ProtocolMagicMapper>;
+
+
+pub open spec fn spec_protocol_magic() -> SpecProtocolMagicCombinator {
+    SpecProtocolMagicCombinator(TryMap { inner: U8, mapper: ProtocolMagicMapper })
+}
+
+                
+pub fn protocol_magic<'a>() -> (o: ProtocolMagicCombinator)
+    ensures o@ == spec_protocol_magic(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = ProtocolMagicCombinator(TryMap { inner: U8, mapper: ProtocolMagicMapper });
+    // assert({
+    //     &&& combinator@ == spec_protocol_magic()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_protocol_magic<'a>(input: &'a [u8]) -> (res: PResult<<ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_protocol_magic().spec_parse(input@) == Some((n as int, v@)),
+        spec_protocol_magic().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_protocol_magic().spec_parse(input@) is None,
+        spec_protocol_magic().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = protocol_magic();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_protocol_magic<'a>(v: <ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_protocol_magic().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_protocol_magic().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_protocol_magic().spec_serialize(v@))
+        },
+{
+    let combinator = protocol_magic();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn protocol_magic_len<'a>(v: <ProtocolMagicCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_protocol_magic().wf(v@),
+        spec_protocol_magic().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_protocol_magic().spec_serialize(v@).len(),
+{
+    let combinator = protocol_magic();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub struct SpecMavlinkV1Msg {
+    pub len: u8,
+    pub seq: u8,
+    pub sysid: u8,
+    pub compid: u8,
+    pub msgid: u8,
+    pub payload: Seq<u8>,
+    pub checksum: u16,
+}
+
+pub type SpecMavlinkV1MsgInner = (u8, (u8, (u8, (u8, (u8, (Seq<u8>, u16))))));
+
+
+impl SpecFrom<SpecMavlinkV1Msg> for SpecMavlinkV1MsgInner {
+    open spec fn spec_from(m: SpecMavlinkV1Msg) -> SpecMavlinkV1MsgInner {
+        (m.len, (m.seq, (m.sysid, (m.compid, (m.msgid, (m.payload, m.checksum))))))
+    }
+}
+
+impl SpecFrom<SpecMavlinkV1MsgInner> for SpecMavlinkV1Msg {
+    open spec fn spec_from(m: SpecMavlinkV1MsgInner) -> SpecMavlinkV1Msg {
+        let (len, (seq, (sysid, (compid, (msgid, (payload, checksum)))))) = m;
+        SpecMavlinkV1Msg { len, seq, sysid, compid, msgid, payload, checksum }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct MavlinkV1Msg<'a> {
+    pub len: u8,
+    pub seq: u8,
+    pub sysid: u8,
+    pub compid: u8,
+    pub msgid: u8,
+    pub payload: &'a [u8],
+    pub checksum: u16,
+}
+
+impl View for MavlinkV1Msg<'_> {
+    type V = SpecMavlinkV1Msg;
+
+    open spec fn view(&self) -> Self::V {
+        SpecMavlinkV1Msg {
+            len: self.len@,
+            seq: self.seq@,
+            sysid: self.sysid@,
+            compid: self.compid@,
+            msgid: self.msgid@,
+            payload: self.payload@,
+            checksum: self.checksum@,
+        }
+    }
+}
+pub type MavlinkV1MsgInner<'a> = (u8, (u8, (u8, (u8, (u8, (&'a [u8], u16))))));
+
+pub type MavlinkV1MsgInnerRef<'a> = (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a u8, (&'a &'a [u8], &'a u16))))));
+impl<'a> From<&'a MavlinkV1Msg<'a>> for MavlinkV1MsgInnerRef<'a> {
+    fn ex_from(m: &'a MavlinkV1Msg) -> MavlinkV1MsgInnerRef<'a> {
+        (&m.len, (&m.seq, (&m.sysid, (&m.compid, (&m.msgid, (&m.payload, &m.checksum))))))
+    }
+}
+
+impl<'a> From<MavlinkV1MsgInner<'a>> for MavlinkV1Msg<'a> {
+    fn ex_from(m: MavlinkV1MsgInner) -> MavlinkV1Msg {
+        let (len, (seq, (sysid, (compid, (msgid, (payload, checksum)))))) = m;
+        MavlinkV1Msg { len, seq, sysid, compid, msgid, payload, checksum }
+    }
+}
+
+pub struct MavlinkV1MsgMapper;
+impl View for MavlinkV1MsgMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for MavlinkV1MsgMapper {
+    type Src = SpecMavlinkV1MsgInner;
+    type Dst = SpecMavlinkV1Msg;
+}
+impl SpecIsoProof for MavlinkV1MsgMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for MavlinkV1MsgMapper {
+    type Src = MavlinkV1MsgInner<'a>;
+    type Dst = MavlinkV1Msg<'a>;
+    type RefSrc = MavlinkV1MsgInnerRef<'a>;
+}
+
+pub struct SpecMavlinkV1MsgCombinator(pub SpecMavlinkV1MsgCombinatorAlias);
+
+impl SpecCombinator for SpecMavlinkV1MsgCombinator {
+    type Type = SpecMavlinkV1Msg;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecMavlinkV1MsgCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecMavlinkV1MsgCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecMavlinkV1MsgCombinatorAlias = Mapped<SpecPair<U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))))>, MavlinkV1MsgMapper>;
+pub struct Predicate3768926651291043512;
+impl View for Predicate3768926651291043512 {
+    type V = Self;
+
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl Pred<u8> for Predicate3768926651291043512 {
+    fn apply(&self, i: &u8) -> bool {
+        let i = (*i);
+        (i >= 1)
+    }
+}
+impl SpecPred<u8> for Predicate3768926651291043512 {
+    open spec fn spec_apply(&self, i: &u8) -> bool {
+        let i = (*i);
+        (i >= 1)
+    }
+}
+
+pub struct MavlinkV1MsgCombinator(pub MavlinkV1MsgCombinatorAlias);
+
+impl View for MavlinkV1MsgCombinator {
+    type V = SpecMavlinkV1MsgCombinator;
+    open spec fn view(&self) -> Self::V { SpecMavlinkV1MsgCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV1MsgCombinator {
+    type Type = MavlinkV1Msg<'a>;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type MavlinkV1MsgCombinatorAlias = Mapped<Pair<U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le))))), MavlinkV1MsgCont0>, MavlinkV1MsgMapper>;
+
+
+pub open spec fn spec_mavlink_v1_msg() -> SpecMavlinkV1MsgCombinator {
+    SpecMavlinkV1MsgCombinator(
+    Mapped {
+        inner: Pair::spec_new(U8, |deps| spec_mavlink_v1_msg_cont0(deps)),
+        mapper: MavlinkV1MsgMapper,
+    })
+}
+
+pub open spec fn spec_mavlink_v1_msg_cont0(deps: u8) -> (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le))))) {
+    let len = deps;
+    (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable((usize::spec_from(len)) as usize), U16Le)))))
+}
+
+impl View for MavlinkV1MsgCont0 {
+    type V = spec_fn(u8) -> (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))));
+
+    open spec fn view(&self) -> Self::V {
+        |deps: u8| {
+            spec_mavlink_v1_msg_cont0(deps)
+        }
+    }
+}
+
+                
+pub fn mavlink_v1_msg<'a>() -> (o: MavlinkV1MsgCombinator)
+    ensures o@ == spec_mavlink_v1_msg(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = MavlinkV1MsgCombinator(
+    Mapped {
+        inner: Pair::new(U8, MavlinkV1MsgCont0),
+        mapper: MavlinkV1MsgMapper,
+    });
+    // assert({
+    //     &&& combinator@ == spec_mavlink_v1_msg()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_mavlink_v1_msg<'a>(input: &'a [u8]) -> (res: PResult<<MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_mavlink_v1_msg().spec_parse(input@) == Some((n as int, v@)),
+        spec_mavlink_v1_msg().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_mavlink_v1_msg().spec_parse(input@) is None,
+        spec_mavlink_v1_msg().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = mavlink_v1_msg();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_mavlink_v1_msg<'a>(v: <MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_mavlink_v1_msg().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_mavlink_v1_msg().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_v1_msg().spec_serialize(v@))
+        },
+{
+    let combinator = mavlink_v1_msg();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn mavlink_v1_msg_len<'a>(v: <MavlinkV1MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_mavlink_v1_msg().wf(v@),
+        spec_mavlink_v1_msg().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_mavlink_v1_msg().spec_serialize(v@).len(),
+{
+    let combinator = mavlink_v1_msg();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+pub struct MavlinkV1MsgCont0;
+type MavlinkV1MsgCont0Type<'a, 'b> = &'b u8;
+type MavlinkV1MsgCont0SType<'a, 'x> = &'x u8;
+type MavlinkV1MsgCont0Input<'a, 'b, 'x> = POrSType<MavlinkV1MsgCont0Type<'a, 'b>, MavlinkV1MsgCont0SType<'a, 'x>>;
+impl<'a, 'b, 'x> Continuation<MavlinkV1MsgCont0Input<'a, 'b, 'x>> for MavlinkV1MsgCont0 {
+    type Output = (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, (U8, (bytes::Variable, U16Le)))));
+
+    open spec fn requires(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (U8).wf(deps@)
+        }
+
+    open spec fn ensures(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_mavlink_v1_msg_cont0(deps@)
+    }
+
+    fn apply(&self, deps: MavlinkV1MsgCont0Input<'a, 'b, 'x>) -> Self::Output {
+        match deps {
+            POrSType::P(deps) => {
+                let len = deps;
+                let len = *len;
+                (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable((usize::ex_from(len)) as usize), U16Le)))))
+            }
+            POrSType::S(deps) => {
+                let len = deps;
+                let len = *len;
+                (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (U8, (bytes::Variable((usize::ex_from(len)) as usize), U16Le)))))
+            }
+        }
+    }
+}
+                
+pub mod IncompatFlags {
+    use super::*;
+    pub spec const SPEC_Signed: u8 = 1;
+    pub exec const Signed: u8 ensures Signed == SPEC_Signed { 1 }
+}
+
+
+pub struct SpecIncompatFlagsCombinator(pub SpecIncompatFlagsCombinatorAlias);
+
+impl SpecCombinator for SpecIncompatFlagsCombinator {
+    type Type = u8;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecIncompatFlagsCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecIncompatFlagsCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecIncompatFlagsCombinatorAlias = U8;
+
+pub struct IncompatFlagsCombinator(pub IncompatFlagsCombinatorAlias);
+
+impl View for IncompatFlagsCombinator {
+    type V = SpecIncompatFlagsCombinator;
+    open spec fn view(&self) -> Self::V { SpecIncompatFlagsCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for IncompatFlagsCombinator {
+    type Type = u8;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type IncompatFlagsCombinatorAlias = U8;
+
+
+pub open spec fn spec_incompat_flags() -> SpecIncompatFlagsCombinator {
+    SpecIncompatFlagsCombinator(U8)
+}
+
+                
+pub fn incompat_flags<'a>() -> (o: IncompatFlagsCombinator)
+    ensures o@ == spec_incompat_flags(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = IncompatFlagsCombinator(U8);
+    // assert({
+    //     &&& combinator@ == spec_incompat_flags()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_incompat_flags<'a>(input: &'a [u8]) -> (res: PResult<<IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_incompat_flags().spec_parse(input@) == Some((n as int, v@)),
+        spec_incompat_flags().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_incompat_flags().spec_parse(input@) is None,
+        spec_incompat_flags().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = incompat_flags();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_incompat_flags<'a>(v: <IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_incompat_flags().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_incompat_flags().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_incompat_flags().spec_serialize(v@))
+        },
+{
+    let combinator = incompat_flags();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn incompat_flags_len<'a>(v: <IncompatFlagsCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_incompat_flags().wf(v@),
+        spec_incompat_flags().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_incompat_flags().spec_serialize(v@).len(),
+{
+    let combinator = incompat_flags();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -2564,13 +2564,13 @@ impl SpecCombinator for SpecCommandAckCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecCommandAckCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecCommandAckCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -2578,11 +2578,11 @@ impl SecureSpecCombinator for SpecCommandAckCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecCommandAckCombinatorAlias = Mapped<SpecCommandAckCombinatorAlias5, CommandAckMapper>;
@@ -2657,13 +2657,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for CommandAckCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type CommandAckCombinatorAlias = Mapped<CommandAckCombinator5, CommandAckMapper>;
 
 
@@ -2686,11 +2686,11 @@ pub fn command_ack<'a>() -> (o: CommandAckCombinator)
         inner: CommandAckCombinator5((mav_cmd(), CommandAckCombinator4((mav_result(), CommandAckCombinator3((Refined { inner: U8, predicate: Predicate5789190955059586907 }, CommandAckCombinator2((U32Le, CommandAckCombinator1((U8, U8)))))))))),
         mapper: CommandAckMapper,
     });
-    assert({
-        &&& combinator@ == spec_command_ack()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_command_ack()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -2714,14 +2714,14 @@ pub fn serialize_command_ack<'a>(v: <CommandAckCombinator as Combinator<'a, &'a 
         spec_command_ack().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_command_ack().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_command_ack().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_command_ack().spec_serialize(v@))
         },
 {
     let combinator = command_ack();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn command_ack_len<'a>(v: <CommandAckCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -2732,6 +2732,237 @@ pub fn command_ack_len<'a>(v: <CommandAckCombinator as Combinator<'a, &'a [u8], 
         serialize_len == spec_command_ack().spec_serialize(v@).len(),
 {
     let combinator = command_ack();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
+}
+
+                
+
+pub struct SpecTerrainRequest {
+    pub lat: u32,
+    pub lon: u32,
+    pub grid_spacing: u16,
+    pub mask: u64,
+}
+
+pub type SpecTerrainRequestInner = (u32, (u32, (u16, u64)));
+
+
+impl SpecFrom<SpecTerrainRequest> for SpecTerrainRequestInner {
+    open spec fn spec_from(m: SpecTerrainRequest) -> SpecTerrainRequestInner {
+        (m.lat, (m.lon, (m.grid_spacing, m.mask)))
+    }
+}
+
+impl SpecFrom<SpecTerrainRequestInner> for SpecTerrainRequest {
+    open spec fn spec_from(m: SpecTerrainRequestInner) -> SpecTerrainRequest {
+        let (lat, (lon, (grid_spacing, mask))) = m;
+        SpecTerrainRequest { lat, lon, grid_spacing, mask }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+
+pub struct TerrainRequest {
+    pub lat: u32,
+    pub lon: u32,
+    pub grid_spacing: u16,
+    pub mask: u64,
+}
+
+impl View for TerrainRequest {
+    type V = SpecTerrainRequest;
+
+    open spec fn view(&self) -> Self::V {
+        SpecTerrainRequest {
+            lat: self.lat@,
+            lon: self.lon@,
+            grid_spacing: self.grid_spacing@,
+            mask: self.mask@,
+        }
+    }
+}
+pub type TerrainRequestInner = (u32, (u32, (u16, u64)));
+
+pub type TerrainRequestInnerRef<'a> = (&'a u32, (&'a u32, (&'a u16, &'a u64)));
+impl<'a> From<&'a TerrainRequest> for TerrainRequestInnerRef<'a> {
+    fn ex_from(m: &'a TerrainRequest) -> TerrainRequestInnerRef<'a> {
+        (&m.lat, (&m.lon, (&m.grid_spacing, &m.mask)))
+    }
+}
+
+impl From<TerrainRequestInner> for TerrainRequest {
+    fn ex_from(m: TerrainRequestInner) -> TerrainRequest {
+        let (lat, (lon, (grid_spacing, mask))) = m;
+        TerrainRequest { lat, lon, grid_spacing, mask }
+    }
+}
+
+pub struct TerrainRequestMapper;
+impl View for TerrainRequestMapper {
+    type V = Self;
+    open spec fn view(&self) -> Self::V {
+        *self
+    }
+}
+impl SpecIso for TerrainRequestMapper {
+    type Src = SpecTerrainRequestInner;
+    type Dst = SpecTerrainRequest;
+}
+impl SpecIsoProof for TerrainRequestMapper {
+    proof fn spec_iso(s: Self::Src) {
+        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
+    }
+    proof fn spec_iso_rev(s: Self::Dst) {
+        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
+    }
+}
+impl<'a> Iso<'a> for TerrainRequestMapper {
+    type Src = TerrainRequestInner;
+    type Dst = TerrainRequest;
+    type RefSrc = TerrainRequestInnerRef<'a>;
+}
+type SpecTerrainRequestCombinatorAlias1 = (U16Le, U64Le);
+type SpecTerrainRequestCombinatorAlias2 = (U32Le, SpecTerrainRequestCombinatorAlias1);
+type SpecTerrainRequestCombinatorAlias3 = (U32Le, SpecTerrainRequestCombinatorAlias2);
+pub struct SpecTerrainRequestCombinator(pub SpecTerrainRequestCombinatorAlias);
+
+impl SpecCombinator for SpecTerrainRequestCombinator {
+    type Type = SpecTerrainRequest;
+    open spec fn requires(&self) -> bool
+    { self.0.requires() }
+    open spec fn wf(&self, v: Self::Type) -> bool
+    { self.0.wf(v) }
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
+    { self.0.spec_parse(s) }
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
+    { self.0.spec_serialize(v) }
+}
+impl SecureSpecCombinator for SpecTerrainRequestCombinator {
+    open spec fn is_prefix_secure() -> bool
+    { SpecTerrainRequestCombinatorAlias::is_prefix_secure() }
+    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
+    { self.0.theorem_serialize_parse_roundtrip(v) }
+    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
+    { self.0.theorem_parse_serialize_roundtrip(buf) }
+    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
+    { self.0.lemma_prefix_secure(s1, s2) }
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
+    { self.0.lemma_parse_length(s) }
+    open spec fn is_productive(&self) -> bool
+    { self.0.is_productive() }
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
+    { self.0.lemma_parse_productive(s) }
+}
+pub type SpecTerrainRequestCombinatorAlias = Mapped<SpecTerrainRequestCombinatorAlias3, TerrainRequestMapper>;
+type TerrainRequestCombinatorAlias1 = (U16Le, U64Le);
+type TerrainRequestCombinatorAlias2 = (U32Le, TerrainRequestCombinator1);
+type TerrainRequestCombinatorAlias3 = (U32Le, TerrainRequestCombinator2);
+pub struct TerrainRequestCombinator1(pub TerrainRequestCombinatorAlias1);
+impl View for TerrainRequestCombinator1 {
+    type V = SpecTerrainRequestCombinatorAlias1;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(TerrainRequestCombinator1, TerrainRequestCombinatorAlias1);
+
+pub struct TerrainRequestCombinator2(pub TerrainRequestCombinatorAlias2);
+impl View for TerrainRequestCombinator2 {
+    type V = SpecTerrainRequestCombinatorAlias2;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(TerrainRequestCombinator2, TerrainRequestCombinatorAlias2);
+
+pub struct TerrainRequestCombinator3(pub TerrainRequestCombinatorAlias3);
+impl View for TerrainRequestCombinator3 {
+    type V = SpecTerrainRequestCombinatorAlias3;
+    open spec fn view(&self) -> Self::V { self.0@ }
+}
+impl_wrapper_combinator!(TerrainRequestCombinator3, TerrainRequestCombinatorAlias3);
+
+pub struct TerrainRequestCombinator(pub TerrainRequestCombinatorAlias);
+
+impl View for TerrainRequestCombinator {
+    type V = SpecTerrainRequestCombinator;
+    open spec fn view(&self) -> Self::V { SpecTerrainRequestCombinator(self.0@) }
+}
+impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TerrainRequestCombinator {
+    type Type = TerrainRequest;
+    type SType = &'a Self::Type;
+    fn length(&self, v: Self::SType) -> usize
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    open spec fn ex_requires(&self) -> bool
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
+pub type TerrainRequestCombinatorAlias = Mapped<TerrainRequestCombinator3, TerrainRequestMapper>;
+
+
+pub open spec fn spec_terrain_request() -> SpecTerrainRequestCombinator {
+    SpecTerrainRequestCombinator(
+    Mapped {
+        inner: (U32Le, (U32Le, (U16Le, U64Le))),
+        mapper: TerrainRequestMapper,
+    })
+}
+
+                
+pub fn terrain_request<'a>() -> (o: TerrainRequestCombinator)
+    ensures o@ == spec_terrain_request(),
+            o@.requires(),
+            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
+{
+    let combinator = TerrainRequestCombinator(
+    Mapped {
+        inner: TerrainRequestCombinator3((U32Le, TerrainRequestCombinator2((U32Le, TerrainRequestCombinator1((U16Le, U64Le)))))),
+        mapper: TerrainRequestMapper,
+    });
+    // assert({
+    //     &&& combinator@ == spec_terrain_request()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
+    combinator
+}
+
+pub fn parse_terrain_request<'a>(input: &'a [u8]) -> (res: PResult<<TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
+    requires
+        input.len() <= usize::MAX,
+    ensures
+        res matches Ok((n, v)) ==> spec_terrain_request().spec_parse(input@) == Some((n as int, v@)),
+        spec_terrain_request().spec_parse(input@) matches Some((n, v))
+            ==> res matches Ok((m, u)) && m == n && v == u@,
+        res is Err ==> spec_terrain_request().spec_parse(input@) is None,
+        spec_terrain_request().spec_parse(input@) is None ==> res is Err,
+{
+    let combinator = terrain_request();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
+}
+
+pub fn serialize_terrain_request<'a>(v: <TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize) -> (o: SResult<usize, SerializeError>)
+    requires
+        pos <= old(data)@.len() <= usize::MAX,
+        spec_terrain_request().wf(v@),
+    ensures
+        o matches Ok(n) ==> {
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
+            &&& n == spec_terrain_request().spec_serialize(v@).len()
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_terrain_request().spec_serialize(v@))
+        },
+{
+    let combinator = terrain_request();
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
+}
+
+pub fn terrain_request_len<'a>(v: <TerrainRequestCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
+    requires
+        spec_terrain_request().wf(v@),
+        spec_terrain_request().spec_serialize(v@).len() <= usize::MAX,
+    ensures
+        serialize_len == spec_terrain_request().spec_serialize(v@).len(),
+{
+    let combinator = terrain_request();
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -2868,13 +3099,13 @@ impl SpecCombinator for SpecMavlinkV2MsgPayloadCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavlinkV2MsgPayloadCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavlinkV2MsgPayloadCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -2882,11 +3113,11 @@ impl SecureSpecCombinator for SpecMavlinkV2MsgPayloadCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavlinkV2MsgPayloadCombinatorAlias = AndThen<bytes::Variable, Mapped<SpecMavlinkV2MsgPayloadCombinatorAlias4, MavlinkV2MsgPayloadMapper>>;
@@ -2933,37 +3164,42 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV2MsgPayloadCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavlinkV2MsgPayloadCombinatorAlias = AndThen<bytes::Variable, Mapped<MavlinkV2MsgPayloadCombinator4, MavlinkV2MsgPayloadMapper>>;
 
 
 pub open spec fn spec_mavlink_v2_msg_payload(len: u8, msgid: u24) -> SpecMavlinkV2MsgPayloadCombinator {
-    SpecMavlinkV2MsgPayloadCombinator(AndThen(bytes::Variable(len.spec_into()), Mapped { inner: Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandInt, inner: spec_command_int() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandLong, inner: spec_command_long() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandAck, inner: spec_command_ack() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_TerrainRequest, inner: spec_terrain_request() }, Cond { cond: !(msgid.spec_as_u32() == MessageIds::SPEC_CommandInt || msgid.spec_as_u32() == MessageIds::SPEC_CommandLong || msgid.spec_as_u32() == MessageIds::SPEC_CommandAck || msgid.spec_as_u32() == MessageIds::SPEC_TerrainRequest), inner: bytes::Variable(len.spec_into()) })))), mapper: MavlinkV2MsgPayloadMapper }))
+    SpecMavlinkV2MsgPayloadCombinator(AndThen(bytes::Variable((usize::spec_from(len)) as usize), Mapped { inner: Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandInt, inner: spec_command_int() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandLong, inner: spec_command_long() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_CommandAck, inner: spec_command_ack() }, Choice(Cond { cond: msgid.spec_as_u32() == MessageIds::SPEC_TerrainRequest, inner: spec_terrain_request() }, Cond { cond: !(msgid.spec_as_u32() == MessageIds::SPEC_CommandInt || msgid.spec_as_u32() == MessageIds::SPEC_CommandLong || msgid.spec_as_u32() == MessageIds::SPEC_CommandAck || msgid.spec_as_u32() == MessageIds::SPEC_TerrainRequest), inner: bytes::Variable((usize::spec_from(len)) as usize) })))), mapper: MavlinkV2MsgPayloadMapper }))
 }
 
 pub fn mavlink_v2_msg_payload<'a>(len: u8, msgid: u24) -> (o: MavlinkV2MsgPayloadCombinator)
+    requires
+        spec_message_ids().wf(msgid@),
+
     ensures o@ == spec_mavlink_v2_msg_payload(len@, msgid@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
-    let combinator = MavlinkV2MsgPayloadCombinator(AndThen(bytes::Variable(len.ex_into()), Mapped { inner: MavlinkV2MsgPayloadCombinator4(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandInt, inner: command_int() }, MavlinkV2MsgPayloadCombinator3(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandLong, inner: command_long() }, MavlinkV2MsgPayloadCombinator2(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandAck, inner: command_ack() }, MavlinkV2MsgPayloadCombinator1(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::TerrainRequest, inner: terrain_request() }, Cond { cond: !(msgid.as_u32() == MessageIds::CommandInt || msgid.as_u32() == MessageIds::CommandLong || msgid.as_u32() == MessageIds::CommandAck || msgid.as_u32() == MessageIds::TerrainRequest), inner: bytes::Variable(len.ex_into()) })))))))), mapper: MavlinkV2MsgPayloadMapper }));
-    assert({
-        &&& combinator@ == spec_mavlink_v2_msg_payload(len@, msgid@)
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    let combinator = MavlinkV2MsgPayloadCombinator(AndThen(bytes::Variable((usize::ex_from(len)) as usize), Mapped { inner: MavlinkV2MsgPayloadCombinator4(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandInt, inner: command_int() }, MavlinkV2MsgPayloadCombinator3(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandLong, inner: command_long() }, MavlinkV2MsgPayloadCombinator2(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::CommandAck, inner: command_ack() }, MavlinkV2MsgPayloadCombinator1(Choice::new(Cond { cond: msgid.as_u32() == MessageIds::TerrainRequest, inner: terrain_request() }, Cond { cond: !(msgid.as_u32() == MessageIds::CommandInt || msgid.as_u32() == MessageIds::CommandLong || msgid.as_u32() == MessageIds::CommandAck || msgid.as_u32() == MessageIds::TerrainRequest), inner: bytes::Variable((usize::ex_from(len)) as usize) })))))))), mapper: MavlinkV2MsgPayloadMapper }));
+    // assert({
+    //     &&& combinator@ == spec_mavlink_v2_msg_payload(len@, msgid@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
 pub fn parse_mavlink_v2_msg_payload<'a>(input: &'a [u8], len: u8, msgid: u24) -> (res: PResult<<MavlinkV2MsgPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_message_ids().wf(msgid@),
+
     ensures
         res matches Ok((n, v)) ==> spec_mavlink_v2_msg_payload(len@, msgid@).spec_parse(input@) == Some((n as int, v@)),
         spec_mavlink_v2_msg_payload(len@, msgid@).spec_parse(input@) matches Some((n, v))
@@ -2979,244 +3215,30 @@ pub fn serialize_mavlink_v2_msg_payload<'a>(v: <MavlinkV2MsgPayloadCombinator as
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_mavlink_v2_msg_payload(len@, msgid@).wf(v@),
+        spec_message_ids().wf(msgid@),
+
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mavlink_v2_msg_payload(len@, msgid@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg_payload(len@, msgid@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg_payload(len@, msgid@).spec_serialize(v@))
         },
 {
     let combinator = mavlink_v2_msg_payload( len, msgid );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn mavlink_v2_msg_payload_len<'a>(v: <MavlinkV2MsgPayloadCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, len: u8, msgid: u24) -> (serialize_len: usize)
     requires
         spec_mavlink_v2_msg_payload(len@, msgid@).wf(v@),
         spec_mavlink_v2_msg_payload(len@, msgid@).spec_serialize(v@).len() <= usize::MAX,
+        spec_message_ids().wf(msgid@),
+
     ensures
         serialize_len == spec_mavlink_v2_msg_payload(len@, msgid@).spec_serialize(v@).len(),
 {
     let combinator = mavlink_v2_msg_payload( len, msgid );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
-}
-
-
-pub enum SpecMavlinkV2MsgSignature {
-    Variant0(Seq<u8>),
-    Variant1(Seq<u8>),
-}
-
-pub type SpecMavlinkV2MsgSignatureInner = Either<Seq<u8>, Seq<u8>>;
-
-impl SpecFrom<SpecMavlinkV2MsgSignature> for SpecMavlinkV2MsgSignatureInner {
-    open spec fn spec_from(m: SpecMavlinkV2MsgSignature) -> SpecMavlinkV2MsgSignatureInner {
-        match m {
-            SpecMavlinkV2MsgSignature::Variant0(m) => Either::Left(m),
-            SpecMavlinkV2MsgSignature::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-                
-impl SpecFrom<SpecMavlinkV2MsgSignatureInner> for SpecMavlinkV2MsgSignature {
-    open spec fn spec_from(m: SpecMavlinkV2MsgSignatureInner) -> SpecMavlinkV2MsgSignature {
-        match m {
-            Either::Left(m) => SpecMavlinkV2MsgSignature::Variant0(m),
-            Either::Right(m) => SpecMavlinkV2MsgSignature::Variant1(m),
-        }
-    }
-
-}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MavlinkV2MsgSignature<'a> {
-    Variant0(&'a [u8]),
-    Variant1(&'a [u8]),
-}
-
-pub type MavlinkV2MsgSignatureInner<'a> = Either<&'a [u8], &'a [u8]>;
-
-pub type MavlinkV2MsgSignatureInnerRef<'a> = Either<&'a &'a [u8], &'a &'a [u8]>;
-
-
-impl<'a> View for MavlinkV2MsgSignature<'a> {
-    type V = SpecMavlinkV2MsgSignature;
-    open spec fn view(&self) -> Self::V {
-        match self {
-            MavlinkV2MsgSignature::Variant0(m) => SpecMavlinkV2MsgSignature::Variant0(m@),
-            MavlinkV2MsgSignature::Variant1(m) => SpecMavlinkV2MsgSignature::Variant1(m@),
-        }
-    }
-}
-
-
-impl<'a> From<&'a MavlinkV2MsgSignature<'a>> for MavlinkV2MsgSignatureInnerRef<'a> {
-    fn ex_from(m: &'a MavlinkV2MsgSignature<'a>) -> MavlinkV2MsgSignatureInnerRef<'a> {
-        match m {
-            MavlinkV2MsgSignature::Variant0(m) => Either::Left(m),
-            MavlinkV2MsgSignature::Variant1(m) => Either::Right(m),
-        }
-    }
-
-}
-
-impl<'a> From<MavlinkV2MsgSignatureInner<'a>> for MavlinkV2MsgSignature<'a> {
-    fn ex_from(m: MavlinkV2MsgSignatureInner<'a>) -> MavlinkV2MsgSignature<'a> {
-        match m {
-            Either::Left(m) => MavlinkV2MsgSignature::Variant0(m),
-            Either::Right(m) => MavlinkV2MsgSignature::Variant1(m),
-        }
-    }
-    
-}
-
-
-pub struct MavlinkV2MsgSignatureMapper;
-impl View for MavlinkV2MsgSignatureMapper {
-    type V = Self;
-    open spec fn view(&self) -> Self::V {
-        *self
-    }
-}
-impl SpecIso for MavlinkV2MsgSignatureMapper {
-    type Src = SpecMavlinkV2MsgSignatureInner;
-    type Dst = SpecMavlinkV2MsgSignature;
-}
-impl SpecIsoProof for MavlinkV2MsgSignatureMapper {
-    proof fn spec_iso(s: Self::Src) {
-        assert(Self::Src::spec_from(Self::Dst::spec_from(s)) == s);
-    }
-    proof fn spec_iso_rev(s: Self::Dst) {
-        assert(Self::Dst::spec_from(Self::Src::spec_from(s)) == s);
-    }
-}
-impl<'a> Iso<'a> for MavlinkV2MsgSignatureMapper {
-    type Src = MavlinkV2MsgSignatureInner<'a>;
-    type Dst = MavlinkV2MsgSignature<'a>;
-    type RefSrc = MavlinkV2MsgSignatureInnerRef<'a>;
-}
-
-type SpecMavlinkV2MsgSignatureCombinatorAlias1 = Choice<Cond<bytes::Fixed<13>>, Cond<bytes::Fixed<0>>>;
-pub struct SpecMavlinkV2MsgSignatureCombinator(pub SpecMavlinkV2MsgSignatureCombinatorAlias);
-
-impl SpecCombinator for SpecMavlinkV2MsgSignatureCombinator {
-    type Type = SpecMavlinkV2MsgSignature;
-    open spec fn requires(&self) -> bool
-    { self.0.requires() }
-    open spec fn wf(&self, v: Self::Type) -> bool
-    { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
-    { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
-    { self.0.spec_serialize(v) }
-}
-impl SecureSpecCombinator for SpecMavlinkV2MsgSignatureCombinator {
-    open spec fn is_prefix_secure() -> bool 
-    { SpecMavlinkV2MsgSignatureCombinatorAlias::is_prefix_secure() }
-    proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
-    { self.0.theorem_serialize_parse_roundtrip(v) }
-    proof fn theorem_parse_serialize_roundtrip(&self, buf: Seq<u8>)
-    { self.0.theorem_parse_serialize_roundtrip(buf) }
-    proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
-    { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
-    { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
-    { self.0.lemma_parse_productive(s) }
-}
-pub type SpecMavlinkV2MsgSignatureCombinatorAlias = Mapped<SpecMavlinkV2MsgSignatureCombinatorAlias1, MavlinkV2MsgSignatureMapper>;
-type MavlinkV2MsgSignatureCombinatorAlias1 = Choice<Cond<bytes::Fixed<13>>, Cond<bytes::Fixed<0>>>;
-pub struct MavlinkV2MsgSignatureCombinator1(pub MavlinkV2MsgSignatureCombinatorAlias1);
-impl View for MavlinkV2MsgSignatureCombinator1 {
-    type V = SpecMavlinkV2MsgSignatureCombinatorAlias1;
-    open spec fn view(&self) -> Self::V { self.0@ }
-}
-impl_wrapper_combinator!(MavlinkV2MsgSignatureCombinator1, MavlinkV2MsgSignatureCombinatorAlias1);
-
-pub struct MavlinkV2MsgSignatureCombinator(pub MavlinkV2MsgSignatureCombinatorAlias);
-
-impl View for MavlinkV2MsgSignatureCombinator {
-    type V = SpecMavlinkV2MsgSignatureCombinator;
-    open spec fn view(&self) -> Self::V { SpecMavlinkV2MsgSignatureCombinator(self.0@) }
-}
-impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV2MsgSignatureCombinator {
-    type Type = MavlinkV2MsgSignature<'a>;
-    type SType = &'a Self::Type;
-    fn length(&self, v: Self::SType) -> usize
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
-    { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
-    fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
-pub type MavlinkV2MsgSignatureCombinatorAlias = Mapped<MavlinkV2MsgSignatureCombinator1, MavlinkV2MsgSignatureMapper>;
-
-
-pub open spec fn spec_mavlink_v2_msg_signature(incompat_flags: u8) -> SpecMavlinkV2MsgSignatureCombinator {
-    SpecMavlinkV2MsgSignatureCombinator(Mapped { inner: Choice(Cond { cond: incompat_flags == 1, inner: bytes::Fixed::<13> }, Cond { cond: !(incompat_flags == 1), inner: bytes::Fixed::<0> }), mapper: MavlinkV2MsgSignatureMapper })
-}
-
-pub fn mavlink_v2_msg_signature<'a>(incompat_flags: u8) -> (o: MavlinkV2MsgSignatureCombinator)
-    ensures o@ == spec_mavlink_v2_msg_signature(incompat_flags@),
-            o@.requires(),
-            <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
-{
-    let combinator = MavlinkV2MsgSignatureCombinator(Mapped { inner: MavlinkV2MsgSignatureCombinator1(Choice::new(Cond { cond: incompat_flags == 1, inner: bytes::Fixed::<13> }, Cond { cond: !(incompat_flags == 1), inner: bytes::Fixed::<0> })), mapper: MavlinkV2MsgSignatureMapper });
-    assert({
-        &&& combinator@ == spec_mavlink_v2_msg_signature(incompat_flags@)
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
-    combinator
-}
-
-pub fn parse_mavlink_v2_msg_signature<'a>(input: &'a [u8], incompat_flags: u8) -> (res: PResult<<MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
-    requires
-        input.len() <= usize::MAX,
-    ensures
-        res matches Ok((n, v)) ==> spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) == Some((n as int, v@)),
-        spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) matches Some((n, v))
-            ==> res matches Ok((m, u)) && m == n && v == u@,
-        res is Err ==> spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) is None,
-        spec_mavlink_v2_msg_signature(incompat_flags@).spec_parse(input@) is None ==> res is Err,
-{
-    let combinator = mavlink_v2_msg_signature( incompat_flags );
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&combinator, input)
-}
-
-pub fn serialize_mavlink_v2_msg_signature<'a>(v: <MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, data: &mut Vec<u8>, pos: usize, incompat_flags: u8) -> (o: SResult<usize, SerializeError>)
-    requires
-        pos <= old(data)@.len() <= usize::MAX,
-        spec_mavlink_v2_msg_signature(incompat_flags@).wf(v@),
-    ensures
-        o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
-            &&& n == spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@))
-        },
-{
-    let combinator = mavlink_v2_msg_signature( incompat_flags );
-    combinator.serialize(v, data, pos)
-}
-
-pub fn mavlink_v2_msg_signature_len<'a>(v: <MavlinkV2MsgSignatureCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, incompat_flags: u8) -> (serialize_len: usize)
-    requires
-        spec_mavlink_v2_msg_signature(incompat_flags@).wf(v@),
-        spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len() <= usize::MAX,
-    ensures
-        serialize_len == spec_mavlink_v2_msg_signature(incompat_flags@).spec_serialize(v@).len(),
-{
-    let combinator = mavlink_v2_msg_signature( incompat_flags );
     <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&combinator, v)
 }
 
@@ -3331,13 +3353,13 @@ impl SpecCombinator for SpecMavlinkV2MsgCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavlinkV2MsgCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavlinkV2MsgCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -3345,11 +3367,11 @@ impl SecureSpecCombinator for SpecMavlinkV2MsgCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavlinkV2MsgCombinatorAlias = Mapped<SpecPair<SpecPair<SpecPair<U8, SpecIncompatFlagsCombinator>, (U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, SpecMessageIdsCombinator))))>, (SpecMavlinkV2MsgPayloadCombinator, (U16Le, SpecMavlinkV2MsgSignatureCombinator))>, MavlinkV2MsgMapper>;
@@ -3365,13 +3387,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkV2MsgCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavlinkV2MsgCombinatorAlias = Mapped<Pair<Pair<Pair<U8, IncompatFlagsCombinator, MavlinkV2MsgCont2>, (U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, MessageIdsCombinator)))), MavlinkV2MsgCont1>, (MavlinkV2MsgPayloadCombinator, (U16Le, MavlinkV2MsgSignatureCombinator)), MavlinkV2MsgCont0>, MavlinkV2MsgMapper>;
 
 
@@ -3439,11 +3461,11 @@ pub fn mavlink_v2_msg<'a>() -> (o: MavlinkV2MsgCombinator)
         inner: Pair::new(Pair::new(Pair::new(U8, MavlinkV2MsgCont2), MavlinkV2MsgCont1), MavlinkV2MsgCont0),
         mapper: MavlinkV2MsgMapper,
     });
-    assert({
-        &&& combinator@ == spec_mavlink_v2_msg()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mavlink_v2_msg()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -3467,14 +3489,14 @@ pub fn serialize_mavlink_v2_msg<'a>(v: <MavlinkV2MsgCombinator as Combinator<'a,
         spec_mavlink_v2_msg().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mavlink_v2_msg().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_v2_msg().spec_serialize(v@))
         },
 {
     let combinator = mavlink_v2_msg();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mavlink_v2_msg_len<'a>(v: <MavlinkV2MsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -3495,16 +3517,20 @@ type MavlinkV2MsgCont2Input<'a, 'b, 'x> = POrSType<MavlinkV2MsgCont2Type<'a, 'b>
 impl<'a, 'b, 'x> Continuation<MavlinkV2MsgCont2Input<'a, 'b, 'x>> for MavlinkV2MsgCont2 {
     type Output = IncompatFlagsCombinator;
 
-    open spec fn requires(&self, deps: MavlinkV2MsgCont2Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MavlinkV2MsgCont2Input<'a, 'b, 'x>) -> bool {
+        &&& (U8).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MavlinkV2MsgCont2Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_mavlink_v2_msg_cont2(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_mavlink_v2_msg_cont2(deps@)
     }
 
     fn apply(&self, deps: MavlinkV2MsgCont2Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let len = *deps;
+                let len = deps;
+                let len = *len;
                 incompat_flags()
             }
             POrSType::S(deps) => {
@@ -3522,21 +3548,27 @@ type MavlinkV2MsgCont1Input<'a, 'b, 'x> = POrSType<MavlinkV2MsgCont1Type<'a, 'b>
 impl<'a, 'b, 'x> Continuation<MavlinkV2MsgCont1Input<'a, 'b, 'x>> for MavlinkV2MsgCont1 {
     type Output = (U8, (U8, (Refined<U8, Predicate3768926651291043512>, (Refined<U8, Predicate3768926651291043512>, MessageIdsCombinator))));
 
-    open spec fn requires(&self, deps: MavlinkV2MsgCont1Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MavlinkV2MsgCont1Input<'a, 'b, 'x>) -> bool {
+        &&& (Pair::spec_new(U8, |deps| spec_mavlink_v2_msg_cont2(deps))).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MavlinkV2MsgCont1Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_mavlink_v2_msg_cont1(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_mavlink_v2_msg_cont1(deps@)
     }
 
     fn apply(&self, deps: MavlinkV2MsgCont1Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let (len, incompat_flags) = *deps;
+                let (len, incompat_flags) = deps;
+                let len = *len;
+                let incompat_flags = *incompat_flags;
                 (U8, (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, message_ids()))))
             }
             POrSType::S(deps) => {
                 let (len, incompat_flags) = deps;
-                let (len, incompat_flags) = (*len, *incompat_flags);
+                let len = *len;
+                let incompat_flags = *incompat_flags;
                 (U8, (U8, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, (Refined { inner: U8, predicate: Predicate3768926651291043512 }, message_ids()))))
             }
         }
@@ -3549,21 +3581,29 @@ type MavlinkV2MsgCont0Input<'a, 'b, 'x> = POrSType<MavlinkV2MsgCont0Type<'a, 'b>
 impl<'a, 'b, 'x> Continuation<MavlinkV2MsgCont0Input<'a, 'b, 'x>> for MavlinkV2MsgCont0 {
     type Output = (MavlinkV2MsgPayloadCombinator, (U16Le, MavlinkV2MsgSignatureCombinator));
 
-    open spec fn requires(&self, deps: MavlinkV2MsgCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MavlinkV2MsgCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (Pair::spec_new(Pair::spec_new(U8, |deps| spec_mavlink_v2_msg_cont2(deps)), |deps| spec_mavlink_v2_msg_cont1(deps))).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MavlinkV2MsgCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_mavlink_v2_msg_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_mavlink_v2_msg_cont0(deps@)
     }
 
     fn apply(&self, deps: MavlinkV2MsgCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let ((len, incompat_flags), (_, (_, (_, (_, msgid))))) = *deps;
+                let ((len, incompat_flags), (_, (_, (_, (_, msgid))))) = deps;
+                let len = *len;
+                let incompat_flags = *incompat_flags;
+                let msgid = *msgid;
                 (mavlink_v2_msg_payload(len, msgid), (U16Le, mavlink_v2_msg_signature(incompat_flags)))
             }
             POrSType::S(deps) => {
                 let ((len, incompat_flags), (_, (_, (_, (_, msgid))))) = deps;
-                let ((len, incompat_flags), msgid) = ((*len, *incompat_flags), *msgid);
+                let len = *len;
+                let incompat_flags = *incompat_flags;
+                let msgid = *msgid;
                 (mavlink_v2_msg_payload(len, msgid), (U16Le, mavlink_v2_msg_signature(incompat_flags)))
             }
         }
@@ -3678,13 +3718,13 @@ impl SpecCombinator for SpecMavlinkMsgMsgCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavlinkMsgMsgCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavlinkMsgMsgCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -3692,11 +3732,11 @@ impl SecureSpecCombinator for SpecMavlinkMsgMsgCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavlinkMsgMsgCombinatorAlias = Mapped<SpecMavlinkMsgMsgCombinatorAlias1, MavlinkMsgMsgMapper>;
@@ -3719,13 +3759,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkMsgMsgCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavlinkMsgMsgCombinatorAlias = Mapped<MavlinkMsgMsgCombinator1, MavlinkMsgMsgMapper>;
 
 
@@ -3734,22 +3774,27 @@ pub open spec fn spec_mavlink_msg_msg(magic: SpecProtocolMagic) -> SpecMavlinkMs
 }
 
 pub fn mavlink_msg_msg<'a>(magic: ProtocolMagic) -> (o: MavlinkMsgMsgCombinator)
+    requires
+        spec_protocol_magic().wf(magic@),
+
     ensures o@ == spec_mavlink_msg_msg(magic@),
             o@.requires(),
             <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o),
 {
     let combinator = MavlinkMsgMsgCombinator(Mapped { inner: MavlinkMsgMsgCombinator1(Choice::new(Cond { cond: magic == ProtocolMagic::MavLink1, inner: mavlink_v1_msg() }, Cond { cond: magic == ProtocolMagic::MavLink2, inner: mavlink_v2_msg() })), mapper: MavlinkMsgMsgMapper });
-    assert({
-        &&& combinator@ == spec_mavlink_msg_msg(magic@)
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mavlink_msg_msg(magic@)
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
 pub fn parse_mavlink_msg_msg<'a>(input: &'a [u8], magic: ProtocolMagic) -> (res: PResult<<MavlinkMsgMsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::Type, ParseError>)
     requires
         input.len() <= usize::MAX,
+        spec_protocol_magic().wf(magic@),
+
     ensures
         res matches Ok((n, v)) ==> spec_mavlink_msg_msg(magic@).spec_parse(input@) == Some((n as int, v@)),
         spec_mavlink_msg_msg(magic@).spec_parse(input@) matches Some((n, v))
@@ -3765,22 +3810,26 @@ pub fn serialize_mavlink_msg_msg<'a>(v: <MavlinkMsgMsgCombinator as Combinator<'
     requires
         pos <= old(data)@.len() <= usize::MAX,
         spec_mavlink_msg_msg(magic@).wf(v@),
+        spec_protocol_magic().wf(magic@),
+
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mavlink_msg_msg(magic@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_msg_msg(magic@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_msg_msg(magic@).spec_serialize(v@))
         },
 {
     let combinator = mavlink_msg_msg( magic );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn mavlink_msg_msg_len<'a>(v: <MavlinkMsgMsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, magic: ProtocolMagic) -> (serialize_len: usize)
     requires
         spec_mavlink_msg_msg(magic@).wf(v@),
         spec_mavlink_msg_msg(magic@).spec_serialize(v@).len() <= usize::MAX,
+        spec_protocol_magic().wf(magic@),
+
     ensures
         serialize_len == spec_mavlink_msg_msg(magic@).spec_serialize(v@).len(),
 {
@@ -3875,13 +3924,13 @@ impl SpecCombinator for SpecMavlinkMsgCombinator {
     { self.0.requires() }
     open spec fn wf(&self, v: Self::Type) -> bool
     { self.0.wf(v) }
-    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)> 
+    open spec fn spec_parse(&self, s: Seq<u8>) -> Option<(int, Self::Type)>
     { self.0.spec_parse(s) }
-    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8> 
+    open spec fn spec_serialize(&self, v: Self::Type) -> Seq<u8>
     { self.0.spec_serialize(v) }
 }
 impl SecureSpecCombinator for SpecMavlinkMsgCombinator {
-    open spec fn is_prefix_secure() -> bool 
+    open spec fn is_prefix_secure() -> bool
     { SpecMavlinkMsgCombinatorAlias::is_prefix_secure() }
     proof fn theorem_serialize_parse_roundtrip(&self, v: Self::Type)
     { self.0.theorem_serialize_parse_roundtrip(v) }
@@ -3889,11 +3938,11 @@ impl SecureSpecCombinator for SpecMavlinkMsgCombinator {
     { self.0.theorem_parse_serialize_roundtrip(buf) }
     proof fn lemma_prefix_secure(&self, s1: Seq<u8>, s2: Seq<u8>)
     { self.0.lemma_prefix_secure(s1, s2) }
-    proof fn lemma_parse_length(&self, s: Seq<u8>) 
+    proof fn lemma_parse_length(&self, s: Seq<u8>)
     { self.0.lemma_parse_length(s) }
-    open spec fn is_productive(&self) -> bool 
+    open spec fn is_productive(&self) -> bool
     { self.0.is_productive() }
-    proof fn lemma_parse_productive(&self, s: Seq<u8>) 
+    proof fn lemma_parse_productive(&self, s: Seq<u8>)
     { self.0.lemma_parse_productive(s) }
 }
 pub type SpecMavlinkMsgCombinatorAlias = Mapped<SpecPair<SpecProtocolMagicCombinator, SpecMavlinkMsgMsgCombinator>, MavlinkMsgMapper>;
@@ -3909,13 +3958,13 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MavlinkMsgCombinator {
     type SType = &'a Self::Type;
     fn length(&self, v: Self::SType) -> usize
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
-    open spec fn ex_requires(&self) -> bool 
+    open spec fn ex_requires(&self) -> bool
     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
-    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>) 
+    fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
-} 
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+}
 pub type MavlinkMsgCombinatorAlias = Mapped<Pair<ProtocolMagicCombinator, MavlinkMsgMsgCombinator, MavlinkMsgCont0>, MavlinkMsgMapper>;
 
 
@@ -3953,11 +4002,11 @@ pub fn mavlink_msg<'a>() -> (o: MavlinkMsgCombinator)
         inner: Pair::new(protocol_magic(), MavlinkMsgCont0),
         mapper: MavlinkMsgMapper,
     });
-    assert({
-        &&& combinator@ == spec_mavlink_msg()
-        &&& combinator@.requires()
-        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
-    });
+    // assert({
+    //     &&& combinator@ == spec_mavlink_msg()
+    //     &&& combinator@.requires()
+    //     &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&combinator)
+    // });
     combinator
 }
 
@@ -3981,14 +4030,14 @@ pub fn serialize_mavlink_msg<'a>(v: <MavlinkMsgCombinator as Combinator<'a, &'a 
         spec_mavlink_msg().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mavlink_msg().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mavlink_msg().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mavlink_msg().spec_serialize(v@))
         },
 {
     let combinator = mavlink_msg();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mavlink_msg_len<'a>(v: <MavlinkMsgCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4009,16 +4058,20 @@ type MavlinkMsgCont0Input<'a, 'b, 'x> = POrSType<MavlinkMsgCont0Type<'a, 'b>, Ma
 impl<'a, 'b, 'x> Continuation<MavlinkMsgCont0Input<'a, 'b, 'x>> for MavlinkMsgCont0 {
     type Output = MavlinkMsgMsgCombinator;
 
-    open spec fn requires(&self, deps: MavlinkMsgCont0Input<'a, 'b, 'x>) -> bool { true }
+    open spec fn requires(&self, deps: MavlinkMsgCont0Input<'a, 'b, 'x>) -> bool {
+        &&& (spec_protocol_magic()).wf(deps@)
+        }
 
     open spec fn ensures(&self, deps: MavlinkMsgCont0Input<'a, 'b, 'x>, o: Self::Output) -> bool {
-        o@ == spec_mavlink_msg_cont0(deps@)
+        &&& <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&o)
+        &&& o@ == spec_mavlink_msg_cont0(deps@)
     }
 
     fn apply(&self, deps: MavlinkMsgCont0Input<'a, 'b, 'x>) -> Self::Output {
         match deps {
             POrSType::P(deps) => {
-                let magic = *deps;
+                let magic = deps;
+                let magic = *magic;
                 mavlink_msg_msg(magic)
             }
             POrSType::S(deps) => {

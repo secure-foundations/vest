@@ -185,8 +185,8 @@ pub fn vec_u8_extend_from_slice(dest: &mut Vec<u8>, src: &[u8])
     requires
         old(dest)@.len() + src@.len() <= usize::MAX,
     ensures
-        dest@.len() == old(dest)@.len() + src@.len(),
-        dest@ == old(dest)@.add(src@),
+        final(dest)@.len() == old(dest)@.len() + src@.len(),
+        final(dest)@ == old(dest)@.add(src@),
 {
     dest.extend_from_slice(src);
 }
@@ -196,8 +196,8 @@ pub fn set_range<'a>(data: &mut Vec<u8>, i: usize, input: &[u8])
     requires
         0 <= i + input@.len() <= old(data)@.len() <= usize::MAX,
     ensures
-        data@.len() == old(data)@.len()
-        && data@ == seq_splice(old(data)@, i, input@),
+        final(data)@.len() == old(data)@.len()
+        && final(data)@ == seq_splice(old(data)@, i, input@),
 {
     // data[i..i + input.len()].copy_from_slice(input);
     let mut j = 0;
