@@ -1,6 +1,6 @@
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, Serializer},
+    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
 };
 use crate::Never;
 use vstd::prelude::*;
@@ -29,6 +29,12 @@ impl Compliance<()> for super::Empty {
 impl ByteLen<()> for super::Empty {
     fn length(&self, _v: ()) -> (len: usize) {
         0
+    }
+}
+
+impl Prepare<()> for super::Empty {
+    fn prepare(&self, _v: ()) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(0)
     }
 }
 

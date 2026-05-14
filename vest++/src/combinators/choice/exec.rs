@@ -1,7 +1,7 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, Serializer},
+        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
         ParseErrorKind,
     },
     spec::SpecParser,
@@ -113,6 +113,20 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
     }
 }
 
+impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Choice<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Prepare<STA>,
+    B: Prepare<STB>,
+ {
+    fn prepare(&self, v: super::Sum<STA, STB>) -> (checked: Result<usize, PreSerializeError>) {
+        match v {
+            super::Sum::Inl(va) => self.0.prepare(va),
+            super::Sum::Inr(vb) => self.1.prepare(vb),
+        }
+    }
+}
+
 impl<I, A, B> Parser<I> for super::Alt<A, B> where
     I: View<V = Seq<u8>>,
     A: Parser<I>,
@@ -140,6 +154,24 @@ impl<A, B, ST> Compliance<ST> for super::Alt<A, B> where
  {
     fn check_compliance(&self, v: ST) -> (yes: bool) {
         self.0.check_compliance(v) || self.1.check_compliance(v)
+    }
+}
+
+impl<A, B, ST> Prepare<ST> for super::Alt<A, B> where
+    ST: DeepView + Copy,
+    A: Prepare<ST>,
+    B: Prepare<ST>,
+ {
+    #[verifier::external_body]
+    // TODO: the spec allows non-deterministic serialization for `Alt` when both branches are compliant,
+    // but we want the actual implementation to always prefer the first one if both are compliant.
+    // We can either make the spec for `Alt` deterministic, or make the post-condition of `prepare` an existential.
+    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+        // prefer the first one if both are compliant
+        if let Ok(la) = self.0.prepare(v) {
+            return Ok(la);
+        }
+        self.1.prepare(v)
     }
 }
 
@@ -219,6 +251,21 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Sum<A, B> where
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.length(vb),
             _ => 0,
+        }
+    }
+}
+
+impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Sum<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Prepare<STA>,
+    B: Prepare<STB>,
+ {
+    fn prepare(&self, v: super::Sum<STA, STB>) -> (checked: Result<usize, PreSerializeError>) {
+        match (self, v) {
+            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.prepare(va),
+            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.prepare(vb),
+            _ => Err(PreSerializeError::NotCompliant("Sum")),
         }
     }
 }

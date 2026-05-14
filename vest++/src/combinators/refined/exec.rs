@@ -7,7 +7,7 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, Serializer},
+        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
@@ -83,6 +83,20 @@ impl<A, PredFn, ST> ByteLen<ST> for super::Refined<A, PredFn> where
     }
 }
 
+impl<A, PredFn, ST> Prepare<ST> for super::Refined<A, PredFn> where
+    ST: DeepView,
+    A: Prepare<ST>,
+    PredFn: Pred<ST>,
+ {
+    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+        if self.1.test(&v) {
+            self.0.prepare(v)
+        } else {
+            Err(PreSerializeError::NotCompliant("Refined"))
+        }
+    }
+}
+
 impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     I: InputBuf,
     Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
@@ -135,6 +149,16 @@ impl<Inner, V, ST> ByteLen<ST> for super::Const<Inner, V> where
  {
     fn length(&self, v: ST) -> (len: usize) {
         self.0.length(v)
+    }
+}
+
+impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inner: Prepare<ST> {
+    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+        if SelfView::eq(&v, &self.1) {
+            self.0.prepare(v)
+        } else {
+            Err(PreSerializeError::NotCompliant("Const"))
+        }
     }
 }
 
@@ -283,6 +307,22 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
+impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: Prepare<ST>,
+ {
+    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+        let fmt = Preceded::<_, _, _, false> {
+            a: super::Const(&self.0, self.1),
+            b: &self.2,
+            a_val: self.1,
+        };
+        fmt.prepare(v)
+    }
+}
+
 impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
     I: InputBuf,
     Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
@@ -362,6 +402,22 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithSuffixTag<Tg, Of> where
             b_val: self.1,
         };
         fmt.length(v)
+    }
+}
+
+impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
+    TagVal: SelfView + Copy,
+    ST: DeepView,
+    Of: Prepare<ST>,
+ {
+    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+        let fmt = Terminated::<_, _, _, false> {
+            a: &self.2,
+            b: super::Const(&self.0, self.1),
+            b_val: self.1,
+        };
+        fmt.prepare(v)
     }
 }
 

@@ -1,4 +1,6 @@
 //! Combinators for parsing permutations of sub-parsers.
+/// Executable serializer-preparation implementations for this combinator.
+pub mod exec;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 

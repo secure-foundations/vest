@@ -2,7 +2,7 @@ use crate::combinators::AsLen;
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, Serializer},
+    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::spec::SpecParser;
@@ -40,6 +40,16 @@ impl<'s, const N: usize> ByteLen<&'s [u8]> for super::Fixed<N> {
     }
 }
 
+impl<'s, const N: usize> Prepare<&'s [u8]> for super::Fixed<N> {
+    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+        if v.len() == N {
+            Ok(N)
+        } else {
+            Err(PreSerializeError::NotCompliant("Fixed"))
+        }
+    }
+}
+
 impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     type PT = I;
 
@@ -68,6 +78,16 @@ impl<'s, Len: AsLen> Compliance<&'s [u8]> for super::Varied<Len> {
 impl<'s, Len: AsLen> ByteLen<&'s [u8]> for super::Varied<Len> {
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
+    }
+}
+
+impl<'s, Len: AsLen> Prepare<&'s [u8]> for super::Varied<Len> {
+    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+        if v.len() == self.0.get() {
+            Ok(v.len())
+        } else {
+            Err(PreSerializeError::NotCompliant("Varied"))
+        }
     }
 }
 
@@ -137,7 +157,6 @@ impl<Len, Inner, InnerST> Serializer<InnerST> for super::ExactLen<Inner, Len> wh
 //         self.1.check_compliance(v) && self.1.length(v) == self.0.get()
 //     }
 // }
-
 impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     InnerST: DeepView,
@@ -145,6 +164,21 @@ impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
  {
     fn length(&self, v: InnerST) -> (len: usize) {
         self.1.length(v)
+    }
+}
+
+impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
+    Len: AsLen,
+    InnerST: DeepView,
+    Inner: Prepare<InnerST>,
+ {
+    fn prepare(&self, v: InnerST) -> (checked: Result<usize, PreSerializeError>) {
+        let len = self.1.prepare(v)?;
+        if len == self.0.get() {
+            Ok(len)
+        } else {
+            Err(PreSerializeError::NotCompliant("ExactLen"))
+        }
     }
 }
 

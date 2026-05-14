@@ -183,4 +183,23 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     }
 }
 
+impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Bind<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Prepare<STA>,
+    B::O: Prepare<STB>,
+    B: MapRef<STA, Input = STA::V>,
+ {
+    fn prepare(&self, v: (STA, STB)) -> Result<usize, PreSerializeError> {
+        let next = self.1.map(&v.0);
+        let la = self.0.prepare(v.0)?;
+        let lb = next.prepare(v.1)?;
+        if let Some(total) = la.checked_add(lb) {
+            Ok(total)
+        } else {
+            Err(PreSerializeError::LengthTooLarge)
+        }
+    }
+}
+
 } // verus!

@@ -1,10 +1,11 @@
+use crate::combinators::Optional;
 use crate::core::exec::{
     input::InputBuf,
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, Serializer},
+    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
-use crate::combinators::Optional;
+use crate::core::spec::{Consistency, SpecByteLen};
 use vstd::prelude::*;
 
 verus! {
@@ -40,6 +41,12 @@ impl<'s> ByteLen<&'s [u8]> for super::Tail {
     }
 }
 
+impl<'s> Prepare<&'s [u8]> for super::Tail {
+    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(v.len())
+    }
+}
+
 impl<I: InputBuf> Parser<I> for super::Eof {
     type PT = ();
 
@@ -70,12 +77,18 @@ impl ByteLen<()> for super::Eof {
     }
 }
 
+impl Prepare<()> for super::Eof {
+    fn prepare(&self, _v: ()) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(0)
+    }
+}
+
 impl<A, B, AVal, BVal> Compliance<(AVal, BVal)> for super::PairRev<A, B> where
     AVal: DeepView,
     BVal: DeepView,
     A: Compliance<AVal>,
     B: Compliance<BVal>,
-{
+ {
     fn check_compliance(&self, v: (AVal, BVal)) -> (yes: bool) {
         self.1.check_compliance(v.0) && self.0.check_compliance(v.1)
     }
@@ -86,7 +99,7 @@ impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     BVal: DeepView,
     A: ByteLen<AVal>,
     B: ByteLen<BVal>,
-{
+ {
     fn length(&self, v: (AVal, BVal)) -> (len: usize) {
         let la = self.1.length(v.0);
         let lb = self.0.length(v.1);
@@ -97,22 +110,22 @@ impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     }
 }
 
-impl<C, ST> Compliance<Option<ST>> for super::OptionalEnd<C> where
-    ST: DeepView,
-    C: Compliance<ST>,
-{
-    fn check_compliance(&self, v: Option<ST>) -> (yes: bool) {
-        Optional(&self.0, super::Eof).check_compliance((v, ()))
+impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
+    AVal: DeepView,
+    BVal: DeepView,
+    A: Prepare<AVal>,
+    B: Prepare<BVal>,
+ {
+    fn prepare(&self, v: (AVal, BVal)) -> Result<usize, PreSerializeError> {
+        let la = self.1.prepare(v.0)?;
+        let lb = self.0.prepare(v.1)?;
+        if let Some(total) = la.checked_add(lb) {
+            Ok(total)
+        } else {
+            Err(PreSerializeError::LengthTooLarge)
+        }
     }
 }
 
-impl<C, ST> ByteLen<Option<ST>> for super::OptionalEnd<C> where
-    ST: DeepView,
-    C: ByteLen<ST>,
-{
-    fn length(&self, v: Option<ST>) -> (len: usize) {
-        Optional(&self.0, super::Eof).length((v, ()))
-    }
-}
 
 } // verus!

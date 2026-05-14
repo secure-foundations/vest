@@ -4,7 +4,7 @@ use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, Serializer},
+    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::spec::{SpecParser, SpecSerializer};
@@ -154,6 +154,12 @@ impl ByteLen<u8> for super::U8 {
     }
 }
 
+impl Prepare<u8> for super::U8 {
+    fn prepare(&self, _v: u8) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(1)
+    }
+}
+
 impl Parser<&[u8]> for super::U16Le {
     type PT = u16;
 
@@ -189,6 +195,12 @@ impl Compliance<u16> for super::U16Le {
 impl ByteLen<u16> for super::U16Le {
     fn length(&self, _v: u16) -> (len: usize) {
         U16_BYTE_LEN
+    }
+}
+
+impl Prepare<u16> for super::U16Le {
+    fn prepare(&self, _v: u16) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U16_BYTE_LEN)
     }
 }
 
@@ -229,6 +241,12 @@ impl ByteLen<u16> for super::U16Be {
     }
 }
 
+impl Prepare<u16> for super::U16Be {
+    fn prepare(&self, _v: u16) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U16_BYTE_LEN)
+    }
+}
+
 impl Parser<&[u8]> for super::U32Le {
     type PT = u32;
 
@@ -266,6 +284,12 @@ impl ByteLen<u32> for super::U32Le {
     }
 }
 
+impl Prepare<u32> for super::U32Le {
+    fn prepare(&self, _v: u32) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U32_BYTE_LEN)
+    }
+}
+
 impl Parser<&[u8]> for super::U32Be {
     type PT = u32;
 
@@ -300,6 +324,12 @@ impl Compliance<u32> for super::U32Be {
 impl ByteLen<u32> for super::U32Be {
     fn length(&self, _v: u32) -> (len: usize) {
         U32_BYTE_LEN
+    }
+}
+
+impl Prepare<u32> for super::U32Be {
+    fn prepare(&self, _v: u32) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U32_BYTE_LEN)
     }
 }
 
@@ -349,6 +379,12 @@ impl ByteLen<u64> for super::U64Le {
     }
 }
 
+impl Prepare<u64> for super::U64Le {
+    fn prepare(&self, _v: u64) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U64_BYTE_LEN)
+    }
+}
+
 impl Parser<&[u8]> for super::U64Be {
     type PT = u64;
 
@@ -392,6 +428,12 @@ impl Compliance<u64> for super::U64Be {
 impl ByteLen<u64> for super::U64Be {
     fn length(&self, _v: u64) -> (len: usize) {
         U64_BYTE_LEN
+    }
+}
+
+impl Prepare<u64> for super::U64Be {
+    fn prepare(&self, _v: u64) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(U64_BYTE_LEN)
     }
 }
 

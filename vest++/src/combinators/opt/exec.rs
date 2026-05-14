@@ -2,7 +2,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, Serializer},
+        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     },
     spec::{SafeParser, SpecParser},
 };
@@ -63,6 +63,15 @@ impl<A, ST> ByteLen<Option<ST>> for super::Opt<A> where ST: DeepView, A: ByteLen
     }
 }
 
+impl<A, ST> Prepare<Option<ST>> for super::Opt<A> where ST: DeepView, A: Prepare<ST> {
+    fn prepare(&self, v: Option<ST>) -> (checked: Result<usize, PreSerializeError>) {
+        match v {
+            Some(vv) => self.0.prepare(vv),
+            None => Ok(0),
+        }
+    }
+}
+
 impl<I, A, B> Parser<I> for super::Optional<A, B> where
     I: InputBuf,
     A: Parser<I> + SafeParser,
@@ -101,6 +110,17 @@ impl<A, B, STA, STB> ByteLen<(Option<STA>, STB)> for super::Optional<A, B> where
  {
     fn length(&self, v: (Option<STA>, STB)) -> (len: usize) {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).length(v)
+    }
+}
+
+impl<A, B, STA, STB> Prepare<(Option<STA>, STB)> for super::Optional<A, B> where
+    STA: DeepView,
+    STB: DeepView,
+    A: Prepare<STA>,
+    B: Prepare<STB>,
+ {
+    fn prepare(&self, v: (Option<STA>, STB)) -> Result<usize, PreSerializeError> {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).prepare(v)
     }
 }
 
