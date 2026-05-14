@@ -187,7 +187,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 
             let (n, v) = self.0.parse(&rest)?;
             let elem = Some(v);
-            arr.set(i, elem);
+            arr[i] = elem;
             rest = rest.skip(n);
             consumed += n;
         }
