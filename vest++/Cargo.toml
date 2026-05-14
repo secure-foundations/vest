@@ -9,13 +9,13 @@ std = ["alloc", "vstd/std"]
 alloc = ["vstd/alloc"]
 
 [dependencies]
-vstd = "0.0.0-2026-04-20-1748"
+vstd = "=0.0.0-2026-05-10-0145"
 
 [package.metadata.verus]
 verify = true
 
 [package.metadata.verus.ide]
-extra_args = "--expand-errors -V new-mut-ref"
+extra_args = "--expand-errors"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }
