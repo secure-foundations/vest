@@ -244,7 +244,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BitString {
             assert(BitStringValue::spec_wf(slice@));
             assert(OctetString.wf(slice@));
         }
-        OctetString.serialize(&slice, data, pos)
+        OctetString.serialize(&slice, &mut *data, pos)
     }
 }
 

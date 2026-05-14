@@ -157,9 +157,9 @@ impl<'a, C1, C2> Combinator<'a, &'a [u8], Vec<u8>> for Default<<C1 as Combinator
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let pair = (&self.1, &self.2);
         let len = if v.0.polyfill_eq(&self.0.clone().ex_into()) {
-            self.2.serialize(v.1, data, pos)?
+            self.2.serialize(v.1, &mut *data, pos)?
         } else {
-            pair.serialize((v.0, v.1), data, pos)?
+            pair.serialize((v.0, v.1), &mut *data, pos)?
         };
 
         assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));

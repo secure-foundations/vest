@@ -94,7 +94,7 @@ pub fn slice_eq<T: PartialEq>(a: &[T], b: &[T]) -> (res: bool)
 #[verifier::external_body]
 pub fn slice_skip_copy<T: PartialEq + Copy>(a: &mut [T], skip: usize, b: &[T])
     requires old(a)@.len() >= b@.len() + skip
-    ensures a@ == old(a)@.take(skip as int) + b@ + old(a)@.skip(skip + b.len())
+    ensures final(a)@ == old(a)@.take(skip as int) + b@ + old(a)@.skip(skip + b.len())
 {
     (&mut a[skip..skip + b.len()]).copy_from_slice(b)
 }
@@ -208,7 +208,7 @@ pub fn u64_to_string(x: u64) -> (res: String)
 #[verifier::external_body]
 #[inline(always)]
 pub fn u64_to_string_inplace(res: &mut String, x: u64)
-    ensures res@ == old(res)@ + spec_u64_to_string(x)
+    ensures final(res)@ == old(res)@ + spec_u64_to_string(x)
 {
     write!(res, "{}", x).unwrap();
 }
@@ -244,8 +244,9 @@ pub fn vec_set<T>(v: &mut Vec<T>, i: usize, x: T)
     requires
         0 <= i < old(v).len(),
     ensures
-        v.len() == old(v).len() && (forall|j| 0 <= j < v.len() && j != i ==> v[j] == old(v)[j])
-            && v[i as int] == x,
+        final(v).len() == old(v).len()
+            && (forall|j| 0 <= j < final(v).len() && j != i ==> final(v)[j] == old(v)[j])
+            && final(v)[i as int] == x,
 {
     v[i] = x;
 }
@@ -256,10 +257,10 @@ pub fn vec_push_nested<T>(v: &mut Vec<Vec<T>>, i: usize, x: T)
         0 <= i < old(v)@.len(),
 
     ensures
-        v.len() == old(v).len(),
-        forall |j| #![trigger v@[j]] 0 <= j < v@.len() ==> {
-            &&& i == j ==> v@[j]@ == old(v)@[j]@.push(x)
-            &&& i != j ==> v@[j] == old(v)@[j]
+        final(v).len() == old(v).len(),
+        forall |j| #![trigger final(v)@[j]] 0 <= j < final(v)@.len() ==> {
+            &&& i == j ==> final(v)@[j]@ == old(v)@[j]@.push(x)
+            &&& i != j ==> final(v)@[j] == old(v)@[j]
         },
 {
     v[i].push(x);
@@ -289,8 +290,8 @@ pub fn vec_init_n<T: Clone + View>(n: usize, v: &T) -> (res: Vec<T>)
 /// Copied from Verus example
 pub fn vec_reverse<T: DeepView>(v: &mut Vec<&T>)
     ensures
-        v.len() == old(v).len(),
-        old(v).deep_view().reverse() =~= v.deep_view(),
+        final(v).len() == old(v).len(),
+        old(v).deep_view().reverse() =~= final(v).deep_view(),
 {
     let length = v.len();
     let ghost v1 = v.deep_view();
@@ -450,9 +451,9 @@ pub fn chars_iter_next<'a>(iter: &mut CharsIter<'a>) -> (res: Option<char>)
     ensures ({
         let raw = spec_chars_iter_str(*old(iter));
         let prev_idx = spec_chars_iter_index(*old(iter));
-        let new_idx = spec_chars_iter_index(*iter);
+        let new_idx = spec_chars_iter_index(*final(iter));
 
-        &&& spec_chars_iter_str(*iter) == raw
+        &&& spec_chars_iter_str(*final(iter)) == raw
         &&& res matches Some(c) ==> prev_idx < raw.len() && c == raw[prev_idx] && new_idx == prev_idx + 1
         &&& res is None <==> new_idx == prev_idx == raw.len()
     })
@@ -497,7 +498,7 @@ pub fn string_new() -> (res: String)
 #[verifier::external_body]
 #[inline(always)]
 pub fn string_push(s: &mut String, c: char)
-    ensures s@ == old(s)@.push(c)
+    ensures final(s)@ == old(s)@.push(c)
 {
     s.push(c)
 }
@@ -505,7 +506,7 @@ pub fn string_push(s: &mut String, c: char)
 #[verifier::external_body]
 #[inline(always)]
 pub fn string_push_str(s: &mut String, r: &str)
-    ensures s@ == old(s)@ + r@
+    ensures final(s)@ == old(s)@ + r@
 {
     s.push_str(r)
 }

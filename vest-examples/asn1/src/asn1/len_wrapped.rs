@@ -99,7 +99,7 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for LengthWrapped<T> where
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let len = self.0.length(v);
-        let final_len = new_length_wrapped_inner(&self.0).serialize((len as LengthValue, v), data, pos)?;
+        let final_len = new_length_wrapped_inner(&self.0).serialize((len as LengthValue, v), &mut *data, pos)?;
 
         if pos < data.len() && final_len < data.len() - pos {
             assert(data@ =~= seq_splice(old(data)@, pos, self@.spec_serialize(v@)));
