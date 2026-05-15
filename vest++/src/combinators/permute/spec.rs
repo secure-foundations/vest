@@ -12,7 +12,7 @@ impl<P1, P2> SpecParser for super::Permute2<P1, P2> where P1: SpecParser, P2: Sp
     type PVal = (P1::PVal, P2::PVal);
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        let inner = Alt(
+        let inner = Alt::<_, _, false>(
             Pair(self.0, self.1),
             Mapped {
                 inner: Pair(self.1, self.0),
@@ -141,9 +141,9 @@ impl<A, B, C> SpecParser for super::Permute3<A, B, C> where
     type PVal = (A::PVal, (B::PVal, C::PVal));
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        let inner = Alt(
+        let inner = Alt::<_, _, false>(
             Pair(self.0, super::Permute2(self.1, self.2)),
-            Alt(
+            Alt::<_, _, false>(
                 Mapped {
                     inner: Pair(self.1, super::Permute2(self.0, self.2)),
                     mapper: (|i| super::swap3_1(i), |o| super::unswap3_1(o)),
@@ -305,14 +305,14 @@ impl<A, B, C, D> SpecParser for super::Permute4<A, B, C, D> where
     type PVal = (A::PVal, (B::PVal, (C::PVal, D::PVal)));
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        let inner = Alt(
+        let inner = Alt::<_, _, false>(
             Pair(self.0, super::Permute3(self.1, self.2, self.3)),
-            Alt(
+            Alt::<_, _, false>(
                 Mapped {
                     inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
                     mapper: (|i| super::swap4_1(i), |o| super::unswap4_1(o)),
                 },
-                Alt(
+                Alt::<_, _, false>(
                     Mapped {
                         inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
                         mapper: (|i| super::swap4_2(i), |o| super::unswap4_2(o)),

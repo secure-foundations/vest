@@ -48,7 +48,7 @@ pub struct Choice<A, B>(pub A, pub B);
 ///
 /// This combinator introduces malleability by default.
 /// Non-malleability can be recovered if `A` is [`DisjointFrom`](crate::core::spec::DisjointFrom) `B`.
-pub struct Alt<A, B>(pub A, pub B);
+pub struct Alt<A, B, const NONDETERMINISTIC: bool = false>(pub A, pub B);
 
 /// Dispatch combinator that selects one of `N` branches based on a "tag" value.
 pub struct Dispatch<T, C, const N: usize>(pub T, pub [(T, C); N]);

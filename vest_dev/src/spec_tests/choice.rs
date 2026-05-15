@@ -49,7 +49,7 @@ proof fn test_choice_balanced() {
 proof fn test_alt_tag() {
     let tag_v1 = Const(U8, 0x01u8);
     let tag_v2 = Const(U8, 0x02u8);
-    let alt_parser = Alt(tag_v1, tag_v2);
+    let alt_parser = Alt::<_, _, false>(tag_v1, tag_v2);
     assert(alt_parser.unambiguous());
 
     let buf_v1: Seq<u8> = seq![0x01u8];
@@ -166,7 +166,7 @@ proof fn test_alt_flexible_length_encoding() {
     let not_81 = Refined(U8, |value: u8| value != 0x81u8);
     let short_form = not_81;
     let long_form = Tagged(U8, 0x81u8, not_81);
-    let alt_parser = Alt(long_form, short_form);
+    let alt_parser = Alt::<_, _, false>(long_form, short_form);
     assert(alt_parser.unambiguous());
 
     let buf_short: Seq<u8> = seq![42u8];

@@ -190,7 +190,11 @@ impl<A: ValueByteLen, B: ValueByteLen> ValueByteLen for super::Choice<A, B> {
     }
 }
 
-impl<A: SpecParser, B: SpecParser<PVal = A::PVal>> SpecParser for super::Alt<A, B> {
+impl<
+    const NONDETERMINISTIC: bool,
+    A: SpecParser,
+    B: SpecParser<PVal = A::PVal>,
+> SpecParser for super::Alt<A, B, NONDETERMINISTIC> {
     type PVal = A::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -202,7 +206,11 @@ impl<A: SpecParser, B: SpecParser<PVal = A::PVal>> SpecParser for super::Alt<A, 
     }
 }
 
-impl<A: Consistency, B: Consistency<Val = A::Val>> Consistency for super::Alt<A, B> {
+impl<
+    const NONDETERMINISTIC: bool,
+    A: Consistency,
+    B: Consistency<Val = A::Val>,
+> Consistency for super::Alt<A, B, NONDETERMINISTIC> {
     type Val = A::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -219,15 +227,28 @@ pub open spec fn arbitrary_or_left(l: bool, r: bool) -> bool {
     }
 }
 
-impl<A: Consistency, B: Consistency<Val = A::Val>> super::Alt<A, B> {
+impl<const NONDETERMINISTIC: bool, A, B> super::Alt<A, B, NONDETERMINISTIC> where
+    A: Consistency,
+    B: Consistency<Val = A::Val>,
+ {
+    /// For non-deterministic `Alt`:
     /// If exactly one branch accepts `v`, this returns that branch.
     /// If both accept `v`, the choice is unspecified.
+    ///
+    /// For deterministic `Alt`, this returns true iff the left branch accepts `v`.
     pub open spec fn choose_left(&self, v: A::Val) -> bool {
-        arbitrary_or_left(self.0.consistent(v), self.1.consistent(v))
+        if NONDETERMINISTIC {
+            arbitrary_or_left(self.0.consistent(v), self.1.consistent(v))
+        } else {
+            self.0.consistent(v)
+        }
     }
 }
 
-impl<A, B> SoundParser for super::Alt<A, B> where A: SoundParser, B: SoundParser<T = A::T> {
+impl<const NONDETERMINISTIC: bool, A, B> SoundParser for super::Alt<A, B, NONDETERMINISTIC> where
+    A: SoundParser,
+    B: SoundParser<T = A::T>,
+ {
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& self.1.sound_inv()
@@ -258,7 +279,10 @@ impl<A, B> SoundParser for super::Alt<A, B> where A: SoundParser, B: SoundParser
     }
 }
 
-impl<A, B> SafeParser for super::Alt<A, B> where A: SafeParser, B: SafeParser<PVal = A::PVal> {
+impl<const NONDETERMINISTIC: bool, A, B> SafeParser for super::Alt<A, B, NONDETERMINISTIC> where
+    A: SafeParser,
+    B: SafeParser<PVal = A::PVal>,
+ {
     open spec fn safe_inv(&self) -> bool {
         &&& self.0.safe_inv()
         &&& self.1.safe_inv()
@@ -270,7 +294,11 @@ impl<A, B> SafeParser for super::Alt<A, B> where A: SafeParser, B: SafeParser<PV
     }
 }
 
-impl<A, B> SpecSerializerDps for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> SpecSerializerDps for super::Alt<
+    A,
+    B,
+    NONDETERMINISTIC,
+> where
     A: SpecSerializerDps + Consistency<Val = A::SValue>,
     B: SpecSerializerDps<SValue = A::SValue> + Consistency<Val = B::SValue>,
  {
@@ -285,7 +313,7 @@ impl<A, B> SpecSerializerDps for super::Alt<A, B> where
     }
 }
 
-impl<A, B> NonTailFmt for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> NonTailFmt for super::Alt<A, B, NONDETERMINISTIC> where
     A: NonTailFmt + Consistency<Val = A::SValue>,
     B: NonTailFmt<T = A::T> + Consistency<Val = B::SValue>,
  {
@@ -311,7 +339,11 @@ impl<A, B> NonTailFmt for super::Alt<A, B> where
     }
 }
 
-impl<A, B> SpecSerializer for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> SpecSerializer for super::Alt<
+    A,
+    B,
+    NONDETERMINISTIC,
+> where
     A: SpecSerializer + Consistency<Val = A::SVal>,
     B: SpecSerializer<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
@@ -326,7 +358,11 @@ impl<A, B> SpecSerializer for super::Alt<A, B> where
     }
 }
 
-impl<A, B> GoodSerializer for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> GoodSerializer for super::Alt<
+    A,
+    B,
+    NONDETERMINISTIC,
+> where
     A: GoodSerializer + Consistency<Val = A::SVal>,
     B: GoodSerializer<T = A::T> + Consistency<Val = B::SVal>,
  {
@@ -344,7 +380,7 @@ impl<A, B> GoodSerializer for super::Alt<A, B> where
     }
 }
 
-impl<A, B> SpecByteLen for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> SpecByteLen for super::Alt<A, B, NONDETERMINISTIC> where
     A: SpecByteLen + Consistency<Val = A::T>,
     B: SpecByteLen<T = A::T> + Consistency<Val = B::T>,
  {
@@ -359,7 +395,10 @@ impl<A, B> SpecByteLen for super::Alt<A, B> where
     }
 }
 
-impl<A, B> MinMaxByteLen for super::Alt<A, B> where A: MinMaxByteLen, B: MinMaxByteLen<T = A::T> {
+impl<const NONDETERMINISTIC: bool, A, B> MinMaxByteLen for super::Alt<A, B, NONDETERMINISTIC> where
+    A: MinMaxByteLen,
+    B: MinMaxByteLen<T = A::T>,
+ {
     open spec fn min(&self) -> nat {
         if self.0.min() <= self.1.min() {
             self.0.min()

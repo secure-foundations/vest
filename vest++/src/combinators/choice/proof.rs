@@ -95,7 +95,11 @@ impl<A, B> EquivSerializers for super::Choice<A, B> where A: EquivSerializers, B
     }
 }
 
-impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::Alt<A, B> {
+impl<
+    const NONDETERMINISTIC: bool,
+    A: SPRoundTripDps,
+    B: SPRoundTripDps<T = A::T>,
+> SPRoundTripDps for super::Alt<A, B, NONDETERMINISTIC> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.unambiguous()
         &&& self.1.unambiguous()
@@ -113,7 +117,7 @@ impl<A: SPRoundTripDps, B: SPRoundTripDps<T = A::T>> SPRoundTripDps for super::A
 
 // NonMalleable only holds for [`Alt`] when the two parsers produce disjoint sets of values.
 // This ensures that if two byte sequences parse to the same value, they must have used the same underlying parser.
-impl<A, B> NonMalleable for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> NonMalleable for super::Alt<A, B, NONDETERMINISTIC> where
     A: SoundParser + NonMalleable,
     B: SoundParser<T = A::T> + NonMalleable,
  {
@@ -160,7 +164,10 @@ impl<A, B> NonMalleable for super::Alt<A, B> where
     }
 }
 
-impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead<PVal = A::PVal> {
+impl<const NONDETERMINISTIC: bool, A, B> NoLookAhead for super::Alt<A, B, NONDETERMINISTIC> where
+    A: NoLookAhead,
+    B: NoLookAhead<PVal = A::PVal>,
+ {
     open spec fn no_lookahead_inv(&self) -> bool {
         &&& self.0.no_lookahead_inv()
         &&& self.1.no_lookahead_inv()
@@ -175,7 +182,11 @@ impl<A, B> NoLookAhead for super::Alt<A, B> where A: NoLookAhead, B: NoLookAhead
     }
 }
 
-impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> EquivSerializersGeneral for super::Alt<
+    A,
+    B,
+    NONDETERMINISTIC,
+> where
     A: EquivSerializersGeneral + Consistency<Val = A::SVal>,
     B: EquivSerializersGeneral<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
@@ -193,7 +204,11 @@ impl<A, B> EquivSerializersGeneral for super::Alt<A, B> where
     }
 }
 
-impl<A, B> EquivSerializers for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, A, B> EquivSerializers for super::Alt<
+    A,
+    B,
+    NONDETERMINISTIC,
+> where
     A: EquivSerializers + Consistency<Val = A::SVal>,
     B: EquivSerializers<SVal = A::SVal> + Consistency<Val = B::SVal>,
  {
