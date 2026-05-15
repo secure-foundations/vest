@@ -28,12 +28,6 @@ impl<'s, const N: usize> Serializer<&'s [u8]> for super::Fixed<N> {
     }
 }
 
-impl<'s, const N: usize> Compliance<&'s [u8]> for super::Fixed<N> {
-    fn check_compliance(&self, v: &'s [u8]) -> (yes: bool) {
-        v.len() == N
-    }
-}
-
 impl<'s, const N: usize> ByteLen<&'s [u8]> for super::Fixed<N> {
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
@@ -66,12 +60,6 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
 impl<'s, Len: AsLen> Serializer<&'s [u8]> for super::Varied<Len> {
     fn ex_serialize(&self, v: &'s [u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
-    }
-}
-
-impl<'s, Len: AsLen> Compliance<&'s [u8]> for super::Varied<Len> {
-    fn check_compliance(&self, v: &'s [u8]) -> (yes: bool) {
-        v.len() == self.0.get()
     }
 }
 
@@ -148,15 +136,6 @@ impl<Len, Inner, InnerST> Serializer<InnerST> for super::ExactLen<Inner, Len> wh
     }
 }
 
-// impl<Len, Inner, InnerST> Compliance<InnerST> for super::ExactLen<Inner, Len> where
-//     Len: AsLen,
-//     InnerST: DeepView + Copy,
-//     Inner: Compliance<InnerST> + ByteLen<InnerST>,
-//  {
-//     fn check_compliance(&self, v: InnerST) -> (yes: bool) {
-//         self.1.check_compliance(v) && self.1.length(v) == self.0.get()
-//     }
-// }
 impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     InnerST: DeepView,

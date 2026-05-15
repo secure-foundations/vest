@@ -37,12 +37,6 @@ impl<ST, Inner> Serializer<ST> for super::Named<Inner> where
     }
 }
 
-impl<T, Inner> Compliance<T> for super::Named<Inner> where T: DeepView, Inner: Compliance<T> {
-    fn check_compliance(&self, v: T) -> (yes: bool) {
-        self.0.check_compliance(v)
-    }
-}
-
 impl<T, Inner> ByteLen<T> for super::Named<Inner> where T: DeepView, Inner: ByteLen<T> {
     fn length(&self, v: T) -> (len: usize) {
         self.0.length(v)

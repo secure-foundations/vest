@@ -59,12 +59,6 @@ pub trait ByteLen<T>: SpecByteLen<T = T::V> where T: DeepView {
     ;
 }
 
-impl<T, S> Compliance<T> for &S where T: DeepView, S: Compliance<T> {
-    fn check_compliance(&self, v: T) -> (yes: bool) {
-        (*self).check_compliance(v)
-    }
-}
-
 impl<T, S> Prepare<T> for &S where T: DeepView, S: Prepare<T> {
     fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
         (*self).prepare(v)

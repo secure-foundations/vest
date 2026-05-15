@@ -20,12 +20,6 @@ impl Serializer<()> for super::Empty {
     }
 }
 
-impl Compliance<()> for super::Empty {
-    fn check_compliance(&self, _v: ()) -> (yes: bool) {
-        true
-    }
-}
-
 impl ByteLen<()> for super::Empty {
     fn length(&self, _v: ()) -> (len: usize) {
         0

@@ -85,20 +85,6 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Choice<A, B> wh
     }
 }
 
-impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Choice<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B: Compliance<STB>,
- {
-    fn check_compliance(&self, v: super::Sum<STA, STB>) -> (yes: bool) {
-        match v {
-            super::Sum::Inl(va) => self.0.check_compliance(va),
-            super::Sum::Inr(vb) => self.1.check_compliance(vb),
-        }
-    }
-}
-
 impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
     STA: DeepView,
     STB: DeepView,
@@ -144,16 +130,6 @@ impl<I, A, B> Parser<I> for super::Alt<A, B> where
             Ok(r) => Ok(r),
             Err(_) => self.1.parse(ibuf),
         }
-    }
-}
-
-impl<A, B, ST> Compliance<ST> for super::Alt<A, B> where
-    ST: DeepView + Copy,
-    A: Compliance<ST>,
-    B: Compliance<ST>,
- {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
-        self.0.check_compliance(v) || self.1.check_compliance(v)
     }
 }
 
@@ -221,21 +197,6 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Sum<A, B> where
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.ex_serialize(vb, obuf),
             _ => (),
-        }
-    }
-}
-
-impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Sum<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B: Compliance<STB>,
- {
-    fn check_compliance(&self, v: super::Sum<STA, STB>) -> (yes: bool) {
-        match (self, v) {
-            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.check_compliance(va),
-            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.check_compliance(vb),
-            _ => false,
         }
     }
 }
