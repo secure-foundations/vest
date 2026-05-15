@@ -4,7 +4,7 @@ use crate::core::{
         serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
         ParseErrorKind,
     },
-    spec::SpecParser,
+    spec::{Consistency, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
 
@@ -113,7 +113,7 @@ impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Choice<A, B> where
     }
 }
 
-impl<I, A, B> Parser<I> for super::Alt<A, B> where
+impl<const NONDETERMINISTIC: bool, I, A, B> Parser<I> for super::Alt<A, B, NONDETERMINISTIC> where
     I: View<V = Seq<u8>>,
     A: Parser<I>,
     B: Parser<I, PVal = A::PVal, PT = A::PT>,
@@ -133,21 +133,39 @@ impl<I, A, B> Parser<I> for super::Alt<A, B> where
     }
 }
 
-impl<A, B, ST> Prepare<ST> for super::Alt<A, B> where
+impl<A, B, ST> Prepare<ST> for super::Alt<A, B, false> where
     ST: DeepView + Copy,
-    A: Prepare<ST>,
+    A: Prepare<ST> + Compliance<ST>,
     B: Prepare<ST>,
  {
-    #[verifier::external_body]
-    // TODO: the spec allows non-deterministic serialization for `Alt` when both branches are compliant,
-    // but we want the actual implementation to always prefer the first one if both are compliant.
-    // We can either make the spec for `Alt` deterministic, or make the post-condition of `prepare` an existential.
     fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
-        // prefer the first one if both are compliant
         if let Ok(la) = self.0.prepare(v) {
             return Ok(la);
         }
         self.1.prepare(v)
+    }
+}
+
+impl<A, B, ST> Serializer<ST> for super::Alt<A, B, false> where
+    ST: DeepView<V = A::SVal> + Copy,
+    A: Serializer<ST> + Compliance<ST>,
+    B: Serializer<ST, SVal = A::SVal> + Consistency<Val = A::SVal>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+        if self.0.check_compliance(v) {
+            assert(self.choose_left(v.deep_view()));
+            assert(self.spec_serialize(v.deep_view()) == self.0.spec_serialize(v.deep_view()));
+            self.0.ex_serialize(v, obuf);
+        } else {
+            assert(!self.choose_left(v.deep_view()));
+            assert(self.spec_serialize(v.deep_view()) == self.1.spec_serialize(v.deep_view()));
+            self.1.ex_serialize(v, obuf);
+        }
     }
 }
 
