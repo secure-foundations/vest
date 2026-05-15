@@ -79,6 +79,20 @@ impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
     }
 }
 
+impl<A, AVal, B, BVal, const CHECK: bool> Compliance<BVal> for super::Preceded<
+    A,
+    AVal,
+    B,
+    CHECK,
+> where AVal: SelfView + Copy, BVal: DeepView, A: Compliance<AVal>, B: Compliance<BVal> {
+    fn check_compliance(&self, v: BVal) -> (yes: bool) {
+        proof {
+            self.a_val.self_view();
+        }
+        Pair(&self.a, &self.b).check_compliance((self.a_val, v))
+    }
+}
+
 impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<BVal> for super::Preceded<
     A,
     AVal,

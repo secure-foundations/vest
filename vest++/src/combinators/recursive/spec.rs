@@ -582,7 +582,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         decreases gas,
     {
         if !(Self::spec_parse_gas(gas, param, input) == Some((n, v))) {
-            return;
+            return ;
         }
         let callback = Self::specs_callback(gas);
         let callback_p = callback(param).2;
@@ -642,7 +642,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         decreases gas,
     {
         if !(Self::spec_parse_gas(gas, param, input) == Some((n, v))) {
-            return;
+            return ;
         }
         let callback = Self::specs_callback(gas);
         let callback_p = callback(param).2;

@@ -29,6 +29,12 @@ impl<'s> Serializer<&'s [u8]> for super::Tail {
     }
 }
 
+impl<'s> Compliance<&'s [u8]> for super::Tail {
+    fn check_compliance(&self, _v: &'s [u8]) -> (yes: bool) {
+        true
+    }
+}
+
 impl<'s> ByteLen<&'s [u8]> for super::Tail {
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
@@ -59,6 +65,12 @@ impl Serializer<()> for super::Eof {
     }
 }
 
+impl Compliance<()> for super::Eof {
+    fn check_compliance(&self, _v: ()) -> (yes: bool) {
+        true
+    }
+}
+
 impl ByteLen<()> for super::Eof {
     fn length(&self, _v: ()) -> (len: usize) {
         0
@@ -68,6 +80,17 @@ impl ByteLen<()> for super::Eof {
 impl Prepare<()> for super::Eof {
     fn prepare(&self, _v: ()) -> (checked: Result<usize, PreSerializeError>) {
         Ok(0)
+    }
+}
+
+impl<A, B, AVal, BVal> Compliance<(AVal, BVal)> for super::PairRev<A, B> where
+    AVal: DeepView,
+    BVal: DeepView,
+    A: Compliance<AVal>,
+    B: Compliance<BVal>,
+ {
+    fn check_compliance(&self, v: (AVal, BVal)) -> (yes: bool) {
+        self.1.check_compliance(v.0) && self.0.check_compliance(v.1)
     }
 }
 
@@ -103,5 +126,6 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
         }
     }
 }
+
 
 } // verus!
