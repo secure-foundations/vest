@@ -67,10 +67,6 @@ impl<A, B, BVal, AVal, const CHECK: bool> Serializer<AVal> for super::Terminated
     A: Serializer<AVal>,
     B: Serializer<BVal, SVal = BVal>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        Pair(&self.a, &self.b).exec_inv()
-    }
-
     fn ex_serialize(&self, v: AVal, obuf: &mut Vec<u8>) {
         proof {
             self.b_val.self_view();

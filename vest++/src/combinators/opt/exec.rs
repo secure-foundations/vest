@@ -33,10 +33,6 @@ impl<A, ST> Serializer<Option<ST>> for super::Opt<A> where
     ST: DeepView<V = A::SVal>,
     A: Serializer<ST>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
-    }
-
     fn ex_serialize(&self, v: Option<ST>, obuf: &mut Vec<u8>) {
         match v {
             Some(vv) => self.0.ex_serialize(vv, obuf),

@@ -83,13 +83,7 @@ impl<T, Exec, Spec> Pred<T> for FnPred<T, Exec, Spec> where
 pub trait Map<I>: SpecMap where I: DeepView<V = Self::Input> {
     type O: DeepView<V = Self::Output>;
 
-    open spec fn exec_inv(&self) -> bool {
-        true
-    }
-
     fn map(&self, i: I) -> (o: Self::O)
-        requires
-            self.exec_inv(),
         ensures
             self.spec_map(i.deep_view()) == o.deep_view(),
     ;
@@ -141,26 +135,38 @@ pub trait MapRef<I>: SpecMap<Output = Self::O> where I: DeepView<V = Self::Input
 // }
 /// Pairs an executable predicate closure with a ghost spec predicate.
 #[verifier::reject_recursive_types(O)]
-pub struct FnMap<I: DeepView, O: DeepView, Exec, Spec> {
-    pub exec_fn: Exec,
-    pub spec_fn: Ghost<Spec>,
-    pub _marker: PhantomData<(I, O)>,
+pub struct FnMap<
+    I: DeepView,
+    O: DeepView,
+    Exec: Fn(I) -> O,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
+> {
+    exec_fn: Exec,
+    spec_fn: Ghost<Spec>,
+    _marker: PhantomData<(I, O)>,
 }
 
-impl<I: DeepView, O: DeepView, Exec, Spec> FnMap<I, O, Exec, Spec> {
-    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (fnmap: Self) where
-        I: DeepView,
-        O: DeepView,
-        Exec: Fn(I) -> O,
-        Spec: SpecMap<Input = I::V, Output = O::V>,
+impl<I: DeepView, O: DeepView, Exec: Fn(I) -> O, Spec: SpecMap<Input = I::V, Output = O::V>> FnMap<
+    I,
+    O,
+    Exec,
+    Spec,
+> {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        &&& forall|i: I| #[trigger] call_requires(self.exec_fn, (i,))
+        &&& forall|i: I, o: O| #[trigger]
+            call_ensures(self.exec_fn, (i,), o) ==> o.deep_view() == {
+                let Ghost(spec_fn) = self.spec_fn;
+                spec_fn.spec_map(i.deep_view())
+            }
+    }
 
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (fnmap: Self)
         requires
             forall|i: I| #[trigger] call_requires(exec_fn, (i,)),
             forall|i: I, o: O| #[trigger]
                 call_ensures(exec_fn, (i,), o) ==> o.deep_view() == spec_fn.spec_map(i.deep_view()),
-        ensures
-            fnmap.exec_inv(),
-            fnmap.spec_fn == spec_fn,
     {
         Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
     }
@@ -169,6 +175,7 @@ impl<I: DeepView, O: DeepView, Exec, Spec> FnMap<I, O, Exec, Spec> {
 impl<I, O, Exec, Spec> SpecMap for FnMap<I, O, Exec, Spec> where
     I: DeepView,
     O: DeepView,
+    Exec: Fn(I) -> O,
     Spec: SpecMap<Input = I::V, Output = O::V>,
  {
     type Input = I::V;
@@ -189,16 +196,10 @@ impl<I, O, Exec, Spec> Map<I> for FnMap<I, O, Exec, Spec> where
  {
     type O = O;
 
-    open spec fn exec_inv(&self) -> bool {
-        &&& forall|i: I| #[trigger] call_requires(self.exec_fn, (i,))
-        &&& forall|i: I, o: O| #[trigger]
-            call_ensures(self.exec_fn, (i,), o) ==> o.deep_view() == {
-                let Ghost(spec_fn) = self.spec_fn;
-                spec_fn.spec_map(i.deep_view())
-            }
-    }
-
     fn map(&self, i: I) -> (o: Self::O) {
+        proof {
+            use_type_invariant(self);
+        }
         (self.exec_fn)(i)
     }
 }
@@ -287,84 +288,6 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
 
     fn parse(&self, ibuf: &I) -> (r: PResult<O>) {
         (self.exec_fn)(ibuf)
-    }
-}
-
-/// Pairs an executable fresh-buffer serializer with a ghost serializer spec.
-#[verifier::reject_recursive_types(T)]
-pub struct FnSerializer<T: DeepView, Spec: SpecSerializer<SVal = T::V>, Exec> {
-    pub exec_fn: Exec,
-    pub spec_fn: Ghost<Spec>,
-    pub _marker: PhantomData<T>,
-}
-
-impl<T, Spec, Exec> FnSerializer<T, Spec, Exec> where
-    T: DeepView,
-    Spec: SpecSerializer<SVal = T::V>,
- {
-    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
-        ensures
-            serializer.exec_fn == exec_fn,
-            serializer.spec_fn == spec_fn,
-    {
-        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
-    }
-}
-
-impl<T, Spec, Exec> SpecSerializer for FnSerializer<T, Spec, Exec> where
-    T: DeepView,
-    Spec: SpecSerializer<SVal = T::V>,
- {
-    type SVal = T::V;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        let Ghost(spec_fn) = self.spec_fn;
-        spec_fn.spec_serialize(v)
-    }
-}
-
-impl<T, Spec, Exec> Consistency for FnSerializer<T, Spec, Exec> where
-    T: DeepView,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
- {
-    type Val = T::V;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        let Ghost(spec_fn) = self.spec_fn;
-        spec_fn.consistent(v)
-    }
-}
-
-impl<T, Spec, Exec> SpecByteLen for FnSerializer<T, Spec, Exec> where
-    T: DeepView,
-    Spec: SpecSerializer<SVal = T::V> + SpecByteLen<T = T::V>,
- {
-    type T = T::V;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        let Ghost(spec_fn) = self.spec_fn;
-        spec_fn.byte_len(v)
-    }
-}
-
-impl<T, Spec, Exec> Serializer<T> for FnSerializer<T, Spec, Exec> where
-    T: DeepView,
-    Spec: SpecSerializer<SVal = T::V>,
-    Exec: Fn(T) -> Vec<u8>,
- {
-    open spec fn exec_inv(&self) -> bool {
-        &&& forall|v: T| #[trigger] call_requires(self.exec_fn, (v,))
-        &&& forall|v: T, bytes: Vec<u8>| #[trigger]
-            call_ensures(self.exec_fn, (v,), bytes) ==> bytes@ == self.spec_serialize(v.deep_view())
-    }
-
-    fn ex_serialize(&self, v: T, obuf: &mut Vec<u8>) {
-        let bytes = (self.exec_fn)(v);
-        let slice = bytes.as_slice();
-        obuf.extend_from_slice(slice);
-        proof {
-            assert(slice@ == bytes@);
-        }
     }
 }
 

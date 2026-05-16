@@ -201,9 +201,6 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: &mut Vec<u8>) where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
-
-    requires
-        inner.exec_inv(),
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
 {
@@ -211,7 +208,6 @@ pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: 
 
     for i in 0..values.len()
         invariant
-            inner.exec_inv(),
             obuf@ == old_obuf + spec_serialize_seq(inner, values.deep_view().take(i as int)),
     {
         proof {
@@ -316,10 +312,6 @@ impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.inner.exec_inv()
-    }
-
     fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
         serialize_slice(&self.inner, v, obuf);
     }
@@ -357,10 +349,6 @@ impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> wher
     InnerST: DeepView<V = Inner::SVal> + Copy,
     N: AsLen,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
         serialize_slice(&self.1, v, obuf);
     }
@@ -406,10 +394,6 @@ impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
-    }
-
     fn ex_serialize(&self, v: &[InnerST; N], obuf: &mut Vec<u8>) {
         serialize_slice(&self.0, v.as_slice(), obuf);
     }

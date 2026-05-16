@@ -139,10 +139,6 @@ impl<Len, Inner, InnerST> Serializer<InnerST> for super::ExactLen<Inner, Len> wh
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: InnerST, obuf: &mut Vec<u8>) {
         self.1.ex_serialize(v, obuf);
     }

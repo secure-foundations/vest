@@ -28,10 +28,6 @@ impl<ST, Inner> Serializer<ST> for super::Named<Inner> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST> + SpecSerializer,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }

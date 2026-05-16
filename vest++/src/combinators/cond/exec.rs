@@ -30,10 +30,6 @@ impl<Inner, ST> Serializer<ST> for super::Cond<Inner> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.1.ex_serialize(v, obuf);
     }

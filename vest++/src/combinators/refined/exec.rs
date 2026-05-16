@@ -54,10 +54,6 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
     A: Serializer<ST>,
     PredFn: SpecPred<A::SVal>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
@@ -122,10 +118,6 @@ impl<Inner, ST> Serializer<ST> for super::Const<Inner, ST> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST, SVal = ST>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
@@ -257,14 +249,6 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        Preceded::<_, _, _, false> {
-            a: super::Const(&self.0, self.1),
-            b: &self.2,
-            a_val: self.1,
-        }.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
@@ -355,14 +339,6 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
-        }.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.2,

@@ -72,11 +72,6 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Choice<A, B> wh
     A: Serializer<STA>,
     B: Serializer<STB>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        &&& self.0.exec_inv()
-        &&& self.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
         match v {
             super::Sum::Inl(va) => self.0.ex_serialize(va, obuf),
@@ -176,11 +171,6 @@ impl<A, B, ST> Serializer<ST> for super::Alt<A, B, false> where
     A: Serializer<ST> + Compliance<ST>,
     B: Serializer<ST, SVal = A::SVal> + Consistency<Val = A::SVal>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        &&& self.0.exec_inv()
-        &&& self.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         if self.0.check_compliance(v) {
             self.0.ex_serialize(v, obuf);
@@ -224,13 +214,6 @@ impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Sum<A, B> where
     A: Serializer<STA>,
     B: Serializer<STB>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        match self {
-            super::Sum::Inl(a) => a.exec_inv(),
-            super::Sum::Inr(b) => b.exec_inv(),
-        }
-    }
-
     fn ex_serialize(&self, v: super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),

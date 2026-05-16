@@ -39,8 +39,7 @@ impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     type PT = M::O;
 
     open spec fn exec_inv(&self) -> bool {
-        &&& self.inner.exec_inv()
-        &&& self.mapper.0.exec_inv()
+        self.inner.exec_inv()
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
@@ -65,7 +64,6 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 
     requires
         fmt.inner.exec_inv(),
-        fmt.mapper.0.exec_inv(),
     ensures
         #[trigger] fmt.exec_inv(),
 {
@@ -77,11 +75,6 @@ impl<Inner, M, MRev, ST> Serializer<ST> for super::Mapped<Inner, BiMap<M, MRev>>
     MRev: Map<ST, Input = M::Output, Output = M::Input>,
     Inner: Serializer<<MRev as Map<ST>>::O>,
  {
-    open spec fn exec_inv(&self) -> bool {
-        &&& self.inner.exec_inv()
-        &&& self.mapper.1.exec_inv()
-    }
-
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let inner_v = self.mapper.1.map(v);
         proof {
@@ -91,22 +84,6 @@ impl<Inner, M, MRev, ST> Serializer<ST> for super::Mapped<Inner, BiMap<M, MRev>>
         }
         self.inner.ex_serialize(inner_v, obuf);
     }
-}
-
-pub broadcast proof fn lemma_map_ref_exec_inv<Inner, M, MRev, ST>(
-    fmt: &super::Mapped<Inner, BiMap<M, MRev>>,
-) where
-    ST: DeepView,
-    M: SpecMap<Input = Inner::SVal, Output = ST::V>,
-    MRev: Map<ST, Input = M::Output, Output = M::Input>,
-    Inner: Serializer<<MRev as Map<ST>>::O>,
-
-    requires
-        fmt.inner.exec_inv(),
-        fmt.mapper.1.exec_inv(),
-    ensures
-        #[trigger] fmt.exec_inv(),
-{
 }
 
 } // verus!
