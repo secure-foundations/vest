@@ -1,7 +1,7 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
         ParseErrorKind,
     },
     spec::{Consistency, SpecByteLen, SpecParser, SpecSerializer},
@@ -280,7 +280,7 @@ impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Sum<A, B> where
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.prepare(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.prepare(vb),
-            _ => Err(PreSerializeError::NotCompliant("Sum")),
+            _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice)),
         }
     }
 }

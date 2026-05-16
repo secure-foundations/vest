@@ -7,7 +7,7 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
@@ -92,7 +92,7 @@ impl<A, PredFn, ST> Prepare<ST> for super::Refined<A, PredFn> where
         if self.1.test(&v) {
             self.0.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant("Refined"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
         }
     }
 }
@@ -157,7 +157,7 @@ impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inne
         if SelfView::eq(&v, &self.1) {
             self.0.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant("Const"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag))
         }
     }
 }

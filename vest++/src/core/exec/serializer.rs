@@ -1,5 +1,6 @@
 //! Executable serializer traits.
 use crate::core::spec::{Consistency, SpecByteLen, SpecSerializer};
+use core::fmt;
 use core::marker::PhantomData;
 use vstd::prelude::*;
 
@@ -35,9 +36,21 @@ pub trait Compliance<T>: Consistency<Val = T::V> where T: DeepView {
     ;
 }
 
+#[derive(Debug)]
+pub enum ComplianceErrorKind {
+    LengthInconsistent,
+    InvalidTag,
+    PredicateFailed,
+    CondRejected,
+    RecursionLimitExceeded,
+    InvalidChoice,
+    NamedFormat(&'static str),
+}
+
+#[derive(Debug)]
 pub enum PreSerializeError {
     LengthTooLarge,
-    NotCompliant(&'static str),
+    NotCompliant(ComplianceErrorKind),
 }
 
 pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: DeepView {
@@ -383,3 +396,29 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 //     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) -> (len: usize);
 // }
 } // verus!
+
+impl fmt::Display for ComplianceErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ComplianceErrorKind::LengthInconsistent => f.write_str("length inconsistent"),
+            ComplianceErrorKind::InvalidTag => f.write_str("invalid tag"),
+            ComplianceErrorKind::PredicateFailed => f.write_str("predicate failed"),
+            ComplianceErrorKind::CondRejected => f.write_str("condition rejected"),
+            ComplianceErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
+            ComplianceErrorKind::InvalidChoice => f.write_str("invalid choice"),
+            ComplianceErrorKind::NamedFormat(name) => write!(f, "value not compliant with format `{}`", name),
+        }
+    }
+}
+
+impl fmt::Display for PreSerializeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PreSerializeError::LengthTooLarge => f.write_str("length too large for usize"),
+            PreSerializeError::NotCompliant(kind) => write!(f, "not compliant: {}", kind),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for PreSerializeError {}

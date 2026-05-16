@@ -4,7 +4,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
@@ -397,7 +397,7 @@ impl<Inner, N, InnerST> Prepare<&[InnerST]> for super::RepeatN<Inner, N> where
         if v.len() == self.0.get() {
             prepare_slice(&self.1, v)
         } else {
-            Err(PreSerializeError::NotCompliant("RepeatN"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }

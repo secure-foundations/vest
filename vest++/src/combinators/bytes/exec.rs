@@ -2,7 +2,7 @@ use crate::combinators::AsLen;
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+    serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::spec::SpecParser;
@@ -45,7 +45,7 @@ impl<'s, const N: usize> Prepare<&'s [u8]> for super::Fixed<N> {
         if v.len() == N {
             Ok(N)
         } else {
-            Err(PreSerializeError::NotCompliant("Fixed"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }
@@ -86,7 +86,7 @@ impl<'s, Len: AsLen> Prepare<&'s [u8]> for super::Varied<Len> {
         if v.len() == self.0.get() {
             Ok(v.len())
         } else {
-            Err(PreSerializeError::NotCompliant("Varied"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }
@@ -177,7 +177,7 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
         if len == self.0.get() {
             Ok(len)
         } else {
-            Err(PreSerializeError::NotCompliant("ExactLen"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }

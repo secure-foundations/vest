@@ -1,7 +1,7 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     spec::SpecParser,
@@ -56,7 +56,7 @@ impl<T, Inner> Prepare<T> for super::Cond<Inner> where T: DeepView, Inner: Prepa
         if self.0 {
             self.1.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant("Cond"))
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected))
         }
     }
 }
