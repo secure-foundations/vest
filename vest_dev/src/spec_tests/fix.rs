@@ -169,6 +169,33 @@ impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
     }
 }
 
+impl<'s> PrepareRecBody<&'s NestedBracesT> for NestedBracesBody {
+    type EP = ();
+
+    fn prepare_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &'s NestedBracesT,
+    ) -> Result<usize, PreSerializeError> where Exec: Fn(&(), &'s NestedBracesT) -> Result<
+        usize,
+        PreSerializeError,
+    > {
+        match v {
+            NestedBracesT::Eps => U8.prepare(0x00u8),
+            NestedBracesT::Brace(inner) => {
+                let l1 = U8.prepare(0x7Bu8)?;
+                let l2 = exec_rec(&(), inner)?;
+                let l3 = U8.prepare(0x7Du8)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                Ok(sum2)
+            },
+        }
+    }
+}
+
 impl StrictRecBody for NestedBracesBody {
     proof fn lemma_body_all_inv_preservation(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
     }
@@ -360,6 +387,44 @@ impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
     }
 }
 
+impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
+    type EP = u8;
+
+    fn prepare_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &'s TaggedChainT,
+    ) -> Result<usize, PreSerializeError> where Exec: Fn(&u8, &'s TaggedChainT) -> Result<
+        usize,
+        PreSerializeError,
+    > {
+        match v {
+            TaggedChainT::End => {
+                if *current_tag == 0u8 {
+                    U8.prepare(0x00u8)
+                } else {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected))
+                }
+            },
+            TaggedChainT::Step(next_tag, tail) => {
+                if *current_tag == 0u8 {
+                    return Err(
+                        PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected),
+                    );
+                }
+                let l1 = U8.prepare(*current_tag)?;
+                let l2 = U8.prepare(*next_tag)?;
+                let l3 = exec_rec(next_tag, tail)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                Ok(sum2)
+            },
+        }
+    }
+}
+
 impl StrictRecBody for TaggedChainBody {
     proof fn lemma_body_all_inv_preservation(
         _param: Self::Param,
@@ -392,11 +457,19 @@ proof fn tagged_chain_sound_parser() {
 } // verus!
 #[test]
 fn nested_braces_exec_parse() {
-    let parser = FixWith::<10, _, _>(NestedBracesBody, ());
-    let input: &[u8] = &[0x7b, 0x7b, 0x00, 0x7d, 0x7d];
-    let result = parser.parse(&input);
+    fn nested_braces(depth: usize) -> NestedBracesT {
+        let mut value = NestedBracesT::Eps;
+        for _ in 0..depth {
+            value = NestedBracesT::Brace(Box::new(value));
+        }
+        value
+    }
 
-    println!("input buf: {:?}, parse result: {:?}", input, result);
+    let fmt = FixWith::<10, _, _>(NestedBracesBody, ());
+    let input: &[u8] = &[0x7b, 0x7b, 0x00, 0x7d, 0x7d];
+    let result = fmt.parse(&input);
+
+    println!("input buf: {:X?}, parse result: {:?}", input, result);
 
     let parsed_value = match result {
         Ok((5, value @ NestedBracesT::Brace(_))) => {
@@ -412,18 +485,22 @@ fn nested_braces_exec_parse() {
     };
 
     let parsed_ref = &parsed_value;
-    let mut serialized = Vec::<u8>::new();
-    parser.ex_serialize(&parsed_ref, &mut serialized);
+    let prepared = fmt.prepare(parsed_ref);
+    assert!(matches!(prepared, Ok(len) if len == input.len()));
+
+    let len = prepared.unwrap();
+    let mut serialized = Vec::with_capacity(len);
+    fmt.serialize(&parsed_ref, &mut serialized);
     println!(
-        "serialized value: {:?}, output buf: {:?}",
+        "serialized value: {:?}, output buf: {:X?}",
         parsed_value, serialized
     );
     assert_eq!(serialized.as_slice(), input);
 
     let serialized_input = serialized.as_slice();
-    let serialized_parse_result = parser.parse(&serialized_input);
+    let serialized_parse_result = fmt.parse(&serialized_input);
     println!(
-        "serialized input buf: {:?}, parse result: {:?}",
+        "serialized input buf: {:X?}, parse result: {:?}",
         serialized_input, serialized_parse_result
     );
 
@@ -432,10 +509,10 @@ fn nested_braces_exec_parse() {
         0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x00, 0x7d, 0x7d, 0x7d,
         0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d,
     ];
-    let bad_result = parser.parse(&bad_input);
+    let bad_result = fmt.parse(&bad_input);
 
     println!(
-        "bad input buf: {:?}, parse result: {:?}",
+        "bad input buf: {:X?}, parse result: {:?}",
         bad_input, bad_result
     );
 
@@ -449,16 +526,26 @@ fn nested_braces_exec_parse() {
         }
         other => panic!("expected recursion limit error, got {:?}", other),
     }
+
+    let too_deep = nested_braces(11);
+    let too_deep_prepared = fmt.prepare(&too_deep);
+    println!("too-deep nested prepare result: {:?}", too_deep_prepared);
+    assert!(matches!(
+        too_deep_prepared,
+        Err(PreSerializeError::NotCompliant(
+            ComplianceErrorKind::RecursionLimitExceeded
+        ))
+    ));
 }
 
 #[test]
 fn tagged_chain_exec_parse_serialize() {
-    let parser = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
+    let fmt = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
     let input: &[u8] = &[0x7A, 0x5A, 0x5A, 0x33, 0x33, 0x00, 0x00];
-    let result = parser.parse(&input);
+    let result = fmt.parse(&input);
 
     println!(
-        "tagged-chain input buf: {:?}, parse result: {:?}",
+        "tagged-chain input buf: {:X?}, parse result: {:?}",
         input, result
     );
 
@@ -475,10 +562,13 @@ fn tagged_chain_exec_parse_serialize() {
         other => panic!("unexpected tagged-chain parse result: {:?}", other),
     };
 
-    let mut serialized = Vec::<u8>::new();
-    parser.ex_serialize(&parsed_value, &mut serialized);
+    let prepared = fmt.prepare(&parsed_value);
+    assert!(matches!(prepared, Ok(len) if len == input.len()));
+    let len = prepared.unwrap();
+    let mut serialized = Vec::with_capacity(len);
+    fmt.serialize(&parsed_value, &mut serialized);
     println!(
-        "tagged-chain parsed value: {:?}, serialized buf: {:?}",
+        "tagged-chain parsed value: {:?}, serialized buf: {:X?}",
         parsed_value, serialized
     );
     assert_eq!(serialized.as_slice(), input);
