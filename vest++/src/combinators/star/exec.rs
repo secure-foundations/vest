@@ -278,6 +278,37 @@ pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: us
     len
 }
 
+pub fn length_slice_checked<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: Option<
+    usize,
+>) where Inner: ByteLen<InnerST>, InnerST: DeepView + Copy
+    ensures
+        len matches Some(len) ==> len == (super::Star { inner: *fmt }).byte_len(values.deep_view()),
+        len is None <==> (super::Star { inner: *fmt }).byte_len(values.deep_view()) > usize::MAX,
+{
+    let ghost vs = values.deep_view();
+    let ghost star = super::Star { inner: *fmt };
+
+    let mut len = 0usize;
+    for i in 0..values.len()
+        invariant
+            values.deep_view() == vs,
+            star == (super::Star { inner: *fmt }),
+            len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
+    {
+        proof {
+            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
+            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
+        }
+        let elem = values[i];
+        let l = fmt.length_checked(elem)?;
+        match len.checked_add(l) {
+            Some(total) => len = total,
+            None => return None,
+        }
+    }
+    Some(len)
+}
+
 pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checked: Result<
     usize,
     PreSerializeError,
@@ -338,6 +369,10 @@ impl<Inner, InnerST> ByteLen<&[InnerST]> for super::Star<Inner> where
     Inner: ByteLen<InnerST>,
     InnerST: DeepView + Copy,
  {
+    fn length_checked(&self, v: &[InnerST]) -> (len: Option<usize>) {
+        length_slice_checked(&self.inner, v)
+    }
+
     fn length(&self, v: &[InnerST]) -> (len: usize) {
         length_slice(&self.inner, v)
     }
@@ -383,6 +418,10 @@ impl<Inner, N, InnerST> ByteLen<&[InnerST]> for super::RepeatN<Inner, N> where
     InnerST: DeepView + Copy,
     N: AsLen,
  {
+    fn length_checked(&self, v: &[InnerST]) -> (len: Option<usize>) {
+        length_slice_checked(&self.1, v)
+    }
+
     fn length(&self, v: &[InnerST]) -> (len: usize) {
         length_slice(&self.1, v)
     }
@@ -429,6 +468,10 @@ impl<Inner, InnerST, const N: usize> ByteLen<&[InnerST; N]> for super::Array<N, 
     Inner: ByteLen<InnerST>,
     InnerST: DeepView + Copy,
  {
+    fn length_checked(&self, v: &[InnerST; N]) -> (len: Option<usize>) {
+        length_slice_checked(&self.0, v.as_slice())
+    }
+
     fn length(&self, v: &[InnerST; N]) -> (len: usize) {
         length_slice(&self.0, v.as_slice())
     }

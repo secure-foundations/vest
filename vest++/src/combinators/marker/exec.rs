@@ -27,6 +27,10 @@ impl Compliance<()> for super::Empty {
 }
 
 impl ByteLen<()> for super::Empty {
+    fn length_checked(&self, _v: ()) -> (len: Option<usize>) {
+        Some(0)
+    }
+
     fn length(&self, _v: ()) -> (len: usize) {
         0
     }

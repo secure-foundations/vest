@@ -51,6 +51,12 @@ pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: D
 }
 
 pub trait ByteLen<T>: SpecByteLen<T = T::V> where T: DeepView {
+    fn length_checked(&self, v: T) -> (len: Option<usize>)
+        ensures
+            len matches Some(l) ==> l == self.byte_len(v.deep_view()),
+            len is None <==> self.byte_len(v.deep_view()) > usize::MAX,
+    ;
+
     fn length(&self, v: T) -> (len: usize)
         requires
             self.byte_len(v.deep_view()) <= usize::MAX,
@@ -72,6 +78,10 @@ impl<T, S> Prepare<T> for &S where T: DeepView, S: Prepare<T> {
 }
 
 impl<T, S> ByteLen<T> for &S where T: DeepView, S: ByteLen<T> {
+    fn length_checked(&self, v: T) -> (len: Option<usize>) {
+        (*self).length_checked(v)
+    }
+
     fn length(&self, v: T) -> (len: usize) {
         (*self).length(v)
     }

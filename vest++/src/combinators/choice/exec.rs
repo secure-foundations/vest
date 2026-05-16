@@ -105,6 +105,13 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
+    fn length_checked(&self, v: super::Sum<STA, STB>) -> (len: Option<usize>) {
+        match v {
+            super::Sum::Inl(va) => self.0.length_checked(va),
+            super::Sum::Inr(vb) => self.1.length_checked(vb),
+        }
+    }
+
     fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
         match v {
             super::Sum::Inl(va) => self.0.length(va),
@@ -157,17 +164,17 @@ impl<A, B, ST> Compliance<ST> for super::Alt<A, B> where
     }
 }
 
-
 impl<A, B, ST> Prepare<ST> for super::Alt<A, B, false> where
     ST: DeepView + Copy,
     A: Prepare<ST> + Compliance<ST>,
     B: Prepare<ST>,
  {
     fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
-        if let Ok(la) = self.0.prepare(v) {
-            return Ok(la);
+        if self.0.check_compliance(v) {
+            self.0.prepare(v)
+        } else {
+            self.1.prepare(v)
         }
-        self.1.prepare(v)
     }
 }
 
@@ -183,12 +190,8 @@ impl<A, B, ST> Serializer<ST> for super::Alt<A, B, false> where
 
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         if self.0.check_compliance(v) {
-            assert(self.choose_left(v.deep_view()));
-            assert(self.spec_serialize(v.deep_view()) == self.0.spec_serialize(v.deep_view()));
             self.0.ex_serialize(v, obuf);
         } else {
-            assert(!self.choose_left(v.deep_view()));
-            assert(self.spec_serialize(v.deep_view()) == self.1.spec_serialize(v.deep_view()));
             self.1.ex_serialize(v, obuf);
         }
     }
@@ -265,6 +268,14 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Sum<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
+    fn length_checked(&self, v: super::Sum<STA, STB>) -> (len: Option<usize>) {
+        match (self, v) {
+            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length_checked(va),
+            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.length_checked(vb),
+            _ => Some(0),
+        }
+    }
+
     fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length(va),

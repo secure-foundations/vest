@@ -36,6 +36,10 @@ impl<'s> Compliance<&'s [u8]> for super::Tail {
 }
 
 impl<'s> ByteLen<&'s [u8]> for super::Tail {
+    fn length_checked(&self, v: &'s [u8]) -> (len: Option<usize>) {
+        Some(v.len())
+    }
+
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
     }
@@ -72,6 +76,10 @@ impl Compliance<()> for super::Eof {
 }
 
 impl ByteLen<()> for super::Eof {
+    fn length_checked(&self, _v: ()) -> (len: Option<usize>) {
+        Some(0)
+    }
+
     fn length(&self, _v: ()) -> (len: usize) {
         0
     }
@@ -100,6 +108,12 @@ impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     A: ByteLen<AVal>,
     B: ByteLen<BVal>,
  {
+    fn length_checked(&self, v: (AVal, BVal)) -> (len: Option<usize>) {
+        let la = self.1.length_checked(v.0)?;
+        let lb = self.0.length_checked(v.1)?;
+        la.checked_add(lb)
+    }
+
     fn length(&self, v: (AVal, BVal)) -> (len: usize) {
         let la = self.1.length(v.0);
         let lb = self.0.length(v.1);
@@ -126,6 +140,5 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
         }
     }
 }
-
 
 } // verus!

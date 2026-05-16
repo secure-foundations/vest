@@ -96,6 +96,12 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Pair<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
+    fn length_checked(&self, v: (STA, STB)) -> (len: Option<usize>) {
+        let la = self.0.length_checked(v.0)?;
+        let lb = self.1.length_checked(v.1)?;
+        la.checked_add(lb)
+    }
+
     fn length(&self, v: (STA, STB)) -> (len: usize) {
         let la = self.0.length(v.0);
         let lb = self.1.length(v.1);
@@ -175,6 +181,13 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     B::O: ByteLen<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
+    fn length_checked(&self, v: (STA, STB)) -> (len: Option<usize>) {
+        let next = self.1.map(&v.0);
+        let la = self.0.length_checked(v.0)?;
+        let lb = next.length_checked(v.1)?;
+        la.checked_add(lb)
+    }
+
     fn length(&self, v: (STA, STB)) -> (len: usize) {
         let next = self.1.map(&v.0);
         let la = self.0.length(v.0);

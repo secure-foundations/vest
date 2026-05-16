@@ -99,6 +99,13 @@ impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<AVal> for super::Terminated<
     BVal,
     CHECK,
 > where AVal: DeepView, BVal: SelfView + Copy, A: ByteLen<AVal>, B: ByteLen<BVal> {
+    fn length_checked(&self, v: AVal) -> (len: Option<usize>) {
+        proof {
+            self.b_val.self_view();
+        }
+        crate::combinators::Pair(&self.a, &self.b).length_checked((v, self.b_val))
+    }
+
     fn length(&self, v: AVal) -> (len: usize) {
         proof {
             self.b_val.self_view();
