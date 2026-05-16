@@ -78,10 +78,6 @@ impl<A, PredFn, ST> ByteLen<ST> for super::Refined<A, PredFn> where
     A: ByteLen<ST>,
     PredFn: Pred<ST>,
  {
-    fn length_checked(&self, v: ST) -> (len: Option<usize>) {
-        self.0.length_checked(v)
-    }
-
     fn length(&self, v: ST) -> (len: usize) {
         self.0.length(v)
     }
@@ -151,10 +147,6 @@ impl<Inner, V, ST> ByteLen<ST> for super::Const<Inner, V> where
     ST: DeepView<V = V>,
     Inner: SpecByteLen<T = V> + ByteLen<ST>,
  {
-    fn length_checked(&self, v: ST) -> (len: Option<usize>) {
-        self.0.length_checked(v)
-    }
-
     fn length(&self, v: ST) -> (len: usize) {
         self.0.length(v)
     }
@@ -191,10 +183,6 @@ impl<const N: usize> Compliance<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
 }
 
 impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn length_checked(&self, _v: [u8; N]) -> (len: Option<usize>) {
-        Some(N)
-    }
-
     fn length(&self, _v: [u8; N]) -> (len: usize) {
         N
     }
@@ -309,15 +297,6 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithPrefixTag<Tg, Of> where
     ST: DeepView,
     Of: ByteLen<ST>,
  {
-    fn length_checked(&self, v: ST) -> (len: Option<usize>) {
-        let fmt = crate::combinators::Preceded::<_, _, _, false> {
-            a: crate::combinators::Const(&self.0, self.1),
-            b: &self.2,
-            a_val: self.1,
-        };
-        fmt.length_checked(v)
-    }
-
     fn length(&self, v: ST) -> (len: usize) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
@@ -416,15 +395,6 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithSuffixTag<Tg, Of> where
     ST: DeepView,
     Of: ByteLen<ST>,
  {
-    fn length_checked(&self, v: ST) -> (len: Option<usize>) {
-        let fmt = crate::combinators::Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: crate::combinators::Const(&self.0, self.1),
-            b_val: self.1,
-        };
-        fmt.length_checked(v)
-    }
-
     fn length(&self, v: ST) -> (len: usize) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.2,

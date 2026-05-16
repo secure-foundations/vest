@@ -149,10 +149,6 @@ impl Compliance<u8> for super::U8 {
 }
 
 impl ByteLen<u8> for super::U8 {
-    fn length_checked(&self, _v: u8) -> (len: Option<usize>) {
-        Some(1)
-    }
-
     fn length(&self, _v: u8) -> (len: usize) {
         1
     }
@@ -197,10 +193,6 @@ impl Compliance<u16> for super::U16Le {
 }
 
 impl ByteLen<u16> for super::U16Le {
-    fn length_checked(&self, _v: u16) -> (len: Option<usize>) {
-        Some(2)
-    }
-
     fn length(&self, _v: u16) -> (len: usize) {
         U16_BYTE_LEN
     }
@@ -244,10 +236,6 @@ impl Compliance<u16> for super::U16Be {
 }
 
 impl ByteLen<u16> for super::U16Be {
-    fn length_checked(&self, _v: u16) -> (len: Option<usize>) {
-        Some(2)
-    }
-
     fn length(&self, _v: u16) -> (len: usize) {
         U16_BYTE_LEN
     }
@@ -291,10 +279,6 @@ impl Compliance<u32> for super::U32Le {
 }
 
 impl ByteLen<u32> for super::U32Le {
-    fn length_checked(&self, _v: u32) -> (len: Option<usize>) {
-        Some(4)
-    }
-
     fn length(&self, _v: u32) -> (len: usize) {
         U32_BYTE_LEN
     }
@@ -338,10 +322,6 @@ impl Compliance<u32> for super::U32Be {
 }
 
 impl ByteLen<u32> for super::U32Be {
-    fn length_checked(&self, _v: u32) -> (len: Option<usize>) {
-        Some(4)
-    }
-
     fn length(&self, _v: u32) -> (len: usize) {
         U32_BYTE_LEN
     }
@@ -394,10 +374,6 @@ impl Compliance<u64> for super::U64Le {
 }
 
 impl ByteLen<u64> for super::U64Le {
-    fn length_checked(&self, _v: u64) -> (len: Option<usize>) {
-        Some(8)
-    }
-
     fn length(&self, _v: u64) -> (len: usize) {
         U64_BYTE_LEN
     }
@@ -450,10 +426,6 @@ impl Compliance<u64> for super::U64Be {
 }
 
 impl ByteLen<u64> for super::U64Be {
-    fn length_checked(&self, _v: u64) -> (len: Option<usize>) {
-        Some(8)
-    }
-
     fn length(&self, _v: u64) -> (len: usize) {
         U64_BYTE_LEN
     }

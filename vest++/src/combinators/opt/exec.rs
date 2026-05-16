@@ -55,13 +55,6 @@ impl<A, ST> Compliance<Option<ST>> for super::Opt<A> where ST: DeepView, A: Comp
 }
 
 impl<A, ST> ByteLen<Option<ST>> for super::Opt<A> where ST: DeepView, A: ByteLen<ST> {
-    fn length_checked(&self, v: Option<ST>) -> (len: Option<usize>) {
-        match v {
-            Some(vv) => self.0.length_checked(vv),
-            None => Some(0),
-        }
-    }
-
     fn length(&self, v: Option<ST>) -> (len: usize) {
         match v {
             Some(vv) => self.0.length(vv),
@@ -115,10 +108,6 @@ impl<A, B, STA, STB> ByteLen<(Option<STA>, STB)> for super::Optional<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
-    fn length_checked(&self, v: (Option<STA>, STB)) -> (len: Option<usize>) {
-        crate::combinators::Pair(super::Opt(&self.0), &self.1).length_checked(v)
-    }
-
     fn length(&self, v: (Option<STA>, STB)) -> (len: usize) {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).length(v)
     }

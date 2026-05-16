@@ -46,10 +46,6 @@ impl<T, Inner> Compliance<T> for super::Cond<Inner> where T: DeepView, Inner: Co
 }
 
 impl<T, Inner> ByteLen<T> for super::Cond<Inner> where T: DeepView, Inner: ByteLen<T> {
-    fn length_checked(&self, v: T) -> (len: Option<usize>) {
-        self.1.length_checked(v)
-    }
-
     fn length(&self, v: T) -> (len: usize) {
         self.1.length(v)
     }

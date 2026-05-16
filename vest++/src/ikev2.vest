@@ -1,0 +1,36 @@
+IkeHdr = {
+    init_spi : u64,
+    resp_spi : u64,
+    next_payload : u8,
+    version : u8,
+    exchange_type : u8,
+    flags : u8,
+    msg_id : u32,
+    length : u32,
+}
+
+generic_header = {
+    next_payload : u8,
+    critical : u8,
+    reserved : u16,
+    payload_length : u32,
+}
+
+msg = {
+    @hdr: IkeHdr,
+    abcde : payload_seq(@hdr.next_payload),
+}
+
+generic_payload_handler(@next_payload: u8) = {
+    hdr : generic_header,
+    body : Tail,
+    // body : choose(@next_payload) {
+    //     ...
+    // },
+}
+
+// #[RECUR_BOUND = N]
+payload_seq(@next_payload: u8) = {
+    @payload : generic_payload_handler(@next_payload),
+    nxt : payload_seq(@payload.hdr.next_payload),
+}

@@ -105,13 +105,6 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
-    fn length_checked(&self, v: super::Sum<STA, STB>) -> (len: Option<usize>) {
-        match v {
-            super::Sum::Inl(va) => self.0.length_checked(va),
-            super::Sum::Inr(vb) => self.1.length_checked(vb),
-        }
-    }
-
     fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
         match v {
             super::Sum::Inl(va) => self.0.length(va),
@@ -268,14 +261,6 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Sum<A, B> where
     A: ByteLen<STA>,
     B: ByteLen<STB>,
  {
-    fn length_checked(&self, v: super::Sum<STA, STB>) -> (len: Option<usize>) {
-        match (self, v) {
-            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length_checked(va),
-            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.length_checked(vb),
-            _ => Some(0),
-        }
-    }
-
     fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length(va),

@@ -35,10 +35,6 @@ impl<'s, const N: usize> Compliance<&'s [u8]> for super::Fixed<N> {
 }
 
 impl<'s, const N: usize> ByteLen<&'s [u8]> for super::Fixed<N> {
-    fn length_checked(&self, v: &'s [u8]) -> (len: Option<usize>) {
-        Some(v.len())
-    }
-
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
     }
@@ -80,10 +76,6 @@ impl<'s, Len: AsLen> Compliance<&'s [u8]> for super::Varied<Len> {
 }
 
 impl<'s, Len: AsLen> ByteLen<&'s [u8]> for super::Varied<Len> {
-    fn length_checked(&self, v: &'s [u8]) -> (len: Option<usize>) {
-        Some(v.len())
-    }
-
     fn length(&self, v: &'s [u8]) -> (len: usize) {
         v.len()
     }
@@ -170,10 +162,6 @@ impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     InnerST: DeepView,
     Inner: ByteLen<InnerST>,
  {
-    fn length_checked(&self, v: InnerST) -> (len: Option<usize>) {
-        self.1.length_checked(v)
-    }
-
     fn length(&self, v: InnerST) -> (len: usize) {
         self.1.length(v)
     }
@@ -198,10 +186,6 @@ impl<A, Then, ThenST> ByteLen<ThenST> for super::AndThen<A, Then> where
     ThenST: DeepView,
     Then: ByteLen<ThenST>,
  {
-    fn length_checked(&self, v: ThenST) -> (len: Option<usize>) {
-        self.1.length_checked(v)
-    }
-
     fn length(&self, v: ThenST) -> (len: usize) {
         self.1.length(v)
     }
