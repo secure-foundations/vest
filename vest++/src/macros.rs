@@ -59,81 +59,82 @@ macro_rules! __vest_build_sum_map_rev {
     };
 }
 
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __vest_build_tuple_deep_view_expr {
-    ($self:ident, $field:ident) => { $self.$field.deep_view() };
-    ($self:ident, $field:ident, $($rest:ident),+) => {
-        ($self.$field.deep_view(), $crate::__vest_build_tuple_deep_view_expr!($self, $($rest),+))
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __vest_build_sum_deep_view_expr {
-    ($self:ident, $exec_name:ident, $variant:ident) => {
-        match $self {
-            $exec_name::$variant(v) => v.deep_view(),
-            _ => ::vstd::prelude::arbitrary(),
-        }
-    };
-    ($self:ident, $exec_name:ident, $variant:ident, $($rest:ident),+) => {
-        match $self {
-            $exec_name::$variant(v) => $crate::combinators::Sum::Inl(v.deep_view()),
-            _ => $crate::combinators::Sum::Inr($crate::__vest_build_sum_deep_view_expr!($self, $exec_name, $($rest),+)),
-        }
-    };
-}
-
-/// Defines an exec nominal type together with a structural spec type alias as its `DeepView`.
+/// Defines paired executable/spec nominal value types and corresponding `DeepView` and `SpecMapper` impls.
+///
+/// The generated `DeepView` and `SpecMapper` implementations assume the exec and spec fields or
+/// variants are aligned by name and order.
 #[macro_export]
 macro_rules! with_deep_view {
     (
         $(#[$exec_attr:meta])*
-        pub struct $exec_name:ident $(<$($lt:lifetime),*>)? {
-            $(pub $field:ident: $field_ty:ty,)*
+        pub struct $exec_name:ident <$lt:lifetime> {
+            $(pub $exec_field:ident: $exec_ty:ty,)*
         }
 
-        type $spec_name:ident = $spec_ty:ty;
+        $(#[$spec_attr:meta])*
+        pub struct $spec_name:ident {
+            $(pub $spec_field:ident: $spec_ty:ty,)*
+        }
+
+        type $inner_name:ident;
     ) => {
         verus! {
             $(#[$exec_attr])*
-            pub struct $exec_name$(<$($lt),*>)? {
-                $(pub $field: $field_ty,)*
+            pub struct $exec_name<$lt> {
+                $(pub $exec_field: $exec_ty,)*
             }
 
-            pub type $spec_name = $spec_ty;
+            $(#[$spec_attr])*
+            pub struct $spec_name {
+                $(pub $spec_field: $spec_ty,)*
+            }
 
-            impl$(<$($lt),*>)? ::vstd::prelude::DeepView for $exec_name$(<$($lt),*>)? {
+            type $inner_name = $crate::__vest_build_tuple_ty!($($spec_ty),*);
+
+            impl<$lt> ::vstd::prelude::DeepView for $exec_name<$lt> {
                 type V = $spec_name;
 
                 open spec fn deep_view(&self) -> Self::V {
-                    $crate::__vest_build_tuple_deep_view_expr!(self, $($field),*)
+                    $spec_name {
+                        $($exec_field: self.$exec_field.deep_view(),)*
+                    }
                 }
             }
         }
     };
     (
         $(#[$exec_attr:meta])*
-        pub enum $exec_name:ident $(<$($lt:lifetime),*>)? {
-            $($variant:ident($variant_ty:ty),)*
+        pub enum $exec_name:ident <$lt:lifetime> {
+            $($exec_variant:ident($exec_ty:ty),)*
         }
 
-        type $spec_name:ident = $spec_ty:ty;
+        $(#[$spec_attr:meta])*
+        pub enum $spec_name:ident {
+            $($spec_variant:ident($spec_ty:ty),)*
+        }
+
+        type $inner_name:ident;
     ) => {
         verus! {
             $(#[$exec_attr])*
-            pub enum $exec_name$(<$($lt),*>)? {
-                $($variant($variant_ty),)*
+            pub enum $exec_name<$lt> {
+                $($exec_variant($exec_ty),)*
             }
 
-            pub type $spec_name = $spec_ty;
+            $(#[$spec_attr])*
+            pub enum $spec_name {
+                $($spec_variant($spec_ty),)*
+            }
 
-            impl$(<$($lt),*>)? ::vstd::prelude::DeepView for $exec_name$(<$($lt),*>)? {
+            type $inner_name = $crate::__vest_build_sum_ty!($($spec_ty),*);
+
+            impl<$lt> ::vstd::prelude::DeepView for $exec_name<$lt> {
                 type V = $spec_name;
 
                 open spec fn deep_view(&self) -> Self::V {
-                    $crate::__vest_build_sum_deep_view_expr!(self, $exec_name, $($variant),*)
+                    match self {
+                        $($exec_name::$exec_variant(v) => $spec_name::$spec_variant(v.deep_view()),)*
+                    }
                 }
             }
         }
