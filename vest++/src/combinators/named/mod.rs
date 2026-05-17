@@ -16,11 +16,11 @@ verus! {
 ///
 /// The semantic format is unchanged: parsing, consistency, serialization, and all proof
 /// obligations are delegated to `Inner`.
-pub struct Named<Inner>(pub Inner, pub &'static str);
+pub struct Named<Inner>(pub &'static str, pub Inner);
 
 impl<Inner: LeafNonMalleable> LeafNonMalleable for Named<Inner> {
     proof fn nonmal_leaf_inv(&self) {
-        self.0.nonmal_leaf_inv();
+        self.1.nonmal_leaf_inv();
     }
 }
 
