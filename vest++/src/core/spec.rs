@@ -273,10 +273,12 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
     }
 
     /// serialized byte sequence has the expected length.
-    proof fn lemma_serialize_len(&self, v: Self::SVal)
+    broadcast proof fn lemma_serialize_len(&self, v: Self::SVal)
         requires
             self.serialize_inv(),
         ensures
+            #![trigger self.spec_serialize(v)]
+            #![trigger self.byte_len(v)]
             self.spec_serialize(v).len() == self.byte_len(v),
     ;
 }
