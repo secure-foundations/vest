@@ -12,58 +12,6 @@ use vstd::prelude::*;
 
 verus! {
 
-struct MyFmtCont;
-
-impl SpecMap for MyFmtCont {
-    type Input = u8;
-
-    type Output = Varied;
-
-    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
-        Varied(i)
-    }
-}
-
-impl MapRef<u8> for MyFmtCont {
-    type O = Varied;
-
-    fn map(&self, i: &u8) -> Self::O {
-        Varied(*i)
-    }
-}
-
-fn test_bind(ibuf: &[u8]) -> PResult<()> {
-    #[verusfmt::skip]
-    let ghost tx_segwit_fmt =
-        WithPrefixTag(U8, 1u8,
-        Bind(U8, |txin_count: u8|
-        Pair(Varied(txin_count),
-        Bind(U8, |txout_count: u8|
-        Pair(Varied(txout_count),
-        Pair(Varied(txin_count),
-        U32Le))))));
-
-    let ghost _ = tx_segwit_fmt.spec_parse(ibuf@);
-
-    let tx_segwit_fmt = Bind(U8, MyFmtCont);
-    // Bind(
-    //     U8,
-    //     (
-    //         |len: &u8| -> (o: Varied)
-    //             ensures
-    //                 o == Varied(*len),
-    //             { Varied(*len) },
-    //         Ghost(|len: u8| Varied(len)),
-    //     ),
-    // );
-
-    let ghost _ = tx_segwit_fmt.spec_parse(ibuf@);
-    assert(Parser::exec_inv(&tx_segwit_fmt));
-    let (_n, _v) = tx_segwit_fmt.parse(&ibuf)?;
-
-    Err(ParseError::expecting_eof())
-}
-
 /*
  * btc_tx_fmt: Data types.
  */
