@@ -178,10 +178,9 @@ impl<'s> PrepareRecBody<&'s NestedBracesT> for NestedBracesBody {
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &'s NestedBracesT,
-    ) -> Result<usize, PreSerializeError> where Exec: Fn(&(), &'s NestedBracesT) -> Result<
-        usize,
-        PreSerializeError,
-    > {
+    ) -> Result<usize, PreSerializeError> where
+        Exec: Fn(&(), &'s NestedBracesT) -> Result<usize, PreSerializeError>,
+     {
         match v {
             NestedBracesT::Eps => U8.prepare(0x00u8),
             NestedBracesT::Brace(inner) => {
@@ -396,10 +395,9 @@ impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &'s TaggedChainT,
-    ) -> Result<usize, PreSerializeError> where Exec: Fn(&u8, &'s TaggedChainT) -> Result<
-        usize,
-        PreSerializeError,
-    > {
+    ) -> Result<usize, PreSerializeError> where
+        Exec: Fn(&u8, &'s TaggedChainT) -> Result<usize, PreSerializeError>,
+     {
         match v {
             TaggedChainT::End => {
                 if *current_tag == 0u8 {
@@ -410,9 +408,7 @@ impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
             },
             TaggedChainT::Step(next_tag, tail) => {
                 if *current_tag == 0u8 {
-                    return Err(
-                        PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected),
-                    );
+                    return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected));
                 }
                 let l1 = U8.prepare(*current_tag)?;
                 let l2 = U8.prepare(*next_tag)?;

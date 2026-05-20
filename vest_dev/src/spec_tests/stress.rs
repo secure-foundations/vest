@@ -5,30 +5,46 @@ use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::parser::{PResult, Parser};
 use crate::core::exec::ParseError;
 use crate::core::{proof::*, spec::*};
-use vest_lib::macros::with_deep_view;
+use crate::macros::with_deep_view_and_mapper;
 use vstd::prelude::*;
 
-with_deep_view! {
+with_deep_view_and_mapper! {
     pub struct PerfHeader<'i> {
         pub version: u8,
         pub flags: u8,
         pub token: &'i [u8],
     }
 
-    type PerfHeaderSpec = (u8, (u8, Seq<u8>));
+    #[verifier::ext_equal]
+    pub struct PerfHeaderSpec {
+        pub version: u8,
+        pub flags: u8,
+        pub token: Seq<u8>,
+    }
+
+    type PerfHeaderInner;
+    pub struct PerfHeaderMapper;
 }
 
-with_deep_view! {
+with_deep_view_and_mapper! {
     pub struct PerfPayload<'i> {
         pub code: u8,
         pub counter: u16,
         pub blob: &'i [u8],
     }
 
-    type PerfPayloadSpec = (u8, (u16, Seq<u8>));
+    #[verifier::ext_equal]
+    pub struct PerfPayloadSpec {
+        pub code: u8,
+        pub counter: u16,
+        pub blob: Seq<u8>,
+    }
+
+    type PerfPayloadInner;
+    pub struct PerfPayloadMapper;
 }
 
-with_deep_view! {
+with_deep_view_and_mapper! {
     pub enum PerfBody20<'i> {
         Tag1(PerfPayload<'i>),
         Tag2(PerfPayload<'i>),
@@ -52,11 +68,35 @@ with_deep_view! {
         Tag20(PerfPayload<'i>),
     }
 
-    type PerfBody20Spec =
-        Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, Sum< PerfPayloadSpec, PerfPayloadSpec, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >, >;
+    #[verifier::ext_equal]
+    pub enum PerfBody20Spec {
+        Tag1(PerfPayloadSpec),
+        Tag2(PerfPayloadSpec),
+        Tag3(PerfPayloadSpec),
+        Tag4(PerfPayloadSpec),
+        Tag5(PerfPayloadSpec),
+        Tag6(PerfPayloadSpec),
+        Tag7(PerfPayloadSpec),
+        Tag8(PerfPayloadSpec),
+        Tag9(PerfPayloadSpec),
+        Tag10(PerfPayloadSpec),
+        Tag11(PerfPayloadSpec),
+        Tag12(PerfPayloadSpec),
+        Tag13(PerfPayloadSpec),
+        Tag14(PerfPayloadSpec),
+        Tag15(PerfPayloadSpec),
+        Tag16(PerfPayloadSpec),
+        Tag17(PerfPayloadSpec),
+        Tag18(PerfPayloadSpec),
+        Tag19(PerfPayloadSpec),
+        Tag20(PerfPayloadSpec),
+    }
+
+    type PerfBody20Inner;
+    pub struct PerfBody20Mapper;
 }
 
-with_deep_view! {
+with_deep_view_and_mapper! {
     pub struct PerfMessage20<'i> {
         pub header: PerfHeader<'i>,
         pub body: PerfBody20<'i>,
@@ -80,17 +120,48 @@ with_deep_view! {
         pub checksum18: u16,
     }
 
-    type PerfMessage20Spec =
-        ( PerfHeaderSpec, ( PerfBody20Spec, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, ( u16, u16, ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), ), );
+    #[verifier::ext_equal]
+    pub struct PerfMessage20Spec {
+        pub header: PerfHeaderSpec,
+        pub body: PerfBody20Spec,
+        pub checksum01: u16,
+        pub checksum02: u16,
+        pub checksum03: u16,
+        pub checksum04: u16,
+        pub checksum05: u16,
+        pub checksum06: u16,
+        pub checksum07: u16,
+        pub checksum08: u16,
+        pub checksum09: u16,
+        pub checksum10: u16,
+        pub checksum11: u16,
+        pub checksum12: u16,
+        pub checksum13: u16,
+        pub checksum14: u16,
+        pub checksum15: u16,
+        pub checksum16: u16,
+        pub checksum17: u16,
+        pub checksum18: u16,
+    }
+
+    type PerfMessage20Inner;
+    pub struct PerfMessage20Mapper;
 }
 
-with_deep_view! {
+with_deep_view_and_mapper! {
     pub struct PerfPair20<'i> {
         pub left: PerfMessage20<'i>,
         pub right: PerfMessage20<'i>,
     }
 
-    type PerfPair20Spec = (PerfMessage20Spec, PerfMessage20Spec);
+    #[verifier::ext_equal]
+    pub struct PerfPair20Spec {
+        pub left: PerfMessage20Spec,
+        pub right: PerfMessage20Spec,
+    }
+
+    type PerfPair20Inner;
+    pub struct PerfPair20Mapper;
 }
 
 verus! {
@@ -98,49 +169,10 @@ verus! {
 
 // Larger nominal-format experiments for verification-performance exploration.
 
-pub struct PerfU16LeFmt;
+type PerfHeaderFmtSpec = Mapped<Pair<U8, Pair<U8, Fixed<2>>>, PerfHeaderMapper>;
 
-impl SpecParser for PerfU16LeFmt {
-    type PVal = u16;
-
-    #[verifier::opaque]
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        if ibuf.len() < 2 {
-            None
-        } else {
-            Some((2, (ibuf[0] as u16) | ((ibuf[1] as u16) << 8)))
-        }
-    }
-}
-
-impl SafeParser for PerfU16LeFmt {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        reveal(<PerfU16LeFmt as SpecParser>::spec_parse);
-    }
-}
-
-impl Consistency for PerfU16LeFmt {
-    type Val = u16;
-
-    open spec fn consistent(&self, _v: Self::Val) -> bool {
-        true
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for PerfU16LeFmt {
-    type PT = u16;
-
-    #[verifier::external_body]
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        let (n, bytes) = Fixed::<2>.parse(ibuf)?;
-        let value = u16::from_le_bytes([bytes[0], bytes[1]]);
-        Ok((n, value))
-    }
-}
-
-
-pub open spec fn perf_header_fmt() -> Pair<U8, Pair<U8, Fixed<2>>> {
-    Pair(U8, Pair(U8, Fixed::<2>))
+pub open spec fn perf_header_fmt() -> PerfHeaderFmtSpec {
+    Mapped { inner: Pair(U8, Pair(U8, Fixed::<2>)), mapper: PerfHeaderMapper }
 }
 
 pub struct PerfHeaderFmt;
@@ -179,8 +211,10 @@ impl<'i> Parser<&'i [u8]> for PerfHeaderFmt {
 }
 
 
-pub open spec fn perf_payload_fmt() -> Pair<U8, Pair<PerfU16LeFmt, Fixed<3>>> {
-    Pair(U8, Pair(PerfU16LeFmt, Fixed::<3>))
+type PerfPayloadFmtSpec = Mapped<Pair<U8, Pair<U16Le, Fixed<3>>>, PerfPayloadMapper>;
+
+pub open spec fn perf_payload_fmt() -> PerfPayloadFmtSpec {
+    Mapped { inner: Pair(U8, Pair(U16Le, Fixed::<3>)), mapper: PerfPayloadMapper }
 }
 
 pub struct PerfPayloadFmt;
@@ -210,7 +244,7 @@ impl<'i> Parser<&'i [u8]> for PerfPayloadFmt {
         reveal(<PerfPayloadFmt as SpecParser>::spec_parse);
         let _total_len = ibuf.len();
         let (n1, code) = U8.parse(ibuf)?;
-        let (n2, counter) = PerfU16LeFmt.parse(&ibuf.skip(n1))?;
+        let (n2, counter) = U16Le.parse(&ibuf.skip(n1))?;
         let (n3, blob) = Fixed::<3>.parse(&ibuf.skip(n1 + n2))?;
         let total_n = n1 + n2 + n3;
         let value = PerfPayload { code, counter, blob };
@@ -223,9 +257,15 @@ impl<'i> Parser<&'i [u8]> for PerfPayloadFmt {
 type PerfBody20Choice =
     Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, Choice<WithPrefixTag<U8, PerfPayloadFmt>, WithPrefixTag<U8, PerfPayloadFmt>>>>>>>>>>>>>>>>>>>>;
 
-pub open spec fn perf_body20_fmt() -> PerfBody20Choice {
+type PerfBody20FmtSpec = Mapped<PerfBody20Choice, PerfBody20Mapper>;
+
+pub open spec fn perf_body20_raw_fmt() -> PerfBody20Choice {
     #[verusfmt::skip]
     Choice(WithPrefixTag(U8, 1u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 2u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 3u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 4u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 5u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 6u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 7u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 8u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 9u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 10u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 11u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 12u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 13u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 14u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 15u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 16u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 17u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 18u8, PerfPayloadFmt), Choice(WithPrefixTag(U8, 19u8, PerfPayloadFmt), WithPrefixTag(U8, 20u8, PerfPayloadFmt))))))))))))))))))))
+}
+
+pub open spec fn perf_body20_fmt() -> PerfBody20FmtSpec {
+    Mapped { inner: perf_body20_raw_fmt(), mapper: PerfBody20Mapper }
 }
 
 pub struct PerfBody20Fmt;
@@ -349,10 +389,16 @@ impl<'i> Parser<&'i [u8]> for PerfBody20Fmt {
 
 
 type PerfMessage20Chain =
-    Pair<PerfHeaderFmt, Pair<PerfBody20Fmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, Pair<PerfU16LeFmt, PerfU16LeFmt>>>>>>>>>>>>>>>>>>>;
+    Pair<PerfHeaderFmt, Pair<PerfBody20Fmt, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, Pair<U16Le, U16Le>>>>>>>>>>>>>>>>>>>;
 
-pub open spec fn perf_message20_fmt() -> PerfMessage20Chain {
-    Pair(PerfHeaderFmt, Pair(PerfBody20Fmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, Pair(PerfU16LeFmt, PerfU16LeFmt)))))))))))))))))))
+type PerfMessage20FmtSpec = Mapped<PerfMessage20Chain, PerfMessage20Mapper>;
+
+pub open spec fn perf_message20_raw_fmt() -> PerfMessage20Chain {
+    Pair(PerfHeaderFmt, Pair(PerfBody20Fmt, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, Pair(U16Le, U16Le)))))))))))))))))))
+}
+
+pub open spec fn perf_message20_fmt() -> PerfMessage20FmtSpec {
+    Mapped { inner: perf_message20_raw_fmt(), mapper: PerfMessage20Mapper }
 }
 
 pub struct PerfMessage20Fmt;
@@ -387,41 +433,41 @@ impl<'i> Parser<&'i [u8]> for PerfMessage20Fmt {
         let rest1 = ibuf.skip(n1);
         let (n2, body) = PerfBody20Fmt.parse(&rest1)?;
         let rest2 = rest1.skip(n2);
-        let (n3, checksum01) = PerfU16LeFmt.parse(&rest2)?;
+        let (n3, checksum01) = U16Le.parse(&rest2)?;
         let rest3 = rest2.skip(n3);
-        let (n4, checksum02) = PerfU16LeFmt.parse(&rest3)?;
+        let (n4, checksum02) = U16Le.parse(&rest3)?;
         let rest4 = rest3.skip(n4);
-        let (n5, checksum03) = PerfU16LeFmt.parse(&rest4)?;
+        let (n5, checksum03) = U16Le.parse(&rest4)?;
         let rest5 = rest4.skip(n5);
-        let (n6, checksum04) = PerfU16LeFmt.parse(&rest5)?;
+        let (n6, checksum04) = U16Le.parse(&rest5)?;
         let rest6 = rest5.skip(n6);
-        let (n7, checksum05) = PerfU16LeFmt.parse(&rest6)?;
+        let (n7, checksum05) = U16Le.parse(&rest6)?;
         let rest7 = rest6.skip(n7);
-        let (n8, checksum06) = PerfU16LeFmt.parse(&rest7)?;
+        let (n8, checksum06) = U16Le.parse(&rest7)?;
         let rest8 = rest7.skip(n8);
-        let (n9, checksum07) = PerfU16LeFmt.parse(&rest8)?;
+        let (n9, checksum07) = U16Le.parse(&rest8)?;
         let rest9 = rest8.skip(n9);
-        let (n10, checksum08) = PerfU16LeFmt.parse(&rest9)?;
+        let (n10, checksum08) = U16Le.parse(&rest9)?;
         let rest10 = rest9.skip(n10);
-        let (n11, checksum09) = PerfU16LeFmt.parse(&rest10)?;
+        let (n11, checksum09) = U16Le.parse(&rest10)?;
         let rest11 = rest10.skip(n11);
-        let (n12, checksum10) = PerfU16LeFmt.parse(&rest11)?;
+        let (n12, checksum10) = U16Le.parse(&rest11)?;
         let rest12 = rest11.skip(n12);
-        let (n13, checksum11) = PerfU16LeFmt.parse(&rest12)?;
+        let (n13, checksum11) = U16Le.parse(&rest12)?;
         let rest13 = rest12.skip(n13);
-        let (n14, checksum12) = PerfU16LeFmt.parse(&rest13)?;
+        let (n14, checksum12) = U16Le.parse(&rest13)?;
         let rest14 = rest13.skip(n14);
-        let (n15, checksum13) = PerfU16LeFmt.parse(&rest14)?;
+        let (n15, checksum13) = U16Le.parse(&rest14)?;
         let rest15 = rest14.skip(n15);
-        let (n16, checksum14) = PerfU16LeFmt.parse(&rest15)?;
+        let (n16, checksum14) = U16Le.parse(&rest15)?;
         let rest16 = rest15.skip(n16);
-        let (n17, checksum15) = PerfU16LeFmt.parse(&rest16)?;
+        let (n17, checksum15) = U16Le.parse(&rest16)?;
         let rest17 = rest16.skip(n17);
-        let (n18, checksum16) = PerfU16LeFmt.parse(&rest17)?;
+        let (n18, checksum16) = U16Le.parse(&rest17)?;
         let rest18 = rest17.skip(n18);
-        let (n19, checksum17) = PerfU16LeFmt.parse(&rest18)?;
+        let (n19, checksum17) = U16Le.parse(&rest18)?;
         let rest19 = rest18.skip(n19);
-        let (n20, checksum18) = PerfU16LeFmt.parse(&rest19)?;
+        let (n20, checksum18) = U16Le.parse(&rest19)?;
         let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10 + n11 + n12 + n13 + n14 + n15 + n16 + n17 + n18 + n19 + n20;
         let value = PerfMessage20 {
             header,
@@ -451,8 +497,10 @@ impl<'i> Parser<&'i [u8]> for PerfMessage20Fmt {
 }
 
 
-pub open spec fn perf_pair20_fmt() -> Pair<PerfMessage20Fmt, PerfMessage20Fmt> {
-    Pair(PerfMessage20Fmt, PerfMessage20Fmt)
+type PerfPair20FmtSpec = Mapped<Pair<PerfMessage20Fmt, PerfMessage20Fmt>, PerfPair20Mapper>;
+
+pub open spec fn perf_pair20_fmt() -> PerfPair20FmtSpec {
+    Mapped { inner: Pair(PerfMessage20Fmt, PerfMessage20Fmt), mapper: PerfPair20Mapper }
 }
 
 pub struct PerfPair20Fmt;

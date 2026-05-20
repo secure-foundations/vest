@@ -253,7 +253,9 @@ type TXSegwitRestRest = KVFormat<u8, TXSegwitRestRestVal, Pair<Varied, Pair<Vari
 type TXSegwitRest = KVFormat<u8, TXSegwitRestVal, Pair<Varied, Implicit<U8, TXSegwitRestRest>>>;
 
 use crate::primitives::btcvarint::VarInt;
+
 type Varint = crate::primitives::btcvarint::VarIntFmt<false>;
+
 proof fn test_bitcoin_tx() {
     let varint = VarInt::<true>;
     // tx_segwit = {
