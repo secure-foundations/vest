@@ -10,7 +10,7 @@ alloc = ["vstd/alloc", "vest_lib2/alloc"]
 
 [dependencies]
 vstd = "=0.0.0-2026-05-10-0145"
-vest_lib2 = { path = "../vest++", default-features = false }
+vest_lib2 = { path = "../vest_lib2", default-features = false }
 vest_derive = { path = "../vest_derive" }
 
 [package.metadata.verus]
