@@ -308,17 +308,24 @@ impl<'i> DeepView for TLVMsg<'i> {
  * tlv_msg_fmt: Specifications.
  */
 
-type PayloadInnerFmt = Mapped<
+
+pub struct TLVPayloadFmt {
+    pub tag: u8,
+}
+
+pub struct TLVFmt;
+
+type TLVPayloadSpec = Mapped<
     Choice<Cond<U8>, Choice<Cond<Fixed<10>>, Choice<Cond<Pair<U8, Tail>>, Cond<Pair<U8, Tail>>>>>,
     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
 >;
 
-type TLVFmt = Implicit<
+type TLVSpec = Implicit<
     U8,
-    KVFormat<u8, TLVMsgSpec, Implicit<U8, KVFormat<u8, TLVMsgSpec, ExactLen<TLVPayload>>>>,
+    KVFormat<u8, TLVMsgSpec, Implicit<U8, KVFormat<u8, TLVMsgSpec, ExactLen<TLVPayloadFmt>>>>,
 >;
 
-pub open spec fn payload_fmt(tag: u8) -> PayloadInnerFmt {
+pub open spec fn payload_fmt(tag: u8) -> TLVPayloadSpec {
     Mapped {
         inner: Choice(
             Cond(tag == 1, U8),
@@ -350,7 +357,7 @@ pub open spec fn payload_fmt(tag: u8) -> PayloadInnerFmt {
     }
 }
 
-pub open spec fn tlv_fmt() -> TLVFmt {
+pub open spec fn tlv_fmt() -> TLVSpec {
     let recover_tag = |msg: TLVMsgSpec| -> u8
         {
             match msg {
@@ -363,24 +370,18 @@ pub open spec fn tlv_fmt() -> TLVFmt {
     let recover_len = |msg: TLVMsgSpec| -> u8
         {
             let tag = recover_tag(msg);
-            TLVPayload { tag }.byte_len(msg) as u8
+            TLVPayloadFmt { tag }.byte_len(msg) as u8
         };
     #[verusfmt::skip]
     let fmt = Implicit(U8,
         (|tag: u8| Implicit(U8,
-        (|len: u8| ExactLen(len, TLVPayload { tag }),
+        (|len: u8| ExactLen(len, TLVPayloadFmt { tag }),
         recover_len)),
         recover_tag));
     fmt
 }
 
-pub struct TLVPayload {
-    pub tag: u8,
-}
-
-struct TLV;
-
-impl SpecParser for TLVPayload {
+impl SpecParser for TLVPayloadFmt {
     type PVal = TLVMsgSpec;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -388,7 +389,7 @@ impl SpecParser for TLVPayload {
     }
 }
 
-impl Consistency for TLVPayload {
+impl Consistency for TLVPayloadFmt {
     type Val = TLVMsgSpec;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -396,7 +397,7 @@ impl Consistency for TLVPayload {
     }
 }
 
-impl SpecSerializerDps for TLVPayload {
+impl SpecSerializerDps for TLVPayloadFmt {
     type SValue = TLVMsgSpec;
 
     open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -404,7 +405,7 @@ impl SpecSerializerDps for TLVPayload {
     }
 }
 
-impl SpecSerializer for TLVPayload {
+impl SpecSerializer for TLVPayloadFmt {
     type SVal = TLVMsgSpec;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -412,7 +413,7 @@ impl SpecSerializer for TLVPayload {
     }
 }
 
-impl SpecByteLen for TLVPayload {
+impl SpecByteLen for TLVPayloadFmt {
     type T = TLVMsgSpec;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -420,7 +421,7 @@ impl SpecByteLen for TLVPayload {
     }
 }
 
-impl SpecParser for TLV {
+impl SpecParser for TLVFmt {
     type PVal = TLVMsgSpec;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -428,7 +429,7 @@ impl SpecParser for TLV {
     }
 }
 
-impl Consistency for TLV {
+impl Consistency for TLVFmt {
     type Val = TLVMsgSpec;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -436,7 +437,7 @@ impl Consistency for TLV {
     }
 }
 
-impl SpecSerializerDps for TLV {
+impl SpecSerializerDps for TLVFmt {
     type SValue = TLVMsgSpec;
 
     open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -444,7 +445,7 @@ impl SpecSerializerDps for TLV {
     }
 }
 
-impl SpecSerializer for TLV {
+impl SpecSerializer for TLVFmt {
     type SVal = TLVMsgSpec;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -452,7 +453,7 @@ impl SpecSerializer for TLV {
     }
 }
 
-impl SpecByteLen for TLV {
+impl SpecByteLen for TLVFmt {
     type T = TLVMsgSpec;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -464,13 +465,13 @@ impl SpecByteLen for TLV {
  * tlv_msg_fmt: Format properties.
  */
 
-impl SafeParser for TLVPayload {
+impl SafeParser for TLVPayloadFmt {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         payload_fmt(self.tag).lemma_parse_safe(ibuf);
     }
 }
 
-impl SoundParser for TLVPayload {
+impl SoundParser for TLVPayloadFmt {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         payload_fmt(self.tag).lemma_parse_sound_consumption(ibuf);
     }
@@ -480,7 +481,7 @@ impl SoundParser for TLVPayload {
     }
 }
 
-// impl NonTailFmt for TLVPayload {
+// impl NonTailFmt for TLVPayloadFmt {
 //     proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
 //         payload_fmt(self.tag).lemma_serialize_dps_prepend(v, obuf);
 //     }
@@ -488,37 +489,37 @@ impl SoundParser for TLVPayload {
 //         payload_fmt(self.tag).lemma_serialize_dps_len(v, obuf);
 //     }
 // }
-impl GoodSerializer for TLVPayload {
+impl GoodSerializer for TLVPayloadFmt {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         payload_fmt(self.tag).lemma_serialize_len(v);
     }
 }
 
-impl SPRoundTripDps for TLVPayload {
+impl SPRoundTripDps for TLVPayloadFmt {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         payload_fmt(self.tag).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl NonMalleable for TLVPayload {
+impl NonMalleable for TLVPayloadFmt {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         payload_fmt(self.tag).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl EquivSerializers for TLVPayload {
+impl EquivSerializers for TLVPayloadFmt {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         payload_fmt(self.tag).lemma_serialize_equiv_on_empty(v);
     }
 }
 
-impl SafeParser for TLV {
+impl SafeParser for TLVFmt {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         tlv_fmt().lemma_parse_safe(ibuf);
     }
 }
 
-impl SoundParser for TLV {
+impl SoundParser for TLVFmt {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         tlv_fmt().lemma_parse_sound_consumption(ibuf);
     }
@@ -528,7 +529,7 @@ impl SoundParser for TLV {
     }
 }
 
-impl NonTailFmt for TLV {
+impl NonTailFmt for TLVFmt {
     proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
         tlv_fmt().lemma_serialize_dps_prepend(v, obuf);
     }
@@ -538,25 +539,25 @@ impl NonTailFmt for TLV {
     }
 }
 
-impl GoodSerializer for TLV {
+impl GoodSerializer for TLVFmt {
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
         tlv_fmt().lemma_serialize_len(v);
     }
 }
 
-impl SPRoundTripDps for TLV {
+impl SPRoundTripDps for TLVFmt {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         tlv_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl NonMalleable for TLV {
+impl NonMalleable for TLVFmt {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         tlv_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl EquivSerializers for TLV {
+impl EquivSerializers for TLVFmt {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         tlv_fmt().lemma_serialize_equiv_on_empty(v);
     }
@@ -566,7 +567,7 @@ impl EquivSerializers for TLV {
  * tlv_msg_fmt: Executable implementations.
  */
 
-impl<'i> Parser<&'i [u8]> for TLVPayload {
+impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
     type PT = TLVMsg<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -594,7 +595,7 @@ impl<'i> Parser<&'i [u8]> for TLVPayload {
     }
 }
 
-impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayload {
+impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayloadFmt {
     fn ex_serialize(&self, v: &'i TLVMsg<'i>, obuf: &mut Vec<u8>) {
         let ghost old_obuf = obuf@;
         match v {
@@ -607,7 +608,7 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayload {
     }
 }
 
-impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayload {
+impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayloadFmt {
     fn prepare(&self, v: &'i TLVMsg<'i>) -> Result<usize, PreSerializeError> {
         match (self.tag, v) {
             (1, TLVMsg::V1(v)) => U8.prepare(*v),
@@ -619,7 +620,7 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayload {
     }
 }
 
-impl<'i> Parser<&'i [u8]> for TLV {
+impl<'i> Parser<&'i [u8]> for TLVFmt {
     type PT = TLVMsg<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -627,14 +628,14 @@ impl<'i> Parser<&'i [u8]> for TLV {
 
         let (n1, tag) = U8.parse(ibuf)?;
         let (n2, len) = U8.parse(&ibuf.skip(n1))?;
-        let (n3, payload) = ExactLen(len, TLVPayload { tag }).parse(&ibuf.skip(n1 + n2))?;
+        let (n3, payload) = ExactLen(len, TLVPayloadFmt { tag }).parse(&ibuf.skip(n1 + n2))?;
         let total_n = n1 + n2 + n3;
         assert(self.spec_parse(ibuf@) == Some((total_n as int, payload.deep_view())));
         Ok((total_n, payload))
     }
 }
 
-impl<'i> Serializer<&'i TLVMsg<'i>> for TLV {
+impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
     fn ex_serialize(&self, v: &'i TLVMsg<'i>, obuf: &mut Vec<u8>) {
         broadcast use crate::core::spec::GoodSerializer::lemma_serialize_len;
 
@@ -647,7 +648,7 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLV {
         };
         U8.ex_serialize(tag, obuf);
         // Strategy 0:
-        // call `TLVPayload { tag }.length()` to get the length of the payload, and serialize it before serializing the payload.
+        // call `TLVPayloadFmt { tag }.length()` to get the length of the payload, and serialize it before serializing the payload.
         // However, this means we have to strengthen the pre-condition of `ex_serialize` to require
         // `self.byte_len(v.deep_view()) <= usize::MAX`, which is not ideal.
 
@@ -656,7 +657,7 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLV {
         // let offset = obuf.len();
         // U8.ex_serialize(0u8, obuf); // placeholder for length
         // let old_len = obuf.len();
-        // TLVPayload { tag }.ex_serialize(v, obuf);
+        // TLVPayloadFmt { tag }.ex_serialize(v, obuf);
         // let new_len = obuf.len();
         // // Update the length field in the output buffer
         // let actual_len = (new_len - old_len) as u8;
@@ -664,7 +665,7 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLV {
 
         // Strategy 2: re-allocation
         let mut payload_buf = Vec::new();
-        TLVPayload { tag }.ex_serialize(v, &mut payload_buf);
+        TLVPayloadFmt { tag }.ex_serialize(v, &mut payload_buf);
         let payload_len = payload_buf.len() as u8;
         U8.ex_serialize(payload_len, obuf);
         obuf.extend_from_slice(&payload_buf);
@@ -672,7 +673,7 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLV {
     }
 }
 
-impl<'i> Prepare<&'i TLVMsg<'i>> for TLV {
+impl<'i> Prepare<&'i TLVMsg<'i>> for TLVFmt {
     fn prepare(&self, v: &'i TLVMsg<'i>) -> Result<usize, PreSerializeError> {
         let tag = match v {
             TLVMsg::V1(_) => 1u8,
@@ -680,7 +681,7 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLV {
             TLVMsg::V3(_, _) => 3u8,
             TLVMsg::V4(_, _) => 4u8,
         };
-        let len = TLVPayload { tag }.prepare(v)?;
+        let len = TLVPayloadFmt { tag }.prepare(v)?;
         let l1 = U8.prepare(tag)?;
         if len > u8::MAX as usize {
             return Err(PreSerializeError::LengthTooLarge);
