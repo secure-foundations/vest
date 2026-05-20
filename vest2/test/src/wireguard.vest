@@ -1,0 +1,33 @@
+// endianess definition
+// !LITTLE_ENDIAN
+
+
+msg1 = {
+     const ty: u8 = 1,
+     const reserved: [u8; 3] = [0, 0, 0],
+     sender: [u8; 4],
+     ephemeral: [u8; 32],
+     static_: [u8; 48], // cipherlen(32)
+     timestamp: [u8; 28], // cipherlen(12)
+     mac1: [u8; 16],
+     mac2: [u8; 16], // = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], // the 0 refinement is not required
+}
+
+msg2 = {
+     const ty: u8 = 2,
+     const reserved: [u8; 3] = [0, 0, 0],
+     sender: [u8; 4],
+     receiver: [u8; 4],
+     ephemeral: [u8; 32],
+     empty: [u8; 16], // cipherlen(0)
+     mac1: [u8; 16],
+     mac2: [u8; 16], // = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], // the 0 refinement is not required
+}
+
+transp = {
+     const ty: u8 = 4,
+     const reserved: [u8; 3] = [0, 0, 0],
+     receiver: [u8; 4],
+     counter: u64, // 8 bytes little-endian
+     packet: Tail,
+}

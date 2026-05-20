@@ -1,0 +1,25 @@
+generic_header = {
+    next_type: u8,
+    reserved: u8,
+    @payload_length: u16 | { 8..0xffff },
+}
+
+payload_with_header = {
+    @hdr: generic_header,
+    body: [u8; @hdr.payload_length - 4],
+}
+
+outer_header = {
+    magic: u32,
+    @inner: generic_header,
+}
+
+deep_nested = {
+    @outer: outer_header,
+    data: [u8; @outer.inner.payload_length - 8],
+}
+
+combined_example(@total_len: u32 | { 65535..0xffffffff }) = {
+    @header: generic_header,
+    body: [u8; @total_len - @header.payload_length],
+}

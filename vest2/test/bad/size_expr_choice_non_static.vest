@@ -1,0 +1,9 @@
+// Invalid: a choice format is not statically sized when branch widths differ
+tagged_choice(@tag: u8) = choose(@tag) {
+    0 => u8,
+    _ => u16,
+}
+
+bad = {
+    body: [u8; |tagged_choice|],
+}

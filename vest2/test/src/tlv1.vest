@@ -1,0 +1,84 @@
+msg1 = {
+  a: u8,
+  b: u16,
+  c: [u8; 3],
+  data: Tail,
+}
+
+msg2 = {
+  a: u8,
+  b: u16,
+  c: u32,
+}
+
+msg3 = {
+  data: [u8; 6],
+}
+
+// will produce `Either::Left(1u8)`, etc.
+// msg_type = choose {
+//   MSG1 { const msg1: u8 = 1, },
+//   MSG2 { const msg2: u8 = 2, },
+//   MSG3 { const msg3: u8 = 3, },
+// }
+
+// will have the same effect as `Int::<u8>`, except that the enum variants can be used as aliases
+// for the integer values
+msg_type = enum {
+  Msg1 = 1,
+  Msg2 = 2,
+  Msg3 = 3,
+}
+
+// const MSG_TYPE: choose {
+//   MSG1(u8 = 1),
+//   MSG2(u8 = 2),
+//   MSG3(u8 = 3),
+// }
+
+// const MSG1: u8 = 1
+// const MSG2: u8 = 2
+// const MSG3: u8 = 3
+
+msg = {
+  @tag: msg_type,
+  @len: u16,
+  content: [u8; @len] >>= choose(@tag) {
+    Msg1 => msg1,
+    Msg2 => msg2,
+    Msg3 => msg3,
+  },
+}
+
+msg_content(@len: u16, @tag: msg_type) = [u8; @len] >>= choose(@tag) {
+  Msg1 => msg1,
+  Msg2 => msg2,
+  Msg3 => msg3,
+}
+// corresponds to the following Rust type:
+// enum Msg {
+//   Msg1(msg1),
+//   Msg2(msg2),
+//   Msg3(msg3),
+// }
+
+
+// same as above
+msg_ = {
+  @tag: u8,
+  @len: u16,
+  content: [u8; @len] >>= choose(@tag) {
+    1 => msg1,
+    2 => msg2,
+    3 => msg3,
+  },
+}
+
+msg__ = {
+  @tag: [u8; 3],
+  content: [u8; 32] >>= choose(@tag) {
+    [1, 2, 3] => msg1,
+    [4, 5, 6] => msg2,
+    [7, 8, 9] => msg3,
+  },
+}

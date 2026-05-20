@@ -1,0 +1,4 @@
+// Invalid: undefined type in size expression
+foo = {
+    data: [u8; |undefined_type|],
+}

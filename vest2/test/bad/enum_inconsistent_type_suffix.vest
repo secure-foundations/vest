@@ -1,0 +1,5 @@
+bad_enum = enum {
+  A = 0u8,
+  B = 1u16,
+  C = 2u8,
+}

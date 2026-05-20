@@ -1,0 +1,8 @@
+my_enum = enum {
+  A = 0,
+  B = 1,
+}
+
+bad_constraint = {
+  field: my_enum | C,
+}

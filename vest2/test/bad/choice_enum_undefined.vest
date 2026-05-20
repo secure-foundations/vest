@@ -1,0 +1,11 @@
+t = enum {
+  A = 1,
+  B = 2,
+  C = 3,
+}
+
+fmt(@tag: tt) = choose(@tag) {
+  A => u8,
+  B => u16,
+  C => u24,
+}

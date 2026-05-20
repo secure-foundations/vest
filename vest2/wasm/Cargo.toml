@@ -1,0 +1,42 @@
+[package]
+name = "wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+verus_builtin = "0.0.0-2025-08-12-1837"
+verus_builtin_macros = "0.0.0-2025-08-12-1837"
+vstd = "=0.0.0-2025-08-12-1837"
+vest_lib = { path = "../../vest" }
+rwasm = { git = "https://github.com/zhengyao-lin/rWasm.git", branch = "main" }
+wasmparser = "0.223.0"
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rwasm = { git = "https://github.com/zhengyao-lin/rWasm.git", branch = "main" }
+wasmparser = "0.223.0"
+wasmbin = { path = "../../tools/wasmbin" }
+
+[[bench]]
+name = "wasm_benchmark"
+harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1

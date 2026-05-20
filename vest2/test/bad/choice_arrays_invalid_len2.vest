@@ -1,0 +1,6 @@
+array(@len: u8) = [u8; @len]
+fmt(@len: u8, @tag: array(@len)) = choose(@tag) {
+  [0; 4] => u8,
+  [1; 4] => u32,
+  [2; 4] => u32,
+}

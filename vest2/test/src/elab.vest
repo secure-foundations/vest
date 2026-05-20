@@ -1,0 +1,37 @@
+!BIG_ENDIAN
+const F5: [u8; 5] = [1; 5]
+
+msg_d = {
+  const f1: [u8; 4] = [1; 4],
+  const f2: u16 = 0x1234,
+  const c: F5,
+}
+
+msg_b = {
+  f1: msg_d,
+}
+
+msg_a = {
+  f1: msg_b,
+  f2: Tail,
+}
+
+content_type = enum {
+  C0 = 0,
+  C1 = 1,
+  C2 = 2,
+  ...
+}
+
+msg_c = {
+  @f2: content_type,
+  @f3: u24,
+  f4: [u8; @f3] >>= choose(@f2) {
+    C0 => content_0(@f3),
+    C1 => u16,
+    C2 => u32,
+    _ => Tail,
+  },
+}
+
+content_0(@num: u24) = [u8; @num]

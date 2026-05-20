@@ -1,0 +1,8 @@
+// Invalid: parameter-dependent formats do not have a statically-known size
+payload(@len: u16) = {
+    body: [u8; @len],
+}
+
+bad = {
+    body: [u8; |payload|],
+}

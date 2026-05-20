@@ -1,0 +1,22 @@
+msg = {
+  const a: u8 = 1,
+  const b: [u8; 2] = [1, 2],
+}
+
+// Secure
+optmsg = Option<msg>
+
+// msg2(@x: u8) = [u8; @x]
+
+// Insecure
+// optmsg = {
+//   @x: u8,
+//   y: Option<msg2(@x)>,
+// }
+
+a = wrap(u8 = 1, u8 = 2, [u8; 10], u8 = 3)
+
+b = {
+  x: [u8; 10],
+  y: wrap([u8; 3] = [1, 2, 3], a, u8 = 1),
+}

@@ -1,0 +1,37 @@
+.PHONY: all build-vest vest bad verus
+
+CARGO        := cargo
+ROOT_MANIFEST := ../Cargo.toml
+VEST_DSL     := ../target/debug/vest2
+# selected .vest files in the src directory
+VEST_FILES   := ./src/anonymous_nested.vest ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/nested_access.vest ./src/ikev2.vest
+# all files in ./bad/
+BAD_VEST_FILES := $(wildcard ./bad/*.vest)
+
+all: vest bad verus
+
+build-vest:
+	$(CARGO) build --manifest-path $(ROOT_MANIFEST) -p vest
+
+vest: build-vest
+	@for file in $(VEST_FILES); do \
+		echo "==================================="; \
+		echo "Processing $$file"; \
+		$(VEST_DSL) $$file; \
+	done
+
+bad: build-vest
+	@for file in $(BAD_VEST_FILES); do \
+		echo "==================================="; \
+		echo "Expecting failure for $$file"; \
+		if $(VEST_DSL) $$file >/tmp/vest_bad.log 2>&1; then \
+			echo "⚠️ Expected failure but succeeded for $$file"; \
+			cat /tmp/vest_bad.log; \
+			exit 1; \
+		else \
+			echo "✅ Got expected failure for $$file"; \
+		fi \
+	done
+
+verus:
+	cargo verus verify -- --expand-errors

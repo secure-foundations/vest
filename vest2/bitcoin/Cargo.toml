@@ -1,0 +1,45 @@
+[package]
+name = "vestbitcoin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
+verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
+verus_builtin_macros = { git = "https://github.com/verus-lang/verus", branch = "main" }
+# verus_builtin = "0.0.0-2025-08-12-1837"
+# verus_builtin_macros = "0.0.0-2025-08-12-1837"
+# vstd = "=0.0.0-2025-08-12-1837"
+vest_lib = { path = "../../vest" }
+
+hex = "0.4.3"
+bitcoin = "0.32.5"
+base64 = "0.22.1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "bitcoin_benchmark"
+harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
