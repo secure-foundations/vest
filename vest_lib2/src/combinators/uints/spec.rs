@@ -1,5 +1,5 @@
 use crate::combinators::bytes::spec::*;
-use crate::combinators::mapped::spec::FnSpecMapper;
+use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{Fixed, Mapped};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -10,6 +10,8 @@ pub const U8_BYTE_LEN: usize = 1;
 
 pub const U16_BYTE_LEN: usize = 2;
 
+pub const U24_BYTE_LEN: usize = 3;
+
 pub const U32_BYTE_LEN: usize = 4;
 
 pub const U64_BYTE_LEN: usize = 8;
@@ -17,6 +19,14 @@ pub const U64_BYTE_LEN: usize = 8;
 pub type U16LeFmt = Mapped<Fixed<2>, FnSpecMapper<Seq<u8>, u16>>;
 
 pub type U16BeFmt = Mapped<Fixed<2>, FnSpecMapper<Seq<u8>, u16>>;
+
+pub struct U24LeMapper;
+
+pub struct U24BeMapper;
+
+pub type U24LeFmt = Mapped<Fixed<3>, U24LeMapper>;
+
+pub type U24BeFmt = Mapped<Fixed<3>, U24BeMapper>;
 
 pub type U32LeFmt = Mapped<Fixed<4>, FnSpecMapper<Seq<u8>, u32>>;
 
@@ -38,6 +48,14 @@ pub open spec fn u16_be_fmt() -> U16BeFmt {
         inner: Fixed::<2>,
         mapper: (|i: Seq<u8>| u16_be_from_bytes(array_from_seq(i)), |o: u16| u16_be_to_bytes(o)@),
     }
+}
+
+pub open spec fn u24_le_fmt() -> U24LeFmt {
+    Mapped { inner: Fixed::<3>, mapper: U24LeMapper }
+}
+
+pub open spec fn u24_be_fmt() -> U24BeFmt {
+    Mapped { inner: Fixed::<3>, mapper: U24BeMapper }
 }
 
 pub open spec fn u32_le_fmt() -> U32LeFmt {
@@ -126,6 +144,194 @@ pub broadcast proof fn lemma_u16_be_value_roundtrip(o: u16)
         &&& (o >> 8) & 0xff < 256
     }) by (bit_vector);
     assert(o == (((o >> 8) & 0xff) << 8 | (o & 0xff))) by (bit_vector);
+}
+
+pub open spec fn u24_le_from_bytes(i: [u8; 3]) -> u32 {
+    (i[0] as u32) | (i[1] as u32) << 8 | (i[2] as u32) << 16
+}
+
+pub open spec fn u24_le_to_bytes(o: u32) -> [u8; 3] {
+    [(o & 0xff) as u8, ((o >> 8) & 0xff) as u8, ((o >> 16) & 0xff) as u8]
+}
+
+pub broadcast proof fn lemma_u24_le_bytes_roundtrip(i: [u8; 3])
+    ensures
+        #[trigger] u24_le_to_bytes(u24_le_from_bytes(i)) == i,
+{
+    let x = u24_le_from_bytes(i);
+    let i0 = i[0] as u32;
+    let i1 = i[1] as u32;
+    let i2 = i[2] as u32;
+    assert(((x == i0 | i1 << 8 | i2 << 16) && (i0 < 256) && (i1 < 256) && (i2 < 256)) ==> i0 == (x
+        & 0xff) && i1 == ((x >> 8) & 0xff) && i2 == ((x >> 16) & 0xff)) by (bit_vector);
+}
+
+pub broadcast proof fn lemma_u24_le_value_roundtrip(o: u32)
+    requires
+        o < 0x01000000,
+    ensures
+        #[trigger] u24_le_from_bytes(u24_le_to_bytes(o)) == o,
+{
+    assert({
+        &&& o & 0xff < 256
+        &&& (o >> 8) & 0xff < 256
+        &&& (o >> 16) & 0xff < 256
+    }) by (bit_vector);
+    assert(o < 0x01000000 ==> o == ((o & 0xff) | ((o >> 8) & 0xff) << 8 | ((o >> 16) & 0xff) << 16))
+        by (bit_vector);
+}
+
+pub proof fn lemma_u24_le_from_bytes_range(i: [u8; 3])
+    ensures
+        u24_le_from_bytes(i) < 0x01000000,
+{
+    let b0 = i[0];
+    let b1 = i[1];
+    let b2 = i[2];
+    assert(((b0 as u32) | ((b1 as u32) << 8) | ((b2 as u32) << 16)) < 0x01000000u32)
+        by (bit_vector);
+}
+
+pub open spec fn u24_be_from_bytes(i: [u8; 3]) -> u32 {
+    (i[0] as u32) << 16 | (i[1] as u32) << 8 | (i[2] as u32)
+}
+
+pub open spec fn u24_be_to_bytes(o: u32) -> [u8; 3] {
+    [((o >> 16) & 0xff) as u8, ((o >> 8) & 0xff) as u8, (o & 0xff) as u8]
+}
+
+pub broadcast proof fn lemma_u24_be_bytes_roundtrip(i: [u8; 3])
+    ensures
+        #[trigger] u24_be_to_bytes(u24_be_from_bytes(i)) == i,
+{
+    let x = u24_be_from_bytes(i);
+    let i0 = i[0] as u32;
+    let i1 = i[1] as u32;
+    let i2 = i[2] as u32;
+    assert(((x == i0 << 16 | i1 << 8 | i2) && (i0 < 256) && (i1 < 256) && (i2 < 256)) ==> i0 == ((x
+        >> 16) & 0xff) && i1 == ((x >> 8) & 0xff) && i2 == (x & 0xff)) by (bit_vector);
+}
+
+pub broadcast proof fn lemma_u24_be_value_roundtrip(o: u32)
+    requires
+        o < 0x01000000,
+    ensures
+        #[trigger] u24_be_from_bytes(u24_be_to_bytes(o)) == o,
+{
+    assert({
+        &&& o & 0xff < 256
+        &&& (o >> 8) & 0xff < 256
+        &&& (o >> 16) & 0xff < 256
+    }) by (bit_vector);
+    assert(o < 0x01000000 ==> o == (((o >> 16) & 0xff) << 16 | ((o >> 8) & 0xff) << 8 | (o & 0xff)))
+        by (bit_vector);
+}
+
+pub proof fn lemma_u24_be_from_bytes_range(i: [u8; 3])
+    ensures
+        u24_be_from_bytes(i) < 0x01000000,
+{
+    let b0 = i[0];
+    let b1 = i[1];
+    let b2 = i[2];
+    assert((((b0 as u32) << 16) | ((b1 as u32) << 8) | (b2 as u32)) < 0x01000000u32)
+        by (bit_vector);
+}
+
+impl SpecMapper for U24LeMapper {
+    type In = Seq<u8>;
+
+    type Out = u32;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        u24_le_from_bytes(array_from_seq(i))
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        u24_le_to_bytes(o)@
+    }
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        i.len() == U24_BYTE_LEN
+    }
+
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        o < 0x01000000
+    }
+}
+
+impl LossyMapper for U24LeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        broadcast use lemma_array_from_seq_roundtrip;
+
+        lemma_u24_le_value_roundtrip(o);
+        assert(self.spec_map(self.spec_map_rev(o)) == o);
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for U24LeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_le_bytes_roundtrip;
+
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        broadcast use axiom_array_from_seq;
+
+        lemma_u24_le_from_bytes_range(array_from_seq(i));
+    }
+}
+
+impl SpecMapper for U24BeMapper {
+    type In = Seq<u8>;
+
+    type Out = u32;
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        u24_be_from_bytes(array_from_seq(i))
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        u24_be_to_bytes(o)@
+    }
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        i.len() == U24_BYTE_LEN
+    }
+
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        o < 0x01000000
+    }
+}
+
+impl LossyMapper for U24BeMapper {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        broadcast use lemma_array_from_seq_roundtrip;
+
+        lemma_u24_be_value_roundtrip(o);
+        assert(self.spec_map(self.spec_map_rev(o)) == o);
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for U24BeMapper {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_be_bytes_roundtrip;
+
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        broadcast use axiom_array_from_seq;
+
+        lemma_u24_be_from_bytes_range(array_from_seq(i));
+    }
 }
 
 pub open spec fn u32_le_from_bytes(i: [u8; 4]) -> u32 {
@@ -630,6 +836,224 @@ impl StaticByteLen for super::U16Be {
 impl ValueByteLen for super::U16Be {
     open spec fn value_byte_len(_v: Self::T) -> nat {
         U16_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl SpecParser for super::U24Le {
+    type PVal = u32;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
+        u24_le_fmt().spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U24Le {
+    type Val = u32;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        v < 0x01000000
+    }
+}
+
+impl SpecSerializerDps for super::U24Le {
+    type SValue = u32;
+
+    open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
+        u24_le_fmt().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl SpecSerializer for super::U24Le {
+    type SVal = u32;
+
+    open spec fn spec_serialize(&self, v: u32) -> Seq<u8> {
+        u24_le_fmt().spec_serialize(v)
+    }
+}
+
+impl SafeParser for super::U24Le {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        u24_le_fmt().lemma_parse_safe(ibuf);
+    }
+}
+
+impl SoundParser for super::U24Le {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_le_bytes_roundtrip;
+
+        u24_le_fmt().lemma_parse_sound_consumption(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_le_bytes_roundtrip;
+
+        u24_le_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl NonTailFmt for super::U24Le {
+    proof fn lemma_serialize_dps_prepend(&self, v: u32, obuf: Seq<u8>) {
+        u24_le_fmt().lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {
+        u24_le_fmt().lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U24Le {
+    proof fn lemma_serialize_len(&self, v: u32) {
+        u24_le_fmt().lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U24Le {
+    type T = u32;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        U24_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::U24Le {
+    open spec fn min(&self) -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl StaticByteLen for super::U24Le {
+    open spec fn static_byte_len() -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl ValueByteLen for super::U24Le {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl SpecParser for super::U24Be {
+    type PVal = u32;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, u32)> {
+        u24_be_fmt().spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::U24Be {
+    type Val = u32;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        v < 0x01000000
+    }
+}
+
+impl SpecSerializerDps for super::U24Be {
+    type SValue = u32;
+
+    open spec fn spec_serialize_dps(&self, v: u32, obuf: Seq<u8>) -> Seq<u8> {
+        u24_be_fmt().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl SpecSerializer for super::U24Be {
+    type SVal = u32;
+
+    open spec fn spec_serialize(&self, v: u32) -> Seq<u8> {
+        u24_be_fmt().spec_serialize(v)
+    }
+}
+
+impl SafeParser for super::U24Be {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        u24_be_fmt().lemma_parse_safe(ibuf);
+    }
+}
+
+impl SoundParser for super::U24Be {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_be_bytes_roundtrip;
+
+        u24_be_fmt().lemma_parse_sound_consumption(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_be_bytes_roundtrip;
+
+        u24_be_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl NonTailFmt for super::U24Be {
+    proof fn lemma_serialize_dps_prepend(&self, v: u32, obuf: Seq<u8>) {
+        u24_be_fmt().lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: u32, obuf: Seq<u8>) {
+        u24_be_fmt().lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl GoodSerializer for super::U24Be {
+    proof fn lemma_serialize_len(&self, v: u32) {
+        u24_be_fmt().lemma_serialize_len(v);
+    }
+}
+
+impl SpecByteLen for super::U24Be {
+    type T = u32;
+
+    open spec fn byte_len(&self, _v: Self::T) -> nat {
+        U24_BYTE_LEN as nat
+    }
+}
+
+impl MinMaxByteLen for super::U24Be {
+    open spec fn min(&self) -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    open spec fn max(&self) -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl StaticByteLen for super::U24Be {
+    open spec fn static_byte_len() -> nat {
+        U24_BYTE_LEN as nat
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+    }
+}
+
+impl ValueByteLen for super::U24Be {
+    open spec fn value_byte_len(_v: Self::T) -> nat {
+        U24_BYTE_LEN as nat
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {

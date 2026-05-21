@@ -8,6 +8,7 @@
 //! | [`Varied<Len>`] | Variable-length bytes determined by a length parameter |
 //! | [`U8`] | Unsigned 8-bit integer |
 //! | [`U16Le`] / [`U16Be`] | Unsigned 16-bit integer (little/big-endian) |
+//! | [`U24Le`] / [`U24Be`] | Unsigned 24-bit integer represented as `u32` (little/big-endian) |
 //! | [`U32Le`] / [`U32Be`] | Unsigned 32-bit integer (little/big-endian) |
 //! | [`U64Le`] / [`U64Be`] | Unsigned 64-bit integer (little/big-endian) |
 //!
@@ -112,4 +113,4 @@ pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
 pub use tuple::{Bind, Pair};
-pub use uints::{U16Be, U16Le, U32Be, U32Le, U64Be, U64Le, U8};
+pub use uints::{U16Be, U16Le, U24Be, U24Le, U32Be, U32Le, U64Be, U64Le, U8};

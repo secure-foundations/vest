@@ -111,6 +111,78 @@ impl EquivSerializers for super::U16Be {
     }
 }
 
+impl SPRoundTripDps for super::U24Le {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
+        broadcast use lemma_array_from_seq_roundtrip;
+        broadcast use lemma_u24_le_value_roundtrip;
+
+        u24_le_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl NonMalleable for super::U24Le {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_le_bytes_roundtrip;
+
+        u24_le_fmt().lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl NoLookAhead for super::U24Le {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        u24_le_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl EquivSerializersGeneral for super::U24Le {
+    proof fn lemma_serialize_equiv(&self, v: u32, obuf: Seq<u8>) {
+        u24_le_fmt().lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl EquivSerializers for super::U24Le {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: u32) {
+        u24_le_fmt().lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+impl SPRoundTripDps for super::U24Be {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
+        broadcast use lemma_array_from_seq_roundtrip;
+        broadcast use lemma_u24_be_value_roundtrip;
+
+        u24_be_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl NonMalleable for super::U24Be {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_be_bytes_roundtrip;
+
+        u24_be_fmt().lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl NoLookAhead for super::U24Be {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        u24_be_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl EquivSerializersGeneral for super::U24Be {
+    proof fn lemma_serialize_equiv(&self, v: u32, obuf: Seq<u8>) {
+        u24_be_fmt().lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl EquivSerializers for super::U24Be {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: u32) {
+        u24_be_fmt().lemma_serialize_equiv_on_empty(v);
+    }
+}
+
 impl SPRoundTripDps for super::U32Le {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: u32, obuf: Seq<u8>) {
         broadcast use lemma_array_from_seq_roundtrip;

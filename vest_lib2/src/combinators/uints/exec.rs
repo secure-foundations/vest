@@ -4,7 +4,7 @@ use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+    serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::spec::{SpecParser, SpecSerializer};
@@ -46,6 +46,38 @@ pub fn u16_to_be_bytes(value: u16) -> (bytes: [u8; 2])
         bytes == u16_be_to_bytes(value),
 {
     value.to_be_bytes()
+}
+
+#[inline(always)]
+pub fn u24_from_le_bytes(bytes: [u8; 3]) -> (out: u32)
+    ensures
+        out == u24_le_from_bytes(bytes),
+{
+    (bytes[0] as u32) | ((bytes[1] as u32) << 8) | ((bytes[2] as u32) << 16)
+}
+
+#[inline(always)]
+pub fn u24_from_be_bytes(bytes: [u8; 3]) -> (out: u32)
+    ensures
+        out == u24_be_from_bytes(bytes),
+{
+    ((bytes[0] as u32) << 16) | ((bytes[1] as u32) << 8) | (bytes[2] as u32)
+}
+
+#[inline(always)]
+pub fn u24_to_le_bytes(value: u32) -> (bytes: [u8; 3])
+    ensures
+        bytes == u24_le_to_bytes(value),
+{
+    [(value & 0xff) as u8, ((value >> 8) & 0xff) as u8, ((value >> 16) & 0xff) as u8]
+}
+
+#[inline(always)]
+pub fn u24_to_be_bytes(value: u32) -> (bytes: [u8; 3])
+    ensures
+        bytes == u24_be_to_bytes(value),
+{
+    [((value >> 16) & 0xff) as u8, ((value >> 8) & 0xff) as u8, (value & 0xff) as u8]
 }
 
 #[verifier::external_body]
@@ -244,6 +276,100 @@ impl ByteLen<u16> for super::U16Be {
 impl Prepare<u16> for super::U16Be {
     fn prepare(&self, _v: u16) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U16_BYTE_LEN)
+    }
+}
+
+impl Parser<&[u8]> for super::U24Le {
+    type PT = u32;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        broadcast use lemma_array_from_seq_roundtrip;
+
+        let (n, chunk) = Fixed::<U24_BYTE_LEN>.parse(ibuf)?;
+        assert(chunk@ == ibuf@.take(U24_BYTE_LEN as int));
+
+        let bytes = [chunk[0], chunk[1], chunk[2]];
+        let value = u24_from_le_bytes(bytes);
+
+        assert(bytes@ == chunk@);
+
+        Ok((n, value))
+    }
+}
+
+impl Serializer<u32> for super::U24Le {
+    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
+        let bytes = u24_to_le_bytes(v);
+        obuf.extend_from_slice(&bytes);
+    }
+}
+
+impl Compliance<u32> for super::U24Le {
+    fn check_compliance(&self, v: u32) -> (yes: bool) {
+        v < 0x01000000
+    }
+}
+
+impl ByteLen<u32> for super::U24Le {
+    fn length(&self, _v: u32) -> (len: usize) {
+        U24_BYTE_LEN
+    }
+}
+
+impl Prepare<u32> for super::U24Le {
+    fn prepare(&self, v: u32) -> (checked: Result<usize, PreSerializeError>) {
+        if v < 0x01000000 {
+            Ok(U24_BYTE_LEN)
+        } else {
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+        }
+    }
+}
+
+impl Parser<&[u8]> for super::U24Be {
+    type PT = u32;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        broadcast use lemma_array_from_seq_roundtrip;
+
+        let (n, chunk) = Fixed::<U24_BYTE_LEN>.parse(ibuf)?;
+        assert(chunk@ == ibuf@.take(U24_BYTE_LEN as int));
+
+        let bytes = [chunk[0], chunk[1], chunk[2]];
+        let value = u24_from_be_bytes(bytes);
+
+        assert(bytes@ == chunk@);
+
+        Ok((n, value))
+    }
+}
+
+impl Serializer<u32> for super::U24Be {
+    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
+        let bytes = u24_to_be_bytes(v);
+        obuf.extend_from_slice(&bytes);
+    }
+}
+
+impl Compliance<u32> for super::U24Be {
+    fn check_compliance(&self, v: u32) -> (yes: bool) {
+        v < 0x01000000
+    }
+}
+
+impl ByteLen<u32> for super::U24Be {
+    fn length(&self, _v: u32) -> (len: usize) {
+        U24_BYTE_LEN
+    }
+}
+
+impl Prepare<u32> for super::U24Be {
+    fn prepare(&self, v: u32) -> (checked: Result<usize, PreSerializeError>) {
+        if v < 0x01000000 {
+            Ok(U24_BYTE_LEN)
+        } else {
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+        }
     }
 }
 
