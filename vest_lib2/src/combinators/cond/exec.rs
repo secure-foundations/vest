@@ -1,7 +1,9 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
+        serializer::{
+            ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
+        },
         ParseError,
     },
     spec::SpecParser,

@@ -77,6 +77,32 @@ impl<A, B, const CHECK: bool> NoLookAhead for super::Terminated<A, B, B::PVal, C
     }
 }
 
+impl<A, B> Productive for super::Terminated<A, B, B::PVal, true> where
+    A: Productive,
+    B: Productive,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        terminated::<_, _, _, _, true>(self.a, self.b, self.b_val).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        terminated::<_, _, _, _, true>(self.a, self.b, self.b_val).lemma_productive(s);
+    }
+}
+
+impl<A, B> Productive for super::Terminated<A, B, B::PVal, false> where
+    A: Productive,
+    B: Productive,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        terminated::<_, _, _, _, false>(self.a, self.b, self.b_val).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        terminated::<_, _, _, _, false>(self.a, self.b, self.b_val).lemma_productive(s);
+    }
+}
+
 impl<A, B, const CHECK: bool> EquivSerializersGeneral for super::Terminated<
     A,
     B,

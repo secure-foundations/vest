@@ -33,6 +33,16 @@ impl<Inner: NoLookAhead> NoLookAhead for super::Named<Inner> {
     }
 }
 
+impl<Inner: Productive> Productive for super::Named<Inner> {
+    open spec fn productive_inv(&self) -> bool {
+        self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.1.lemma_productive(s);
+    }
+}
+
 impl<Inner: EquivSerializersGeneral> EquivSerializersGeneral for super::Named<Inner> {
     open spec fn equiv_general_inv(&self) -> bool {
         self.1.equiv_general_inv()

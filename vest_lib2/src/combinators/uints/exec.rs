@@ -4,7 +4,9 @@ use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
+    serializer::{
+        ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
+    },
     ParseError,
 };
 use crate::core::spec::{SpecParser, SpecSerializer};

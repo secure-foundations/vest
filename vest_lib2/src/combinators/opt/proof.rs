@@ -171,6 +171,21 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
     }
 }
 
+impl<A: Productive, B: Productive> Productive for super::Optional<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _v)) = self.spec_parse(s) {
+            let (n1, _v1) = super::Opt(self.0).spec_parse(s)->0;
+            let (n2, _v2) = self.1.spec_parse(s.skip(n1))->0;
+            super::Opt(self.0).lemma_parse_safe(s);
+            self.1.lemma_productive(s.skip(n1));
+        }
+    }
+}
+
 impl<
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,

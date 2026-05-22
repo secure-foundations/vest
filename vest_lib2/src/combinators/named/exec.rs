@@ -1,7 +1,9 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
+        serializer::{
+            ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
+        },
     },
     spec::SpecSerializer,
 };
@@ -48,7 +50,9 @@ impl<T, Inner> ByteLen<T> for super::Named<Inner> where T: DeepView, Inner: Byte
 impl<T, Inner> Prepare<T> for super::Named<Inner> where T: DeepView, Inner: Prepare<T> {
     fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
         match self.1.prepare(v) {
-            Err(PreSerializeError::NotCompliant(_)) => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::NamedFormat(self.0))),
+            Err(PreSerializeError::NotCompliant(_)) => Err(
+                PreSerializeError::NotCompliant(ComplianceErrorKind::NamedFormat(self.0)),
+            ),
             otherwise => otherwise,
         }
     }

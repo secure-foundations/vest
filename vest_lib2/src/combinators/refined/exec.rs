@@ -7,7 +7,9 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
+        serializer::{
+            ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
+        },
         ParseError,
     },
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},

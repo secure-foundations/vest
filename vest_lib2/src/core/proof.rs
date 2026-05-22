@@ -206,6 +206,23 @@ pub trait NoLookAhead: SafeParser {
     }
 }
 
+/// Productivity for parsers.
+///
+/// A productive parser always consumes at least one byte when it succeeds.
+pub trait Productive: SafeParser {
+    open spec fn productive_inv(&self) -> bool {
+        true
+    }
+
+    broadcast proof fn lemma_productive(&self, s: Seq<u8>)
+        requires
+            self.safe_inv(),
+            self.productive_inv(),
+        ensures
+            #[trigger] self.spec_parse(s) matches Some((n, _)) ==> n > 0,
+    ;
+}
+
 /// Full DPS ↔ non-DPS serializer equivalence for *any* output buffer.
 ///
 /// See [`EquivSerializers`] for the weaker empty-buffer variant.

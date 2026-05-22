@@ -460,6 +460,60 @@ impl<C: NoLookAhead, N: AsLen> NoLookAhead for super::RepeatN<C, N> {
     }
 }
 
+impl<A: SpecParser> super::Star<A> {
+    proof fn lemma_parse_rec_nonnegative(&self, ibuf: Seq<u8>)
+        ensures
+            0 <= self.parse_rec(ibuf).0,
+        decreases ibuf.len(),
+    {
+        if let Some((n, _v)) = self.inner.spec_parse(ibuf) {
+            if 0 < n <= ibuf.len() {
+                self.lemma_parse_rec_nonnegative(ibuf.skip(n));
+            }
+        }
+    }
+}
+
+impl<C: Productive, N: AsLen> super::RepeatN<C, N> {
+    proof fn lemma_parse_n_positive(&self, count: nat, ibuf: Seq<u8>)
+        requires
+            self.1.productive_inv(),
+            self.1.safe_inv(),
+            count > 0,
+        ensures
+            self.parse_n_rec(count, ibuf) matches Some((n, _)) ==> n > 0,
+        decreases count,
+    {
+        if let Some((n0, _v0)) = self.1.spec_parse(ibuf) {
+            self.1.lemma_productive(ibuf);
+            if let Some((n1, _rest)) = self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+                if count - 1 > 0 {
+                    self.lemma_parse_n_positive((count - 1) as nat, ibuf.skip(n0));
+                    assert(n1 > 0);
+                } else {
+                    assert(n1 == 0);
+                }
+                assert(n0 > 0);
+                assert(n0 + n1 > 0);
+            }
+        }
+    }
+}
+
+impl<C: Productive, N: AsLen> Productive for super::RepeatN<C, N> {
+    open spec fn productive_inv(&self) -> bool {
+        &&& self.0.as_nat() > 0
+        &&& self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _v)) = self.spec_parse(s) {
+            self.lemma_parse_n_positive(self.0.as_nat(), s);
+            assert(n > 0);
+        }
+    }
+}
+
 impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializersGeneral for super::RepeatN<C, N> {
     open spec fn equiv_general_inv(&self) -> bool {
         self.1.equiv_general_inv()
@@ -507,6 +561,16 @@ impl<const N: usize, C: NoLookAhead> NoLookAhead for super::Array<N, C> {
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<const N: usize, C: Productive> Productive for super::Array<N, C> {
+    open spec fn productive_inv(&self) -> bool {
+        super::RepeatN(N, self.0).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_productive(s);
     }
 }
 
@@ -598,6 +662,25 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
                     }
                 }
             }
+        }
+    }
+}
+
+impl<A: SafeParser, B: Productive> Productive for super::Repeat<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        let star = super::Star { inner: self.0 };
+        if let Some((n, _v)) = self.spec_parse(s) {
+            let (n0, _vs) = star.spec_parse(s)->0;
+            let (n1, _b) = self.1.spec_parse(s.skip(n0))->0;
+            star.lemma_parse_rec_nonnegative(s);
+            self.1.lemma_productive(s.skip(n0));
+            assert(n1 > 0);
+            assert(n == n0 + n1);
+            assert(n > 0);
         }
     }
 }

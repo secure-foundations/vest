@@ -21,6 +21,15 @@ impl<const N: usize> NoLookAhead for super::Fixed<N> {
     }
 }
 
+impl<const N: usize> Productive for super::Fixed<N> {
+    open spec fn productive_inv(&self) -> bool {
+        N > 0
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl<const N: usize> EquivSerializersGeneral for super::Fixed<N> {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
     }
@@ -43,6 +52,15 @@ impl<Len: AsLen> NonMalleable for super::Varied<Len> {
 
 impl<Len: AsLen> NoLookAhead for super::Varied<Len> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+    }
+}
+
+impl<Len: AsLen> Productive for super::Varied<Len> {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.as_nat() > 0
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
     }
 }
 
@@ -82,6 +100,16 @@ impl<Inner: NonMalleable, Len: AsLen> NonMalleable for super::ExactLen<Inner, Le
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<Inner, Len> Productive for super::ExactLen<Inner, Len> where Inner: SafeParser, Len: AsLen {
+    open spec fn productive_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        super::AndThen(super::Varied(self.0), self.1).lemma_productive(s);
     }
 }
 
@@ -194,6 +222,19 @@ impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
                 }
             }
         }
+    }
+}
+
+impl<A, Then> Productive for super::AndThen<A, Then> where
+    A: BytesCombinator + Productive<PVal = Seq<u8>>,
+    Then: SafeParser,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
     }
 }
 

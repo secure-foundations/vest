@@ -108,6 +108,27 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
     }
 }
 
+impl<A: Productive, B: Productive> Productive for super::Pair<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        ||| self.0.productive_inv()
+        ||| self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _v)) = self.spec_parse(s) {
+            let (n1, _v1) = self.0.spec_parse(s)->0;
+            let (n2, _v2) = self.1.spec_parse(s.skip(n1))->0;
+            self.0.lemma_parse_safe(s);
+            self.1.lemma_parse_safe(s.skip(n1));
+            if self.0.productive_inv() {
+                self.0.lemma_productive(s);
+            } else {
+                self.1.lemma_productive(s.skip(n1));
+            }
+        }
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for super::Pair<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
@@ -263,6 +284,32 @@ impl<A, B> NonMalleable for super::Bind<A, B> where
                         assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
                     }
                 }
+            }
+        }
+    }
+}
+
+impl<A, B> Productive for super::Bind<A, B> where
+    A: Productive,
+    B: SpecMap<Input = A::PVal>,
+    B::Output: Productive,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        ||| self.0.productive_inv()
+        ||| forall|key: A::PVal| #[trigger] self.1.spec_map(key).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(s) {
+            let (n1, key) = self.0.spec_parse(s)->0;
+            let next = self.1.spec_map(key);
+            let (n2, _val) = next.spec_parse(s.skip(n1))->0;
+            self.0.lemma_parse_safe(s);
+            next.lemma_parse_safe(s.skip(n1));
+            if self.0.productive_inv() {
+                self.0.lemma_productive(s);
+            } else {
+                next.lemma_productive(s.skip(n1));
             }
         }
     }

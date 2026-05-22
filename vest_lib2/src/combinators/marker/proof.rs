@@ -20,6 +20,11 @@ impl NoLookAhead for super::Empty {
     }
 }
 
+impl Productive for super::Void {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl EquivSerializersGeneral for super::Empty {
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
         assert(self.spec_serialize_dps(v, obuf) == self.spec_serialize(v) + obuf);

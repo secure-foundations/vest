@@ -52,6 +52,16 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
     }
 }
 
+impl<A: Productive, Pred: SpecPred<A::PVal>> Productive for super::Refined<A, Pred> {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
+    }
+}
+
 impl<A, Pred> EquivSerializersGeneral for super::Refined<A, Pred> where
     A: EquivSerializersGeneral,
     Pred: SpecPred<A::SVal>,
@@ -120,6 +130,16 @@ impl<Inner: NoLookAhead> NoLookAhead for super::Const<Inner, Inner::PVal> {
     }
 }
 
+impl<Inner: Productive> Productive for super::Const<Inner, Inner::PVal> {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
+    }
+}
+
 impl<Inner> EquivSerializersGeneral for super::Const<Inner, Inner::SVal> where
     Inner: EquivSerializersGeneral,
  {
@@ -175,6 +195,16 @@ impl<const N: usize> NoLookAhead for super::Const<Fixed::<N>, [u8; N]> {
                 }
             }
         }
+    }
+}
+
+impl<const N: usize> Productive for super::Const<Fixed::<N>, [u8; N]> {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
     }
 }
 
@@ -234,6 +264,19 @@ impl<Tg, Of> NoLookAhead for super::WithPrefixTag<Tg, Of> where
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         with_prefix_tag(self.0, self.1, self.2).lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<Tg, Of> Productive for super::WithPrefixTag<Tg, Of> where
+    Tg: SpecByteLen + Productive<PVal = Tg::T>,
+    Of: Productive,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        with_prefix_tag(self.0, self.1, self.2).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        with_prefix_tag(self.0, self.1, self.2).lemma_productive(s);
     }
 }
 
@@ -303,6 +346,19 @@ impl<Tg, Of> NoLookAhead for super::WithSuffixTag<Tg, Of> where
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         with_suffix_tag(self.0, self.1, self.2).lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<Tg, Of> Productive for super::WithSuffixTag<Tg, Of> where
+    Tg: SpecByteLen + Productive<PVal = Tg::T>,
+    Of: Productive,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        with_suffix_tag(self.0, self.1, self.2).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        with_suffix_tag(self.0, self.1, self.2).lemma_productive(s);
     }
 }
 

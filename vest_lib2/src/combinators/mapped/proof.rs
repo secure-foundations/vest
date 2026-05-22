@@ -113,6 +113,19 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     }
 }
 
+impl<Inner, M> Productive for super::Mapped<Inner, M> where
+    Inner: Productive,
+    M: SpecMapper<In = Inner::PVal>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        self.inner.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.inner.lemma_productive(s);
+    }
+}
+
 impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     Inner: EquivSerializersGeneral,
     M: SpecMapper<In = Inner::SVal>,
@@ -219,6 +232,19 @@ impl<Inner, M> NoLookAhead for super::TryMap<Inner, M> where
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         assert(self.no_lookahead_inv());
         self.inner().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl<Inner, M> Productive for super::TryMap<Inner, M> where
+    Inner: Productive,
+    M: SpecMapper<In = Inner::PVal>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        self.inner().productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.inner().lemma_productive(s);
     }
 }
 

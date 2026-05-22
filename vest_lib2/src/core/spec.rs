@@ -156,6 +156,17 @@ pub trait SpecByteLen {
 }
 
 /// Denotes the min/max byte length of a value w.r.t. a combinator's format spec.
+///
+/// **Combinators that do not implement `MinMaxByteLen`**
+/// * **Unbounded Sequence/Tail Combinators:**
+///   *   `Tail` (consumes the remaining buffer)
+///   *   `Star<A>` (zero or more repetitions)
+///   *   `Repeat<A, B>` (zero or more `A`s followed by terminator `B`)
+///   *   `RepeatTillEnd<A>` (sugar for `Repeat<A, Eof>`)
+/// * **Dependent and Recursive Combinators:**
+///   *   `Bind<A, B>` (the suffix parser `B` is constructed dynamically from the parsed value of `A`)
+///   *   `Implicit<Head, Tail>` (similar to `Bind`)
+///   *   `FixWith<LIMIT, Body, Param>` (recursive fixpoint)
 pub trait MinMaxByteLen: SpecByteLen + Consistency<Val = Self::T> {
     spec fn min(&self) -> nat;
 

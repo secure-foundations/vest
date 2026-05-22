@@ -120,6 +120,32 @@ impl<Head, Tail> NoLookAhead for super::Implicit<Head, Tail> where
     }
 }
 
+impl<Head, Tail> Productive for super::Implicit<Head, Tail> where
+    Head: Productive,
+    Tail: super::DepCombinator<Key = Head::PVal>,
+    Tail::Body: Productive<PVal = Tail::Val>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        ||| self.0.productive_inv()
+        ||| forall|key: Head::PVal| #[trigger] self.1.apply(key).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(s) {
+            let (n1, key) = self.0.spec_parse(s)->0;
+            let next = self.1.apply(key);
+            let (n2, _val) = next.spec_parse(s.skip(n1))->0;
+            self.0.lemma_parse_safe(s);
+            next.lemma_parse_safe(s.skip(n1));
+            if self.0.productive_inv() {
+                self.0.lemma_productive(s);
+            } else {
+                next.lemma_productive(s.skip(n1));
+            }
+        }
+    }
+}
+
 impl<Head, Tail> EquivSerializersGeneral for super::Implicit<Head, Tail> where
     Head: EquivSerializersGeneral,
     Tail: super::DepCombinator<Key = Head::SVal>,

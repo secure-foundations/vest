@@ -29,6 +29,11 @@ impl NoLookAhead for super::U8 {
     }
 }
 
+impl Productive for super::U8 {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl EquivSerializersGeneral for super::U8 {
     proof fn lemma_serialize_equiv(&self, v: u8, obuf: Seq<u8>) {
     }
@@ -60,6 +65,12 @@ impl NonMalleable for super::U16Le {
 impl NoLookAhead for super::U16Le {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         u16_le_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl Productive for super::U16Le {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u16_le_fmt().lemma_productive(s);
     }
 }
 
@@ -99,6 +110,12 @@ impl NoLookAhead for super::U16Be {
     }
 }
 
+impl Productive for super::U16Be {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u16_be_fmt().lemma_productive(s);
+    }
+}
+
 impl EquivSerializersGeneral for super::U16Be {
     proof fn lemma_serialize_equiv(&self, v: u16, obuf: Seq<u8>) {
         u16_be_fmt().lemma_serialize_equiv(v, obuf);
@@ -132,6 +149,12 @@ impl NonMalleable for super::U24Le {
 impl NoLookAhead for super::U24Le {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         u24_le_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl Productive for super::U24Le {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u24_le_fmt().lemma_productive(s);
     }
 }
 
@@ -171,6 +194,12 @@ impl NoLookAhead for super::U24Be {
     }
 }
 
+impl Productive for super::U24Be {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u24_be_fmt().lemma_productive(s);
+    }
+}
+
 impl EquivSerializersGeneral for super::U24Be {
     proof fn lemma_serialize_equiv(&self, v: u32, obuf: Seq<u8>) {
         u24_be_fmt().lemma_serialize_equiv(v, obuf);
@@ -204,6 +233,12 @@ impl NonMalleable for super::U32Le {
 impl NoLookAhead for super::U32Le {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         u32_le_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl Productive for super::U32Le {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u32_le_fmt().lemma_productive(s);
     }
 }
 
@@ -243,6 +278,12 @@ impl NoLookAhead for super::U32Be {
     }
 }
 
+impl Productive for super::U32Be {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u32_be_fmt().lemma_productive(s);
+    }
+}
+
 impl EquivSerializersGeneral for super::U32Be {
     proof fn lemma_serialize_equiv(&self, v: u32, obuf: Seq<u8>) {
         u32_be_fmt().lemma_serialize_equiv(v, obuf);
@@ -279,6 +320,12 @@ impl NoLookAhead for super::U64Le {
     }
 }
 
+impl Productive for super::U64Le {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u64_le_fmt().lemma_productive(s);
+    }
+}
+
 impl EquivSerializersGeneral for super::U64Le {
     proof fn lemma_serialize_equiv(&self, v: u64, obuf: Seq<u8>) {
         u64_le_fmt().lemma_serialize_equiv(v, obuf);
@@ -312,6 +359,12 @@ impl NonMalleable for super::U64Be {
 impl NoLookAhead for super::U64Be {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         u64_be_fmt().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl Productive for super::U64Be {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        u64_be_fmt().lemma_productive(s);
     }
 }
 

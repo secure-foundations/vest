@@ -128,6 +128,32 @@ impl<A, B> NonMalleable for super::PairRev<A, B> where
     }
 }
 
+impl<A: Productive, B: StaticByteLen + SafeParser<PVal = B::T>> Productive for super::PairRev<
+    A,
+    B,
+> {
+    open spec fn productive_inv(&self) -> bool {
+        B::static_byte_len() > 0 || (self.1.productive_inv() && self.1.safe_inv())
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _v)) = self.spec_parse(s) {
+            let prefix = s.len() - B::static_byte_len();
+            let (n1, _a) = self.1.spec_parse(s.take(prefix))->0;
+            let (n2, _b) = self.0.spec_parse(s.skip(prefix))->0;
+            assert(n == n1 + n2);
+            if B::static_byte_len() > 0 {
+                assert(n2 == B::static_byte_len());
+                assert(n2 > 0);
+            } else {
+                self.1.lemma_productive(s.take(prefix));
+                assert(n1 > 0);
+            }
+            assert(n > 0);
+        }
+    }
+}
+
 impl<A, B> EquivSerializers for super::PairRev<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializers,
@@ -141,17 +167,25 @@ impl<A, B> EquivSerializers for super::PairRev<A, B> where
     }
 }
 
-impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::OptionalEnd<C> {
+impl<C: SPRoundTripDps + NonTailFmt + Productive> SPRoundTripDps for super::OptionalEnd<C> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.0.unambiguous()
-        &&& self.0.spec_parse(Seq::empty()) is None
+        &&& self.0.safe_inv()
+        &&& self.0.productive_inv()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert forall|s| #[trigger]
-            super::Eof.spec_parse(s) is Some implies s == Seq::<u8>::empty() by {}
-        assert(disjoint_domains(self.0, super::Eof));
+        assert(disjoint_domains(self.0, super::Eof)) by {
+            assert forall|input: Seq<u8>|
+                #![auto]
+                self.0.spec_parse(input) is Some && super::Eof.spec_parse(
+                    input,
+                ) is Some implies false by {
+                self.0.lemma_parse_safe(input);
+                self.0.lemma_productive(input);
+            }
+        };
         Optional(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
     }
 }
@@ -176,17 +210,25 @@ impl<C: EquivSerializersGeneral> EquivSerializers for super::OptionalEnd<C> {
     }
 }
 
-impl<C: SPRoundTripDps + NonTailFmt> SPRoundTripDps for super::RepeatTillEnd<C> {
+impl<C: SPRoundTripDps + NonTailFmt + Productive> SPRoundTripDps for super::RepeatTillEnd<C> {
     open spec fn unambiguous(&self) -> bool {
         &&& self.0.serialize_dps_inv()
         &&& self.0.unambiguous()
-        &&& self.0.spec_parse(Seq::empty()) is None
+        &&& self.0.safe_inv()
+        &&& self.0.productive_inv()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert forall|s| #[trigger]
-            super::Eof.spec_parse(s) is Some implies s == Seq::<u8>::empty() by {}
-        assert(disjoint_domains(self.0, super::Eof));
+        assert(disjoint_domains(self.0, super::Eof)) by {
+            assert forall|input: Seq<u8>|
+                #![auto]
+                self.0.spec_parse(input) is Some && super::Eof.spec_parse(
+                    input,
+                ) is Some implies false by {
+                self.0.lemma_parse_safe(input);
+                self.0.lemma_productive(input);
+            }
+        };
         Repeat(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
     }
 }

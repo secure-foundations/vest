@@ -385,7 +385,6 @@ impl<ST, S> Serializer<ST> for &S where ST: DeepView<V = S::SVal>, S: Serializer
 //     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) -> (len: usize);
 // }
 } // verus!
-
 impl fmt::Display for ComplianceErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -395,7 +394,9 @@ impl fmt::Display for ComplianceErrorKind {
             ComplianceErrorKind::CondRejected => f.write_str("condition rejected"),
             ComplianceErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
             ComplianceErrorKind::InvalidChoice => f.write_str("invalid choice"),
-            ComplianceErrorKind::NamedFormat(name) => write!(f, "value not compliant with format `{}`", name),
+            ComplianceErrorKind::NamedFormat(name) => {
+                write!(f, "value not compliant with format `{}`", name)
+            }
         }
     }
 }

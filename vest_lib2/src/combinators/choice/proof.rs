@@ -56,6 +56,18 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Choice<A, B> {
     }
 }
 
+impl<A: Productive, B: Productive> Productive for super::Choice<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        &&& self.0.productive_inv()
+        &&& self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
+        self.1.lemma_productive(s);
+    }
+}
+
 impl<A, B> EquivSerializersGeneral for super::Choice<A, B> where
     A: EquivSerializersGeneral,
     B: EquivSerializersGeneral,
@@ -182,6 +194,21 @@ impl<const NONDETERMINISTIC: bool, A, B> NoLookAhead for super::Alt<A, B, NONDET
     }
 }
 
+impl<const NONDETERMINISTIC: bool, A, B> Productive for super::Alt<A, B, NONDETERMINISTIC> where
+    A: Productive,
+    B: Productive<PVal = A::PVal>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        &&& self.0.productive_inv()
+        &&& self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.0.lemma_productive(s);
+        self.1.lemma_productive(s);
+    }
+}
+
 impl<const NONDETERMINISTIC: bool, A, B> EquivSerializersGeneral for super::Alt<
     A,
     B,
@@ -266,6 +293,16 @@ impl<T, C: NoLookAhead, const N: usize> NoLookAhead for super::Dispatch<T, C, N>
     }
 }
 
+impl<T, C: Productive, const N: usize> Productive for super::Dispatch<T, C, N> {
+    open spec fn productive_inv(&self) -> bool {
+        self.active_branch().productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.active_branch().lemma_productive(s);
+    }
+}
+
 impl<T, C, const N: usize> EquivSerializersGeneral for super::Dispatch<T, C, N> where
     C: EquivSerializersGeneral,
  {
@@ -333,6 +370,22 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for Sum<A, B> {
         match self {
             Sum::Inl(a) => a.lemma_no_lookahead(i1, i2),
             Sum::Inr(b) => b.lemma_no_lookahead(i1, i2),
+        }
+    }
+}
+
+impl<A: Productive, B: Productive> Productive for Sum<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.productive_inv(),
+            Sum::Inr(b) => b.productive_inv(),
+        }
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_productive(s),
+            Sum::Inr(b) => b.lemma_productive(s),
         }
     }
 }

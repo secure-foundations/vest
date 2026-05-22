@@ -83,6 +83,26 @@ impl<A, B, const CHECK: bool> NoLookAhead for super::Preceded<A, A::PVal, B, CHE
     }
 }
 
+impl<A, B> Productive for super::Preceded<A, A::PVal, B, true> where A: Productive, B: Productive {
+    open spec fn productive_inv(&self) -> bool {
+        preceded::<_, _, _, _, true>(self.a, self.b, self.a_val).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        preceded::<_, _, _, _, true>(self.a, self.b, self.a_val).lemma_productive(s);
+    }
+}
+
+impl<A, B> Productive for super::Preceded<A, A::PVal, B, false> where A: Productive, B: Productive {
+    open spec fn productive_inv(&self) -> bool {
+        preceded::<_, _, _, _, false>(self.a, self.b, self.a_val).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        preceded::<_, _, _, _, false>(self.a, self.b, self.a_val).lemma_productive(s);
+    }
+}
+
 impl<A, B, const CHECK: bool> EquivSerializersGeneral for super::Preceded<
     A,
     A::SValue,

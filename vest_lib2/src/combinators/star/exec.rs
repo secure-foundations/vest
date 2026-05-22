@@ -4,7 +4,9 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
+        serializer::{
+            ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
+        },
         ParseError,
     },
     spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
@@ -201,6 +203,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: &mut Vec<u8>) where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
+
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
 {
