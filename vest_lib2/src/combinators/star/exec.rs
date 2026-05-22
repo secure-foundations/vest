@@ -9,18 +9,20 @@ use crate::core::{
         },
         ParseError,
     },
+    proof::Productive,
     spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
 
 verus! {
 
-impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser<I> + SafeParser {
+impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser<I> + Productive {
     type PT = Vec<Inner::PT>;
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.inner.exec_inv()
         &&& self.inner.safe_inv()
+        &&& self.inner.productive_inv()
     }
 
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
@@ -48,9 +50,9 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
 
             match self.inner.parse(&rest) {
                 Ok((n, v)) => {
-                    // TODO: can require productive parsers to guarantee progress (and eliminate this run-time check)
-                    if n == 0 {
-                        return Ok((consumed, values));
+                    proof {
+                        self.inner.lemma_productive(rest@);
+                        assert(n > 0);
                     }
                     values.push(v);
                     rest = rest.skip(n);
