@@ -209,6 +209,14 @@ pub trait NoLookAhead: SafeParser {
 /// Productivity for parsers.
 ///
 /// A productive parser always consumes at least one byte when it succeeds.
+///
+/// Inherently unproductive combinators are:
+/// *   **`Empty`**: Always succeeds and never consumes any bytes.
+/// *   **`Eof`**: Asserts the end of the input. It only succeeds if the buffer is entirely empty, thus always consuming 0 bytes.
+/// *   **`Tail`**: Consumes all remaining bytes in the buffer. If the buffer is already empty, it successfully consumes 0 bytes.
+/// *   **`Opt<A>`**: Evaluates an optional field. If `A` fails, `Opt<A>` successfully returns `None` while consuming 0 bytes.
+/// *   **`Star<A>`**: The Kleene star for zero-or-more repetitions. It can successfully parse zero occurrences of `A`, consuming 0 bytes.
+/// *   **`OptionalEnd<C>` & `RepeatTillEnd<C>`**: These are syntax sugar for `Optional<C, Eof>` and `Repeat<C, Eof>`.
 pub trait Productive: SafeParser {
     open spec fn productive_inv(&self) -> bool {
         true
