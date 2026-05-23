@@ -217,6 +217,9 @@ pub trait NoLookAhead: SafeParser {
 /// *   **`Opt<A>`**: Evaluates an optional field. If `A` fails, `Opt<A>` successfully returns `None` while consuming 0 bytes.
 /// *   **`Star<A>`**: The Kleene star for zero-or-more repetitions. It can successfully parse zero occurrences of `A`, consuming 0 bytes.
 /// *   **`OptionalEnd<C>` & `RepeatTillEnd<C>`**: These are syntax sugar for `Optional<C, Eof>` and `Repeat<C, Eof>`.
+///
+/// The above combinators still implement the `Productive` trait in order for sequencing combinators
+/// like `Pair` to remain productive, but their `productive_inv` would return `false` (so `lemma_productive` would not apply to them).
 pub trait Productive: SafeParser {
     open spec fn productive_inv(&self) -> bool {
         true

@@ -63,6 +63,15 @@ impl<A: NonMalleable> NonMalleable for super::Opt<A> {
     }
 }
 
+impl<A: SafeParser> Productive for super::Opt<A> {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl<A> EquivSerializersGeneral for super::Opt<A> where A: EquivSerializersGeneral {
     open spec fn equiv_general_inv(&self) -> bool {
         self.0.equiv_general_inv()

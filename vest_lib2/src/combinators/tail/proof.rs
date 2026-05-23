@@ -21,6 +21,15 @@ impl NonMalleable for super::Tail {
     }
 }
 
+impl Productive for super::Tail {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl EquivSerializers for super::Tail {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
     }
@@ -37,6 +46,15 @@ impl SPRoundTripDps for super::Eof {
 // }
 impl NonMalleable for super::Eof {
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+    }
+}
+
+impl Productive for super::Eof {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
     }
 }
 
@@ -200,6 +218,15 @@ impl<C: NonMalleable + SafeParser> NonMalleable for super::OptionalEnd<C> {
     }
 }
 
+impl<C: SafeParser> Productive for super::OptionalEnd<C> {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl<C: EquivSerializersGeneral> EquivSerializers for super::OptionalEnd<C> {
     open spec fn equiv_inv(&self) -> bool {
         self.0.equiv_general_inv()
@@ -240,6 +267,15 @@ impl<C: NonMalleable + SafeParser> NonMalleable for super::RepeatTillEnd<C> {
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
         Repeat(self.0, super::Eof).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<C: SafeParser> Productive for super::RepeatTillEnd<C> {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
     }
 }
 

@@ -138,6 +138,15 @@ impl<A: NonMalleable + SafeParser> NonMalleable for super::Star<A> {
     }
 }
 
+impl<A: SafeParser> Productive for super::Star<A> {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires

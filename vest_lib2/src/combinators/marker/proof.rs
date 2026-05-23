@@ -20,6 +20,15 @@ impl NoLookAhead for super::Empty {
     }
 }
 
+impl Productive for super::Empty {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
 impl Productive for super::Void {
     proof fn lemma_productive(&self, s: Seq<u8>) {
     }
