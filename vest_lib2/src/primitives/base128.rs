@@ -211,6 +211,12 @@ impl<const MINIMAL: bool> SafeParser for Base128<MINIMAL> {
     }
 }
 
+impl<const MINIMAL: bool> Productive for Base128<MINIMAL> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        base128_fmt::<MINIMAL>().lemma_productive(s);
+    }
+}
+
 impl SoundParser for Base128<true> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         broadcast use lemma_base128_wire_fmt_props;

@@ -210,6 +210,12 @@ impl<const MINIMAL: bool> SafeParser for VarInt<MINIMAL> {
     }
 }
 
+impl<const MINIMAL: bool> Productive for VarInt<MINIMAL> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        varint_fmt::<MINIMAL>().lemma_productive(s);
+    }
+}
+
 impl SoundParser for VarInt<true> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         varint_fmt::<true>().lemma_parse_sound_consumption(ibuf);

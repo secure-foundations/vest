@@ -105,6 +105,12 @@ impl<const DER: bool> SafeParser for super::Bool<DER> {
     }
 }
 
+impl<const DER: bool> Productive for super::Bool<DER> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        bool_fmt::<DER>().lemma_productive(s);
+    }
+}
+
 impl<const DER: bool> SoundParser for super::Bool<DER> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
     }

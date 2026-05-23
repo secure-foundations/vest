@@ -185,6 +185,29 @@ impl<SpecP, Cnstcy, Blen> SoundParser for (SpecP, Cnstcy, Blen) where
     }
 }
 
+impl<SpecP, Cnstcy, Blen> Productive for (SpecP, Cnstcy, Blen) where
+    Blen: SpecByteLen,
+    SpecP: SpecParser<PVal = Blen::T>,
+    Cnstcy: Consistency<Val = Blen::T>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        let (p, _, _) = *self;
+        let p_fn = |ibuf| p.spec_parse(ibuf);
+        productive_parser(p_fn)
+    }
+
+    proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        let (p, _, _) = *self;
+        let p_fn = |i: Seq<u8>| p.spec_parse(i);
+        assert(self.productive_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(productive_parser(p_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(n > 0);
+        }
+    }
+}
+
 /// The functional version of [`SoundParser`].
 pub open spec fn sound_parser<T>(
     parser: ParserFnSpec<T>,
@@ -196,6 +219,11 @@ pub open spec fn sound_parser<T>(
             &&& consistent(v)
             &&& byte_len(v) == n
         }
+}
+
+/// The functional version of [`Productive`].
+pub open spec fn productive_parser<T>(parser: ParserFnSpec<T>) -> bool {
+    forall|input: Seq<u8>| #[trigger] parser(input) matches Some((n, _)) ==> n > 0
 }
 
 pub type BundledSpecs<T> = (
@@ -287,6 +315,16 @@ impl<T> SoundParser for BundledSpecs<T> {
     }
 }
 
+impl<T> Productive for BundledSpecs<T> {
+    open spec fn productive_inv(&self) -> bool {
+        parser_specs(*self).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        parser_specs(*self).lemma_productive(ibuf);
+    }
+}
+
 impl<T> GoodSerializer for BundledSpecs<T> {
     open spec fn serialize_inv(&self) -> bool {
         serializer_specs(*self).serialize_inv()
@@ -351,6 +389,20 @@ pub trait SoundParserRecBody: SpecRecBody where Self::Body: SoundParser {
             forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv(),
         ensures
             Self::spec_body(param, rec).sound_inv(),
+    ;
+}
+
+/// Productivity preservation for recursive bodies.
+pub trait ProductiveRecBody: SafeParserRecBody where Self::Body: Productive {
+    proof fn lemma_body_productive_inv_preservation(
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    )
+        requires
+            forall|p: Self::Param| #![trigger rec(p)] rec(p).safe_inv(),
+            forall|p: Self::Param| #![trigger rec(p)] rec(p).productive_inv(),
+        ensures
+            Self::spec_body(param, rec).productive_inv(),
     ;
 }
 
@@ -694,6 +746,78 @@ impl<const LIMIT: usize, Body, Param> SoundParser for super::FixWith<LIMIT, Body
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.sound_parser_by_induction(LIMIT as nat, self.1.deep_view(), ibuf, n, v);
+        }
+    }
+}
+
+impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
+    Body: ProductiveRecBody,
+    Body::Body: Productive,
+    Param: DeepView<V = Body::Param>,
+ {
+    /// Inductive proof that `spec_parse_gas` satisfies [`productive_parser`].
+    pub(crate) proof fn productive_by_induction(
+        &self,
+        gas: nat,
+        param: Body::Param,
+        input: Seq<u8>,
+        n: int,
+        v: Body::T,
+    )
+        ensures
+            Self::spec_parse_gas(gas, param, input) == Some((n, v)) ==> n > 0,
+        decreases gas,
+    {
+        if !(Self::spec_parse_gas(gas, param, input) == Some((n, v))) {
+            return;
+        }
+        let callback = Self::specs_callback(gas);
+
+        assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
+            callback(p).2(rem) matches Some((nn, _vv)) ==> 0 <= nn <= rem.len() by {
+            if let Some((nn, vv)) = callback(p).2(rem) {
+                self.safe_parser_by_induction((gas - 1) as nat, p, rem, nn, vv);
+                assert(Self::spec_parse_gas((gas - 1) as nat, p, rem) == Some((nn, vv)));
+                assert(0 <= nn <= rem.len());
+            }
+        }
+
+        assert forall|p: Body::Param| #[trigger] callback(p).safe_inv() by {
+            assert(safe_parser(callback(p).2));
+        }
+
+        assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
+            callback(p).2(rem) matches Some((nn, _vv)) ==> nn > 0 by {
+            if let Some((nn, vv)) = callback(p).2(rem) {
+                self.productive_by_induction((gas - 1) as nat, p, rem, nn, vv);
+                assert(Self::spec_parse_gas((gas - 1) as nat, p, rem) == Some((nn, vv)));
+                assert(nn > 0);
+            }
+        }
+
+        assert forall|p: Body::Param| #[trigger] callback(p).productive_inv() by {
+            assert(productive_parser(callback(p).2));
+        }
+
+        Body::lemma_body_safe_inv_preservation(param, callback);
+        Body::lemma_body_productive_inv_preservation(param, callback);
+
+        let body = Body::spec_body(param, callback);
+        body.lemma_parse_safe(input);
+        body.lemma_productive(input);
+
+        assert(Self::spec_parse_gas(gas, param, input) == body.spec_parse(input));
+    }
+}
+
+impl<const LIMIT: usize, Body, Param> Productive for super::FixWith<LIMIT, Body, Param> where
+    Body: ProductiveRecBody,
+    Body::Body: Productive,
+    Param: DeepView<V = Body::Param>,
+ {
+    proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            self.productive_by_induction(LIMIT as nat, self.1.deep_view(), ibuf, n, v);
         }
     }
 }

@@ -258,6 +258,14 @@ impl SafeParser for super::Integer {
     }
 }
 
+impl Productive for super::Integer {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _)) = integer_fmt().spec_parse(s) {
+            assert(n > 0);
+        }
+    }
+}
+
 impl SoundParser for super::Integer {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         integer_fmt().lemma_parse_sound_consumption(ibuf);

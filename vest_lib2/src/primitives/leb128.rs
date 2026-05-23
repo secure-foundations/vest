@@ -184,6 +184,14 @@ impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
     }
 }
 
+impl<const MINIMAL: bool> ProductiveRecBody for ULeb128RecBody<MINIMAL> {
+    proof fn lemma_body_productive_inv_preservation(
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
 impl NonMalleableRecBody for ULeb128RecBody<true> {
     proof fn lemma_body_nonmal_inv_preservation(
         _param: (),
@@ -245,6 +253,12 @@ impl<const MINIMAL: bool, const N: usize> Consistency for ULeb128<MINIMAL, N> {
 impl<const MINIMAL: bool, const N: usize> SafeParser for ULeb128<MINIMAL, N> {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         uleb128_fmt::<MINIMAL, N>().lemma_parse_safe(ibuf);
+    }
+}
+
+impl<const MINIMAL: bool, const N: usize> Productive for ULeb128<MINIMAL, N> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        uleb128_fmt::<MINIMAL, N>().lemma_productive(s);
     }
 }
 

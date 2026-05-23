@@ -57,6 +57,12 @@ impl<const DER: bool> SafeParser for super::BitString<DER> {
     }
 }
 
+impl<const DER: bool> Productive for super::BitString<DER> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        bitstring_fmt::<DER>().lemma_productive(s);
+    }
+}
+
 impl<const DER: bool> SoundParser for super::BitString<DER> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         bitstring_fmt::<DER>().lemma_parse_sound_consumption(ibuf);

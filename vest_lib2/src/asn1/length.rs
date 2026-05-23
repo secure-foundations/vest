@@ -296,6 +296,12 @@ impl<const DER: bool> SafeParser for super::Length<DER> {
     }
 }
 
+impl<const DER: bool> Productive for super::Length<DER> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        length_fmt::<DER>().lemma_productive(s);
+    }
+}
+
 impl SoundParser for super::Length<true> {
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         length_fmt::<true>().lemma_parse_sound_consumption(ibuf);
