@@ -381,8 +381,8 @@ impl<'a> Analysis<'a> {
         let inner_value_ty = &inner.value_ty;
         let value_ty = quote! { Option<#inner_value_ty> };
         RenderedSpec {
-            ty: quote! { Opt<#inner_ty> },
-            expr: quote! { Opt(#inner_expr) },
+            ty: quote! { OptionalEnd<#inner_ty> },
+            expr: quote! { OptionalEnd(#inner_expr) },
             value_ty,
             has_value: true,
         }
@@ -391,45 +391,30 @@ impl<'a> Analysis<'a> {
     fn render_wrap(&self, wrap: &vestir::WrapCombinator) -> RenderedSpec {
         let mut body = self.render_spec_combinator(&wrap.combinator);
         for const_comb in wrap.post.iter() {
-            let c = self.render_const_spec(const_comb);
+            let c = self.render_tag_spec(const_comb);
             let body_ty = &body.ty;
             let body_expr = &body.expr;
             let c_ty = &c.ty;
             let c_expr = &c.expr;
-            let c_value_ty = &c.value_ty;
             let c_value_expr = &c.value_expr;
-            if body.has_value {
-                let ty = quote! { Terminated<#body_ty, #c_ty, ()> };
-                let expr =
-                    quote! { Terminated { a: #body_expr, b: #c_expr, b_val: #c_value_expr } };
-                body = RenderedSpec {
-                    ty,
-                    expr,
-                    value_ty: body.value_ty,
-                    has_value: true,
-                };
-            } else {
-                let ty = quote! { Terminated<#body_ty, #c_ty, #c_value_ty> };
-                let expr =
-                    quote! { Terminated { a: #body_expr, b: #c_expr, b_val: #c_value_expr } };
-                body = RenderedSpec {
-                    ty,
-                    expr,
-                    value_ty: body.value_ty,
-                    has_value: false,
-                };
-            }
+            let ty = quote! { WithSuffixTag<#c_ty, #body_ty> };
+            let expr = quote! { WithSuffixTag(#c_expr, #c_value_expr, #body_expr) };
+            body = RenderedSpec {
+                ty,
+                expr,
+                value_ty: body.value_ty,
+                has_value: body.has_value,
+            };
         }
         for const_comb in wrap.prior.iter().rev() {
-            let c = self.render_const_spec(const_comb);
+            let c = self.render_tag_spec(const_comb);
             let body_ty = &body.ty;
             let body_expr = &body.expr;
             let c_ty = &c.ty;
             let c_expr = &c.expr;
-            let c_value_ty = &c.value_ty;
             let c_value_expr = &c.value_expr;
-            let ty = quote! { Preceded<#c_ty, #c_value_ty, #body_ty> };
-            let expr = quote! { Preceded { a: #c_expr, b: #body_expr, a_val: #c_value_expr } };
+            let ty = quote! { WithPrefixTag<#c_ty, #body_ty> };
+            let expr = quote! { WithPrefixTag(#c_expr, #c_value_expr, #body_expr) };
             body = RenderedSpec {
                 ty,
                 expr,
@@ -461,19 +446,42 @@ impl<'a> Analysis<'a> {
                 let c_ty = &c.ty;
                 let c_expr = &c.expr;
                 let c_value_ty = &c.value_ty;
-                let c_value_expr = &c.value_expr;
                 let rest_ty = &rest.ty;
                 let rest_expr = &rest.expr;
-                let ty = quote! { Preceded<#c_ty, #c_value_ty, #rest_ty> };
-                let expr = quote! { Preceded { a: #c_expr, b: #rest_expr, a_val: #c_value_expr } };
-                RenderedSpec {
-                    ty,
-                    expr,
-                    value_ty: rest.value_ty,
-                    has_value: rest.has_value,
+                let rest_value_ty = &rest.value_ty;
+                if rest.has_value {
+                    let ty = quote! { Pair<#c_ty, #rest_ty> };
+                    let expr = quote! { Pair(#c_expr, #rest_expr) };
+                    let value_ty = quote! { (#c_value_ty, #rest_value_ty) };
+                    RenderedSpec {
+                        ty,
+                        expr,
+                        value_ty,
+                        has_value: true,
+                    }
+                } else if is_empty_ty(&rest.ty) {
+                    RenderedSpec {
+                        ty: c.ty,
+                        expr: c.expr,
+                        value_ty: c.value_ty,
+                        has_value: true,
+                    }
+                } else {
+                    let ty = quote! { Terminated<#c_ty, #rest_ty, #rest_value_ty> };
+                    let expr = quote! { Terminated { a: #c_expr, b: #rest_expr, b_val: () } };
+                    RenderedSpec {
+                        ty,
+                        expr,
+                        value_ty: c.value_ty,
+                        has_value: true,
+                    }
                 }
             }
             StructField::Ordinary { combinator, .. } => {
+                if let Some(rendered) = self.render_optional_or_repeat_with_rest(combinator, &rest)
+                {
+                    return rendered;
+                }
                 let cur = self.render_spec_combinator(combinator);
                 let cur_ty = &cur.ty;
                 let cur_expr = &cur.expr;
@@ -510,6 +518,10 @@ impl<'a> Analysis<'a> {
                 }
             }
             StructField::Dependent { label, combinator } => {
+                if let Some(rendered) = self.render_optional_or_repeat_with_rest(combinator, &rest)
+                {
+                    return rendered;
+                }
                 let cur = self.render_spec_combinator(combinator);
                 let label_ident = format_ident!("{}", label);
                 let cur_ty = &cur.ty;
@@ -549,6 +561,142 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    fn render_optional_or_repeat_with_rest(
+        &self,
+        combinator: &Combinator,
+        rest: &RenderedSpec,
+    ) -> Option<RenderedSpec> {
+        if combinator.and_then.is_some() {
+            return None;
+        }
+
+        match self.ctx.resolve_alias(&combinator.inner) {
+            CombinatorInner::Option(opt) => {
+                let inner = self.render_spec_combinator(&opt.0);
+                let inner_ty = &inner.ty;
+                let inner_expr = &inner.expr;
+                let inner_value_ty = &inner.value_ty;
+                let value_ty = quote! { Option<#inner_value_ty> };
+                if is_empty_ty(&rest.ty) {
+                    Some(RenderedSpec {
+                        ty: quote! { OptionalEnd<#inner_ty> },
+                        expr: quote! { OptionalEnd(#inner_expr) },
+                        value_ty,
+                        has_value: true,
+                    })
+                } else {
+                    let rest_ty = &rest.ty;
+                    let rest_expr = &rest.expr;
+                    let rest_value_ty = &rest.value_ty;
+                    let pair_ty = quote! { (#value_ty, #rest_value_ty) };
+                    Some(RenderedSpec {
+                        ty: quote! { Optional<#inner_ty, #rest_ty> },
+                        expr: quote! { Optional(#inner_expr, #rest_expr) },
+                        value_ty: pair_ty,
+                        has_value: true,
+                    })
+                }
+            }
+            CombinatorInner::Vec(vec_comb) => match vec_comb {
+                vestir::VecCombinator::Vec(inner_comb) => {
+                    let inner = self.render_spec_combinator(inner_comb);
+                    let inner_ty = &inner.ty;
+                    let inner_expr = &inner.expr;
+                    let inner_value_ty = &inner.value_ty;
+                    let value_ty = quote! { Seq<#inner_value_ty> };
+                    if is_empty_ty(&rest.ty) {
+                        Some(RenderedSpec {
+                            ty: quote! { RepeatTillEnd<#inner_ty> },
+                            expr: quote! { RepeatTillEnd(#inner_expr) },
+                            value_ty,
+                            has_value: true,
+                        })
+                    } else {
+                        let rest_ty = &rest.ty;
+                        let rest_expr = &rest.expr;
+                        let rest_value_ty = &rest.value_ty;
+                        let pair_ty = quote! { (#value_ty, #rest_value_ty) };
+                        Some(RenderedSpec {
+                            ty: quote! { Repeat<#inner_ty, #rest_ty> },
+                            expr: quote! { Repeat(#inner_expr, #rest_expr) },
+                            value_ty: pair_ty,
+                            has_value: true,
+                        })
+                    }
+                }
+            },
+            _ => None,
+        }
+    }
+
+    fn render_tag_spec(&self, combinator: &ConstCombinator) -> ConstRendered {
+        match self.ctx.resolve_const(combinator) {
+            ConstCombinator::ConstBytes(bytes) => {
+                let n = syn_usize(bytes.len);
+                let values = self.render_const_array_expr(&bytes.values);
+                ConstRendered {
+                    ty: quote! { Fixed<#n> },
+                    expr: quote! { Fixed::<#n> },
+                    value_ty: quote! { Seq<u8> },
+                    value_expr: values,
+                }
+            }
+            ConstCombinator::ConstInt(int_comb) => {
+                let prim_ty = self.int_combinator_ty(&int_comb.combinator);
+                let prim_expr = self.int_combinator_expr(&int_comb.combinator);
+                let value_ty = self.int_type(&int_comb.combinator, TypeMode::Spec);
+                let value_expr = int_literal(int_comb.value, &int_comb.combinator);
+                ConstRendered {
+                    ty: prim_ty,
+                    expr: prim_expr,
+                    value_ty,
+                    value_expr,
+                }
+            }
+            ConstCombinator::ConstEnum(enum_comb) => {
+                let inner = self.render_spec_combinator(&Combinator {
+                    inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
+                    and_then: None,
+                });
+                let enum_ty = self.render_value_type(
+                    &Combinator {
+                        inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
+                        and_then: None,
+                    },
+                    TypeMode::Spec,
+                    true,
+                );
+                let inner_ty = inner.ty;
+                let inner_expr = inner.expr;
+                let variant_ident = format_ident!("{}", enum_comb.variant);
+                let value_expr = quote! { #enum_ty::#variant_ident };
+                ConstRendered {
+                    ty: inner_ty,
+                    expr: inner_expr,
+                    value_ty: enum_ty,
+                    value_expr,
+                }
+            }
+            ConstCombinator::ConstCombinatorInvocation(name) => {
+                let info = self.info(name);
+                let ty_ident = format_ident!("{}", info.names.fmt);
+                let fn_ident = format_ident!("{}", info.names.fmt_fn);
+                let value_ty = self.nominal_type(name, TypeMode::Spec);
+                let value_expr = quote! { arbitrary() };
+                ConstRendered {
+                    ty: quote! { #ty_ident },
+                    expr: if info.needs_lifetime {
+                        quote! { #fn_ident() }
+                    } else {
+                        quote! { #ty_ident }
+                    },
+                    value_ty,
+                    value_expr,
+                }
+            }
+        }
+    }
+
     fn render_struct_top_level(&self, name: &str, struct_comb: &StructCombinator) -> RenderedSpec {
         let info = self.info(name);
         let raw = self.render_struct_raw(struct_comb);
@@ -557,11 +705,10 @@ impl<'a> Analysis<'a> {
         let labels = struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
-                StructField::Const { .. } => None,
-                StructField::Dependent { label, .. } | StructField::Ordinary { label, .. } => {
-                    Some(label.clone())
-                }
+            .map(|field| match field {
+                StructField::Const { label, .. }
+                | StructField::Dependent { label, .. }
+                | StructField::Ordinary { label, .. } => label.clone(),
             })
             .collect::<Vec<_>>();
         let tuple_pat = nested_tuple_pattern(&labels);
@@ -1003,7 +1150,13 @@ impl<'a> Analysis<'a> {
             ConstArray::Int(values) => {
                 let elems = values
                     .iter()
-                    .map(|v| proc_macro2::Literal::i128_unsuffixed(*v))
+                    .map(|v| {
+                        if (0..=u8::MAX as i128).contains(v) {
+                            proc_macro2::Literal::u8_suffixed(*v as u8)
+                        } else {
+                            proc_macro2::Literal::i128_unsuffixed(*v)
+                        }
+                    })
                     .collect::<Vec<_>>();
                 quote! { seq![#(#elems),*] }
             }

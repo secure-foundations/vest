@@ -18,6 +18,8 @@ impl<'a> Analysis<'a> {
 
         let safe =
             self.gen_safe_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
+        let productive =
+            self.gen_productive_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
         let sound = if info.non_malleable {
             self.gen_sound_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
         } else {
@@ -46,6 +48,7 @@ impl<'a> Analysis<'a> {
 
         quote! {
             #safe
+            #productive
             #sound
             #non_tail
             #good
@@ -55,6 +58,28 @@ impl<'a> Analysis<'a> {
             #equiv
         }
         .to_string()
+    }
+
+    fn gen_productive_impl(
+        &self,
+        fmt_ident: &proc_macro2::Ident,
+        fmt_fn_ident: &proc_macro2::Ident,
+        generics: &TokenStream,
+        wrapper_call_args: &[TokenStream],
+    ) -> TokenStream {
+        let reveal_ty = fmt_ident;
+        quote! {
+            impl #generics Productive for #fmt_ident #generics {
+                proof fn lemma_productive(&self, s: Seq<u8>) {
+                    reveal(<#reveal_ty as SpecParser>::spec_parse);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.safe_inv());
+                    if fmt.productive_inv() {
+                        fmt.lemma_productive(s);
+                    }
+                }
+            }
+        }
     }
 
     fn gen_safe_parser_impl(
@@ -88,13 +113,17 @@ impl<'a> Analysis<'a> {
                 proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecParser>::spec_parse);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_parse_sound_consumption(ibuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.sound_inv());
+                    fmt.lemma_parse_sound_consumption(ibuf);
                 }
 
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecParser>::spec_parse);
                     reveal(<#reveal_ty as Consistency>::consistent);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_parse_sound_value(ibuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.sound_inv());
+                    fmt.lemma_parse_sound_value(ibuf);
                 }
             }
         }
@@ -112,13 +141,17 @@ impl<'a> Analysis<'a> {
             impl #generics NonTailFmt for #fmt_ident #generics {
                 proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_serialize_dps_prepend(v, obuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.serialize_dps_inv());
+                    fmt.lemma_serialize_dps_prepend(v, obuf);
                 }
 
                 proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_serialize_dps_len(v, obuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.serialize_dps_inv());
+                    fmt.lemma_serialize_dps_len(v, obuf);
                 }
             }
         }
@@ -137,7 +170,9 @@ impl<'a> Analysis<'a> {
                 proof fn lemma_serialize_len(&self, v: Self::SVal) {
                     reveal(<#reveal_ty as SpecSerializer>::spec_serialize);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_serialize_len(v);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.serialize_inv());
+                    fmt.lemma_serialize_len(v);
                 }
             }
         }
@@ -158,7 +193,9 @@ impl<'a> Analysis<'a> {
                     reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
                     reveal(<#reveal_ty as Consistency>::consistent);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).theorem_serialize_dps_parse_roundtrip(v, obuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.unambiguous());
+                    fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
                 }
             }
         }
@@ -176,7 +213,9 @@ impl<'a> Analysis<'a> {
             impl #generics NonMalleable for #fmt_ident #generics {
                 proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
                     reveal(<#reveal_ty as SpecParser>::spec_parse);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_parse_non_malleable(buf1, buf2);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.nonmal_inv());
+                    fmt.lemma_parse_non_malleable(buf1, buf2);
                 }
             }
         }
@@ -195,7 +234,9 @@ impl<'a> Analysis<'a> {
                 proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
                     reveal(<#reveal_ty as SpecSerializer>::spec_serialize);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_serialize_equiv(v, obuf);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.equiv_general_inv());
+                    fmt.lemma_serialize_equiv(v, obuf);
                 }
             }
         }
@@ -214,7 +255,9 @@ impl<'a> Analysis<'a> {
                 proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
                     reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
                     reveal(<#reveal_ty as SpecSerializer>::spec_serialize);
-                    #fmt_fn_ident(#(#wrapper_call_args),*).lemma_serialize_equiv_on_empty(v);
+                    let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
+                    assert(fmt.equiv_inv());
+                    fmt.lemma_serialize_equiv_on_empty(v);
                 }
             }
         }

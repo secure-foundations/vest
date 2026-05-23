@@ -126,6 +126,10 @@ impl<'a> Analysis<'a> {
         mode: TypeMode,
         top_level: bool,
     ) -> TokenStream {
+        if let CombinatorInner::Invocation(invocation) = inner {
+            return self.invocation_value_type(invocation, mode);
+        }
+
         match self.ctx.resolve_alias(inner) {
             CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
                 self.int_type(combinator, mode)
@@ -229,7 +233,9 @@ impl<'a> Analysis<'a> {
         let mut retained = Vec::new();
         for field in &struct_comb.0 {
             match field {
-                StructField::Const { .. } => {},
+                StructField::Const { combinator, .. } => {
+                    retained.push(self.render_const_value_type(combinator, mode));
+                }
                 StructField::Dependent { combinator, .. }
                 | StructField::Ordinary { combinator, .. } => {
                     retained.push(self.render_value_type(combinator, mode, true));
@@ -247,13 +253,17 @@ impl<'a> Analysis<'a> {
         struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
-                StructField::Const { .. } => None,
+            .map(|field| match field {
+                StructField::Const { label, combinator } => {
+                    let ident = format_ident!("{}", label);
+                    let ty = self.render_const_value_type(combinator, mode);
+                    quote! { pub #ident: #ty }
+                }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let ident = format_ident!("{}", label);
                     let ty = self.render_value_type(combinator, mode, true);
-                    Some(quote! { pub #ident: #ty })
+                    quote! { pub #ident: #ty }
                 },
             })
             .collect()
@@ -266,11 +276,12 @@ impl<'a> Analysis<'a> {
         struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
-                StructField::Const { .. } => None,
-                StructField::Dependent { label, .. } | StructField::Ordinary { label, .. } => {
+            .map(|field| match field {
+                StructField::Const { label, .. }
+                | StructField::Dependent { label, .. }
+                | StructField::Ordinary { label, .. } => {
                     let ident = format_ident!("{}", label);
-                    Some(quote! { #ident: self.#ident.deep_view() })
+                    quote! { #ident: self.#ident.deep_view() }
                 },
             })
             .collect()
@@ -511,40 +522,58 @@ impl<'a> Analysis<'a> {
 
     fn definition_non_tail(&self, def: &Definition) -> bool {
         match def {
-            Definition::Combinator { combinator, .. } => self.combinator_non_tail(combinator),
+            Definition::Combinator { combinator, .. } => self.combinator_non_tail_at(combinator, true),
             Definition::ConstCombinator { const_combinator, .. } => self.const_non_tail(const_combinator),
             Definition::Endianess(_) => true,
         }
     }
 
     fn combinator_non_tail(&self, combinator: &Combinator) -> bool {
+        self.combinator_non_tail_at(combinator, false)
+    }
+
+    fn combinator_non_tail_at(&self, combinator: &Combinator, tail_position: bool) -> bool {
         if let Some(and_then) = &combinator.and_then {
-            return self.combinator_non_tail(and_then);
+            return self.combinator_non_tail_at(and_then, tail_position);
         }
         match self.ctx.resolve_alias(&combinator.inner) {
             CombinatorInner::Tail(_) => false,
-            CombinatorInner::Vec(_) => false,
             CombinatorInner::ConstraintInt(_)
             | CombinatorInner::ConstraintEnum(_)
             | CombinatorInner::Enum(_)
             | CombinatorInner::Bytes(_) => true,
-            CombinatorInner::Struct(StructCombinator(fields)) => fields.iter().all(|field| match field {
-                StructField::Const { combinator, .. } => self.const_non_tail(combinator),
-                StructField::Dependent { combinator, .. }
-                | StructField::Ordinary { combinator, .. } => self.combinator_non_tail(combinator),
-            }),
+            CombinatorInner::Struct(StructCombinator(fields)) => {
+                let mut at_tail = tail_position;
+                for field in fields.iter().rev() {
+                    let ok = match field {
+                        StructField::Const { combinator, .. } => self.const_non_tail(combinator),
+                        StructField::Dependent { combinator, .. }
+                        | StructField::Ordinary { combinator, .. } => {
+                            self.combinator_non_tail_at(combinator, at_tail)
+                        }
+                    };
+                    if !ok {
+                        return false;
+                    }
+                    at_tail = false;
+                }
+                true
+            }
             CombinatorInner::Wrap(WrapCombinator { prior, combinator, post }) => {
                 prior.iter().all(|c| self.const_non_tail(c))
-                    && self.combinator_non_tail(combinator)
+                    && self.combinator_non_tail_at(combinator, tail_position)
                     && post.iter().all(|c| self.const_non_tail(c))
             },
             CombinatorInner::Choice(choice) => match &choice.choices {
-                Choices::Enums(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail(combinator)),
-                Choices::Ints(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail(combinator)),
-                Choices::Arrays(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail(combinator)),
+                Choices::Enums(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
+                Choices::Ints(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
+                Choices::Arrays(branches) => branches.iter().all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
             },
             CombinatorInner::Array(ArrayCombinator { combinator, .. }) => self.combinator_non_tail(combinator),
-            CombinatorInner::Option(OptionCombinator(combinator)) => self.combinator_non_tail(combinator),
+            CombinatorInner::Option(OptionCombinator(combinator))
+            | CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+                !tail_position && self.combinator_non_tail(combinator)
+            }
             CombinatorInner::Invocation(invocation) => self.info(&invocation.func).non_tail,
         }
     }
