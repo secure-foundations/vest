@@ -18,13 +18,16 @@ impl<'a> Analysis<'a> {
     pub(crate) fn gen_specs_section(
         &self,
         name: &str,
-        _combinator: &Combinator,
+        combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
+        if let Some(invocation) = self.direct_alias(combinator) {
+            return self.gen_alias_specs_section(name, invocation);
+        }
         let mut out = String::new();
         out.push_str(&self.gen_wrapper_type(name, param_defns));
         out.push('\n');
-        out.push_str(&self.gen_format_spec_alias_and_ctor(name, _combinator, param_defns));
+        out.push_str(&self.gen_format_spec_alias_and_ctor(name, combinator, param_defns));
         out
     }
 
@@ -56,6 +59,9 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
+        if let Some(invocation) = self.direct_alias(combinator) {
+            return self.gen_alias_specs_section(name, invocation);
+        }
         let info = self.info(name);
         let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
@@ -73,6 +79,35 @@ impl<'a> Analysis<'a> {
             #[doc = #ctor_doc]
             pub open spec fn #fmt_fn_ident(#(#spec_params),*) -> #fmt_spec_ident {
                 #named_expr
+            }
+        }
+        .to_string()
+    }
+
+    fn gen_alias_specs_section(
+        &self,
+        name: &str,
+        invocation: &vestir::CombinatorInvocation,
+    ) -> String {
+        let info = self.info(name);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
+        let target = self.info(&invocation.func);
+        let target_fmt_spec_ident = format_ident!("{}Spec", target.names.fmt);
+        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
+        let target_fmt_fn_ident = format_ident!("{}", target.names.fmt_fn);
+        let doc = format!("named format combinator for `{}`.", name);
+        let ctor_doc = format!("specification constructor for `{}`.", name);
+
+        quote! {
+            #[doc = #doc]
+            pub struct #fmt_ident;
+
+            pub type #fmt_spec_ident = #target_fmt_spec_ident;
+
+            #[doc = #ctor_doc]
+            pub open spec fn #fmt_fn_ident() -> #fmt_spec_ident {
+                #target_fmt_fn_ident()
             }
         }
         .to_string()
@@ -136,6 +171,9 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_top_level_spec(&self, name: &str, combinator: &Combinator) -> RenderedSpec {
+        if combinator.and_then.is_some() {
+            return self.render_spec_combinator(combinator);
+        }
         match self.ctx.resolve(combinator) {
             CombinatorInner::Struct(struct_comb) => self.render_struct_top_level(name, struct_comb),
             CombinatorInner::Choice(choice_comb) => self.render_choice_top_level(name, choice_comb),
@@ -242,10 +280,13 @@ impl<'a> Analysis<'a> {
                 &self.definition_name_for_inner(&combinator.inner),
                 enum_comb,
             ),
-            CombinatorInner::Choice(choice_comb) => self.render_choice_top_level(
-                &self.definition_name_for_inner(&combinator.inner),
-                choice_comb,
-            ),
+            CombinatorInner::Choice(choice_comb) => {
+                if let Some(name) = self.definition_name_for_inner_opt(&combinator.inner) {
+                    self.render_choice_top_level(&name, choice_comb)
+                } else {
+                    self.render_choice_raw(choice_comb, None)
+                }
+            }
             CombinatorInner::Vec(vec_comb) => self.render_vec(vec_comb),
             CombinatorInner::Array(array_comb) => self.render_array(array_comb),
             CombinatorInner::Bytes(bytes) => self.render_bytes(bytes),
@@ -1115,14 +1156,18 @@ impl<'a> Analysis<'a> {
 
     fn render_length_expr_usize(&self, len: &LengthExpr) -> TokenStream {
         match len {
-            LengthExpr::Const(n) => syn_usize(*n),
+            LengthExpr::Const(n) => {
+                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                quote! { #lit }
+            }
             LengthExpr::Dependent(name) => {
                 let path = path_tokens(name);
                 quote! { (#path as usize) }
             }
             LengthExpr::SizeOf(name) => {
                 if let Some(n) = self.ctx.static_sizes.get(name) {
-                    syn_usize(*n)
+                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                    quote! { #lit }
                 } else {
                     let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
                     quote! { (<#fmt_ident as StaticByteLen>::static_byte_len() as usize) }
@@ -1132,10 +1177,10 @@ impl<'a> Analysis<'a> {
                 let left = self.render_length_expr_usize(left);
                 let right = self.render_length_expr_usize(right);
                 match op {
-                    vestir::ArithOp::Add => quote! { (#left + #right) },
-                    vestir::ArithOp::Sub => quote! { (#left - #right) },
-                    vestir::ArithOp::Mul => quote! { (#left * #right) },
-                    vestir::ArithOp::Div => quote! { (#left / #right) },
+                    vestir::ArithOp::Add => quote! { ((#left + #right) as usize) },
+                    vestir::ArithOp::Sub => quote! { ((#left - #right) as usize) },
+                    vestir::ArithOp::Mul => quote! { ((#left * #right) as usize) },
+                    vestir::ArithOp::Div => quote! { ((#left / #right) as usize) },
                 }
             }
         }
@@ -1161,9 +1206,15 @@ impl<'a> Analysis<'a> {
                 quote! { seq![#(#elems),*] }
             }
             ConstArray::Repeat(value, len) => {
-                let value = proc_macro2::Literal::i128_unsuffixed(*value);
+                let value = if (0..=u8::MAX as i128).contains(value) {
+                    let v = proc_macro2::Literal::u8_suffixed(*value as u8);
+                    quote! { #v }
+                } else {
+                    let v = proc_macro2::Literal::i128_unsuffixed(*value);
+                    quote! { #v }
+                };
                 let len = syn_usize(*len);
-                quote! { Seq::new(#len as nat, |_: int| #value) }
+                quote! { seq![#value; #len] }
             }
             ConstArray::Wildcard => quote! { arbitrary() },
         }
@@ -1448,7 +1499,7 @@ fn struct_init_fields_expr(labels: &[String]) -> TokenStream {
         .collect::<Vec<_>>();
     let fields = idents
         .iter()
-        .map(|ident| quote! { #ident: #ident })
+        .map(|ident| quote! { #ident })
         .collect::<Vec<_>>();
     quote! { #(#fields),* }
 }

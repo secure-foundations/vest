@@ -11,6 +11,36 @@ impl<'a> Analysis<'a> {
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
         let doc = format!("data type for `{}`.", name);
+        if combinator.and_then.is_some() {
+            let exec_ty = self.render_value_type(combinator, TypeMode::Exec, true);
+            let spec_ty = self.render_value_type(combinator, TypeMode::Spec, true);
+            let exec_alias = if info.needs_lifetime {
+                quote! { pub type #exec_ident <'i> = #exec_ty; }
+            } else {
+                quote! { pub type #exec_ident = #exec_ty; }
+            };
+            return quote! {
+                #[doc = #doc]
+                #exec_alias
+                pub type #spec_ident = #spec_ty;
+            }
+            .to_string();
+        }
+        if let Some(invocation) = self.direct_alias(combinator) {
+            let exec_ty = self.invocation_value_type(invocation, TypeMode::Exec);
+            let spec_ty = self.invocation_value_type(invocation, TypeMode::Spec);
+            let exec_alias = if info.needs_lifetime {
+                quote! { pub type #exec_ident <'i> = #exec_ty; }
+            } else {
+                quote! { pub type #exec_ident = #exec_ty; }
+            };
+            return quote! {
+                #[doc = #doc]
+                #exec_alias
+                pub type #spec_ident = #spec_ty;
+            }
+            .to_string();
+        }
         match self.ctx.resolve(combinator) {
             CombinatorInner::Struct(struct_comb) => {
                 let exec_fields = self.struct_value_fields(struct_comb, TypeMode::Exec);
@@ -27,7 +57,7 @@ impl<'a> Analysis<'a> {
                     quote! {}
                 };
                 let exec_struct = quote! {
-                    #[derive(Debug, PartialEq, Eq, Clone)]
+                    #[derive(Debug, PartialEq, Eq)]
                     pub struct #exec_ident #exec_lifetime {
                         #(#exec_fields,)*
                     }
@@ -201,7 +231,7 @@ impl<'a> Analysis<'a> {
         let doc = format!("data type for `{}`.", names.dsl);
         quote! {
             #[doc = #doc]
-            #[derive(Debug, PartialEq, Eq, Clone)]
+            #[derive(Debug, PartialEq, Eq)]
             pub enum #exec_ident #exec_lifetime {
                 #(#exec_variants,)*
             }
