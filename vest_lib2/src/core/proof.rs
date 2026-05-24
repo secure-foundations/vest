@@ -346,4 +346,16 @@ impl<Fmt: LeafNonMalleable> Leaf for Fmt {
     }
 }
 
+pub proof fn lemma_seq_repeat_u8_neq(x: u8, y: u8, n: nat)
+    requires
+        x != y,
+        n > 0,
+    ensures
+        seq![x; n] != seq![y; n],
+{
+    assert(seq![x; n][0] == x);
+    assert(seq![y; n][0] == y);
+    assert(seq![x; n] != seq![y; n]);
+}
+
 } // verus!
