@@ -9,47 +9,56 @@ use common::{prelude, Analysis};
 
 pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String {
     let analysis = Analysis::new(defs, ctx);
-    let defs = defs
-        .iter()
-        .filter(|def| !matches!(def, Definition::Endianess(_)))
-        .collect::<Vec<_>>();
-    let data_types = defs
-        .iter()
-        .map(|def| analysis.gen_data_fragment(def))
-        .collect::<Vec<_>>()
-        .join("\n\n");
-    let specs = defs
-        .iter()
-        .map(|def| analysis.gen_specs_fragment(def))
-        .collect::<Vec<_>>()
-        .join("\n\n");
-    let derived_specs = defs
-        .iter()
-        .map(|def| analysis.gen_derived_specs_fragment(def))
-        .collect::<Vec<_>>()
-        .join("\n\n");
-    let proofs = defs
-        .iter()
-        .map(|def| analysis.gen_proofs_fragment(def))
-        .collect::<Vec<_>>()
-        .join("\n\n");
-    let execs = defs
-        .iter()
-        .map(|def| analysis.gen_execs_fragment(def))
-        .collect::<Vec<_>>()
-        .join("\n\n");
+    let defs = non_endian_defs(defs);
+    let data_types = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_data_fragment(def));
+    let specs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_specs_fragment(def));
+    let derived_specs =
+        render_fragments(&analysis, &defs, |analysis, def| analysis.gen_derived_specs_fragment(def));
+    let proofs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_proofs_fragment(def));
+    let execs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_execs_fragment(def));
 
-    let body = format!(
-        "{data_header}\n{data_types}\n\n{specs_header}\n{specs}\n\n{derived_specs_header}\n mod derived_specs {{ use super::*;\n {derived_specs} }}\n\n{proofs_header}\n mod derived_proofs {{  use super::*;\n {proofs} }} \n\n{execs_header}\n{execs}\n",
-        data_header = section_header("Data Types"),
-        specs_header = section_header("Format Specifications"),
-        derived_specs_header =
-            section_header("Derived Parser, Serializer, Length, and Consistency Specifications"),
-        proofs_header = section_header("Proven Format Properties"),
-        execs_header = section_header("Executable Implementations"),
-    );
+    let body = [
+        render_section("Data Types", &data_types),
+        render_section("Format Specifications", &specs),
+        render_nested_section(
+            "Derived Parser, Serializer, Length, and Consistency Specifications",
+            "derived_specs",
+            &derived_specs,
+        ),
+        render_nested_section("Proven Format Properties", "derived_proofs", &proofs),
+        render_section("Executable Implementations", &execs),
+    ]
+    .join("\n\n");
 
     format!("{}\nverus! {{\n{}\n}}\n", prelude(), body)
+}
+
+fn non_endian_defs<'a>(defs: &'a [Definition]) -> Vec<&'a Definition> {
+    defs.iter()
+        .filter(|def| !matches!(def, Definition::Endianess(_)))
+        .collect()
+}
+
+fn render_fragments(
+    analysis: &Analysis<'_>,
+    defs: &[&Definition],
+    gen: impl Fn(&Analysis<'_>, &Definition) -> String,
+) -> String {
+    defs.iter()
+        .map(|def| gen(analysis, def))
+        .collect::<Vec<_>>()
+        .join("\n\n")
+}
+
+fn render_section(title: &str, body: &str) -> String {
+    format!("{}\n{}", section_header(title), body)
+}
+
+fn render_nested_section(title: &str, module: &str, body: &str) -> String {
+    format!(
+        "{header}\nmod {module} {{\n    use super::*;\n\n{body}\n}}",
+        header = section_header(title),
+    )
 }
 
 fn section_header(title: &str) -> String {

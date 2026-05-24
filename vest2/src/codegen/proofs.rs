@@ -32,13 +32,13 @@ impl<'a> Analysis<'a> {
         };
         let good =
             self.gen_good_serializer_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-        let repeated_u8_array_ineq_lemma = self.gen_repeated_u8_array_ineq_lemma(combinator);
+        let roundtrip_prelude = self.gen_roundtrip_prelude(combinator);
         let roundtrip = self.gen_sp_roundtrip_impl(
             &fmt_ident,
             &fmt_fn_ident,
             &generics,
             &wrapper_call_args,
-            &repeated_u8_array_ineq_lemma,
+            &roundtrip_prelude,
         );
         let non_malleable = if info.non_malleable {
             self.gen_non_malleable_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
@@ -192,7 +192,7 @@ impl<'a> Analysis<'a> {
         fmt_fn_ident: &proc_macro2::Ident,
         generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
-        repeated_u8_array_ineq_lemma: &TokenStream,
+        roundtrip_prelude: &TokenStream,
     ) -> TokenStream {
         let reveal_ty = fmt_ident;
         quote! {
@@ -203,7 +203,7 @@ impl<'a> Analysis<'a> {
                     reveal(<#reveal_ty as Consistency>::consistent);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
                     let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
-                    #repeated_u8_array_ineq_lemma
+                    #roundtrip_prelude
                     assert(fmt.unambiguous());
                     fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
                 }
@@ -211,7 +211,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn gen_repeated_u8_array_ineq_lemma(&self, combinator: &Combinator) -> TokenStream {
+    fn gen_roundtrip_prelude(&self, combinator: &Combinator) -> TokenStream {
         let facts = self.repeated_u8_array_ineq_facts(combinator);
         let asserts = facts.into_iter().map(|(lhs, rhs, len)| {
             let lhs = proc_macro2::Literal::u8_suffixed(lhs);

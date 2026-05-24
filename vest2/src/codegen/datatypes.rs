@@ -5,41 +5,61 @@ use crate::vestir::{
 use quote::{format_ident, quote};
 
 impl<'a> Analysis<'a> {
+    fn type_doc(name: &str) -> String {
+        format!("data type for `{}`.", name)
+    }
+
+    fn emit_exec_spec_aliases(
+        &self,
+        exec_ident: &proc_macro2::Ident,
+        spec_ident: &proc_macro2::Ident,
+        exec_ty: proc_macro2::TokenStream,
+        spec_ty: proc_macro2::TokenStream,
+        needs_lifetime: bool,
+        doc: &str,
+    ) -> String {
+        let exec_alias = if needs_lifetime {
+            quote! { pub type #exec_ident <'i> = #exec_ty; }
+        } else {
+            quote! { pub type #exec_ident = #exec_ty; }
+        };
+        quote! {
+            #[doc = #doc]
+            #exec_alias
+            pub type #spec_ident = #spec_ty;
+        }
+        .to_string()
+    }
+
     pub(crate) fn gen_value_types(&self, name: &str, combinator: &Combinator) -> String {
         let info = self.info(name);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
-        let doc = format!("data type for `{}`.", name);
+        let doc = Self::type_doc(name);
         if combinator.and_then.is_some() {
             let exec_ty = self.render_value_type(combinator, TypeMode::Exec, true);
             let spec_ty = self.render_value_type(combinator, TypeMode::Spec, true);
-            let exec_alias = if info.needs_lifetime {
-                quote! { pub type #exec_ident <'i> = #exec_ty; }
-            } else {
-                quote! { pub type #exec_ident = #exec_ty; }
-            };
-            return quote! {
-                #[doc = #doc]
-                #exec_alias
-                pub type #spec_ident = #spec_ty;
-            }
-            .to_string();
+            return self.emit_exec_spec_aliases(
+                &exec_ident,
+                &spec_ident,
+                exec_ty,
+                spec_ty,
+                info.needs_lifetime,
+                &doc,
+            );
         }
         if let Some(invocation) = self.direct_alias(combinator) {
             let exec_ty = self.invocation_value_type(invocation, TypeMode::Exec);
             let spec_ty = self.invocation_value_type(invocation, TypeMode::Spec);
-            let exec_alias = if info.needs_lifetime {
-                quote! { pub type #exec_ident <'i> = #exec_ty; }
-            } else {
-                quote! { pub type #exec_ident = #exec_ty; }
-            };
-            return quote! {
-                #[doc = #doc]
-                #exec_alias
-                pub type #spec_ident = #spec_ty;
-            }
-            .to_string();
+            return self.emit_exec_spec_aliases(
+                &exec_ident,
+                &spec_ident,
+                exec_ty,
+                spec_ty,
+                info.needs_lifetime,
+                &doc,
+            );
         }
         match self.ctx.resolve(combinator) {
             CombinatorInner::Struct(struct_comb) => {
@@ -47,11 +67,6 @@ impl<'a> Analysis<'a> {
                 let spec_fields = self.struct_value_fields(struct_comb, TypeMode::Spec);
                 let inner_ty = self.render_struct_inner_type(struct_comb, TypeMode::Spec);
                 let exec_lifetime = if info.needs_lifetime {
-                    quote! { <'i> }
-                } else {
-                    quote! {}
-                };
-                let exec_generics = if info.needs_lifetime {
                     quote! { <'i> }
                 } else {
                     quote! {}
@@ -74,7 +89,7 @@ impl<'a> Analysis<'a> {
                     #exec_struct
                     #spec_struct
                     pub type #inner_ident = #inner_ty;
-                    impl #exec_generics DeepView for #exec_ident #exec_generics {
+                    impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
                         type V = #spec_ident;
                         open spec fn deep_view(&self) -> Self::V {
                             #spec_ident { #(#deep_view_fields,)* }
@@ -88,17 +103,14 @@ impl<'a> Analysis<'a> {
             _ => {
                 let exec_ty = self.render_value_type(combinator, TypeMode::Exec, true);
                 let spec_ty = self.render_value_type(combinator, TypeMode::Spec, true);
-                let exec_alias = if info.needs_lifetime {
-                    quote! { pub type #exec_ident <'i> = #exec_ty; }
-                } else {
-                    quote! { pub type #exec_ident = #exec_ty; }
-                };
-                quote! {
-                    #[doc = #doc]
-                    #exec_alias
-                    pub type #spec_ident = #spec_ty;
-                }
-                .to_string()
+                self.emit_exec_spec_aliases(
+                    &exec_ident,
+                    &spec_ident,
+                    exec_ty,
+                    spec_ty,
+                    info.needs_lifetime,
+                    &doc,
+                )
             }
         }
     }
@@ -113,18 +125,15 @@ impl<'a> Analysis<'a> {
         let spec_ty = self.render_const_value_type(const_combinator, TypeMode::Spec);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
-        let doc = format!("data type for `{}`.", name);
-        let exec_alias = if info.needs_lifetime {
-            quote! { pub type #exec_ident <'i> = #ty; }
-        } else {
-            quote! { pub type #exec_ident = #ty; }
-        };
-        quote! {
-            #[doc = #doc]
-            #exec_alias
-            pub type #spec_ident = #spec_ty;
-        }
-        .to_string()
+        let doc = Self::type_doc(name);
+        self.emit_exec_spec_aliases(
+            &exec_ident,
+            &spec_ident,
+            ty,
+            spec_ty,
+            info.needs_lifetime,
+            &doc,
+        )
     }
 
     fn gen_enum_types(&self, enum_comb: &EnumCombinator, names: &FormatNames) -> String {
