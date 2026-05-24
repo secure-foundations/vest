@@ -5,11 +5,21 @@ verus! {
 
 /// The sum type.
 #[verifier::ext_equal]
+#[derive(Debug, Copy, PartialEq, Eq)]
 pub enum Sum<A, B> {
     /// Left injection.
     Inl(A),
     /// Right injection.
     Inr(B),
+}
+
+impl<A: Clone, B: Clone> Clone for Sum<A, B> {
+    fn clone(&self) -> Self {
+        match self {
+            Sum::Inl(a) => Sum::Inl(a.clone()),
+            Sum::Inr(b) => Sum::Inr(b.clone()),
+        }
+    }
 }
 
 impl<A: SpecParser, B: SpecParser> SpecParser for super::Choice<A, B> {
