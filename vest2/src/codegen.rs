@@ -10,12 +10,21 @@ use common::{prelude, Analysis};
 pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String {
     let analysis = Analysis::new(defs, ctx);
     let defs = non_endian_defs(defs);
-    let data_types = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_data_fragment(def));
-    let specs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_specs_fragment(def));
-    let derived_specs =
-        render_fragments(&analysis, &defs, |analysis, def| analysis.gen_derived_specs_fragment(def));
-    let proofs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_proofs_fragment(def));
-    let execs = render_fragments(&analysis, &defs, |analysis, def| analysis.gen_execs_fragment(def));
+    let data_types = render_fragments(&analysis, &defs, |analysis, def| {
+        analysis.gen_data_fragment(def)
+    });
+    let specs = render_fragments(&analysis, &defs, |analysis, def| {
+        analysis.gen_specs_fragment(def)
+    });
+    let derived_specs = render_fragments(&analysis, &defs, |analysis, def| {
+        analysis.gen_derived_specs_fragment(def)
+    });
+    let proofs = render_fragments(&analysis, &defs, |analysis, def| {
+        analysis.gen_proofs_fragment(def)
+    });
+    let execs = render_fragments(&analysis, &defs, |analysis, def| {
+        analysis.gen_execs_fragment(def)
+    });
 
     let body = [
         render_section("Data Types", &data_types),
@@ -23,9 +32,15 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
         render_nested_section(
             "Derived Parser, Serializer, Length, and Consistency Specifications",
             "derived_specs",
+            "use super::*;",
             &derived_specs,
         ),
-        render_nested_section("Proven Format Properties", "derived_proofs", &proofs),
+        render_nested_section(
+            "Proven Format Properties",
+            "derived_proofs",
+            "use super::*;\nbroadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;\n",
+            &proofs,
+        ),
         render_section("Executable Implementations", &execs),
     ]
     .join("\n\n");
@@ -54,9 +69,9 @@ fn render_section(title: &str, body: &str) -> String {
     format!("{}\n{}", section_header(title), body)
 }
 
-fn render_nested_section(title: &str, module: &str, body: &str) -> String {
+fn render_nested_section(title: &str, module: &str, imports: &str, body: &str) -> String {
     format!(
-        "{header}\nmod {module} {{\n    use super::*;\n\n{body}\n}}",
+        "{header}\nmod {module} {{\n    {imports}\n\n{body}\n}}",
         header = section_header(title),
     )
 }

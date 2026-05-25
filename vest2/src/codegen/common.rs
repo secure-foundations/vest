@@ -48,7 +48,6 @@ pub(crate) fn prelude() -> String {
         #![allow(warnings)]
         use vest_lib2::combinators::mapped::spec::*;
         use vest_lib2::combinators::*;
-        use vest_lib2::core::exec::fns::{Map, MapRef, Pred};
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
         use vest_lib2::core::exec::parser::*;
         use vest_lib2::core::exec::serializer::*;
