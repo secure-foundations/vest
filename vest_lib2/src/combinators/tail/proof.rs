@@ -194,16 +194,8 @@ impl<C: SPRoundTripDps + NonTailFmt + Productive> SPRoundTripDps for super::Opti
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert(disjoint_domains(self.0, super::Eof)) by {
-            assert forall|input: Seq<u8>|
-                #![auto]
-                self.0.spec_parse(input) is Some && super::Eof.spec_parse(
-                    input,
-                ) is Some implies false by {
-                self.0.lemma_parse_safe(input);
-                self.0.lemma_productive(input);
-            }
-        };
+        broadcast use crate::combinators::disjoint::lemma_disjoint_eof;
+
         Optional(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
     }
 }
@@ -246,16 +238,8 @@ impl<C: SPRoundTripDps + NonTailFmt + Productive> SPRoundTripDps for super::Repe
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert(disjoint_domains(self.0, super::Eof)) by {
-            assert forall|input: Seq<u8>|
-                #![auto]
-                self.0.spec_parse(input) is Some && super::Eof.spec_parse(
-                    input,
-                ) is Some implies false by {
-                self.0.lemma_parse_safe(input);
-                self.0.lemma_productive(input);
-            }
-        };
+        broadcast use crate::combinators::disjoint::lemma_disjoint_eof;
+
         Repeat(self.0, super::Eof).theorem_serialize_dps_parse_roundtrip((v, ()), obuf);
     }
 }

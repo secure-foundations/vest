@@ -114,6 +114,10 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
         let opt = super::Opt(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
+        assert(parser_fails_on(self.0, serialized1)) by {
+            reveal(disjoint_domains);
+            assert(self.1.spec_parse(serialized1) is Some);
+        }
         let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
         opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
         let n0 = serialized0.len() - serialized1.len();
@@ -146,6 +150,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        reveal(disjoint_domains);
         broadcast use vstd::seq_lib::group_seq_properties;
 
         use crate::combinators::tuple::proof::lemma_take_skip;

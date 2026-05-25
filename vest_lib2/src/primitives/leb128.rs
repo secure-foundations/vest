@@ -181,6 +181,7 @@ impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
         _param: (),
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) {
+        reveal(disjoint_domains);
     }
 }
 
@@ -221,6 +222,7 @@ impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
         _param: (),
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) {
+        reveal(disjoint_domains);
     }
 }
 

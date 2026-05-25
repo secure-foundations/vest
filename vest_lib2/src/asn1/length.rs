@@ -367,12 +367,18 @@ impl<const DER: bool> MinMaxByteLen for super::Length<DER> {
 
 impl<const DER: bool> SPRoundTripDps for super::Length<DER> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert(length_fmt::<DER>().unambiguous()) by {
+            reveal(disjoint_domains);
+        }
         length_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
 impl<const DER: bool> NoLookAhead for super::Length<DER> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(length_fmt::<DER>().no_lookahead_inv()) by {
+            reveal(disjoint_domains);
+        }
         length_fmt::<DER>().lemma_no_lookahead(i1, i2);
     }
 }

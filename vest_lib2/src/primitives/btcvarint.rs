@@ -282,12 +282,18 @@ impl<const MINIMAL: bool> MinMaxByteLen for VarInt<MINIMAL> {
 
 impl<const MINIMAL: bool> SPRoundTripDps for VarInt<MINIMAL> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert(varint_fmt::<MINIMAL>().unambiguous()) by {
+            reveal(disjoint_domains);
+        }
         varint_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
 impl<const MINIMAL: bool> NoLookAhead for VarInt<MINIMAL> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(varint_fmt::<MINIMAL>().no_lookahead_inv()) by {
+            reveal(disjoint_domains);
+        }
         varint_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
     }
 }

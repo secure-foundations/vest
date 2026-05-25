@@ -278,13 +278,18 @@ impl<const MINIMAL: bool> SpecByteLen for Base128<MINIMAL> {
 impl<const MINIMAL: bool> SPRoundTripDps for Base128<MINIMAL> {
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
         assert forall|s: Seq<u8>| #![auto] s.len() > 0 ==> s.drop_last().push(s.last()) == s by {}
-        assert(base128_fmt::<MINIMAL>().inner.unambiguous());
+        assert(base128_fmt::<MINIMAL>().inner.unambiguous()) by {
+            reveal(disjoint_domains);
+        }
         base128_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
 impl<const MINIMAL: bool> NoLookAhead for Base128<MINIMAL> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(base128_fmt::<MINIMAL>().no_lookahead_inv()) by {
+            reveal(disjoint_domains);
+        }
         base128_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
     }
 }

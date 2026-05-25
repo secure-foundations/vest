@@ -20,6 +20,7 @@ pub trait SpecParser {
 /// This is the key condition for establishing unambiguity in combinator compositions.
 /// See also [`crate::combinators::disjoint`] for broadcast lemmas establishing
 /// disjointness for common compositions.
+#[verifier::opaque]
 pub open spec fn disjoint_domains<P1: SpecParser, P2: SpecParser>(p1: P1, p2: P2) -> bool {
     forall|input: Seq<u8>| p1.spec_parse(input) is Some && p2.spec_parse(input) is Some ==> false
 }
