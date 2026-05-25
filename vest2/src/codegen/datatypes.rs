@@ -145,14 +145,12 @@ impl<'a> Analysis<'a> {
             EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
         };
         let repr_ty = self.int_exec_type(inferred);
-        let mut branch_tys = variants
-            .iter()
-            .map(|_| self.int_spec_type(inferred))
-            .collect::<Vec<_>>();
-        if !exhaustive {
-            branch_tys.push(self.int_spec_type(inferred));
-        }
-        let inner_ty = self.choice_sum_type(&branch_tys);
+        let int_spec_ty = self.int_spec_type(inferred);
+        let inner_ty = if exhaustive {
+            int_spec_ty.clone()
+        } else {
+            quote! { Sum<#int_spec_ty, #int_spec_ty> }
+        };
         let exec_variants = variants.iter().map(|variant| {
             let ident = format_ident!("{}", variant.name);
             let value = int_literal(variant.value, inferred);

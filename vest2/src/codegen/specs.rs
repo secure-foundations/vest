@@ -965,64 +965,92 @@ impl<'a> Analysis<'a> {
         let prim_ty = self.int_combinator_ty(inferred);
         let prim_expr = self.int_combinator_expr(inferred);
         let int_spec_ty = self.int_spec_type(inferred);
-        let mut branches = Vec::new();
-        for variant in variants {
-            let value_expr = int_literal(variant.value, inferred);
-            let branch_ty = quote! { Const<#prim_ty, #int_spec_ty> };
-            let branch_expr = quote! { Const(#prim_expr, #value_expr) };
-            branches.push(RenderedSpec {
-                ty: branch_ty,
-                expr: branch_expr,
-                value_ty: int_spec_ty.clone(),
-                has_value: true,
-            });
-        }
-        if !exhaustive {
-            let pred = variants.iter().fold(quote! { true }, |acc, variant| {
+        let eq_terms = variants
+            .iter()
+            .map(|variant| {
                 let value = int_literal(variant.value, inferred);
-                quote! { #acc && x != #value }
-            });
-            let branch_ty = quote! { Refined<#prim_ty, PredFnSpec<#int_spec_ty>> };
-            let branch_expr = quote! { Refined(#prim_expr, |x: #int_spec_ty| #pred) };
-            branches.push(RenderedSpec {
-                ty: branch_ty,
-                expr: branch_expr,
-                value_ty: int_spec_ty.clone(),
-                has_value: true,
-            });
-        }
-        let raw = fold_choice(branches);
-        let forward_arms = variants.iter().enumerate().map(|(idx, variant)| {
-            let pat = sum_pattern(
-                idx,
-                variants.len() + if exhaustive { 0 } else { 1 },
-                quote! { _ },
-            );
-            let ident = format_ident!("{}", variant.name);
-            quote! { #pat => #spec_ident::#ident, }
-        });
-        let unknown_forward = if exhaustive {
-            quote! {}
+                quote! { x == #value }
+            })
+            .collect::<Vec<_>>();
+        let allowed_pred = fold_bool_or(eq_terms);
+        let disallowed_terms = variants
+            .iter()
+            .map(|variant| {
+                let value = int_literal(variant.value, inferred);
+                quote! { x != #value }
+            })
+            .collect::<Vec<_>>();
+        let disallowed_pred = fold_bool_and(disallowed_terms);
+
+        let raw = if exhaustive {
+            RenderedSpec::new(
+                quote! { Refined<#prim_ty, PredFnSpec<#int_spec_ty>> },
+                quote! { Refined(#prim_expr, |x: #int_spec_ty| #allowed_pred) },
+                int_spec_ty.clone(),
+                true,
+            )
         } else {
-            let pat = sum_pattern(variants.len(), variants.len() + 1, quote! { v });
-            quote! { #pat => #spec_ident::Unknown(v), }
+            RenderedSpec::new(
+                quote! { Choice<Refined<#prim_ty, PredFnSpec<#int_spec_ty>>, Refined<#prim_ty, PredFnSpec<#int_spec_ty>>> },
+                quote! {
+                    Choice(
+                        Refined(#prim_expr, |x: #int_spec_ty| #allowed_pred),
+                        Refined(#prim_expr, |x: #int_spec_ty| #disallowed_pred)
+                    )
+                },
+                quote! { #inner_ident },
+                true,
+            )
         };
-        let reverse_arms = variants.iter().enumerate().map(|(idx, variant)| {
+
+        let exhaustive_forward_arms = variants.iter().map(|variant| {
             let value = int_literal(variant.value, inferred);
-            let expr = sum_injection(
-                idx,
-                variants.len() + if exhaustive { 0 } else { 1 },
-                quote! { #value },
-            );
             let ident = format_ident!("{}", variant.name);
-            quote! { #spec_ident::#ident => #expr, }
+            quote! { #value => #spec_ident::#ident, }
         });
-        let unknown_reverse = if exhaustive {
-            quote! {}
+        let exhaustive_reverse_arms = variants.iter().map(|variant| {
+            let value = int_literal(variant.value, inferred);
+            let ident = format_ident!("{}", variant.name);
+            if exhaustive {
+                quote! { #spec_ident::#ident => #value, }
+            } else {
+                quote! { #spec_ident::#ident => Sum::Inl(#value), }
+            }
+        });
+
+        let forward_expr = if exhaustive {
+            quote! {
+                match parsed {
+                    #(#exhaustive_forward_arms)*
+                    _ => arbitrary(),
+                }
+            }
         } else {
-            let expr = sum_injection(variants.len(), variants.len() + 1, quote! { v });
-            quote! { #spec_ident::Unknown(v) => #expr, }
+            quote! {
+                match parsed {
+                    Sum::Inl(x) => match x {
+                        #(#exhaustive_forward_arms)*
+                        _ => arbitrary(),
+                    },
+                    Sum::Inr(x) => #spec_ident::Unknown(x),
+                }
+            }
         };
+        let reverse_expr = if exhaustive {
+            quote! {
+                match value {
+                    #(#exhaustive_reverse_arms)*
+                }
+            }
+        } else {
+            quote! {
+                match value {
+                    #(#exhaustive_reverse_arms)*
+                    #spec_ident::Unknown(x) => Sum::Inr(x),
+                }
+            }
+        };
+
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
         let ty = quote! { Mapped<#raw_ty, FnSpecMapper<#inner_ident, #spec_ident>> };
@@ -1031,16 +1059,10 @@ impl<'a> Analysis<'a> {
                 inner: #raw_expr,
                 mapper: (
                     |parsed: #inner_ident| -> #spec_ident {
-                        match parsed {
-                            #(#forward_arms)*
-                            #unknown_forward
-                        }
+                        #forward_expr
                     },
                     |value: #spec_ident| -> #inner_ident {
-                        match value {
-                            #(#reverse_arms)*
-                            #unknown_reverse
-                        }
+                        #reverse_expr
                     }
                 )
             }
@@ -1434,6 +1456,24 @@ fn fold_choice(mut branches: Vec<RenderedSpec>) -> RenderedSpec {
         value_ty: quote! { Sum<#first_value_ty, #rest_value_ty> },
         has_value: true,
     }
+}
+
+fn fold_bool_or(mut terms: Vec<TokenStream>) -> TokenStream {
+    let first = terms
+        .drain(..1)
+        .next()
+        .expect("boolean disjunction requires at least one term");
+    terms.into_iter()
+        .fold(first, |acc, term| quote! { #acc || #term })
+}
+
+fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
+    let first = terms
+        .drain(..1)
+        .next()
+        .expect("boolean conjunction requires at least one term");
+    terms.into_iter()
+        .fold(first, |acc, term| quote! { #acc && #term })
 }
 
 fn nested_tuple_pattern(labels: &[String]) -> TokenStream {
