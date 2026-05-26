@@ -160,7 +160,8 @@ impl<Inner: SPRoundTripDps, Out> SPRoundTripDps for super::Mapped<
 > {
     open spec fn unambiguous(&self) -> bool {
         &&& self.inner.unambiguous()
-        &&& forall|o: Out| #![auto] self.consistent(o) ==> (self.mapper.0)((self.mapper.1)(o)) == o
+        &&& forall|o: Out| #[trigger]
+            self.consistent(o) ==> (self.mapper.0)((self.mapper.1)(o)) == o
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
@@ -175,8 +176,7 @@ impl<Inner, Out> NonMalleable for super::Mapped<Inner, FnSpecMapper<Inner::PVal,
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()
         &&& self.inner.sound_inv()
-        &&& forall|v: Inner::PVal|
-            #![auto]
+        &&& forall|v: Inner::PVal| #[trigger]
             self.inner.consistent(v) ==> (self.mapper.1)((self.mapper.0)(v)) == v
     }
 

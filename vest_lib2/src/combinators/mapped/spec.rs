@@ -313,8 +313,7 @@ impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::
 impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
-        &&& forall|v: Inner::T|
-            #![auto]
+        &&& forall|v: Inner::T| #[trigger]
             self.inner.consistent(v) ==> (self.mapper.1)((self.mapper.0)(v)) == v
     }
 
