@@ -1,6 +1,7 @@
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{Alt, Mapped, Refined, Tagged, U16Le, U32Le, U64Le, U8};
-use crate::core::{proof::*, spec::*};
+use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::{exec::*, proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
@@ -333,5 +334,84 @@ proof fn test_varint_roundtrip() {
     fmt.theorem_serialize_parse_roundtrip(v_u32);
     fmt.theorem_serialize_parse_roundtrip(v_u64);
 }
+
+impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
+    type PT = u64;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let rest = *ibuf;
+
+        let (n1, tag) = U8.parse(&rest)?;
+        let rest = rest.skip(n1);
+        match tag {
+            t if t < VARINT_TAG_U16 => Ok((1usize, t as u64)),
+            VARINT_TAG_U16 => {
+                let (_, v) = U16Le.parse(&rest)?;
+                if MINIMAL && v < VARINT_TAG_U16 as u16 {
+                    Err(ParseError::non_canonical())
+                } else {
+                    Ok((3usize, v as u64))
+                }
+            },
+            VARINT_TAG_U32 => {
+                let (_, v) = U32Le.parse(&rest)?;
+                if MINIMAL && v <= u16::MAX as u32 {
+                    Err(ParseError::non_canonical())
+                } else {
+                    Ok((5usize, v as u64))
+                }
+            },
+            VARINT_TAG_U64 => {
+                let (_, v) = U64Le.parse(&rest)?;
+                if MINIMAL && v <= u32::MAX as u64 {
+                    Err(ParseError::non_canonical())
+                } else {
+                    Ok((9usize, v))
+                }
+            },
+            _ => Err(ParseError::invalid_tag()),
+        }
+    }
+}
+
+impl<const MINIMAL: bool> Serializer<u64> for VarInt<MINIMAL> {
+    fn ex_serialize(&self, v: u64, obuf: &mut Vec<u8>) {
+        let ghost old_obuf = obuf@;
+
+        match v {
+            0..0xFD => {
+                U8.ex_serialize(v as u8, obuf);
+            },
+            0xFD..=0xFFFF => {
+                U8.ex_serialize(VARINT_TAG_U16, obuf);
+                U16Le.ex_serialize(v as u16, obuf);
+            },
+            0x1_0000..=0xFFFF_FFFF => {
+                U8.ex_serialize(VARINT_TAG_U32, obuf);
+                U32Le.ex_serialize(v as u32, obuf);
+            },
+            _ => {
+                U8.ex_serialize(VARINT_TAG_U64, obuf);
+                U64Le.ex_serialize(v, obuf);
+            },
+        }
+
+        assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+    }
+}
+
+impl<const MINIMAL: bool> Prepare<u64> for VarInt<MINIMAL> {
+    fn prepare(&self, v: u64) -> Result<usize, PreSerializeError> {
+        match v {
+            0..0xFD => Ok(1usize),
+            0xFD..=0xFFFF => Ok(3usize),
+            0x1_0000..=0xFFFF_FFFF => Ok(5usize),
+            _ => Ok(9usize),
+        }
+    }
+}
+
 
 } // verus!
