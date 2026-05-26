@@ -685,21 +685,29 @@ pub open spec fn tlv_fmt() -> Implicit<
     fmt
 }
 
+// pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
+//     Choice<Cond<U8>, Choice<Cond<Fixed<10>>, Choice<Cond<Pair<U8, Tail>>, Cond<Pair<U8, Tail>>>>>,
+//     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
+// > {
+// Mapped {
+    // inner: Choice(
+    //     Cond(tag == MsgTy::TYPE1, U8),
+    //     Choice(
+    //         Cond(tag == MsgTy::TYPE2, Fixed::<10>),
+    //         Choice(Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)), Cond(tag == MsgTy::TYPE4, Pair(U8, Tail))),
+    //     ),
+    // ),
 pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
-    Choice<Cond<U8>, Choice<Cond<Fixed<10>>, Choice<Cond<Pair<U8, Tail>>, Cond<Pair<U8, Tail>>>>>,
+    Sum<U8, Sum<Fixed<10>, Sum<Pair<U8, Tail>, Pair<U8, Tail>>>>,
     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
 > {
     Mapped {
-        inner: Choice(
-            Cond(tag == MsgTy::TYPE1, U8),
-            Choice(
-                Cond(tag == MsgTy::TYPE2, Fixed::<10>),
-                Choice(
-                    Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)),
-                    Cond(tag == MsgTy::TYPE4, Pair(U8, Tail)),
-                ),
-            ),
-        ),
+        inner: match tag {
+                MsgTy::TYPE1 => Sum::Inl(U8),
+                MsgTy::TYPE2 => Sum::Inr(Sum::Inl(Fixed::<10>)),
+                MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(Pair(U8, Tail)))),
+                MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(Pair(U8, Tail)))),
+            },
         mapper: (
             |parsed: TLVMsgInner| -> TLVMsgSpec
                 {
@@ -1083,11 +1091,12 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayloadFmt {
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
 
         let ghost old_obuf = obuf@;
-        match v {
-            TLVMsg::V1(v) => U8.ex_serialize(*v, obuf),
-            TLVMsg::V2(v) => Fixed::<10>.ex_serialize(*v, obuf),
-            TLVMsg::V3(v1, v2) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
-            TLVMsg::V4(v1, v2) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
+        match (self.tag, v) {
+            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(*v, obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(*v, obuf),
+            (MsgTy::TYPE3, TLVMsg::V3(v1, v2)) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
+            (MsgTy::TYPE4, TLVMsg::V4(v1, v2)) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
+            _ => {},
         }
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
