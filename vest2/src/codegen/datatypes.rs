@@ -36,8 +36,10 @@ impl<'a> Analysis<'a> {
         let info = self.info(name);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
-        let inner_ident = format_ident!("{}", info.names.inner);
         let doc = Self::type_doc(name);
+        if let Some(choice_comb) = self.top_level_choice(combinator) {
+            return self.gen_choice_types(choice_comb, &info.names);
+        }
         if combinator.and_then.is_some() {
             let exec_ty = self.render_value_type(combinator, TypeMode::Exec, true);
             let spec_ty = self.render_value_type(combinator, TypeMode::Spec, true);
@@ -64,6 +66,7 @@ impl<'a> Analysis<'a> {
         }
         match self.ctx.resolve(combinator) {
             CombinatorInner::Struct(struct_comb) => {
+                let inner_ident = format_ident!("{}", info.names.inner);
                 let exec_fields = self.struct_value_fields(struct_comb, TypeMode::Exec);
                 let spec_fields = self.struct_value_fields(struct_comb, TypeMode::Spec);
                 let inner_ty = self.render_struct_inner_type(struct_comb, TypeMode::Spec);

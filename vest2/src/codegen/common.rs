@@ -366,6 +366,21 @@ impl<'a> Analysis<'a> {
         self.render_inner_type(&combinator.inner, mode, top_level)
     }
 
+    pub(crate) fn top_level_choice<'b>(
+        &self,
+        combinator: &'b Combinator,
+    ) -> Option<&'b ChoiceCombinator> {
+        if let Some(and_then) = &combinator.and_then {
+            if let CombinatorInner::Choice(choice) = &and_then.inner {
+                return Some(choice);
+            }
+        }
+        match &combinator.inner {
+            CombinatorInner::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
     pub(crate) fn render_inner_type(
         &self,
         inner: &CombinatorInner,

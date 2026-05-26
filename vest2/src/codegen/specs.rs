@@ -46,13 +46,13 @@ impl<'a> Analysis<'a> {
     pub(crate) fn gen_derived_specs_section(
         &self,
         name: &str,
-        combinator: &Combinator,
+        _combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
         let info = self.info(name);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let fmt_ident = format_ident!("{}", info.names.fmt);
-        let top_value_ty = self.render_value_type(combinator, TypeMode::Spec, true);
+        let top_value_ty = self.nominal_type(name, TypeMode::Spec);
         let wrapper_generics = self.wrapper_generics(param_defns);
         let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
 
@@ -270,11 +270,22 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    fn render_and_then_spec(&self, combinator: &Combinator, and_then: &Combinator) -> RenderedSpec {
+    fn render_and_then_spec(
+        &self,
+        combinator: &Combinator,
+        and_then: &Combinator,
+        owner_name: Option<&str>,
+    ) -> RenderedSpec {
         match self.ctx.resolve_alias(&combinator.inner) {
             CombinatorInner::Bytes(bytes) => {
                 let len_expr = self.render_length_expr_usize(&bytes.len);
-                let inner = self.render_spec_combinator(and_then);
+                let inner = if let (Some(name), CombinatorInner::Choice(choice_comb)) =
+                    (owner_name, self.ctx.resolve_alias(&and_then.inner))
+                {
+                    self.render_choice_top_level(name, choice_comb)
+                } else {
+                    self.render_spec_combinator(and_then)
+                };
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
                 RenderedSpec::new(
@@ -289,7 +300,13 @@ impl<'a> Analysis<'a> {
                     inner: combinator.inner.clone(),
                     and_then: None,
                 });
-                let rhs = self.render_spec_combinator(and_then);
+                let rhs = if let (Some(name), CombinatorInner::Choice(choice_comb)) =
+                    (owner_name, self.ctx.resolve_alias(&and_then.inner))
+                {
+                    self.render_choice_top_level(name, choice_comb)
+                } else {
+                    self.render_spec_combinator(and_then)
+                };
                 let lhs_ty = &lhs.ty;
                 let lhs_expr = &lhs.expr;
                 let rhs_ty = &rhs.ty;
@@ -305,8 +322,8 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_top_level_spec(&self, name: &str, combinator: &Combinator) -> RenderedSpec {
-        if combinator.and_then.is_some() {
-            return self.render_spec_combinator(combinator);
+        if let Some(and_then) = &combinator.and_then {
+            return self.render_and_then_spec(combinator, and_then, Some(name));
         }
         match self.ctx.resolve(combinator) {
             CombinatorInner::Struct(struct_comb) => self.render_struct_top_level(name, struct_comb),
@@ -318,7 +335,7 @@ impl<'a> Analysis<'a> {
 
     fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
         if let Some(and_then) = &combinator.and_then {
-            return self.render_and_then_spec(combinator, and_then);
+            return self.render_and_then_spec(combinator, and_then, None);
         }
 
         if let CombinatorInner::Invocation(invocation) = &combinator.inner {
