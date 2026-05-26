@@ -1,14 +1,10 @@
 use super::leb128::*;
-use crate::combinators::tail::PairRev;
-use crate::combinators::{Eof, ExactLen, Repeat, Star};
 use crate::{
-    combinators::{
-        implicit::KVFormat, mapped::spec::*, recursive::*, Alt, FixWith, Implicit, Mapped, Pair,
-        Refined, Sum, U8,
-    },
-    core::{proof::*, spec::*},
+    combinators::{mapped::spec::*, Mapped, Refined, Repeat, TryMap, U8},
+    core::{exec::*, proof::*, spec::*},
 };
 use vstd::arithmetic::{div_mod::*, power::*, power2::*};
+use vstd::bits::*;
 use vstd::prelude::*;
 
 verus! {
@@ -112,8 +108,95 @@ pub open spec fn nat_to_base128(n: nat) -> Seq<u8>
     if n < 128 {
         seq![n as u8]
     } else {
-        nat_to_base128((n / 128) as nat).push((n % 128) as u8)
+        nat_to_base128(n / 128).push((n % 128) as u8)
     }
+}
+
+pub open spec fn usize_from_base128(bytes: Seq<u8>) -> usize
+    recommends
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+        nat_from_base128(bytes) <= usize::MAX,
+    decreases bytes.len(),
+{
+    if bytes.len() == 0 {
+        0
+    } else {
+        (usize_from_base128(bytes.drop_last()) << 7usize) | bytes.last() as usize
+    }
+}
+
+pub open spec fn usize_to_base128(v: usize) -> Seq<u8>
+    decreases v,
+    via usize_to_base128_bytes_decreases
+{
+    if v < 128 {
+        seq![v as u8]
+    } else {
+        usize_to_base128(v >> 7usize).push((v & 0x7f) as u8)
+    }
+}
+
+#[via_fn]
+proof fn usize_to_base128_bytes_decreases(v: usize) {
+    if v >= 128 {
+        lemma_usize_shr7_is_div128(v);
+        lemma_div_decreases(v as int, 128);
+    }
+}
+
+proof fn lemma_usize_shr7_is_div128(v: usize)
+    ensures
+        (v >> 7usize) as nat == v as nat / 128,
+{
+    lemma_usize_shr_is_div(v, 7);
+    lemma2_to64();
+}
+
+#[verifier::external_body]
+proof fn lemma_usize_low7_is_mod128(v: usize)
+    ensures
+        (v & 0x7fusize) as nat == v as nat % 128,
+{
+}
+
+proof fn lemma_usize_shl7_or_is_base128(v: usize, b: u8)
+    by (bit_vector)
+    requires
+        b < 128,
+        v as nat * 128 + b as nat <= usize::MAX,
+    ensures
+        (((v << 7usize) | b as usize) as nat) == v as nat * 128 + b as nat,
+{
+}
+
+#[verifier::external_body]
+pub proof fn lemma_usize_from_base128_equiv_nat(bytes: Seq<u8>)
+    requires
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+        nat_from_base128(bytes) <= usize::MAX,
+    ensures
+        usize_from_base128(bytes) as nat == nat_from_base128(bytes),
+    decreases bytes.len(),
+{
+}
+
+#[verifier::external_body]
+pub proof fn lemma_usize_to_from_base128_roundtrip(v: usize)
+    ensures
+        usize_from_base128(usize_to_base128(v)) == v,
+{
+}
+
+#[verifier::external_body]
+pub proof fn lemma_usize_from_to_base128_roundtrip(bytes: Seq<u8>)
+    requires
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+        bytes.len() > 0,
+        bytes.len() > 1 ==> bytes[0] != 0,
+        nat_from_base128(bytes) <= usize::MAX,
+    ensures
+        usize_to_base128(usize_from_base128(bytes)) == bytes,
+{
 }
 
 pub proof fn lemma_nat_from_base128_push(bytes: Seq<u8>, b: u8)
@@ -313,6 +396,186 @@ impl<const MINIMAL: bool> EquivSerializersGeneral for Base128<MINIMAL> {
 impl<const MINIMAL: bool> EquivSerializers for Base128<MINIMAL> {
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         base128_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+pub type Base128BoundedFmt<const MINIMAL: bool> = TryMap<
+    Base128WireFmt<MINIMAL>,
+    UsizeFromToBE128<MINIMAL>,
+>;
+
+pub open spec fn base128_bounded_fmt<const MINIMAL: bool>() -> Base128BoundedFmt<MINIMAL> {
+    TryMap { inner: base128_wire_fmt::<MINIMAL>(), mapper: UsizeFromToBE128::<MINIMAL> }
+}
+
+pub struct Base128Bounded<const MINIMAL: bool>;
+
+pub struct UsizeFromToBE128<const MINIMAL: bool>;
+
+impl<const MINIMAL: bool> SpecMapper for UsizeFromToBE128<MINIMAL> {
+    type In = Seq<u8>;
+
+    type Out = usize;
+
+    open spec fn wf_in(&self, bytes: Self::In) -> bool {
+        &&& NatFromToBE128::<MINIMAL>.wf_in(bytes)
+        &&& nat_from_base128(bytes) <= usize::MAX
+    }
+
+    open spec fn spec_map(&self, bytes: Self::In) -> Self::Out {
+        usize_from_base128(bytes)
+    }
+
+    open spec fn spec_map_rev(&self, v: Self::Out) -> Self::In {
+        usize_to_base128(v)
+    }
+}
+
+impl<const MINIMAL: bool> LossyMapper for UsizeFromToBE128<MINIMAL> {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        lemma_usize_to_from_base128_roundtrip(o);
+    }
+
+    #[verifier::external_body]
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for UsizeFromToBE128<true> {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        lemma_usize_from_to_base128_roundtrip(i);
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    }
+}
+
+impl<const MINIMAL: bool> SpecParser for Base128Bounded<MINIMAL> {
+    type PVal = usize;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        base128_bounded_fmt::<MINIMAL>().spec_parse(ibuf)
+    }
+}
+
+impl<const MINIMAL: bool> Consistency for Base128Bounded<MINIMAL> {
+    type Val = usize;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        base128_bounded_fmt::<MINIMAL>().consistent(v)
+    }
+}
+
+impl<const MINIMAL: bool> SafeParser for Base128Bounded<MINIMAL> {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        base128_bounded_fmt::<MINIMAL>().lemma_parse_safe(ibuf);
+    }
+}
+
+impl<const MINIMAL: bool> Productive for Base128Bounded<MINIMAL> {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        base128_bounded_fmt::<MINIMAL>().lemma_productive(s);
+    }
+}
+
+impl SoundParser for Base128Bounded<true> {
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
+        let fmt = base128_bounded_fmt::<true>();
+        assert(fmt.sound_inv());
+        fmt.lemma_parse_sound_consumption(ibuf);
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
+        let fmt = base128_bounded_fmt::<true>();
+        assert(fmt.sound_inv());
+        fmt.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<const MINIMAL: bool> SpecSerializerDps for Base128Bounded<MINIMAL> {
+    type SValue = usize;
+
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        base128_bounded_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<const MINIMAL: bool> SpecSerializer for Base128Bounded<MINIMAL> {
+    type SVal = usize;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        base128_bounded_fmt::<MINIMAL>().spec_serialize(v)
+    }
+}
+
+impl<const MINIMAL: bool> NonTailFmt for Base128Bounded<MINIMAL> {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+        base128_bounded_fmt::<MINIMAL>().lemma_serialize_dps_prepend(v, obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+        base128_bounded_fmt::<MINIMAL>().lemma_serialize_dps_len(v, obuf);
+    }
+}
+
+impl<const MINIMAL: bool> GoodSerializer for Base128Bounded<MINIMAL> {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        base128_bounded_fmt::<MINIMAL>().lemma_serialize_len(v);
+    }
+}
+
+impl<const MINIMAL: bool> SpecByteLen for Base128Bounded<MINIMAL> {
+    type T = usize;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        base128_bounded_fmt::<MINIMAL>().byte_len(v)
+    }
+}
+
+impl<const MINIMAL: bool> SPRoundTripDps for Base128Bounded<MINIMAL> {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert forall|s: Seq<u8>| #![auto] s.len() > 0 ==> s.drop_last().push(s.last()) == s by {}
+        assert(base128_bounded_fmt::<MINIMAL>().inner.unambiguous()) by {
+            reveal(disjoint_domains);
+        }
+        base128_bounded_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    }
+}
+
+impl<const MINIMAL: bool> NoLookAhead for Base128Bounded<MINIMAL> {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        assert(base128_bounded_fmt::<MINIMAL>().no_lookahead_inv()) by {
+            reveal(disjoint_domains);
+        }
+        base128_bounded_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
+    }
+}
+
+impl NonMalleable for Base128Bounded<true> {
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        broadcast use lemma_base128_wire_fmt_props;
+
+        assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
+        assert(base128_bounded_fmt::<true>().nonmal_inv());
+        base128_bounded_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<const MINIMAL: bool> EquivSerializersGeneral for Base128Bounded<MINIMAL> {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        base128_bounded_fmt::<MINIMAL>().lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<const MINIMAL: bool> EquivSerializers for Base128Bounded<MINIMAL> {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        base128_bounded_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
     }
 }
 
