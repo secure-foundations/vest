@@ -152,8 +152,8 @@ proof fn lemma_usize_shr7_is_div128(v: usize)
     lemma2_to64();
 }
 
-#[verifier::external_body]
 proof fn lemma_usize_low7_is_mod128(v: usize)
+    by (bit_vector)
     ensures
         (v & 0x7fusize) as nat == v as nat % 128,
 {
@@ -169,7 +169,6 @@ proof fn lemma_usize_shl7_or_is_base128(v: usize, b: u8)
 {
 }
 
-#[verifier::external_body]
 pub proof fn lemma_usize_from_base128_equiv_nat(bytes: Seq<u8>)
     requires
         forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
@@ -178,16 +177,44 @@ pub proof fn lemma_usize_from_base128_equiv_nat(bytes: Seq<u8>)
         usize_from_base128(bytes) as nat == nat_from_base128(bytes),
     decreases bytes.len(),
 {
+    if bytes.len() == 0 {
+    } else {
+        let prefix = bytes.drop_last();
+        let last = bytes.last();
+
+        lemma_usize_from_base128_equiv_nat(prefix);
+        let prefix_usize = usize_from_base128(prefix);
+        lemma_usize_shl7_or_is_base128(prefix_usize, last);
+    }
 }
 
-#[verifier::external_body]
+pub proof fn lemma_usize_to_base128_eq_nat(v: usize)
+    ensures
+        usize_to_base128(v) == nat_to_base128(v as nat),
+    decreases v,
+{
+    if v < 128 {
+    } else {
+        // v >= 128: usize_to_base128(v) = usize_to_base128(v >> 7).push((v & 0x7f) as u8)
+        //            nat_to_base128(v) = nat_to_base128(v / 128).push((v % 128) as u8)
+        lemma_usize_shr7_is_div128(v);
+        lemma_usize_low7_is_mod128(v);
+        let vd = v >> 7usize;
+        lemma_usize_to_base128_eq_nat(vd);
+    }
+}
+
 pub proof fn lemma_usize_to_from_base128_roundtrip(v: usize)
     ensures
         usize_from_base128(usize_to_base128(v)) == v,
 {
+    lemma_usize_to_base128_eq_nat(v);
+    lemma_nat_to_base128_props(v as nat);
+    lemma_to_from_base128_roundtrip(v as nat);
+    let bytes = usize_to_base128(v);
+    lemma_usize_from_base128_equiv_nat(bytes);
 }
 
-#[verifier::external_body]
 pub proof fn lemma_usize_from_to_base128_roundtrip(bytes: Seq<u8>)
     requires
         forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
@@ -197,6 +224,10 @@ pub proof fn lemma_usize_from_to_base128_roundtrip(bytes: Seq<u8>)
     ensures
         usize_to_base128(usize_from_base128(bytes)) == bytes,
 {
+    lemma_usize_from_base128_equiv_nat(bytes);
+    lemma_from_to_base128_roundtrip(bytes);
+    let v = usize_from_base128(bytes);
+    lemma_usize_to_base128_eq_nat(v);
 }
 
 pub proof fn lemma_nat_from_base128_push(bytes: Seq<u8>, b: u8)
@@ -436,8 +467,10 @@ impl<const MINIMAL: bool> LossyMapper for UsizeFromToBE128<MINIMAL> {
         lemma_usize_to_from_base128_roundtrip(o);
     }
 
-    #[verifier::external_body]
     proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+        lemma_usize_to_base128_eq_nat(o);
+        lemma_nat_to_base128_props(o as nat);
+        lemma_to_from_base128_roundtrip(o as nat);
     }
 }
 
