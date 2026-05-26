@@ -29,3 +29,6 @@ Cargo.lock
 *.diff
 
 .DS_Store
+
+# AI
+.antigravitycli
