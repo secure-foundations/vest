@@ -1,0 +1,2365 @@
+# ! [allow (warnings)] use vest_lib2 :: combinators :: mapped :: spec :: * ;
+use vest_lib2 :: combinators :: * ;
+use vest_lib2 :: core :: exec :: input :: {
+    InputBuf ,
+    InputSlice
+}
+;
+use vest_lib2 :: core :: exec :: parser :: * ;
+use vest_lib2 :: core :: exec :: serializer :: * ;
+use vest_lib2 :: core :: exec :: ParseError ;
+use vest_lib2 :: core :: {
+    proof :: * ,
+    spec :: *
+}
+;
+use vest_lib2 :: primitives :: btcvarint :: VarInt ;
+use vest_lib2 :: primitives :: leb128 :: ULeb128 ;
+use vstd :: prelude :: * ;
+verus! {
+    // ============================================================
+    // Data Types
+    // ============================================================
+    # [doc = "data type for `msg5_content`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub enum Msg5Content < 'i > {
+        Variant1 (u16) ,
+        Default (& 'i [u8]) ,
+    }
+    # [verifier :: ext_equal]
+    pub enum Msg5ContentSpec {
+        Variant1 (u16) ,
+        Default (Seq < u8 >) ,
+    }
+    pub type Msg5ContentInner = Sum < u16 , Seq < u8 > > ;
+    impl < 'i > DeepView for Msg5Content < 'i > {
+        type V = Msg5ContentSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            match self {
+                Msg5Content :: Variant1 (v) => Msg5ContentSpec :: Variant1 (v . deep_view ()) ,
+                Msg5Content :: Default (v) => Msg5ContentSpec :: Default (v . deep_view ()) ,
+            }
+        }
+    }
+
+    # [doc = "data type for `hello_retry_request`."]
+    pub type HelloRetryRequest = u16 ;
+    pub type HelloRetryRequestSpec = u16 ;
+
+
+    # [doc = "data type for `server_hello`."]
+    pub type ServerHello = u32 ;
+    pub type ServerHelloSpec = u32 ;
+
+
+    # [doc = "data type for `msg1_payload`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub enum Msg1Payload {
+        Variant1 (HelloRetryRequest) ,
+        Default (ServerHello) ,
+    }
+    # [verifier :: ext_equal]
+    pub enum Msg1PayloadSpec {
+        Variant1 (HelloRetryRequestSpec) ,
+        Default (ServerHelloSpec) ,
+    }
+    pub type Msg1PayloadInner = Sum < HelloRetryRequestSpec , ServerHelloSpec > ;
+    impl DeepView for Msg1Payload {
+        type V = Msg1PayloadSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            match self {
+                Msg1Payload :: Variant1 (v) => Msg1PayloadSpec :: Variant1 (v . deep_view ()) ,
+                Msg1Payload :: Default (v) => Msg1PayloadSpec :: Default (v . deep_view ()) ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg4_content`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub enum Msg4Content < 'i > {
+        Variant1 (u16) ,
+        Default (& 'i [u8]) ,
+    }
+    # [verifier :: ext_equal]
+    pub enum Msg4ContentSpec {
+        Variant1 (u16) ,
+        Default (Seq < u8 >) ,
+    }
+    pub type Msg4ContentInner = Sum < u16 , Seq < u8 > > ;
+    impl < 'i > DeepView for Msg4Content < 'i > {
+        type V = Msg4ContentSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            match self {
+                Msg4Content :: Variant1 (v) => Msg4ContentSpec :: Variant1 (v . deep_view ()) ,
+                Msg4Content :: Default (v) => Msg4ContentSpec :: Default (v . deep_view ()) ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg3_content`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub enum Msg3Content < 'i > {
+        Variant1 (u16) ,
+        Variant2 (u32) ,
+        Variant3 (u32) ,
+        Default (& 'i [u8]) ,
+    }
+    # [verifier :: ext_equal]
+    pub enum Msg3ContentSpec {
+        Variant1 (u16) ,
+        Variant2 (u32) ,
+        Variant3 (u32) ,
+        Default (Seq < u8 >) ,
+    }
+    pub type Msg3ContentInner = Sum < u16 , Sum < u32 , Sum < u32 , Seq < u8 > > > > ;
+    impl < 'i > DeepView for Msg3Content < 'i > {
+        type V = Msg3ContentSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            match self {
+                Msg3Content :: Variant1 (v) => Msg3ContentSpec :: Variant1 (v . deep_view ()) ,
+                Msg3Content :: Variant2 (v) => Msg3ContentSpec :: Variant2 (v . deep_view ()) ,
+                Msg3Content :: Variant3 (v) => Msg3ContentSpec :: Variant3 (v . deep_view ()) ,
+                Msg3Content :: Default (v) => Msg3ContentSpec :: Default (v . deep_view ()) ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg3`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct Msg3 < 'i > {
+        pub i : u8 ,
+        pub content : Msg3Content < 'i > ,
+    }
+    # [verifier :: ext_equal]
+    pub struct Msg3Spec {
+        pub i : u8 ,
+        pub content : Msg3ContentSpec ,
+    }
+    pub type Msg3Inner = (u8 , Msg3ContentSpec) ;
+    impl < 'i > DeepView for Msg3 < 'i > {
+        type V = Msg3Spec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            Msg3Spec {
+                i : self . i . deep_view () ,
+                content : self . content . deep_view () ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg5`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct Msg5 < 'i > {
+        pub i : u64 ,
+        pub content : Msg5Content < 'i > ,
+    }
+    # [verifier :: ext_equal]
+    pub struct Msg5Spec {
+        pub i : u64 ,
+        pub content : Msg5ContentSpec ,
+    }
+    pub type Msg5Inner = (u64 , Msg5ContentSpec) ;
+    impl < 'i > DeepView for Msg5 < 'i > {
+        type V = Msg5Spec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            Msg5Spec {
+                i : self . i . deep_view () ,
+                content : self . content . deep_view () ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg2_content`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub enum Msg2Content {
+        Variant1 (u16) ,
+        Default (u32) ,
+    }
+    # [verifier :: ext_equal]
+    pub enum Msg2ContentSpec {
+        Variant1 (u16) ,
+        Default (u32) ,
+    }
+    pub type Msg2ContentInner = Sum < u16 , u32 > ;
+    impl DeepView for Msg2Content {
+        type V = Msg2ContentSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            match self {
+                Msg2Content :: Variant1 (v) => Msg2ContentSpec :: Variant1 (v . deep_view ()) ,
+                Msg2Content :: Default (v) => Msg2ContentSpec :: Default (v . deep_view ()) ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg1`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct Msg1 < 'i > {
+        pub b : & 'i [u8] ,
+        pub payload : Msg1Payload ,
+    }
+    # [verifier :: ext_equal]
+    pub struct Msg1Spec {
+        pub b : Seq < u8 > ,
+        pub payload : Msg1PayloadSpec ,
+    }
+    pub type Msg1Inner = (Seq < u8 > , Msg1PayloadSpec) ;
+    impl < 'i > DeepView for Msg1 < 'i > {
+        type V = Msg1Spec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            Msg1Spec {
+                b : self . b . deep_view () ,
+                payload : self . payload . deep_view () ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg2`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct Msg2 < 'i > {
+        pub b : & 'i [u8] ,
+        pub content : Msg2Content ,
+    }
+    # [verifier :: ext_equal]
+    pub struct Msg2Spec {
+        pub b : Seq < u8 > ,
+        pub content : Msg2ContentSpec ,
+    }
+    pub type Msg2Inner = (Seq < u8 > , Msg2ContentSpec) ;
+    impl < 'i > DeepView for Msg2 < 'i > {
+        type V = Msg2Spec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            Msg2Spec {
+                b : self . b . deep_view () ,
+                content : self . content . deep_view () ,
+            }
+        }
+    }
+
+    # [doc = "data type for `msg4`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct Msg4 < 'i > {
+        pub i : u32 ,
+        pub content : Msg4Content < 'i > ,
+    }
+    # [verifier :: ext_equal]
+    pub struct Msg4Spec {
+        pub i : u32 ,
+        pub content : Msg4ContentSpec ,
+    }
+    pub type Msg4Inner = (u32 , Msg4ContentSpec) ;
+    impl < 'i > DeepView for Msg4 < 'i > {
+        type V = Msg4Spec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            Msg4Spec {
+                i : self . i . deep_view () ,
+                content : self . content . deep_view () ,
+            }
+        }
+    }
+
+    // ============================================================
+    // Format Specifications
+    // ============================================================
+    # [doc = "named format combinator for `msg5_content`."]
+    pub struct Msg5ContentFmt {
+        pub i : u64 ,
+    }
+
+    pub type Msg5ContentFmtSpec = Named < Mapped < Sum < U16Le , Tail > , FnSpecMapper < Msg5ContentInner , Msg5ContentSpec >> > ;
+
+    # [doc = "specification constructor for `msg5_content`."]
+    pub open spec fn msg5_content_fmt (i : u64) -> Msg5ContentFmtSpec {
+        Named ("msg5_content" ,
+        Mapped {
+            inner : match i {
+                1 => Sum :: Inl (U16Le) ,
+                _ => Sum :: Inr (Tail) ,
+            }
+            ,
+            mapper : (| parsed : Msg5ContentInner | -> Msg5ContentSpec {
+                match parsed {
+                    Sum :: Inl (v) => Msg5ContentSpec :: Variant1 (v) ,
+                    Sum :: Inr (v) => Msg5ContentSpec :: Default (v) ,
+                }
+            }
+            ,
+            | value : Msg5ContentSpec | -> Msg5ContentInner {
+                match value {
+                    Msg5ContentSpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    Msg5ContentSpec :: Default (v) => Sum :: Inr (v) ,
+                }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `hello_retry_request`."]
+    pub struct HelloRetryRequestFmt ;
+
+    pub type HelloRetryRequestFmtSpec = Named < U16Le > ;
+
+    # [doc = "specification constructor for `hello_retry_request`."]
+    pub open spec fn hello_retry_request_fmt () -> HelloRetryRequestFmtSpec {
+        Named ("hello_retry_request" ,
+        U16Le)
+    }
+
+
+    # [doc = "named format combinator for `server_hello`."]
+    pub struct ServerHelloFmt ;
+
+    pub type ServerHelloFmtSpec = Named < U32Le > ;
+
+    # [doc = "specification constructor for `server_hello`."]
+    pub open spec fn server_hello_fmt () -> ServerHelloFmtSpec {
+        Named ("server_hello" ,
+        U32Le)
+    }
+
+
+    # [doc = "named format combinator for `msg1_payload`."]
+    pub struct Msg1PayloadFmt < 'i > {
+        pub b : & 'i [u8] ,
+    }
+
+    pub type Msg1PayloadFmtSpec = Named < Mapped < Sum < HelloRetryRequestFmt , ServerHelloFmt > , FnSpecMapper < Msg1PayloadInner , Msg1PayloadSpec >> > ;
+
+    # [doc = "specification constructor for `msg1_payload`."]
+    pub open spec fn msg1_payload_fmt (b : Seq < u8 >) -> Msg1PayloadFmtSpec {
+        Named ("msg1_payload" ,
+        Mapped {
+            inner : match b {
+                x if x == seq ! [207u8 , 33u8 , 173u8 , 116u8 , 229u8 , 154u8 , 97u8 , 17u8 , 190u8 , 29u8 , 140u8 , 2u8 , 30u8 , 101u8 , 184u8 , 145u8 , 194u8 , 162u8 , 17u8 , 22u8 , 122u8 , 187u8 , 140u8 , 94u8 , 7u8 , 158u8 , 9u8 , 226u8 , 200u8 , 168u8 , 51u8 , 156u8] => Sum :: Inl (HelloRetryRequestFmt) ,
+                _ => Sum :: Inr (ServerHelloFmt) ,
+            }
+            ,
+            mapper : (| parsed : Msg1PayloadInner | -> Msg1PayloadSpec {
+                match parsed {
+                    Sum :: Inl (v) => Msg1PayloadSpec :: Variant1 (v) ,
+                    Sum :: Inr (v) => Msg1PayloadSpec :: Default (v) ,
+                }
+            }
+            ,
+            | value : Msg1PayloadSpec | -> Msg1PayloadInner {
+                match value {
+                    Msg1PayloadSpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    Msg1PayloadSpec :: Default (v) => Sum :: Inr (v) ,
+                }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg4_content`."]
+    pub struct Msg4ContentFmt {
+        pub i : u32 ,
+    }
+
+    pub type Msg4ContentFmtSpec = Named < Mapped < Sum < U16Le , Tail > , FnSpecMapper < Msg4ContentInner , Msg4ContentSpec >> > ;
+
+    # [doc = "specification constructor for `msg4_content`."]
+    pub open spec fn msg4_content_fmt (i : u32) -> Msg4ContentFmtSpec {
+        Named ("msg4_content" ,
+        Mapped {
+            inner : match i {
+                1 => Sum :: Inl (U16Le) ,
+                _ => Sum :: Inr (Tail) ,
+            }
+            ,
+            mapper : (| parsed : Msg4ContentInner | -> Msg4ContentSpec {
+                match parsed {
+                    Sum :: Inl (v) => Msg4ContentSpec :: Variant1 (v) ,
+                    Sum :: Inr (v) => Msg4ContentSpec :: Default (v) ,
+                }
+            }
+            ,
+            | value : Msg4ContentSpec | -> Msg4ContentInner {
+                match value {
+                    Msg4ContentSpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    Msg4ContentSpec :: Default (v) => Sum :: Inr (v) ,
+                }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg3_content`."]
+    pub struct Msg3ContentFmt {
+        pub i : u8 ,
+    }
+
+    pub type Msg3ContentFmtSpec = Named < Mapped < Sum < U16Le , Sum < U32Le , Sum < U32Le , Tail > > > , FnSpecMapper < Msg3ContentInner , Msg3ContentSpec >> > ;
+
+    # [doc = "specification constructor for `msg3_content`."]
+    pub open spec fn msg3_content_fmt (i : u8) -> Msg3ContentFmtSpec {
+        Named ("msg3_content" ,
+        Mapped {
+            inner : match i {
+                1 => Sum :: Inl (U16Le) ,
+                2 => Sum :: Inr (Sum :: Inl (U32Le)) ,
+                3 => Sum :: Inr (Sum :: Inr (Sum :: Inl (U32Le))) ,
+                _ => Sum :: Inr (Sum :: Inr (Sum :: Inr (Tail))) ,
+            }
+            ,
+            mapper : (| parsed : Msg3ContentInner | -> Msg3ContentSpec {
+                match parsed {
+                    Sum :: Inl (v) => Msg3ContentSpec :: Variant1 (v) ,
+                    Sum :: Inr (Sum :: Inl (v)) => Msg3ContentSpec :: Variant2 (v) ,
+                    Sum :: Inr (Sum :: Inr (Sum :: Inl (v))) => Msg3ContentSpec :: Variant3 (v) ,
+                    Sum :: Inr (Sum :: Inr (Sum :: Inr (v))) => Msg3ContentSpec :: Default (v) ,
+                }
+            }
+            ,
+            | value : Msg3ContentSpec | -> Msg3ContentInner {
+                match value {
+                    Msg3ContentSpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    Msg3ContentSpec :: Variant2 (v) => Sum :: Inr (Sum :: Inl (v)) ,
+                    Msg3ContentSpec :: Variant3 (v) => Sum :: Inr (Sum :: Inr (Sum :: Inl (v))) ,
+                    Msg3ContentSpec :: Default (v) => Sum :: Inr (Sum :: Inr (Sum :: Inr (v))) ,
+                }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg3`."]
+    pub struct Msg3Fmt ;
+
+    pub type Msg3FmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Msg3ContentFmt > , FnSpecMapper < Msg3Inner , Msg3Spec >> > ;
+
+    # [doc = "specification constructor for `msg3`."]
+    pub open spec fn msg3_fmt () -> Msg3FmtSpec {
+        Named ("msg3" ,
+        Mapped {
+            inner : Bind (U8 ,
+            | i : u8 | Msg3ContentFmt {
+                i
+            }
+            ) ,
+            mapper : (| parsed : Msg3Inner | -> Msg3Spec {
+                let (i ,
+                content) = parsed ;
+                Msg3Spec {
+                    i ,
+                    content
+                }
+            }
+            ,
+            | value : Msg3Spec | -> Msg3Inner {
+                let Msg3Spec {
+                    i ,
+                    content
+                }
+                = value ;
+                (i ,
+                content)
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg5`."]
+    pub struct Msg5Fmt ;
+
+    pub type Msg5FmtSpec = Named < Mapped < Bind < VarInt < true > , spec_fn (u64) -> Msg5ContentFmt > , FnSpecMapper < Msg5Inner , Msg5Spec >> > ;
+
+    # [doc = "specification constructor for `msg5`."]
+    pub open spec fn msg5_fmt () -> Msg5FmtSpec {
+        Named ("msg5" ,
+        Mapped {
+            inner : Bind (VarInt :: < true > ,
+            | i : u64 | Msg5ContentFmt {
+                i
+            }
+            ) ,
+            mapper : (| parsed : Msg5Inner | -> Msg5Spec {
+                let (i ,
+                content) = parsed ;
+                Msg5Spec {
+                    i ,
+                    content
+                }
+            }
+            ,
+            | value : Msg5Spec | -> Msg5Inner {
+                let Msg5Spec {
+                    i ,
+                    content
+                }
+                = value ;
+                (i ,
+                content)
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg2_content`."]
+    pub struct Msg2ContentFmt < 'i > {
+        pub b : & 'i [u8] ,
+    }
+
+    pub type Msg2ContentFmtSpec = Named < Mapped < Sum < U16Le , U32Le > , FnSpecMapper < Msg2ContentInner , Msg2ContentSpec >> > ;
+
+    # [doc = "specification constructor for `msg2_content`."]
+    pub open spec fn msg2_content_fmt (b : Seq < u8 >) -> Msg2ContentFmtSpec {
+        Named ("msg2_content" ,
+        Mapped {
+            inner : match b {
+                x if x == seq ! [22u8 , 3u8 , 1u8] => Sum :: Inl (U16Le) ,
+                _ => Sum :: Inr (U32Le) ,
+            }
+            ,
+            mapper : (| parsed : Msg2ContentInner | -> Msg2ContentSpec {
+                match parsed {
+                    Sum :: Inl (v) => Msg2ContentSpec :: Variant1 (v) ,
+                    Sum :: Inr (v) => Msg2ContentSpec :: Default (v) ,
+                }
+            }
+            ,
+            | value : Msg2ContentSpec | -> Msg2ContentInner {
+                match value {
+                    Msg2ContentSpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    Msg2ContentSpec :: Default (v) => Sum :: Inr (v) ,
+                }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg1`."]
+    pub struct Msg1Fmt ;
+
+    pub type Msg1FmtSpec = Named < Mapped < Bind < Fixed < 32 > , spec_fn (Seq < u8 >) -> Msg1PayloadFmtSpec > , FnSpecMapper < Msg1Inner , Msg1Spec >> > ;
+
+    # [doc = "specification constructor for `msg1`."]
+    pub open spec fn msg1_fmt () -> Msg1FmtSpec {
+        Named ("msg1" ,
+        Mapped {
+            inner : Bind (Fixed :: < 32 > ,
+            | b : Seq < u8 > | msg1_payload_fmt (b)) ,
+            mapper : (| parsed : Msg1Inner | -> Msg1Spec {
+                let (b ,
+                payload) = parsed ;
+                Msg1Spec {
+                    b ,
+                    payload
+                }
+            }
+            ,
+            | value : Msg1Spec | -> Msg1Inner {
+                let Msg1Spec {
+                    b ,
+                    payload
+                }
+                = value ;
+                (b ,
+                payload)
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg2`."]
+    pub struct Msg2Fmt ;
+
+    pub type Msg2FmtSpec = Named < Mapped < Bind < Fixed < 3 > , spec_fn (Seq < u8 >) -> Msg2ContentFmtSpec > , FnSpecMapper < Msg2Inner , Msg2Spec >> > ;
+
+    # [doc = "specification constructor for `msg2`."]
+    pub open spec fn msg2_fmt () -> Msg2FmtSpec {
+        Named ("msg2" ,
+        Mapped {
+            inner : Bind (Fixed :: < 3 > ,
+            | b : Seq < u8 > | msg2_content_fmt (b)) ,
+            mapper : (| parsed : Msg2Inner | -> Msg2Spec {
+                let (b ,
+                content) = parsed ;
+                Msg2Spec {
+                    b ,
+                    content
+                }
+            }
+            ,
+            | value : Msg2Spec | -> Msg2Inner {
+                let Msg2Spec {
+                    b ,
+                    content
+                }
+                = value ;
+                (b ,
+                content)
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `msg4`."]
+    pub struct Msg4Fmt ;
+
+    pub type Msg4FmtSpec = Named < Mapped < Bind < U24Le , spec_fn (u32) -> Msg4ContentFmt > , FnSpecMapper < Msg4Inner , Msg4Spec >> > ;
+
+    # [doc = "specification constructor for `msg4`."]
+    pub open spec fn msg4_fmt () -> Msg4FmtSpec {
+        Named ("msg4" ,
+        Mapped {
+            inner : Bind (U24Le ,
+            | i : u32 | Msg4ContentFmt {
+                i
+            }
+            ) ,
+            mapper : (| parsed : Msg4Inner | -> Msg4Spec {
+                let (i ,
+                content) = parsed ;
+                Msg4Spec {
+                    i ,
+                    content
+                }
+            }
+            ,
+            | value : Msg4Spec | -> Msg4Inner {
+                let Msg4Spec {
+                    i ,
+                    content
+                }
+                = value ;
+                (i ,
+                content)
+            }
+            )
+        }
+        )
+    }
+
+    // ============================================================
+    // Derived Parser, Serializer, Length, and Consistency Specifications
+    // ============================================================
+    mod derived_specs {
+        use super::*;
+
+        impl SpecParser for Msg5ContentFmt {
+            type PVal = Msg5ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg5_content_fmt (self . i . deep_view ()) . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg5ContentFmt {
+            type Val = Msg5ContentSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg5_content_fmt (self . i . deep_view ()) . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg5ContentFmt {
+            type SValue = Msg5ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg5_content_fmt (self . i . deep_view ()) . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg5ContentFmt {
+            type SVal = Msg5ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg5_content_fmt (self . i . deep_view ()) . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg5ContentFmt {
+            type T = Msg5ContentSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg5_content_fmt (self . i . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for HelloRetryRequestFmt {
+            type PVal = HelloRetryRequestSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                hello_retry_request_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for HelloRetryRequestFmt {
+            type Val = HelloRetryRequestSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                hello_retry_request_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for HelloRetryRequestFmt {
+            type SValue = HelloRetryRequestSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                hello_retry_request_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for HelloRetryRequestFmt {
+            type SVal = HelloRetryRequestSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                hello_retry_request_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for HelloRetryRequestFmt {
+            type T = HelloRetryRequestSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                hello_retry_request_fmt () . byte_len (v)
+            }
+        }
+
+        impl SpecParser for ServerHelloFmt {
+            type PVal = ServerHelloSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                server_hello_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for ServerHelloFmt {
+            type Val = ServerHelloSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                server_hello_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for ServerHelloFmt {
+            type SValue = ServerHelloSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                server_hello_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for ServerHelloFmt {
+            type SVal = ServerHelloSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                server_hello_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for ServerHelloFmt {
+            type T = ServerHelloSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                server_hello_fmt () . byte_len (v)
+            }
+        }
+
+        impl < 'i > SpecParser for Msg1PayloadFmt < 'i > {
+            type PVal = Msg1PayloadSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg1_payload_fmt (self . b . deep_view ()) . spec_parse (ibuf)
+            }
+        }
+        impl < 'i > Consistency for Msg1PayloadFmt < 'i > {
+            type Val = Msg1PayloadSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg1_payload_fmt (self . b . deep_view ()) . consistent (v)
+            }
+        }
+        impl < 'i > SpecSerializerDps for Msg1PayloadFmt < 'i > {
+            type SValue = Msg1PayloadSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg1_payload_fmt (self . b . deep_view ()) . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl < 'i > SpecSerializer for Msg1PayloadFmt < 'i > {
+            type SVal = Msg1PayloadSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg1_payload_fmt (self . b . deep_view ()) . spec_serialize (v)
+            }
+        }
+        impl < 'i > SpecByteLen for Msg1PayloadFmt < 'i > {
+            type T = Msg1PayloadSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg1_payload_fmt (self . b . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg4ContentFmt {
+            type PVal = Msg4ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg4_content_fmt (self . i . deep_view ()) . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg4ContentFmt {
+            type Val = Msg4ContentSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg4_content_fmt (self . i . deep_view ()) . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg4ContentFmt {
+            type SValue = Msg4ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg4_content_fmt (self . i . deep_view ()) . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg4ContentFmt {
+            type SVal = Msg4ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg4_content_fmt (self . i . deep_view ()) . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg4ContentFmt {
+            type T = Msg4ContentSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg4_content_fmt (self . i . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg3ContentFmt {
+            type PVal = Msg3ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg3_content_fmt (self . i . deep_view ()) . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg3ContentFmt {
+            type Val = Msg3ContentSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg3_content_fmt (self . i . deep_view ()) . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg3ContentFmt {
+            type SValue = Msg3ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg3_content_fmt (self . i . deep_view ()) . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg3ContentFmt {
+            type SVal = Msg3ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg3_content_fmt (self . i . deep_view ()) . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg3ContentFmt {
+            type T = Msg3ContentSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg3_content_fmt (self . i . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg3Fmt {
+            type PVal = Msg3Spec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg3_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg3Fmt {
+            type Val = Msg3Spec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg3_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg3Fmt {
+            type SValue = Msg3Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg3_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg3Fmt {
+            type SVal = Msg3Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg3_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg3Fmt {
+            type T = Msg3Spec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg3_fmt () . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg5Fmt {
+            type PVal = Msg5Spec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg5_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg5Fmt {
+            type Val = Msg5Spec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg5_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg5Fmt {
+            type SValue = Msg5Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg5_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg5Fmt {
+            type SVal = Msg5Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg5_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg5Fmt {
+            type T = Msg5Spec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg5_fmt () . byte_len (v)
+            }
+        }
+
+        impl < 'i > SpecParser for Msg2ContentFmt < 'i > {
+            type PVal = Msg2ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg2_content_fmt (self . b . deep_view ()) . spec_parse (ibuf)
+            }
+        }
+        impl < 'i > Consistency for Msg2ContentFmt < 'i > {
+            type Val = Msg2ContentSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg2_content_fmt (self . b . deep_view ()) . consistent (v)
+            }
+        }
+        impl < 'i > SpecSerializerDps for Msg2ContentFmt < 'i > {
+            type SValue = Msg2ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg2_content_fmt (self . b . deep_view ()) . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl < 'i > SpecSerializer for Msg2ContentFmt < 'i > {
+            type SVal = Msg2ContentSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg2_content_fmt (self . b . deep_view ()) . spec_serialize (v)
+            }
+        }
+        impl < 'i > SpecByteLen for Msg2ContentFmt < 'i > {
+            type T = Msg2ContentSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg2_content_fmt (self . b . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg1Fmt {
+            type PVal = Msg1Spec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg1_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg1Fmt {
+            type Val = Msg1Spec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg1_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg1Fmt {
+            type SValue = Msg1Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg1_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg1Fmt {
+            type SVal = Msg1Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg1_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg1Fmt {
+            type T = Msg1Spec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg1_fmt () . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg2Fmt {
+            type PVal = Msg2Spec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg2_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg2Fmt {
+            type Val = Msg2Spec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg2_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg2Fmt {
+            type SValue = Msg2Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg2_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg2Fmt {
+            type SVal = Msg2Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg2_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg2Fmt {
+            type T = Msg2Spec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg2_fmt () . byte_len (v)
+            }
+        }
+
+        impl SpecParser for Msg4Fmt {
+            type PVal = Msg4Spec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                msg4_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for Msg4Fmt {
+            type Val = Msg4Spec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                msg4_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for Msg4Fmt {
+            type SValue = Msg4Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                msg4_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for Msg4Fmt {
+            type SVal = Msg4Spec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                msg4_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for Msg4Fmt {
+            type T = Msg4Spec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                msg4_fmt () . byte_len (v)
+            }
+        }
+    }
+
+    // ============================================================
+    // Proven Format Properties
+    // ============================================================
+    mod derived_proofs {
+        use super::*;
+        broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+
+        impl SafeParser for Msg5ContentFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                msg5_content_fmt (self . i . deep_view ()) . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg5ContentFmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg5_content_fmt (self . i . deep_view ()) . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg5ContentFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5ContentFmt as Consistency > :: consistent) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg5ContentFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg5ContentFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg5ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg5ContentFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg5ContentFmt as Consistency > :: consistent) ;
+                reveal (< Msg5ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg5ContentFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg5ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg5ContentFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg5ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg5ContentFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg5_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for HelloRetryRequestFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                hello_retry_request_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for HelloRetryRequestFmt {
+            open spec fn productive_inv (& self) -> bool {
+                hello_retry_request_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for HelloRetryRequestFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                reveal (< HelloRetryRequestFmt as SpecByteLen > :: byte_len) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                reveal (< HelloRetryRequestFmt as Consistency > :: consistent) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl NonTailFmt for HelloRetryRequestFmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< HelloRetryRequestFmt as SpecByteLen > :: byte_len) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl GoodSerializer for HelloRetryRequestFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< HelloRetryRequestFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< HelloRetryRequestFmt as SpecByteLen > :: byte_len) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for HelloRetryRequestFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                reveal (< HelloRetryRequestFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< HelloRetryRequestFmt as Consistency > :: consistent) ;
+                reveal (< HelloRetryRequestFmt as SpecByteLen > :: byte_len) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for HelloRetryRequestFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for HelloRetryRequestFmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< HelloRetryRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl EquivSerializers for HelloRetryRequestFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< HelloRetryRequestFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< HelloRetryRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = hello_retry_request_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for ServerHelloFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                server_hello_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for ServerHelloFmt {
+            open spec fn productive_inv (& self) -> bool {
+                server_hello_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for ServerHelloFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                reveal (< ServerHelloFmt as SpecByteLen > :: byte_len) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                reveal (< ServerHelloFmt as Consistency > :: consistent) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl NonTailFmt for ServerHelloFmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< ServerHelloFmt as SpecByteLen > :: byte_len) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl GoodSerializer for ServerHelloFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< ServerHelloFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< ServerHelloFmt as SpecByteLen > :: byte_len) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for ServerHelloFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                reveal (< ServerHelloFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< ServerHelloFmt as Consistency > :: consistent) ;
+                reveal (< ServerHelloFmt as SpecByteLen > :: byte_len) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for ServerHelloFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for ServerHelloFmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< ServerHelloFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< ServerHelloFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl EquivSerializers for ServerHelloFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< ServerHelloFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< ServerHelloFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = server_hello_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl < 'i > SafeParser for Msg1PayloadFmt < 'i > {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                msg1_payload_fmt (self . b . deep_view ()) . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl < 'i > Productive for Msg1PayloadFmt < 'i > {
+            open spec fn productive_inv (& self) -> bool {
+                msg1_payload_fmt (self . b . deep_view ()) . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl < 'i > SoundParser for Msg1PayloadFmt < 'i > {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1PayloadFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1PayloadFmt as Consistency > :: consistent) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl < 'i > NonTailFmt for Msg1PayloadFmt < 'i > {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1PayloadFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > GoodSerializer for Msg1PayloadFmt < 'i > {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg1PayloadFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg1PayloadFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl < 'i > SPRoundTripDps for Msg1PayloadFmt < 'i > {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1PayloadFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1PayloadFmt as Consistency > :: consistent) ;
+                reveal (< Msg1PayloadFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > NonMalleable for Msg1PayloadFmt < 'i > {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl < 'i > EquivSerializersGeneral for Msg1PayloadFmt < 'i > {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1PayloadFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1PayloadFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > EquivSerializers for Msg1PayloadFmt < 'i > {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg1PayloadFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1PayloadFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg1_payload_fmt (self . b . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg4ContentFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                msg4_content_fmt (self . i . deep_view ()) . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg4ContentFmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg4_content_fmt (self . i . deep_view ()) . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg4ContentFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4ContentFmt as Consistency > :: consistent) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg4ContentFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg4ContentFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg4ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg4ContentFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg4ContentFmt as Consistency > :: consistent) ;
+                reveal (< Msg4ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg4ContentFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg4ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg4ContentFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg4ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg4ContentFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg4_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg3ContentFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                msg3_content_fmt (self . i . deep_view ()) . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg3ContentFmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg3_content_fmt (self . i . deep_view ()) . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg3ContentFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3ContentFmt as Consistency > :: consistent) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg3ContentFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg3ContentFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg3ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg3ContentFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg3ContentFmt as Consistency > :: consistent) ;
+                reveal (< Msg3ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg3ContentFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg3ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg3ContentFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg3ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg3ContentFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg3_content_fmt (self . i . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg3Fmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                msg3_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg3Fmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg3_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg3Fmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3Fmt as Consistency > :: consistent) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg3Fmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg3Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg3Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg3Fmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg3Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg3Fmt as Consistency > :: consistent) ;
+                reveal (< Msg3Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg3Fmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg3Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg3Fmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg3Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg3Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg3_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg5Fmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                msg5_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg5Fmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg5_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg5Fmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5Fmt as Consistency > :: consistent) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg5Fmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg5Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg5Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg5Fmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg5Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg5Fmt as Consistency > :: consistent) ;
+                reveal (< Msg5Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg5Fmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg5Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg5Fmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg5Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg5Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg5_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl < 'i > SafeParser for Msg2ContentFmt < 'i > {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                msg2_content_fmt (self . b . deep_view ()) . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl < 'i > Productive for Msg2ContentFmt < 'i > {
+            open spec fn productive_inv (& self) -> bool {
+                msg2_content_fmt (self . b . deep_view ()) . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl < 'i > SoundParser for Msg2ContentFmt < 'i > {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2ContentFmt as Consistency > :: consistent) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl < 'i > NonTailFmt for Msg2ContentFmt < 'i > {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > GoodSerializer for Msg2ContentFmt < 'i > {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg2ContentFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg2ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl < 'i > SPRoundTripDps for Msg2ContentFmt < 'i > {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2ContentFmt as Consistency > :: consistent) ;
+                reveal (< Msg2ContentFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > NonMalleable for Msg2ContentFmt < 'i > {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecParser > :: spec_parse) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl < 'i > EquivSerializersGeneral for Msg2ContentFmt < 'i > {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2ContentFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl < 'i > EquivSerializers for Msg2ContentFmt < 'i > {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg2ContentFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2ContentFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg2_content_fmt (self . b . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg1Fmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                msg1_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg1Fmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg1_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg1Fmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1Fmt as Consistency > :: consistent) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl NonTailFmt for Msg1Fmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl GoodSerializer for Msg1Fmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg1Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg1Fmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1Fmt as Consistency > :: consistent) ;
+                reveal (< Msg1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg1Fmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for Msg1Fmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl EquivSerializers for Msg1Fmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg1Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg1_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg2Fmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                msg2_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg2Fmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg2_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg2Fmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2Fmt as Consistency > :: consistent) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl NonTailFmt for Msg2Fmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl GoodSerializer for Msg2Fmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg2Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg2Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg2Fmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg2Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2Fmt as Consistency > :: consistent) ;
+                reveal (< Msg2Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg2Fmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for Msg2Fmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg2Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl EquivSerializers for Msg2Fmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg2Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg2Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg2_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for Msg4Fmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                msg4_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for Msg4Fmt {
+            open spec fn productive_inv (& self) -> bool {
+                msg4_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for Msg4Fmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4Fmt as Consistency > :: consistent) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for Msg4Fmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg4Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< Msg4Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for Msg4Fmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                reveal (< Msg4Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg4Fmt as Consistency > :: consistent) ;
+                reveal (< Msg4Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for Msg4Fmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< Msg4Fmt as SpecParser > :: spec_parse) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for Msg4Fmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< Msg4Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< Msg4Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg4_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+    }
+
+    // ============================================================
+    // Executable Implementations
+    // ============================================================
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg5Content
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for HelloRetryRequest
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerHello
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg1Payload
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg4Content
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg3Content
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg3
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg5
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg2Content
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg1
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg2
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for Msg4
+}
+

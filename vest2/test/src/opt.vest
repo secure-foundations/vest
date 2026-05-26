@@ -20,3 +20,10 @@ b = {
   x: [u8; 10],
   y: wrap([u8; 3] = [1, 2, 3], a, u8 = 1),
 }
+
+tagged_mix = {
+  x: Option<wrap(u8 = 10, [u8; 1])>,
+  y: Vec<wrap(u8 = 11, [u8; 2])>,
+  z: Option<wrap(u8 = 12, [u8; 3])>,
+  w: Vec<wrap(u8 = 13, [u8; 4])>,
+}

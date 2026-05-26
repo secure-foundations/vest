@@ -50,7 +50,7 @@ msg = {
   },
 }
 
-msg_content(@len: u16, @tag: msg_type) = [u8; @len] >>= choose(@tag) {
+msg_param(@len: u16, @tag: msg_type) = [u8; @len] >>= choose(@tag) {
   Msg1 => msg1,
   Msg2 => msg2,
   Msg3 => msg3,
@@ -64,21 +64,13 @@ msg_content(@len: u16, @tag: msg_type) = [u8; @len] >>= choose(@tag) {
 
 
 // same as above
-msg_ = {
+msg_alt = {
   @tag: u8,
   @len: u16,
   content: [u8; @len] >>= choose(@tag) {
     1 => msg1,
     2 => msg2,
     3 => msg3,
-  },
-}
-
-msg__ = {
-  @tag: [u8; 3],
-  content: [u8; 32] >>= choose(@tag) {
-    [1, 2, 3] => msg1,
-    [4, 5, 6] => msg2,
-    [7, 8, 9] => msg3,
+    _ => [u8; @len],
   },
 }

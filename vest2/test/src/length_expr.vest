@@ -40,6 +40,7 @@ choice_arrays_folded = {
     body: choose(@tag) {
         [0; 2] => u8,
         [1; 2] => u16,
+        _ => u16,
     },
 }
 
