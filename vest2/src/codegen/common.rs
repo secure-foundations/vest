@@ -43,8 +43,231 @@ pub(crate) enum TypeMode {
     Spec,
 }
 
+pub(crate) struct CodeWriter {
+    buf: String,
+    indent: usize,
+    needs_indent: bool,
+}
+
+impl CodeWriter {
+    pub(crate) fn new() -> Self {
+        Self {
+            buf: String::new(),
+            indent: 0,
+            needs_indent: true,
+        }
+    }
+
+    pub(crate) fn line(&mut self, line: impl AsRef<str>) {
+        self.write_line_inner(line.as_ref());
+        self.buf.push('\n');
+        self.needs_indent = true;
+    }
+
+    pub(crate) fn blank_line(&mut self) {
+        if !self.buf.ends_with("\n") {
+            self.buf.push('\n');
+        }
+        if !self.buf.ends_with("\n\n") {
+            self.buf.push('\n');
+        }
+        self.needs_indent = true;
+    }
+
+    pub(crate) fn push_multiline(&mut self, text: impl AsRef<str>) {
+        let text = text.as_ref();
+        for line in text.lines() {
+            self.write_line_inner(line);
+            self.buf.push('\n');
+            self.needs_indent = true;
+        }
+    }
+
+    pub(crate) fn indented(&mut self, f: impl FnOnce(&mut Self)) {
+        self.indent += 1;
+        f(self);
+        self.indent -= 1;
+    }
+
+    pub(crate) fn block(&mut self, header: impl AsRef<str>, f: impl FnOnce(&mut Self)) {
+        self.line(format!("{} {{", header.as_ref()));
+        self.indented(f);
+        self.line("}");
+    }
+
+    pub(crate) fn finish(mut self) -> String {
+        while self.buf.ends_with("\n\n\n") {
+            self.buf.pop();
+        }
+        self.buf
+    }
+
+    fn write_line_inner(&mut self, line: &str) {
+        if line.is_empty() {
+            return;
+        }
+        if self.needs_indent {
+            self.buf.push_str(&"    ".repeat(self.indent));
+            self.needs_indent = false;
+        }
+        self.buf.push_str(line);
+    }
+}
+
+pub(crate) fn render_ts(ts: TokenStream) -> String {
+    format_verus_snippet(&ts.to_string())
+}
+
+pub(crate) fn format_verus_snippet(input: &str) -> String {
+    let chars = input.chars().collect::<Vec<_>>();
+    let mut out = String::new();
+    let mut i = 0usize;
+    let mut indent = 0usize;
+    let mut line_start = true;
+    let mut paren_depth = 0usize;
+    let mut bracket_depth = 0usize;
+    let mut brace_depth = 0usize;
+    let mut in_string = false;
+    let mut escape = false;
+
+    fn next_non_space(chars: &[char], mut i: usize) -> Option<char> {
+        while i < chars.len() {
+            if !chars[i].is_whitespace() {
+                return Some(chars[i]);
+            }
+            i += 1;
+        }
+        None
+    }
+
+    fn write_indent(out: &mut String, indent: usize, line_start: &mut bool) {
+        if *line_start {
+            out.push_str(&"    ".repeat(indent));
+            *line_start = false;
+        }
+    }
+
+    fn trim_trailing_space(out: &mut String) {
+        while out.ends_with(' ') || out.ends_with('\t') {
+            out.pop();
+        }
+    }
+
+    fn newline(out: &mut String, line_start: &mut bool) {
+        trim_trailing_space(out);
+        if !out.ends_with('\n') {
+            out.push('\n');
+        }
+        *line_start = true;
+    }
+
+    while i < chars.len() {
+        let ch = chars[i];
+        let next = next_non_space(&chars, i + 1);
+
+        if in_string {
+            write_indent(&mut out, indent, &mut line_start);
+            out.push(ch);
+            if escape {
+                escape = false;
+            } else if ch == '\\' {
+                escape = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            i += 1;
+            continue;
+        }
+
+        match ch {
+            '"' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(ch);
+                in_string = true;
+            }
+            '{' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push('{');
+                brace_depth += 1;
+                newline(&mut out, &mut line_start);
+                indent += 1;
+            }
+            '}' => {
+                indent = indent.saturating_sub(1);
+                brace_depth = brace_depth.saturating_sub(1);
+                newline(&mut out, &mut line_start);
+                write_indent(&mut out, indent, &mut line_start);
+                out.push('}');
+                if matches!(next, Some(',') | Some(';')) {
+                    i += 1;
+                    out.push(chars[i]);
+                }
+                newline(&mut out, &mut line_start);
+            }
+            '(' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push('(');
+                paren_depth += 1;
+            }
+            ')' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(')');
+                paren_depth = paren_depth.saturating_sub(1);
+            }
+            '[' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push('[');
+                bracket_depth += 1;
+            }
+            ']' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(']');
+                bracket_depth = bracket_depth.saturating_sub(1);
+                if bracket_depth == 0 && brace_depth == 0 && matches!(next, Some('#' | 'p' | 'i' | 'm')) {
+                    newline(&mut out, &mut line_start);
+                }
+            }
+            ';' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(';');
+                newline(&mut out, &mut line_start);
+            }
+            ',' => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(',');
+                if brace_depth > 0 && bracket_depth == 0 {
+                    newline(&mut out, &mut line_start);
+                } else if !matches!(next, Some(')' | ']' | '}' | ',' | ';')) {
+                    out.push(' ');
+                }
+            }
+            '\n' | '\r' | '\t' | ' ' => {
+                if !line_start && !out.ends_with(' ') && !out.ends_with('\n') {
+                    out.push(' ');
+                }
+            }
+            _ => {
+                write_indent(&mut out, indent, &mut line_start);
+                out.push(ch);
+            }
+        }
+
+        i += 1;
+    }
+
+    let mut formatted = out
+        .lines()
+        .map(str::trim_end)
+        .collect::<Vec<_>>()
+        .join("\n");
+    while formatted.ends_with("\n\n") {
+        formatted.pop();
+    }
+    formatted
+}
+
 pub(crate) fn prelude() -> String {
-    quote! {
+    render_ts(quote! {
         #![allow(warnings)]
         use vest_lib2::combinators::mapped::spec::*;
         use vest_lib2::combinators::*;
@@ -56,8 +279,7 @@ pub(crate) fn prelude() -> String {
         use vest_lib2::primitives::btcvarint::VarInt;
         use vest_lib2::primitives::leb128::ULeb128;
         use vstd::prelude::*;
-    }
-    .to_string()
+    })
 }
 
 impl<'a> Analysis<'a> {

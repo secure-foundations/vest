@@ -1,4 +1,6 @@
-use super::common::{int_literal, type_needs_exec_lifetime, Analysis, FormatNames, TypeMode};
+use super::common::{
+    int_literal, render_ts, type_needs_exec_lifetime, Analysis, CodeWriter, FormatNames, TypeMode,
+};
 use crate::vestir::{
     ChoiceCombinator, Combinator, CombinatorInner, ConstCombinator, EnumCombinator, ParamDefn,
 };
@@ -23,12 +25,11 @@ impl<'a> Analysis<'a> {
         } else {
             quote! { pub type #exec_ident = #exec_ty; }
         };
-        quote! {
-            #[doc = #doc]
-            #exec_alias
-            pub type #spec_ident = #spec_ty;
-        }
-        .to_string()
+        let mut out = CodeWriter::new();
+        out.push_multiline(render_ts(quote! { #[doc = #doc] }));
+        out.push_multiline(render_ts(exec_alias));
+        out.push_multiline(render_ts(quote! { pub type #spec_ident = #spec_ty; }));
+        out.finish()
     }
 
     pub(crate) fn gen_value_types(&self, name: &str, combinator: &Combinator) -> String {
@@ -84,7 +85,7 @@ impl<'a> Analysis<'a> {
                     }
                 };
                 let deep_view_fields = self.struct_deep_view_fields(struct_comb);
-                quote! {
+                render_ts(quote! {
                     #[doc = #doc]
                     #exec_struct
                     #spec_struct
@@ -95,8 +96,7 @@ impl<'a> Analysis<'a> {
                             #spec_ident { #(#deep_view_fields,)* }
                         }
                     }
-                }
-                .to_string()
+                })
             }
             CombinatorInner::Enum(enum_comb) => self.gen_enum_types(enum_comb, &info.names),
             CombinatorInner::Choice(choice_comb) => self.gen_choice_types(choice_comb, &info.names),
@@ -181,7 +181,7 @@ impl<'a> Analysis<'a> {
             arms
         };
         let doc = format!("data type for `{}`.", names.dsl);
-        quote! {
+        render_ts(quote! {
             #[doc = #doc]
             #[repr(#repr_ty)]
             #[derive(Debug, PartialEq, Eq, Clone, Copy, Structural)]
@@ -199,8 +199,7 @@ impl<'a> Analysis<'a> {
                     }
                 }
             }
-        }
-        .to_string()
+        })
     }
 
     fn gen_choice_types(&self, choice_comb: &ChoiceCombinator, names: &FormatNames) -> String {
@@ -236,7 +235,7 @@ impl<'a> Analysis<'a> {
             quote! { #exec_ident::#ident(v) => #spec_ident::#ident(v.deep_view()), }
         });
         let doc = format!("data type for `{}`.", names.dsl);
-        quote! {
+        render_ts(quote! {
             #[doc = #doc]
             #[derive(Debug, PartialEq, Eq)]
             pub enum #exec_ident #exec_lifetime {
@@ -255,8 +254,7 @@ impl<'a> Analysis<'a> {
                     }
                 }
             }
-        }
-        .to_string()
+        })
     }
 
     pub(crate) fn gen_wrapper_type(&self, name: &str, param_defns: &[ParamDefn]) -> String {
@@ -282,19 +280,17 @@ impl<'a> Analysis<'a> {
             })
             .collect::<Vec<_>>();
         if fields.is_empty() {
-            quote! {
+            render_ts(quote! {
                 #[doc = #doc]
                 pub struct #fmt_ident;
-            }
-            .to_string()
+            })
         } else {
-            quote! {
+            render_ts(quote! {
                 #[doc = #doc]
                 pub struct #fmt_ident #lifetime {
                     #(#fields,)*
                 }
-            }
-            .to_string()
+            })
         }
     }
 }

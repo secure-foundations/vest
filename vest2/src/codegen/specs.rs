@@ -1,4 +1,4 @@
-use super::common::{int_literal, syn_usize, Analysis, TypeMode};
+use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
     self, ChoiceCombinator, Choices, Combinator, CombinatorInner, ConstArray, ConstCombinator,
     ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator,
@@ -38,7 +38,7 @@ impl<'a> Analysis<'a> {
         }
         let mut out = String::new();
         out.push_str(&self.gen_wrapper_type(name, param_defns));
-        out.push('\n');
+        out.push_str("\n\n");
         out.push_str(&self.gen_format_spec_alias_and_ctor(name, combinator, param_defns));
         out
     }
@@ -85,15 +85,16 @@ impl<'a> Analysis<'a> {
         let spec_params = self.spec_param_list(param_defns);
         let ctor_doc = format!("specification constructor for `{}`.", name);
 
-        quote! {
-            pub type #fmt_spec_ident = #named_ty;
-
+        let mut out = CodeWriter::new();
+        out.push_multiline(render_ts(quote! { pub type #fmt_spec_ident = #named_ty; }));
+        out.blank_line();
+        out.push_multiline(render_ts(quote! {
             #[doc = #ctor_doc]
             pub open spec fn #fmt_fn_ident(#(#spec_params),*) -> #fmt_spec_ident {
                 #named_expr
             }
-        }
-        .to_string()
+        }));
+        out.finish()
     }
 
     fn gen_alias_specs_section(
@@ -111,7 +112,7 @@ impl<'a> Analysis<'a> {
         let doc = format!("named format combinator for `{}`.", name);
         let ctor_doc = format!("specification constructor for `{}`.", name);
 
-        quote! {
+        render_ts(quote! {
             #[doc = #doc]
             pub struct #fmt_ident;
 
@@ -121,8 +122,7 @@ impl<'a> Analysis<'a> {
             pub open spec fn #fmt_fn_ident() -> #fmt_spec_ident {
                 #target_fmt_fn_ident()
             }
-        }
-        .to_string()
+        })
     }
 
     fn gen_derived_spec_impls(
@@ -133,7 +133,7 @@ impl<'a> Analysis<'a> {
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
     ) -> String {
-        quote! {
+        render_ts(quote! {
             impl #wrapper_generics SpecParser for #fmt_ident #wrapper_generics {
                 type PVal = #top_value_ty;
 
@@ -178,8 +178,7 @@ impl<'a> Analysis<'a> {
                     #fmt_fn_ident(#(#wrapper_call_args),*).byte_len(v)
                 }
             }
-        }
-        .to_string()
+        })
     }
 
     fn render_sequence_with_rest(

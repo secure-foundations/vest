@@ -5,7 +5,7 @@ mod proofs;
 mod specs;
 
 use crate::vestir::{self, Combinator, ConstCombinator, Definition, ParamDefn};
-use common::{prelude, Analysis};
+use common::{prelude, Analysis, CodeWriter};
 
 pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String {
     let analysis = Analysis::new(defs, ctx);
@@ -26,26 +26,34 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
         analysis.gen_execs_fragment(def)
     });
 
-    let body = [
-        render_section("Data Types", &data_types),
-        render_section("Format Specifications", &specs),
-        render_nested_section(
-            "Derived Parser, Serializer, Length, and Consistency Specifications",
-            "derived_specs",
-            "use super::*;",
-            &derived_specs,
-        ),
-        render_nested_section(
-            "Proven Format Properties",
-            "derived_proofs",
-            "use super::*;\nbroadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;\n",
-            &proofs,
-        ),
-        render_section("Executable Implementations", &execs),
-    ]
-    .join("\n\n");
+    let mut body = CodeWriter::new();
+    body.push_multiline(render_section("Data Types", &data_types));
+    body.blank_line();
+    body.push_multiline(render_section("Format Specifications", &specs));
+    body.blank_line();
+    body.push_multiline(render_nested_section(
+        "Derived Parser, Serializer, Length, and Consistency Specifications",
+        "derived_specs",
+        "use super::*;",
+        &derived_specs,
+    ));
+    body.blank_line();
+    body.push_multiline(render_nested_section(
+        "Proven Format Properties",
+        "derived_proofs",
+        "use super::*;\nbroadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;\n",
+        &proofs,
+    ));
+    body.blank_line();
+    body.push_multiline(render_section("Executable Implementations", &execs));
 
-    format!("{}\nverus! {{\n{}\n}}\n", prelude(), body)
+    let mut out = CodeWriter::new();
+    out.push_multiline(prelude());
+    out.block("verus!", |w| {
+        w.push_multiline(body.finish());
+    });
+    out.line("");
+    out.finish()
 }
 
 fn non_endian_defs<'a>(defs: &'a [Definition]) -> Vec<&'a Definition> {
@@ -66,14 +74,21 @@ fn render_fragments(
 }
 
 fn render_section(title: &str, body: &str) -> String {
-    format!("{}\n{}", section_header(title), body)
+    let mut out = CodeWriter::new();
+    out.push_multiline(section_header(title));
+    out.push_multiline(body);
+    out.finish()
 }
 
 fn render_nested_section(title: &str, module: &str, imports: &str, body: &str) -> String {
-    format!(
-        "{header}\nmod {module} {{\n    {imports}\n\n{body}\n}}",
-        header = section_header(title),
-    )
+    let mut out = CodeWriter::new();
+    out.push_multiline(section_header(title));
+    out.block(format!("mod {module}"), |w| {
+        w.push_multiline(imports.trim_end());
+        w.blank_line();
+        w.push_multiline(body);
+    });
+    out.finish()
 }
 
 fn section_header(title: &str) -> String {

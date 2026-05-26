@@ -1,4 +1,4 @@
-use super::common::Analysis;
+use super::common::{render_ts, Analysis};
 use crate::vestir::{Combinator, ParamDefn};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -52,7 +52,7 @@ impl<'a> Analysis<'a> {
         };
         let equiv = self.gen_equiv_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
 
-        quote! {
+        render_ts(quote! {
             #safe
             #productive
             #sound
@@ -62,8 +62,7 @@ impl<'a> Analysis<'a> {
             #non_malleable
             #equiv_general
             #equiv
-        }
-        .to_string()
+        })
     }
 
     fn gen_productive_impl(
