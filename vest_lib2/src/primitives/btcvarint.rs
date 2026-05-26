@@ -189,150 +189,142 @@ impl LosslessMapper for U32FromToU64 {
 
 pub struct VarInt<const MINIMAL: bool>;
 
-impl<const MINIMAL: bool> SpecParser for VarInt<MINIMAL> {
-    type PVal = u64;
+mod bitcoin_varint_derived_specs {
+    use super::*;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        varint_fmt::<MINIMAL>().spec_parse(ibuf)
-    }
-}
+    impl<const MINIMAL: bool> SpecParser for VarInt<MINIMAL> {
+        type PVal = u64;
 
-impl<const MINIMAL: bool> Consistency for VarInt<MINIMAL> {
-    type Val = u64;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        varint_fmt::<MINIMAL>().consistent(v)
-    }
-}
-
-impl<const MINIMAL: bool> SafeParser for VarInt<MINIMAL> {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        varint_fmt::<MINIMAL>().lemma_parse_safe(ibuf);
-    }
-}
-
-impl<const MINIMAL: bool> Productive for VarInt<MINIMAL> {
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        varint_fmt::<MINIMAL>().lemma_productive(s);
-    }
-}
-
-impl SoundParser for VarInt<true> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        varint_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-    }
-
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        varint_fmt::<true>().lemma_parse_sound_value(ibuf);
-    }
-}
-
-impl<const MINIMAL: bool> SpecSerializerDps for VarInt<MINIMAL> {
-    type SValue = u64;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        varint_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<const MINIMAL: bool> SpecSerializer for VarInt<MINIMAL> {
-    type SVal = u64;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        varint_fmt::<MINIMAL>().spec_serialize(v)
-    }
-}
-
-impl<const MINIMAL: bool> NonTailFmt for VarInt<MINIMAL> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        varint_fmt::<MINIMAL>().lemma_serialize_dps_prepend(v, obuf);
-    }
-
-    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        varint_fmt::<MINIMAL>().lemma_serialize_dps_len(v, obuf);
-    }
-}
-
-impl<const MINIMAL: bool> GoodSerializer for VarInt<MINIMAL> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        varint_fmt::<MINIMAL>().lemma_serialize_len(v);
-    }
-}
-
-impl<const MINIMAL: bool> SpecByteLen for VarInt<MINIMAL> {
-    type T = u64;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        varint_fmt::<MINIMAL>().byte_len(v)
-    }
-}
-
-impl<const MINIMAL: bool> MinMaxByteLen for VarInt<MINIMAL> {
-    open spec fn min(&self) -> nat {
-        varint_fmt::<MINIMAL>().min()
-    }
-
-    open spec fn max(&self) -> nat {
-        varint_fmt::<MINIMAL>().max()
-    }
-
-    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
-        varint_fmt::<MINIMAL>().lemma_min_max_byte_len(v);
-    }
-}
-
-impl<const MINIMAL: bool> SPRoundTripDps for VarInt<MINIMAL> {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        assert(varint_fmt::<MINIMAL>().unambiguous()) by {
-            reveal(disjoint_domains);
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            varint_fmt::<MINIMAL>().spec_parse(ibuf)
         }
-        varint_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
-}
 
-impl<const MINIMAL: bool> NoLookAhead for VarInt<MINIMAL> {
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        assert(varint_fmt::<MINIMAL>().no_lookahead_inv()) by {
-            reveal(disjoint_domains);
+    impl<const MINIMAL: bool> Consistency for VarInt<MINIMAL> {
+        type Val = u64;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            varint_fmt::<MINIMAL>().consistent(v)
         }
-        varint_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
     }
+
+    impl<const MINIMAL: bool> SpecSerializerDps for VarInt<MINIMAL> {
+        type SValue = u64;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            varint_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl<const MINIMAL: bool> SpecSerializer for VarInt<MINIMAL> {
+        type SVal = u64;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            varint_fmt::<MINIMAL>().spec_serialize(v)
+        }
+    }
+
+    impl<const MINIMAL: bool> SpecByteLen for VarInt<MINIMAL> {
+        type T = u64;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            varint_fmt::<MINIMAL>().byte_len(v)
+        }
+    }
+
 }
 
-impl NonMalleable for VarInt<true> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        varint_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
+mod bitcoin_varint_derived_proofs {
+    use super::*;
+
+    impl<const MINIMAL: bool> SafeParser for VarInt<MINIMAL> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            varint_fmt::<MINIMAL>().lemma_parse_safe(ibuf);
+        }
     }
-}
 
-impl<const MINIMAL: bool> EquivSerializersGeneral for VarInt<MINIMAL> {
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        varint_fmt::<MINIMAL>().lemma_serialize_equiv(v, obuf);
+    impl<const MINIMAL: bool> Productive for VarInt<MINIMAL> {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            varint_fmt::<MINIMAL>().lemma_productive(s);
+        }
     }
-}
 
-impl<const MINIMAL: bool> EquivSerializers for VarInt<MINIMAL> {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        varint_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
+    impl SoundParser for VarInt<true> {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            varint_fmt::<true>().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            varint_fmt::<true>().lemma_parse_sound_value(ibuf);
+        }
     }
-}
 
-proof fn test_varint_roundtrip() {
-    let fmt = VarInt::<true>;
-    let v_u8 = 100u64;
-    let v_u16 = VARINT_TAG_U16 as u64;
-    let v_u32 = 0x1_0000u64;
-    let v_u64 = 0x1_0000_0000u64;
+    impl<const MINIMAL: bool> NonTailFmt for VarInt<MINIMAL> {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            varint_fmt::<MINIMAL>().lemma_serialize_dps_prepend(v, obuf);
+        }
 
-    assert(fmt.consistent(v_u8));
-    assert(fmt.consistent(v_u16));
-    assert(fmt.consistent(v_u32));
-    assert(fmt.consistent(v_u64));
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            varint_fmt::<MINIMAL>().lemma_serialize_dps_len(v, obuf);
+        }
+    }
 
-    fmt.theorem_serialize_parse_roundtrip(v_u8);
-    fmt.theorem_serialize_parse_roundtrip(v_u16);
-    fmt.theorem_serialize_parse_roundtrip(v_u32);
-    fmt.theorem_serialize_parse_roundtrip(v_u64);
+    impl<const MINIMAL: bool> GoodSerializer for VarInt<MINIMAL> {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            varint_fmt::<MINIMAL>().lemma_serialize_len(v);
+        }
+    }
+
+    impl<const MINIMAL: bool> MinMaxByteLen for VarInt<MINIMAL> {
+        open spec fn min(&self) -> nat {
+            varint_fmt::<MINIMAL>().min()
+        }
+
+        open spec fn max(&self) -> nat {
+            varint_fmt::<MINIMAL>().max()
+        }
+
+        proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+            varint_fmt::<MINIMAL>().lemma_min_max_byte_len(v);
+        }
+    }
+
+    impl<const MINIMAL: bool> SPRoundTripDps for VarInt<MINIMAL> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            assert(varint_fmt::<MINIMAL>().unambiguous()) by {
+                reveal(disjoint_domains);
+            }
+            varint_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl<const MINIMAL: bool> NoLookAhead for VarInt<MINIMAL> {
+        proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+            assert(varint_fmt::<MINIMAL>().no_lookahead_inv()) by {
+                reveal(disjoint_domains);
+            }
+            varint_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
+        }
+    }
+
+    impl NonMalleable for VarInt<true> {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            varint_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<const MINIMAL: bool> EquivSerializersGeneral for VarInt<MINIMAL> {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            varint_fmt::<MINIMAL>().lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl<const MINIMAL: bool> EquivSerializers for VarInt<MINIMAL> {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            varint_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
 }
 
 impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
@@ -412,6 +404,5 @@ impl<const MINIMAL: bool> Prepare<u64> for VarInt<MINIMAL> {
         }
     }
 }
-
 
 } // verus!

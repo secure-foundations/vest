@@ -160,188 +160,198 @@ impl LosslessMapper for LowBitsMask {
     }
 }
 
-impl<const MINIMAL: bool> SafeParserRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_safe_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl SoundParserRecBody for ULeb128RecBody<true> {
-    proof fn lemma_body_sound_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_no_lookahead_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-        reveal(disjoint_domains);
-    }
-}
-
-impl<const MINIMAL: bool> ProductiveRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_productive_inv_preservation(
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl NonMalleableRecBody for ULeb128RecBody<true> {
-    proof fn lemma_body_nonmal_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl<const MINIMAL: bool> GoodSerializerRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_serialize_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl<const MINIMAL: bool> NonTailFmtRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_dps_serialize_dps_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
-impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_body_sp_roundtrip_dps_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-        reveal(disjoint_domains);
-    }
-}
-
-impl<const MINIMAL: bool> EquivSerializersGeneralRecBody for ULeb128RecBody<MINIMAL> {
-    proof fn lemma_s_body_equiv_general_inv_preservation(
-        _param: (),
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-    }
-}
-
 pub struct ULeb128<const MINIMAL: bool, const N: usize>;
 
-impl<const MINIMAL: bool, const N: usize> SpecParser for ULeb128<MINIMAL, N> {
-    type PVal = nat;
+mod leb128_derived_specs {
+    use super::*;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        uleb128_fmt::<MINIMAL, N>().spec_parse(ibuf)
+    impl<const MINIMAL: bool, const N: usize> SpecParser for ULeb128<MINIMAL, N> {
+        type PVal = nat;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            uleb128_fmt::<MINIMAL, N>().spec_parse(ibuf)
+        }
     }
+
+    impl<const MINIMAL: bool, const N: usize> Consistency for ULeb128<MINIMAL, N> {
+        type Val = nat;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            uleb128_fmt::<MINIMAL, N>().consistent(v)
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> SpecSerializerDps for ULeb128<MINIMAL, N> {
+        type SValue = nat;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            uleb128_fmt::<MINIMAL, N>().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> SpecSerializer for ULeb128<MINIMAL, N> {
+        type SVal = nat;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            uleb128_fmt::<MINIMAL, N>().spec_serialize(v)
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> SpecByteLen for ULeb128<MINIMAL, N> {
+        type T = nat;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            uleb128_fmt::<MINIMAL, N>().byte_len(v)
+        }
+    }
+
 }
 
-impl<const MINIMAL: bool, const N: usize> Consistency for ULeb128<MINIMAL, N> {
-    type Val = nat;
+mod leb128_derived_proofs {
+    use super::*;
 
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        uleb128_fmt::<MINIMAL, N>().consistent(v)
-    }
-}
-
-impl<const MINIMAL: bool, const N: usize> SafeParser for ULeb128<MINIMAL, N> {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_parse_safe(ibuf);
-    }
-}
-
-impl<const MINIMAL: bool, const N: usize> Productive for ULeb128<MINIMAL, N> {
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_productive(s);
-    }
-}
-
-impl<const N: usize> SoundParser for ULeb128<true, N> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        uleb128_fmt::<true, N>().lemma_parse_sound_consumption(ibuf);
+    impl<const MINIMAL: bool> SafeParserRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_body_safe_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
 
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        uleb128_fmt::<true, N>().lemma_parse_sound_value(ibuf);
-    }
-}
-
-impl<const MINIMAL: bool, const N: usize> SpecSerializerDps for ULeb128<MINIMAL, N> {
-    type SValue = nat;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        uleb128_fmt::<MINIMAL, N>().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<const MINIMAL: bool, const N: usize> SpecSerializer for ULeb128<MINIMAL, N> {
-    type SVal = nat;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        uleb128_fmt::<MINIMAL, N>().spec_serialize(v)
-    }
-}
-
-impl<const MINIMAL: bool, const N: usize> NonTailFmt for ULeb128<MINIMAL, N> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_serialize_dps_prepend(v, obuf);
+    impl SoundParserRecBody for ULeb128RecBody<true> {
+        proof fn lemma_body_sound_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_serialize_dps_len(v, obuf);
+    impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_body_no_lookahead_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+            reveal(disjoint_domains);
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> GoodSerializer for ULeb128<MINIMAL, N> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        uleb128_fmt::<MINIMAL, N>().lemma_serialize_len(v);
+    impl<const MINIMAL: bool> ProductiveRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_body_productive_inv_preservation(
+            param: Self::Param,
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> SpecByteLen for ULeb128<MINIMAL, N> {
-    type T = nat;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        uleb128_fmt::<MINIMAL, N>().byte_len(v)
+    impl NonMalleableRecBody for ULeb128RecBody<true> {
+        proof fn lemma_body_nonmal_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> SPRoundTripDps for ULeb128<MINIMAL, N> {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().theorem_serialize_dps_parse_roundtrip(v, obuf);
+    impl<const MINIMAL: bool> GoodSerializerRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_s_body_serialize_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> NoLookAhead for ULeb128<MINIMAL, N> {
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_no_lookahead(i1, i2);
+    impl<const MINIMAL: bool> NonTailFmtRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_s_body_dps_serialize_dps_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
-}
 
-impl<const N: usize> NonMalleable for ULeb128<true, N> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        uleb128_fmt::<true, N>().lemma_parse_non_malleable(buf1, buf2);
+    impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_body_sp_roundtrip_dps_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+            reveal(disjoint_domains);
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> EquivSerializersGeneral for ULeb128<MINIMAL, N> {
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        uleb128_fmt::<MINIMAL, N>().lemma_serialize_equiv(v, obuf);
+    impl<const MINIMAL: bool> EquivSerializersGeneralRecBody for ULeb128RecBody<MINIMAL> {
+        proof fn lemma_s_body_equiv_general_inv_preservation(
+            _param: (),
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
     }
-}
 
-impl<const MINIMAL: bool, const N: usize> EquivSerializers for ULeb128<MINIMAL, N> {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        uleb128_fmt::<MINIMAL, N>().lemma_serialize_equiv_on_empty(v);
+    impl<const MINIMAL: bool, const N: usize> SafeParser for ULeb128<MINIMAL, N> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_parse_safe(ibuf);
+        }
     }
+
+    impl<const MINIMAL: bool, const N: usize> Productive for ULeb128<MINIMAL, N> {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_productive(s);
+        }
+    }
+
+    impl<const N: usize> SoundParser for ULeb128<true, N> {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            uleb128_fmt::<true, N>().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            uleb128_fmt::<true, N>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> NonTailFmt for ULeb128<MINIMAL, N> {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> GoodSerializer for ULeb128<MINIMAL, N> {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            uleb128_fmt::<MINIMAL, N>().lemma_serialize_len(v);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> SPRoundTripDps for ULeb128<MINIMAL, N> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> NoLookAhead for ULeb128<MINIMAL, N> {
+        proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_no_lookahead(i1, i2);
+        }
+    }
+
+    impl<const N: usize> NonMalleable for ULeb128<true, N> {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            uleb128_fmt::<true, N>().lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> EquivSerializersGeneral for ULeb128<MINIMAL, N> {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            uleb128_fmt::<MINIMAL, N>().lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl<const MINIMAL: bool, const N: usize> EquivSerializers for ULeb128<MINIMAL, N> {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            uleb128_fmt::<MINIMAL, N>().lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
 }
 
 } // verus!
