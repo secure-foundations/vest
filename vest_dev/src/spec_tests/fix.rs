@@ -16,9 +16,11 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
 /*
 * Example recursive parser: nested braces
 */
+
 /// Example recursive value type: nested braces `{...}` or empty `\0`.
 #[derive(Debug, DeepView)]
 pub enum NestedBracesT {
@@ -197,6 +199,7 @@ impl<'s> PrepareRecBody<&'s NestedBracesT> for NestedBracesBody {
 
 impl StrictRecBody for NestedBracesBody {
     proof fn lemma_body_all_inv_preservation(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
+        reveal(disjoint_domains);
     }
 }
 

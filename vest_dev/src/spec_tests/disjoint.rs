@@ -8,20 +8,10 @@ use vstd::prelude::*;
 verus! {
 
 // Enable all disjointness lemmas
-broadcast use {
-    lemma_disjoint_const,
-    lemma_disjoint_tuple,
-    lemma_disjoint_preceded,
-    lemma_disjoint_terminated,
-    lemma_disjoint_mapped,
-    lemma_disjoint_choice,
-    lemma_disjoint_optional,
-    lemma_disjoint_repeat,
-    lemma_disjoint_eof,
-    lemma_disjoint_tuple_2,
-};
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
 proof fn test_disjointness_tags() {
+    reveal(disjoint_domains);
     let tag1 = Const(U8, 1u8);
     let tag2 = Const(U8, 2u8);
     let tag3 = Const(U8, 3u8);
@@ -50,6 +40,7 @@ proof fn test_disjointness_mapped() {
 }
 
 proof fn test_disjointness_nested_choice() {
+    reveal(disjoint_domains);
     let tag1 = Const(U8, 1u8);
     let tag2 = Const(U8, 2u8);
     let tag3 = Const(U8, 3u8);
@@ -70,6 +61,7 @@ proof fn test_disjointness_optional_chain() {
 }
 
 proof fn test_choice_with_repeat() {
+    reveal(disjoint_domains);
     let tag1 = Const(U8, 1u8);
     let tag2 = Const(U8, 2u8);
     let eof = Eof;

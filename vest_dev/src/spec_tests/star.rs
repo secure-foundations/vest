@@ -4,7 +4,10 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 proof fn test_repeat_roundtrip_basic() {
+    reveal(disjoint_domains);
     let inner = Refined(U8, |x: u8| x != 0xFFu8);
     // let inner = Const(U8, 0xAAu8);
     let term = Const(U8, 0xFFu8);
@@ -37,6 +40,7 @@ proof fn test_repeat_roundtrip_empty() {
 }
 
 proof fn test_repeat_needs_distinct_terminator() {
+    reveal(disjoint_domains);
     let inner = Const(U8, 0xAAu8);
     let term_same = Const(U8, 0xAAu8);
     let rep_bad = Repeat(inner, term_same);

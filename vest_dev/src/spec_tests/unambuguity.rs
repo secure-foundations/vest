@@ -5,6 +5,8 @@ use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 struct Pred0;
 
 struct Pred1;

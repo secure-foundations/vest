@@ -8,6 +8,8 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 proof fn test_bind_fmt1_roundtrip() {
     let fmt1 = Bind(U8, |len: u8| Varied(len));
     let v = (3u8, seq![0xAAu8, 0xBBu8, 0xCCu8]);

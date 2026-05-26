@@ -11,6 +11,8 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 proof fn test_tail_compose() {
     let c = Pair(U8, Tail);
     let obuf = Seq::empty();

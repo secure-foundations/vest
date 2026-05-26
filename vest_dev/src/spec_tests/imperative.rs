@@ -26,11 +26,9 @@ verus! {
  * }
  * ```
  */
-
 /*
  * btc_tx_fmt: Data types.
  */
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BtcTx<'i> {
     pub txin_cnt: u8,
@@ -248,6 +246,7 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
         reveal(<TxSegwitFmt as SpecParser>::spec_parse);
         let _ = ibuf.len();
         let rest = *ibuf;
@@ -308,13 +307,13 @@ impl<'i> Prepare<&'i BtcTx<'i>> for TxSegwitFmt {
         let l5 = Varied(txout_cnt).prepare(txout)?;
         let l6 = Varied(txin_cnt).prepare(witness)?;
         let l7 = U8.prepare(locktime)?;
-        let total_len = l1
-            .checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?
-            .checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?
-            .checked_add(l4).ok_or(PreSerializeError::LengthTooLarge)?
-            .checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?
-            .checked_add(l6).ok_or(PreSerializeError::LengthTooLarge)?
-            .checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?;
+        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
+            l3,
+        ).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+            PreSerializeError::LengthTooLarge,
+        )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
+            PreSerializeError::LengthTooLarge,
+        )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?;
 
         Ok(total_len)
     }
@@ -343,7 +342,7 @@ impl<'i> Prepare<&'i BtcTx<'i>> for TxSegwitFmt {
  * ```
  */
 
- /*
+/*
   * msg_ty: Data types.
   */
 
@@ -371,7 +370,12 @@ impl DeepView for MsgTy {
 
 pub struct MsgTyFmt;
 
-pub open spec fn msg_ty_fmt() -> Named<Mapped<Choice<Const<U8, u8>, Choice<Const<U8, u8>, Choice<Const<U8, u8>, Const<U8, u8>>>>, FnSpecMapper<MsgTyInner, MsgTy>>> {
+pub open spec fn msg_ty_fmt() -> Named<
+    Mapped<
+        Choice<Const<U8, u8>, Choice<Const<U8, u8>, Choice<Const<U8, u8>, Const<U8, u8>>>>,
+        FnSpecMapper<MsgTyInner, MsgTy>,
+    >,
+> {
     #[verusfmt::skip]
     Named("msg_ty", Mapped{
         inner:
@@ -497,6 +501,7 @@ impl SPRoundTripDps for MsgTyFmt {
         reveal(<MsgTyFmt as SpecSerializerDps>::spec_serialize_dps);
         reveal(<MsgTyFmt as Consistency>::consistent);
         reveal(<MsgTyFmt as SpecByteLen>::byte_len);
+        reveal(disjoint_domains);
         msg_ty_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -533,6 +538,7 @@ impl<'i> Parser<&'i [u8]> for MsgTyFmt {
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
         reveal(<MsgTyFmt as SpecParser>::spec_parse);
         let _ = ibuf.len();
         let rest = *ibuf;
@@ -582,7 +588,7 @@ impl<'i> Prepare<&'i MsgTy> for MsgTyFmt {
 impl MsgTy {
     pub fn parse(ibuf: &[u8]) -> (r: PResult<Self>)
         ensures
-            parse_matches_spec(r, MsgTyFmt.spec_parse(ibuf@))
+            parse_matches_spec(r, MsgTyFmt.spec_parse(ibuf@)),
     {
         Named("msg_ty", MsgTyFmt).parse(&ibuf)
     }
@@ -679,7 +685,6 @@ pub open spec fn tlv_fmt() -> Implicit<
     fmt
 }
 
-
 pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
     Choice<Cond<U8>, Choice<Cond<Fixed<10>>, Choice<Cond<Pair<U8, Tail>>, Cond<Pair<U8, Tail>>>>>,
     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
@@ -689,7 +694,10 @@ pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
             Cond(tag == MsgTy::TYPE1, U8),
             Choice(
                 Cond(tag == MsgTy::TYPE2, Fixed::<10>),
-                Choice(Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)), Cond(tag == MsgTy::TYPE4, Pair(U8, Tail))),
+                Choice(
+                    Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)),
+                    Cond(tag == MsgTy::TYPE4, Pair(U8, Tail)),
+                ),
             ),
         ),
         mapper: (
@@ -925,6 +933,7 @@ impl SPRoundTripDps for TLVPayloadFmt {
         reveal(<TLVPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
+        reveal(disjoint_domains);
         payload_fmt(self.tag).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -953,6 +962,7 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
         reveal(<TLVFmt as SpecParser>::spec_parse);
         let _ = ibuf.len();
         let mut rest = *ibuf;
@@ -1028,8 +1038,9 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVFmt {
             return Err(PreSerializeError::LengthTooLarge);
         }
         let l2 = U8.prepare(l3 as u8)?;
-        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?
-                          .checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
+            l3,
+        ).ok_or(PreSerializeError::LengthTooLarge)?;
         Ok(total_len)
     }
 }
@@ -1039,6 +1050,7 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
         reveal(<TLVPayloadFmt as SpecParser>::spec_parse);
         let _ = ibuf.len();
         let rest = *ibuf;
@@ -1099,7 +1111,7 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayloadFmt {
 impl<'x> TLVMsg<'x> {
     pub fn parse(ibuf: &'x [u8]) -> (r: PResult<TLVMsg<'x>>)
         ensures
-            parse_matches_spec(r, TLVFmt.spec_parse(ibuf@))
+            parse_matches_spec(r, TLVFmt.spec_parse(ibuf@)),
     {
         Named("tlv", TLVFmt).parse(&ibuf)
     }

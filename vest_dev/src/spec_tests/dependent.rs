@@ -15,6 +15,8 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 proof fn test_dependent_varied_u8() {
     let fmt = Implicit(U8, VLData());
     let value = seq![0xAAu8, 0xBBu8, 0xCCu8];
@@ -29,6 +31,8 @@ proof fn test_dependent_varied_u8() {
 
 proof fn test_dependent_nary_tagval() {
     broadcast use lemma_disjoint_cond;
+
+    reveal(disjoint_domains);
 
     #[verusfmt::skip]
     let fmt = Implicit(U8,
@@ -55,6 +59,8 @@ proof fn test_dependent_nary_custom_tag() {
     broadcast use lemma_disjoint_cond;
     broadcast use lemma_disjoint_const;
     broadcast use lemma_disjoint_choice;
+
+    reveal(disjoint_domains);
 
     let my_tag = Mapped {
         inner: Choice(Const(U8, 1u8), Choice(Const(U8, 2u8), Const(U8, 3u8))),
@@ -101,6 +107,7 @@ proof fn test_dependent_n_consecutive_lengths_values() {
 }
 
 proof fn test_dependent_simple_tlv() {
+    reveal(disjoint_domains);
     // tlv = {
     //   @tag: u16
     //   @len: u8
@@ -204,6 +211,7 @@ impl DepCombinator for TLVRest {
 }
 
 proof fn test_dependent_complex_tlv() {
+    reveal(disjoint_domains);
     // tlv = {
     //   @tag: u8
     //   @len1: u8

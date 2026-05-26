@@ -30,6 +30,7 @@ impl SpecPred<u8> for Pred3 {
 }
 
 proof fn test_opt_compose() {
+    reveal(disjoint_domains);
     let pred1 = |x: u8| x == 1u8;
     let pred2 = |x: u8| x == 2u8;
     let c = Optional(Refined(U8, Pred2), Optional(Refined(U8, Pred1), Refined(U8, Pred3)));
@@ -59,6 +60,8 @@ proof fn test_opt_compose() {
 
 proof fn test_chaining_end_with_eof() {
     broadcast use lemma_disjoint_const, lemma_disjoint_eof, lemma_disjoint_optional;
+
+    reveal(disjoint_domains);
 
     #[verusfmt::skip]
     let c = Optional(Refined(U8, |x: u8| x == 1u8),

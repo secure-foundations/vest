@@ -11,6 +11,8 @@ use vstd::prelude::*;
 
 verus! {
 
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
 proof fn test_choice_compose() {
     let c = Choice(Const(U8, 0u8), Const(U8, 2u8));
     let obuf = Seq::empty();
@@ -36,6 +38,7 @@ proof fn test_choice_compose1() {
 }
 
 proof fn test_choice_balanced() {
+    reveal(disjoint_domains);
     let tag1 = Const(U16Le, 1u16);
     let tag2 = Const(U16Le, 2u16);
     let tag3 = Const(U16Le, 3u16);
@@ -163,6 +166,7 @@ proof fn test_dispatch_tag() {
 }
 
 proof fn test_alt_flexible_length_encoding() {
+    reveal(disjoint_domains);
     let not_81 = Refined(U8, |value: u8| value != 0x81u8);
     let short_form = not_81;
     let long_form = Tagged(U8, 0x81u8, not_81);
