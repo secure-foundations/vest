@@ -797,6 +797,18 @@ impl<'a> Analysis<'a> {
         choice_comb: &ChoiceCombinator,
         owner_name: Option<&str>,
     ) -> RenderedSpec {
+        if choice_comb.depend_id.is_some() {
+            return self.render_dependent_choice_raw(choice_comb, owner_name);
+        }
+
+        self.render_choice_raw_via_choice(choice_comb, owner_name)
+    }
+
+    fn render_choice_raw_via_choice(
+        &self,
+        choice_comb: &ChoiceCombinator,
+        owner_name: Option<&str>,
+    ) -> RenderedSpec {
         let branches = match &choice_comb.choices {
             Choices::Enums(branches) => branches
                 .iter()
@@ -950,6 +962,102 @@ impl<'a> Analysis<'a> {
                 .collect::<Vec<_>>(),
         };
         fold_choice(branches)
+    }
+
+    fn render_dependent_choice_raw(
+        &self,
+        choice_comb: &ChoiceCombinator,
+        owner_name: Option<&str>,
+    ) -> RenderedSpec {
+        let dep = path_tokens(
+            choice_comb
+                .depend_id
+                .as_ref()
+                .expect("dependent choose should have a selector"),
+        );
+
+        let (branch_specs, match_arms): (Vec<RenderedSpec>, Vec<TokenStream>) =
+            match &choice_comb.choices {
+                Choices::Enums(branches) => {
+                    let enum_ty = owner_name.and_then(|name| {
+                        branches.iter().find_map(|(pat, _)| {
+                            if pat == "_" {
+                                None
+                            } else {
+                                Some(self.render_enum_pattern_type(pat, choice_comb, Some(name)))
+                            }
+                        })
+                    });
+                    let mut specs = Vec::new();
+                    let mut arms = Vec::new();
+                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
+                        let fmt = self.render_spec_combinator(combinator);
+                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
+                        let arm = if pat == "_" {
+                            quote! { _ => #inj, }
+                        } else {
+                            let variant = format_ident!("{}", pat);
+                            let ty = enum_ty
+                                .clone()
+                                .unwrap_or_else(|| {
+                                    self.render_enum_pattern_type(pat, choice_comb, owner_name)
+                                });
+                            quote! { #ty::#variant => #inj, }
+                        };
+                        specs.push(fmt);
+                        arms.push(arm);
+                    }
+                    (specs, arms)
+                }
+                Choices::Ints(branches) => {
+                    let mut specs = Vec::new();
+                    let mut arms = Vec::new();
+                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
+                        let fmt = self.render_spec_combinator(combinator);
+                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
+                        let arm = match pat {
+                            Some(elem) => self.render_int_choice_match_arm(elem, inj),
+                            None => quote! { _ => #inj, },
+                        };
+                        specs.push(fmt);
+                        arms.push(arm);
+                    }
+                    (specs, arms)
+                }
+                Choices::Arrays(branches) => {
+                    let mut specs = Vec::new();
+                    let mut arms = Vec::new();
+                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
+                        let fmt = self.render_spec_combinator(combinator);
+                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
+                        let arm = match pat {
+                            ConstArray::Wildcard => quote! { _ => #inj, },
+                            _ => {
+                                let pat_expr = self.render_const_array_expr(pat);
+                                quote! { x if x == #pat_expr => #inj, }
+                            }
+                        };
+                        specs.push(fmt);
+                        arms.push(arm);
+                    }
+                    (specs, arms)
+                }
+            };
+
+        let branch_tys = branch_specs.iter().map(|fmt| fmt.ty.clone()).collect::<Vec<_>>();
+        let branch_value_tys = branch_specs
+            .iter()
+            .map(|fmt| fmt.value_ty.clone())
+            .collect::<Vec<_>>();
+        let ty = self.choice_sum_type(&branch_tys);
+        let value_ty = self.choice_sum_type(&branch_value_tys);
+        let expr = quote! {
+            match #dep {
+                #(#match_arms)*
+            }
+        };
+
+        RenderedSpec::new(ty, expr, value_ty, true)
     }
 
     fn render_enum_top_level(&self, name: &str, enum_comb: &EnumCombinator) -> RenderedSpec {
@@ -1284,6 +1392,31 @@ impl<'a> Analysis<'a> {
                     (None, Some(u)) => u,
                     (None, None) => quote! { true },
                 }
+            }
+        }
+    }
+
+    fn render_int_choice_match_arm(
+        &self,
+        elem: &ConstraintElem,
+        branch_expr: TokenStream,
+    ) -> TokenStream {
+        match elem {
+            ConstraintElem::Single(v) => {
+                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                quote! { #lit => #branch_expr, }
+            }
+            ConstraintElem::Range {
+                start: Some(start),
+                end: Some(end),
+            } => {
+                let start = proc_macro2::Literal::i128_unsuffixed(*start);
+                let end = proc_macro2::Literal::i128_unsuffixed(*end);
+                quote! { #start ..= #end => #branch_expr, }
+            }
+            _ => {
+                let cond = self.render_constraint_elem_pred(elem, quote! { x });
+                quote! { x if #cond => #branch_expr, }
             }
         }
     }

@@ -1670,6 +1670,50 @@ fn check_choice_combinator<'ast>(
     global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
+    fn report_missing_wildcard<'ast>(
+        span: &Span,
+        source: (&str, &Source),
+        kind: &str,
+    ) -> VestError {
+        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+            .with_message("non-exhaustive dependent choice")
+            .with_label(
+                Label::new((source.0, span_as_range(span)))
+                    .with_message(format!(
+                        "Dependent {} choices must include a wildcard `_` branch",
+                        kind
+                    ))
+                    .with_color(Color::Red),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
+        VestError::TypeError
+    }
+
+    fn report_invalid_wildcard_position<'ast>(
+        wildcard_span: &Span,
+        span: &Span,
+        source: (&str, &Source),
+    ) -> VestError {
+        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+            .with_message("invalid wildcard branch")
+            .with_label(
+                Label::new((source.0, span_as_range(wildcard_span)))
+                    .with_message("Wildcard `_` must appear as the last branch")
+                    .with_color(Color::Red),
+            )
+            .with_label(
+                Label::new((source.0, span_as_range(span)))
+                    .with_message("This dependent choice is matched top-to-bottom")
+                    .with_color(Color::Yellow),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
+        VestError::TypeError
+    }
+
     let get_combinator_from_depend_id = |depend_id| -> Result<&CombinatorInner<'ast>, VestError> {
         local_ctx
             .dependent_fields
@@ -1744,6 +1788,27 @@ fn check_choice_combinator<'ast>(
                     };
                     // check for well-formed variants
                     let mut variants = HashSet::new();
+                    let wildcard_count = enums.iter().filter(|(variant, _)| variant.name == "_").count();
+                    if wildcard_count > 1 {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message("duplicate wildcard branch")
+                            .with_labels(enums.iter().filter(|(label, _)| label.name == "_").map(|(label, _)| {
+                                Label::new((source.0, span_as_range(&label.span))).with_color(Color::Yellow)
+                            }))
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                    if let Some((idx, (variant, _))) = enums
+                        .iter()
+                        .enumerate()
+                        .find(|(_, (variant, _))| variant.name == "_")
+                    {
+                        if idx + 1 != enums.len() {
+                            return Err(report_invalid_wildcard_position(&variant.span, span, source));
+                        }
+                    }
                     for (variant, combinator) in enums {
                         if variant.name == "_" {
                             if !is_non_exhaustive {
@@ -1876,6 +1941,8 @@ fn check_choice_combinator<'ast>(
                                 .unwrap();
                             return Err(VestError::TypeError);
                         }
+                    } else if wildcard_count == 0 {
+                        return Err(report_missing_wildcard(span, source, "enum"));
                     }
                 } else {
                     Report::build(ReportKind::Error, (source.0, span_as_range(span)))
@@ -1979,6 +2046,31 @@ fn check_choice_combinator<'ast>(
                     }
                     Ok(())
                 };
+                let wildcard_positions = ints
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, (pattern, _))| pattern.is_none().then_some(idx))
+                    .collect::<Vec<_>>();
+                match wildcard_positions.as_slice() {
+                    [] => return Err(report_missing_wildcard(span, source, "int")),
+                    [idx] if *idx + 1 == ints.len() => {}
+                    [idx] => {
+                        let wildcard_span = ints[*idx].1.span;
+                        return Err(report_invalid_wildcard_position(&wildcard_span, span, source));
+                    }
+                    _ => {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message("duplicate wildcard branch")
+                            .with_labels(wildcard_positions.iter().map(|idx| {
+                                Label::new((source.0, span_as_range(&ints[*idx].1.span)))
+                                    .with_color(Color::Yellow)
+                            }))
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                }
                 // check if `combinator` is defined as an int
                 if let CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                     combinator:
@@ -2092,6 +2184,31 @@ fn check_choice_combinator<'ast>(
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
+                let wildcard_positions = arrays
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, (pattern, _))| matches!(pattern, ConstArray::Wildcard).then_some(idx))
+                    .collect::<Vec<_>>();
+                match wildcard_positions.as_slice() {
+                    [] => return Err(report_missing_wildcard(span, source, "array")),
+                    [idx] if *idx + 1 == arrays.len() => {}
+                    [idx] => {
+                        let wildcard_span = arrays[*idx].0.as_span();
+                        return Err(report_invalid_wildcard_position(&wildcard_span, span, source));
+                    }
+                    _ => {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message("duplicate wildcard branch")
+                            .with_labels(wildcard_positions.iter().map(|idx| {
+                                Label::new((source.0, span_as_range(&arrays[*idx].0.as_span())))
+                                    .with_color(Color::Yellow)
+                            }))
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                }
                 // check if `combinator` is defined as an array
                 if let CombinatorInner::Array(ArrayCombinator {
                     len,
