@@ -6,6 +6,8 @@ pub mod parser;
 pub mod serializer;
 
 pub use error::{ParseError, ParseErrorKind};
+pub use parser::{PResult, Parser};
+pub use serializer::{ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer};
 
 use vstd::prelude::*;
 

@@ -29,7 +29,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
         TerminalByteNat,
         Mapped<
             Pair<ContinuationByte, Refined<BundledSpecs<nat>, PredFnSpec<nat>>>,
-            BiMapper<(u8, nat), nat>,
+            FnSpecMapper<(u8, nat), nat>,
         >,
     >;
 
@@ -44,7 +44,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
                 inner: Pair(continuation_byte(), Refined(rec(()), |v: nat| MINIMAL ==> v > 0)),
                 // map: (lsb, rest) -> lsb | (rest << 7)
                 // map_rev: o -> (lsb = o & 0x7F, rest = o >> 7)
-                mapper: BiMap(
+                mapper: (
                     |pair: (u8, nat)| 128 * pair.1 + pair.0 as nat,
                     |o: nat| ((o % 128) as u8, o / 128),
                 ),
