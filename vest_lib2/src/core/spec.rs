@@ -79,11 +79,11 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
     ;
 
     /// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>)
+    broadcast proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>)
         requires
             self.sound_inv(),
         ensures
-            self.spec_parse(ibuf) matches Some((_, v)) ==> self.consistent(v),
+            #[trigger] self.spec_parse(ibuf) matches Some((_, v)) ==> self.consistent(v),
     ;
 }
 

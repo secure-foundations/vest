@@ -1,5 +1,6 @@
 //! Executable parser traits.
 use crate::core::spec::{SafeParser, SpecParser};
+use crate::core::proof::Productive;
 use vstd::prelude::*;
 
 use super::ParseError;
@@ -85,6 +86,16 @@ impl<P: SafeParser> SafeParser for &P {
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         (*self).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<P: Productive> Productive for &P {
+    open spec fn productive_inv(&self) -> bool {
+        (*self).productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        (*self).lemma_productive(s);
     }
 }
 

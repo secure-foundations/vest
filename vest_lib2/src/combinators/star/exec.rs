@@ -66,6 +66,26 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
     }
 }
 
+impl<I, A, B> Parser<I> for super::Repeat<A, B> where
+    I: InputBuf,
+    A: Parser<I> + SafeParser + Productive + Copy,
+    B: Parser<I> + SafeParser + Copy,
+ {
+    type PT = (Vec<A::PT>, B::PT);
+
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.0.safe_inv()
+        &&& self.0.productive_inv()
+        &&& self.1.exec_inv()
+        &&& self.1.safe_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
+        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).parse(ibuf)
+    }
+}
+
 impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
     I: InputBuf,
     Inner: Parser<I> + SafeParser,
@@ -243,7 +263,9 @@ pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: boo
             vs[i as int],
         )) ==> (forall|j: int| #![auto] 0 <= j < i + 1 ==> fmt.consistent(vs[j])));
 
-        yes = yes && fmt.check_compliance(values[i]);
+        let elem_ok = fmt.check_compliance(values[i]);
+        assert(elem_ok == fmt.consistent(vs[i as int]));
+        yes = yes && elem_ok;
     }
     yes
 }

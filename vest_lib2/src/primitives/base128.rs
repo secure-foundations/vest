@@ -1,7 +1,9 @@
 use super::leb128::*;
 use crate::core::exec::parser::*;
+use crate::core::exec::parser::*;
 use crate::{
-    combinators::{mapped::spec::*, Mapped, Refined, Repeat, Star, TryMap, U8},
+    combinators::mapped::spec::*,
+    combinators::*,
     core::{exec::*, proof::*, spec::*},
 };
 use input::InputBuf;
@@ -635,7 +637,185 @@ mod base128_bounded_derived_proofs {
 
 }
 
+// Overflow-related proofs
+pub proof fn lemma_pow128_succ(exp: nat)
+    ensures
+        pow(128, exp + 1) == pow(128, exp) * 128,
+{
+    lemma_pow_adds(128, exp, 1);
+    lemma_pow1(128);
+}
+
+pub proof fn lemma_nat_from_base128_upper_bound(bytes: Seq<u8>)
+    requires
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+    ensures
+        nat_from_base128(bytes) < pow(128, bytes.len()),
+    decreases bytes.len(),
+{
+    if bytes.len() == 0 {
+        lemma_pow0(128);
+    } else {
+        let prefix = bytes.drop_last();
+        lemma_nat_from_base128_upper_bound(prefix);
+        lemma_pow128_succ(prefix.len());
+    }
+}
+
+/// Number of base-128 bytes that fit in `usize`:
+/// - 32-bit `usize`: 4 bytes (128^4 = 2^28 ≤ 2^32 - 1)
+/// - 64-bit `usize`: 9 bytes (128^9 = 2^63 ≤ 2^64 - 1)
+pub open spec fn size_of_base128_usize() -> nat {
+    if usize::BITS == 32 {
+        4
+    } else {
+        9
+    }
+}
+
+pub proof fn lemma_nat_from_base128_fits_usize(bytes: Seq<u8>)
+    requires
+        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+        bytes.len() <= size_of_base128_usize(),
+    ensures
+        nat_from_base128(bytes) <= usize::MAX,
+{
+    lemma_nat_from_base128_upper_bound(bytes);
+    assert(usize::BITS == 32 || usize::BITS == 64);
+    if usize::BITS == 32 {
+        assert(size_of_base128_usize() == 4);
+        // pow(128, 4) = 2^28 < 2^32 = USIZE_MODULUS_32
+        reveal_with_fuel(pow, 5);
+    } else {
+        assert(usize::BITS == 64);
+        assert(size_of_base128_usize() == 9);
+        // pow(128, 9) = 2^63 < 2^64 = USIZE_MODULUS_64
+        reveal_with_fuel(pow, 10);
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ContByteFmt;
+
+#[derive(Clone, Copy)]
+struct TermByteFmt;
+
+impl SpecParser for ContByteFmt {
+    type PVal = u8;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        continuation_byte().spec_parse(ibuf)
+    }
+}
+
+impl SpecParser for TermByteFmt {
+    type PVal = u8;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        terminal_byte().spec_parse(ibuf)
+    }
+}
+
+impl SafeParser for ContByteFmt {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        continuation_byte().lemma_parse_safe(ibuf);
+    }
+}
+
+impl SafeParser for TermByteFmt {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        terminal_byte().lemma_parse_safe(ibuf);
+    }
+}
+
+impl Productive for ContByteFmt {
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        continuation_byte().lemma_productive(s);
+    }
+}
+
+impl Parser<&[u8]> for ContByteFmt {
+    type PT = u8;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        let (_, b) = U8.parse(ibuf)?;
+        if b < 128 {
+            Err(ParseError::cond_rejected())
+        } else {
+            assert(b >= 128 ==> b & 0x7F == b - 128) by (bit_vector);
+            Ok((1, b & 0x7F))
+        }
+    }
+}
+
+impl Parser<&[u8]> for TermByteFmt {
+    type PT = u8;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        let (_, b) = U8.parse(ibuf)?;
+        if b < 128 {
+            Ok((1, b))
+        } else {
+            Err(ParseError::cond_rejected())
+        }
+    }
+}
+
+proof fn lemma_cont_byte_fmt_parse_rec_eq(ibuf: Seq<u8>)
+    ensures
+        (Star { inner: ContByteFmt }).parse_rec(ibuf) == (Star {
+            inner: continuation_byte(),
+        }).parse_rec(ibuf),
+    decreases ibuf.len(),
+{
+    let star1 = Star { inner: ContByteFmt };
+    if ibuf.len() == 0 {
+    } else {
+        match star1.inner.spec_parse(ibuf) {
+            Some((n, v)) if 0 < n <= ibuf.len() => {
+                lemma_cont_byte_fmt_parse_rec_eq(ibuf.skip(n));
+            },
+            _ => {},
+        }
+    }
+}
+
+proof fn lemma_repeat_spec_parse_eq(ibuf: Seq<u8>)
+    ensures
+        Repeat(ContByteFmt, TermByteFmt).spec_parse(ibuf) == Repeat(
+            continuation_byte(),
+            terminal_byte(),
+        ).spec_parse(ibuf),
+{
+    lemma_cont_byte_fmt_parse_rec_eq(ibuf);
+}
+
 impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
+    pub fn parse_base128_wire_fmt(input: &[u8]) -> (r: PResult<Vec<u8>>)
+        ensures
+            parse_matches_spec(r, base128_wire_fmt::<MINIMAL>().spec_parse(input@)),
+    {
+        proof {
+            lemma_repeat_spec_parse_eq(input@);
+        }
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let (n, (mut bytes, term_byte)) = Repeat(ContByteFmt, TermByteFmt).parse(&input)?;
+        let ghost bytes_before = bytes.deep_view();
+
+        // check for minimality
+        if MINIMAL {
+            if bytes.len() > 0 && bytes[0] == 0 {
+                return Err(ParseError::non_canonical());
+            }
+        }
+        bytes.push(term_byte);
+
+        assert(bytes.deep_view() == bytes_before.push(term_byte));
+
+        Ok((n, bytes))
+    }
+
     pub fn from_base128_bytes(bytes: &[u8]) -> (v: usize)
         requires
             forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
@@ -670,14 +850,32 @@ impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
 
 // impl<const MINIMAL: bool> Parser<&[u8]> for Base128Bounded<MINIMAL> {
 //     type PT = usize;
-//     fn parse(&self, ibuf: &&[u8]) -> (r: PResult<Self::PT>)
-//         requires
-//             self.exec_inv(),
-//         ensures
-//             parse_matches_spec(r, self.spec_parse(ibuf@)),
-//     {
+
+//     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+//         broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
+//         broadcast use lemma_base128_wire_fmt_props;
+
+//         let (n, bytes) = Self::parse_base128_wire_fmt(*ibuf)?;
+
+//         // check for overflow
+//         if usize::BITS == 32 {
+//             if bytes.len() > 4 {
+//                 return Err(ParseError::overflow());
+//             }
+//         } else {
+//             if bytes.len() > 9 {
+//                 return Err(ParseError::overflow());
+//             }
+//         }
+//         proof {
+//             lemma_nat_from_base128_fits_usize(bytes@);
+//         }
+//         let r = Self::from_base128_bytes(&bytes);
+//         assert(self.spec_parse(ibuf@) == Some((n as int, r)));
+//         Ok((n, r))
 //     }
 // }
+
 // pub struct Base128RecBody;
 // impl SpecRecBody for Base128RecBody {
 //     type Param = usize;
