@@ -1,8 +1,10 @@
 use super::leb128::*;
+use crate::core::exec::parser::*;
 use crate::{
-    combinators::{mapped::spec::*, Mapped, Refined, Repeat, TryMap, U8},
+    combinators::{mapped::spec::*, Mapped, Refined, Repeat, Star, TryMap, U8},
     core::{exec::*, proof::*, spec::*},
 };
+use input::InputBuf;
 use vstd::arithmetic::{div_mod::*, power::*, power2::*};
 use vstd::bits::*;
 use vstd::prelude::*;
@@ -121,27 +123,24 @@ pub open spec fn usize_from_base128(bytes: Seq<u8>) -> usize
     if bytes.len() == 0 {
         0
     } else {
-        (usize_from_base128(bytes.drop_last()) << 7usize) | bytes.last() as usize
+        (usize_from_base128(bytes.drop_last()) << 7) | bytes.last() as usize
     }
 }
 
 pub open spec fn usize_to_base128(v: usize) -> Seq<u8>
     decreases v,
-    via usize_to_base128_bytes_decreases
+    via usize_shr_decreases
 {
     if v < 128 {
         seq![v as u8]
     } else {
-        usize_to_base128(v >> 7usize).push((v & 0x7f) as u8)
+        usize_to_base128(v >> 7).push((v & 0x7f) as u8)
     }
 }
 
 #[via_fn]
-proof fn usize_to_base128_bytes_decreases(v: usize) {
-    if v >= 128 {
-        lemma_usize_shr7_is_div128(v);
-        lemma_div_decreases(v as int, 128);
-    }
+proof fn usize_shr_decreases(v: usize) {
+    assert(v != 0 ==> v >> 7 < v) by (bit_vector);
 }
 
 proof fn lemma_usize_shr7_is_div128(v: usize)
@@ -636,6 +635,49 @@ mod base128_bounded_derived_proofs {
 
 }
 
+impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
+    pub fn from_base128_bytes(bytes: &[u8]) -> (v: usize)
+        requires
+            forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+            nat_from_base128(bytes@) <= usize::MAX,
+        ensures
+            v == usize_from_base128(bytes@),
+        decreases bytes.len(),
+    {
+        let n = bytes.len();
+        if n == 0 {
+            0
+        } else {
+            (Self::from_base128_bytes(bytes.take(n - 1)) << 7) | bytes[n - 1] as usize
+        }
+    }
+
+    pub fn to_base128_bytes(v: usize) -> (bytes: Vec<u8>)
+        ensures
+            bytes@ == usize_to_base128(v),
+        decreases v,
+    {
+        if v < 128 {
+            vec![v as u8]
+        } else {
+            assert(v != 0 ==> v >> 7 < v) by (bit_vector);
+            let mut bytes = Self::to_base128_bytes(v >> 7);
+            bytes.push((v & 0x7f) as u8);
+            bytes
+        }
+    }
+}
+
+// impl<const MINIMAL: bool> Parser<&[u8]> for Base128Bounded<MINIMAL> {
+//     type PT = usize;
+//     fn parse(&self, ibuf: &&[u8]) -> (r: PResult<Self::PT>)
+//         requires
+//             self.exec_inv(),
+//         ensures
+//             parse_matches_spec(r, self.spec_parse(ibuf@)),
+//     {
+//     }
+// }
 // pub struct Base128RecBody;
 // impl SpecRecBody for Base128RecBody {
 //     type Param = usize;
@@ -701,3 +743,70 @@ mod base128_bounded_derived_proofs {
 //     }
 // }
 } // verus!
+#[cfg(test)]
+mod tests {
+    use super::Base128Bounded;
+
+    #[test]
+    fn test_to_base128_bytes() {
+        assert_eq!(Base128Bounded::<true>::to_base128_bytes(0x00), vec![0x00]);
+        assert_eq!(Base128Bounded::<true>::to_base128_bytes(0x7f), vec![0x7f]);
+        assert_eq!(
+            Base128Bounded::<true>::to_base128_bytes(0x80),
+            vec![0x01, 0x00]
+        );
+        assert_eq!(
+            Base128Bounded::<true>::to_base128_bytes(0x12c),
+            vec![0x02, 0x2c]
+        );
+        assert_eq!(
+            Base128Bounded::<true>::to_base128_bytes(0x4000),
+            vec![0x01, 0x00, 0x00]
+        );
+        assert_eq!(
+            Base128Bounded::<true>::to_base128_bytes(usize::MAX),
+            vec![0x01, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f]
+        );
+    }
+
+    #[test]
+    fn test_from_base128_bytes() {
+        assert_eq!(Base128Bounded::<true>::from_base128_bytes(&[0x00]), 0x00);
+        assert_eq!(Base128Bounded::<true>::from_base128_bytes(&[0x7f]), 0x7f);
+        assert_eq!(
+            Base128Bounded::<true>::from_base128_bytes(&[0x01, 0x00]),
+            0x80
+        );
+        assert_eq!(
+            Base128Bounded::<true>::from_base128_bytes(&[0x02, 0x2c]),
+            0x12c
+        );
+        assert_eq!(
+            Base128Bounded::<true>::from_base128_bytes(&[0x01, 0x00, 0x00]),
+            0x4000
+        );
+    }
+
+    #[test]
+    fn test_base128_roundtrip() {
+        let test_values = vec![
+            0x00,
+            0x01,
+            0x7f,
+            0x80,
+            0xff,
+            0x100,
+            0x12c,
+            0x3fff,
+            0x4000,
+            0x4001,
+            0xf_4240,
+            usize::MAX,
+        ];
+        for v in test_values {
+            let encoded = Base128Bounded::<true>::to_base128_bytes(v);
+            let decoded = Base128Bounded::<true>::from_base128_bytes(&encoded);
+            assert_eq!(v, decoded);
+        }
+    }
+}

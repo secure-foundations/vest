@@ -5,7 +5,6 @@ use super::*;
 use crate::core::proof::*;
 use crate::core::spec::SpecPred;
 use crate::core::spec::*;
-use vstd::pervasive::arbitrary;
 use vstd::prelude::*;
 
 verus! {
@@ -302,6 +301,7 @@ proof fn test_disjoinness() {
     use crate::combinators::*;
     use crate::core::proof::*;
     broadcast use disjointness_lemmas;
+    use vstd::pervasive::arbitrary;
 
     let fmt = Choice(Const(U8, 0), Choice(Const(U8, 1), Choice(Const(U8, 2), Const(U8, 3))));
     assert(fmt.unambiguous());
