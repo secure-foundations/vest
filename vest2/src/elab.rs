@@ -580,8 +580,11 @@ fn collect_params_with_bound<'ast>(
             depend_id, choices, ..
         }) => {
             if let Some(depend_id) = depend_id {
-                if !bound.contains(&depend_id.name) {
-                    params.insert(Param::Dependent(depend_id.to_owned()));
+                let root_name = depend_id.name.split('.').next().unwrap().to_string();
+                if !bound.contains(&root_name) {
+                    let mut root_ident = depend_id.to_owned();
+                    root_ident.name = root_name;
+                    params.insert(Param::Dependent(root_ident));
                 }
             }
             match choices {
@@ -632,8 +635,11 @@ fn collect_params_with_bound<'ast>(
         CombinatorInner::Invocation(CombinatorInvocation { args, .. }) => {
             for arg in args {
                 let Param::Dependent(name) = arg;
-                if !bound.contains(&name.name) {
-                    params.insert(Param::Dependent(name.to_owned()));
+                let root_name = name.name.split('.').next().unwrap().to_string();
+                if !bound.contains(&root_name) {
+                    let mut root_ident = name.to_owned();
+                    root_ident.name = root_name;
+                    params.insert(Param::Dependent(root_ident));
                 }
             }
         }

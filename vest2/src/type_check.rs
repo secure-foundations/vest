@@ -72,7 +72,7 @@ impl<'ast> CombinatorSig<'ast> {
 
 impl<'ast> GlobalCtx<'ast> {
     // TODO: return `Result`
-    pub fn resolve(&self, combinator: &'ast Combinator) -> &CombinatorInner<'ast> {
+    pub fn resolve<'a>(&'a self, combinator: &'a Combinator<'ast>) -> &'a CombinatorInner<'ast> {
         if let Some(and_then) = &combinator.and_then {
             self.resolve(and_then)
         } else {
@@ -80,7 +80,7 @@ impl<'ast> GlobalCtx<'ast> {
         }
     }
     // TODO: return `Result` instead of panic
-    pub fn resolve_alias(&self, combinator: &'ast CombinatorInner) -> &CombinatorInner<'ast> {
+    pub fn resolve_alias<'a>(&'a self, combinator: &'a CombinatorInner<'ast>) -> &'a CombinatorInner<'ast> {
         match combinator {
             CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
                 let combinator_sig = self
@@ -1130,110 +1130,42 @@ fn check_combinator_invocation<'ast>(
                                 l => l.clone(),
                             }
                         }
-                        // 1. try to find `depend_id` in local_ctx
-                        if let Some(arg_combinator) = local_ctx.dependent_fields.get(depend_id) {
-                            let left =
-                                resolve_up_to_enums(global_ctx.resolve(arg_combinator).clone());
-                            let right =
-                                resolve_up_to_enums(global_ctx.resolve_alias(combinator).clone());
-                            if left != right {
-                                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                    .with_message("argument type mismatch")
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(span)))
-                                            .with_message(format!(
-                                                "Expected {}, got {}",
-                                                combinator, arg_combinator
-                                            ))
-                                            .with_color(Color::Red),
-                                    )
-                                    .with_label(
-                                        Label::new((
-                                            source.0,
-                                            span_as_range(&combinator_sig.as_span()),
-                                        ))
+                        let arg_combinator = resolve_dependent_id(
+                            depend_id,
+                            param_defns,
+                            local_ctx,
+                            global_ctx,
+                            source,
+                        )?;
+                        let left = resolve_up_to_enums(arg_combinator.clone());
+                        let right =
+                            resolve_up_to_enums(global_ctx.resolve_alias(combinator).clone());
+                        if left != right {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                                .with_message("argument type mismatch")
+                                .with_label(
+                                    Label::new((source.0, span_as_range(span)))
                                         .with_message(format!(
-                                            "Format `{}` is defined here",
-                                            combinator_sig.name
+                                            "Expected {}, got {}",
+                                            combinator, left
                                         ))
-                                        .with_color(Color::Yellow),
-                                    )
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(&arg_combinator.span)))
-                                            .with_message(format!(
-                                                "Field `@{}` is defined here",
-                                                depend_id
-                                            ))
-                                            .with_color(Color::Yellow),
-                                    )
-                                    .finish()
-                                    .eprint(source)
-                                    .unwrap();
-                                return Err(VestError::TypeError);
-                            }
-                        } else {
-                            // 2. try to find `depend_id` in param_defns
-                            let param_defn = param_defns
-                                .iter()
-                                .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == depend_id));
-                            match param_defn {
-                                Some(ParamDefn::Dependent {
-                                    combinator: combinator_,
-                                    ..
-                                }) => {
-                                    let left = resolve_up_to_enums(
-                                        global_ctx.resolve_alias(combinator_).clone(),
-                                    );
-                                    let right = resolve_up_to_enums(
-                                        global_ctx.resolve_alias(combinator).clone(),
-                                    );
-                                    if left != right {
-                                        Report::build(
-                                            ReportKind::Error,
-                                            (source.0, span_as_range(span)),
-                                        )
-                                        .with_message("argument type mismatch")
-                                        .with_label(
-                                            Label::new((source.0, span_as_range(span)))
-                                                .with_message(format!(
-                                                    "Expected {}, got {}",
-                                                    combinator, combinator_
-                                                ))
-                                                .with_color(Color::Red),
-                                        )
-                                        .with_label(
-                                            Label::new((
-                                                source.0,
-                                                span_as_range(&combinator_sig.as_span()),
-                                            ))
-                                            .with_message(format!(
-                                                "Format `{}` is defined here",
-                                                combinator_sig.name
-                                            ))
-                                            .with_color(Color::Yellow),
-                                        )
-                                        .with_label(
-                                            Label::new((
-                                                source.0,
-                                                span_as_range(&combinator_.as_span()),
-                                            ))
-                                            .with_message(format!(
-                                                "Parameter `@{}` is defined here",
-                                                depend_id
-                                            ))
-                                            .with_color(Color::Yellow),
-                                        )
-                                        .finish()
-                                        .eprint(source)
-                                        .unwrap();
-                                        return Err(VestError::TypeError);
-                                    }
-                                }
-                                _ => {
-                                    report_unbound_field!(source, span, depend_id);
-                                    return Err(VestError::TypeError);
-                                }
-                            }
+                                        .with_color(Color::Red),
+                                )
+                                .with_label(
+                                    Label::new((
+                                        source.0,
+                                        span_as_range(&combinator_sig.as_span()),
+                                    ))
+                                    .with_message(format!(
+                                        "Format `{}` is defined here",
+                                        combinator_sig.name
+                                    ))
+                                    .with_color(Color::Yellow),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
                         }
                     }
                 }
@@ -1311,6 +1243,106 @@ fn check_length_expr<'ast>(
             check_length_expr(right, span, param_defns, local_ctx, global_ctx, source)
         }
     }
+}
+
+fn resolve_dependent_id<'a, 'ast>(
+    depend_id: &Identifier<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &'a LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+    source: (&str, &Source),
+) -> Result<&'a CombinatorInner<'ast>, VestError> {
+    let parts: Vec<&str> = depend_id.name.split('.').collect();
+    let root_id = Identifier {
+        name: parts[0].to_string(),
+        span: depend_id.span.clone(),
+    };
+
+    // 1. Find the root combinator
+    let mut current_combinator = if let Some(combinator) = local_ctx.dependent_fields.get(&root_id) {
+        global_ctx.resolve(combinator)
+    } else {
+        let param_defn = param_defns
+            .iter()
+            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
+        match param_defn {
+            Some(ParamDefn::Dependent { combinator, .. }) => global_ctx.resolve_alias(combinator),
+            _ => {
+                report_unbound_field!(source, &depend_id.span, root_id);
+                return Err(VestError::TypeError);
+            }
+        }
+    };
+
+    // 2. Navigate nested fields
+    let mut i = 1;
+    while i < parts.len() {
+        let field_name = parts[i];
+        match current_combinator {
+            CombinatorInner::Struct(struct_comb) => {
+                let field = struct_comb.fields.iter().find(|f| match f {
+                    StructField::Dependent { label, .. } => label.name == *field_name,
+                    _ => false,
+                });
+                match field {
+                    Some(StructField::Dependent { combinator, .. }) => {
+                        current_combinator = global_ctx.resolve(combinator);
+                        i += 1;
+                    }
+                    _ => {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
+                            .with_message("invalid nested field access")
+                            .with_label(
+                                Label::new((source.0, span_as_range(&depend_id.span)))
+                                    .with_message(format!("field `{}` is not a dependent field", field_name))
+                                    .with_color(Color::Red),
+                            )
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                }
+            }
+            CombinatorInner::Invocation(inv) => {
+                let sig = global_ctx
+                    .combinators
+                    .iter()
+                    .find(|sig| sig.name == inv.func);
+                if let Some(sig) = sig {
+                    current_combinator = &sig.resolved_combinator;
+                    // retry the same field on resolved combinator
+                } else {
+                    Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
+                        .with_message("cannot resolve type for nested access")
+                        .with_label(
+                            Label::new((source.0, span_as_range(&depend_id.span)))
+                                .with_message(format!("cannot resolve type of `{}`", inv.func))
+                                .with_color(Color::Red),
+                        )
+                        .finish()
+                        .eprint(source)
+                        .unwrap();
+                    return Err(VestError::TypeError);
+                }
+            }
+            _ => {
+                Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
+                    .with_message("invalid nested field access")
+                    .with_label(
+                        Label::new((source.0, span_as_range(&depend_id.span)))
+                            .with_message("nested field access requires a struct type")
+                            .with_color(Color::Red),
+                    )
+                    .finish()
+                    .eprint(source)
+                    .unwrap();
+                return Err(VestError::TypeError);
+            }
+        }
+    }
+
+    Ok(current_combinator)
 }
 
 fn check_dependent_id_is_valid_length<'ast>(
@@ -1714,26 +1746,6 @@ fn check_choice_combinator<'ast>(
         VestError::TypeError
     }
 
-    let get_combinator_from_depend_id = |depend_id| -> Result<&CombinatorInner<'ast>, VestError> {
-        local_ctx
-            .dependent_fields
-            .get(depend_id)
-            .map(|combinator| &combinator.inner)
-            .or_else(|| {
-                param_defns.iter().find_map(|param_defn| match param_defn {
-                    ParamDefn::Dependent {
-                        name,
-                        combinator,
-                        span,
-                    } if name == depend_id => Some(combinator),
-                    _ => None,
-                })
-            })
-            .ok_or_else(|| {
-                report_unbound_field!(source, span, depend_id);
-                VestError::TypeError
-            })
-    };
     // if there isn't a depend_id, it must be an `enum` choice:
     if depend_id.is_none() && !matches!(choices, Choices::Enums(_)) {
         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
@@ -1776,7 +1788,7 @@ fn check_choice_combinator<'ast>(
         Choices::Enums(enums) => {
             if let Some(depend_id) = depend_id {
                 // check if depend_id a prior field in the struct or in the param_defns
-                let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
@@ -2003,7 +2015,7 @@ fn check_choice_combinator<'ast>(
         }
         Choices::Ints(ints) => {
             if let Some(depend_id) = depend_id {
-                let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
@@ -2180,7 +2192,7 @@ fn check_choice_combinator<'ast>(
         }
         Choices::Arrays(arrays) => {
             if let Some(depend_id) = depend_id {
-                let combinator = get_combinator_from_depend_id(depend_id)?;
+                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
