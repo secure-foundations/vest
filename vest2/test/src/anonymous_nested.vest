@@ -12,7 +12,7 @@ c_or_d = enum {
 
 nested_inner_struct = {
   @len: u32,
-  inner: [u8; @len] >>= {
+  v: [u8; @len] >>= {
     x: u8,
     y: Tail,
   },

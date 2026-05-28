@@ -4,7 +4,7 @@ mod execs;
 mod proofs;
 mod specs;
 
-use crate::vestir::{self, Combinator, ConstCombinator, Definition, ParamDefn};
+use crate::vestir::{self, Definition};
 use common::{prelude, Analysis, CodeWriter};
 
 pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String {
@@ -101,27 +101,49 @@ fn section_header(title: &str) -> String {
 impl<'a> Analysis<'a> {
     pub(crate) fn gen_data_fragment(&self, def: &Definition) -> String {
         match def {
-            Definition::Combinator {
-                name,
-                combinator,
-                param_defns,
-            } => self.gen_combinator_data_fragment(name, combinator, param_defns),
-            Definition::ConstCombinator {
+            Definition::StructDef {
+                name, combinator, ..
+            } => self.gen_struct_value_types(name, combinator),
+            Definition::ChoiceDef {
+                name, combinator, ..
+            } => self.gen_choice_value_types(name, combinator),
+            Definition::EnumDef {
+                name, combinator, ..
+            } => self.gen_enum_value_types(name, combinator),
+            Definition::CombinatorDef {
+                name, combinator, ..
+            } => self.gen_combinator_value_types(name, combinator),
+            Definition::ConstCombinatorDef {
                 name,
                 const_combinator,
-            } => self.gen_const_data_fragment(name, const_combinator),
+            } => self.gen_const_value_aliases(name, const_combinator),
             Definition::Endianess(_) => String::new(),
         }
     }
 
     pub(crate) fn gen_specs_fragment(&self, def: &Definition) -> String {
         match def {
-            Definition::Combinator {
+            Definition::StructDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_struct_specs_section(name, combinator, param_defns),
+            Definition::ChoiceDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_choice_specs_section(name, combinator, param_defns),
+            Definition::EnumDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_enum_specs_section(name, combinator, param_defns),
+            Definition::CombinatorDef {
                 name,
                 combinator,
                 param_defns,
             } => self.gen_specs_section(name, combinator, param_defns),
-            Definition::ConstCombinator { name, .. } => format!(
+            Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(specs): emit const-format spec wrappers for {}\n",
                 self.info(name).names.exec
             ),
@@ -131,12 +153,21 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn gen_derived_specs_fragment(&self, def: &Definition) -> String {
         match def {
-            Definition::Combinator {
+            Definition::StructDef {
+                name, param_defns, ..
+            }
+            | Definition::ChoiceDef {
+                name, param_defns, ..
+            }
+            | Definition::EnumDef {
+                name, param_defns, ..
+            } => self.gen_top_level_derived_specs_section(name, param_defns),
+            Definition::CombinatorDef {
                 name,
                 combinator,
                 param_defns,
             } => self.gen_derived_specs_section(name, combinator, param_defns),
-            Definition::ConstCombinator { name, .. } => format!(
+            Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(derived-specs): emit const-format trait wrappers for {}\n",
                 self.info(name).names.exec
             ),
@@ -146,12 +177,21 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn gen_proofs_fragment(&self, def: &Definition) -> String {
         match def {
-            Definition::Combinator {
+            Definition::StructDef {
+                name, param_defns, ..
+            }
+            | Definition::ChoiceDef {
+                name, param_defns, ..
+            }
+            | Definition::EnumDef {
+                name, param_defns, ..
+            } => self.gen_top_level_proofs_section(name, param_defns),
+            Definition::CombinatorDef {
                 name,
                 combinator,
                 param_defns,
             } => self.gen_proofs_section(name, combinator, param_defns),
-            Definition::ConstCombinator { name, .. } => format!(
+            Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(proofs): emit const-format proof wrappers for {}\n",
                 self.info(name).names.exec
             ),
@@ -161,28 +201,24 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn gen_execs_fragment(&self, def: &Definition) -> String {
         match def {
-            Definition::Combinator {
+            Definition::CombinatorDef {
                 name, combinator, ..
             } => self.gen_execs_section(name, combinator),
-            Definition::ConstCombinator { name, .. } => format!(
+            Definition::StructDef { name, .. }
+            | Definition::ChoiceDef { name, .. }
+            | Definition::EnumDef { name, .. } => {
+                let info = self.info(name);
+                format!(
+                    "// TODO(execs): emit Parser / Serializer / Prepare impls for {}\n",
+                    info.names.exec
+                )
+            }
+            Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(execs): emit const-format exec wrappers for {}\n",
                 self.info(name).names.exec
             ),
             Definition::Endianess(_) => String::new(),
         }
-    }
-
-    fn gen_combinator_data_fragment(
-        &self,
-        name: &str,
-        combinator: &Combinator,
-        _param_defns: &[ParamDefn],
-    ) -> String {
-        self.gen_value_types(name, combinator)
-    }
-
-    fn gen_const_data_fragment(&self, name: &str, const_combinator: &ConstCombinator) -> String {
-        self.gen_const_value_aliases(name, const_combinator)
     }
 }
 
@@ -190,17 +226,10 @@ impl<'a> Analysis<'a> {
 mod tests {
     use super::*;
     use crate::vestir::{
-        self, CombinatorInner, CombinatorInvocation, ConstraintIntCombinator, Definition,
-        GlobalCtx, IntCombinator, LengthExpr, StructCombinator, StructField,
+        self, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstraintIntCombinator,
+        Definition, GlobalCtx, IntCombinator, LengthExpr, StructCombinator, StructField,
     };
     use std::collections::HashMap;
-
-    fn combinator(inner: CombinatorInner) -> Combinator {
-        Combinator {
-            inner,
-            and_then: None,
-        }
-    }
 
     fn ctx_for(defs: &[Definition]) -> GlobalCtx {
         let mut combinators = std::collections::HashSet::new();
@@ -208,7 +237,7 @@ mod tests {
         let mut enums = HashMap::new();
         for def in defs {
             match def {
-                Definition::Combinator {
+                Definition::CombinatorDef {
                     name,
                     param_defns,
                     combinator,
@@ -216,13 +245,28 @@ mod tests {
                     combinators.insert(vestir::CombinatorSig {
                         name: name.clone(),
                         param_defns: param_defns.clone(),
-                        resolved_combinator: combinator.inner.clone(),
+                        resolved_combinator: combinator.clone(),
                     });
-                    if let CombinatorInner::Enum(enum_comb) = &combinator.inner {
-                        enums.insert(name.clone(), enum_comb.clone());
-                    }
                 }
-                Definition::ConstCombinator { .. } | Definition::Endianess(_) => {}
+                Definition::EnumDef {
+                    name,
+                    param_defns,
+                    combinator,
+                } => {
+                    enums.insert(name.clone(), combinator.clone());
+                    combinators.insert(vestir::CombinatorSig {
+                        name: name.clone(),
+                        param_defns: param_defns.clone(),
+                        resolved_combinator: Combinator::Invocation(CombinatorInvocation {
+                            func: name.clone(),
+                            args: vec![],
+                        }),
+                    });
+                }
+                Definition::StructDef { .. }
+                | Definition::ChoiceDef { .. }
+                | Definition::ConstCombinatorDef { .. }
+                | Definition::Endianess(_) => {}
             }
         }
         GlobalCtx {
@@ -238,19 +282,19 @@ mod tests {
         let names = common::format_names("payload_with_header");
         assert_eq!(names.exec, "PayloadWithHeader");
         assert_eq!(names.spec, "PayloadWithHeaderSpec");
-        assert_eq!(names.inner, "PayloadWithHeaderInner");
+        assert_eq!(names.inner, "PayloadWithHeaderRepr");
         assert_eq!(names.fmt, "PayloadWithHeaderFmt");
         assert_eq!(names.fmt_fn, "payload_with_header_fmt");
     }
 
     #[test]
     fn bytes_need_lifetime() {
-        let defs = vec![Definition::Combinator {
+        let defs = vec![Definition::CombinatorDef {
             name: "msg".to_string(),
             param_defns: vec![],
-            combinator: combinator(CombinatorInner::Bytes(vestir::BytesCombinator {
+            combinator: Combinator::Bytes(vestir::BytesCombinator {
                 len: LengthExpr::Const(4),
-            })),
+            }),
         }];
         let ctx = ctx_for(&defs);
         let analysis = Analysis::new(&defs, &ctx);
@@ -260,20 +304,20 @@ mod tests {
     #[test]
     fn aliases_propagate_lifetime() {
         let defs = vec![
-            Definition::Combinator {
+            Definition::CombinatorDef {
                 name: "bytes4".to_string(),
                 param_defns: vec![],
-                combinator: combinator(CombinatorInner::Bytes(vestir::BytesCombinator {
+                combinator: Combinator::Bytes(vestir::BytesCombinator {
                     len: LengthExpr::Const(4),
-                })),
+                }),
             },
-            Definition::Combinator {
+            Definition::CombinatorDef {
                 name: "wrapper".to_string(),
                 param_defns: vec![],
-                combinator: combinator(CombinatorInner::Invocation(CombinatorInvocation {
+                combinator: Combinator::Invocation(CombinatorInvocation {
                     func: "bytes4".to_string(),
                     args: vec![],
-                })),
+                }),
             },
         ];
         let ctx = ctx_for(&defs);
@@ -283,29 +327,25 @@ mod tests {
 
     #[test]
     fn codegen_emits_structs_and_wrappers() {
-        let defs = vec![Definition::Combinator {
+        let defs = vec![Definition::StructDef {
             name: "header".to_string(),
             param_defns: vec![],
-            combinator: combinator(CombinatorInner::Struct(StructCombinator(vec![
+            combinator: StructCombinator(vec![
                 StructField::Dependent {
                     label: "len".to_string(),
-                    combinator: combinator(CombinatorInner::ConstraintInt(
-                        ConstraintIntCombinator {
-                            combinator: IntCombinator::Unsigned(16),
-                            constraint: None,
-                        },
-                    )),
+                    combinator: Combinator::ConstraintInt(ConstraintIntCombinator {
+                        combinator: IntCombinator::Unsigned(16),
+                        constraint: None,
+                    }),
                 },
                 StructField::Ordinary {
                     label: "flags".to_string(),
-                    combinator: combinator(CombinatorInner::ConstraintInt(
-                        ConstraintIntCombinator {
-                            combinator: IntCombinator::Unsigned(8),
-                            constraint: None,
-                        },
-                    )),
+                    combinator: Combinator::ConstraintInt(ConstraintIntCombinator {
+                        combinator: IntCombinator::Unsigned(8),
+                        constraint: None,
+                    }),
                 },
-            ]))),
+            ]),
         }];
         let ctx = ctx_for(&defs);
         let code = code_gen(&defs, &ctx);
@@ -317,12 +357,12 @@ mod tests {
 
     #[test]
     fn codegen_emits_proof_impls_for_non_tail_formats() {
-        let defs = vec![Definition::Combinator {
+        let defs = vec![Definition::CombinatorDef {
             name: "msg".to_string(),
             param_defns: vec![],
-            combinator: combinator(CombinatorInner::Bytes(vestir::BytesCombinator {
+            combinator: Combinator::Bytes(vestir::BytesCombinator {
                 len: LengthExpr::Const(4),
-            })),
+            }),
         }];
         let ctx = ctx_for(&defs);
         let code = code_gen(&defs, &ctx);
@@ -342,10 +382,10 @@ mod tests {
 
     #[test]
     fn codegen_skips_tail_only_proof_traits_for_tail_formats() {
-        let defs = vec![Definition::Combinator {
+        let defs = vec![Definition::CombinatorDef {
             name: "rest".to_string(),
             param_defns: vec![],
-            combinator: combinator(CombinatorInner::Tail(vestir::TailCombinator)),
+            combinator: Combinator::Tail(vestir::TailCombinator),
         }];
         let ctx = ctx_for(&defs);
         let code = code_gen(&defs, &ctx);
@@ -363,5 +403,34 @@ mod tests {
             code.contains("impl  NonMalleable for RestFmt")
                 || code.contains("impl NonMalleable for RestFmt")
         );
+    }
+
+    #[test]
+    fn codegen_emits_choice_types() {
+        let defs = vec![Definition::ChoiceDef {
+            name: "pick".to_string(),
+            param_defns: vec![],
+            combinator: ChoiceCombinator {
+                depend_id: None,
+                choices: Choices::Ints(vec![
+                    (
+                        Some(vestir::ConstraintElem::Single(1)),
+                        Combinator::Bytes(vestir::BytesCombinator {
+                            len: LengthExpr::Const(1),
+                        }),
+                    ),
+                    (
+                        Some(vestir::ConstraintElem::Single(2)),
+                        Combinator::Bytes(vestir::BytesCombinator {
+                            len: LengthExpr::Const(2),
+                        }),
+                    ),
+                ]),
+            },
+        }];
+        let ctx = ctx_for(&defs);
+        let code = code_gen(&defs, &ctx);
+        assert!(code.contains("pub enum Pick"));
+        assert!(code.contains("pick_fmt"));
     }
 }

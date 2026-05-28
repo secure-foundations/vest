@@ -1,9 +1,8 @@
 use crate::vestir::{
-    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInner,
-    CombinatorInvocation, ConstArray, ConstCombinator, ConstraintEnumCombinator,
-    ConstraintIntCombinator, Definition, Endianess, EnumCombinator, GlobalCtx, LengthExpr,
-    OptionCombinator, ParamDefn, StructCombinator, StructField, TailCombinator, VecCombinator,
-    WrapCombinator,
+    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstArray,
+    ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition, Endianess,
+    GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
+    TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
@@ -223,7 +222,10 @@ pub(crate) fn format_verus_snippet(input: &str) -> String {
                 write_indent(&mut out, indent, &mut line_start);
                 out.push(']');
                 bracket_depth = bracket_depth.saturating_sub(1);
-                if bracket_depth == 0 && brace_depth == 0 && matches!(next, Some('#' | 'p' | 'i' | 'm')) {
+                if bracket_depth == 0
+                    && brace_depth == 0
+                    && matches!(next, Some('#' | 'p' | 'i' | 'm'))
+                {
                     newline(&mut out, &mut line_start);
                 }
             }
@@ -287,12 +289,10 @@ impl<'a> Analysis<'a> {
         &self,
         combinator: &'b Combinator,
     ) -> Option<&'b CombinatorInvocation> {
-        if combinator.and_then.is_none() {
-            if let CombinatorInner::Invocation(invocation) = &combinator.inner {
-                return Some(invocation);
-            }
+        match combinator {
+            Combinator::Invocation(invocation) => Some(invocation),
+            _ => None,
         }
-        None
     }
 
     pub(crate) fn new(defs: &'a [Definition], ctx: &'a GlobalCtx) -> Self {
@@ -360,99 +360,40 @@ impl<'a> Analysis<'a> {
         mode: TypeMode,
         top_level: bool,
     ) -> TokenStream {
-        if let Some(and_then) = &combinator.and_then {
-            return self.render_value_type(and_then, mode, top_level);
+        match combinator {
+            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode, top_level),
+            _ => self.render_inner_type(combinator, mode, top_level),
         }
-        self.render_inner_type(&combinator.inner, mode, top_level)
     }
 
     pub(crate) fn render_inner_type(
         &self,
-        inner: &CombinatorInner,
+        inner: &Combinator,
         mode: TypeMode,
         top_level: bool,
     ) -> TokenStream {
-        if let CombinatorInner::Invocation(invocation) = inner {
+        if let Combinator::Invocation(invocation) = inner {
             return self.invocation_value_type(invocation, mode);
         }
 
         match self.ctx.resolve_alias(inner) {
-            CombinatorInner::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
+            Combinator::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
                 self.int_type(combinator, mode)
             }
-            CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
+            Combinator::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
                 self.invocation_value_type(combinator, mode)
             }
-            CombinatorInner::Struct(struct_comb) => {
-                if top_level {
-                    if let Some(name) = self.definition_name_for_inner_opt(inner) {
-                        self.nominal_type(&name, mode)
-                    } else {
-                        self.render_struct_inner_type(struct_comb, mode)
-                    }
-                } else {
-                    self.render_struct_inner_type(struct_comb, mode)
-                }
-            }
-            CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
+            Combinator::Wrap(WrapCombinator { combinator, .. }) => {
                 self.render_value_type(combinator, mode, top_level)
             }
-            CombinatorInner::Enum(enum_comb) => {
-                if top_level {
-                    if let Some(name) = self.definition_name_for_inner_opt(inner) {
-                        self.nominal_type(&name, mode)
-                    } else {
-                        let branch_types = match enum_comb {
-                            EnumCombinator::Exhaustive { enums, inferred }
-                            | EnumCombinator::NonExhaustive { enums, inferred } => {
-                                let mut tys = enums
-                                    .iter()
-                                    .map(|_| self.int_type(inferred, mode))
-                                    .collect::<Vec<_>>();
-                                if matches!(enum_comb, EnumCombinator::NonExhaustive { .. }) {
-                                    tys.push(self.int_type(inferred, mode));
-                                }
-                                tys
-                            }
-                        };
-                        self.choice_sum_type(&branch_types)
-                    }
-                } else {
-                    let branch_types = match enum_comb {
-                        EnumCombinator::Exhaustive { enums, inferred }
-                        | EnumCombinator::NonExhaustive { enums, inferred } => {
-                            let mut tys = enums
-                                .iter()
-                                .map(|_| self.int_type(inferred, mode))
-                                .collect::<Vec<_>>();
-                            if matches!(enum_comb, EnumCombinator::NonExhaustive { .. }) {
-                                tys.push(self.int_type(inferred, mode));
-                            }
-                            tys
-                        }
-                    };
-                    self.choice_sum_type(&branch_types)
-                }
-            }
-            CombinatorInner::Choice(choice_comb) => {
-                if top_level {
-                    if let Some(name) = self.definition_name_for_inner_opt(inner) {
-                        self.nominal_type(&name, mode)
-                    } else {
-                        self.choice_sum_type(&self.choice_branch_types(choice_comb, mode))
-                    }
-                } else {
-                    self.choice_sum_type(&self.choice_branch_types(choice_comb, mode))
-                }
-            }
-            CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            Combinator::Vec(VecCombinator::Vec(combinator)) => {
                 let inner_ty = self.render_value_type(combinator, mode, false);
                 match mode {
                     TypeMode::Exec => quote! { Vec<#inner_ty> },
                     TypeMode::Spec => quote! { Seq<#inner_ty> },
                 }
             }
-            CombinatorInner::Array(ArrayCombinator { combinator, len }) => {
+            Combinator::Array(ArrayCombinator { combinator, len }) => {
                 let inner_ty = self.render_value_type(combinator, mode, false);
                 match (mode, self.eval_const_length_expr(len)) {
                     (TypeMode::Exec, Some(n)) => {
@@ -463,15 +404,16 @@ impl<'a> Analysis<'a> {
                     (TypeMode::Spec, _) => quote! { Seq<#inner_ty> },
                 }
             }
-            CombinatorInner::Bytes(_) | CombinatorInner::Tail(TailCombinator) => match mode {
+            Combinator::Bytes(_) | Combinator::Tail(TailCombinator) => match mode {
                 TypeMode::Exec => quote! { &'i [u8] },
                 TypeMode::Spec => quote! { Seq<u8> },
             },
-            CombinatorInner::Option(OptionCombinator(combinator)) => {
+            Combinator::Option(OptionCombinator(combinator)) => {
                 let inner_ty = self.render_value_type(combinator, mode, false);
                 quote! { Option<#inner_ty> }
             }
-            CombinatorInner::Invocation(invocation) => self.invocation_value_type(invocation, mode),
+            Combinator::Invocation(invocation) => self.invocation_value_type(invocation, mode),
+            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode, top_level),
         }
     }
 
@@ -657,42 +599,23 @@ impl<'a> Analysis<'a> {
             .collect()
     }
 
-    pub(crate) fn definition_name_for_inner_opt(&self, inner: &CombinatorInner) -> Option<String> {
-        match inner {
-            CombinatorInner::Invocation(invocation) => Some(invocation.func.clone()),
-            _ => self.defs.iter().find_map(|def| match def {
-                Definition::Combinator {
-                    name, combinator, ..
-                } if std::ptr::eq(&combinator.inner, inner) => Some(name.clone()),
-                _ => None,
-            }),
-        }
-    }
-
-    pub(crate) fn definition_name_for_inner(&self, inner: &CombinatorInner) -> String {
-        self.definition_name_for_inner_opt(inner)
-            .unwrap_or_else(|| "Anonymous".to_string())
-    }
-
     pub(crate) fn param_needs_lifetime(&self, param: &ParamDefn) -> bool {
         match param {
-            ParamDefn::Dependent { combinator, .. } => self.inner_needs_lifetime(combinator),
+            ParamDefn::Dependent { combinator, .. } => self.combinator_needs_lifetime(combinator),
         }
     }
 
     pub(crate) fn param_defns_for(&self, name: &str) -> &[ParamDefn] {
         match self.definition_for(name) {
-            Some(Definition::Combinator { param_defns, .. }) => param_defns.as_slice(),
+            Some(def) => def.param_defns(),
             _ => &[],
         }
     }
 
     fn definition_for(&self, name: &str) -> Option<&Definition> {
-        self.defs.iter().find(|def| matches!(
-            def,
-            Definition::Combinator { name: def_name, .. } | Definition::ConstCombinator { name: def_name, .. }
-                if def_name == name
-        ))
+        self.defs
+            .iter()
+            .find(|def| definition_name(def).is_some_and(|def_name| def_name == name))
     }
 
     pub(crate) fn repeated_u8_array_ineq_facts(
@@ -713,95 +636,46 @@ impl<'a> Analysis<'a> {
         facts: &mut HashSet<(u8, u8, usize)>,
         visited: &mut HashSet<String>,
     ) {
-        self.collect_repeated_u8_array_ineq_facts_inner(&combinator.inner, facts, visited);
-        if let Some(and_then) = &combinator.and_then {
-            self.collect_repeated_u8_array_ineq_facts(and_then, facts, visited);
+        match combinator {
+            Combinator::AndThen(lhs, rhs) => {
+                self.collect_repeated_u8_array_ineq_facts(lhs, facts, visited);
+                self.collect_repeated_u8_array_ineq_facts(rhs, facts, visited);
+            }
+            _ => self.collect_repeated_u8_array_ineq_facts_inner(combinator, facts, visited),
         }
     }
 
     fn collect_repeated_u8_array_ineq_facts_inner(
         &self,
-        inner: &CombinatorInner,
+        inner: &Combinator,
         facts: &mut HashSet<(u8, u8, usize)>,
         visited: &mut HashSet<String>,
     ) {
         match inner {
-            CombinatorInner::Choice(choice) => {
-                self.collect_choice_repeated_u8_array_ineq_facts(choice, facts);
-                for branch in self.choice_branches(choice) {
-                    self.collect_repeated_u8_array_ineq_facts(branch, facts, visited);
-                }
-            }
-            CombinatorInner::Struct(StructCombinator(fields)) => {
-                for field in fields {
-                    match field {
-                        StructField::Dependent { combinator, .. }
-                        | StructField::Ordinary { combinator, .. } => {
-                            self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
-                        }
-                        StructField::Const { .. } => {}
-                    }
-                }
-            }
-            CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
+            Combinator::Wrap(WrapCombinator { combinator, .. }) => {
                 self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
             }
-            CombinatorInner::Vec(VecCombinator::Vec(combinator))
-            | CombinatorInner::Option(OptionCombinator(combinator)) => {
+            Combinator::Vec(VecCombinator::Vec(combinator))
+            | Combinator::Option(OptionCombinator(combinator)) => {
                 self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
             }
-            CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            Combinator::Array(ArrayCombinator { combinator, .. }) => {
                 self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
             }
-            CombinatorInner::Invocation(invocation) => {
+            Combinator::Invocation(invocation) => {
                 if visited.insert(invocation.func.clone()) {
-                    if let Some(Definition::Combinator { combinator, .. }) =
+                    if let Some(Definition::CombinatorDef { combinator, .. }) =
                         self.definition_for(&invocation.func)
                     {
                         self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
                     }
                 }
             }
-            CombinatorInner::ConstraintInt(_)
-            | CombinatorInner::ConstraintEnum(_)
-            | CombinatorInner::Enum(_)
-            | CombinatorInner::Bytes(_)
-            | CombinatorInner::Tail(_) => {}
-        }
-    }
-
-    fn collect_choice_repeated_u8_array_ineq_facts(
-        &self,
-        choice: &ChoiceCombinator,
-        facts: &mut HashSet<(u8, u8, usize)>,
-    ) {
-        let Choices::Arrays(branches) = &choice.choices else {
-            return;
-        };
-        let repeats = branches
-            .iter()
-            .filter_map(|(array, _)| match array {
-                ConstArray::Repeat(value, len)
-                    if (0..=u8::MAX as i128).contains(value) && *len > 0 =>
-                {
-                    Some((*value as u8, *len))
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        for i in 0..repeats.len() {
-            for j in i + 1..repeats.len() {
-                let (lhs, len_lhs) = repeats[i];
-                let (rhs, len_rhs) = repeats[j];
-                if len_lhs == len_rhs && lhs != rhs {
-                    let fact = if lhs < rhs {
-                        (lhs, rhs, len_lhs)
-                    } else {
-                        (rhs, lhs, len_lhs)
-                    };
-                    facts.insert(fact);
-                }
-            }
+            Combinator::ConstraintInt(_)
+            | Combinator::ConstraintEnum(_)
+            | Combinator::Bytes(_)
+            | Combinator::Tail(_) => {}
+            Combinator::AndThen(_, _) => unreachable!(),
         }
     }
 
@@ -817,8 +691,13 @@ impl<'a> Analysis<'a> {
 
     fn definition_needs_lifetime(&self, def: &Definition) -> bool {
         match def {
-            Definition::Combinator { combinator, .. } => self.combinator_needs_lifetime(combinator),
-            Definition::ConstCombinator {
+            Definition::StructDef { combinator, .. } => self.struct_needs_lifetime(combinator),
+            Definition::ChoiceDef { combinator, .. } => self.choice_needs_lifetime(combinator),
+            Definition::EnumDef { .. } => false,
+            Definition::CombinatorDef { combinator, .. } => {
+                self.combinator_needs_lifetime(combinator)
+            }
+            Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_needs_lifetime(const_combinator),
             Definition::Endianess(_) => false,
@@ -826,27 +705,16 @@ impl<'a> Analysis<'a> {
     }
 
     fn combinator_needs_lifetime(&self, combinator: &Combinator) -> bool {
-        if let Some(and_then) = &combinator.and_then {
-            return self.combinator_needs_lifetime(and_then);
+        match combinator {
+            Combinator::AndThen(_, rhs) => self.combinator_needs_lifetime(rhs),
+            _ => self.inner_needs_lifetime(combinator),
         }
-        self.inner_needs_lifetime(&combinator.inner)
     }
 
-    fn inner_needs_lifetime(&self, inner: &CombinatorInner) -> bool {
+    fn inner_needs_lifetime(&self, inner: &Combinator) -> bool {
         match self.ctx.resolve_alias(inner) {
-            CombinatorInner::ConstraintInt(_)
-            | CombinatorInner::ConstraintEnum(_)
-            | CombinatorInner::Enum(_) => false,
-            CombinatorInner::Struct(StructCombinator(fields)) => {
-                fields.iter().any(|field| match field {
-                    StructField::Const { combinator, .. } => self.const_needs_lifetime(combinator),
-                    StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } => {
-                        self.combinator_needs_lifetime(combinator)
-                    }
-                })
-            }
-            CombinatorInner::Wrap(WrapCombinator {
+            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) => false,
+            Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
                 post,
@@ -855,29 +723,35 @@ impl<'a> Analysis<'a> {
                     || self.combinator_needs_lifetime(combinator)
                     || post.iter().any(|c| self.const_needs_lifetime(c))
             }
-            CombinatorInner::Choice(choice) => match &choice.choices {
-                Choices::Enums(branches) => branches
-                    .iter()
-                    .any(|(_, combinator)| self.combinator_needs_lifetime(combinator)),
-                Choices::Ints(branches) => branches
-                    .iter()
-                    .any(|(_, combinator)| self.combinator_needs_lifetime(combinator)),
-                Choices::Arrays(branches) => branches
-                    .iter()
-                    .any(|(_, combinator)| self.combinator_needs_lifetime(combinator)),
-            },
-            CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            Combinator::Vec(VecCombinator::Vec(combinator)) => {
                 self.combinator_needs_lifetime(combinator)
             }
-            CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            Combinator::Array(ArrayCombinator { combinator, .. }) => {
                 self.combinator_needs_lifetime(combinator)
             }
-            CombinatorInner::Bytes(_) | CombinatorInner::Tail(_) => true,
-            CombinatorInner::Option(OptionCombinator(combinator)) => {
+            Combinator::Bytes(_) | Combinator::Tail(_) => true,
+            Combinator::Option(OptionCombinator(combinator)) => {
                 self.combinator_needs_lifetime(combinator)
             }
-            CombinatorInner::Invocation(invocation) => self.info(&invocation.func).needs_lifetime,
+            Combinator::Invocation(invocation) => self.info(&invocation.func).needs_lifetime,
+            Combinator::AndThen(_, rhs) => self.combinator_needs_lifetime(rhs),
         }
+    }
+
+    fn struct_needs_lifetime(&self, struct_comb: &StructCombinator) -> bool {
+        struct_comb.0.iter().any(|field| match field {
+            StructField::Const { combinator, .. } => self.const_needs_lifetime(combinator),
+            StructField::Dependent { combinator, .. }
+            | StructField::Ordinary { combinator, .. } => {
+                self.combinator_needs_lifetime(combinator)
+            }
+        })
+    }
+
+    fn choice_needs_lifetime(&self, choice: &ChoiceCombinator) -> bool {
+        self.choice_branches(choice)
+            .into_iter()
+            .any(|branch| self.combinator_needs_lifetime(branch))
     }
 
     fn const_needs_lifetime(&self, combinator: &ConstCombinator) -> bool {
@@ -890,10 +764,13 @@ impl<'a> Analysis<'a> {
 
     fn definition_non_tail(&self, def: &Definition) -> bool {
         match def {
-            Definition::Combinator { combinator, .. } => {
+            Definition::StructDef { combinator, .. } => self.struct_non_tail_at(combinator, true),
+            Definition::ChoiceDef { combinator, .. } => self.choice_non_tail_at(combinator, true),
+            Definition::EnumDef { .. } => true,
+            Definition::CombinatorDef { combinator, .. } => {
                 self.combinator_non_tail_at(combinator, true)
             }
-            Definition::ConstCombinator {
+            Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_non_tail(const_combinator),
             Definition::Endianess(_) => true,
@@ -905,39 +782,21 @@ impl<'a> Analysis<'a> {
     }
 
     fn combinator_non_tail_at(&self, combinator: &Combinator, tail_position: bool) -> bool {
-        if let Some(and_then) = &combinator.and_then {
-            return match self.ctx.resolve_alias(&combinator.inner) {
-                // `bytes >>= fmt` lowers to `ExactLen(len, fmt)`, which is non-tail even when
-                // the inner format itself is tail-like because the exact-length wrapper "boxes"
-                // the inner parser/serializer from the outside context.
-                CombinatorInner::Bytes(_) => true,
-                _ => self.combinator_non_tail_at(and_then, tail_position),
-            };
+        match combinator {
+            Combinator::AndThen(lhs, rhs) => {
+                return match self.ctx.resolve_alias(lhs) {
+                    Combinator::Bytes(_) => true,
+                    _ => self.combinator_non_tail_at(rhs, tail_position),
+                };
+            }
+            _ => {}
         }
-        match self.ctx.resolve_alias(&combinator.inner) {
-            CombinatorInner::Tail(_) => false,
-            CombinatorInner::ConstraintInt(_)
-            | CombinatorInner::ConstraintEnum(_)
-            | CombinatorInner::Enum(_)
-            | CombinatorInner::Bytes(_) => true,
-            CombinatorInner::Struct(StructCombinator(fields)) => {
-                let mut at_tail = tail_position;
-                for field in fields.iter().rev() {
-                    let ok = match field {
-                        StructField::Const { combinator, .. } => self.const_non_tail(combinator),
-                        StructField::Dependent { combinator, .. }
-                        | StructField::Ordinary { combinator, .. } => {
-                            self.combinator_non_tail_at(combinator, at_tail)
-                        }
-                    };
-                    if !ok {
-                        return false;
-                    }
-                    at_tail = false;
-                }
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::Tail(_) => false,
+            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) | Combinator::Bytes(_) => {
                 true
             }
-            CombinatorInner::Wrap(WrapCombinator {
+            Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
                 post,
@@ -946,26 +805,40 @@ impl<'a> Analysis<'a> {
                     && self.combinator_non_tail_at(combinator, tail_position)
                     && post.iter().all(|c| self.const_non_tail(c))
             }
-            CombinatorInner::Choice(choice) => match &choice.choices {
-                Choices::Enums(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
-                Choices::Ints(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
-                Choices::Arrays(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_tail_at(combinator, tail_position)),
-            },
-            CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            Combinator::Array(ArrayCombinator { combinator, .. }) => {
                 self.combinator_non_tail(combinator)
             }
-            CombinatorInner::Option(OptionCombinator(combinator))
-            | CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            Combinator::Option(OptionCombinator(combinator))
+            | Combinator::Vec(VecCombinator::Vec(combinator)) => {
                 !tail_position && self.combinator_non_tail(combinator)
             }
-            CombinatorInner::Invocation(invocation) => self.info(&invocation.func).non_tail,
+            Combinator::Invocation(invocation) => self.info(&invocation.func).non_tail,
+            Combinator::AndThen(_, _) => unreachable!(),
         }
+    }
+
+    fn struct_non_tail_at(&self, struct_comb: &StructCombinator, tail_position: bool) -> bool {
+        let mut at_tail = tail_position;
+        for field in struct_comb.0.iter().rev() {
+            let ok = match field {
+                StructField::Const { combinator, .. } => self.const_non_tail(combinator),
+                StructField::Dependent { combinator, .. }
+                | StructField::Ordinary { combinator, .. } => {
+                    self.combinator_non_tail_at(combinator, at_tail)
+                }
+            };
+            if !ok {
+                return false;
+            }
+            at_tail = false;
+        }
+        true
+    }
+
+    fn choice_non_tail_at(&self, choice: &ChoiceCombinator, tail_position: bool) -> bool {
+        self.choice_branches(choice)
+            .into_iter()
+            .all(|branch| self.combinator_non_tail_at(branch, tail_position))
     }
 
     fn const_non_tail(&self, combinator: &ConstCombinator) -> bool {
@@ -979,8 +852,13 @@ impl<'a> Analysis<'a> {
 
     fn definition_non_malleable(&self, def: &Definition) -> bool {
         match def {
-            Definition::Combinator { combinator, .. } => self.combinator_non_malleable(combinator),
-            Definition::ConstCombinator {
+            Definition::StructDef { combinator, .. } => self.struct_non_malleable(combinator),
+            Definition::ChoiceDef { combinator, .. } => self.choice_non_malleable(combinator),
+            Definition::EnumDef { .. } => true,
+            Definition::CombinatorDef { combinator, .. } => {
+                self.combinator_non_malleable(combinator)
+            }
+            Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_non_malleable(const_combinator),
             Definition::Endianess(_) => true,
@@ -988,24 +866,15 @@ impl<'a> Analysis<'a> {
     }
 
     fn combinator_non_malleable(&self, combinator: &Combinator) -> bool {
-        if let Some(and_then) = &combinator.and_then {
-            return self.combinator_non_malleable(and_then);
+        match combinator {
+            Combinator::AndThen(_, rhs) => return self.combinator_non_malleable(rhs),
+            _ => {}
         }
-        match self.ctx.resolve_alias(&combinator.inner) {
-            CombinatorInner::ConstraintInt(_)
-            | CombinatorInner::ConstraintEnum(_)
-            | CombinatorInner::Enum(_)
-            | CombinatorInner::Bytes(_) => true,
-            CombinatorInner::Struct(StructCombinator(fields)) => {
-                fields.iter().all(|field| match field {
-                    StructField::Const { combinator, .. } => self.const_non_malleable(combinator),
-                    StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } => {
-                        self.combinator_non_malleable(combinator)
-                    }
-                })
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) | Combinator::Bytes(_) => {
+                true
             }
-            CombinatorInner::Wrap(WrapCombinator {
+            Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
                 post,
@@ -1014,29 +883,33 @@ impl<'a> Analysis<'a> {
                     && self.combinator_non_malleable(combinator)
                     && post.iter().all(|c| self.const_non_malleable(c))
             }
-            CombinatorInner::Choice(choice) => match &choice.choices {
-                Choices::Enums(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_malleable(combinator)),
-                Choices::Ints(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_malleable(combinator)),
-                Choices::Arrays(branches) => branches
-                    .iter()
-                    .all(|(_, combinator)| self.combinator_non_malleable(combinator)),
-            },
-            CombinatorInner::Tail(_) => true,
-            CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
+            Combinator::Tail(_) => true,
+            Combinator::Vec(VecCombinator::Vec(combinator)) => {
                 self.combinator_non_malleable(combinator)
             }
-            CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
+            Combinator::Array(ArrayCombinator { combinator, .. }) => {
                 self.combinator_non_malleable(combinator)
             }
-            CombinatorInner::Option(OptionCombinator(combinator)) => {
+            Combinator::Option(OptionCombinator(combinator)) => {
                 self.combinator_non_malleable(combinator)
             }
-            CombinatorInner::Invocation(invocation) => self.info(&invocation.func).non_malleable,
+            Combinator::Invocation(invocation) => self.info(&invocation.func).non_malleable,
+            Combinator::AndThen(_, _) => unreachable!(),
         }
+    }
+
+    fn struct_non_malleable(&self, struct_comb: &StructCombinator) -> bool {
+        struct_comb.0.iter().all(|field| match field {
+            StructField::Const { combinator, .. } => self.const_non_malleable(combinator),
+            StructField::Dependent { combinator, .. }
+            | StructField::Ordinary { combinator, .. } => self.combinator_non_malleable(combinator),
+        })
+    }
+
+    fn choice_non_malleable(&self, choice: &ChoiceCombinator) -> bool {
+        self.choice_branches(choice)
+            .into_iter()
+            .all(|branch| self.combinator_non_malleable(branch))
     }
 
     fn const_non_malleable(&self, combinator: &ConstCombinator) -> bool {
@@ -1051,8 +924,11 @@ impl<'a> Analysis<'a> {
 
 pub(crate) fn definition_name(def: &Definition) -> Option<&str> {
     match def {
-        Definition::Combinator { name, .. } => Some(name),
-        Definition::ConstCombinator { name, .. } => Some(name),
+        Definition::StructDef { name, .. }
+        | Definition::ChoiceDef { name, .. }
+        | Definition::EnumDef { name, .. }
+        | Definition::CombinatorDef { name, .. }
+        | Definition::ConstCombinatorDef { name, .. } => Some(name),
         Definition::Endianess(_) => None,
     }
 }

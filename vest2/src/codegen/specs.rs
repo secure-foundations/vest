@@ -1,6 +1,6 @@
 use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
-    self, ChoiceCombinator, Choices, Combinator, CombinatorInner, ConstArray, ConstCombinator,
+    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator,
     ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator,
     IntCombinator, LengthExpr, Param, ParamDefn, StructCombinator, StructField,
 };
@@ -27,6 +27,45 @@ impl RenderedSpec {
 }
 
 impl<'a> Analysis<'a> {
+    pub(crate) fn gen_struct_specs_section(
+        &self,
+        name: &str,
+        combinator: &StructCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let mut out = String::new();
+        out.push_str(&self.gen_wrapper_type(name, param_defns));
+        out.push_str("\n\n");
+        out.push_str(&self.gen_struct_format_spec_alias_and_ctor(name, combinator, param_defns));
+        out
+    }
+
+    pub(crate) fn gen_choice_specs_section(
+        &self,
+        name: &str,
+        combinator: &ChoiceCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let mut out = String::new();
+        out.push_str(&self.gen_wrapper_type(name, param_defns));
+        out.push_str("\n\n");
+        out.push_str(&self.gen_choice_format_spec_alias_and_ctor(name, combinator, param_defns));
+        out
+    }
+
+    pub(crate) fn gen_enum_specs_section(
+        &self,
+        name: &str,
+        combinator: &EnumCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let mut out = String::new();
+        out.push_str(&self.gen_wrapper_type(name, param_defns));
+        out.push_str("\n\n");
+        out.push_str(&self.gen_enum_format_spec_alias_and_ctor(name, combinator, param_defns));
+        out
+    }
+
     pub(crate) fn gen_specs_section(
         &self,
         name: &str,
@@ -65,6 +104,27 @@ impl<'a> Analysis<'a> {
         )
     }
 
+    pub(crate) fn gen_top_level_derived_specs_section(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let info = self.info(name);
+        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let top_value_ty = self.nominal_type(name, TypeMode::Spec);
+        let wrapper_generics = self.wrapper_generics(param_defns);
+        let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
+
+        self.gen_derived_spec_impls(
+            &fmt_ident,
+            &fmt_fn_ident,
+            &wrapper_generics,
+            &wrapper_call_args,
+            &top_value_ty,
+        )
+    }
+
     fn gen_format_spec_alias_and_ctor(
         &self,
         name: &str,
@@ -78,6 +138,73 @@ impl<'a> Analysis<'a> {
         let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let raw = self.render_top_level_spec(name, combinator);
+        let raw_ty = &raw.ty;
+        let raw_expr = &raw.expr;
+        let named_ty = quote! { Named<#raw_ty> };
+        let named_expr = quote! { Named(#name, #raw_expr) };
+        let spec_params = self.spec_param_list(param_defns);
+        let ctor_doc = format!("specification constructor for `{}`.", name);
+
+        let mut out = CodeWriter::new();
+        out.push_multiline(render_ts(quote! { pub type #fmt_spec_ident = #named_ty; }));
+        out.blank_line();
+        out.push_multiline(render_ts(quote! {
+            #[doc = #ctor_doc]
+            pub open spec fn #fmt_fn_ident(#(#spec_params),*) -> #fmt_spec_ident {
+                #named_expr
+            }
+        }));
+        out.finish()
+    }
+
+    fn gen_struct_format_spec_alias_and_ctor(
+        &self,
+        name: &str,
+        combinator: &StructCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_named_top_level_spec_alias_and_ctor(
+            name,
+            self.render_struct_top_level(name, combinator),
+            param_defns,
+        )
+    }
+
+    fn gen_choice_format_spec_alias_and_ctor(
+        &self,
+        name: &str,
+        combinator: &ChoiceCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_named_top_level_spec_alias_and_ctor(
+            name,
+            self.render_choice_top_level(name, combinator),
+            param_defns,
+        )
+    }
+
+    fn gen_enum_format_spec_alias_and_ctor(
+        &self,
+        name: &str,
+        combinator: &EnumCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_named_top_level_spec_alias_and_ctor(
+            name,
+            self.render_enum_top_level(name, combinator),
+            param_defns,
+        )
+    }
+
+    fn gen_named_top_level_spec_alias_and_ctor(
+        &self,
+        name: &str,
+        raw: RenderedSpec,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let info = self.info(name);
+        let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
+        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
         let named_ty = quote! { Named<#raw_ty> };
@@ -258,34 +385,21 @@ impl<'a> Analysis<'a> {
                 quote! { #fmt_ident }
             },
             expr,
-            self.render_value_type(
-                &Combinator {
-                    inner: CombinatorInner::Invocation(invocation.clone()),
-                    and_then: None,
-                },
-                TypeMode::Spec,
-                true,
-            ),
+            self.render_value_type(&Combinator::Invocation(invocation.clone()), TypeMode::Spec, true),
             true,
         )
     }
 
     fn render_and_then_spec(
         &self,
-        combinator: &Combinator,
-        and_then: &Combinator,
-        owner_name: Option<&str>,
+        lhs: &Combinator,
+        rhs: &Combinator,
+        _owner_name: Option<&str>,
     ) -> RenderedSpec {
-        match self.ctx.resolve_alias(&combinator.inner) {
-            CombinatorInner::Bytes(bytes) => {
+        match self.ctx.resolve_alias(lhs) {
+            Combinator::Bytes(bytes) => {
                 let len_expr = self.render_length_expr_usize(&bytes.len);
-                let inner = if let (Some(name), CombinatorInner::Choice(choice_comb)) =
-                    (owner_name, self.ctx.resolve_alias(&and_then.inner))
-                {
-                    self.render_choice_top_level(name, choice_comb)
-                } else {
-                    self.render_spec_combinator(and_then)
-                };
+                let inner = self.render_spec_combinator(rhs);
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
                 RenderedSpec::new(
@@ -296,17 +410,8 @@ impl<'a> Analysis<'a> {
                 )
             }
             _ => {
-                let lhs = self.render_spec_combinator(&Combinator {
-                    inner: combinator.inner.clone(),
-                    and_then: None,
-                });
-                let rhs = if let (Some(name), CombinatorInner::Choice(choice_comb)) =
-                    (owner_name, self.ctx.resolve_alias(&and_then.inner))
-                {
-                    self.render_choice_top_level(name, choice_comb)
-                } else {
-                    self.render_spec_combinator(and_then)
-                };
+                let lhs = self.render_spec_combinator(lhs);
+                let rhs = self.render_spec_combinator(rhs);
                 let lhs_ty = &lhs.ty;
                 let lhs_expr = &lhs.expr;
                 let rhs_ty = &rhs.ty;
@@ -322,53 +427,32 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_top_level_spec(&self, name: &str, combinator: &Combinator) -> RenderedSpec {
-        if let Some(and_then) = &combinator.and_then {
-            return self.render_and_then_spec(combinator, and_then, Some(name));
-        }
-        match self.ctx.resolve(combinator) {
-            CombinatorInner::Struct(struct_comb) => self.render_struct_top_level(name, struct_comb),
-            CombinatorInner::Choice(choice_comb) => self.render_choice_top_level(name, choice_comb),
-            CombinatorInner::Enum(enum_comb) => self.render_enum_top_level(name, enum_comb),
-            _ => self.render_spec_combinator(combinator),
-        }
+        let _ = name;
+        self.render_spec_combinator(combinator)
     }
 
     fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
-        if let Some(and_then) = &combinator.and_then {
-            return self.render_and_then_spec(combinator, and_then, None);
+        match combinator {
+            Combinator::AndThen(lhs, rhs) => return self.render_and_then_spec(lhs, rhs, None),
+            Combinator::Invocation(invocation) => return self.render_invocation_spec(invocation),
+            _ => {}
         }
 
-        if let CombinatorInner::Invocation(invocation) = &combinator.inner {
-            return self.render_invocation_spec(invocation);
-        }
-
-        match self.ctx.resolve_alias(&combinator.inner) {
-            CombinatorInner::ConstraintInt(c) => self.render_constraint_int(c),
-            CombinatorInner::ConstraintEnum(c) => self.render_constraint_enum(c),
-            CombinatorInner::Struct(struct_comb) => self.render_struct_raw(struct_comb),
-            CombinatorInner::Wrap(wrap) => self.render_wrap(wrap),
-            CombinatorInner::Enum(enum_comb) => self.render_enum_top_level(
-                &self.definition_name_for_inner(&combinator.inner),
-                enum_comb,
-            ),
-            CombinatorInner::Choice(choice_comb) => {
-                if let Some(name) = self.definition_name_for_inner_opt(&combinator.inner) {
-                    self.render_choice_top_level(&name, choice_comb)
-                } else {
-                    self.render_choice_raw(choice_comb, None)
-                }
-            }
-            CombinatorInner::Vec(vec_comb) => self.render_vec(vec_comb),
-            CombinatorInner::Array(array_comb) => self.render_array(array_comb),
-            CombinatorInner::Bytes(bytes) => self.render_bytes(bytes),
-            CombinatorInner::Tail(_) => RenderedSpec {
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::ConstraintInt(c) => self.render_constraint_int(c),
+            Combinator::ConstraintEnum(c) => self.render_constraint_enum(c),
+            Combinator::Wrap(wrap) => self.render_wrap(wrap),
+            Combinator::Vec(vec_comb) => self.render_vec(vec_comb),
+            Combinator::Array(array_comb) => self.render_array(array_comb),
+            Combinator::Bytes(bytes) => self.render_bytes(bytes),
+            Combinator::Tail(_) => RenderedSpec {
                 ty: quote! { Tail },
                 expr: quote! { Tail },
                 value_ty: quote! { Seq<u8> },
                 has_value: true,
             },
-            CombinatorInner::Option(opt) => self.render_option(opt),
-            CombinatorInner::Invocation(_) => unreachable!(),
+            Combinator::Option(opt) => self.render_option(opt),
+            Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),
         }
     }
 
@@ -398,10 +482,7 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_constraint_enum(&self, c: &ConstraintEnumCombinator) -> RenderedSpec {
-        let inner = self.render_spec_combinator(&Combinator {
-            inner: CombinatorInner::Invocation(c.combinator.clone()),
-            and_then: None,
-        });
+        let inner = self.render_spec_combinator(&Combinator::Invocation(c.combinator.clone()));
         let value_ty = inner.value_ty.clone();
         let pred = self.render_enum_constraint(&c.constraint, &value_ty, quote! { x });
         let inner_ty = &inner.ty;
@@ -586,12 +667,12 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         rest: &RenderedSpec,
     ) -> Option<RenderedSpec> {
-        if combinator.and_then.is_some() {
+        if matches!(combinator, Combinator::AndThen(_, _)) {
             return None;
         }
 
-        match self.ctx.resolve_alias(&combinator.inner) {
-            CombinatorInner::Option(opt) => {
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::Option(opt) => {
                 let inner = self.render_spec_combinator(&opt.0);
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
@@ -617,7 +698,7 @@ impl<'a> Analysis<'a> {
                     })
                 }
             }
-            CombinatorInner::Vec(vec_comb) => match vec_comb {
+            Combinator::Vec(vec_comb) => match vec_comb {
                 vestir::VecCombinator::Vec(inner_comb) => {
                     let inner = self.render_spec_combinator(inner_comb);
                     let inner_ty = &inner.ty;
@@ -674,15 +755,10 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner = self.render_spec_combinator(&Combinator {
-                    inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
-                    and_then: None,
-                });
+                let inner =
+                    self.render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
                 let enum_ty = self.render_value_type(
-                    &Combinator {
-                        inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
-                        and_then: None,
-                    },
+                    &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
                     true,
                 );
@@ -1224,15 +1300,10 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner = self.render_spec_combinator(&Combinator {
-                    inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
-                    and_then: None,
-                });
+                let inner =
+                    self.render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
                 let enum_ty = self.render_value_type(
-                    &Combinator {
-                        inner: CombinatorInner::Invocation(enum_comb.combinator.clone()),
-                        and_then: None,
-                    },
+                    &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
                     true,
                 );
@@ -1535,7 +1606,7 @@ impl<'a> Analysis<'a> {
                     .iter()
                     .find_map(|param| match param {
                         ParamDefn::Dependent { name, combinator } if name == dep_base => {
-                            if let CombinatorInner::Invocation(inv) = combinator {
+                            if let Combinator::Invocation(inv) = combinator {
                                 Some(self.nominal_type(&inv.func, TypeMode::Spec))
                             } else {
                                 None
@@ -1551,24 +1622,16 @@ impl<'a> Analysis<'a> {
             .defs
             .iter()
             .find_map(|def| match def {
-                vestir::Definition::Combinator { combinator, .. } => match self
-                    .ctx
-                    .resolve(combinator)
-                {
-                    CombinatorInner::Struct(struct_comb) => {
-                        struct_comb.0.iter().find_map(|field| match field {
-                            StructField::Dependent { label, combinator } if label == dep_base => {
-                                if let CombinatorInner::Invocation(inv) = &combinator.inner {
-                                    Some(self.nominal_type(&inv.func, TypeMode::Spec))
-                                } else {
-                                    None
-                                }
-                            }
-                            _ => None,
-                        })
+                vestir::Definition::StructDef { combinator, .. } => combinator.0.iter().find_map(|field| match field {
+                    StructField::Dependent { label, combinator } if label == dep_base => {
+                        if let Combinator::Invocation(inv) = combinator {
+                            Some(self.nominal_type(&inv.func, TypeMode::Spec))
+                        } else {
+                            None
+                        }
                     }
                     _ => None,
-                },
+                }),
                 _ => None,
             })
             .unwrap_or_else(|| {

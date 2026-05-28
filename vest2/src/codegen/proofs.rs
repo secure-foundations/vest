@@ -4,6 +4,65 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl<'a> Analysis<'a> {
+    pub(crate) fn gen_top_level_proofs_section(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let info = self.info(name);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
+        let generics = self.wrapper_generics(param_defns);
+        let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
+
+        let safe =
+            self.gen_safe_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
+        let productive =
+            self.gen_productive_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
+        let sound = if info.non_malleable {
+            self.gen_sound_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
+        } else {
+            TokenStream::new()
+        };
+        let non_tail = if info.non_tail {
+            self.gen_non_tail_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
+        } else {
+            TokenStream::new()
+        };
+        let good =
+            self.gen_good_serializer_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
+        let roundtrip = self.gen_sp_roundtrip_impl(
+            &fmt_ident,
+            &fmt_fn_ident,
+            &generics,
+            &wrapper_call_args,
+            &TokenStream::new(),
+        );
+        let non_malleable = if info.non_malleable {
+            self.gen_non_malleable_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
+        } else {
+            TokenStream::new()
+        };
+        let equiv_general = if info.non_tail {
+            self.gen_equiv_general_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
+        } else {
+            TokenStream::new()
+        };
+        let equiv = self.gen_equiv_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
+
+        render_ts(quote! {
+            #safe
+            #productive
+            #sound
+            #non_tail
+            #good
+            #roundtrip
+            #non_malleable
+            #equiv_general
+            #equiv
+        })
+    }
+
     pub(crate) fn gen_proofs_section(
         &self,
         name: &str,

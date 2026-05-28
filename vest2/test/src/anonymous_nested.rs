@@ -152,6 +152,28 @@ verus! {
         }
     }
 
+    # [doc = "data type for `nested_inner_struct_v`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct NestedInnerStructV < 'i > {
+        pub x : u8 ,
+        pub y : & 'i [u8] ,
+    }
+    # [verifier :: ext_equal]
+    pub struct NestedInnerStructVSpec {
+        pub x : u8 ,
+        pub y : Seq < u8 > ,
+    }
+    pub type NestedInnerStructVInner = (u8 , Seq < u8 >) ;
+    impl < 'i > DeepView for NestedInnerStructV < 'i > {
+        type V = NestedInnerStructVSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            NestedInnerStructVSpec {
+                x : self . x . deep_view () ,
+                y : self . y . deep_view () ,
+            }
+        }
+    }
+
     # [doc = "data type for `capture_outer_and_local_payload_body_choice1`."]
     # [derive (Debug , PartialEq , Eq)]
     pub struct CaptureOuterAndLocalPayloadBodyChoice1 < 'i > {
@@ -344,46 +366,24 @@ verus! {
         }
     }
 
-    # [doc = "data type for `nested_inner_struct_inner`."]
-    # [derive (Debug , PartialEq , Eq)]
-    pub struct NestedInnerStructInner < 'i > {
-        pub x : u8 ,
-        pub y : & 'i [u8] ,
-    }
-    # [verifier :: ext_equal]
-    pub struct NestedInnerStructInnerSpec {
-        pub x : u8 ,
-        pub y : Seq < u8 > ,
-    }
-    pub type NestedInnerStructInnerInner = (u8 , Seq < u8 >) ;
-    impl < 'i > DeepView for NestedInnerStructInner < 'i > {
-        type V = NestedInnerStructInnerSpec ;
-        open spec fn deep_view (& self) -> Self :: V {
-            NestedInnerStructInnerSpec {
-                x : self . x . deep_view () ,
-                y : self . y . deep_view () ,
-            }
-        }
-    }
-
     # [doc = "data type for `nested_inner_struct`."]
     # [derive (Debug , PartialEq , Eq)]
     pub struct NestedInnerStruct < 'i > {
         pub len : u32 ,
-        pub inner : NestedInnerStructInner < 'i > ,
+        pub v : NestedInnerStructV < 'i > ,
     }
     # [verifier :: ext_equal]
     pub struct NestedInnerStructSpec {
         pub len : u32 ,
-        pub inner : NestedInnerStructInnerSpec ,
+        pub v : NestedInnerStructVSpec ,
     }
-    pub type NestedInnerStructInner = (u32 , NestedInnerStructInnerSpec) ;
+    pub type NestedInnerStructInner = (u32 , NestedInnerStructVSpec) ;
     impl < 'i > DeepView for NestedInnerStruct < 'i > {
         type V = NestedInnerStructSpec ;
         open spec fn deep_view (& self) -> Self :: V {
             NestedInnerStructSpec {
                 len : self . len . deep_view () ,
-                inner : self . inner . deep_view () ,
+                v : self . v . deep_view () ,
             }
         }
     }
@@ -687,6 +687,41 @@ verus! {
                     NestedInnerChoiceXASpec :: C (v) => Sum :: Inl (v) ,
                     NestedInnerChoiceXASpec :: D (v) => Sum :: Inr (v) ,
                 }
+            }
+            )
+        }
+        )
+    }
+
+
+    # [doc = "named format combinator for `nested_inner_struct_v`."]
+    pub struct NestedInnerStructVFmt ;
+
+    pub type NestedInnerStructVFmtSpec = Named < Mapped < Pair < U8 , Tail > , FnSpecMapper < NestedInnerStructVInner , NestedInnerStructVSpec >> > ;
+
+    # [doc = "specification constructor for `nested_inner_struct_v`."]
+    pub open spec fn nested_inner_struct_v_fmt () -> NestedInnerStructVFmtSpec {
+        Named ("nested_inner_struct_v" ,
+        Mapped {
+            inner : Pair (U8 ,
+            Tail) ,
+            mapper : (| parsed : NestedInnerStructVInner | -> NestedInnerStructVSpec {
+                let (x ,
+                y) = parsed ;
+                NestedInnerStructVSpec {
+                    x ,
+                    y
+                }
+            }
+            ,
+            | value : NestedInnerStructVSpec | -> NestedInnerStructVInner {
+                let NestedInnerStructVSpec {
+                    x ,
+                    y
+                }
+                = value ;
+                (x ,
+                y)
             }
             )
         }
@@ -1029,45 +1064,10 @@ verus! {
     }
 
 
-    # [doc = "named format combinator for `nested_inner_struct_inner`."]
-    pub struct NestedInnerStructInnerFmt ;
-
-    pub type NestedInnerStructInnerFmtSpec = Named < Mapped < Pair < U8 , Tail > , FnSpecMapper < NestedInnerStructInnerInner , NestedInnerStructInnerSpec >> > ;
-
-    # [doc = "specification constructor for `nested_inner_struct_inner`."]
-    pub open spec fn nested_inner_struct_inner_fmt () -> NestedInnerStructInnerFmtSpec {
-        Named ("nested_inner_struct_inner" ,
-        Mapped {
-            inner : Pair (U8 ,
-            Tail) ,
-            mapper : (| parsed : NestedInnerStructInnerInner | -> NestedInnerStructInnerSpec {
-                let (x ,
-                y) = parsed ;
-                NestedInnerStructInnerSpec {
-                    x ,
-                    y
-                }
-            }
-            ,
-            | value : NestedInnerStructInnerSpec | -> NestedInnerStructInnerInner {
-                let NestedInnerStructInnerSpec {
-                    x ,
-                    y
-                }
-                = value ;
-                (x ,
-                y)
-            }
-            )
-        }
-        )
-    }
-
-
     # [doc = "named format combinator for `nested_inner_struct`."]
     pub struct NestedInnerStructFmt ;
 
-    pub type NestedInnerStructFmtSpec = Named < Mapped < Bind < U32Le , spec_fn (u32) -> ExactLen < NestedInnerStructInnerFmt , usize > > , FnSpecMapper < NestedInnerStructInner , NestedInnerStructSpec >> > ;
+    pub type NestedInnerStructFmtSpec = Named < Mapped < Bind < U32Le , spec_fn (u32) -> ExactLen < NestedInnerStructVFmt , usize > > , FnSpecMapper < NestedInnerStructInner , NestedInnerStructSpec >> > ;
 
     # [doc = "specification constructor for `nested_inner_struct`."]
     pub open spec fn nested_inner_struct_fmt () -> NestedInnerStructFmtSpec {
@@ -1075,24 +1075,24 @@ verus! {
         Mapped {
             inner : Bind (U32Le ,
             | len : u32 | ExactLen ((len as usize) ,
-            NestedInnerStructInnerFmt)) ,
+            NestedInnerStructVFmt)) ,
             mapper : (| parsed : NestedInnerStructInner | -> NestedInnerStructSpec {
                 let (len ,
-                inner) = parsed ;
+                v) = parsed ;
                 NestedInnerStructSpec {
                     len ,
-                    inner
+                    v
                 }
             }
             ,
             | value : NestedInnerStructSpec | -> NestedInnerStructInner {
                 let NestedInnerStructSpec {
                     len ,
-                    inner
+                    v
                 }
                 = value ;
                 (len ,
-                inner)
+                v)
             }
             )
         }
@@ -1479,6 +1479,45 @@ verus! {
             }
         }
 
+        impl SpecParser for NestedInnerStructVFmt {
+            type PVal = NestedInnerStructVSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                nested_inner_struct_v_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for NestedInnerStructVFmt {
+            type Val = NestedInnerStructVSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                nested_inner_struct_v_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for NestedInnerStructVFmt {
+            type SValue = NestedInnerStructVSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                nested_inner_struct_v_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for NestedInnerStructVFmt {
+            type SVal = NestedInnerStructVSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                nested_inner_struct_v_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for NestedInnerStructVFmt {
+            type T = NestedInnerStructVSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                nested_inner_struct_v_fmt () . byte_len (v)
+            }
+        }
+
         impl SpecParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             type PVal = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn spec_parse (& self ,
@@ -1847,45 +1886,6 @@ verus! {
             v : Self :: T) -> nat {
                 capture_param_and_local_fmt (self . choice1 . deep_view () ,
                 self . choice2 . deep_view ()) . byte_len (v)
-            }
-        }
-
-        impl SpecParser for NestedInnerStructInnerFmt {
-            type PVal = NestedInnerStructInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_parse (& self ,
-            ibuf : Seq < u8 >) -> Option < (int ,
-            Self :: PVal) > {
-                nested_inner_struct_inner_fmt () . spec_parse (ibuf)
-            }
-        }
-        impl Consistency for NestedInnerStructInnerFmt {
-            type Val = NestedInnerStructInnerSpec ;
-            # [verifier :: opaque] open spec fn consistent (& self ,
-            v : Self :: Val) -> bool {
-                nested_inner_struct_inner_fmt () . consistent (v)
-            }
-        }
-        impl SpecSerializerDps for NestedInnerStructInnerFmt {
-            type SValue = NestedInnerStructInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) -> Seq < u8 > {
-                nested_inner_struct_inner_fmt () . spec_serialize_dps (v ,
-                obuf)
-            }
-        }
-        impl SpecSerializer for NestedInnerStructInnerFmt {
-            type SVal = NestedInnerStructInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize (& self ,
-            v : Self :: SVal) -> Seq < u8 > {
-                nested_inner_struct_inner_fmt () . spec_serialize (v)
-            }
-        }
-        impl SpecByteLen for NestedInnerStructInnerFmt {
-            type T = NestedInnerStructInnerSpec ;
-            # [verifier :: opaque] open spec fn byte_len (& self ,
-            v : Self :: T) -> nat {
-                nested_inner_struct_inner_fmt () . byte_len (v)
             }
         }
 
@@ -2807,6 +2807,89 @@ verus! {
                 reveal (< NestedInnerChoiceXAFmt as SpecSerializerDps > :: spec_serialize_dps) ;
                 reveal (< NestedInnerChoiceXAFmt as SpecSerializer > :: spec_serialize) ;
                 let fmt = nested_inner_choice_x_a_fmt (self . choice2 . deep_view ()) ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
+        impl SafeParser for NestedInnerStructVFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                nested_inner_struct_v_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for NestedInnerStructVFmt {
+            open spec fn productive_inv (& self) -> bool {
+                nested_inner_struct_v_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for NestedInnerStructVFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructVFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructVFmt as Consistency > :: consistent) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for NestedInnerStructVFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< NestedInnerStructVFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< NestedInnerStructVFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for NestedInnerStructVFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructVFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructVFmt as Consistency > :: consistent) ;
+                reveal (< NestedInnerStructVFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for NestedInnerStructVFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< NestedInnerStructVFmt as SpecParser > :: spec_parse) ;
+                let fmt = nested_inner_struct_v_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for NestedInnerStructVFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< NestedInnerStructVFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructVFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = nested_inner_struct_v_fmt () ;
                 assert (fmt . equiv_inv ()) ;
                 fmt . lemma_serialize_equiv_on_empty (v) ;
             }
@@ -3904,89 +3987,6 @@ verus! {
             }
         }
 
-        impl SafeParser for NestedInnerStructInnerFmt {
-            proof fn lemma_parse_safe (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                nested_inner_struct_inner_fmt () . lemma_parse_safe (ibuf) ;
-            }
-        }
-        impl Productive for NestedInnerStructInnerFmt {
-            open spec fn productive_inv (& self) -> bool {
-                nested_inner_struct_inner_fmt () . productive_inv ()
-            }
-            proof fn lemma_productive (& self ,
-            s : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . productive_inv ()) ;
-                fmt . lemma_productive (s) ;
-            }
-        }
-        impl SoundParser for NestedInnerStructInnerFmt {
-            proof fn lemma_parse_sound_consumption (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . sound_inv ()) ;
-                fmt . lemma_parse_sound_consumption (ibuf) ;
-            }
-            proof fn lemma_parse_sound_value (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructInnerFmt as Consistency > :: consistent) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . sound_inv ()) ;
-                fmt . lemma_parse_sound_value (ibuf) ;
-            }
-        }
-        impl GoodSerializer for NestedInnerStructInnerFmt {
-            proof fn lemma_serialize_len (& self ,
-            v : Self :: SVal) {
-                reveal (< NestedInnerStructInnerFmt as SpecSerializer > :: spec_serialize) ;
-                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . serialize_inv ()) ;
-                fmt . lemma_serialize_len (v) ;
-            }
-        }
-        impl SPRoundTripDps for NestedInnerStructInnerFmt {
-            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
-            v : Self :: T ,
-            obuf : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructInnerFmt as Consistency > :: consistent) ;
-                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . unambiguous ()) ;
-                fmt . theorem_serialize_dps_parse_roundtrip (v ,
-                obuf) ;
-            }
-        }
-        impl NonMalleable for NestedInnerStructInnerFmt {
-            proof fn lemma_parse_non_malleable (& self ,
-            buf1 : Seq < u8 > ,
-            buf2 : Seq < u8 >) {
-                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . nonmal_inv ()) ;
-                fmt . lemma_parse_non_malleable (buf1 ,
-                buf2) ;
-            }
-        }
-        impl EquivSerializers for NestedInnerStructInnerFmt {
-            proof fn lemma_serialize_equiv_on_empty (& self ,
-            v : Self :: SVal) {
-                reveal (< NestedInnerStructInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructInnerFmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = nested_inner_struct_inner_fmt () ;
-                assert (fmt . equiv_inv ()) ;
-                fmt . lemma_serialize_equiv_on_empty (v) ;
-            }
-        }
-
         impl SafeParser for NestedInnerStructFmt {
             proof fn lemma_parse_safe (& self ,
             ibuf : Seq < u8 >) {
@@ -4589,6 +4589,9 @@ verus! {
     // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerChoiceXA
 
 
+    // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStructV
+
+
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayloadBodyChoice1
 
 
@@ -4614,9 +4617,6 @@ verus! {
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureParamAndLocal
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStructInner
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStruct

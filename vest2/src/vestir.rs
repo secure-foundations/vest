@@ -5,18 +5,60 @@ use std::{
     fmt::Display,
 };
 
+// ============================================================
+// Top-level definitions
+// ============================================================
+
 #[derive(Debug, Clone)]
 pub enum Definition {
-    Combinator {
+    StructDef {
+        name: String,
+        param_defns: Vec<ParamDefn>,
+        combinator: StructCombinator,
+    },
+    ChoiceDef {
+        name: String,
+        param_defns: Vec<ParamDefn>,
+        combinator: ChoiceCombinator,
+    },
+    EnumDef {
+        name: String,
+        param_defns: Vec<ParamDefn>,
+        combinator: EnumCombinator,
+    },
+    CombinatorDef {
         name: String,
         param_defns: Vec<ParamDefn>,
         combinator: Combinator,
     },
-    ConstCombinator {
+    ConstCombinatorDef {
         name: String,
         const_combinator: ConstCombinator,
     },
     Endianess(Endianess),
+}
+
+impl Definition {
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            Definition::StructDef { name, .. }
+            | Definition::ChoiceDef { name, .. }
+            | Definition::EnumDef { name, .. }
+            | Definition::CombinatorDef { name, .. }
+            | Definition::ConstCombinatorDef { name, .. } => Some(name.as_str()),
+            Definition::Endianess(_) => None,
+        }
+    }
+
+    pub fn param_defns(&self) -> &[ParamDefn] {
+        match self {
+            Definition::StructDef { param_defns, .. }
+            | Definition::ChoiceDef { param_defns, .. }
+            | Definition::EnumDef { param_defns, .. }
+            | Definition::CombinatorDef { param_defns, .. } => param_defns.as_slice(),
+            _ => &[],
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -25,35 +67,46 @@ pub enum Endianess {
     Big,
 }
 
+// ============================================================
+// Parameters
+// ============================================================
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ParamDefn {
     Dependent {
         name: String,
-        combinator: CombinatorInner,
+        combinator: Combinator,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Combinator {
-    pub inner: CombinatorInner,
-    pub and_then: Option<Box<Combinator>>,
+pub enum Param {
+    Dependent(String),
 }
 
+// ============================================================
+// Unified Combinator enum
+// (Struct, Choice, and Enum only appear at Definition level)
+// ============================================================
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum CombinatorInner {
+pub enum Combinator {
     ConstraintInt(ConstraintIntCombinator),
     ConstraintEnum(ConstraintEnumCombinator),
-    Struct(StructCombinator),
     Wrap(WrapCombinator),
-    Enum(EnumCombinator),
-    Choice(ChoiceCombinator),
     Vec(VecCombinator),
     Array(ArrayCombinator),
     Bytes(BytesCombinator),
     Tail(TailCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
+    /// `lhs >>= rhs` — reparsing bind
+    AndThen(Box<Combinator>, Box<Combinator>),
 }
+
+// ============================================================
+// Sub-combinator types
+// ============================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstraintIntCombinator {
@@ -118,11 +171,6 @@ pub enum StructField {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Param {
-    Dependent(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WrapCombinator {
     pub prior: Vec<ConstCombinator>,
     pub combinator: Box<Combinator>,
@@ -150,9 +198,9 @@ pub struct Enum {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChoiceCombinator {
     pub depend_id: Option<String>,
-    // pub choices: Vec<Choice>,
     pub choices: Choices,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Choices {
     Enums(Vec<(String, Combinator)>),
@@ -221,6 +269,10 @@ pub struct CombinatorInvocation {
     pub args: Vec<Param>,
 }
 
+// ============================================================
+// Const combinators (unchanged structure)
+// ============================================================
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ConstCombinator {
     ConstBytes(ConstBytesCombinator),
@@ -255,10 +307,14 @@ pub struct ConstIntCombinator {
     pub value: i128,
 }
 
+// ============================================================
+// Display impls
+// ============================================================
+
 impl Display for Definition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Definition::Combinator {
+            Definition::StructDef {
                 name,
                 param_defns,
                 combinator,
@@ -269,7 +325,40 @@ impl Display for Definition {
                 }
                 write!(f, " = {}", combinator)
             }
-            Definition::ConstCombinator {
+            Definition::ChoiceDef {
+                name,
+                param_defns,
+                combinator,
+            } => {
+                write!(f, "{}", name)?;
+                if !param_defns.is_empty() {
+                    write!(f, "({})", param_defns.iter().join(","))?;
+                }
+                write!(f, " = {}", combinator)
+            }
+            Definition::EnumDef {
+                name,
+                param_defns,
+                combinator,
+            } => {
+                write!(f, "{}", name)?;
+                if !param_defns.is_empty() {
+                    write!(f, "({})", param_defns.iter().join(","))?;
+                }
+                write!(f, " = {}", combinator)
+            }
+            Definition::CombinatorDef {
+                name,
+                param_defns,
+                combinator,
+            } => {
+                write!(f, "{}", name)?;
+                if !param_defns.is_empty() {
+                    write!(f, "({})", param_defns.iter().join(","))?;
+                }
+                write!(f, " = {}", combinator)
+            }
+            Definition::ConstCombinatorDef {
                 name,
                 const_combinator,
             } => {
@@ -293,29 +382,17 @@ impl Display for ParamDefn {
 
 impl Display for Combinator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.inner)?;
-        if let Some(next) = &self.and_then {
-            write!(f, " >>= {}", next)?;
-        }
-        Ok(())
-    }
-}
-
-impl Display for CombinatorInner {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CombinatorInner::ConstraintInt(c) => write!(f, "{}", c),
-            CombinatorInner::ConstraintEnum(c) => write!(f, "{}", c),
-            CombinatorInner::Struct(s) => write!(f, "{}", s),
-            CombinatorInner::Wrap(w) => write!(f, "{}", w),
-            CombinatorInner::Enum(e) => write!(f, "{}", e),
-            CombinatorInner::Choice(c) => write!(f, "{}", c),
-            CombinatorInner::Vec(v) => write!(f, "{}", v),
-            CombinatorInner::Array(a) => write!(f, "{}", a),
-            CombinatorInner::Bytes(a) => write!(f, "{}", a),
-            CombinatorInner::Tail(t) => write!(f, "{}", t),
-            CombinatorInner::Option(o) => write!(f, "{}", o),
-            CombinatorInner::Invocation(i) => write!(f, "{}", i),
+            Combinator::ConstraintInt(c) => write!(f, "{}", c),
+            Combinator::ConstraintEnum(c) => write!(f, "{}", c),
+            Combinator::Wrap(w) => write!(f, "{}", w),
+            Combinator::Vec(v) => write!(f, "{}", v),
+            Combinator::Array(a) => write!(f, "{}", a),
+            Combinator::Bytes(b) => write!(f, "{}", b),
+            Combinator::Tail(t) => write!(f, "{}", t),
+            Combinator::Option(o) => write!(f, "{}", o),
+            Combinator::Invocation(i) => write!(f, "{}", i),
+            Combinator::AndThen(lhs, rhs) => write!(f, "{} >>= {}", lhs, rhs),
         }
     }
 }
@@ -620,6 +697,10 @@ impl Display for CombinatorInvocation {
     }
 }
 
+// ============================================================
+// Global context
+// ============================================================
+
 #[derive(Debug, Clone)]
 pub struct GlobalCtx {
     pub combinators: HashSet<CombinatorSig>,
@@ -632,7 +713,10 @@ pub struct GlobalCtx {
 pub struct CombinatorSig {
     pub name: String,
     pub param_defns: Vec<ParamDefn>,
-    pub resolved_combinator: CombinatorInner,
+    /// The resolved "final" type of this combinator (after following any AndThen chain
+    /// and resolving Invocation aliases). Stored as a Combinator for uniformity;
+    /// it will never be `AndThen` or `Invocation` after resolution.
+    pub resolved_combinator: Combinator,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -642,18 +726,26 @@ pub struct ConstCombinatorSig {
 }
 
 impl GlobalCtx {
-    pub fn resolve<'a>(&'a self, c: &'a Combinator) -> &'a CombinatorInner {
-        if let Some(next) = &c.and_then {
-            self.resolve(next)
-        } else {
-            self.resolve_alias(&c.inner)
+    /// Follow `AndThen` to its final RHS and then resolve `Invocation` aliases.
+    pub fn resolve<'a>(&'a self, c: &'a Combinator) -> &'a Combinator {
+        match c {
+            Combinator::AndThen(_, rhs) => self.resolve(rhs),
+            Combinator::Invocation(CombinatorInvocation { func, .. }) => {
+                let sig = self
+                    .combinators
+                    .iter()
+                    .find(|s| s.name == *func)
+                    .unwrap_or_else(|| panic!("Format `{}` is not defined", func));
+                &sig.resolved_combinator
+            }
+            other => other,
         }
     }
 
-    pub fn resolve_alias<'a>(&'a self, inner: &'a CombinatorInner) -> &'a CombinatorInner {
-        use CombinatorInner::*;
-        match inner {
-            Invocation(CombinatorInvocation { func, .. }) => {
+    /// Resolve an `Invocation` alias one level (does not follow AndThen).
+    pub fn resolve_alias<'a>(&'a self, c: &'a Combinator) -> &'a Combinator {
+        match c {
+            Combinator::Invocation(CombinatorInvocation { func, .. }) => {
                 let sig = self
                     .combinators
                     .iter()
@@ -682,6 +774,10 @@ impl GlobalCtx {
     }
 }
 
+// ============================================================
+// AST Lowering
+// ============================================================
+
 pub mod lowering {
     use crate::ast;
     use crate::type_check::resolve_enum_type;
@@ -693,6 +789,7 @@ pub mod lowering {
     }
 
     // ---------- Top-level ----------
+
     impl<'i> From<ast::Definition<'i>> for ir::Definition {
         fn from(d: ast::Definition<'i>) -> Self {
             match d {
@@ -701,16 +798,44 @@ pub mod lowering {
                     param_defns,
                     combinator,
                     ..
-                } => ir::Definition::Combinator {
-                    name: id(name),
-                    param_defns: param_defns.into_iter().map(Into::into).collect(),
-                    combinator: combinator.into(),
-                },
+                } => {
+                    let name_str = id(name);
+                    let params: Vec<ir::ParamDefn> =
+                        param_defns.into_iter().map(Into::into).collect();
+                    match combinator.inner {
+                        ast::CombinatorInner::Struct(s) if combinator.and_then.is_none() => {
+                            ir::Definition::StructDef {
+                                name: name_str,
+                                param_defns: params,
+                                combinator: s.into(),
+                            }
+                        }
+                        ast::CombinatorInner::Choice(c) if combinator.and_then.is_none() => {
+                            ir::Definition::ChoiceDef {
+                                name: name_str,
+                                param_defns: params,
+                                combinator: c.into(),
+                            }
+                        }
+                        ast::CombinatorInner::Enum(e) if combinator.and_then.is_none() => {
+                            ir::Definition::EnumDef {
+                                name: name_str,
+                                param_defns: params,
+                                combinator: e.into(),
+                            }
+                        }
+                        _ => ir::Definition::CombinatorDef {
+                            name: name_str,
+                            param_defns: params,
+                            combinator: combinator.into(),
+                        },
+                    }
+                }
                 ast::Definition::ConstCombinator {
                     name,
                     const_combinator,
                     ..
-                } => ir::Definition::ConstCombinator {
+                } => ir::Definition::ConstCombinatorDef {
                     name: id(name),
                     const_combinator: const_combinator.into(),
                 },
@@ -732,6 +857,7 @@ pub mod lowering {
     }
 
     // ---------- Params / ParamDefns ----------
+
     impl<'i> From<ast::ParamDefn<'i>> for ir::ParamDefn {
         fn from(p: ast::ParamDefn<'i>) -> Self {
             match p {
@@ -754,32 +880,51 @@ pub mod lowering {
     }
 
     // ---------- Combinators ----------
+
+    /// Convert an `ast::Combinator` into the unified `ir::Combinator`.
+    /// If the AST node has an `and_then`, wrap the result in `AndThen`.
     impl<'i> From<ast::Combinator<'i>> for ir::Combinator {
         fn from(c: ast::Combinator<'i>) -> Self {
-            ir::Combinator {
-                inner: c.inner.into(),
-                and_then: c.and_then.map(|b| Box::new((*b).into())),
+            let lhs: ir::Combinator = c.inner.into();
+            match c.and_then {
+                None => lhs,
+                Some(rhs) => {
+                    ir::Combinator::AndThen(Box::new(lhs), Box::new((*rhs).into()))
+                }
             }
         }
     }
 
-    impl<'i> From<ast::CombinatorInner<'i>> for ir::CombinatorInner {
+    impl<'i> From<ast::CombinatorInner<'i>> for ir::Combinator {
         fn from(ci: ast::CombinatorInner<'i>) -> Self {
             use ast::CombinatorInner as A;
-            use ir::CombinatorInner as B;
             match ci {
-                A::ConstraintInt(x) => B::ConstraintInt(x.into()),
-                A::ConstraintEnum(x) => B::ConstraintEnum(x.into()),
-                A::Struct(x) => B::Struct(x.into()),
-                A::Wrap(x) => B::Wrap(x.into()),
-                A::Enum(x) => B::Enum(x.into()),
-                A::Choice(x) => B::Choice(x.into()),
-                A::Vec(x) => B::Vec(x.into()),
-                A::Array(x) => B::Array(x.into()),
-                A::Bytes(x) => B::Bytes(x.into()),
-                A::Tail(_x) => B::Tail(ir::TailCombinator),
-                A::Option(x) => B::Option(ir::OptionCombinator(Box::new((*x.0).clone().into()))),
-                A::Invocation(x) => B::Invocation(x.into()),
+                A::ConstraintInt(x) => ir::Combinator::ConstraintInt(x.into()),
+                A::ConstraintEnum(x) => ir::Combinator::ConstraintEnum(x.into()),
+                // Struct / Choice / Enum never appear inline in the elaborated IR —
+                // they are always lifted to top-level definitions by `elab.rs`.
+                // If we encounter them here, it means the input wasn't elaborated.
+                A::Struct(x) => panic!(
+                    "Inline Struct in lowering — input must be elaborated first: {:?}",
+                    x
+                ),
+                A::Choice(x) => panic!(
+                    "Inline Choice in lowering — input must be elaborated first: {:?}",
+                    x
+                ),
+                A::Enum(x) => panic!(
+                    "Inline Enum in lowering — input must be elaborated first: {:?}",
+                    x
+                ),
+                A::Wrap(x) => ir::Combinator::Wrap(x.into()),
+                A::Vec(x) => ir::Combinator::Vec(x.into()),
+                A::Array(x) => ir::Combinator::Array(x.into()),
+                A::Bytes(x) => ir::Combinator::Bytes(x.into()),
+                A::Tail(_x) => ir::Combinator::Tail(ir::TailCombinator),
+                A::Option(x) => {
+                    ir::Combinator::Option(ir::OptionCombinator(Box::new((*x.0).clone().into())))
+                }
+                A::Invocation(x) => ir::Combinator::Invocation(x.into()),
                 A::MacroInvocation { .. } => unreachable!(
                     "Macro invocations should have been expanded before lowering to IR"
                 ),
@@ -788,6 +933,7 @@ pub mod lowering {
     }
 
     // ---------- Ints / Constraints ----------
+
     impl<'i> From<ast::ConstraintIntCombinator<'i>> for ir::ConstraintIntCombinator {
         fn from(x: ast::ConstraintIntCombinator<'i>) -> Self {
             ir::ConstraintIntCombinator {
@@ -853,6 +999,7 @@ pub mod lowering {
     }
 
     // ---------- Struct ----------
+
     impl<'i> From<ast::StructCombinator<'i>> for ir::StructCombinator {
         fn from(s: ast::StructCombinator<'i>) -> Self {
             ir::StructCombinator(s.fields.into_iter().map(Into::into).collect())
@@ -885,6 +1032,7 @@ pub mod lowering {
     }
 
     // ---------- Wrap ----------
+
     impl<'i> From<ast::WrapCombinator<'i>> for ir::WrapCombinator {
         fn from(w: ast::WrapCombinator<'i>) -> Self {
             ir::WrapCombinator {
@@ -896,6 +1044,7 @@ pub mod lowering {
     }
 
     // ---------- Enum ----------
+
     impl<'i> From<ast::EnumCombinator<'i>> for ir::EnumCombinator {
         fn from(e: ast::EnumCombinator<'i>) -> Self {
             match e {
@@ -923,6 +1072,7 @@ pub mod lowering {
     }
 
     // ---------- Choice ----------
+
     impl<'i> From<ast::ChoiceCombinator<'i>> for ir::ChoiceCombinator {
         fn from(c: ast::ChoiceCombinator<'i>) -> Self {
             ir::ChoiceCombinator {
@@ -951,6 +1101,7 @@ pub mod lowering {
     }
 
     // ---------- Vec ----------
+
     impl<'i> From<ast::VecCombinator<'i>> for ir::VecCombinator {
         fn from(v: ast::VecCombinator<'i>) -> Self {
             match v {
@@ -960,6 +1111,7 @@ pub mod lowering {
     }
 
     // ---------- Array / Bytes / Tail / Option ----------
+
     impl<'i> From<ast::ArrayCombinator<'i>> for ir::ArrayCombinator {
         fn from(a: ast::ArrayCombinator<'i>) -> Self {
             ir::ArrayCombinator {
@@ -1016,6 +1168,7 @@ pub mod lowering {
     }
 
     // ---------- Consts ----------
+
     impl<'i> From<ast::ConstCombinator<'i>> for ir::ConstCombinator {
         fn from(c: ast::ConstCombinator<'i>) -> Self {
             match c {
@@ -1109,10 +1262,22 @@ pub mod lowering {
 
     impl<'i> From<crate::type_check::CombinatorSig<'i>> for ir::CombinatorSig {
         fn from(src: crate::type_check::CombinatorSig<'i>) -> Self {
+            let name = src.name.name.clone();
+            let resolved_combinator = match src.resolved_combinator {
+                ast::CombinatorInner::Struct(_)
+                | ast::CombinatorInner::Choice(_)
+                | ast::CombinatorInner::Enum(_) => {
+                    ir::Combinator::Invocation(ir::CombinatorInvocation {
+                        func: name.clone(),
+                        args: vec![],
+                    })
+                }
+                _ => src.resolved_combinator.into(),
+            };
             ir::CombinatorSig {
-                name: src.name.name,
+                name,
                 param_defns: src.param_defns.iter().cloned().map(Into::into).collect(),
-                resolved_combinator: src.resolved_combinator.into(),
+                resolved_combinator,
             }
         }
     }

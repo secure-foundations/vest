@@ -498,7 +498,9 @@ fn sorted_params<'ast>(combinator: &Combinator<'ast>) -> Vec<Param<'ast>> {
 
 fn contains_anonymous_format(combinator: &Combinator) -> bool {
     match &combinator.inner {
-        CombinatorInner::Struct(..) | CombinatorInner::Choice(..) => true,
+        CombinatorInner::Struct(..) | CombinatorInner::Choice(..) | CombinatorInner::Enum(..) => {
+            true
+        }
         CombinatorInner::Wrap(WrapCombinator { combinator, .. })
         | CombinatorInner::Vec(VecCombinator::Vec(combinator))
         | CombinatorInner::Array(ArrayCombinator { combinator, .. })

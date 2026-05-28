@@ -3625,9 +3625,6 @@ verus! {
                 reveal (< ChoiceArraysFoldedBodyFmt as Consistency > :: consistent) ;
                 reveal (< ChoiceArraysFoldedBodyFmt as SpecByteLen > :: byte_len) ;
                 let fmt = choice_arrays_folded_body_fmt (self . tag . deep_view ()) ;
-                lemma_seq_repeat_u8_neq (0u8 ,
-                1u8 ,
-                2) ;
                 assert (fmt . unambiguous ()) ;
                 fmt . theorem_serialize_dps_parse_roundtrip (v ,
                 obuf) ;
@@ -3744,9 +3741,6 @@ verus! {
                 reveal (< ChoiceArraysFoldedFmt as Consistency > :: consistent) ;
                 reveal (< ChoiceArraysFoldedFmt as SpecByteLen > :: byte_len) ;
                 let fmt = choice_arrays_folded_fmt () ;
-                lemma_seq_repeat_u8_neq (0u8 ,
-                1u8 ,
-                2) ;
                 assert (fmt . unambiguous ()) ;
                 fmt . theorem_serialize_dps_parse_roundtrip (v ,
                 obuf) ;
