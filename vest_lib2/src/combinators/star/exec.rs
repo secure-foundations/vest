@@ -371,6 +371,50 @@ impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
     }
 }
 
+impl<A, B, AST, BST> Serializer<(&[AST], BST)> for super::Repeat<A, B> where
+    A: Serializer<AST> + Copy,
+    B: Serializer<BST> + Copy,
+    AST: DeepView<V = A::SVal> + Copy,
+    BST: DeepView<V = B::SVal>,
+ {
+    fn ex_serialize(&self, v: (&[AST], BST), obuf: &mut Vec<u8>) {
+        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).ex_serialize(v, obuf);
+    }
+}
+
+impl<A, B, AST, BST> Compliance<(&[AST], BST)> for super::Repeat<A, B> where
+    A: Compliance<AST> + Copy,
+    B: Compliance<BST> + Copy,
+    AST: DeepView + Copy,
+    BST: DeepView,
+ {
+    fn check_compliance(&self, v: (&[AST], BST)) -> (yes: bool) {
+        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).check_compliance(v)
+    }
+}
+
+impl<A, B, AST, BST> ByteLen<(&[AST], BST)> for super::Repeat<A, B> where
+    A: ByteLen<AST> + Copy,
+    B: ByteLen<BST> + Copy,
+    AST: DeepView + Copy,
+    BST: DeepView,
+ {
+    fn length(&self, v: (&[AST], BST)) -> (len: usize) {
+        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).length(v)
+    }
+}
+
+impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
+    A: Prepare<AST> + Copy,
+    B: Prepare<BST> + Copy,
+    AST: DeepView + Copy,
+    BST: DeepView,
+ {
+    fn prepare(&self, v: (&[AST], BST)) -> (checked: Result<usize, PreSerializeError>) {
+        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).prepare(v)
+    }
+}
+
 impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,

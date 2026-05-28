@@ -87,6 +87,17 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     }
 }
 
+impl<A, B, STA, STB> Serializer<(Option<STA>, STB)> for super::Optional<A, B> where
+    STA: DeepView<V = A::SVal>,
+    STB: DeepView<V = B::SVal>,
+    A: Serializer<STA>,
+    B: Serializer<STB>,
+ {
+    fn ex_serialize(&self, v: (Option<STA>, STB), obuf: &mut Vec<u8>) {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).ex_serialize(v, obuf);
+    }
+}
+
 impl<A, B, STA, STB> Compliance<(Option<STA>, STB)> for super::Optional<A, B> where
     STA: DeepView,
     STB: DeepView,

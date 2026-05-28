@@ -1,10 +1,12 @@
-use crate::combinators::Optional;
+use crate::combinators::{Eof, Optional, Pair, Repeat, Star};
 use crate::core::exec::{
     input::InputBuf,
     parser::{PResult, Parser},
     serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
+use crate::core::proof::Productive;
+use crate::core::spec::SafeParser;
 use crate::core::spec::{Consistency, SpecByteLen};
 use vstd::prelude::*;
 
@@ -124,6 +126,104 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
         } else {
             Err(PreSerializeError::LengthTooLarge)
         }
+    }
+}
+
+impl<I, A> Parser<I> for super::RepeatTillEnd<A> where
+    I: InputBuf,
+    A: Parser<I> + SafeParser + Productive + Copy,
+ {
+    type PT = Vec<A::PT>;
+
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.0.safe_inv()
+        &&& self.0.productive_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
+        let (n, (r, _)) = Repeat(self.0, super::Eof).parse(ibuf)?;
+        Ok((n, r))
+    }
+}
+
+impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> + SafeParser {
+    type PT = Option<A::PT>;
+
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.0.safe_inv()
+    }
+
+    fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
+        let (n, (r, _)) = Optional(&self.0, super::Eof).parse(ibuf)?;
+        Ok((n, r))
+    }
+}
+
+impl<A, AST> Serializer<&[AST]> for super::RepeatTillEnd<A> where
+    A: Serializer<AST> + Copy,
+    AST: DeepView<V = A::SVal> + Copy,
+ {
+    fn ex_serialize(&self, v: &[AST], obuf: &mut Vec<u8>) {
+        Repeat(self.0, super::Eof).ex_serialize((v, ()), obuf);
+    }
+}
+
+impl<A, AST> Compliance<&[AST]> for super::RepeatTillEnd<A> where
+    A: Compliance<AST> + Copy,
+    AST: DeepView + Copy,
+ {
+    fn check_compliance(&self, v: &[AST]) -> (yes: bool) {
+        Repeat(self.0, super::Eof).check_compliance((v, ()))
+    }
+}
+
+impl<A, AST> ByteLen<&[AST]> for super::RepeatTillEnd<A> where
+    A: ByteLen<AST> + Copy,
+    AST: DeepView + Copy,
+ {
+    fn length(&self, v: &[AST]) -> (len: usize) {
+        Repeat(self.0, super::Eof).length((v, ()))
+    }
+}
+
+impl<A, AST> Prepare<&[AST]> for super::RepeatTillEnd<A> where
+    A: Prepare<AST> + Copy,
+    AST: DeepView + Copy,
+ {
+    fn prepare(&self, v: &[AST]) -> Result<usize, PreSerializeError> {
+        Repeat(self.0, super::Eof).prepare((v, ()))
+    }
+}
+
+impl<A, AST> Serializer<Option<AST>> for super::OptionalEnd<A> where
+    A: Serializer<AST>,
+    AST: DeepView<V = A::SVal>,
+ {
+    fn ex_serialize(&self, v: Option<AST>, obuf: &mut Vec<u8>) {
+        Optional(&self.0, super::Eof).ex_serialize((v, ()), obuf);
+    }
+}
+
+impl<A, AST> Compliance<Option<AST>> for super::OptionalEnd<A> where
+    A: Compliance<AST>,
+    AST: DeepView,
+ {
+    fn check_compliance(&self, v: Option<AST>) -> (yes: bool) {
+        Optional(&self.0, super::Eof).check_compliance((v, ()))
+    }
+}
+
+impl<A, AST> ByteLen<Option<AST>> for super::OptionalEnd<A> where A: ByteLen<AST>, AST: DeepView {
+    fn length(&self, v: Option<AST>) -> (len: usize) {
+        Optional(&self.0, super::Eof).length((v, ()))
+    }
+}
+
+impl<A, AST> Prepare<Option<AST>> for super::OptionalEnd<A> where A: Prepare<AST>, AST: DeepView {
+    fn prepare(&self, v: Option<AST>) -> Result<usize, PreSerializeError> {
+        Optional(&self.0, super::Eof).prepare((v, ()))
     }
 }
 
