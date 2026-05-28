@@ -20,8 +20,8 @@ verus! {
  *     @txin_cnt: u8,
  *     txin: [u8; @txin_cnt],
  *     @txout_cnt: u8 | @txout_cnt == @txin_cnt,
- *     txout: [u8; @txout_cnt],
- *     witness: [u8; @txin_cnt],
+ *     txout: [u16; @txout_cnt],
+ *     witness: [u16; @txin_cnt],
  *     locktime: u8,
  * }
  * ```
@@ -29,13 +29,13 @@ verus! {
 /*
  * btc_tx_fmt: Data types.
  */
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct BtcTx<'i> {
     pub txin_cnt: u8,
     pub txin: &'i [u8],
     pub txout_cnt: u8,
-    pub txout: &'i [u8],
-    pub witness: &'i [u8],
+    pub txout: Vec<u16>,
+    pub witness: Vec<u16>,
     pub locktime: u8,
 }
 
@@ -44,12 +44,12 @@ pub struct BtcTxSpec {
     pub txin_cnt: u8,
     pub txin: Seq<u8>,
     pub txout_cnt: u8,
-    pub txout: Seq<u8>,
-    pub witness: Seq<u8>,
+    pub txout: Seq<u16>,
+    pub witness: Seq<u16>,
     pub locktime: u8,
 }
 
-type BtcTxInner = (u8, (Seq<u8>, (u8, (Seq<u8>, (Seq<u8>, u8)))));
+type BtcTxInner = (u8, (Seq<u8>, (u8, (Seq<u16>, (Seq<u16>, u8)))));
 
 impl<'i> DeepView for BtcTx<'i> {
     type V = BtcTxSpec;
@@ -80,7 +80,7 @@ pub open spec fn btc_tx_fmt() -> Named<
                     Varied,
                     Bind<
                         Refined<U8, PredFnSpec<u8>>,
-                        spec_fn(txout_count: u8) -> Pair<Varied, Pair<Varied, U8>>,
+                        spec_fn(txout_count: u8) -> Pair<RepeatN<U16Le>, Pair<RepeatN<U16Le>, U8>>,
                     >,
                 >,
             >,
@@ -95,8 +95,8 @@ pub open spec fn btc_tx_fmt() -> Named<
             Bind(U8, |txin_count: u8|
             Pair(Varied(txin_count),
             Bind(Refined(U8, |x: u8| x == txin_count), |txout_count: u8|
-            Pair(Varied(txout_count),
-            Pair(Varied(txin_count),
+            Pair(RepeatN(txout_count, U16Le),
+            Pair(RepeatN(txin_count, U16Le),
             U8)))))),
         mapper: (
             |parsed: BtcTxInner| -> BtcTxSpec {
@@ -111,7 +111,7 @@ pub open spec fn btc_tx_fmt() -> Named<
     })
 }
 
-struct TxSegwitFmt;
+pub struct TxSegwitFmt;
 
 impl SpecParser for TxSegwitFmt {
     type PVal = BtcTxSpec;
@@ -262,9 +262,9 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
             return Err(ParseError::predicate_failed());
         }
         let rest = rest.skip(n4);
-        let (n5, txout) = Varied(txout_cnt).parse(&rest)?;
+        let (n5, txout) = RepeatN(txout_cnt, U16Le).parse(&rest)?;
         let rest = rest.skip(n5);
-        let (n6, witness) = Varied(txin_cnt).parse(&rest)?;
+        let (n6, witness) = RepeatN(txin_cnt, U16Le).parse(&rest)?;
         let rest = rest.skip(n6);
         let (n7, locktime) = U8.parse(&rest)?;
         let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7;
@@ -279,14 +279,14 @@ impl<'i> Serializer<&'i BtcTx<'i>> for TxSegwitFmt {
         reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
 
         let ghost old_obuf = obuf@;
-        let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = *v;
+        let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
         U8.ex_serialize(1u8, obuf);
-        U8.ex_serialize(txin_cnt, obuf);
-        Varied(txin_cnt).ex_serialize(txin, obuf);
-        U8.ex_serialize(txout_cnt, obuf);
-        Varied(txout_cnt).ex_serialize(txout, obuf);
-        Varied(txin_cnt).ex_serialize(witness, obuf);
-        U8.ex_serialize(locktime, obuf);
+        U8.ex_serialize(*txin_cnt, obuf);
+        Varied(*txin_cnt).ex_serialize(txin, obuf);
+        U8.ex_serialize(*txout_cnt, obuf);
+        RepeatN(*txout_cnt, U16Le).ex_serialize(txout, obuf);
+        RepeatN(*txin_cnt, U16Le).ex_serialize(witness, obuf);
+        U8.ex_serialize(*locktime, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -296,17 +296,17 @@ impl<'i> Prepare<&'i BtcTx<'i>> for TxSegwitFmt {
         reveal(<TxSegwitFmt as Consistency>::consistent);
         reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
 
-        let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = *v;
+        let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
         let l1 = U8.prepare(1u8)?;
-        let l2 = U8.prepare(txin_cnt)?;
-        let l3 = Varied(txin_cnt).prepare(txin)?;
-        let l4 = U8.prepare(txout_cnt)?;
+        let l2 = U8.prepare(*txin_cnt)?;
+        let l3 = Varied(*txin_cnt).prepare(txin)?;
+        let l4 = U8.prepare(*txout_cnt)?;
         if txout_cnt != txin_cnt {
             return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
         }
-        let l5 = Varied(txout_cnt).prepare(txout)?;
-        let l6 = Varied(txin_cnt).prepare(witness)?;
-        let l7 = U8.prepare(locktime)?;
+        let l5 = RepeatN(*txout_cnt, U16Le).prepare(txout)?;
+        let l6 = RepeatN(*txin_cnt, U16Le).prepare(witness)?;
+        let l7 = U8.prepare(*locktime)?;
         let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
             l3,
         ).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
@@ -335,8 +335,8 @@ impl<'i> Prepare<&'i BtcTx<'i>> for TxSegwitFmt {
  *     payload: [u8; @len] >>= choose(@tag) {
  *         TYPE1 => u8,
  *         TYPE2 => [u8; 10],
- *         TYPE3 => (u8, Tail),
- *         TYPE4 => (u8, Tail),
+ *         TYPE3 => btc_tx,
+ *         TYPE4 => btc_tx,
  *     },
  * }
  * ```
@@ -585,55 +585,55 @@ impl<'i> Prepare<&'i MsgTy> for MsgTyFmt {
     }
 }
 
-impl MsgTy {
-    pub fn parse(ibuf: &[u8]) -> (r: PResult<Self>)
-        ensures
-            parse_matches_spec(r, MsgTyFmt.spec_parse(ibuf@)),
-    {
-        Named("msg_ty", MsgTyFmt).parse(&ibuf)
-    }
+// impl MsgTy {
+//     pub fn parse(ibuf: &[u8]) -> (r: PResult<Self>)
+//         ensures
+//             parse_matches_spec(r, MsgTyFmt.spec_parse(ibuf@)),
+//     {
+//         Named("msg_ty", MsgTyFmt).parse(&ibuf)
+//     }
 
-    pub fn serialize(&self, obuf: &mut Vec<u8>)
-        requires
-            MsgTyFmt.consistent(self.deep_view()),
-        ensures
-            final(obuf)@ == old(obuf)@ + MsgTyFmt.spec_serialize(self.deep_view()),
-    {
-        MsgTyFmt.serialize(self, obuf)
-    }
+//     pub fn serialize(&self, obuf: &mut Vec<u8>)
+//         requires
+//             MsgTyFmt.consistent(self.deep_view()),
+//         ensures
+//             final(obuf)@ == old(obuf)@ + MsgTyFmt.spec_serialize(self.deep_view()),
+//     {
+//         MsgTyFmt.serialize(self, obuf)
+//     }
 
-    pub fn prepare(&self) -> (checked: Result<usize, PreSerializeError>)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& MsgTyFmt.consistent(self.deep_view())
-                &&& len == MsgTyFmt.byte_len(self.deep_view())
-            },
-    {
-        Named("msg_ty", MsgTyFmt).prepare(self)
-    }
-}
+//     pub fn prepare(&self) -> (checked: Result<usize, PreSerializeError>)
+//         ensures
+//             checked matches Ok(len) ==> {
+//                 &&& MsgTyFmt.consistent(self.deep_view())
+//                 &&& len == MsgTyFmt.byte_len(self.deep_view())
+//             },
+//     {
+//         Named("msg_ty", MsgTyFmt).prepare(self)
+//     }
+// }
 
 /*
  * tlv_msg_fmt: Data types.
  */
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TLVMsg<'i> {
     V1(u8),
     V2(&'i [u8]),
-    V3(u8, &'i [u8]),
-    V4(u8, &'i [u8]),
+    V3(BtcTx<'i>),
+    V4(BtcTx<'i>),
 }
 
 #[verifier::ext_equal]
 pub enum TLVMsgSpec {
     V1(u8),
     V2(Seq<u8>),
-    V3(u8, Seq<u8>),
-    V4(u8, Seq<u8>),
+    V3(BtcTxSpec),
+    V4(BtcTxSpec),
 }
 
-type TLVMsgInner = Sum<u8, Sum<Seq<u8>, Sum<(u8, Seq<u8>), (u8, Seq<u8>)>>>;
+type TLVMsgInner = Sum<u8, Sum<Seq<u8>, Sum<BtcTxSpec, BtcTxSpec>>>;
 
 impl<'i> DeepView for TLVMsg<'i> {
     type V = TLVMsgSpec;
@@ -642,8 +642,8 @@ impl<'i> DeepView for TLVMsg<'i> {
         match *self {
             TLVMsg::V1(v) => TLVMsgSpec::V1(v),
             TLVMsg::V2(v) => TLVMsgSpec::V2(v.deep_view()),
-            TLVMsg::V3(v1, v2) => TLVMsgSpec::V3(v1, v2.deep_view()),
-            TLVMsg::V4(v1, v2) => TLVMsgSpec::V4(v1, v2.deep_view()),
+            TLVMsg::V3(v) => TLVMsgSpec::V3(v.deep_view()),
+            TLVMsg::V4(v) => TLVMsgSpec::V4(v.deep_view()),
         }
     }
 }
@@ -667,8 +667,8 @@ pub open spec fn tlv_fmt() -> Implicit<
             match msg {
                 TLVMsgSpec::V1(_) => MsgTy::TYPE1,
                 TLVMsgSpec::V2(_) => MsgTy::TYPE2,
-                TLVMsgSpec::V3(_, _) => MsgTy::TYPE3,
-                TLVMsgSpec::V4(_, _) => MsgTy::TYPE4,
+                TLVMsgSpec::V3(_) => MsgTy::TYPE3,
+                TLVMsgSpec::V4(_) => MsgTy::TYPE4,
             }
         };
     let recover_len = |msg: TLVMsgSpec| -> u8
@@ -698,15 +698,15 @@ pub open spec fn tlv_fmt() -> Implicit<
     //     ),
     // ),
 pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
-    Sum<U8, Sum<Fixed<10>, Sum<Pair<U8, Tail>, Pair<U8, Tail>>>>,
+    Sum<U8, Sum<Fixed<10>, Sum<TxSegwitFmt, TxSegwitFmt>>>,
     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
 > {
     Mapped {
         inner: match tag {
                 MsgTy::TYPE1 => Sum::Inl(U8),
                 MsgTy::TYPE2 => Sum::Inr(Sum::Inl(Fixed::<10>)),
-                MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(Pair(U8, Tail)))),
-                MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(Pair(U8, Tail)))),
+                MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(TxSegwitFmt))),
+                MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(TxSegwitFmt))),
             },
         mapper: (
             |parsed: TLVMsgInner| -> TLVMsgSpec
@@ -714,8 +714,8 @@ pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
                     match parsed {
                         Sum::Inl(v) => TLVMsgSpec::V1(v),
                         Sum::Inr(Sum::Inl(v)) => TLVMsgSpec::V2(v),
-                        Sum::Inr(Sum::Inr(Sum::Inl((v1, v2)))) => TLVMsgSpec::V3(v1, v2),
-                        Sum::Inr(Sum::Inr(Sum::Inr((v1, v2)))) => TLVMsgSpec::V4(v1, v2),
+                        Sum::Inr(Sum::Inr(Sum::Inl(v))) => TLVMsgSpec::V3(v),
+                        Sum::Inr(Sum::Inr(Sum::Inr((v)))) => TLVMsgSpec::V4(v),
                     }
                 },
             |value: TLVMsgSpec| -> TLVMsgInner
@@ -723,8 +723,8 @@ pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
                     match value {
                         TLVMsgSpec::V1(v) => Sum::Inl(v),
                         TLVMsgSpec::V2(v) => Sum::Inr(Sum::Inl(v)),
-                        TLVMsgSpec::V3(v1, v2) => Sum::Inr(Sum::Inr(Sum::Inl((v1, v2)))),
-                        TLVMsgSpec::V4(v1, v2) => Sum::Inr(Sum::Inr(Sum::Inr((v1, v2)))),
+                        TLVMsgSpec::V3(v) => Sum::Inr(Sum::Inr(Sum::Inl((v)))),
+                        TLVMsgSpec::V4(v) => Sum::Inr(Sum::Inr(Sum::Inr((v)))),
                     }
                 },
         ),
@@ -973,12 +973,12 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
 
         reveal(<TLVFmt as SpecParser>::spec_parse);
         let _ = ibuf.len();
-        let mut rest = *ibuf;
+        let rest = *ibuf;
 
-        let (n1, tag) = MsgTy::parse(&rest)?;
-        rest = rest.skip(n1);
+        let (n1, tag) = Named("msg_ty", MsgTyFmt).parse(&rest)?;
+        let rest = rest.skip(n1);
         let (n2, len) = U8.parse(&rest)?;
-        rest = rest.skip(n2);
+        let rest = rest.skip(n2);
         let (n3, payload) = ExactLen(len, TLVPayloadFmt { tag }).parse(&rest)?;
         let total_n = n1 + n2 + n3;
         assert(self.spec_parse(ibuf@) == Some((total_n as int, payload.deep_view())));
@@ -988,8 +988,6 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
 
 impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
     fn ex_serialize(&self, v: &'i TLVMsg<'i>, obuf: &mut Vec<u8>) {
-        broadcast use crate::core::spec::GoodSerializer::lemma_serialize_len;
-
         reveal(<TLVFmt as SpecSerializer>::spec_serialize);
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
@@ -998,8 +996,8 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
         let tag = match v {
             TLVMsg::V1(_) => MsgTy::TYPE1,
             TLVMsg::V2(_) => MsgTy::TYPE2,
-            TLVMsg::V3(_, _) => MsgTy::TYPE3,
-            TLVMsg::V4(_, _) => MsgTy::TYPE4,
+            TLVMsg::V3(_) => MsgTy::TYPE3,
+            TLVMsg::V4(_) => MsgTy::TYPE4,
         };
         MsgTyFmt.ex_serialize(&tag, obuf);
         // Strategy 0:
@@ -1021,8 +1019,11 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
         // Strategy 2: re-allocation
         let mut payload_buf = Vec::new();
         TLVPayloadFmt { tag }.ex_serialize(v, &mut payload_buf);
-        let payload_len = payload_buf.len() as u8;
-        U8.ex_serialize(payload_len, obuf);
+        proof {
+            TLVPayloadFmt { tag }.lemma_serialize_len(v.deep_view());
+        }
+        let payload_len = payload_buf.len();
+        U8.ex_serialize(payload_len as u8, obuf);
         obuf.extend_from_slice(&payload_buf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
@@ -1037,10 +1038,10 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVFmt {
         let tag = match v {
             TLVMsg::V1(_) => MsgTy::TYPE1,
             TLVMsg::V2(_) => MsgTy::TYPE2,
-            TLVMsg::V3(_, _) => MsgTy::TYPE3,
-            TLVMsg::V4(_, _) => MsgTy::TYPE4,
+            TLVMsg::V3(_) => MsgTy::TYPE3,
+            TLVMsg::V4(_) => MsgTy::TYPE4,
         };
-        let l1 = MsgTyFmt.prepare(&tag)?;
+        let l1 = Named("msg_ty", MsgTyFmt).prepare(&tag)?;
         let l3 = TLVPayloadFmt { tag }.prepare(v)?;
         if l3 > u8::MAX as usize {
             return Err(PreSerializeError::LengthTooLarge);
@@ -1073,12 +1074,12 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
                 (n, TLVMsg::V2(v))
             },
             MsgTy::TYPE3 => {
-                let (n, (v1, v2)) = Pair(U8, Tail).parse(&rest)?;
-                (n, TLVMsg::V3(v1, v2))
+                let (n, v) = Named("btc_tx", TxSegwitFmt).parse(&rest)?;
+                (n, TLVMsg::V3(v))
             },
             MsgTy::TYPE4 => {
-                let (n, (v1, v2)) = Pair(U8, Tail).parse(&rest)?;
-                (n, TLVMsg::V4(v1, v2))
+                let (n, v) = Named("btc_tx", TxSegwitFmt).parse(&rest)?;
+                (n, TLVMsg::V4(v))
             },
         };
         assert(self.spec_parse(ibuf@) == Some((n as int, payload.deep_view())));
@@ -1093,9 +1094,9 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayloadFmt {
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
             (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(*v, obuf),
-            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(*v, obuf),
-            (MsgTy::TYPE3, TLVMsg::V3(v1, v2)) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
-            (MsgTy::TYPE4, TLVMsg::V4(v1, v2)) => Pair(U8, Tail).ex_serialize((*v1, *v2), obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(v, obuf),
+            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.ex_serialize(v, obuf),
+            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.ex_serialize(v, obuf),
             _ => {},
         }
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -1109,39 +1110,11 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayloadFmt {
 
         match (self.tag, v) {
             (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.prepare(*v),
-            (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.prepare(*v),
-            (MsgTy::TYPE3, TLVMsg::V3(v1, v2)) => Pair(U8, Tail).prepare((*v1, *v2)),
-            (MsgTy::TYPE4, TLVMsg::V4(v1, v2)) => Pair(U8, Tail).prepare((*v1, *v2)),
+            (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.prepare(v),
+            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.prepare(v),
+            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.prepare(v),
             _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
         }
-    }
-}
-
-impl<'x> TLVMsg<'x> {
-    pub fn parse(ibuf: &'x [u8]) -> (r: PResult<TLVMsg<'x>>)
-        ensures
-            parse_matches_spec(r, TLVFmt.spec_parse(ibuf@)),
-    {
-        Named("tlv", TLVFmt).parse(&ibuf)
-    }
-
-    pub fn serialize(&self, obuf: &mut Vec<u8>)
-        requires
-            TLVFmt.consistent(self.deep_view()),
-        ensures
-            final(obuf)@ == old(obuf)@ + TLVFmt.spec_serialize(self.deep_view()),
-    {
-        TLVFmt.serialize(self, obuf)
-    }
-
-    pub fn prepare(&self) -> (checked: Result<usize, PreSerializeError>)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& TLVFmt.consistent(self.deep_view())
-                &&& len == TLVFmt.byte_len(self.deep_view())
-            },
-    {
-        Named("tlv", TLVFmt).prepare(self)
     }
 }
 
