@@ -2,7 +2,8 @@ use super::common::{
     int_literal, render_ts, type_needs_exec_lifetime, Analysis, CodeWriter, FormatNames, TypeMode,
 };
 use crate::vestir::{
-    ChoiceCombinator, Combinator, CombinatorInner, ConstCombinator, EnumCombinator, ParamDefn,
+    ChoiceCombinator, Combinator, CombinatorInner, ConstCombinator, EnumCombinator,
+    StructCombinator, StructField,
 };
 use quote::{format_ident, quote};
 
@@ -260,40 +261,60 @@ impl<'a> Analysis<'a> {
         })
     }
 
-    pub(crate) fn gen_wrapper_type(&self, name: &str, param_defns: &[ParamDefn]) -> String {
-        let info = self.info(name);
-        let fmt_ident = format_ident!("{}", info.names.fmt);
-        let doc = format!("named format combinator for `{}`.", name);
-        let lifetime = if param_defns
-            .iter()
-            .any(|param| self.param_needs_lifetime(param))
-        {
-            quote! { <'i> }
-        } else {
-            quote! {}
-        };
-        let fields = param_defns
-            .iter()
-            .map(|param| match param {
-                ParamDefn::Dependent { name, combinator } => {
-                    let field_ident = format_ident!("{}", name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Exec, true);
-                    quote! { pub #field_ident: #ty }
-                }
-            })
-            .collect::<Vec<_>>();
-        if fields.is_empty() {
-            render_ts(quote! {
-                #[doc = #doc]
-                pub struct #fmt_ident;
-            })
-        } else {
-            render_ts(quote! {
-                #[doc = #doc]
-                pub struct #fmt_ident #lifetime {
-                    #(#fields,)*
-                }
-            })
+    fn top_level_choice<'b>(
+        &self,
+        combinator: &'b Combinator,
+    ) -> Option<&'b ChoiceCombinator> {
+        if let Some(and_then) = &combinator.and_then {
+            if let CombinatorInner::Choice(choice) = &and_then.inner {
+                return Some(choice);
+            }
         }
+        match &combinator.inner {
+            CombinatorInner::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
+    fn struct_value_fields(
+        &self,
+        struct_comb: &StructCombinator,
+        mode: TypeMode,
+    ) -> Vec<proc_macro2::TokenStream> {
+        struct_comb
+            .0
+            .iter()
+            .map(|field| match field {
+                StructField::Const { label, combinator } => {
+                    let ident = format_ident!("{}", label);
+                    let ty = self.render_const_value_type(combinator, mode);
+                    quote! { pub #ident: #ty }
+                }
+                StructField::Dependent { label, combinator }
+                | StructField::Ordinary { label, combinator } => {
+                    let ident = format_ident!("{}", label);
+                    let ty = self.render_value_type(combinator, mode, true);
+                    quote! { pub #ident: #ty }
+                }
+            })
+            .collect()
+    }
+
+    fn struct_deep_view_fields(
+        &self,
+        struct_comb: &StructCombinator,
+    ) -> Vec<proc_macro2::TokenStream> {
+        struct_comb
+            .0
+            .iter()
+            .map(|field| match field {
+                StructField::Const { label, .. }
+                | StructField::Dependent { label, .. }
+                | StructField::Ordinary { label, .. } => {
+                    let ident = format_ident!("{}", label);
+                    quote! { #ident: self.#ident.deep_view() }
+                }
+            })
+            .collect()
     }
 }

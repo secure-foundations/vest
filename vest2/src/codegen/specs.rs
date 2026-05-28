@@ -1577,6 +1577,56 @@ impl<'a> Analysis<'a> {
             });
         def
     }
+
+    fn spec_param_list(&self, param_defns: &[ParamDefn]) -> Vec<TokenStream> {
+        param_defns
+            .iter()
+            .map(|param| match param {
+                ParamDefn::Dependent { name, combinator } => {
+                    let ident = format_ident!("{}", name);
+                    let ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                    quote! { #ident: #ty }
+                }
+            })
+            .collect()
+    }
+
+    fn gen_wrapper_type(&self, name: &str, param_defns: &[ParamDefn]) -> String {
+        let info = self.info(name);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let doc = format!("named format combinator for `{}`.", name);
+        let lifetime = if param_defns
+            .iter()
+            .any(|param| self.param_needs_lifetime(param))
+        {
+            quote! { <'i> }
+        } else {
+            quote! {}
+        };
+        let fields = param_defns
+            .iter()
+            .map(|param| match param {
+                ParamDefn::Dependent { name, combinator } => {
+                    let field_ident = format_ident!("{}", name);
+                    let ty = self.render_inner_type(combinator, TypeMode::Exec, true);
+                    quote! { pub #field_ident: #ty }
+                }
+            })
+            .collect::<Vec<_>>();
+        if fields.is_empty() {
+            render_ts(quote! {
+                #[doc = #doc]
+                pub struct #fmt_ident;
+            })
+        } else {
+            render_ts(quote! {
+                #[doc = #doc]
+                pub struct #fmt_ident #lifetime {
+                    #(#fields,)*
+                }
+            })
+        }
+    }
 }
 
 struct ConstRendered {

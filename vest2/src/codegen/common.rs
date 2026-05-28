@@ -366,21 +366,6 @@ impl<'a> Analysis<'a> {
         self.render_inner_type(&combinator.inner, mode, top_level)
     }
 
-    pub(crate) fn top_level_choice<'b>(
-        &self,
-        combinator: &'b Combinator,
-    ) -> Option<&'b ChoiceCombinator> {
-        if let Some(and_then) = &combinator.and_then {
-            if let CombinatorInner::Choice(choice) = &and_then.inner {
-                return Some(choice);
-            }
-        }
-        match &combinator.inner {
-            CombinatorInner::Choice(choice) => Some(choice),
-            _ => None,
-        }
-    }
-
     pub(crate) fn render_inner_type(
         &self,
         inner: &CombinatorInner,
@@ -531,48 +516,6 @@ impl<'a> Analysis<'a> {
         tuple_chain(&retained)
     }
 
-    pub(crate) fn struct_value_fields(
-        &self,
-        struct_comb: &StructCombinator,
-        mode: TypeMode,
-    ) -> Vec<TokenStream> {
-        struct_comb
-            .0
-            .iter()
-            .map(|field| match field {
-                StructField::Const { label, combinator } => {
-                    let ident = format_ident!("{}", label);
-                    let ty = self.render_const_value_type(combinator, mode);
-                    quote! { pub #ident: #ty }
-                }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let ident = format_ident!("{}", label);
-                    let ty = self.render_value_type(combinator, mode, true);
-                    quote! { pub #ident: #ty }
-                }
-            })
-            .collect()
-    }
-
-    pub(crate) fn struct_deep_view_fields(
-        &self,
-        struct_comb: &StructCombinator,
-    ) -> Vec<TokenStream> {
-        struct_comb
-            .0
-            .iter()
-            .map(|field| match field {
-                StructField::Const { label, .. }
-                | StructField::Dependent { label, .. }
-                | StructField::Ordinary { label, .. } => {
-                    let ident = format_ident!("{}", label);
-                    quote! { #ident: self.#ident.deep_view() }
-                }
-            })
-            .collect()
-    }
-
     pub(crate) fn choice_variant_names(&self, choice_comb: &ChoiceCombinator) -> Vec<String> {
         match &choice_comb.choices {
             Choices::Enums(branches) => branches
@@ -702,19 +645,6 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn spec_param_list(&self, param_defns: &[ParamDefn]) -> Vec<TokenStream> {
-        param_defns
-            .iter()
-            .map(|param| match param {
-                ParamDefn::Dependent { name, combinator } => {
-                    let ident = format_ident!("{}", name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Spec, true);
-                    quote! { #ident: #ty }
-                }
-            })
-            .collect()
-    }
-
     pub(crate) fn wrapper_spec_call_args(&self, param_defns: &[ParamDefn]) -> Vec<TokenStream> {
         param_defns
             .iter()
@@ -757,7 +687,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn definition_for(&self, name: &str) -> Option<&Definition> {
+    fn definition_for(&self, name: &str) -> Option<&Definition> {
         self.defs.iter().find(|def| matches!(
             def,
             Definition::Combinator { name: def_name, .. } | Definition::ConstCombinator { name: def_name, .. }
