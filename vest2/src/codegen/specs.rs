@@ -27,17 +27,28 @@ impl RenderedSpec {
 }
 
 impl<'a> Analysis<'a> {
+    fn gen_wrapped_specs_section(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+        render_body: impl FnOnce() -> String,
+    ) -> String {
+        let mut out = String::new();
+        out.push_str(&self.gen_wrapper_type(name, param_defns));
+        out.push_str("\n\n");
+        out.push_str(&render_body());
+        out
+    }
+
     pub(crate) fn gen_struct_specs_section(
         &self,
         name: &str,
         combinator: &StructCombinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        let mut out = String::new();
-        out.push_str(&self.gen_wrapper_type(name, param_defns));
-        out.push_str("\n\n");
-        out.push_str(&self.gen_struct_format_spec_alias_and_ctor(name, combinator, param_defns));
-        out
+        self.gen_wrapped_specs_section(name, param_defns, || {
+            self.gen_struct_format_spec_alias_and_ctor(name, combinator, param_defns)
+        })
     }
 
     pub(crate) fn gen_choice_specs_section(
@@ -46,11 +57,9 @@ impl<'a> Analysis<'a> {
         combinator: &ChoiceCombinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        let mut out = String::new();
-        out.push_str(&self.gen_wrapper_type(name, param_defns));
-        out.push_str("\n\n");
-        out.push_str(&self.gen_choice_format_spec_alias_and_ctor(name, combinator, param_defns));
-        out
+        self.gen_wrapped_specs_section(name, param_defns, || {
+            self.gen_choice_format_spec_alias_and_ctor(name, combinator, param_defns)
+        })
     }
 
     pub(crate) fn gen_enum_specs_section(
@@ -59,11 +68,9 @@ impl<'a> Analysis<'a> {
         combinator: &EnumCombinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        let mut out = String::new();
-        out.push_str(&self.gen_wrapper_type(name, param_defns));
-        out.push_str("\n\n");
-        out.push_str(&self.gen_enum_format_spec_alias_and_ctor(name, combinator, param_defns));
-        out
+        self.gen_wrapped_specs_section(name, param_defns, || {
+            self.gen_enum_format_spec_alias_and_ctor(name, combinator, param_defns)
+        })
     }
 
     pub(crate) fn gen_specs_section(
@@ -75,11 +82,9 @@ impl<'a> Analysis<'a> {
         if let Some(invocation) = self.direct_alias(combinator) {
             return self.gen_alias_specs_section(name, invocation);
         }
-        let mut out = String::new();
-        out.push_str(&self.gen_wrapper_type(name, param_defns));
-        out.push_str("\n\n");
-        out.push_str(&self.gen_format_spec_alias_and_ctor(name, combinator, param_defns));
-        out
+        self.gen_wrapped_specs_section(name, param_defns, || {
+            self.gen_format_spec_alias_and_ctor(name, combinator, param_defns)
+        })
     }
 
     pub(crate) fn gen_derived_specs_section(
@@ -88,20 +93,7 @@ impl<'a> Analysis<'a> {
         _combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        let info = self.info(name);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
-        let fmt_ident = format_ident!("{}", info.names.fmt);
-        let top_value_ty = self.nominal_type(name, TypeMode::Spec);
-        let wrapper_generics = self.wrapper_generics(param_defns);
-        let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
-
-        self.gen_derived_spec_impls(
-            &fmt_ident,
-            &fmt_fn_ident,
-            &wrapper_generics,
-            &wrapper_call_args,
-            &top_value_ty,
-        )
+        self.gen_derived_specs_section_impl(name, param_defns)
     }
 
     pub(crate) fn gen_top_level_derived_specs_section(
@@ -109,6 +101,10 @@ impl<'a> Analysis<'a> {
         name: &str,
         param_defns: &[ParamDefn],
     ) -> String {
+        self.gen_derived_specs_section_impl(name, param_defns)
+    }
+
+    fn gen_derived_specs_section_impl(&self, name: &str, param_defns: &[ParamDefn]) -> String {
         let info = self.info(name);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let fmt_ident = format_ident!("{}", info.names.fmt);
@@ -134,27 +130,11 @@ impl<'a> Analysis<'a> {
         if let Some(invocation) = self.direct_alias(combinator) {
             return self.gen_alias_specs_section(name, invocation);
         }
-        let info = self.info(name);
-        let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
-        let raw = self.render_top_level_spec(name, combinator);
-        let raw_ty = &raw.ty;
-        let raw_expr = &raw.expr;
-        let named_ty = quote! { Named<#raw_ty> };
-        let named_expr = quote! { Named(#name, #raw_expr) };
-        let spec_params = self.spec_param_list(param_defns);
-        let ctor_doc = format!("specification constructor for `{}`.", name);
-
-        let mut out = CodeWriter::new();
-        out.push_multiline(render_ts(quote! { pub type #fmt_spec_ident = #named_ty; }));
-        out.blank_line();
-        out.push_multiline(render_ts(quote! {
-            #[doc = #ctor_doc]
-            pub open spec fn #fmt_fn_ident(#(#spec_params),*) -> #fmt_spec_ident {
-                #named_expr
-            }
-        }));
-        out.finish()
+        self.gen_named_top_level_spec_alias_and_ctor(
+            name,
+            self.render_top_level_spec(name, combinator),
+            param_defns,
+        )
     }
 
     fn gen_struct_format_spec_alias_and_ctor(

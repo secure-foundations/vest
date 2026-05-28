@@ -9,66 +9,19 @@ impl<'a> Analysis<'a> {
         name: &str,
         param_defns: &[ParamDefn],
     ) -> String {
-        let info = self.info(name);
-        let fmt_ident = format_ident!("{}", info.names.fmt);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
-        let generics = self.wrapper_generics(param_defns);
-        let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
-
-        let safe =
-            self.gen_safe_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-        let productive =
-            self.gen_productive_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-        let sound = if info.non_malleable {
-            self.gen_sound_parser_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
-        } else {
-            TokenStream::new()
-        };
-        let non_tail = if info.non_tail {
-            self.gen_non_tail_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
-        } else {
-            TokenStream::new()
-        };
-        let good =
-            self.gen_good_serializer_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-        let roundtrip = self.gen_sp_roundtrip_impl(
-            &fmt_ident,
-            &fmt_fn_ident,
-            &generics,
-            &wrapper_call_args,
-            &TokenStream::new(),
-        );
-        let non_malleable = if info.non_malleable {
-            self.gen_non_malleable_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
-        } else {
-            TokenStream::new()
-        };
-        let equiv_general = if info.non_tail {
-            self.gen_equiv_general_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
-        } else {
-            TokenStream::new()
-        };
-        let equiv = self.gen_equiv_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-
-        render_ts(quote! {
-            #safe
-            #productive
-            #sound
-            #non_tail
-            #good
-            #roundtrip
-            #non_malleable
-            #equiv_general
-            #equiv
-        })
+        self.gen_proofs_section_impl(name, param_defns)
     }
 
     pub(crate) fn gen_proofs_section(
         &self,
         name: &str,
-        combinator: &Combinator,
+        _combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
+        self.gen_proofs_section_impl(name, param_defns)
+    }
+
+    fn gen_proofs_section_impl(&self, name: &str, param_defns: &[ParamDefn]) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
@@ -91,14 +44,8 @@ impl<'a> Analysis<'a> {
         };
         let good =
             self.gen_good_serializer_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
-        let roundtrip_prelude = self.gen_roundtrip_prelude(combinator);
-        let roundtrip = self.gen_sp_roundtrip_impl(
-            &fmt_ident,
-            &fmt_fn_ident,
-            &generics,
-            &wrapper_call_args,
-            &roundtrip_prelude,
-        );
+        let roundtrip =
+            self.gen_sp_roundtrip_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args);
         let non_malleable = if info.non_malleable {
             self.gen_non_malleable_impl(&fmt_ident, &fmt_fn_ident, &generics, &wrapper_call_args)
         } else {
@@ -250,7 +197,6 @@ impl<'a> Analysis<'a> {
         fmt_fn_ident: &proc_macro2::Ident,
         generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
-        roundtrip_prelude: &TokenStream,
     ) -> TokenStream {
         let reveal_ty = fmt_ident;
         quote! {
@@ -261,25 +207,11 @@ impl<'a> Analysis<'a> {
                     reveal(<#reveal_ty as Consistency>::consistent);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
                     let fmt = #fmt_fn_ident(#(#wrapper_call_args),*);
-                    #roundtrip_prelude
                     assert(fmt.unambiguous());
                     fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
                 }
             }
         }
-    }
-
-    fn gen_roundtrip_prelude(&self, combinator: &Combinator) -> TokenStream {
-        let facts = self.repeated_u8_array_ineq_facts(combinator);
-        let asserts = facts.into_iter().map(|(lhs, rhs, len)| {
-            let lhs = proc_macro2::Literal::u8_suffixed(lhs);
-            let rhs = proc_macro2::Literal::u8_suffixed(rhs);
-            let len = proc_macro2::Literal::u64_unsuffixed(len as u64);
-            quote! {
-                lemma_seq_repeat_u8_neq(#lhs, #rhs, #len);
-            }
-        });
-        quote! { #(#asserts)* }
     }
 
     fn gen_non_malleable_impl(

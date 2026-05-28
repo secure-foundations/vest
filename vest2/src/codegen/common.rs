@@ -1,5 +1,5 @@
 use crate::vestir::{
-    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstArray,
+    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation,
     ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition, Endianess,
     GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
     TailCombinator, VecCombinator, WrapCombinator,
@@ -7,7 +7,7 @@ use crate::vestir::{
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FormatNames {
@@ -616,67 +616,6 @@ impl<'a> Analysis<'a> {
         self.defs
             .iter()
             .find(|def| definition_name(def).is_some_and(|def_name| def_name == name))
-    }
-
-    pub(crate) fn repeated_u8_array_ineq_facts(
-        &self,
-        combinator: &Combinator,
-    ) -> Vec<(u8, u8, usize)> {
-        let mut facts = HashSet::new();
-        let mut visited = HashSet::new();
-        self.collect_repeated_u8_array_ineq_facts(combinator, &mut facts, &mut visited);
-        let mut facts = facts.into_iter().collect::<Vec<_>>();
-        facts.sort_unstable();
-        facts
-    }
-
-    fn collect_repeated_u8_array_ineq_facts(
-        &self,
-        combinator: &Combinator,
-        facts: &mut HashSet<(u8, u8, usize)>,
-        visited: &mut HashSet<String>,
-    ) {
-        match combinator {
-            Combinator::AndThen(lhs, rhs) => {
-                self.collect_repeated_u8_array_ineq_facts(lhs, facts, visited);
-                self.collect_repeated_u8_array_ineq_facts(rhs, facts, visited);
-            }
-            _ => self.collect_repeated_u8_array_ineq_facts_inner(combinator, facts, visited),
-        }
-    }
-
-    fn collect_repeated_u8_array_ineq_facts_inner(
-        &self,
-        inner: &Combinator,
-        facts: &mut HashSet<(u8, u8, usize)>,
-        visited: &mut HashSet<String>,
-    ) {
-        match inner {
-            Combinator::Wrap(WrapCombinator { combinator, .. }) => {
-                self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
-            }
-            Combinator::Vec(VecCombinator::Vec(combinator))
-            | Combinator::Option(OptionCombinator(combinator)) => {
-                self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
-            }
-            Combinator::Array(ArrayCombinator { combinator, .. }) => {
-                self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
-            }
-            Combinator::Invocation(invocation) => {
-                if visited.insert(invocation.func.clone()) {
-                    if let Some(Definition::CombinatorDef { combinator, .. }) =
-                        self.definition_for(&invocation.func)
-                    {
-                        self.collect_repeated_u8_array_ineq_facts(combinator, facts, visited);
-                    }
-                }
-            }
-            Combinator::ConstraintInt(_)
-            | Combinator::ConstraintEnum(_)
-            | Combinator::Bytes(_)
-            | Combinator::Tail(_) => {}
-            Combinator::AndThen(_, _) => unreachable!(),
-        }
     }
 
     fn choice_branches<'b>(&self, choice: &'b ChoiceCombinator) -> Vec<&'b Combinator> {

@@ -282,7 +282,7 @@ mod tests {
         let names = common::format_names("payload_with_header");
         assert_eq!(names.exec, "PayloadWithHeader");
         assert_eq!(names.spec, "PayloadWithHeaderSpec");
-        assert_eq!(names.inner, "PayloadWithHeaderRepr");
+        assert_eq!(names.inner, "PayloadWithHeaderInner");
         assert_eq!(names.fmt, "PayloadWithHeaderFmt");
         assert_eq!(names.fmt_fn, "payload_with_header_fmt");
     }
