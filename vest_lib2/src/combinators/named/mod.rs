@@ -16,7 +16,17 @@ verus! {
 ///
 /// The semantic format is unchanged: parsing, consistency, serialization, and all proof
 /// obligations are delegated to `Inner`.
+#[derive(Copy)]
 pub struct Named<Inner>(pub &'static str, pub Inner);
+
+impl<Inner: Clone> Clone for Named<Inner> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Inner::clone, (&self.1,), cloned.1),
+    {
+        Named(self.0, self.1.clone())
+    }
+}
 
 impl<Inner: LeafNonMalleable> LeafNonMalleable for Named<Inner> {
     proof fn nonmal_leaf_inv(&self) {

@@ -1,3 +1,5 @@
+use crate::core::exec::input::InputBuf;
+use crate::core::exec::parser::*;
 use crate::{
     combinators::{mapped::spec::*, recursive::*, Alt, FixWith, Mapped, Pair, Refined, U8},
     core::{proof::*, spec::*},
@@ -354,4 +356,7 @@ mod leb128_derived_proofs {
 
 }
 
+// impl<const MINIMAL: bool> Parser<&[u8]> for ULeb128<MINIMAL, 5> {
+//     typ
+// }
 } // verus!

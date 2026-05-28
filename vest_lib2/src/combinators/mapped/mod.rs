@@ -13,11 +13,22 @@ verus! {
 /// `Mapped { inner, mapper }` transforms the inner combinator's value type.
 ///
 /// Lossless mappers preserve all format properties including parser soundness and non-malleability, while lossy mappers may introduce malleability.
+#[derive(Copy)]
 pub struct Mapped<Inner, M> {
     /// The inner combinator whose values are being transformed.
     pub inner: Inner,
     /// The mapping between the inner and outer value types.
     pub mapper: M,
+}
+
+impl<Inner: Clone, M: Clone> Clone for Mapped<Inner, M> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Inner::clone, (&self.inner,), cloned.inner),
+            call_ensures(M::clone, (&self.mapper,), cloned.mapper),
+    {
+        Mapped { inner: self.inner.clone(), mapper: self.mapper.clone() }
+    }
 }
 
 /// `TryMap { inner, mapper }` is the derived combinator
@@ -27,11 +38,22 @@ pub struct Mapped<Inner, M> {
 /// Serialization maps values back with `mapper.spec_map_rev`, and consistency
 /// requires both `mapper.wf_out(v)` and that the reverse-mapped inner value is
 /// consistent and satisfies `mapper.wf_in`.
+#[derive(Copy)]
 pub struct TryMap<Inner, M> {
     /// The inner combinator whose values are being transformed.
     pub inner: Inner,
     /// The mapping between the inner and outer value types.
     pub mapper: M,
+}
+
+impl<Inner: Clone, M: Clone> Clone for TryMap<Inner, M> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Inner::clone, (&self.inner,), cloned.inner),
+            call_ensures(M::clone, (&self.mapper,), cloned.mapper),
+    {
+        TryMap { inner: self.inner.clone(), mapper: self.mapper.clone() }
+    }
 }
 
 } // verus!

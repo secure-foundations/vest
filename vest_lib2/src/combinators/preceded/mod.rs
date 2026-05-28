@@ -16,10 +16,22 @@ verus! {
 ///
 /// When `CHECK` is `false`, parsing is malleable in the discarded prefix unless `A` admits a unique consistent value.
 /// When `CHECK` is `true`, parsing additionally checks that the parsed prefix equals `a_val`.
+#[derive(Copy)]
 pub struct Preceded<A, AVal, B, const CHECK: bool = false> {
     pub a: A,
     pub b: B,
     pub a_val: AVal,
+}
+
+impl<A: Clone, AVal: Clone, B: Clone, const CHECK: bool> Clone for Preceded<A, AVal, B, CHECK> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.a,), cloned.a),
+            call_ensures(B::clone, (&self.b,), cloned.b),
+            call_ensures(AVal::clone, (&self.a_val,), cloned.a_val),
+    {
+        Preceded { a: self.a.clone(), b: self.b.clone(), a_val: self.a_val.clone() }
+    }
 }
 
 } // verus!

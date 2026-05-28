@@ -62,7 +62,18 @@ pub open spec fn unswap4_3<A, B, C, D>(o: (A, (B, (C, D)))) -> (D, (A, (B, C))) 
 /// `Permute2<P1, P2>` parses either `(P1, P2)` or `(P2, P1)` and produces `(P1::PVal, P2::PVal)`
 ///
 /// `Permute2 ::= Alt((P1, P2), Mapped((P2, P1), swap))`
+#[derive(Copy)]
 pub struct Permute2<P1, P2>(pub P1, pub P2);
+
+impl<P1: Clone, P2: Clone> Clone for Permute2<P1, P2> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(P1::clone, (&self.0,), cloned.0),
+            call_ensures(P2::clone, (&self.1,), cloned.1),
+    {
+        Permute2(self.0.clone(), self.1.clone())
+    }
+}
 
 /// `Permute3<A, B, C>` parses any permutation of A, B, C and produces `(A::PVal, (B::PVal, C::PVal))`
 ///
@@ -75,7 +86,19 @@ pub struct Permute2<P1, P2>(pub P1, pub P2);
 ///     )
 /// )
 /// ```
+#[derive(Copy)]
 pub struct Permute3<A, B, C>(pub A, pub B, pub C);
+
+impl<A: Clone, B: Clone, C: Clone> Clone for Permute3<A, B, C> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+            call_ensures(B::clone, (&self.1,), cloned.1),
+            call_ensures(C::clone, (&self.2,), cloned.2),
+    {
+        Permute3(self.0.clone(), self.1.clone(), self.2.clone())
+    }
+}
 
 /// `Permute4<A, B, C, D>` parses any permutation and produces `(A::PVal, (B::PVal, (C::PVal, D::PVal)))`
 ///
@@ -91,6 +114,19 @@ pub struct Permute3<A, B, C>(pub A, pub B, pub C);
 ///     )
 /// )
 /// ```
+#[derive(Copy)]
 pub struct Permute4<A, B, C, D>(pub A, pub B, pub C, pub D);
+
+impl<A: Clone, B: Clone, C: Clone, D: Clone> Clone for Permute4<A, B, C, D> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+            call_ensures(B::clone, (&self.1,), cloned.1),
+            call_ensures(C::clone, (&self.2,), cloned.2),
+            call_ensures(D::clone, (&self.3,), cloned.3),
+    {
+        Permute4(self.0.clone(), self.1.clone(), self.2.clone(), self.3.clone())
+    }
+}
 
 } // verus!

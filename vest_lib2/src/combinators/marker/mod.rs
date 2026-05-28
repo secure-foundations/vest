@@ -16,6 +16,7 @@ verus! {
 /// Parsing semantics: always succeeds without consuming any input, returning `()`.
 ///
 /// Serialization semantics: produces an empty byte sequence.
+#[derive(Clone, Copy)]
 pub struct Empty;
 
 /// Marker combinator that denotes the "void" format.
@@ -25,6 +26,7 @@ pub struct Empty;
 /// ## Consistency
 ///
 /// No value is consistent with `Void`.
+#[derive(Clone, Copy)]
 pub struct Void;
 
 impl LeafNonMalleable for Empty {

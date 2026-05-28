@@ -24,13 +24,34 @@ verus! {
 ///
 /// This combinator is mostly used *internally* to specify [`Optional<A, B>`], which is
 /// able to disambiguate `A` and `B` and hence more compositional.
+#[derive(Copy)]
 pub struct Opt<A>(pub A);
+
+impl<A: Clone> Clone for Opt<A> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+    {
+        Opt(self.0.clone())
+    }
+}
 
 /// Optional field with an arbitrary continuation, defined as `Pair(Opt<A>, B)`.
 ///
 /// ## Unambiguity
 ///
 /// Requires `disjoint_domains(A, B)`.
+#[derive(Copy)]
 pub struct Optional<A, B>(pub A, pub B);
+
+impl<A: Clone, B: Clone> Clone for Optional<A, B> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+            call_ensures(B::clone, (&self.1,), cloned.1),
+    {
+        Optional(self.0.clone(), self.1.clone())
+    }
+}
 
 } // verus!

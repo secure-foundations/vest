@@ -1,6 +1,6 @@
 //! Executable parser traits.
-use crate::core::spec::{SafeParser, SpecParser};
 use crate::core::proof::Productive;
+use crate::core::spec::{SafeParser, SpecParser};
 use vstd::prelude::*;
 
 use super::ParseError;

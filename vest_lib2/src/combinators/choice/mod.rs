@@ -25,7 +25,18 @@ verus! {
 /// ## Unambiguity
 ///
 /// Requires `disjoint_domains(A, B)`.
+#[derive(Copy)]
 pub struct Choice<A, B>(pub A, pub B);
+
+impl<A: Clone, B: Clone> Clone for Choice<A, B> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+            call_ensures(B::clone, (&self.1,), cloned.1),
+    {
+        Choice(self.0.clone(), self.1.clone())
+    }
+}
 
 /// Ordered alternative combinator.
 ///
@@ -48,7 +59,18 @@ pub struct Choice<A, B>(pub A, pub B);
 ///
 /// This combinator introduces malleability by default.
 /// Non-malleability can be recovered if `A` is [`DisjointFrom`](crate::core::spec::DisjointFrom) `B`.
+#[derive(Copy)]
 pub struct Alt<A, B, const NONDETERMINISTIC: bool = false>(pub A, pub B);
+
+impl<A: Clone, B: Clone, const NONDETERMINISTIC: bool> Clone for Alt<A, B, NONDETERMINISTIC> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(A::clone, (&self.0,), cloned.0),
+            call_ensures(B::clone, (&self.1,), cloned.1),
+    {
+        Alt(self.0.clone(), self.1.clone())
+    }
+}
 
 /// Dispatch combinator that selects one of `N` branches based on a "tag" value.
 pub struct Dispatch<T, C, const N: usize>(pub T, pub [(T, C); N]);

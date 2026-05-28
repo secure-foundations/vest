@@ -17,6 +17,16 @@ verus! {
 /// ## Consistency
 ///
 /// A value `v` is consistent with `Cond(true, Inner)` iff it is consistent with `Inner`. No value is consistent with `Cond(false, Inner)`.
+#[derive(Copy)]
 pub struct Cond<Inner>(pub bool, pub Inner);
+
+impl<Inner: Clone> Clone for Cond<Inner> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Inner::clone, (&self.1,), cloned.1),
+    {
+        Cond(self.0, self.1.clone())
+    }
+}
 
 } // verus!

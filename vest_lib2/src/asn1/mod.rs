@@ -21,6 +21,7 @@ use vstd::prelude::*;
 
 verus! {
 
+#[derive(Clone, Copy)]
 pub enum ASN1Tag {
     Boolean = 0x01,
     Integer = 0x02,
@@ -40,6 +41,7 @@ pub type ASN1TLV<T, Len = usize> = WithPrefixTag<TagFmt, Implicit<Length, NBytes
 ///
 /// When `DER = false`, this is the more permissive BER form:
 /// FALSE = `0x00`, TRUE = any non-zero byte.
+#[derive(Clone, Copy)]
 pub struct Bool<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BOOLEAN.
@@ -61,6 +63,7 @@ pub const DerBool: Bool<true> = Bool;
 ///
 /// When `DER = false`, the parser/serializer is BER-permissive over short and long
 /// definite forms, without minimality constraints.
+#[derive(Clone, Copy)]
 pub struct Length<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 definite length.
@@ -76,6 +79,7 @@ pub const BerLength: Length<false> = Length;
 pub const DerLength: Length<true> = Length;
 
 /// ASN.1 INTEGER contents format.
+#[derive(Clone, Copy)]
 pub struct Integer;
 
 /// ASN.1 BIT STRING contents format.
@@ -84,6 +88,7 @@ pub struct Integer;
 /// the trailing unused bits to be zero.
 ///
 /// When `DER = false`, the parser allows any value for the trailing unused bits.
+#[derive(Clone, Copy)]
 pub struct BitString<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BIT STRING.

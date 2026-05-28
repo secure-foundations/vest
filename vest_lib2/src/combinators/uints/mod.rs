@@ -14,46 +14,55 @@ verus! {
 /// Unsigned 8-bit integer combinator.
 ///
 /// Defined as `Mapped { inner: Fixed::<1>, mapper: (u8_from_bytes, u8_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U8;
 
 /// Little-endian unsigned 16-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<2>, mapper: (u16_le_from_bytes, u16_le_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U16Le;
 
 /// Big-endian unsigned 16-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<2>, mapper: (u16_be_from_bytes, u16_be_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U16Be;
 
 /// Little-endian unsigned 24-bit integer, represented as `u32`.
 ///
 /// Defined as `Mapped { inner: Fixed::<3>, mapper: (u24_le_from_bytes, u24_le_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U24Le;
 
 /// Big-endian unsigned 24-bit integer, represented as `u32`.
 ///
 /// Defined as `Mapped { inner: Fixed::<3>, mapper: (u24_be_from_bytes, u24_be_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U24Be;
 
 /// Little-endian unsigned 32-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<4>, mapper: (u32_le_from_bytes, u32_le_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U32Le;
 
 /// Big-endian unsigned 32-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<4>, mapper: (u32_be_from_bytes, u32_be_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U32Be;
 
 /// Little-endian unsigned 64-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<8>, mapper: (u64_le_from_bytes, u64_le_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U64Le;
 
 /// Big-endian unsigned 64-bit integer.
 ///
 /// Defined as `Mapped { inner: Fixed::<8>, mapper: (u64_be_from_bytes, u64_be_to_bytes) }`.
+#[derive(Clone, Copy)]
 pub struct U64Be;
 
 impl LeafNonMalleable for U8 {

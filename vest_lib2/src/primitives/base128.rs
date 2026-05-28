@@ -1,6 +1,5 @@
 use super::leb128::*;
 use crate::core::exec::parser::*;
-use crate::core::exec::parser::*;
 use crate::{
     combinators::mapped::spec::*,
     combinators::*,
@@ -850,13 +849,10 @@ impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
 
 // impl<const MINIMAL: bool> Parser<&[u8]> for Base128Bounded<MINIMAL> {
 //     type PT = usize;
-
 //     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
 //         broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
 //         broadcast use lemma_base128_wire_fmt_props;
-
 //         let (n, bytes) = Self::parse_base128_wire_fmt(*ibuf)?;
-
 //         // check for overflow
 //         if usize::BITS == 32 {
 //             if bytes.len() > 4 {
@@ -875,7 +871,6 @@ impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
 //         Ok((n, r))
 //     }
 // }
-
 // pub struct Base128RecBody;
 // impl SpecRecBody for Base128RecBody {
 //     type Param = usize;

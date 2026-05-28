@@ -65,7 +65,18 @@ pub type KVFormat<Key, Value, Fmt> = (spec_fn(Key) -> Fmt, spec_fn(Value) -> Key
 /// self.0.unambiguous() &&
 /// forall|key: Head::PVal| #[trigger] (self.1.apply(key)).unambiguous()
 /// ```
+#[derive(Copy)]
 pub struct Implicit<Head, Tail>(pub Head, pub Tail);
+
+impl<Head: Clone, Tail: Clone> Clone for Implicit<Head, Tail> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Head::clone, (&self.0,), cloned.0),
+            call_ensures(Tail::clone, (&self.1,), cloned.1),
+    {
+        Implicit(self.0.clone(), self.1.clone())
+    }
+}
 
 /// One of the [dependent family of combinators](DepCombinator)
 ///
@@ -124,7 +135,18 @@ pub struct TagValNode<Tag, Left, Right>(pub Left, pub Right, pub core::marker::P
 /// One of the [dependent family of combinators](DepCombinator)
 ///
 /// Leaf node for tag-value tree.
+#[derive(Copy)]
 pub struct TVLeaf<Tag, C>(pub Tag, pub C);
+
+impl<Tag: Clone, C: Clone> Clone for TVLeaf<Tag, C> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Tag::clone, (&self.0,), cloned.0),
+            call_ensures(C::clone, (&self.1,), cloned.1),
+    {
+        TVLeaf(self.0.clone(), self.1.clone())
+    }
+}
 
 /// Convenience constructor for [`TagValNode`].
 #[allow(non_snake_case)]

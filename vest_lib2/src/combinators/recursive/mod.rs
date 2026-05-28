@@ -26,7 +26,18 @@ verus! {
 ///
 /// `Param` is the starting parameter for the recursive `Body`.
 /// Context-free recursive formats use `Param = ()`.
+#[derive(Copy)]
 pub struct FixWith<const LIMIT: usize, Body, Param>(pub Body, pub Param);
+
+impl<const LIMIT: usize, Body: Clone, Param: Clone> Clone for FixWith<LIMIT, Body, Param> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Body::clone, (&self.0,), cloned.0),
+            call_ensures(Param::clone, (&self.1,), cloned.1),
+    {
+        FixWith(self.0.clone(), self.1.clone())
+    }
+}
 
 impl<const N: usize, Body, Param> LeafNonMalleable for FixWith<N, Body, Param> where
     Param: DeepView<V = Body::Param>,
