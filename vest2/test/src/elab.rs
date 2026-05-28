@@ -237,12 +237,11 @@ verus! {
         pub f3 : u32 ,
     }
 
-    pub type MsgCF4FmtSpec = Named < ExactLen < Mapped < Sum < Content0Fmt , Sum < U16Be , Sum < U32Be , Tail > > > , FnSpecMapper < MsgCF4Inner , MsgCF4Spec >> , usize > > ;
+    pub type MsgCF4FmtSpec = Named < Mapped < Sum < Content0Fmt , Sum < U16Be , Sum < U32Be , Tail > > > , FnSpecMapper < MsgCF4Inner , MsgCF4Spec >> > ;
 
     # [doc = "specification constructor for `msg_c_f4`."]
     pub open spec fn msg_c_f4_fmt (f2 : ContentTypeSpec , f3 : u32) -> MsgCF4FmtSpec {
         Named ("msg_c_f4" ,
-        ExactLen ((f3 as usize) ,
         Mapped {
             inner : match f2 {
                 ContentTypeSpec :: C0 => Sum :: Inl (Content0Fmt {
@@ -273,7 +272,7 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
@@ -390,7 +389,7 @@ verus! {
     # [doc = "named format combinator for `msg_c`."]
     pub struct MsgCFmt ;
 
-    pub type MsgCFmtSpec = Named < Mapped < Bind < ContentTypeFmt , spec_fn (ContentTypeSpec) -> Bind < U24Be , spec_fn (u32) -> MsgCF4Fmt > > , FnSpecMapper < MsgCInner , MsgCSpec >> > ;
+    pub type MsgCFmtSpec = Named < Mapped < Bind < ContentTypeFmt , spec_fn (ContentTypeSpec) -> Bind < U24Be , spec_fn (u32) -> ExactLen < MsgCF4Fmt , usize > > > , FnSpecMapper < MsgCInner , MsgCSpec >> > ;
 
     # [doc = "specification constructor for `msg_c`."]
     pub open spec fn msg_c_fmt () -> MsgCFmtSpec {
@@ -398,11 +397,12 @@ verus! {
         Mapped {
             inner : Bind (ContentTypeFmt ,
             | f2 : ContentTypeSpec | Bind (U24Be ,
-            | f3 : u32 | MsgCF4Fmt {
+            | f3 : u32 | ExactLen ((f3 as usize) ,
+            MsgCF4Fmt {
                 f2 ,
                 f3
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : MsgCInner | -> MsgCSpec {
                 let (f2 ,
                 (f3 ,
@@ -1001,29 +1001,6 @@ verus! {
                 fmt . lemma_parse_sound_value (ibuf) ;
             }
         }
-        impl NonTailFmt for MsgCF4Fmt {
-            proof fn lemma_serialize_dps_prepend (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) {
-                reveal (< MsgCF4Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                let fmt = msg_c_f4_fmt (self . f2 . deep_view () ,
-                self . f3 . deep_view ()) ;
-                assert (fmt . serialize_dps_inv ()) ;
-                fmt . lemma_serialize_dps_prepend (v ,
-                obuf) ;
-            }
-            proof fn lemma_serialize_dps_len (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) {
-                reveal (< MsgCF4Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< MsgCF4Fmt as SpecByteLen > :: byte_len) ;
-                let fmt = msg_c_f4_fmt (self . f2 . deep_view () ,
-                self . f3 . deep_view ()) ;
-                assert (fmt . serialize_dps_inv ()) ;
-                fmt . lemma_serialize_dps_len (v ,
-                obuf) ;
-            }
-        }
         impl GoodSerializer for MsgCF4Fmt {
             proof fn lemma_serialize_len (& self ,
             v : Self :: SVal) {
@@ -1060,19 +1037,6 @@ verus! {
                 assert (fmt . nonmal_inv ()) ;
                 fmt . lemma_parse_non_malleable (buf1 ,
                 buf2) ;
-            }
-        }
-        impl EquivSerializersGeneral for MsgCF4Fmt {
-            proof fn lemma_serialize_equiv (& self ,
-            v : Self :: SVal ,
-            obuf : Seq < u8 >) {
-                reveal (< MsgCF4Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< MsgCF4Fmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = msg_c_f4_fmt (self . f2 . deep_view () ,
-                self . f3 . deep_view ()) ;
-                assert (fmt . equiv_general_inv ()) ;
-                fmt . lemma_serialize_equiv (v ,
-                obuf) ;
             }
         }
         impl EquivSerializers for MsgCF4Fmt {
@@ -1439,6 +1403,27 @@ verus! {
                 fmt . lemma_parse_sound_value (ibuf) ;
             }
         }
+        impl NonTailFmt for MsgCFmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< MsgCFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = msg_c_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< MsgCFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< MsgCFmt as SpecByteLen > :: byte_len) ;
+                let fmt = msg_c_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
         impl GoodSerializer for MsgCFmt {
             proof fn lemma_serialize_len (& self ,
             v : Self :: SVal) {
@@ -1472,6 +1457,18 @@ verus! {
                 assert (fmt . nonmal_inv ()) ;
                 fmt . lemma_parse_non_malleable (buf1 ,
                 buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for MsgCFmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< MsgCFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< MsgCFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = msg_c_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
             }
         }
         impl EquivSerializers for MsgCFmt {

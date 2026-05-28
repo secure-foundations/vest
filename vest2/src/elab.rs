@@ -305,16 +305,7 @@ fn expand_combinator<'ast>(
     used_names: &mut HashSet<String>,
 ) {
     if let Some(and_then) = &mut combinator.and_then {
-        // Keep the direct continuation inside the current named helper so the
-        // public type for `bytes >>= { ... }` / `bytes >>= choose { ... }`
-        // remains attached to this definition.
-        expand_combinator(
-            &child_generated_name(name, "inner"),
-            and_then,
-            expanded,
-            elab_ctx,
-            used_names,
-        );
+        expand_child_combinator(name, and_then, expanded, elab_ctx, used_names);
     }
 
     match &mut combinator.inner {
@@ -387,7 +378,7 @@ fn expand_combinator<'ast>(
         },
         CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
             expand_child_combinator(
-                &child_generated_name(name, "inner"),
+                &child_generated_name(name, "anon"),
                 combinator,
                 expanded,
                 elab_ctx,
@@ -506,12 +497,6 @@ fn sorted_params<'ast>(combinator: &Combinator<'ast>) -> Vec<Param<'ast>> {
 }
 
 fn contains_anonymous_format(combinator: &Combinator) -> bool {
-    if let Some(and_then) = &combinator.and_then {
-        if contains_anonymous_format(and_then) {
-            return true;
-        }
-    }
-
     match &combinator.inner {
         CombinatorInner::Struct(..) | CombinatorInner::Choice(..) => true,
         CombinatorInner::Wrap(WrapCombinator { combinator, .. })
@@ -541,14 +526,7 @@ fn generated_segment(segment: &str) -> String {
 }
 
 fn child_generated_name(parent: &str, segment: &str) -> String {
-    if segment == "inner" {
-        // `FooInner` is already reserved by codegen for the parent definition's
-        // tuple/choice carrier type, so lifted anonymous continuations need a
-        // distinct suffix here.
-        format!("{parent}_anon_{segment}")
-    } else {
-        format!("{parent}_{segment}")
-    }
+    format!("{parent}_{segment}")
 }
 
 fn fresh_generated_name(base: &str, used_names: &mut HashSet<String>) -> String {
@@ -776,5 +754,44 @@ fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> 
             name: invocation, ..
         } => vec![invocation.name.to_owned()],
         _ => Vec::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::from_str;
+
+    #[test]
+    fn test_lift_anonymous_bind() {
+        let source = r#"
+        capture_outer_and_local = {
+            @frame_len: u8 | { 1.. },
+            payload: [u8; @frame_len] >>= {
+                @tag: u8,
+                body: choose(@tag) {
+                    0 => [u8; @frame_len - |u8|],
+                    _ => {
+                        @count: u8,
+                        items: [u8; @count],
+                    },
+                },
+            },
+        }
+        "#;
+
+        let mut ast = from_str(source).unwrap();
+        expand_definitions(&mut ast);
+        println!("Elaborated AST:");
+        for defn in &ast {
+            println!("{}", defn);
+        }
+
+        // We expect:
+        // Helper1 (for the choose `_` branch)
+        // Helper2 (for the `choose` body)
+        // Helper3 (for the `and_then` struct body)
+        // capture_outer_and_local (the original combinator)
+        assert_eq!(ast.len(), 4);
     }
 }

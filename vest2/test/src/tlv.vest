@@ -50,7 +50,7 @@ msg = {
   },
 }
 
-msg_param(@len: u16, @tag: msg_type) = [u8; @len] >>= choose(@tag) {
+msg_param(@tag: msg_type) =  choose(@tag) {
   Msg1 => msg1,
   Msg2 => msg2,
   Msg3 => msg3,

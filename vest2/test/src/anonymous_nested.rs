@@ -152,54 +152,71 @@ verus! {
         }
     }
 
-    # [doc = "data type for `capture_outer_and_local_payload_anon_inner_body_choice1`."]
+    # [doc = "data type for `capture_outer_and_local_payload_body_choice1`."]
     # [derive (Debug , PartialEq , Eq)]
-    pub struct CaptureOuterAndLocalPayloadAnonInnerBodyChoice1 < 'i > {
+    pub struct CaptureOuterAndLocalPayloadBodyChoice1 < 'i > {
         pub count : u8 ,
         pub items : & 'i [u8] ,
     }
     # [verifier :: ext_equal]
-    pub struct CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec {
+    pub struct CaptureOuterAndLocalPayloadBodyChoice1Spec {
         pub count : u8 ,
         pub items : Seq < u8 > ,
     }
-    pub type CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Inner = (u8 , Seq < u8 >) ;
-    impl < 'i > DeepView for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1 < 'i > {
-        type V = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+    pub type CaptureOuterAndLocalPayloadBodyChoice1Inner = (u8 , Seq < u8 >) ;
+    impl < 'i > DeepView for CaptureOuterAndLocalPayloadBodyChoice1 < 'i > {
+        type V = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
         open spec fn deep_view (& self) -> Self :: V {
-            CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec {
+            CaptureOuterAndLocalPayloadBodyChoice1Spec {
                 count : self . count . deep_view () ,
                 items : self . items . deep_view () ,
             }
         }
     }
 
-    # [doc = "data type for `capture_outer_and_local_payload_anon_inner_body`."]
+    # [doc = "data type for `capture_outer_and_local_payload_body`."]
     # [derive (Debug , PartialEq , Eq)]
-    pub enum CaptureOuterAndLocalPayloadAnonInnerBody < 'i > {
+    pub enum CaptureOuterAndLocalPayloadBody < 'i > {
         Variant1 (& 'i [u8]) ,
-        Default (CaptureOuterAndLocalPayloadAnonInnerBodyChoice1 < 'i >) ,
+        Default (CaptureOuterAndLocalPayloadBodyChoice1 < 'i >) ,
     }
     # [verifier :: ext_equal]
-    pub enum CaptureOuterAndLocalPayloadAnonInnerBodySpec {
+    pub enum CaptureOuterAndLocalPayloadBodySpec {
         Variant1 (Seq < u8 >) ,
-        Default (CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec) ,
+        Default (CaptureOuterAndLocalPayloadBodyChoice1Spec) ,
     }
-    pub type CaptureOuterAndLocalPayloadAnonInnerBodyInner = Sum < Seq < u8 > , CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec > ;
-    impl < 'i > DeepView for CaptureOuterAndLocalPayloadAnonInnerBody < 'i > {
-        type V = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+    pub type CaptureOuterAndLocalPayloadBodyInner = Sum < Seq < u8 > , CaptureOuterAndLocalPayloadBodyChoice1Spec > ;
+    impl < 'i > DeepView for CaptureOuterAndLocalPayloadBody < 'i > {
+        type V = CaptureOuterAndLocalPayloadBodySpec ;
         open spec fn deep_view (& self) -> Self :: V {
             match self {
-                CaptureOuterAndLocalPayloadAnonInnerBody :: Variant1 (v) => CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Variant1 (v . deep_view ()) ,
-                CaptureOuterAndLocalPayloadAnonInnerBody :: Default (v) => CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Default (v . deep_view ()) ,
+                CaptureOuterAndLocalPayloadBody :: Variant1 (v) => CaptureOuterAndLocalPayloadBodySpec :: Variant1 (v . deep_view ()) ,
+                CaptureOuterAndLocalPayloadBody :: Default (v) => CaptureOuterAndLocalPayloadBodySpec :: Default (v . deep_view ()) ,
             }
         }
     }
 
     # [doc = "data type for `capture_outer_and_local_payload`."]
-    pub type CaptureOuterAndLocalPayload < 'i > = (u8 , CaptureOuterAndLocalPayloadAnonInnerBody < 'i >) ;
-    pub type CaptureOuterAndLocalPayloadSpec = (u8 , CaptureOuterAndLocalPayloadAnonInnerBodySpec) ;
-
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct CaptureOuterAndLocalPayload < 'i > {
+        pub tag : u8 ,
+        pub body : CaptureOuterAndLocalPayloadBody < 'i > ,
+    }
+    # [verifier :: ext_equal]
+    pub struct CaptureOuterAndLocalPayloadSpec {
+        pub tag : u8 ,
+        pub body : CaptureOuterAndLocalPayloadBodySpec ,
+    }
+    pub type CaptureOuterAndLocalPayloadInner = (u8 , CaptureOuterAndLocalPayloadBodySpec) ;
+    impl < 'i > DeepView for CaptureOuterAndLocalPayload < 'i > {
+        type V = CaptureOuterAndLocalPayloadSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            CaptureOuterAndLocalPayloadSpec {
+                tag : self . tag . deep_view () ,
+                body : self . body . deep_view () ,
+            }
+        }
+    }
 
     # [doc = "data type for `capture_outer_and_local`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -222,11 +239,6 @@ verus! {
             }
         }
     }
-
-    # [doc = "data type for `nested_inner_struct_anon_inner`."]
-    pub type NestedInnerStructAnonInner < 'i > = (u8 , & 'i [u8]) ;
-    pub type NestedInnerStructAnonInnerSpec = (u8 , Seq < u8 >) ;
-
 
     # [doc = "data type for `capture_local_in_anon_struct_wrapper_value_choice0`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -332,18 +344,40 @@ verus! {
         }
     }
 
+    # [doc = "data type for `nested_inner_struct_inner`."]
+    # [derive (Debug , PartialEq , Eq)]
+    pub struct NestedInnerStructInner < 'i > {
+        pub x : u8 ,
+        pub y : & 'i [u8] ,
+    }
+    # [verifier :: ext_equal]
+    pub struct NestedInnerStructInnerSpec {
+        pub x : u8 ,
+        pub y : Seq < u8 > ,
+    }
+    pub type NestedInnerStructInnerInner = (u8 , Seq < u8 >) ;
+    impl < 'i > DeepView for NestedInnerStructInner < 'i > {
+        type V = NestedInnerStructInnerSpec ;
+        open spec fn deep_view (& self) -> Self :: V {
+            NestedInnerStructInnerSpec {
+                x : self . x . deep_view () ,
+                y : self . y . deep_view () ,
+            }
+        }
+    }
+
     # [doc = "data type for `nested_inner_struct`."]
     # [derive (Debug , PartialEq , Eq)]
     pub struct NestedInnerStruct < 'i > {
         pub len : u32 ,
-        pub inner : NestedInnerStructAnonInner < 'i > ,
+        pub inner : NestedInnerStructInner < 'i > ,
     }
     # [verifier :: ext_equal]
     pub struct NestedInnerStructSpec {
         pub len : u32 ,
-        pub inner : NestedInnerStructAnonInnerSpec ,
+        pub inner : NestedInnerStructInnerSpec ,
     }
-    pub type NestedInnerStructInner = (u32 , NestedInnerStructAnonInnerSpec) ;
+    pub type NestedInnerStructInner = (u32 , NestedInnerStructInnerSpec) ;
     impl < 'i > DeepView for NestedInnerStruct < 'i > {
         type V = NestedInnerStructSpec ;
         open spec fn deep_view (& self) -> Self :: V {
@@ -660,28 +694,28 @@ verus! {
     }
 
 
-    # [doc = "named format combinator for `capture_outer_and_local_payload_anon_inner_body_choice1`."]
-    pub struct CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt ;
+    # [doc = "named format combinator for `capture_outer_and_local_payload_body_choice1`."]
+    pub struct CaptureOuterAndLocalPayloadBodyChoice1Fmt ;
 
-    pub type CaptureOuterAndLocalPayloadAnonInnerBodyChoice1FmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Inner , CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec >> > ;
+    pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < CaptureOuterAndLocalPayloadBodyChoice1Inner , CaptureOuterAndLocalPayloadBodyChoice1Spec >> > ;
 
-    # [doc = "specification constructor for `capture_outer_and_local_payload_anon_inner_body_choice1`."]
-    pub open spec fn capture_outer_and_local_payload_anon_inner_body_choice1_fmt () -> CaptureOuterAndLocalPayloadAnonInnerBodyChoice1FmtSpec {
-        Named ("capture_outer_and_local_payload_anon_inner_body_choice1" ,
+    # [doc = "specification constructor for `capture_outer_and_local_payload_body_choice1`."]
+    pub open spec fn capture_outer_and_local_payload_body_choice1_fmt () -> CaptureOuterAndLocalPayloadBodyChoice1FmtSpec {
+        Named ("capture_outer_and_local_payload_body_choice1" ,
         Mapped {
             inner : Bind (U8 ,
             | count : u8 | Varied ((count as usize))) ,
-            mapper : (| parsed : CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Inner | -> CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec {
+            mapper : (| parsed : CaptureOuterAndLocalPayloadBodyChoice1Inner | -> CaptureOuterAndLocalPayloadBodyChoice1Spec {
                 let (count ,
                 items) = parsed ;
-                CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec {
+                CaptureOuterAndLocalPayloadBodyChoice1Spec {
                     count ,
                     items
                 }
             }
             ,
-            | value : CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec | -> CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Inner {
-                let CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec {
+            | value : CaptureOuterAndLocalPayloadBodyChoice1Spec | -> CaptureOuterAndLocalPayloadBodyChoice1Inner {
+                let CaptureOuterAndLocalPayloadBodyChoice1Spec {
                     count ,
                     items
                 }
@@ -695,34 +729,34 @@ verus! {
     }
 
 
-    # [doc = "named format combinator for `capture_outer_and_local_payload_anon_inner_body`."]
-    pub struct CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+    # [doc = "named format combinator for `capture_outer_and_local_payload_body`."]
+    pub struct CaptureOuterAndLocalPayloadBodyFmt {
         pub frame_len : u8 ,
         pub tag : u8 ,
     }
 
-    pub type CaptureOuterAndLocalPayloadAnonInnerBodyFmtSpec = Named < Mapped < Sum < Varied < usize > , CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt > , FnSpecMapper < CaptureOuterAndLocalPayloadAnonInnerBodyInner , CaptureOuterAndLocalPayloadAnonInnerBodySpec >> > ;
+    pub type CaptureOuterAndLocalPayloadBodyFmtSpec = Named < Mapped < Sum < Varied < usize > , CaptureOuterAndLocalPayloadBodyChoice1Fmt > , FnSpecMapper < CaptureOuterAndLocalPayloadBodyInner , CaptureOuterAndLocalPayloadBodySpec >> > ;
 
-    # [doc = "specification constructor for `capture_outer_and_local_payload_anon_inner_body`."]
-    pub open spec fn capture_outer_and_local_payload_anon_inner_body_fmt (frame_len : u8 , tag : u8) -> CaptureOuterAndLocalPayloadAnonInnerBodyFmtSpec {
-        Named ("capture_outer_and_local_payload_anon_inner_body" ,
+    # [doc = "specification constructor for `capture_outer_and_local_payload_body`."]
+    pub open spec fn capture_outer_and_local_payload_body_fmt (frame_len : u8 , tag : u8) -> CaptureOuterAndLocalPayloadBodyFmtSpec {
+        Named ("capture_outer_and_local_payload_body" ,
         Mapped {
             inner : match tag {
                 0 => Sum :: Inl (Varied ((((frame_len as usize) - 1) as usize))) ,
-                _ => Sum :: Inr (CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt) ,
+                _ => Sum :: Inr (CaptureOuterAndLocalPayloadBodyChoice1Fmt) ,
             }
             ,
-            mapper : (| parsed : CaptureOuterAndLocalPayloadAnonInnerBodyInner | -> CaptureOuterAndLocalPayloadAnonInnerBodySpec {
+            mapper : (| parsed : CaptureOuterAndLocalPayloadBodyInner | -> CaptureOuterAndLocalPayloadBodySpec {
                 match parsed {
-                    Sum :: Inl (v) => CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Variant1 (v) ,
-                    Sum :: Inr (v) => CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Default (v) ,
+                    Sum :: Inl (v) => CaptureOuterAndLocalPayloadBodySpec :: Variant1 (v) ,
+                    Sum :: Inr (v) => CaptureOuterAndLocalPayloadBodySpec :: Default (v) ,
                 }
             }
             ,
-            | value : CaptureOuterAndLocalPayloadAnonInnerBodySpec | -> CaptureOuterAndLocalPayloadAnonInnerBodyInner {
+            | value : CaptureOuterAndLocalPayloadBodySpec | -> CaptureOuterAndLocalPayloadBodyInner {
                 match value {
-                    CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Variant1 (v) => Sum :: Inl (v) ,
-                    CaptureOuterAndLocalPayloadAnonInnerBodySpec :: Default (v) => Sum :: Inr (v) ,
+                    CaptureOuterAndLocalPayloadBodySpec :: Variant1 (v) => Sum :: Inl (v) ,
+                    CaptureOuterAndLocalPayloadBodySpec :: Default (v) => Sum :: Inr (v) ,
                 }
             }
             )
@@ -736,25 +770,46 @@ verus! {
         pub frame_len : u8 ,
     }
 
-    pub type CaptureOuterAndLocalPayloadFmtSpec = Named < ExactLen < Bind < U8 , spec_fn (u8) -> CaptureOuterAndLocalPayloadAnonInnerBodyFmt > , usize > > ;
+    pub type CaptureOuterAndLocalPayloadFmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> CaptureOuterAndLocalPayloadBodyFmt > , FnSpecMapper < CaptureOuterAndLocalPayloadInner , CaptureOuterAndLocalPayloadSpec >> > ;
 
     # [doc = "specification constructor for `capture_outer_and_local_payload`."]
     pub open spec fn capture_outer_and_local_payload_fmt (frame_len : u8) -> CaptureOuterAndLocalPayloadFmtSpec {
         Named ("capture_outer_and_local_payload" ,
-        ExactLen ((frame_len as usize) ,
-        Bind (U8 ,
-        | tag : u8 | CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            frame_len ,
-            tag
+        Mapped {
+            inner : Bind (U8 ,
+            | tag : u8 | CaptureOuterAndLocalPayloadBodyFmt {
+                frame_len ,
+                tag
+            }
+            ) ,
+            mapper : (| parsed : CaptureOuterAndLocalPayloadInner | -> CaptureOuterAndLocalPayloadSpec {
+                let (tag ,
+                body) = parsed ;
+                CaptureOuterAndLocalPayloadSpec {
+                    tag ,
+                    body
+                }
+            }
+            ,
+            | value : CaptureOuterAndLocalPayloadSpec | -> CaptureOuterAndLocalPayloadInner {
+                let CaptureOuterAndLocalPayloadSpec {
+                    tag ,
+                    body
+                }
+                = value ;
+                (tag ,
+                body)
+            }
+            )
         }
-        )))
+        )
     }
 
 
     # [doc = "named format combinator for `capture_outer_and_local`."]
     pub struct CaptureOuterAndLocalFmt ;
 
-    pub type CaptureOuterAndLocalFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> CaptureOuterAndLocalPayloadFmt > , FnSpecMapper < CaptureOuterAndLocalInner , CaptureOuterAndLocalSpec >> > ;
+    pub type CaptureOuterAndLocalFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < CaptureOuterAndLocalPayloadFmt , usize > > , FnSpecMapper < CaptureOuterAndLocalInner , CaptureOuterAndLocalSpec >> > ;
 
     # [doc = "specification constructor for `capture_outer_and_local`."]
     pub open spec fn capture_outer_and_local_fmt () -> CaptureOuterAndLocalFmtSpec {
@@ -762,10 +817,11 @@ verus! {
         Mapped {
             inner : Bind (Refined (U8 ,
             | x : u8 | x >= 1) ,
-            | frame_len : u8 | CaptureOuterAndLocalPayloadFmt {
+            | frame_len : u8 | ExactLen ((frame_len as usize) ,
+            CaptureOuterAndLocalPayloadFmt {
                 frame_len
             }
-            ) ,
+            )) ,
             mapper : (| parsed : CaptureOuterAndLocalInner | -> CaptureOuterAndLocalSpec {
                 let (frame_len ,
                 payload) = parsed ;
@@ -787,22 +843,6 @@ verus! {
             )
         }
         )
-    }
-
-
-    # [doc = "named format combinator for `nested_inner_struct_anon_inner`."]
-    pub struct NestedInnerStructAnonInnerFmt {
-        pub len : u32 ,
-    }
-
-    pub type NestedInnerStructAnonInnerFmtSpec = Named < ExactLen < Pair < U8 , Tail > , usize > > ;
-
-    # [doc = "specification constructor for `nested_inner_struct_anon_inner`."]
-    pub open spec fn nested_inner_struct_anon_inner_fmt (len : u32) -> NestedInnerStructAnonInnerFmtSpec {
-        Named ("nested_inner_struct_anon_inner" ,
-        ExactLen ((len as usize) ,
-        Pair (U8 ,
-        Tail)))
     }
 
 
@@ -989,20 +1029,53 @@ verus! {
     }
 
 
+    # [doc = "named format combinator for `nested_inner_struct_inner`."]
+    pub struct NestedInnerStructInnerFmt ;
+
+    pub type NestedInnerStructInnerFmtSpec = Named < Mapped < Pair < U8 , Tail > , FnSpecMapper < NestedInnerStructInnerInner , NestedInnerStructInnerSpec >> > ;
+
+    # [doc = "specification constructor for `nested_inner_struct_inner`."]
+    pub open spec fn nested_inner_struct_inner_fmt () -> NestedInnerStructInnerFmtSpec {
+        Named ("nested_inner_struct_inner" ,
+        Mapped {
+            inner : Pair (U8 ,
+            Tail) ,
+            mapper : (| parsed : NestedInnerStructInnerInner | -> NestedInnerStructInnerSpec {
+                let (x ,
+                y) = parsed ;
+                NestedInnerStructInnerSpec {
+                    x ,
+                    y
+                }
+            }
+            ,
+            | value : NestedInnerStructInnerSpec | -> NestedInnerStructInnerInner {
+                let NestedInnerStructInnerSpec {
+                    x ,
+                    y
+                }
+                = value ;
+                (x ,
+                y)
+            }
+            )
+        }
+        )
+    }
+
+
     # [doc = "named format combinator for `nested_inner_struct`."]
     pub struct NestedInnerStructFmt ;
 
-    pub type NestedInnerStructFmtSpec = Named < Mapped < Bind < U32Le , spec_fn (u32) -> NestedInnerStructAnonInnerFmt > , FnSpecMapper < NestedInnerStructInner , NestedInnerStructSpec >> > ;
+    pub type NestedInnerStructFmtSpec = Named < Mapped < Bind < U32Le , spec_fn (u32) -> ExactLen < NestedInnerStructInnerFmt , usize > > , FnSpecMapper < NestedInnerStructInner , NestedInnerStructSpec >> > ;
 
     # [doc = "specification constructor for `nested_inner_struct`."]
     pub open spec fn nested_inner_struct_fmt () -> NestedInnerStructFmtSpec {
         Named ("nested_inner_struct" ,
         Mapped {
             inner : Bind (U32Le ,
-            | len : u32 | NestedInnerStructAnonInnerFmt {
-                len
-            }
-            ) ,
+            | len : u32 | ExactLen ((len as usize) ,
+            NestedInnerStructInnerFmt)) ,
             mapper : (| parsed : NestedInnerStructInner | -> NestedInnerStructSpec {
                 let (len ,
                 inner) = parsed ;
@@ -1406,85 +1479,85 @@ verus! {
             }
         }
 
-        impl SpecParser for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
-            type PVal = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+        impl SpecParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+            type PVal = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn spec_parse (& self ,
             ibuf : Seq < u8 >) -> Option < (int ,
             Self :: PVal) > {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . spec_parse (ibuf)
+                capture_outer_and_local_payload_body_choice1_fmt () . spec_parse (ibuf)
             }
         }
-        impl Consistency for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
-            type Val = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+        impl Consistency for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+            type Val = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn consistent (& self ,
             v : Self :: Val) -> bool {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . consistent (v)
+                capture_outer_and_local_payload_body_choice1_fmt () . consistent (v)
             }
         }
-        impl SpecSerializerDps for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
-            type SValue = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+        impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+            type SValue = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) -> Seq < u8 > {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . spec_serialize_dps (v ,
+                capture_outer_and_local_payload_body_choice1_fmt () . spec_serialize_dps (v ,
                 obuf)
             }
         }
-        impl SpecSerializer for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
-            type SVal = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+        impl SpecSerializer for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+            type SVal = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn spec_serialize (& self ,
             v : Self :: SVal) -> Seq < u8 > {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . spec_serialize (v)
+                capture_outer_and_local_payload_body_choice1_fmt () . spec_serialize (v)
             }
         }
-        impl SpecByteLen for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
-            type T = CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Spec ;
+        impl SpecByteLen for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+            type T = CaptureOuterAndLocalPayloadBodyChoice1Spec ;
             # [verifier :: opaque] open spec fn byte_len (& self ,
             v : Self :: T) -> nat {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . byte_len (v)
+                capture_outer_and_local_payload_body_choice1_fmt () . byte_len (v)
             }
         }
 
-        impl SpecParser for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            type PVal = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+        impl SpecParser for CaptureOuterAndLocalPayloadBodyFmt {
+            type PVal = CaptureOuterAndLocalPayloadBodySpec ;
             # [verifier :: opaque] open spec fn spec_parse (& self ,
             ibuf : Seq < u8 >) -> Option < (int ,
             Self :: PVal) > {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . spec_parse (ibuf)
             }
         }
-        impl Consistency for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            type Val = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+        impl Consistency for CaptureOuterAndLocalPayloadBodyFmt {
+            type Val = CaptureOuterAndLocalPayloadBodySpec ;
             # [verifier :: opaque] open spec fn consistent (& self ,
             v : Self :: Val) -> bool {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . consistent (v)
             }
         }
-        impl SpecSerializerDps for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            type SValue = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+        impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyFmt {
+            type SValue = CaptureOuterAndLocalPayloadBodySpec ;
             # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) -> Seq < u8 > {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . spec_serialize_dps (v ,
                 obuf)
             }
         }
-        impl SpecSerializer for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            type SVal = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+        impl SpecSerializer for CaptureOuterAndLocalPayloadBodyFmt {
+            type SVal = CaptureOuterAndLocalPayloadBodySpec ;
             # [verifier :: opaque] open spec fn spec_serialize (& self ,
             v : Self :: SVal) -> Seq < u8 > {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . spec_serialize (v)
             }
         }
-        impl SpecByteLen for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
-            type T = CaptureOuterAndLocalPayloadAnonInnerBodySpec ;
+        impl SpecByteLen for CaptureOuterAndLocalPayloadBodyFmt {
+            type T = CaptureOuterAndLocalPayloadBodySpec ;
             # [verifier :: opaque] open spec fn byte_len (& self ,
             v : Self :: T) -> nat {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . byte_len (v)
             }
         }
@@ -1564,45 +1637,6 @@ verus! {
             # [verifier :: opaque] open spec fn byte_len (& self ,
             v : Self :: T) -> nat {
                 capture_outer_and_local_fmt () . byte_len (v)
-            }
-        }
-
-        impl SpecParser for NestedInnerStructAnonInnerFmt {
-            type PVal = NestedInnerStructAnonInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_parse (& self ,
-            ibuf : Seq < u8 >) -> Option < (int ,
-            Self :: PVal) > {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . spec_parse (ibuf)
-            }
-        }
-        impl Consistency for NestedInnerStructAnonInnerFmt {
-            type Val = NestedInnerStructAnonInnerSpec ;
-            # [verifier :: opaque] open spec fn consistent (& self ,
-            v : Self :: Val) -> bool {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . consistent (v)
-            }
-        }
-        impl SpecSerializerDps for NestedInnerStructAnonInnerFmt {
-            type SValue = NestedInnerStructAnonInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) -> Seq < u8 > {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . spec_serialize_dps (v ,
-                obuf)
-            }
-        }
-        impl SpecSerializer for NestedInnerStructAnonInnerFmt {
-            type SVal = NestedInnerStructAnonInnerSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize (& self ,
-            v : Self :: SVal) -> Seq < u8 > {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . spec_serialize (v)
-            }
-        }
-        impl SpecByteLen for NestedInnerStructAnonInnerFmt {
-            type T = NestedInnerStructAnonInnerSpec ;
-            # [verifier :: opaque] open spec fn byte_len (& self ,
-            v : Self :: T) -> nat {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . byte_len (v)
             }
         }
 
@@ -1813,6 +1847,45 @@ verus! {
             v : Self :: T) -> nat {
                 capture_param_and_local_fmt (self . choice1 . deep_view () ,
                 self . choice2 . deep_view ()) . byte_len (v)
+            }
+        }
+
+        impl SpecParser for NestedInnerStructInnerFmt {
+            type PVal = NestedInnerStructInnerSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                nested_inner_struct_inner_fmt () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for NestedInnerStructInnerFmt {
+            type Val = NestedInnerStructInnerSpec ;
+            # [verifier :: opaque] open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                nested_inner_struct_inner_fmt () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for NestedInnerStructInnerFmt {
+            type SValue = NestedInnerStructInnerSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                nested_inner_struct_inner_fmt () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for NestedInnerStructInnerFmt {
+            type SVal = NestedInnerStructInnerSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                nested_inner_struct_inner_fmt () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for NestedInnerStructInnerFmt {
+            type T = NestedInnerStructInnerSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                nested_inner_struct_inner_fmt () . byte_len (v)
             }
         }
 
@@ -2739,49 +2812,49 @@ verus! {
             }
         }
 
-        impl SafeParser for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl SafeParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_parse_safe (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . lemma_parse_safe (ibuf) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                capture_outer_and_local_payload_body_choice1_fmt () . lemma_parse_safe (ibuf) ;
             }
         }
-        impl Productive for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl Productive for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             open spec fn productive_inv (& self) -> bool {
-                capture_outer_and_local_payload_anon_inner_body_choice1_fmt () . productive_inv ()
+                capture_outer_and_local_payload_body_choice1_fmt () . productive_inv ()
             }
             proof fn lemma_productive (& self ,
             s : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . productive_inv ()) ;
                 fmt . lemma_productive (s) ;
             }
         }
-        impl SoundParser for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl SoundParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_parse_sound_consumption (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . sound_inv ()) ;
                 fmt . lemma_parse_sound_consumption (ibuf) ;
             }
             proof fn lemma_parse_sound_value (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as Consistency > :: consistent) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as Consistency > :: consistent) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . sound_inv ()) ;
                 fmt . lemma_parse_sound_value (ibuf) ;
             }
         }
-        impl NonTailFmt for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl NonTailFmt for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_serialize_dps_prepend (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . serialize_dps_inv ()) ;
                 fmt . lemma_serialize_dps_prepend (v ,
                 obuf) ;
@@ -2789,120 +2862,120 @@ verus! {
             proof fn lemma_serialize_dps_len (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . serialize_dps_inv ()) ;
                 fmt . lemma_serialize_dps_len (v ,
                 obuf) ;
             }
         }
-        impl GoodSerializer for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl GoodSerializer for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_serialize_len (& self ,
             v : Self :: SVal) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . serialize_inv ()) ;
                 fmt . lemma_serialize_len (v) ;
             }
         }
-        impl SPRoundTripDps for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl SPRoundTripDps for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn theorem_serialize_dps_parse_roundtrip (& self ,
             v : Self :: T ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as Consistency > :: consistent) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as Consistency > :: consistent) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . unambiguous ()) ;
                 fmt . theorem_serialize_dps_parse_roundtrip (v ,
                 obuf) ;
             }
         }
-        impl NonMalleable for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl NonMalleable for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_parse_non_malleable (& self ,
             buf1 : Seq < u8 > ,
             buf2 : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecParser > :: spec_parse) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser > :: spec_parse) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . nonmal_inv ()) ;
                 fmt . lemma_parse_non_malleable (buf1 ,
                 buf2) ;
             }
         }
-        impl EquivSerializersGeneral for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl EquivSerializersGeneral for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_serialize_equiv (& self ,
             v : Self :: SVal ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . equiv_general_inv ()) ;
                 fmt . lemma_serialize_equiv (v ,
                 obuf) ;
             }
         }
-        impl EquivSerializers for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt {
+        impl EquivSerializers for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
             proof fn lemma_serialize_equiv_on_empty (& self ,
             v : Self :: SVal) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_choice1_fmt () ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = capture_outer_and_local_payload_body_choice1_fmt () ;
                 assert (fmt . equiv_inv ()) ;
                 fmt . lemma_serialize_equiv_on_empty (v) ;
             }
         }
 
-        impl SafeParser for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl SafeParser for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_parse_safe (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . lemma_parse_safe (ibuf) ;
             }
         }
-        impl Productive for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl Productive for CaptureOuterAndLocalPayloadBodyFmt {
             open spec fn productive_inv (& self) -> bool {
-                capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) . productive_inv ()
             }
             proof fn lemma_productive (& self ,
             s : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . productive_inv ()) ;
                 fmt . lemma_productive (s) ;
             }
         }
-        impl SoundParser for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl SoundParser for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_parse_sound_consumption (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . sound_inv ()) ;
                 fmt . lemma_parse_sound_consumption (ibuf) ;
             }
             proof fn lemma_parse_sound_value (& self ,
             ibuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as Consistency > :: consistent) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as Consistency > :: consistent) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . sound_inv ()) ;
                 fmt . lemma_parse_sound_value (ibuf) ;
             }
         }
-        impl NonTailFmt for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl NonTailFmt for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_serialize_dps_prepend (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . serialize_dps_inv ()) ;
                 fmt . lemma_serialize_dps_prepend (v ,
@@ -2911,72 +2984,72 @@ verus! {
             proof fn lemma_serialize_dps_len (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . serialize_dps_inv ()) ;
                 fmt . lemma_serialize_dps_len (v ,
                 obuf) ;
             }
         }
-        impl GoodSerializer for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl GoodSerializer for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_serialize_len (& self ,
             v : Self :: SVal) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializer > :: spec_serialize) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . serialize_inv ()) ;
                 fmt . lemma_serialize_len (v) ;
             }
         }
-        impl SPRoundTripDps for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl SPRoundTripDps for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn theorem_serialize_dps_parse_roundtrip (& self ,
             v : Self :: T ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as Consistency > :: consistent) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecByteLen > :: byte_len) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as Consistency > :: consistent) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen > :: byte_len) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . unambiguous ()) ;
                 fmt . theorem_serialize_dps_parse_roundtrip (v ,
                 obuf) ;
             }
         }
-        impl NonMalleable for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl NonMalleable for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_parse_non_malleable (& self ,
             buf1 : Seq < u8 > ,
             buf2 : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecParser > :: spec_parse) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecParser > :: spec_parse) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . nonmal_inv ()) ;
                 fmt . lemma_parse_non_malleable (buf1 ,
                 buf2) ;
             }
         }
-        impl EquivSerializersGeneral for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl EquivSerializersGeneral for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_serialize_equiv (& self ,
             v : Self :: SVal ,
             obuf : Seq < u8 >) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . equiv_general_inv ()) ;
                 fmt . lemma_serialize_equiv (v ,
                 obuf) ;
             }
         }
-        impl EquivSerializers for CaptureOuterAndLocalPayloadAnonInnerBodyFmt {
+        impl EquivSerializers for CaptureOuterAndLocalPayloadBodyFmt {
             proof fn lemma_serialize_equiv_on_empty (& self ,
             v : Self :: SVal) {
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< CaptureOuterAndLocalPayloadAnonInnerBodyFmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = capture_outer_and_local_payload_anon_inner_body_fmt (self . frame_len . deep_view () ,
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< CaptureOuterAndLocalPayloadBodyFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = capture_outer_and_local_payload_body_fmt (self . frame_len . deep_view () ,
                 self . tag . deep_view ()) ;
                 assert (fmt . equiv_inv ()) ;
                 fmt . lemma_serialize_equiv_on_empty (v) ;
@@ -3210,122 +3283,6 @@ verus! {
                 reveal (< CaptureOuterAndLocalFmt as SpecSerializerDps > :: spec_serialize_dps) ;
                 reveal (< CaptureOuterAndLocalFmt as SpecSerializer > :: spec_serialize) ;
                 let fmt = capture_outer_and_local_fmt () ;
-                assert (fmt . equiv_inv ()) ;
-                fmt . lemma_serialize_equiv_on_empty (v) ;
-            }
-        }
-
-        impl SafeParser for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_parse_safe (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . lemma_parse_safe (ibuf) ;
-            }
-        }
-        impl Productive for NestedInnerStructAnonInnerFmt {
-            open spec fn productive_inv (& self) -> bool {
-                nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) . productive_inv ()
-            }
-            proof fn lemma_productive (& self ,
-            s : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . productive_inv ()) ;
-                fmt . lemma_productive (s) ;
-            }
-        }
-        impl SoundParser for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_parse_sound_consumption (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . sound_inv ()) ;
-                fmt . lemma_parse_sound_consumption (ibuf) ;
-            }
-            proof fn lemma_parse_sound_value (& self ,
-            ibuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructAnonInnerFmt as Consistency > :: consistent) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . sound_inv ()) ;
-                fmt . lemma_parse_sound_value (ibuf) ;
-            }
-        }
-        impl NonTailFmt for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_serialize_dps_prepend (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . serialize_dps_inv ()) ;
-                fmt . lemma_serialize_dps_prepend (v ,
-                obuf) ;
-            }
-            proof fn lemma_serialize_dps_len (& self ,
-            v : Self :: SValue ,
-            obuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . serialize_dps_inv ()) ;
-                fmt . lemma_serialize_dps_len (v ,
-                obuf) ;
-            }
-        }
-        impl GoodSerializer for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_serialize_len (& self ,
-            v : Self :: SVal) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializer > :: spec_serialize) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . serialize_inv ()) ;
-                fmt . lemma_serialize_len (v) ;
-            }
-        }
-        impl SPRoundTripDps for NestedInnerStructAnonInnerFmt {
-            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
-            v : Self :: T ,
-            obuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructAnonInnerFmt as Consistency > :: consistent) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecByteLen > :: byte_len) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . unambiguous ()) ;
-                fmt . theorem_serialize_dps_parse_roundtrip (v ,
-                obuf) ;
-            }
-        }
-        impl NonMalleable for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_parse_non_malleable (& self ,
-            buf1 : Seq < u8 > ,
-            buf2 : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecParser > :: spec_parse) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . nonmal_inv ()) ;
-                fmt . lemma_parse_non_malleable (buf1 ,
-                buf2) ;
-            }
-        }
-        impl EquivSerializersGeneral for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_serialize_equiv (& self ,
-            v : Self :: SVal ,
-            obuf : Seq < u8 >) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
-                assert (fmt . equiv_general_inv ()) ;
-                fmt . lemma_serialize_equiv (v ,
-                obuf) ;
-            }
-        }
-        impl EquivSerializers for NestedInnerStructAnonInnerFmt {
-            proof fn lemma_serialize_equiv_on_empty (& self ,
-            v : Self :: SVal) {
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
-                reveal (< NestedInnerStructAnonInnerFmt as SpecSerializer > :: spec_serialize) ;
-                let fmt = nested_inner_struct_anon_inner_fmt (self . len . deep_view ()) ;
                 assert (fmt . equiv_inv ()) ;
                 fmt . lemma_serialize_equiv_on_empty (v) ;
             }
@@ -3947,6 +3904,89 @@ verus! {
             }
         }
 
+        impl SafeParser for NestedInnerStructInnerFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                nested_inner_struct_inner_fmt () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for NestedInnerStructInnerFmt {
+            open spec fn productive_inv (& self) -> bool {
+                nested_inner_struct_inner_fmt () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for NestedInnerStructInnerFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructInnerFmt as Consistency > :: consistent) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl GoodSerializer for NestedInnerStructInnerFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< NestedInnerStructInnerFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for NestedInnerStructInnerFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                reveal (< NestedInnerStructInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructInnerFmt as Consistency > :: consistent) ;
+                reveal (< NestedInnerStructInnerFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for NestedInnerStructInnerFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< NestedInnerStructInnerFmt as SpecParser > :: spec_parse) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializers for NestedInnerStructInnerFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< NestedInnerStructInnerFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructInnerFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = nested_inner_struct_inner_fmt () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
+
         impl SafeParser for NestedInnerStructFmt {
             proof fn lemma_parse_safe (& self ,
             ibuf : Seq < u8 >) {
@@ -3984,6 +4024,27 @@ verus! {
                 fmt . lemma_parse_sound_value (ibuf) ;
             }
         }
+        impl NonTailFmt for NestedInnerStructFmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< NestedInnerStructFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = nested_inner_struct_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< NestedInnerStructFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructFmt as SpecByteLen > :: byte_len) ;
+                let fmt = nested_inner_struct_fmt () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
         impl GoodSerializer for NestedInnerStructFmt {
             proof fn lemma_serialize_len (& self ,
             v : Self :: SVal) {
@@ -4017,6 +4078,18 @@ verus! {
                 assert (fmt . nonmal_inv ()) ;
                 fmt . lemma_parse_non_malleable (buf1 ,
                 buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for NestedInnerStructFmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< NestedInnerStructFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< NestedInnerStructFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = nested_inner_struct_fmt () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
             }
         }
         impl EquivSerializers for NestedInnerStructFmt {
@@ -4516,19 +4589,16 @@ verus! {
     // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerChoiceXA
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayloadAnonInnerBodyChoice1
+    // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayloadBodyChoice1
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayloadAnonInnerBody
+    // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayloadBody
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocalPayload
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureOuterAndLocal
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStructAnonInner
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureLocalInAnonStructWrapperValueChoice0
@@ -4544,6 +4614,9 @@ verus! {
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for CaptureParamAndLocal
+
+
+    // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStructInner
 
 
     // TODO(execs): emit Parser / Serializer / Prepare impls for NestedInnerStruct

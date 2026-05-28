@@ -3431,12 +3431,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type CertificateRequestExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < SignatureSchemeListFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < SignatureSchemeListFmt , Sum < CertificateStatusRequestFmt , Sum < SignedCertificateTimestampListFmt , Sum < OidFilterExtensionFmt , Varied < usize > > > > > > > , FnSpecMapper < CertificateRequestExtensionExtensionDataInner , CertificateRequestExtensionExtensionDataSpec >> , usize > > ;
+    pub type CertificateRequestExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SignatureSchemeListFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < SignatureSchemeListFmt , Sum < CertificateStatusRequestFmt , Sum < SignedCertificateTimestampListFmt , Sum < OidFilterExtensionFmt , Varied < usize > > > > > > > , FnSpecMapper < CertificateRequestExtensionExtensionDataInner , CertificateRequestExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `certificate_request_extension_extension_data`."]
     pub open spec fn certificate_request_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> CertificateRequestExtensionExtensionDataFmtSpec {
         Named ("certificate_request_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: SignatureAlgorithms => Sum :: Inl (SignatureSchemeListFmt) ,
@@ -3473,14 +3472,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `certificate_request_extension`."]
     pub struct CertificateRequestExtensionFmt ;
 
-    pub type CertificateRequestExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> CertificateRequestExtensionExtensionDataFmt > > , FnSpecMapper < CertificateRequestExtensionInner , CertificateRequestExtensionSpec >> > ;
+    pub type CertificateRequestExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateRequestExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateRequestExtensionInner , CertificateRequestExtensionSpec >> > ;
 
     # [doc = "specification constructor for `certificate_request_extension`."]
     pub open spec fn certificate_request_extension_fmt () -> CertificateRequestExtensionFmtSpec {
@@ -3488,11 +3487,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | CertificateRequestExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            CertificateRequestExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : CertificateRequestExtensionInner | -> CertificateRequestExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -3801,12 +3801,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type HelloRetryExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < SupportedVersionsServerFmt , Sum < CookieFmt , Sum < NamedGroupFmt , Varied < usize > > > > , FnSpecMapper < HelloRetryExtensionExtensionDataInner , HelloRetryExtensionExtensionDataSpec >> , usize > > ;
+    pub type HelloRetryExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SupportedVersionsServerFmt , Sum < CookieFmt , Sum < NamedGroupFmt , Varied < usize > > > > , FnSpecMapper < HelloRetryExtensionExtensionDataInner , HelloRetryExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `hello_retry_extension_extension_data`."]
     pub open spec fn hello_retry_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> HelloRetryExtensionExtensionDataFmtSpec {
         Named ("hello_retry_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: SupportedVersions => Sum :: Inl (SupportedVersionsServerFmt) ,
@@ -3834,14 +3833,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `hello_retry_extension`."]
     pub struct HelloRetryExtensionFmt ;
 
-    pub type HelloRetryExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> HelloRetryExtensionExtensionDataFmt > > , FnSpecMapper < HelloRetryExtensionInner , HelloRetryExtensionSpec >> > ;
+    pub type HelloRetryExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < HelloRetryExtensionExtensionDataFmt , usize > > > , FnSpecMapper < HelloRetryExtensionInner , HelloRetryExtensionSpec >> > ;
 
     # [doc = "specification constructor for `hello_retry_extension`."]
     pub open spec fn hello_retry_extension_fmt () -> HelloRetryExtensionFmtSpec {
@@ -3849,11 +3848,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | HelloRetryExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            HelloRetryExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : HelloRetryExtensionInner | -> HelloRetryExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -4042,12 +4042,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type SeverHelloExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < PreSharedKeyServerExtensionFmt , Sum < SupportedVersionsServerFmt , Sum < KeyShareEntryFmt , Varied < usize > > > > , FnSpecMapper < SeverHelloExtensionExtensionDataInner , SeverHelloExtensionExtensionDataSpec >> , usize > > ;
+    pub type SeverHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < PreSharedKeyServerExtensionFmt , Sum < SupportedVersionsServerFmt , Sum < KeyShareEntryFmt , Varied < usize > > > > , FnSpecMapper < SeverHelloExtensionExtensionDataInner , SeverHelloExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `sever_hello_extension_extension_data`."]
     pub open spec fn sever_hello_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> SeverHelloExtensionExtensionDataFmtSpec {
         Named ("sever_hello_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: PreSharedKey => Sum :: Inl (PreSharedKeyServerExtensionFmt) ,
@@ -4075,14 +4074,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `sever_hello_extension`."]
     pub struct SeverHelloExtensionFmt ;
 
-    pub type SeverHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> SeverHelloExtensionExtensionDataFmt > > , FnSpecMapper < SeverHelloExtensionInner , SeverHelloExtensionSpec >> > ;
+    pub type SeverHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < SeverHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < SeverHelloExtensionInner , SeverHelloExtensionSpec >> > ;
 
     # [doc = "specification constructor for `sever_hello_extension`."]
     pub open spec fn sever_hello_extension_fmt () -> SeverHelloExtensionFmtSpec {
@@ -4090,11 +4089,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | SeverHelloExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            SeverHelloExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : SeverHelloExtensionInner | -> SeverHelloExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -5193,12 +5193,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type ClientHelloExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < ServerNameListFmt , Sum < SignatureSchemeListFmt , Sum < NamedGroupListFmt , Sum < CertificateStatusRequestFmt , Sum < ProtocolNameListFmt , Sum < SupportedVersionsClientFmt , Sum < KeyShareClientHelloFmt , Sum < PskKeyExchangeModesFmt , Sum < PreSharedKeyClientExtensionFmt , ClientHelloExtensionRestFmt > > > > > > > > > , FnSpecMapper < ClientHelloExtensionExtensionDataInner , ClientHelloExtensionExtensionDataSpec >> , usize > > ;
+    pub type ClientHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < ServerNameListFmt , Sum < SignatureSchemeListFmt , Sum < NamedGroupListFmt , Sum < CertificateStatusRequestFmt , Sum < ProtocolNameListFmt , Sum < SupportedVersionsClientFmt , Sum < KeyShareClientHelloFmt , Sum < PskKeyExchangeModesFmt , Sum < PreSharedKeyClientExtensionFmt , ClientHelloExtensionRestFmt > > > > > > > > > , FnSpecMapper < ClientHelloExtensionExtensionDataInner , ClientHelloExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `client_hello_extension_extension_data`."]
     pub open spec fn client_hello_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> ClientHelloExtensionExtensionDataFmtSpec {
         Named ("client_hello_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: ServerName => Sum :: Inl (ServerNameListFmt) ,
@@ -5248,14 +5247,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `client_hello_extension`."]
     pub struct ClientHelloExtensionFmt ;
 
-    pub type ClientHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ClientHelloExtensionExtensionDataFmt > > , FnSpecMapper < ClientHelloExtensionInner , ClientHelloExtensionSpec >> > ;
+    pub type ClientHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < ClientHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < ClientHelloExtensionInner , ClientHelloExtensionSpec >> > ;
 
     # [doc = "specification constructor for `client_hello_extension`."]
     pub open spec fn client_hello_extension_fmt () -> ClientHelloExtensionFmtSpec {
@@ -5263,11 +5262,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | ClientHelloExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            ClientHelloExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : ClientHelloExtensionInner | -> ClientHelloExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -5460,12 +5460,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type NewSessionTicketExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < EarlyDataIndicationNewSessionTicketFmt , Varied < usize > > , FnSpecMapper < NewSessionTicketExtensionExtensionDataInner , NewSessionTicketExtensionExtensionDataSpec >> , usize > > ;
+    pub type NewSessionTicketExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EarlyDataIndicationNewSessionTicketFmt , Varied < usize > > , FnSpecMapper < NewSessionTicketExtensionExtensionDataInner , NewSessionTicketExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `new_session_ticket_extension_extension_data`."]
     pub open spec fn new_session_ticket_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> NewSessionTicketExtensionExtensionDataFmtSpec {
         Named ("new_session_ticket_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: EarlyData => Sum :: Inl (EarlyDataIndicationNewSessionTicketFmt) ,
@@ -5487,14 +5486,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `new_session_ticket_extension`."]
     pub struct NewSessionTicketExtensionFmt ;
 
-    pub type NewSessionTicketExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> NewSessionTicketExtensionExtensionDataFmt > > , FnSpecMapper < NewSessionTicketExtensionInner , NewSessionTicketExtensionSpec >> > ;
+    pub type NewSessionTicketExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < NewSessionTicketExtensionExtensionDataFmt , usize > > > , FnSpecMapper < NewSessionTicketExtensionInner , NewSessionTicketExtensionSpec >> > ;
 
     # [doc = "specification constructor for `new_session_ticket_extension`."]
     pub open spec fn new_session_ticket_extension_fmt () -> NewSessionTicketExtensionFmtSpec {
@@ -5502,11 +5501,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | NewSessionTicketExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            NewSessionTicketExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : NewSessionTicketExtensionInner | -> NewSessionTicketExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -5628,12 +5628,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type EncryptedExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < EmptyFmt , Sum < MaxFragmentLengthFmt , Sum < NamedGroupListFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < EmptyFmt , Varied < usize > > > > > > > > > , FnSpecMapper < EncryptedExtensionExtensionDataInner , EncryptedExtensionExtensionDataSpec >> , usize > > ;
+    pub type EncryptedExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EmptyFmt , Sum < MaxFragmentLengthFmt , Sum < NamedGroupListFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < EmptyFmt , Varied < usize > > > > > > > > > , FnSpecMapper < EncryptedExtensionExtensionDataInner , EncryptedExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `encrypted_extension_extension_data`."]
     pub open spec fn encrypted_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> EncryptedExtensionExtensionDataFmtSpec {
         Named ("encrypted_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: ServerName => Sum :: Inl (EmptyFmt) ,
@@ -5676,14 +5675,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `encrypted_extension`."]
     pub struct EncryptedExtensionFmt ;
 
-    pub type EncryptedExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> EncryptedExtensionExtensionDataFmt > > , FnSpecMapper < EncryptedExtensionInner , EncryptedExtensionSpec >> > ;
+    pub type EncryptedExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < EncryptedExtensionExtensionDataFmt , usize > > > , FnSpecMapper < EncryptedExtensionInner , EncryptedExtensionSpec >> > ;
 
     # [doc = "specification constructor for `encrypted_extension`."]
     pub open spec fn encrypted_extension_fmt () -> EncryptedExtensionFmtSpec {
@@ -5691,11 +5690,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | EncryptedExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            EncryptedExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : EncryptedExtensionInner | -> EncryptedExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -5846,12 +5846,11 @@ verus! {
         pub extension_type : ExtensionType ,
     }
 
-    pub type CertificateExtensionExtensionDataFmtSpec = Named < ExactLen < Mapped < Sum < CertificateStatusFmt , Sum < SignedCertificateTimestampListFmt , Varied < usize > > > , FnSpecMapper < CertificateExtensionExtensionDataInner , CertificateExtensionExtensionDataSpec >> , usize > > ;
+    pub type CertificateExtensionExtensionDataFmtSpec = Named < Mapped < Sum < CertificateStatusFmt , Sum < SignedCertificateTimestampListFmt , Varied < usize > > > , FnSpecMapper < CertificateExtensionExtensionDataInner , CertificateExtensionExtensionDataSpec >> > ;
 
     # [doc = "specification constructor for `certificate_extension_extension_data`."]
     pub open spec fn certificate_extension_extension_data_fmt (ext_len : u16 , extension_type : ExtensionTypeSpec) -> CertificateExtensionExtensionDataFmtSpec {
         Named ("certificate_extension_extension_data" ,
-        ExactLen ((ext_len as usize) ,
         Mapped {
             inner : match extension_type {
                 ExtensionTypeSpec :: StatusRequest => Sum :: Inl (CertificateStatusFmt) ,
@@ -5876,14 +5875,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `certificate_extension`."]
     pub struct CertificateExtensionFmt ;
 
-    pub type CertificateExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> CertificateExtensionExtensionDataFmt > > , FnSpecMapper < CertificateExtensionInner , CertificateExtensionSpec >> > ;
+    pub type CertificateExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateExtensionInner , CertificateExtensionSpec >> > ;
 
     # [doc = "specification constructor for `certificate_extension`."]
     pub open spec fn certificate_extension_fmt () -> CertificateExtensionFmtSpec {
@@ -5891,11 +5890,12 @@ verus! {
         Mapped {
             inner : Bind (ExtensionTypeFmt ,
             | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-            | ext_len : u16 | CertificateExtensionExtensionDataFmt {
+            | ext_len : u16 | ExactLen ((ext_len as usize) ,
+            CertificateExtensionExtensionDataFmt {
                 ext_len ,
                 extension_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : CertificateExtensionInner | -> CertificateExtensionSpec {
                 let (extension_type ,
                 (ext_len ,
@@ -6287,12 +6287,11 @@ verus! {
         pub msg_type : HandshakeType ,
     }
 
-    pub type HandshakeMsgFmtSpec = Named < ExactLen < Mapped < Sum < ClientHelloFmt , Sum < ShOrHrrFmt , Sum < NewSessionTicketFmt , Sum < EmptyFmt , Sum < EncryptedExtensionsFmt , Sum < CertificateFmt , Sum < CertificateRequestFmt , Sum < CertificateVerifyFmt , Sum < FinishedFmt , KeyUpdateFmt > > > > > > > > > , FnSpecMapper < HandshakeMsgInner , HandshakeMsgSpec >> , usize > > ;
+    pub type HandshakeMsgFmtSpec = Named < Mapped < Sum < ClientHelloFmt , Sum < ShOrHrrFmt , Sum < NewSessionTicketFmt , Sum < EmptyFmt , Sum < EncryptedExtensionsFmt , Sum < CertificateFmt , Sum < CertificateRequestFmt , Sum < CertificateVerifyFmt , Sum < FinishedFmt , KeyUpdateFmt > > > > > > > > > , FnSpecMapper < HandshakeMsgInner , HandshakeMsgSpec >> > ;
 
     # [doc = "specification constructor for `handshake_msg`."]
     pub open spec fn handshake_msg_fmt (length : u32 , msg_type : HandshakeTypeSpec) -> HandshakeMsgFmtSpec {
         Named ("handshake_msg" ,
-        ExactLen ((length as usize) ,
         Mapped {
             inner : match msg_type {
                 HandshakeTypeSpec :: ClientHello => Sum :: Inl (ClientHelloFmt) ,
@@ -6341,14 +6340,14 @@ verus! {
             }
             )
         }
-        ))
+        )
     }
 
 
     # [doc = "named format combinator for `handshake`."]
     pub struct HandshakeFmt ;
 
-    pub type HandshakeFmtSpec = Named < Mapped < Bind < HandshakeTypeFmt , spec_fn (HandshakeTypeSpec) -> Bind < U24Be , spec_fn (u32) -> HandshakeMsgFmt > > , FnSpecMapper < HandshakeInner , HandshakeSpec >> > ;
+    pub type HandshakeFmtSpec = Named < Mapped < Bind < HandshakeTypeFmt , spec_fn (HandshakeTypeSpec) -> Bind < U24Be , spec_fn (u32) -> ExactLen < HandshakeMsgFmt , usize > > > , FnSpecMapper < HandshakeInner , HandshakeSpec >> > ;
 
     # [doc = "specification constructor for `handshake`."]
     pub open spec fn handshake_fmt () -> HandshakeFmtSpec {
@@ -6356,11 +6355,12 @@ verus! {
         Mapped {
             inner : Bind (HandshakeTypeFmt ,
             | msg_type : HandshakeTypeSpec | Bind (U24Be ,
-            | length : u32 | HandshakeMsgFmt {
+            | length : u32 | ExactLen ((length as usize) ,
+            HandshakeMsgFmt {
                 length ,
                 msg_type
             }
-            )) ,
+            ))) ,
             mapper : (| parsed : HandshakeInner | -> HandshakeSpec {
                 let (msg_type ,
                 (length ,
