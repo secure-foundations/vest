@@ -20,9 +20,9 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
     type PT = Vec<Inner::PT>;
 
     open spec fn exec_inv(&self) -> bool {
-        &&& self.inner.exec_inv()
-        &&& self.inner.safe_inv()
-        &&& self.inner.productive_inv()
+        &&& self.0.exec_inv()
+        &&& self.0.safe_inv()
+        &&& self.0.productive_inv()
     }
 
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
@@ -48,10 +48,10 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         {
             broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
-            match self.inner.parse(&rest) {
+            match self.0.parse(&rest) {
                 Ok((n, v)) => {
                     proof {
-                        self.inner.lemma_productive(rest@);
+                        self.0.lemma_productive(rest@);
                         assert(n > 0);
                     }
                     values.push(v);
@@ -82,7 +82,7 @@ impl<I, A, B> Parser<I> for super::Repeat<A, B> where
     }
 
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
-        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).parse(ibuf)
+        crate::combinators::Pair(super::Star(self.0), self.1).parse(ibuf)
     }
 }
 
@@ -249,7 +249,7 @@ pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: boo
     InnerST: DeepView + Copy,
 
     ensures
-        yes == (super::Star { inner: *fmt }).consistent(values.deep_view()),
+        yes == (super::Star(*fmt)).consistent(values.deep_view()),
 {
     let ghost vs = values.deep_view();
 
@@ -275,18 +275,18 @@ pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: us
     InnerST: DeepView + Copy,
 
     requires
-        (super::Star { inner: *fmt }).byte_len(values.deep_view()) <= usize::MAX,
+        (super::Star(*fmt)).byte_len(values.deep_view()) <= usize::MAX,
     ensures
-        len == (super::Star { inner: *fmt }).byte_len(values.deep_view()),
+        len == (super::Star(*fmt)).byte_len(values.deep_view()),
 {
     let ghost vs = values.deep_view();
-    let ghost star = super::Star { inner: *fmt };
+    let ghost star = super::Star(*fmt);
 
     let mut len = 0usize;
     for i in 0..values.len()
         invariant
             values.deep_view() == vs,
-            star == (super::Star { inner: *fmt }),
+            star == (super::Star(*fmt)),
             star.byte_len(vs) <= usize::MAX,
             len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
     {
@@ -307,18 +307,18 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
 >) where Inner: Prepare<InnerST>, InnerST: DeepView + Copy
     ensures
         checked matches Ok(len) ==> {
-            &&& (super::Star { inner: *fmt }).consistent(values.deep_view())
-            &&& len == (super::Star { inner: *fmt }).byte_len(values.deep_view())
+            &&& (super::Star(*fmt)).consistent(values.deep_view())
+            &&& len == (super::Star(*fmt)).byte_len(values.deep_view())
         },
 {
     let ghost vs = values.deep_view();
-    let ghost star = super::Star { inner: *fmt };
+    let ghost star = super::Star(*fmt);
 
     let mut len = 0usize;
     for i in 0..values.len()
         invariant
             values.deep_view() == vs,
-            star == (super::Star { inner: *fmt }),
+            star == (super::Star(*fmt)),
             forall|j: int| 0 <= j < i ==> fmt.consistent(#[trigger] vs[j]),
             len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
     {
@@ -340,7 +340,7 @@ impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
     fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
-        serialize_slice(&self.inner, v, obuf);
+        serialize_slice(&self.0, v, obuf);
     }
 }
 
@@ -349,7 +349,7 @@ impl<Inner, InnerST> Compliance<&[InnerST]> for super::Star<Inner> where
     InnerST: DeepView + Copy,
  {
     fn check_compliance(&self, v: &[InnerST]) -> (yes: bool) {
-        check_slice(&self.inner, v)
+        check_slice(&self.0, v)
     }
 }
 
@@ -358,7 +358,7 @@ impl<Inner, InnerST> ByteLen<&[InnerST]> for super::Star<Inner> where
     InnerST: DeepView + Copy,
  {
     fn length(&self, v: &[InnerST]) -> (len: usize) {
-        length_slice(&self.inner, v)
+        length_slice(&self.0, v)
     }
 }
 
@@ -367,7 +367,7 @@ impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
     InnerST: DeepView + Copy,
  {
     fn prepare(&self, v: &[InnerST]) -> (checked: Result<usize, PreSerializeError>) {
-        prepare_slice(&self.inner, v)
+        prepare_slice(&self.0, v)
     }
 }
 
@@ -378,7 +378,7 @@ impl<A, B, AST, BST> Serializer<(&[AST], BST)> for super::Repeat<A, B> where
     BST: DeepView<V = B::SVal>,
  {
     fn ex_serialize(&self, v: (&[AST], BST), obuf: &mut Vec<u8>) {
-        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).ex_serialize(v, obuf);
+        crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
     }
 }
 
@@ -389,7 +389,7 @@ impl<A, B, AST, BST> Compliance<(&[AST], BST)> for super::Repeat<A, B> where
     BST: DeepView,
  {
     fn check_compliance(&self, v: (&[AST], BST)) -> (yes: bool) {
-        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).check_compliance(v)
+        crate::combinators::Pair(super::Star(self.0), self.1).check_compliance(v)
     }
 }
 
@@ -400,7 +400,7 @@ impl<A, B, AST, BST> ByteLen<(&[AST], BST)> for super::Repeat<A, B> where
     BST: DeepView,
  {
     fn length(&self, v: (&[AST], BST)) -> (len: usize) {
-        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).length(v)
+        crate::combinators::Pair(super::Star(self.0), self.1).length(v)
     }
 }
 
@@ -411,7 +411,7 @@ impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
     BST: DeepView,
  {
     fn prepare(&self, v: (&[AST], BST)) -> (checked: Result<usize, PreSerializeError>) {
-        crate::combinators::Pair(super::Star { inner: self.0 }, self.1).prepare(v)
+        crate::combinators::Pair(super::Star(self.0), self.1).prepare(v)
     }
 }
 

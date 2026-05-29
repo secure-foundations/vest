@@ -24,17 +24,14 @@ verus! {
 /// This combinator is mostly used *internally* to specify [`Repeat<A, B>`], which is
 /// able to disambiguate `A` and `B` and hence more compositional.
 #[derive(Copy)]
-pub struct Star<A> {
-    /// The inner combinator to repeat.
-    pub inner: A,
-}
+pub struct Star<A>(pub A);
 
 impl<A: Clone> Clone for Star<A> {
     fn clone(&self) -> (cloned: Self)
         ensures
-            call_ensures(A::clone, (&self.inner,), cloned.inner),
+            call_ensures(A::clone, (&self.0,), cloned.0),
     {
-        Star { inner: self.inner.clone() }
+        Star(self.0.clone())
     }
 }
 

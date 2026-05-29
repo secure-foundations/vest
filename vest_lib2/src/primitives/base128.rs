@@ -762,15 +762,13 @@ impl Parser<&[u8]> for TermByteFmt {
 
 proof fn lemma_cont_byte_fmt_parse_rec_eq(ibuf: Seq<u8>)
     ensures
-        (Star { inner: ContByteFmt }).parse_rec(ibuf) == (Star {
-            inner: continuation_byte(),
-        }).parse_rec(ibuf),
+        (Star(ContByteFmt)).parse_rec(ibuf) == (Star(continuation_byte())).parse_rec(ibuf),
     decreases ibuf.len(),
 {
-    let star1 = Star { inner: ContByteFmt };
+    let star1 = Star(ContByteFmt);
     if ibuf.len() == 0 {
     } else {
-        match star1.inner.spec_parse(ibuf) {
+        match star1.0.spec_parse(ibuf) {
             Some((n, v)) if 0 < n <= ibuf.len() => {
                 lemma_cont_byte_fmt_parse_rec_eq(ibuf.skip(n));
             },

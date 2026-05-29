@@ -8,9 +8,9 @@ verus! {
 impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
     proof fn lemma_serialize_parse_roundtrip_rec(&self, vs: Seq<A::PVal>, obuf: Seq<u8>)
         requires
-            self.inner.serialize_dps_inv(),
-            self.inner.unambiguous(),
-            parser_fails_on(self.inner, obuf),
+            self.0.serialize_dps_inv(),
+            self.0.unambiguous(),
+            parser_fails_on(self.0, obuf),
             self.consistent(vs),
         ensures
             self.spec_parse(self.spec_serialize_dps(vs, obuf)) == Some(
@@ -19,26 +19,26 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
         decreases vs.len(),
     {
         if vs.len() == 0 {
-            assert(self.inner.spec_parse(obuf) is None);
+            assert(self.0.spec_parse(obuf) is None);
         } else {
             let v = vs[0];
             let rest = vs.skip(1);
             let rest_buf = self.spec_serialize_dps(rest, obuf);
             let serialized = self.spec_serialize_dps(vs, obuf);
-            assert(serialized == self.inner.spec_serialize_dps(v, rest_buf));
+            assert(serialized == self.0.spec_serialize_dps(v, rest_buf));
 
             // induction
             assert(self.consistent(rest));
             self.lemma_serialize_parse_roundtrip_rec(rest, obuf);
 
             // base
-            assert(self.inner.consistent(v));
-            self.inner.theorem_serialize_dps_parse_roundtrip(v, rest_buf);
-            self.inner.lemma_serialize_dps_prepend(v, rest_buf);
-            self.inner.lemma_serialize_dps_len(v, rest_buf);
+            assert(self.0.consistent(v));
+            self.0.theorem_serialize_dps_parse_roundtrip(v, rest_buf);
+            self.0.lemma_serialize_dps_prepend(v, rest_buf);
+            self.0.lemma_serialize_dps_len(v, rest_buf);
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
-            assert(self.inner.spec_parse(serialized) == Some((n0, v)));
+            assert(self.0.spec_parse(serialized) == Some((n0, v)));
             assert(serialized.skip(n0) == rest_buf);
 
             if 0 < n0 <= serialized.len() {
@@ -48,7 +48,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
             } else {
                 assert(n0 == 0);
                 assert(serialized == rest_buf);
-                assert(self.inner.spec_parse(rest_buf) == Some((0int, v)));
+                assert(self.0.spec_parse(rest_buf) == Some((0int, v)));
 
                 // from the definition
                 assert(self.parse_rec(rest_buf) == (0int, Seq::<A::PVal>::empty()));
@@ -61,8 +61,8 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
                 assert(rest == Seq::<A::PVal>::empty());
 
                 // contradiction
-                assert(self.inner.spec_parse(obuf) is Some);
-                assert(self.inner.spec_parse(obuf) is None);
+                assert(self.0.spec_parse(obuf) is Some);
+                assert(self.0.spec_parse(obuf) is None);
             }
         }
     }
@@ -83,7 +83,7 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
         let (n1, v1) = self.parse_rec(buf1);
         let (n2, v2) = self.parse_rec(buf2);
         if v1 == v2 {
-            match (self.inner.spec_parse(buf1), self.inner.spec_parse(buf2)) {
+            match (self.0.spec_parse(buf1), self.0.spec_parse(buf2)) {
                 (Some((m1, a1)), Some((m2, a2))) => {
                     if 0 < m1 <= buf1.len() && 0 < m2 <= buf2.len() {
                         let (n1_rest, rest1) = self.parse_rec(buf1.skip(m1));
@@ -103,7 +103,7 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
                         }
 
                         // base
-                        self.inner.lemma_parse_non_malleable(buf1, buf2);
+                        self.0.lemma_parse_non_malleable(buf1, buf2);
                         assert(buf1.take(m1) == buf2.take(m2));
 
                         // induction
@@ -127,8 +127,8 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
 
 impl<A: NonMalleable + SafeParser> NonMalleable for super::Star<A> {
     open spec fn nonmal_inv(&self) -> bool {
-        &&& self.inner.nonmal_inv()
-        &&& self.inner.safe_inv()
+        &&& self.0.nonmal_inv()
+        &&& self.0.safe_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -151,8 +151,8 @@ impl<A: NoLookAhead> super::Star<A> {
     proof fn lemma_parse_rec_no_lookahead_conditional(&self, i1: Seq<u8>, i2: Seq<u8>)
         requires
             self.safe_inv(),
-            self.inner.no_lookahead_inv(),
-            parser_fails_on(self.inner, i2.skip(self.parse_rec(i1).0)),
+            self.0.no_lookahead_inv(),
+            parser_fails_on(self.0, i2.skip(self.parse_rec(i1).0)),
         ensures
             ({
                 let r = self.parse_rec(i1);
@@ -164,7 +164,7 @@ impl<A: NoLookAhead> super::Star<A> {
         broadcast use vstd::seq_lib::group_seq_properties;
 
         let (n, vs) = self.parse_rec(i1);
-        match self.inner.spec_parse(i1) {
+        match self.0.spec_parse(i1) {
             Some((m, v)) if 0 < m <= i1.len() => {
                 let i1_rest = i1.skip(m);
                 let i2_rest = i2.skip(m);
@@ -174,13 +174,13 @@ impl<A: NoLookAhead> super::Star<A> {
                 if 0 <= n <= i2.len() {
                     if i2.take(n) == i1.take(n) {
                         assert(i2.take(m) == i1.take(m));
-                        assert(self.inner.safe_inv());
-                        self.inner.lemma_no_lookahead(i1, i2);
+                        assert(self.0.safe_inv());
+                        self.0.lemma_no_lookahead(i1, i2);
                         assert(i2_rest.take(n_rest) == i1_rest.take(n_rest)) by {
                             lemma_take_skip(i1, m, n_rest);
                             lemma_take_skip(i2, m, n_rest);
                         };
-                        assert(parser_fails_on(self.inner, i2_rest.skip(n_rest))) by {
+                        assert(parser_fails_on(self.0, i2_rest.skip(n_rest))) by {
                             broadcast use vstd::seq_lib::lemma_seq_skip_of_skip;
 
                         };
@@ -197,12 +197,12 @@ impl<A: NoLookAhead> super::Star<A> {
 impl<A> super::Star<A> where A: EquivSerializersGeneral {
     proof fn lemma_serialize_equiv_rec(&self, vs: Seq<A::SVal>, obuf: Seq<u8>)
         requires
-            self.inner.equiv_general_inv(),
+            self.0.equiv_general_inv(),
         ensures
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
         decreases vs.len(),
     {
-        let f = |buf: Seq<u8>, elem: A::SVal| buf + self.inner.spec_serialize(elem);
+        let f = |buf: Seq<u8>, elem: A::SVal| buf + self.0.spec_serialize(elem);
 
         if vs.len() == 0 {
         } else {
@@ -216,16 +216,16 @@ impl<A> super::Star<A> where A: EquivSerializersGeneral {
                 (==)
                 self.rfold_serialize_dps(vs, obuf); {  // definition
                 }
-                self.inner.spec_serialize_dps(v0, rest_foldr); {
+                self.0.spec_serialize_dps(v0, rest_foldr); {
                     // base
-                    self.inner.lemma_serialize_equiv(v0, rest_foldr);
+                    self.0.lemma_serialize_equiv(v0, rest_foldr);
                 }
-                self.inner.spec_serialize(v0) + rest_foldr; {
+                self.0.spec_serialize(v0) + rest_foldr; {
                     // induction
                     self.lemma_serialize_equiv_rec(rest, obuf);
                 }
-                self.inner.spec_serialize(v0) + (rest_foldl + obuf); {}
-                (self.inner.spec_serialize(v0) + rest_foldl) + obuf;
+                self.0.spec_serialize(v0) + (rest_foldl + obuf); {}
+                (self.0.spec_serialize(v0) + rest_foldl) + obuf;
             }
 
             // need to show: fold_left(vs, empty, f) == inner.serialize(v0) + rest_foldl
@@ -237,15 +237,15 @@ impl<A> super::Star<A> where A: EquivSerializersGeneral {
                 }
                 vs.fold_left_alt(Seq::empty(), f); {}
                 rest.fold_left_alt(f(Seq::empty(), v0), f); {}
-                rest.fold_left_alt(self.inner.spec_serialize(v0), f); {
-                    rest.lemma_fold_left_alt(self.inner.spec_serialize(v0), f);
+                rest.fold_left_alt(self.0.spec_serialize(v0), f); {
+                    rest.lemma_fold_left_alt(self.0.spec_serialize(v0), f);
                 }
-                rest.fold_left(self.inner.spec_serialize(v0), f); {
+                rest.fold_left(self.0.spec_serialize(v0), f); {
                     assert forall|acc: Seq<u8>, x: Seq<u8>, y: A::SVal| #[trigger]
                         f(acc + x, y) == acc + #[trigger] f(x, y) by {}
-                    lemma_fold_left_accumulate_seq(rest, self.inner.spec_serialize(v0), f);
+                    lemma_fold_left_accumulate_seq(rest, self.0.spec_serialize(v0), f);
                 }
-                self.inner.spec_serialize(v0) + rest_foldl;
+                self.0.spec_serialize(v0) + rest_foldl;
             }
         }
     }
@@ -291,7 +291,7 @@ pub(crate) proof fn lemma_fold_left_accumulate_nat<T>(
 
 impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGeneral {
     open spec fn equiv_general_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
+        self.0.equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
@@ -301,7 +301,7 @@ impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGene
 
 impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
     open spec fn equiv_inv(&self) -> bool {
-        self.inner.equiv_general_inv()
+        self.0.equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
@@ -315,7 +315,7 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
             self.1.serialize_dps_inv(),
             self.1.unambiguous(),
             vs.len() == count,
-            (super::Star { inner: self.1 }.consistent(vs)),
+            (super::Star(self.1).consistent(vs)),
         ensures
             self.parse_n_rec(count, self.spec_serialize_dps(vs, obuf)) == Some(
                 ((self.spec_serialize_dps(vs, obuf).len() - obuf.len()) as int, vs),
@@ -475,7 +475,7 @@ impl<A: SpecParser> super::Star<A> {
             0 <= self.parse_rec(ibuf).0,
         decreases ibuf.len(),
     {
-        if let Some((n, _v)) = self.inner.spec_parse(ibuf) {
+        if let Some((n, _v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 self.lemma_parse_rec_nonnegative(ibuf.skip(n));
             }
@@ -529,7 +529,7 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializersGeneral for super::Re
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        super::Star { inner: self.1 }.lemma_serialize_equiv(v, obuf);
+        super::Star(self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -539,7 +539,7 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        super::Star { inner: self.1 }.lemma_serialize_equiv_on_empty(v);
+        super::Star(self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 
@@ -612,7 +612,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let star = super::Star { inner: self.0 };
+        let star = super::Star(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
         assert(parser_fails_on(self.0, serialized1)) by {
@@ -635,11 +635,11 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
 // }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
-        Pair(super::Star { inner: self.0 }, self.1).nonmal_inv()
+        Pair(super::Star(self.0), self.1).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        Pair(super::Star { inner: self.0 }, self.1).lemma_parse_non_malleable(buf1, buf2);
+        Pair(super::Star(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
@@ -655,7 +655,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
         use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
-        let star = super::Star { inner: self.0 };
+        let star = super::Star(self.0);
         self.lemma_parse_safe(i1);
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
@@ -686,7 +686,7 @@ impl<A: SafeParser, B: Productive> Productive for super::Repeat<A, B> {
     }
 
     proof fn lemma_productive(&self, s: Seq<u8>) {
-        let star = super::Star { inner: self.0 };
+        let star = super::Star(self.0);
         if let Some((n, _v)) = self.spec_parse(s) {
             let (n0, _vs) = star.spec_parse(s)->0;
             let (n1, _b) = self.1.spec_parse(s.skip(n0))->0;
@@ -709,7 +709,7 @@ impl<
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv(v, obuf);
+        Pair(super::Star(self.0), self.1).lemma_serialize_equiv(v, obuf);
     }
 }
 
@@ -720,7 +720,7 @@ impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        Pair(super::Star { inner: self.0 }, self.1).lemma_serialize_equiv_on_empty(v);
+        Pair(super::Star(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
 
