@@ -79,8 +79,13 @@ impl<'a> Analysis<'a> {
         } else {
             quote! {}
         };
+        let derives = if self.is_copyable(name) {
+            quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
+        } else {
+            quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
+        };
         let exec_struct = quote! {
-            #[derive(Debug, PartialEq, Eq)]
+            #derives
             pub struct #exec_ident #exec_lifetime {
                 #(#exec_fields,)*
             }
@@ -144,9 +149,14 @@ impl<'a> Analysis<'a> {
             quote! { #exec_ident::#ident(v) => #spec_ident::#ident(v.deep_view()), }
         });
         let doc = format!("data type for `{}`.", names.dsl);
+        let derives = if self.is_copyable(name) {
+            quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
+        } else {
+            quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
+        };
         render_ts(quote! {
             #[doc = #doc]
-            #[derive(Debug, PartialEq, Eq)]
+            #derives
             pub enum #exec_ident #exec_lifetime {
                 #(#exec_variants,)*
             }

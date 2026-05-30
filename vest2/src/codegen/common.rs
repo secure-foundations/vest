@@ -923,6 +923,55 @@ impl<'a> Analysis<'a> {
             ConstCombinator::ConstCombinatorInvocation(name) => self.info(name).non_malleable,
         }
     }
+
+    pub(crate) fn is_copyable(&self, name: &str) -> bool {
+        let def = self.defs.iter().find(|d| d.name() == Some(name));
+        match def {
+            Some(Definition::StructDef { combinator, .. }) => {
+                combinator.0.iter().all(|field| match field {
+                    StructField::Const { .. } => true,
+                    StructField::Dependent { combinator, .. }
+                    | StructField::Ordinary { combinator, .. } => {
+                        self.combinator_is_copyable(combinator)
+                    }
+                })
+            }
+            Some(Definition::ChoiceDef { combinator, .. }) => match &combinator.choices {
+                Choices::Enums(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
+                Choices::Ints(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
+                Choices::Arrays(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
+            },
+            Some(Definition::EnumDef { .. }) => true,
+            Some(Definition::CombinatorDef { combinator, .. }) => {
+                self.combinator_is_copyable(combinator)
+            }
+            Some(Definition::ConstCombinatorDef { .. }) => true,
+            _ => true,
+        }
+    }
+
+    pub(crate) fn combinator_is_copyable(&self, combinator: &Combinator) -> bool {
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::ConstraintInt(_) => true,
+            Combinator::ConstraintEnum(_) => true,
+            Combinator::Wrap(wrap) => self.combinator_is_copyable(&wrap.combinator),
+            Combinator::Vec(_) => false,
+            Combinator::Array(arr) => {
+                self.eval_const_length_expr(&arr.len).is_some()
+                    && self.combinator_is_copyable(&arr.combinator)
+            }
+            Combinator::Bytes(_) | Combinator::Tail(_) => true,
+            Combinator::Option(OptionCombinator(inner)) => self.combinator_is_copyable(inner),
+            Combinator::Invocation(invocation) => self.is_copyable(&invocation.func),
+            Combinator::AndThen(_, rhs) => self.combinator_is_copyable(rhs),
+        }
+    }
 }
 
 pub(crate) fn definition_name(def: &Definition) -> Option<&str> {
