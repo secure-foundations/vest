@@ -99,6 +99,7 @@ impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     I: InputBuf,
     Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
     Inner::PVal: SelfView,
+    // Inner::PVal: DeepView<V = Inner::PVal> + PartialEq + Structural,
  {
     type PT = Inner::PVal;
 

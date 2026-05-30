@@ -256,5 +256,35 @@ macro_rules! with_deep_view_and_mapper {
     };
 }
 
+use vstd::prelude::*;
+use crate::core::exec::{DeepEq, SelfView};
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_self_view_for {
+    ($($t:ty),*) => {
+        $(
+            verus! {
+                impl DeepEq for $t {
+                    fn deep_eq(&self, other: &Self) -> bool {
+                        *self == *other
+                    }
+                }
+                impl SelfView for $t {
+                    proof fn self_view(&self) {
+                    }
+
+                    fn eq(&self, other: &Self) -> bool {
+                        *self == *other
+                    }
+                }
+            }
+            )*
+    };
+}
+
+impl_self_view_for!(u8, u16, u32, u64, usize, bool);
+
+pub use crate::impl_self_view_for;
 pub use crate::with_deep_view;
 pub use crate::with_deep_view_and_mapper;

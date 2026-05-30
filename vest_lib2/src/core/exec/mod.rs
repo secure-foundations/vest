@@ -37,32 +37,6 @@ pub trait SelfView: DeepEq<V = Self> + Sized {
     ;
 }
 
-} // verus!
-macro_rules! impl_self_view_for {
-    ($($t:ty),*) => {
-        $(
-            verus! {
-                impl DeepEq for $t {
-                    fn deep_eq(&self, other: &Self) -> bool {
-                        *self == *other
-                    }
-                }
-                impl SelfView for $t {
-                    proof fn self_view(&self) {
-                    }
-
-                    fn eq(&self, other: &Self) -> bool {
-                        *self == *other
-                    }
-                }
-            }
-            )*
-    };
-}
-
-impl_self_view_for!(u8, u16, u32, u64, usize, bool);
-
-verus! {
 
 #[verifier::external_body]
 #[inline(always)]
@@ -76,7 +50,7 @@ pub fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
     a == b
 }
 
-impl DeepEq for &[u8] {
+impl DeepEq for [u8] {
     fn deep_eq(&self, other: &Self) -> (eq: bool) {
         if self.len() != other.len() {
             assert(self.deep_view().len() != other.deep_view().len());
@@ -103,5 +77,6 @@ impl DeepEq for Vec<u8> {
         }
     }
 }
+
 
 } // verus!
