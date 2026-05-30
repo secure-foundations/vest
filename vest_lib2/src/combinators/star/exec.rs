@@ -26,6 +26,7 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
     }
 
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
         let total_len = ibuf.len();
@@ -47,6 +48,8 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
             decreases remaining,
         {
             broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal(<super::Star::<_> as SpecParser>::spec_parse);
 
             match self.0.parse(&rest) {
                 Ok((n, v)) => {
@@ -251,6 +254,7 @@ pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: boo
     ensures
         yes == (super::Star(*fmt)).consistent(values.deep_view()),
 {
+    reveal(<super::Star::<_> as Consistency>::consistent);
     let ghost vs = values.deep_view();
 
     let mut yes = true;
@@ -279,6 +283,7 @@ pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: us
     ensures
         len == (super::Star(*fmt)).byte_len(values.deep_view()),
 {
+    reveal(<super::Star::<_> as SpecByteLen>::byte_len);
     let ghost vs = values.deep_view();
     let ghost star = super::Star(*fmt);
 
@@ -311,6 +316,8 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
             &&& len == (super::Star(*fmt)).byte_len(values.deep_view())
         },
 {
+    reveal(<super::Star::<_> as Consistency>::consistent);
+    reveal(<super::Star::<_> as SpecByteLen>::byte_len);
     let ghost vs = values.deep_view();
     let ghost star = super::Star(*fmt);
 
@@ -340,6 +347,7 @@ impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
     fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, v, obuf);
     }
 }

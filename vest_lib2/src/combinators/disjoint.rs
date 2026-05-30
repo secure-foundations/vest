@@ -28,7 +28,7 @@ pub broadcast proof fn lemma_disjoint_prefix_tagged<
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     A: SpecParser,
     B: SpecParser,
->(prefix1: WithPrefixTag<Tg, A>, prefix2: WithPrefixTag<Tg, B>)
+>(prefix1: PrefixTagged<Tg, A>, prefix2: PrefixTagged<Tg, B>)
     requires
         prefix1.0 == prefix2.0,
         prefix1.1 != prefix2.1,
@@ -201,6 +201,7 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
     ensures
         #[trigger] disjoint_domains(p, repeat),
 {
+    reveal(<super::Star::<_> as SpecParser>::spec_parse);
     reveal(disjoint_domains);
     broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
@@ -267,6 +268,7 @@ pub broadcast proof fn lemma_disjoint_repeat_till_end<P: Productive, A: SpecPars
         #[trigger] disjoint_domains(p, repeat),
 {
     reveal(disjoint_domains);
+    reveal(<super::Star::<_> as SpecParser>::spec_parse);
     broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
     assert forall|input: Seq<u8>|
@@ -326,12 +328,12 @@ proof fn test_disjoinness() {
     );
     assert(fmt4.unambiguous());
     let fmt5 = Optional(
-        WithPrefixTag(U8, 10, Fixed::<1>),
+        PrefixTagged(U8, 10, Fixed::<1>),
         Repeat(
-            WithPrefixTag(U8, 11, Fixed::<2>),
+            PrefixTagged(U8, 11, Fixed::<2>),
             Optional(
-                WithPrefixTag(U8, 12, Fixed::<3>),
-                RepeatTillEnd(WithPrefixTag(U8, 13, Fixed::<4>)),
+                PrefixTagged(U8, 12, Fixed::<3>),
+                RepeatTillEnd(PrefixTagged(U8, 13, Fixed::<4>)),
             ),
         ),
     );

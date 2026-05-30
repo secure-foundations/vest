@@ -13,7 +13,7 @@ pub mod length;
 
 use crate::{
     combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, Tail, TryMap, WithPrefixTag, U8,
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, Tail, TryMap, PrefixTagged, U8,
     },
     core::proof::{Leaf, LeafNonMalleable},
 };
@@ -32,7 +32,7 @@ pub enum ASN1Tag {
 
 pub type TagFmt = TryMap<U8, FnSpecMapper<u8, ASN1Tag>>;
 
-pub type ASN1TLV<T, Len = usize> = WithPrefixTag<TagFmt, Implicit<Length, NBytesOf<Len, T>>>;
+pub type ASN1TLV<T, Len = usize> = PrefixTagged<TagFmt, Implicit<Length, NBytesOf<Len, T>>>;
 
 /// ASN.1 BOOLEAN format.
 ///

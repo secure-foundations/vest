@@ -18,6 +18,9 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
             ),
         decreases vs.len(),
     {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as Consistency>::consistent);
         if vs.len() == 0 {
             assert(self.0.spec_parse(obuf) is None);
         } else {
@@ -80,6 +83,7 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
             }),
         decreases buf1.len(),
     {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         let (n1, v1) = self.parse_rec(buf1);
         let (n2, v2) = self.parse_rec(buf2);
         if v1 == v2 {
@@ -132,6 +136,7 @@ impl<A: NonMalleable + SafeParser> NonMalleable for super::Star<A> {
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         assert(self.nonmal_inv());
         assert(self.safe_inv());
         self.lemma_parse_non_malleable_rec(buf1, buf2);
@@ -160,6 +165,7 @@ impl<A: NoLookAhead> super::Star<A> {
             }),
         decreases i1.len(),
     {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -202,6 +208,7 @@ impl<A> super::Star<A> where A: EquivSerializersGeneral {
             self.rfold_serialize_dps(vs, obuf) == self.spec_serialize(vs) + obuf,
         decreases vs.len(),
     {
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         let f = |buf: Seq<u8>, elem: A::SVal| buf + self.0.spec_serialize(elem);
 
         if vs.len() == 0 {
@@ -295,6 +302,8 @@ impl<A> EquivSerializersGeneral for super::Star<A> where A: EquivSerializersGene
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         self.lemma_serialize_equiv_rec(v, obuf);
     }
 }
@@ -305,6 +314,8 @@ impl<A> EquivSerializers for super::Star<A> where A: EquivSerializersGeneral {
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         self.lemma_serialize_equiv_rec(v, Seq::empty());
     }
 }
@@ -322,6 +333,8 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
             ),
         decreases count,
     {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as Consistency>::consistent);
         if count == 0 {
         } else {
             let v0 = vs[0];
@@ -529,6 +542,8 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializersGeneral for super::Re
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         super::Star(self.1).lemma_serialize_equiv(v, obuf);
     }
 }
@@ -539,6 +554,8 @@ impl<C: EquivSerializersGeneral, N: AsLen> EquivSerializers for super::RepeatN<C
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+        reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         super::Star(self.1).lemma_serialize_equiv_on_empty(v);
     }
 }
@@ -612,6 +629,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
         let star = super::Star(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
         self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
@@ -652,6 +670,7 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         reveal(disjoint_domains);
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         use crate::combinators::tuple::proof::lemma_take_skip;
         broadcast use vstd::seq_lib::group_seq_properties;
 
@@ -686,6 +705,7 @@ impl<A: SafeParser, B: Productive> Productive for super::Repeat<A, B> {
     }
 
     proof fn lemma_productive(&self, s: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
         let star = super::Star(self.0);
         if let Some((n, _v)) = self.spec_parse(s) {
             let (n0, _vs) = star.spec_parse(s)->0;

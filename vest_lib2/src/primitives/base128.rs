@@ -290,6 +290,7 @@ pub broadcast proof fn lemma_base128_wire_fmt_props<const MINIMAL: bool>(bytes: 
     ensures
         #[trigger] NatFromToBE128::<MINIMAL>.wf_in(bytes),
 {
+    reveal(<Star::<_> as Consistency>::consistent);
     let pair = SplitSeqAtLast.spec_map(bytes);
 
     assert forall|i: int| 0 <= i < bytes.len() implies bytes[i] < 128 by {
@@ -784,6 +785,7 @@ proof fn lemma_repeat_spec_parse_eq(ibuf: Seq<u8>)
             terminal_byte(),
         ).spec_parse(ibuf),
 {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
     lemma_cont_byte_fmt_parse_rec_eq(ibuf);
 }
 
