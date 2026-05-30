@@ -79,9 +79,6 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        if let Some(invocation) = self.direct_alias(combinator) {
-            return self.gen_alias_specs_section(name, invocation);
-        }
         self.gen_wrapped_specs_section(name, param_defns, || {
             self.gen_format_spec_alias_and_ctor(name, combinator, param_defns)
         })
@@ -114,12 +111,9 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        if let Some(invocation) = self.direct_alias(combinator) {
-            return self.gen_alias_specs_section(name, invocation);
-        }
         self.gen_named_top_level_spec_alias_and_ctor(
             name,
-            self.render_top_level_spec(name, combinator),
+            self.render_spec_combinator(combinator),
             param_defns,
         )
     }
@@ -189,34 +183,6 @@ impl<'a> Analysis<'a> {
             }
         }));
         out.finish()
-    }
-
-    fn gen_alias_specs_section(
-        &self,
-        name: &str,
-        invocation: &vestir::CombinatorInvocation,
-    ) -> String {
-        let info = self.info(name);
-        let fmt_ident = format_ident!("{}", info.names.fmt);
-        let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
-        let target = self.info(&invocation.func);
-        let target_fmt_spec_ident = format_ident!("{}Spec", target.names.fmt);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
-        let target_fmt_fn_ident = format_ident!("{}", target.names.fmt_fn);
-        let doc = format!("named format combinator for `{}`.", name);
-        let ctor_doc = format!("specification constructor for `{}`.", name);
-
-        render_ts(quote! {
-            #[doc = #doc]
-            pub struct #fmt_ident;
-
-            pub type #fmt_spec_ident = #target_fmt_spec_ident;
-
-            #[doc = #ctor_doc]
-            pub open spec fn #fmt_fn_ident() -> #fmt_spec_ident {
-                #target_fmt_fn_ident()
-            }
-        })
     }
 
     fn gen_derived_spec_impls(
@@ -401,11 +367,6 @@ impl<'a> Analysis<'a> {
                 )
             }
         }
-    }
-
-    fn render_top_level_spec(&self, name: &str, combinator: &Combinator) -> RenderedSpec {
-        let _ = name;
-        self.render_spec_combinator(combinator)
     }
 
     fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
@@ -993,7 +954,8 @@ impl<'a> Analysis<'a> {
                                     .filter_map(|(prior_pat, _)| match prior_pat {
                                         ConstArray::Wildcard => None,
                                         _ => {
-                                            let pat_expr = self.render_const_array_expr(prior_pat, TypeMode::Spec);
+                                            let pat_expr = self
+                                                .render_const_array_expr(prior_pat, TypeMode::Spec);
                                             Some(quote! { #dep != #pat_expr })
                                         }
                                     })
@@ -1341,7 +1303,6 @@ impl<'a> Analysis<'a> {
         }
     }
 
-
     fn render_int_constraint(
         &self,
         constraint: &vestir::IntConstraint,
@@ -1623,11 +1584,13 @@ impl<'a> Analysis<'a> {
         if fields.is_empty() {
             render_ts(quote! {
                 #[doc = #doc]
+                #[derive(Clone, Copy)]
                 pub struct #fmt_ident;
             })
         } else {
             render_ts(quote! {
                 #[doc = #doc]
+                #[derive(Clone, Copy)]
                 pub struct #fmt_ident #lifetime {
                     #(#fields,)*
                 }

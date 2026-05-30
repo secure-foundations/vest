@@ -331,6 +331,16 @@ impl<'a> Analysis<'a> {
                         }));
                     }
                     w.line(format!("let rest = rest.skip({});", n_var));
+                    if i == fields.len() - 1 {
+                        if matches!(
+                            self.ctx.resolve_alias(combinator),
+                            Combinator::Option(_) | Combinator::Vec(_)
+                        ) {
+                            w.line(render_ts(quote! {
+                                let _ = (Eof).parse(&rest)?;
+                            }));
+                        }
+                    }
                 }
             }
             n_vars.push(n_var);
@@ -951,6 +961,15 @@ impl<'a> Analysis<'a> {
                 }
             }));
         }
+        if matches!(
+            self.ctx.resolve_alias(combinator),
+            Combinator::Option(_) | Combinator::Vec(_)
+        ) {
+            w.line(render_ts(quote! {
+                let rest = ibuf.skip(n);
+                let _ = (Eof).parse(&rest)?;
+            }));
+        }
         w.line(render_ts(quote! {
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
         }));
@@ -1026,12 +1045,17 @@ impl<'a> Analysis<'a> {
             Combinator::ConstraintInt(c) => self.exec_constraint_int_fmt(c, param_defns, is_ref),
             Combinator::ConstraintEnum(c) => self.exec_constraint_enum_fmt(c, param_defns, is_ref),
             Combinator::Wrap(wrap) => {
-                // Wrap is not commonly hit at the top level exec path; fall back to spec fmt
-                let inner = self.exec_combinator_fmt_expr(&wrap.combinator, param_defns, is_ref);
-                // We ignore prior/post tags for now (they contribute to const parse that
-                // is handled by the Wrap combinator itself in spec mode).
-                // TODO: properly handle Wrap at exec level
-                inner
+                let mut body_expr =
+                    self.exec_combinator_fmt_expr(&wrap.combinator, param_defns, is_ref);
+                for const_comb in wrap.post.iter() {
+                    let (c_fmt, c_val) = self.exec_tag_expr(const_comb, param_defns, is_ref);
+                    body_expr = quote! { SuffixTagged(#body_expr, #c_fmt, #c_val) };
+                }
+                for const_comb in wrap.prior.iter().rev() {
+                    let (c_fmt, c_val) = self.exec_tag_expr(const_comb, param_defns, is_ref);
+                    body_expr = quote! { PrefixTagged(#c_fmt, #c_val, #body_expr) };
+                }
+                body_expr
             }
             Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
                 let inner_expr = self.exec_combinator_fmt_expr(inner, param_defns, is_ref);
@@ -1198,6 +1222,38 @@ impl<'a> Analysis<'a> {
     }
 
     /// Build the exec format expression for a ConstCombinator.
+    fn exec_tag_expr(
+        &self,
+        combinator: &ConstCombinator,
+        param_defns: &[ParamDefn],
+        is_ref: bool,
+    ) -> (TokenStream, TokenStream) {
+        match self.ctx.resolve_const(combinator) {
+            ConstCombinator::ConstBytes(bytes) => {
+                let n = syn_usize(bytes.len);
+                let values = self.render_const_array_expr(&bytes.values, TypeMode::Exec);
+                (quote! { Fixed::<#n> }, values)
+            }
+            ConstCombinator::ConstInt(int_comb) => {
+                let prim = self.int_combinator_expr(&int_comb.combinator);
+                let value = int_literal(int_comb.value, &int_comb.combinator);
+                (prim, value)
+            }
+            ConstCombinator::ConstEnum(enum_comb) => {
+                let inner =
+                    self.exec_invocation_fmt_expr(&enum_comb.combinator, param_defns, is_ref);
+                let enum_ty = self.nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
+                let variant = format_ident!("{}", enum_comb.variant);
+                (quote! { ConstEnum(#inner) }, quote! { #enum_ty::#variant })
+            }
+            ConstCombinator::ConstCombinatorInvocation(name) => {
+                let info = self.info(name);
+                let fmt_ident = format_ident!("{}", info.names.fmt);
+                (quote! { #fmt_ident.0 }, quote! { #fmt_ident.1 })
+            }
+        }
+    }
+
     fn exec_const_fmt_expr(
         &self,
         combinator: &ConstCombinator,
