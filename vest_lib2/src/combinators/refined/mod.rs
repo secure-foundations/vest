@@ -9,6 +9,8 @@ pub mod spec;
 use crate::core::spec::SpecByteLen;
 use vstd::prelude::*;
 
+use super::{Preceded, Terminated};
+
 verus! {
 
 /// Value refinement combinator: filters values through a predicate.
@@ -48,6 +50,62 @@ impl<Inner: Clone, Value: Clone> Clone for Const<Inner, Value> {
     }
 }
 
+#[allow(type_alias_bounds)]
+pub type PrefixTagged<TagFmt: SpecByteLen, Of, Tag = <TagFmt as SpecByteLen>::T> = Preceded<
+    Const<TagFmt, Tag>,
+    Tag,
+    Of,
+    false,
+>;
+
+#[allow(type_alias_bounds)]
+pub type SuffixTagged<Of, TagFmt: SpecByteLen, Tag = <TagFmt as SpecByteLen>::T> = Terminated<
+    Of,
+    Const<TagFmt, Tag>,
+    Tag,
+    false,
+>;
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub fn PrefixTagged<TagFmt, Of, Tag>(tag_fmt: TagFmt, tag: Tag, body: Of) -> PrefixTagged<
+    TagFmt,
+    Of,
+    Tag,
+> where TagFmt: SpecByteLen, Tag: Copy
+    returns
+        (Preceded::<Const<TagFmt, Tag>, Tag, Of, false> {
+            a: Const(tag_fmt, tag),
+            a_val: tag,
+            b: body,
+        }),
+{
+    let a = Const(tag_fmt, tag);
+    let b = body;
+    let a_val = tag;
+    Preceded { a, a_val, b }
+}
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub fn SuffixTagged<Of, TagFmt, Tag>(body: Of, tag_fmt: TagFmt, tag: Tag) -> SuffixTagged<
+    Of,
+    TagFmt,
+    Tag,
+> where TagFmt: SpecByteLen, Tag: Copy
+    returns
+        (Terminated::<Of, Const<TagFmt, Tag>, Tag, false> {
+            a: body,
+            b: Const(tag_fmt, tag),
+            b_val: tag,
+        }),
+{
+    let a = body;
+    let b = Const(tag_fmt, tag);
+    let b_val = tag;
+    Terminated { a, b, b_val }
+}
+
 /// Sugar for `Preceded { a: Const(inner, tag), a_val: tag, b: body }`.
 #[derive(Copy)]
 pub struct WithPrefixTag<Tg: SpecByteLen, Of>(pub Tg, pub Tg::T, pub Of);
@@ -79,5 +137,3 @@ impl<Tg: SpecByteLen + Clone, Of: Clone> Clone for WithSuffixTag<Tg, Of> where T
 }
 
 } // verus!
-/// Backward-compatible name for [`WithPrefixTag`].
-pub use WithPrefixTag as Tagged;
