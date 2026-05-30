@@ -321,7 +321,9 @@ impl<'a> Analysis<'a> {
                     w.line(render_ts(quote! {
                         let (#n_var_tok, #label_ident) = (#fmt_expr).parse(&rest)?;
                     }));
-                    if let Some(pred) = self.gen_constraint_pred(combinator, quote! { #label_ident }) {
+                    if let Some(pred) =
+                        self.gen_constraint_pred(combinator, quote! { #label_ident })
+                    {
                         w.line(render_ts(quote! {
                             if !(#pred) {
                                 return Err(ParseError::predicate_failed());
@@ -540,7 +542,9 @@ impl<'a> Analysis<'a> {
                         let variant_ident = format_ident!("{}", variant_name);
                         let fmt_expr =
                             self.exec_combinator_fmt_expr(combinator, param_defns, false);
-                        let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
+                        let check = if let Some(pred) =
+                            self.gen_constraint_pred(combinator, quote! { v })
+                        {
                             quote! {
                                 if !(#pred) {
                                     return Err(ParseError::predicate_failed());
@@ -577,15 +581,16 @@ impl<'a> Analysis<'a> {
                 .map(|((pat, combinator), variant_name)| {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, false);
-                    let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                        quote! {
-                            if !(#pred) {
-                                return Err(ParseError::predicate_failed());
+                    let check =
+                        if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
+                            quote! {
+                                if !(#pred) {
+                                    return Err(ParseError::predicate_failed());
+                                }
                             }
-                        }
-                    } else {
-                        quote! {}
-                    };
+                        } else {
+                            quote! {}
+                        };
                     match pat {
                         None => quote! {
                             _ => {
@@ -613,15 +618,16 @@ impl<'a> Analysis<'a> {
                 .map(|((pat, combinator), variant_name)| {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, false);
-                    let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                        quote! {
-                            if !(#pred) {
-                                return Err(ParseError::predicate_failed());
+                    let check =
+                        if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
+                            quote! {
+                                if !(#pred) {
+                                    return Err(ParseError::predicate_failed());
+                                }
                             }
-                        }
-                    } else {
-                        quote! {}
-                    };
+                        } else {
+                            quote! {}
+                        };
                     match pat {
                         ConstArray::Wildcard => quote! {
                             _ => {
@@ -631,9 +637,9 @@ impl<'a> Analysis<'a> {
                             },
                         },
                         _ => {
-                            let pat_expr = self.exec_const_array_exec_pat(pat);
+                            let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
                             quote! {
-                                x if x == #pat_expr => {
+                                x if x.deep_eq(&#pat_expr) => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
                                     (n, #exec_ident::#variant_ident(v))
@@ -933,24 +939,6 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) {
-        // For a direct alias (CombinatorDef { combinator: Invocation(..) }),
-        // delegate to the target Fmt's parser.
-        if let Some(invocation) = self.direct_alias(combinator) {
-            let target_info = self.info(&invocation.func);
-            let target_fmt = format_ident!("{}", target_info.names.fmt);
-            let target_args = self.exec_invocation_fmt_expr(invocation, param_defns, false);
-            w.line(render_ts(quote! {
-                let (n, v) = (#target_args).parse(ibuf)?;
-            }));
-            w.line(render_ts(quote! {
-                assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
-            }));
-            w.line("Ok((n, v))");
-            let _ = target_fmt;
-            return;
-        }
-
-        // Otherwise, build the fmt combinator expr and call parse
         let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, false);
 
         w.line(render_ts(quote! {
@@ -1219,7 +1207,7 @@ impl<'a> Analysis<'a> {
         match self.ctx.resolve_const(combinator) {
             ConstCombinator::ConstBytes(bytes) => {
                 let n = syn_usize(bytes.len);
-                let values = self.exec_const_array_literal(&bytes.values);
+                let values = self.render_const_array_expr(&bytes.values, TypeMode::Exec);
                 quote! { Const(Fixed::<#n>, #values) }
             }
             ConstCombinator::ConstInt(int_comb) => {
@@ -1240,50 +1228,6 @@ impl<'a> Analysis<'a> {
                 quote! { #fmt_ident }
             }
         }
-    }
-
-    fn exec_const_array_literal(&self, array: &ConstArray) -> TokenStream {
-        match array {
-            ConstArray::Char(bytes) => {
-                let elems: Vec<_> = bytes
-                    .iter()
-                    .map(|b| proc_macro2::Literal::u8_suffixed(*b))
-                    .collect();
-                quote! { [#(#elems),*] }
-            }
-            ConstArray::Int(values) => {
-                let elems: Vec<_> = values
-                    .iter()
-                    .map(|v| {
-                        if (0..=u8::MAX as i128).contains(v) {
-                            proc_macro2::Literal::u8_suffixed(*v as u8)
-                        } else {
-                            proc_macro2::Literal::i128_unsuffixed(*v)
-                        }
-                    })
-                    .collect();
-                quote! { [#(#elems),*] }
-            }
-            ConstArray::Repeat(value, len) => {
-                let v = if (0..=u8::MAX as i128).contains(value) {
-                    let lit: TokenStream = proc_macro2::Literal::u8_suffixed(*value as u8)
-                        .to_string()
-                        .parse()
-                        .unwrap();
-                    quote! { #lit }
-                } else {
-                    let lit = proc_macro2::Literal::i128_unsuffixed(*value);
-                    quote! { #lit }
-                };
-                let n = syn_usize(*len);
-                quote! { [#v; #n] }
-            }
-            ConstArray::Wildcard => quote! { [0u8; 0] },
-        }
-    }
-
-    fn exec_const_array_exec_pat(&self, array: &ConstArray) -> TokenStream {
-        self.exec_const_array_literal(array)
     }
 
     fn int_constraint_elem_exec_pat(&self, elem: &vestir::ConstraintElem) -> TokenStream {
@@ -1493,11 +1437,9 @@ impl<'a> Analysis<'a> {
     ) -> Option<TokenStream> {
         let resolved = self.ctx.resolve_alias(combinator);
         match resolved {
-            Combinator::ConstraintInt(c) => {
-                c.constraint.as_ref().map(|constraint| {
-                    self.render_int_constraint_exec(constraint, &c.combinator, val_tokens)
-                })
-            }
+            Combinator::ConstraintInt(c) => c.constraint.as_ref().map(|constraint| {
+                self.render_int_constraint_exec(constraint, &c.combinator, val_tokens)
+            }),
             Combinator::ConstraintEnum(c) => {
                 let value_ty = self.nominal_type(&c.combinator.func, TypeMode::Exec);
                 Some(self.render_enum_constraint_exec(&c.constraint, &value_ty, val_tokens))

@@ -1,8 +1,8 @@
 use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
-    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator,
-    ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator,
-    IntCombinator, LengthExpr, Param, ParamDefn, StructCombinator, StructField,
+    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, ConstraintElem,
+    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, IntCombinator, LengthExpr,
+    Param, ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -87,24 +87,11 @@ impl<'a> Analysis<'a> {
         })
     }
 
-    pub(crate) fn gen_derived_specs_section(
-        &self,
-        name: &str,
-        _combinator: &Combinator,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        self.gen_derived_specs_section_impl(name, param_defns)
-    }
-
-    pub(crate) fn gen_top_level_derived_specs_section(
+    pub(crate) fn gen_derived_specs_section_impl(
         &self,
         name: &str,
         param_defns: &[ParamDefn],
     ) -> String {
-        self.gen_derived_specs_section_impl(name, param_defns)
-    }
-
-    fn gen_derived_specs_section_impl(&self, name: &str, param_defns: &[ParamDefn]) -> String {
         let info = self.info(name);
         let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let fmt_ident = format_ident!("{}", info.names.fmt);
@@ -240,11 +227,17 @@ impl<'a> Analysis<'a> {
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
     ) -> String {
+        let opaque = if wrapper_generics.is_empty() {
+            quote! { #[verifier::opaque] }
+        } else {
+            quote! {}
+        };
+
         render_ts(quote! {
             impl #wrapper_generics SpecParser for #fmt_ident #wrapper_generics {
                 type PVal = #top_value_ty;
 
-                #[verifier::opaque]
+                #opaque
                 open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
                     #fmt_fn_ident(#(#wrapper_call_args),*).spec_parse(ibuf)
                 }
@@ -253,7 +246,7 @@ impl<'a> Analysis<'a> {
             impl #wrapper_generics Consistency for #fmt_ident #wrapper_generics {
                 type Val = #top_value_ty;
 
-                #[verifier::opaque]
+                #opaque
                 open spec fn consistent(&self, v: Self::Val) -> bool {
                     #fmt_fn_ident(#(#wrapper_call_args),*).consistent(v)
                 }
@@ -262,7 +255,7 @@ impl<'a> Analysis<'a> {
             impl #wrapper_generics SpecSerializerDps for #fmt_ident #wrapper_generics {
                 type SValue = #top_value_ty;
 
-                #[verifier::opaque]
+                #opaque
                 open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
                     #fmt_fn_ident(#(#wrapper_call_args),*).spec_serialize_dps(v, obuf)
                 }
@@ -271,7 +264,7 @@ impl<'a> Analysis<'a> {
             impl #wrapper_generics SpecSerializer for #fmt_ident #wrapper_generics {
                 type SVal = #top_value_ty;
 
-                #[verifier::opaque]
+                #opaque
                 open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
                     #fmt_fn_ident(#(#wrapper_call_args),*).spec_serialize(v)
                 }
@@ -280,7 +273,7 @@ impl<'a> Analysis<'a> {
             impl #wrapper_generics SpecByteLen for #fmt_ident #wrapper_generics {
                 type T = #top_value_ty;
 
-                #[verifier::opaque]
+                #opaque
                 open spec fn byte_len(&self, v: Self::T) -> nat {
                     #fmt_fn_ident(#(#wrapper_call_args),*).byte_len(v)
                 }
@@ -365,7 +358,11 @@ impl<'a> Analysis<'a> {
                 quote! { #fmt_ident }
             },
             expr,
-            self.render_value_type(&Combinator::Invocation(invocation.clone()), TypeMode::Spec, true),
+            self.render_value_type(
+                &Combinator::Invocation(invocation.clone()),
+                TypeMode::Spec,
+                true,
+            ),
             true,
         )
     }
@@ -565,8 +562,8 @@ impl<'a> Analysis<'a> {
             let c_ty = &c.ty;
             let c_expr = &c.expr;
             let c_value_expr = &c.value_expr;
-            let ty = quote! { WithSuffixTag<#c_ty, #body_ty> };
-            let expr = quote! { WithSuffixTag(#c_expr, #c_value_expr, #body_expr) };
+            let ty = quote! { SuffixTagged<#body_ty, #c_ty> };
+            let expr = quote! { SuffixTagged(#body_expr, #c_expr, #c_value_expr) };
             body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
         }
         for const_comb in wrap.prior.iter().rev() {
@@ -576,15 +573,11 @@ impl<'a> Analysis<'a> {
             let c_ty = &c.ty;
             let c_expr = &c.expr;
             let c_value_expr = &c.value_expr;
-            let ty = quote! { WithPrefixTag<#c_ty, #body_ty> };
-            let expr = quote! { WithPrefixTag(#c_expr, #c_value_expr, #body_expr) };
+            let ty = quote! { PrefixTagged<#c_ty, #body_ty> };
+            let expr = quote! { PrefixTagged(#c_expr, #c_value_expr, #body_expr) };
             body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
         }
         body
-    }
-
-    fn render_struct_raw(&self, struct_comb: &StructCombinator) -> RenderedSpec {
-        self.render_struct_fields(&struct_comb.0)
     }
 
     fn render_struct_fields(&self, fields: &[StructField]) -> RenderedSpec {
@@ -714,7 +707,7 @@ impl<'a> Analysis<'a> {
         match self.ctx.resolve_const(combinator) {
             ConstCombinator::ConstBytes(bytes) => {
                 let n = syn_usize(bytes.len);
-                let values = self.render_const_array_expr(&bytes.values);
+                let values = self.render_const_array_expr(&bytes.values, TypeMode::Spec);
                 ConstRendered {
                     ty: quote! { Fixed<#n> },
                     expr: quote! { Fixed::<#n> },
@@ -735,8 +728,8 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner =
-                    self.render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
+                let inner = self
+                    .render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
                 let enum_ty = self.render_value_type(
                     &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
@@ -775,7 +768,8 @@ impl<'a> Analysis<'a> {
 
     fn render_struct_top_level(&self, name: &str, struct_comb: &StructCombinator) -> RenderedSpec {
         let info = self.info(name);
-        let raw = self.render_struct_raw(struct_comb);
+        let raw = self.render_struct_fields(&struct_comb.0);
+
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
         let labels = struct_comb
@@ -999,7 +993,7 @@ impl<'a> Analysis<'a> {
                                     .filter_map(|(prior_pat, _)| match prior_pat {
                                         ConstArray::Wildcard => None,
                                         _ => {
-                                            let pat_expr = self.render_const_array_expr(prior_pat);
+                                            let pat_expr = self.render_const_array_expr(prior_pat, TypeMode::Spec);
                                             Some(quote! { #dep != #pat_expr })
                                         }
                                     })
@@ -1011,7 +1005,7 @@ impl<'a> Analysis<'a> {
                                 }
                             }
                             _ => {
-                                let pat_expr = self.render_const_array_expr(pat);
+                                let pat_expr = self.render_const_array_expr(pat, TypeMode::Spec);
                                 quote! { #dep == #pat_expr }
                             }
                         };
@@ -1069,11 +1063,9 @@ impl<'a> Analysis<'a> {
                             quote! { _ => #inj, }
                         } else {
                             let variant = format_ident!("{}", pat);
-                            let ty = enum_ty
-                                .clone()
-                                .unwrap_or_else(|| {
-                                    self.render_enum_pattern_type(pat, choice_comb, owner_name)
-                                });
+                            let ty = enum_ty.clone().unwrap_or_else(|| {
+                                self.render_enum_pattern_type(pat, choice_comb, owner_name)
+                            });
                             quote! { #ty::#variant => #inj, }
                         };
                         specs.push(fmt);
@@ -1105,8 +1097,8 @@ impl<'a> Analysis<'a> {
                         let arm = match pat {
                             ConstArray::Wildcard => quote! { _ => #inj, },
                             _ => {
-                                let pat_expr = self.render_const_array_expr(pat);
-                                quote! { x if x == #pat_expr => #inj, }
+                                let pat_expr = self.render_const_array_expr(pat, TypeMode::Spec);
+                                quote! { x if x == #pat_expr.deep_view() => #inj, }
                             }
                         };
                         specs.push(fmt);
@@ -1116,7 +1108,10 @@ impl<'a> Analysis<'a> {
                 }
             };
 
-        let branch_tys = branch_specs.iter().map(|fmt| fmt.ty.clone()).collect::<Vec<_>>();
+        let branch_tys = branch_specs
+            .iter()
+            .map(|fmt| fmt.ty.clone())
+            .collect::<Vec<_>>();
         let branch_value_tys = branch_specs
             .iter()
             .map(|fmt| fmt.value_ty.clone())
@@ -1259,9 +1254,9 @@ impl<'a> Analysis<'a> {
         match self.ctx.resolve_const(combinator) {
             ConstCombinator::ConstBytes(bytes) => {
                 let n = syn_usize(bytes.len);
-                let values = self.render_const_array_expr(&bytes.values);
+                let values = self.render_const_array_expr(&bytes.values, TypeMode::Spec);
                 ConstRendered {
-                    ty: quote! { Const<Fixed<#n>, Seq<u8>> },
+                    ty: quote! { Const<Fixed<#n>, [u8; #n]> },
                     expr: quote! { Const(Fixed::<#n>, #values) },
                     value_ty: quote! { Seq<u8> },
                     value_expr: values,
@@ -1280,8 +1275,8 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner =
-                    self.render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
+                let inner = self
+                    .render_spec_combinator(&Combinator::Invocation(enum_comb.combinator.clone()));
                 let enum_ty = self.render_value_type(
                     &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
@@ -1346,39 +1341,6 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_const_array_expr(&self, array: &ConstArray) -> TokenStream {
-        match array {
-            ConstArray::Char(bytes) => {
-                let elems = bytes.iter().map(|b| proc_macro2::Literal::u8_suffixed(*b));
-                quote! { seq![#(#elems),*] }
-            }
-            ConstArray::Int(values) => {
-                let elems = values
-                    .iter()
-                    .map(|v| {
-                        if (0..=u8::MAX as i128).contains(v) {
-                            proc_macro2::Literal::u8_suffixed(*v as u8)
-                        } else {
-                            proc_macro2::Literal::i128_unsuffixed(*v)
-                        }
-                    })
-                    .collect::<Vec<_>>();
-                quote! { seq![#(#elems),*] }
-            }
-            ConstArray::Repeat(value, len) => {
-                let value = if (0..=u8::MAX as i128).contains(value) {
-                    let v = proc_macro2::Literal::u8_suffixed(*value as u8);
-                    quote! { #v }
-                } else {
-                    let v = proc_macro2::Literal::i128_unsuffixed(*value);
-                    quote! { #v }
-                };
-                let len = syn_usize(*len);
-                quote! { seq![#value; #len] }
-            }
-            ConstArray::Wildcard => quote! { arbitrary() },
-        }
-    }
 
     fn render_int_constraint(
         &self,
@@ -1602,16 +1564,18 @@ impl<'a> Analysis<'a> {
             .defs
             .iter()
             .find_map(|def| match def {
-                vestir::Definition::StructDef { combinator, .. } => combinator.0.iter().find_map(|field| match field {
-                    StructField::Dependent { label, combinator } if label == dep_base => {
-                        if let Combinator::Invocation(inv) = combinator {
-                            Some(self.nominal_type(&inv.func, TypeMode::Spec))
-                        } else {
-                            None
+                vestir::Definition::StructDef { combinator, .. } => {
+                    combinator.0.iter().find_map(|field| match field {
+                        StructField::Dependent { label, combinator } if label == dep_base => {
+                            if let Combinator::Invocation(inv) = combinator {
+                                Some(self.nominal_type(&inv.func, TypeMode::Spec))
+                            } else {
+                                None
+                            }
                         }
-                    }
-                    _ => None,
-                }),
+                        _ => None,
+                    })
+                }
                 _ => None,
             })
             .unwrap_or_else(|| {
@@ -1705,7 +1669,8 @@ fn fold_bool_or(mut terms: Vec<TokenStream>) -> TokenStream {
         .drain(..1)
         .next()
         .expect("boolean disjunction requires at least one term");
-    terms.into_iter()
+    terms
+        .into_iter()
         .fold(first, |acc, term| quote! { #acc || #term })
 }
 
@@ -1714,7 +1679,8 @@ fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
         .drain(..1)
         .next()
         .expect("boolean conjunction requires at least one term");
-    terms.into_iter()
+    terms
+        .into_iter()
         .fold(first, |acc, term| quote! { #acc && #term })
 }
 

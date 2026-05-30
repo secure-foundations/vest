@@ -161,12 +161,10 @@ impl<'a> Analysis<'a> {
             }
             | Definition::EnumDef {
                 name, param_defns, ..
-            } => self.gen_top_level_derived_specs_section(name, param_defns),
-            Definition::CombinatorDef {
-                name,
-                combinator,
-                param_defns,
-            } => self.gen_derived_specs_section(name, combinator, param_defns),
+            }
+            | Definition::CombinatorDef {
+                name, param_defns, ..
+            } => self.gen_derived_specs_section_impl(name, param_defns),
             Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(derived-specs): emit const-format trait wrappers for {}\n",
                 self.info(name).names.exec

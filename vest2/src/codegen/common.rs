@@ -1,5 +1,5 @@
 use crate::vestir::{
-    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation,
+    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstArray,
     ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition, Endianess,
     GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
     TailCombinator, VecCombinator, WrapCombinator,
@@ -31,9 +31,71 @@ pub(crate) struct FormatInfo {
 pub(crate) struct Analysis<'a> {
     pub(crate) defs: &'a [Definition],
     pub(crate) ctx: &'a GlobalCtx,
-    #[allow(dead_code)]
     pub(crate) endianness: Endianess,
     pub(crate) infos: HashMap<String, FormatInfo>,
+}
+
+impl<'a> Analysis<'a> {
+    pub(crate) fn render_const_array_expr(
+        &self,
+        array: &ConstArray,
+        mode: TypeMode,
+    ) -> TokenStream {
+        match array {
+            ConstArray::Char(bytes) => {
+                let elems = bytes
+                    .iter()
+                    .map(|b| {
+                        let hex_str = match mode {
+                            TypeMode::Exec => format!("0x{:02x}", *b),
+                            TypeMode::Spec => format!("0x{:02x}u8", *b),
+                        };
+                        hex_str.parse::<TokenStream>().unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                quote! { [#(#elems),*] }
+            }
+            ConstArray::Int(values) => {
+                let elems = values
+                    .iter()
+                    .map(|v| {
+                        if (0..=u8::MAX as i128).contains(v) {
+                            let hex_str = match mode {
+                                TypeMode::Exec => format!("0x{:02x}", *v as u8),
+                                TypeMode::Spec => format!("0x{:02x}u8", *v as u8),
+                            };
+                            hex_str.parse::<TokenStream>().unwrap()
+                        } else {
+                            panic!("integer literal {} is too large to fit in a byte", v);
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                quote! { [#(#elems),*] }
+            }
+            ConstArray::Repeat(value, len) => {
+                let value_stream = if (0..=u8::MAX as i128).contains(value) {
+                    let hex_str = match mode {
+                        TypeMode::Exec => format!("0x{:02x}", *value as u8),
+                        TypeMode::Spec => format!("0x{:02x}u8", *value as u8),
+                    };
+                    hex_str.parse::<TokenStream>().unwrap()
+                } else {
+                    let hex_str = if *value < 0 {
+                        format!("-0x{:x}", value.abs())
+                    } else {
+                        format!("0x{:x}", *value)
+                    };
+                    hex_str.parse::<TokenStream>().unwrap()
+                };
+                let len_stream = syn_usize(*len);
+                quote! { [#value_stream; #len_stream] }
+            }
+            ConstArray::Wildcard => match mode {
+                TypeMode::Spec => quote! { arbitrary() },
+                TypeMode::Exec => quote! { [0u8; 0] },
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
