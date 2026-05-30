@@ -220,7 +220,7 @@ impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
     }
 }
 
-impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
+impl<I, Tg, Of> Parser<I> for super::PrefixTagged<Tg, Of> where
     I: InputBuf,
     Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
     Tg::T: SelfView + Copy,
@@ -246,7 +246,7 @@ impl<I, Tg, Of> Parser<I> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of, ST> Serializer<ST> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
     Tg::T: SelfView + Copy,
     ST: DeepView<V = Of::SVal>,
@@ -262,7 +262,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithPrefixTag<Tg, Of> where
+impl<Tg, TagVal, Of, ST> Compliance<ST> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -278,7 +278,7 @@ impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithPrefixTag<Tg, Of> where
+impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -294,7 +294,7 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithPrefixTag<Tg, Of> where
+impl<Tg, TagVal, Of, ST> Prepare<ST> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -310,7 +310,7 @@ impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
+impl<I, Of, Tg> Parser<I> for super::SuffixTagged<Of, Tg> where
     I: InputBuf,
     Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
     Tg::T: SelfView + Copy,
@@ -320,23 +320,23 @@ impl<I, Tg, Of> Parser<I> for super::WithSuffixTag<Tg, Of> where
 
     open spec fn exec_inv(&self) -> bool {
         Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         }.exec_inv()
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let fmt = Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         };
         fmt.parse(ibuf)
     }
 }
 
-impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg, ST> Serializer<ST> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
     Tg::T: SelfView + Copy,
     ST: DeepView<V = Of::SVal>,
@@ -344,15 +344,15 @@ impl<Tg, Of, ST> Serializer<ST> for super::WithSuffixTag<Tg, Of> where
  {
     fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         };
         fmt.ex_serialize(v, obuf);
     }
 }
 
-impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithSuffixTag<Tg, Of> where
+impl<Of, TagVal, Tg, ST> Compliance<ST> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -360,15 +360,15 @@ impl<Tg, TagVal, Of, ST> Compliance<ST> for super::WithSuffixTag<Tg, Of> where
  {
     fn check_compliance(&self, v: ST) -> (yes: bool) {
         let fmt = Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         };
         fmt.check_compliance(v)
     }
 }
 
-impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithSuffixTag<Tg, Of> where
+impl<Of, TagVal, Tg, ST> ByteLen<ST> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -376,15 +376,15 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::WithSuffixTag<Tg, Of> where
  {
     fn length(&self, v: ST) -> (len: usize) {
         let fmt = Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         };
         fmt.length(v)
     }
 }
 
-impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithSuffixTag<Tg, Of> where
+impl<Of, TagVal, Tg, ST> Prepare<ST> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
     TagVal: SelfView + Copy,
     ST: DeepView,
@@ -392,9 +392,9 @@ impl<Tg, TagVal, Of, ST> Prepare<ST> for super::WithSuffixTag<Tg, Of> where
  {
     fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
         let fmt = Terminated::<_, _, _, false> {
-            a: &self.2,
-            b: super::Const(&self.0, self.1),
-            b_val: self.1,
+            a: &self.0,
+            b: super::Const(&self.1, self.2),
+            b_val: self.2,
         };
         fmt.prepare(v)
     }

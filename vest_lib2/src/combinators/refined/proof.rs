@@ -228,7 +228,7 @@ impl<const N: usize> EquivSerializers for super::Const<Fixed::<N>, [u8; N]> {
     }
 }
 
-impl<Tg, Of> SPRoundTripDps for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SPRoundTripDps for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
     Of: SPRoundTripDps,
  {
@@ -241,7 +241,7 @@ impl<Tg, Of> SPRoundTripDps for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NonMalleable for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> NonMalleable for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
@@ -254,7 +254,7 @@ impl<Tg, Of> NonMalleable for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NoLookAhead for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> NoLookAhead for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
     Of: NoLookAhead,
  {
@@ -267,7 +267,7 @@ impl<Tg, Of> NoLookAhead for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> Productive for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> Productive for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + Productive<PVal = Tg::T>,
     Of: Productive,
  {
@@ -280,7 +280,7 @@ impl<Tg, Of> Productive for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> EquivSerializersGeneral for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> EquivSerializersGeneral for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
@@ -295,7 +295,7 @@ impl<Tg, Of> EquivSerializersGeneral for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> EquivSerializers for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> EquivSerializers for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
@@ -310,83 +310,83 @@ impl<Tg, Of> EquivSerializers for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SPRoundTripDps for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SPRoundTripDps for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SPRoundTripDps,
     Of: SPRoundTripDps + NonTailFmt,
  {
     open spec fn unambiguous(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).unambiguous()
+        with_suffix_tag(self.1, self.2, self.0).unambiguous()
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).theorem_serialize_dps_parse_roundtrip(v, obuf);
+        with_suffix_tag(self.1, self.2, self.0).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
 
-impl<Tg, Of> NonMalleable for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> NonMalleable for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).nonmal_inv()
+        with_suffix_tag(self.1, self.2, self.0).nonmal_inv()
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_parse_non_malleable(buf1, buf2);
+        with_suffix_tag(self.1, self.2, self.0).lemma_parse_non_malleable(buf1, buf2);
     }
 }
 
-impl<Tg, Of> NoLookAhead for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> NoLookAhead for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
     Of: NoLookAhead,
  {
     open spec fn no_lookahead_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).no_lookahead_inv()
+        with_suffix_tag(self.1, self.2, self.0).no_lookahead_inv()
     }
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_no_lookahead(i1, i2);
+        with_suffix_tag(self.1, self.2, self.0).lemma_no_lookahead(i1, i2);
     }
 }
 
-impl<Tg, Of> Productive for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> Productive for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + Productive<PVal = Tg::T>,
     Of: Productive,
  {
     open spec fn productive_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).productive_inv()
+        with_suffix_tag(self.1, self.2, self.0).productive_inv()
     }
 
     proof fn lemma_productive(&self, s: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_productive(s);
+        with_suffix_tag(self.1, self.2, self.0).lemma_productive(s);
     }
 }
 
-impl<Tg, Of> EquivSerializersGeneral for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> EquivSerializersGeneral for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_general_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).equiv_general_inv()
+        with_suffix_tag(self.1, self.2, self.0).equiv_general_inv()
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SValue, obuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_equiv(v, obuf);
+        with_suffix_tag(self.1, self.2, self.0).lemma_serialize_equiv(v, obuf);
     }
 }
 
-impl<Tg, Of> EquivSerializers for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> EquivSerializers for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + EquivSerializers<SVal = Tg::T, SValue = Tg::T> + Consistency<Val = Tg::T>,
     Of: EquivSerializersGeneral,
  {
     open spec fn equiv_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).equiv_inv()
+        with_suffix_tag(self.1, self.2, self.0).equiv_inv()
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SValue) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_equiv_on_empty(v);
+        with_suffix_tag(self.1, self.2, self.0).lemma_serialize_equiv_on_empty(v);
     }
 }
 

@@ -438,7 +438,7 @@ pub open spec fn with_suffix_tag<Tg: SpecByteLen, Of>(
     Terminated { a: of, b: super::Const(tag_inner, tag), b_val: tag }
 }
 
-impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SpecParser for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     Of: SpecParser,
  {
@@ -449,7 +449,7 @@ impl<Tg, Of> SpecParser for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> Consistency for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> Consistency for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
     Of: Consistency,
  {
@@ -460,7 +460,7 @@ impl<Tg, Of> Consistency for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SafeParser for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SafeParser for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
     Of: SafeParser,
  {
@@ -473,7 +473,7 @@ impl<Tg, Of> SafeParser for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SoundParser for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
@@ -490,7 +490,7 @@ impl<Tg, Of> SoundParser for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecSerializerDps for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SpecSerializerDps for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
     Of: SpecSerializerDps,
  {
@@ -501,7 +501,7 @@ impl<Tg, Of> SpecSerializerDps for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecSerializer for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> SpecSerializer for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
     Of: SpecSerializer,
  {
@@ -512,7 +512,7 @@ impl<Tg, Of> SpecSerializer for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NonTailFmt for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> NonTailFmt for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + NonTailFmt,
     Of: NonTailFmt,
  {
@@ -529,7 +529,7 @@ impl<Tg, Of> NonTailFmt for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> GoodSerializer for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> GoodSerializer for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + GoodSerializer,
     Of: GoodSerializer,
  {
@@ -542,7 +542,7 @@ impl<Tg, Of> GoodSerializer for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
+impl<Tg, Of> SpecByteLen for super::PrefixTagged<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -550,7 +550,7 @@ impl<Tg, Of> SpecByteLen for super::WithPrefixTag<Tg, Of> where Tg: SpecByteLen,
     }
 }
 
-impl<Tg, Of> MinMaxByteLen for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> MinMaxByteLen for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen + MinMaxByteLen,
     Of: MinMaxByteLen,
  {
@@ -567,7 +567,7 @@ impl<Tg, Of> MinMaxByteLen for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> StaticByteLen for super::PrefixTagged<Tg, Of> where
     Tg: StaticByteLen,
     Of: StaticByteLen,
  {
@@ -580,7 +580,7 @@ impl<Tg, Of> StaticByteLen for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> ValueByteLen for super::WithPrefixTag<Tg, Of> where
+impl<Tg, Of> ValueByteLen for super::PrefixTagged<Tg, Of> where
     Tg: StaticByteLen,
     Of: ValueByteLen,
  {
@@ -593,136 +593,136 @@ impl<Tg, Of> ValueByteLen for super::WithPrefixTag<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecParser for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SpecParser for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     Of: SpecParser,
  {
     type PVal = Of::PVal;
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        with_suffix_tag(self.0, self.1, self.2).spec_parse(ibuf)
+        with_suffix_tag(self.1, self.2, self.0).spec_parse(ibuf)
     }
 }
 
-impl<Tg, Of> Consistency for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> Consistency for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
     Of: Consistency,
  {
     type Val = Of::Val;
 
     open spec fn consistent(&self, v: Self::Val) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).consistent(v)
+        with_suffix_tag(self.1, self.2, self.0).consistent(v)
     }
 }
 
-impl<Tg, Of> SafeParser for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SafeParser for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
     Of: SafeParser,
  {
     open spec fn safe_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).safe_inv()
+        with_suffix_tag(self.1, self.2, self.0).safe_inv()
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_parse_safe(ibuf)
+        with_suffix_tag(self.1, self.2, self.0).lemma_parse_safe(ibuf)
     }
 }
 
-impl<Tg, Of> SoundParser for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).sound_inv()
+        with_suffix_tag(self.1, self.2, self.0).sound_inv()
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_parse_sound_consumption(ibuf)
+        with_suffix_tag(self.1, self.2, self.0).lemma_parse_sound_consumption(ibuf)
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_parse_sound_value(ibuf)
+        with_suffix_tag(self.1, self.2, self.0).lemma_parse_sound_value(ibuf)
     }
 }
 
-impl<Tg, Of> SpecSerializerDps for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SpecSerializerDps for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
     Of: SpecSerializerDps,
  {
     type SValue = Of::SValue;
 
     open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        with_suffix_tag(self.0, self.1, self.2).spec_serialize_dps(v, obuf)
+        with_suffix_tag(self.1, self.2, self.0).spec_serialize_dps(v, obuf)
     }
 }
 
-impl<Tg, Of> SpecSerializer for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> SpecSerializer for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
     Of: SpecSerializer,
  {
     type SVal = Of::SVal;
 
     open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        with_suffix_tag(self.0, self.1, self.2).spec_serialize(v)
+        with_suffix_tag(self.1, self.2, self.0).spec_serialize(v)
     }
 }
 
-impl<Tg, Of> NonTailFmt for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> NonTailFmt for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + NonTailFmt,
     Of: NonTailFmt,
  {
     open spec fn serialize_dps_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).serialize_dps_inv()
+        with_suffix_tag(self.1, self.2, self.0).serialize_dps_inv()
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_dps_prepend(v, obuf);
+        with_suffix_tag(self.1, self.2, self.0).lemma_serialize_dps_prepend(v, obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_dps_len(v, obuf);
+        with_suffix_tag(self.1, self.2, self.0).lemma_serialize_dps_len(v, obuf);
     }
 }
 
-impl<Tg, Of> GoodSerializer for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> GoodSerializer for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + GoodSerializer,
     Of: GoodSerializer,
  {
     open spec fn serialize_inv(&self) -> bool {
-        with_suffix_tag(self.0, self.1, self.2).serialize_inv()
+        with_suffix_tag(self.1, self.2, self.0).serialize_inv()
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_serialize_len(v);
+        with_suffix_tag(self.1, self.2, self.0).lemma_serialize_len(v);
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::WithSuffixTag<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
+impl<Of, Tg> SpecByteLen for super::SuffixTagged<Of, Tg> where Tg: SpecByteLen, Of: SpecByteLen {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
-        with_suffix_tag(self.0, self.1, self.2).byte_len(v)
+        with_suffix_tag(self.1, self.2, self.0).byte_len(v)
     }
 }
 
-impl<Tg, Of> MinMaxByteLen for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> MinMaxByteLen for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen + MinMaxByteLen,
     Of: MinMaxByteLen,
  {
     open spec fn min(&self) -> nat {
-        with_suffix_tag(self.0, self.1, self.2).min()
+        with_suffix_tag(self.1, self.2, self.0).min()
     }
 
     open spec fn max(&self) -> nat {
-        with_suffix_tag(self.0, self.1, self.2).max()
+        with_suffix_tag(self.1, self.2, self.0).max()
     }
 
     proof fn lemma_min_max_byte_len(&self, v: Self::T) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_min_max_byte_len(v);
+        with_suffix_tag(self.1, self.2, self.0).lemma_min_max_byte_len(v);
     }
 }
 
-impl<Tg, Of> StaticByteLen for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> StaticByteLen for super::SuffixTagged<Of, Tg> where
     Tg: StaticByteLen,
     Of: StaticByteLen,
  {
@@ -731,11 +731,11 @@ impl<Tg, Of> StaticByteLen for super::WithSuffixTag<Tg, Of> where
     }
 
     proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_static_len_matches_byte_len(v);
+        with_suffix_tag(self.1, self.2, self.0).lemma_static_len_matches_byte_len(v);
     }
 }
 
-impl<Tg, Of> ValueByteLen for super::WithSuffixTag<Tg, Of> where
+impl<Of, Tg> ValueByteLen for super::SuffixTagged<Of, Tg> where
     Tg: StaticByteLen,
     Of: ValueByteLen,
  {
@@ -744,7 +744,7 @@ impl<Tg, Of> ValueByteLen for super::WithSuffixTag<Tg, Of> where
     }
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        with_suffix_tag(self.0, self.1, self.2).lemma_value_len_matches_byte_len(v);
+        with_suffix_tag(self.1, self.2, self.0).lemma_value_len_matches_byte_len(v);
     }
 }
 

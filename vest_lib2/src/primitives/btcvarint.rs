@@ -1,10 +1,10 @@
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
-use crate::combinators::{Alt, Mapped, Refined, WithPrefixTag, U16Le, U32Le, U64Le, U8};
+use crate::combinators::{Alt, Mapped, Refined, PrefixTagged, U16Le, U32Le, U64Le, U8};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::{exec::*, proof::*, spec::*};
 use vstd::prelude::*;
 
-use WithPrefixTag as Tagged;
+use PrefixTagged as Tagged;
 verus! {
 
 /*
