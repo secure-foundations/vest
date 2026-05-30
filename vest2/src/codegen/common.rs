@@ -273,6 +273,7 @@ pub(crate) fn prelude() -> String {
         #![allow(warnings)]
         use vest_lib2::combinators::mapped::spec::*;
         use vest_lib2::combinators::*;
+        use vest_lib2::core::exec::{DeepEq, SelfView};
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
         use vest_lib2::core::exec::parser::*;
         use vest_lib2::core::exec::serializer::*;
@@ -280,6 +281,7 @@ pub(crate) fn prelude() -> String {
         use vest_lib2::core::{proof::*, spec::*};
         use vest_lib2::primitives::btcvarint::VarInt;
         use vest_lib2::primitives::leb128::ULeb128;
+        use vest_lib2::macros::impl_self_view_for;
         use vstd::prelude::*;
     })
 }

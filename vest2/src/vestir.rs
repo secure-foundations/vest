@@ -85,7 +85,7 @@ pub enum Param {
 }
 
 // ============================================================
-// Unified Combinator enum
+// Format Combinators
 // (Struct, Choice, and Enum only appear at Definition level)
 // ============================================================
 
@@ -100,7 +100,7 @@ pub enum Combinator {
     Tail(TailCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
-    /// `lhs >>= rhs` — reparsing bind
+    /// `lhs >>= rhs`
     AndThen(Box<Combinator>, Box<Combinator>),
 }
 
@@ -270,7 +270,7 @@ pub struct CombinatorInvocation {
 }
 
 // ============================================================
-// Const combinators (unchanged structure)
+// Const format combinators
 // ============================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -888,9 +888,7 @@ pub mod lowering {
             let lhs: ir::Combinator = c.inner.into();
             match c.and_then {
                 None => lhs,
-                Some(rhs) => {
-                    ir::Combinator::AndThen(Box::new(lhs), Box::new((*rhs).into()))
-                }
+                Some(rhs) => ir::Combinator::AndThen(Box::new(lhs), Box::new((*rhs).into())),
             }
         }
     }

@@ -202,17 +202,25 @@ impl<'a> Analysis<'a> {
     pub(crate) fn gen_execs_fragment(&self, def: &Definition) -> String {
         match def {
             Definition::CombinatorDef {
-                name, combinator, ..
-            } => self.gen_execs_section(name, combinator),
-            Definition::StructDef { name, .. }
-            | Definition::ChoiceDef { name, .. }
-            | Definition::EnumDef { name, .. } => {
-                let info = self.info(name);
-                format!(
-                    "// TODO(execs): emit Parser / Serializer / Prepare impls for {}\n",
-                    info.names.exec
-                )
-            }
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_execs_section(name, combinator, param_defns),
+            Definition::StructDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_struct_execs_section(name, combinator, param_defns),
+            Definition::ChoiceDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_choice_execs_section(name, combinator, param_defns),
+            Definition::EnumDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_enum_execs_section(name, combinator, param_defns),
             Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(execs): emit const-format exec wrappers for {}\n",
                 self.info(name).names.exec

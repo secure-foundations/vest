@@ -1513,7 +1513,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
+    pub(crate) fn int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
         match combinator {
             IntCombinator::Unsigned(8) => quote! { U8 },
             IntCombinator::Unsigned(16) => match self.endianness {
@@ -1541,7 +1541,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
+    pub(crate) fn int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
         match combinator {
             IntCombinator::Unsigned(8) => quote! { U8 },
             IntCombinator::Unsigned(16) => match self.endianness {

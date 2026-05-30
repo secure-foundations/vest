@@ -230,6 +230,17 @@ impl<'a> Analysis<'a> {
                     }
                 }
             }
+            impl DeepEq for #exec_ident {
+                fn deep_eq(&self, other: &Self) -> bool {
+                    *self == *other
+                }
+            }
+            impl SelfView for #exec_ident {
+                proof fn self_view(&self) {}
+                fn eq(&self, other: &Self) -> bool {
+                    *self == *other
+                }
+            }
         })
     }
 
