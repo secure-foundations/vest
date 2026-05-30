@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `msg3`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg3<'i> {
     pub data: &'i [u8],
 }
@@ -38,7 +38,7 @@ impl<'i> DeepView for Msg3<'i> {
 }
 
 # [doc = "data type for `msg1`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg1<'i> {
     pub a: u8,
     pub b: u16,
@@ -70,7 +70,7 @@ impl<'i> DeepView for Msg1<'i> {
 }
 
 # [doc = "data type for `msg2`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg2 {
     pub a: u8,
     pub b: u16,
@@ -95,7 +95,7 @@ impl DeepView for Msg2 {
 }
 
 # [doc = "data type for `msg_param`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum MsgParam<'i> {
     Msg1(Msg1<'i>),
     Msg2(Msg2),
@@ -124,7 +124,7 @@ impl<'i> DeepView for MsgParam<'i> {
 }
 
 # [doc = "data type for `msg_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum MsgContent<'i> {
     Msg1(Msg1<'i>),
     Msg2(Msg2),
@@ -153,7 +153,7 @@ impl<'i> DeepView for MsgContent<'i> {
 }
 
 # [doc = "data type for `msg_alt_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum MsgAltContent<'i> {
     Variant1(Msg1<'i>),
     Variant2(Msg2),
@@ -185,7 +185,7 @@ impl<'i> DeepView for MsgAltContent<'i> {
 }
 
 # [doc = "data type for `msg_alt`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MsgAlt<'i> {
     pub tag: u8,
     pub len: u16,
@@ -254,7 +254,7 @@ impl SelfView for MsgType {
 }
 
 # [doc = "data type for `msg`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg<'i> {
     pub tag: MsgType,
     pub len: u16,
@@ -286,6 +286,7 @@ impl<'i> DeepView for Msg<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `msg3`."]
+# [derive (Clone , Copy)]
 pub struct Msg3Fmt;
 
 pub type Msg3FmtSpec = Named<Mapped<Fixed<6>, FnSpecMapper<Msg3Inner, Msg3Spec>>>;
@@ -313,6 +314,7 @@ pub open spec fn msg3_fmt() -> Msg3FmtSpec {
 }
 
 # [doc = "named format combinator for `msg1`."]
+# [derive (Clone , Copy)]
 pub struct Msg1Fmt;
 
 pub type Msg1FmtSpec = Named<
@@ -342,6 +344,7 @@ pub open spec fn msg1_fmt() -> Msg1FmtSpec {
 }
 
 # [doc = "named format combinator for `msg2`."]
+# [derive (Clone , Copy)]
 pub struct Msg2Fmt;
 
 pub type Msg2FmtSpec = Named<
@@ -371,6 +374,7 @@ pub open spec fn msg2_fmt() -> Msg2FmtSpec {
 }
 
 # [doc = "named format combinator for `msg_param`."]
+# [derive (Clone , Copy)]
 pub struct MsgParamFmt {
     pub tag: MsgType,
 }
@@ -412,6 +416,7 @@ pub open spec fn msg_param_fmt(tag: MsgTypeSpec) -> MsgParamFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_content`."]
+# [derive (Clone , Copy)]
 pub struct MsgContentFmt {
     pub tag: MsgType,
 }
@@ -453,6 +458,7 @@ pub open spec fn msg_content_fmt(tag: MsgTypeSpec) -> MsgContentFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_alt_content`."]
+# [derive (Clone , Copy)]
 pub struct MsgAltContentFmt {
     pub len: u16,
     pub tag: u8,
@@ -501,6 +507,7 @@ pub open spec fn msg_alt_content_fmt(len: u16, tag: u8) -> MsgAltContentFmtSpec 
 }
 
 # [doc = "named format combinator for `msg_alt`."]
+# [derive (Clone , Copy)]
 pub struct MsgAltFmt;
 
 pub type MsgAltFmtSpec = Named<
@@ -537,6 +544,7 @@ pub open spec fn msg_alt_fmt() -> MsgAltFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_type`."]
+# [derive (Clone , Copy)]
 pub struct MsgTypeFmt;
 
 pub type MsgTypeFmtSpec = Named<
@@ -573,6 +581,7 @@ pub open spec fn msg_type_fmt() -> MsgTypeFmtSpec {
 }
 
 # [doc = "named format combinator for `msg`."]
+# [derive (Clone , Copy)]
 pub struct MsgFmt;
 
 pub type MsgFmtSpec = Named<

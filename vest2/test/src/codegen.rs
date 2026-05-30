@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `msg1`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg1<'i> {
     pub a: u8,
     pub b: u16,
@@ -42,7 +42,7 @@ impl<'i> DeepView for Msg1<'i> {
 }
 
 # [doc = "data type for `msg2`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg2 {
     pub a: u8,
     pub b: u16,
@@ -112,7 +112,7 @@ pub type Msg3<'i> = &'i [u8];
 pub type Msg3Spec = Seq<u8>;
 
 # [doc = "data type for `msg4_v`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg4V<'i> {
     A(Msg1<'i>),
     B(Msg2),
@@ -141,7 +141,7 @@ impl<'i> DeepView for Msg4V<'i> {
 }
 
 # [doc = "data type for `msg4`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg4<'i> {
     pub t: AType,
     pub v: Msg4V<'i>,
@@ -169,6 +169,7 @@ impl<'i> DeepView for Msg4<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `msg1`."]
+# [derive (Clone , Copy)]
 pub struct Msg1Fmt;
 
 pub type Msg1FmtSpec = Named<
@@ -204,6 +205,7 @@ pub open spec fn msg1_fmt() -> Msg1FmtSpec {
 }
 
 # [doc = "named format combinator for `msg2`."]
+# [derive (Clone , Copy)]
 pub struct Msg2Fmt;
 
 pub type Msg2FmtSpec = Named<
@@ -233,6 +235,7 @@ pub open spec fn msg2_fmt() -> Msg2FmtSpec {
 }
 
 # [doc = "named format combinator for `a_type`."]
+# [derive (Clone , Copy)]
 pub struct ATypeFmt;
 
 pub type ATypeFmtSpec = Named<
@@ -269,6 +272,7 @@ pub open spec fn a_type_fmt() -> ATypeFmtSpec {
 }
 
 # [doc = "named format combinator for `msg3`."]
+# [derive (Clone , Copy)]
 pub struct Msg3Fmt;
 
 pub type Msg3FmtSpec = Named<Fixed<6>>;
@@ -279,6 +283,7 @@ pub open spec fn msg3_fmt() -> Msg3FmtSpec {
 }
 
 # [doc = "named format combinator for `msg4_v`."]
+# [derive (Clone , Copy)]
 pub struct Msg4VFmt {
     pub t: AType,
 }
@@ -320,6 +325,7 @@ pub open spec fn msg4_v_fmt(t: ATypeSpec) -> Msg4VFmtSpec {
 }
 
 # [doc = "named format combinator for `msg4`."]
+# [derive (Clone , Copy)]
 pub struct Msg4Fmt;
 
 pub type Msg4FmtSpec = Named<

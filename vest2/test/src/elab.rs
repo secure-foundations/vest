@@ -64,7 +64,7 @@ impl SelfView for ContentType {
 }
 
 # [doc = "data type for `msg_c_f4`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum MsgCF4<'i> {
     C0(Content0<'i>),
     C1(u16),
@@ -96,7 +96,7 @@ impl<'i> DeepView for MsgCF4<'i> {
 }
 
 # [doc = "data type for `msg_d`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MsgD {
     pub f1: [u8; 4],
     pub f2: u16,
@@ -121,7 +121,7 @@ impl DeepView for MsgD {
 }
 
 # [doc = "data type for `msg_b`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MsgB {
     pub f1: MsgD,
 }
@@ -142,7 +142,7 @@ impl DeepView for MsgB {
 }
 
 # [doc = "data type for `msg_a`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MsgA<'i> {
     pub f1: MsgB,
     pub f2: &'i [u8],
@@ -165,7 +165,7 @@ impl<'i> DeepView for MsgA<'i> {
 }
 
 # [doc = "data type for `msg_c`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MsgC<'i> {
     pub f2: ContentType,
     pub f3: u32,
@@ -198,6 +198,7 @@ pub type F5Spec = Seq<u8>;
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `content_0`."]
+# [derive (Clone , Copy)]
 pub struct Content0Fmt {
     pub num: u32,
 }
@@ -210,6 +211,7 @@ pub open spec fn content_0_fmt(num: u32) -> Content0FmtSpec {
 }
 
 # [doc = "named format combinator for `content_type`."]
+# [derive (Clone , Copy)]
 pub struct ContentTypeFmt;
 
 pub type ContentTypeFmtSpec = Named<
@@ -256,6 +258,7 @@ pub open spec fn content_type_fmt() -> ContentTypeFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_c_f4`."]
+# [derive (Clone , Copy)]
 pub struct MsgCF4Fmt {
     pub f2: ContentType,
     pub f3: u32,
@@ -301,6 +304,7 @@ pub open spec fn msg_c_f4_fmt(f2: ContentTypeSpec, f3: u32) -> MsgCF4FmtSpec {
 }
 
 # [doc = "named format combinator for `msg_d`."]
+# [derive (Clone , Copy)]
 pub struct MsgDFmt;
 
 pub type MsgDFmtSpec = Named<
@@ -339,6 +343,7 @@ pub open spec fn msg_d_fmt() -> MsgDFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_b`."]
+# [derive (Clone , Copy)]
 pub struct MsgBFmt;
 
 pub type MsgBFmtSpec = Named<Mapped<MsgDFmt, FnSpecMapper<MsgBInner, MsgBSpec>>>;
@@ -366,6 +371,7 @@ pub open spec fn msg_b_fmt() -> MsgBFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_a`."]
+# [derive (Clone , Copy)]
 pub struct MsgAFmt;
 
 pub type MsgAFmtSpec = Named<Mapped<Pair<MsgBFmt, Tail>, FnSpecMapper<MsgAInner, MsgASpec>>>;
@@ -393,6 +399,7 @@ pub open spec fn msg_a_fmt() -> MsgAFmtSpec {
 }
 
 # [doc = "named format combinator for `msg_c`."]
+# [derive (Clone , Copy)]
 pub struct MsgCFmt;
 
 pub type MsgCFmtSpec = Named<

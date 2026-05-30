@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `msg5_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg5Content<'i> {
     Variant1(u16),
     Default(&'i [u8]),
@@ -53,7 +53,7 @@ pub type ServerHello = u32;
 pub type ServerHelloSpec = u32;
 
 # [doc = "data type for `msg1_payload`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg1Payload {
     Variant1(HelloRetryRequest),
     Default(ServerHello),
@@ -79,7 +79,7 @@ impl DeepView for Msg1Payload {
 }
 
 # [doc = "data type for `msg4_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg4Content<'i> {
     Variant1(u16),
     Default(&'i [u8]),
@@ -105,7 +105,7 @@ impl<'i> DeepView for Msg4Content<'i> {
 }
 
 # [doc = "data type for `msg3_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg3Content<'i> {
     Variant1(u16),
     Variant2(u32),
@@ -137,7 +137,7 @@ impl<'i> DeepView for Msg3Content<'i> {
 }
 
 # [doc = "data type for `msg3`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg3<'i> {
     pub i: u8,
     pub content: Msg3Content<'i>,
@@ -160,7 +160,7 @@ impl<'i> DeepView for Msg3<'i> {
 }
 
 # [doc = "data type for `msg5`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg5<'i> {
     pub i: u64,
     pub content: Msg5Content<'i>,
@@ -183,7 +183,7 @@ impl<'i> DeepView for Msg5<'i> {
 }
 
 # [doc = "data type for `msg2_content`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum Msg2Content {
     Variant1(u16),
     Default(u32),
@@ -209,7 +209,7 @@ impl DeepView for Msg2Content {
 }
 
 # [doc = "data type for `msg1`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg1<'i> {
     pub b: &'i [u8],
     pub payload: Msg1Payload,
@@ -232,7 +232,7 @@ impl<'i> DeepView for Msg1<'i> {
 }
 
 # [doc = "data type for `msg2`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg2<'i> {
     pub b: &'i [u8],
     pub content: Msg2Content,
@@ -255,7 +255,7 @@ impl<'i> DeepView for Msg2<'i> {
 }
 
 # [doc = "data type for `msg4`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Msg4<'i> {
     pub i: u32,
     pub content: Msg4Content<'i>,
@@ -281,6 +281,7 @@ impl<'i> DeepView for Msg4<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `msg5_content`."]
+# [derive (Clone , Copy)]
 pub struct Msg5ContentFmt {
     pub i: u64,
 }
@@ -319,6 +320,7 @@ pub open spec fn msg5_content_fmt(i: u64) -> Msg5ContentFmtSpec {
 }
 
 # [doc = "named format combinator for `hello_retry_request`."]
+# [derive (Clone , Copy)]
 pub struct HelloRetryRequestFmt;
 
 pub type HelloRetryRequestFmtSpec = Named<U16Le>;
@@ -329,6 +331,7 @@ pub open spec fn hello_retry_request_fmt() -> HelloRetryRequestFmtSpec {
 }
 
 # [doc = "named format combinator for `server_hello`."]
+# [derive (Clone , Copy)]
 pub struct ServerHelloFmt;
 
 pub type ServerHelloFmtSpec = Named<U32Le>;
@@ -339,6 +342,7 @@ pub open spec fn server_hello_fmt() -> ServerHelloFmtSpec {
 }
 
 # [doc = "named format combinator for `msg1_payload`."]
+# [derive (Clone , Copy)]
 pub struct Msg1PayloadFmt<'i> {
     pub b: &'i [u8],
 }
@@ -413,6 +417,7 @@ pub open spec fn msg1_payload_fmt(b: Seq<u8>) -> Msg1PayloadFmtSpec {
 }
 
 # [doc = "named format combinator for `msg4_content`."]
+# [derive (Clone , Copy)]
 pub struct Msg4ContentFmt {
     pub i: u32,
 }
@@ -451,6 +456,7 @@ pub open spec fn msg4_content_fmt(i: u32) -> Msg4ContentFmtSpec {
 }
 
 # [doc = "named format combinator for `msg3_content`."]
+# [derive (Clone , Copy)]
 pub struct Msg3ContentFmt {
     pub i: u8,
 }
@@ -498,6 +504,7 @@ pub open spec fn msg3_content_fmt(i: u8) -> Msg3ContentFmtSpec {
 }
 
 # [doc = "named format combinator for `msg3`."]
+# [derive (Clone , Copy)]
 pub struct Msg3Fmt;
 
 pub type Msg3FmtSpec = Named<
@@ -527,6 +534,7 @@ pub open spec fn msg3_fmt() -> Msg3FmtSpec {
 }
 
 # [doc = "named format combinator for `msg5`."]
+# [derive (Clone , Copy)]
 pub struct Msg5Fmt;
 
 pub type Msg5FmtSpec = Named<
@@ -556,6 +564,7 @@ pub open spec fn msg5_fmt() -> Msg5FmtSpec {
 }
 
 # [doc = "named format combinator for `msg2_content`."]
+# [derive (Clone , Copy)]
 pub struct Msg2ContentFmt<'i> {
     pub b: &'i [u8],
 }
@@ -563,7 +572,6 @@ pub struct Msg2ContentFmt<'i> {
 pub type Msg2ContentFmtSpec = Named<
     Mapped<Sum<U16Le, U32Le>, FnSpecMapper<Msg2ContentInner, Msg2ContentSpec>>,
 >;
-
 
 # [doc = "specification constructor for `msg2_content`."]
 pub open spec fn msg2_content_fmt(b: Seq<u8>) -> Msg2ContentFmtSpec {
@@ -595,6 +603,7 @@ pub open spec fn msg2_content_fmt(b: Seq<u8>) -> Msg2ContentFmtSpec {
 }
 
 # [doc = "named format combinator for `msg1`."]
+# [derive (Clone , Copy)]
 pub struct Msg1Fmt;
 
 pub type Msg1FmtSpec = Named<
@@ -627,6 +636,7 @@ pub open spec fn msg1_fmt() -> Msg1FmtSpec {
 }
 
 # [doc = "named format combinator for `msg2`."]
+# [derive (Clone , Copy)]
 pub struct Msg2Fmt;
 
 pub type Msg2FmtSpec = Named<
@@ -659,6 +669,7 @@ pub open spec fn msg2_fmt() -> Msg2FmtSpec {
 }
 
 # [doc = "named format combinator for `msg4`."]
+# [derive (Clone , Copy)]
 pub struct Msg4Fmt;
 
 pub type Msg4FmtSpec = Named<

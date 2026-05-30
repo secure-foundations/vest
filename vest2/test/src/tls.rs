@@ -65,7 +65,7 @@ verus! {
 
 
     # [doc = "data type for `opaque_0_ffff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque0Ffff < 'i > {
         pub l : u16 ,
         pub data : & 'i [u8] ,
@@ -242,7 +242,7 @@ verus! {
     }
 
     # [doc = "data type for `signature_scheme_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct SignatureSchemeList {
         pub l : u16 ,
         pub list : Vec < SignatureScheme > ,
@@ -264,7 +264,7 @@ verus! {
     }
 
     # [doc = "data type for `opaque_1_ffff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque1Ffff < 'i > {
         pub l : u16 ,
         pub data : & 'i [u8] ,
@@ -291,7 +291,7 @@ verus! {
 
 
     # [doc = "data type for `certificate_authorities_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateAuthoritiesExtension < 'i > {
         pub l : u16 ,
         pub list : Vec < DistinguishedName < 'i > > ,
@@ -318,7 +318,7 @@ verus! {
 
 
     # [doc = "data type for `responder_id_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ResponderIdList < 'i > {
         pub l : u16 ,
         pub list : Vec < ResponderId < 'i > > ,
@@ -340,7 +340,7 @@ verus! {
     }
 
     # [doc = "data type for `oscp_status_request`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct OscpStatusRequest < 'i > {
         pub responder_id_list : ResponderIdList < 'i > ,
         pub extensions : OcspExtensions < 'i > ,
@@ -362,7 +362,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_status_request`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateStatusRequest < 'i > {
         pub status_type : u8 ,
         pub request : OscpStatusRequest < 'i > ,
@@ -389,7 +389,7 @@ verus! {
 
 
     # [doc = "data type for `signed_certificate_timestamp_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct SignedCertificateTimestampList < 'i > {
         pub l : u16 ,
         pub list : Vec < SerializedSct < 'i > > ,
@@ -411,7 +411,7 @@ verus! {
     }
 
     # [doc = "data type for `opaque_1_ff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque1Ff < 'i > {
         pub l : u8 ,
         pub data : & 'i [u8] ,
@@ -433,7 +433,7 @@ verus! {
     }
 
     # [doc = "data type for `oid_filter`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct OidFilter < 'i > {
         pub certificate_extension_oid : Opaque1Ff < 'i > ,
         pub certificate_extension_values : Opaque0Ffff < 'i > ,
@@ -455,7 +455,7 @@ verus! {
     }
 
     # [doc = "data type for `oid_filter_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct OidFilterExtension < 'i > {
         pub l : u16 ,
         pub list : Vec < OidFilter < 'i > > ,
@@ -477,7 +477,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_request_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum CertificateRequestExtensionExtensionData < 'i > {
         SignatureAlgorithms (SignatureSchemeList) ,
         CertificateAuthorities (CertificateAuthoritiesExtension < 'i >) ,
@@ -514,7 +514,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_request_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateRequestExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -572,7 +572,7 @@ verus! {
     }
 
     # [doc = "data type for `session_id`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct SessionId < 'i > {
         pub l : u8 ,
         pub id : & 'i [u8] ,
@@ -781,7 +781,7 @@ verus! {
     }
 
     # [doc = "data type for `hello_retry_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum HelloRetryExtensionExtensionData < 'i > {
         SupportedVersions (SupportedVersionsServer) ,
         Cookie (Cookie < 'i >) ,
@@ -809,7 +809,7 @@ verus! {
     }
 
     # [doc = "data type for `hello_retry_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct HelloRetryExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -834,7 +834,7 @@ verus! {
     }
 
     # [doc = "data type for `hello_retry_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct HelloRetryExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < HelloRetryExtension < 'i > > ,
@@ -856,7 +856,7 @@ verus! {
     }
 
     # [doc = "data type for `hello_retry_request`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct HelloRetryRequest < 'i > {
         pub legacy_session_id_echo : SessionId < 'i > ,
         pub cipher_suite : CipherSuite ,
@@ -884,7 +884,7 @@ verus! {
     }
 
     # [doc = "data type for `pre_shared_key_server_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct PreSharedKeyServerExtension {
         pub selected_identity : u16 ,
     }
@@ -903,7 +903,7 @@ verus! {
     }
 
     # [doc = "data type for `key_share_entry`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct KeyShareEntry < 'i > {
         pub group : NamedGroup ,
         pub l : u16 ,
@@ -928,7 +928,7 @@ verus! {
     }
 
     # [doc = "data type for `sever_hello_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum SeverHelloExtensionExtensionData < 'i > {
         PreSharedKey (PreSharedKeyServerExtension) ,
         SupportedVersions (SupportedVersionsServer) ,
@@ -956,7 +956,7 @@ verus! {
     }
 
     # [doc = "data type for `sever_hello_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct SeverHelloExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -981,7 +981,7 @@ verus! {
     }
 
     # [doc = "data type for `server_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ServerExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < SeverHelloExtension < 'i > > ,
@@ -1003,7 +1003,7 @@ verus! {
     }
 
     # [doc = "data type for `server_hello`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ServerHello < 'i > {
         pub legacy_session_id_echo : SessionId < 'i > ,
         pub cipher_suite : CipherSuite ,
@@ -1031,7 +1031,7 @@ verus! {
     }
 
     # [doc = "data type for `sh_or_hrr_payload`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum ShOrHrrPayload < 'i > {
         Variant1 (HelloRetryRequest < 'i >) ,
         Default (ServerHello < 'i >) ,
@@ -1053,7 +1053,7 @@ verus! {
     }
 
     # [doc = "data type for `sh_or_hrr`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ShOrHrr < 'i > {
         pub legacy_version : u16 ,
         pub random : & 'i [u8] ,
@@ -1127,7 +1127,7 @@ verus! {
     }
 
     # [doc = "data type for `cipher_suite_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CipherSuiteList {
         pub l : u16 ,
         pub list : Vec < CipherSuite > ,
@@ -1159,7 +1159,7 @@ verus! {
 
 
     # [doc = "data type for `server_name_name`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum ServerNameName < 'i > {
         HostName (HostName < 'i >) ,
         Default (UnknownName < 'i >) ,
@@ -1181,7 +1181,7 @@ verus! {
     }
 
     # [doc = "data type for `server_name`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct ServerName < 'i > {
         pub name_type : NameType ,
         pub name : ServerNameName < 'i > ,
@@ -1203,7 +1203,7 @@ verus! {
     }
 
     # [doc = "data type for `server_name_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ServerNameList < 'i > {
         pub l : u16 ,
         pub list : Vec < ServerName < 'i > > ,
@@ -1225,7 +1225,7 @@ verus! {
     }
 
     # [doc = "data type for `named_group_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct NamedGroupList {
         pub l : u16 ,
         pub list : Vec < NamedGroup > ,
@@ -1252,7 +1252,7 @@ verus! {
 
 
     # [doc = "data type for `protocol_name_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ProtocolNameList < 'i > {
         pub l : u16 ,
         pub list : Vec < ProtocolName < 'i > > ,
@@ -1274,7 +1274,7 @@ verus! {
     }
 
     # [doc = "data type for `supported_versions_client`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct SupportedVersionsClient {
         pub l : u8 ,
         pub list : Vec < ProtocolVersion > ,
@@ -1296,7 +1296,7 @@ verus! {
     }
 
     # [doc = "data type for `key_share_client_hello`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct KeyShareClientHello < 'i > {
         pub l : u16 ,
         pub list : Vec < KeyShareEntry < 'i > > ,
@@ -1353,7 +1353,7 @@ verus! {
     }
 
     # [doc = "data type for `psk_key_exchange_modes`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct PskKeyExchangeModes {
         pub l : u8 ,
         pub list : Vec < PskKeyExchangeMode > ,
@@ -1375,7 +1375,7 @@ verus! {
     }
 
     # [doc = "data type for `psk_identity`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct PskIdentity < 'i > {
         pub identity : Opaque1Ffff < 'i > ,
         pub obfuscated_ticket_age : u32 ,
@@ -1397,7 +1397,7 @@ verus! {
     }
 
     # [doc = "data type for `psk_identities`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct PskIdentities < 'i > {
         pub l : u16 ,
         pub list : Vec < PskIdentity < 'i > > ,
@@ -1419,7 +1419,7 @@ verus! {
     }
 
     # [doc = "data type for `psk_binder_entry`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct PskBinderEntry < 'i > {
         pub l : u8 ,
         pub entries : & 'i [u8] ,
@@ -1441,7 +1441,7 @@ verus! {
     }
 
     # [doc = "data type for `psk_binder_entries`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct PskBinderEntries < 'i > {
         pub l : u16 ,
         pub list : Vec < PskBinderEntry < 'i > > ,
@@ -1463,7 +1463,7 @@ verus! {
     }
 
     # [doc = "data type for `offered_psks`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct OfferedPsks < 'i > {
         pub identities : PskIdentities < 'i > ,
         pub binders : PskBinderEntries < 'i > ,
@@ -1485,7 +1485,7 @@ verus! {
     }
 
     # [doc = "data type for `pre_shared_key_client_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct PreSharedKeyClientExtension < 'i > {
         pub offers : OfferedPsks < 'i > ,
     }
@@ -1613,7 +1613,7 @@ verus! {
     }
 
     # [doc = "data type for `client_cert_type_client_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ClientCertTypeClientExtension {
         pub l : u8 ,
         pub list : Vec < CertificateType > ,
@@ -1635,7 +1635,7 @@ verus! {
     }
 
     # [doc = "data type for `server_cert_type_client_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ServerCertTypeClientExtension {
         pub l : u8 ,
         pub list : Vec < CertificateType > ,
@@ -1657,7 +1657,7 @@ verus! {
     }
 
     # [doc = "data type for `client_hello_extension_rest`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum ClientHelloExtensionRest < 'i > {
         MaxFragmentLength (MaxFragmentLength) ,
         Heartbeat (HeartbeatMode) ,
@@ -1706,7 +1706,7 @@ verus! {
     }
 
     # [doc = "data type for `client_hello_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum ClientHelloExtensionExtensionData < 'i > {
         ServerName (ServerNameList < 'i >) ,
         SignatureAlgorithms (SignatureSchemeList) ,
@@ -1752,7 +1752,7 @@ verus! {
     }
 
     # [doc = "data type for `client_hello_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ClientHelloExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -1777,7 +1777,7 @@ verus! {
     }
 
     # [doc = "data type for `client_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ClientExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < ClientHelloExtension < 'i > > ,
@@ -1799,7 +1799,7 @@ verus! {
     }
 
     # [doc = "data type for `client_hello`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct ClientHello < 'i > {
         pub legacy_version : u16 ,
         pub random : & 'i [u8] ,
@@ -1833,7 +1833,7 @@ verus! {
     }
 
     # [doc = "data type for `opaque_0_ff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque0Ff < 'i > {
         pub l : u8 ,
         pub data : & 'i [u8] ,
@@ -1855,7 +1855,7 @@ verus! {
     }
 
     # [doc = "data type for `early_data_indication_new_session_ticket`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct EarlyDataIndicationNewSessionTicket {
         pub max_early_data_size : u32 ,
     }
@@ -1874,7 +1874,7 @@ verus! {
     }
 
     # [doc = "data type for `new_session_ticket_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum NewSessionTicketExtensionExtensionData < 'i > {
         EarlyData (EarlyDataIndicationNewSessionTicket) ,
         Default (& 'i [u8]) ,
@@ -1896,7 +1896,7 @@ verus! {
     }
 
     # [doc = "data type for `new_session_ticket_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct NewSessionTicketExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -1921,7 +1921,7 @@ verus! {
     }
 
     # [doc = "data type for `new_session_ticket_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct NewSessionTicketExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < NewSessionTicketExtension < 'i > > ,
@@ -1943,7 +1943,7 @@ verus! {
     }
 
     # [doc = "data type for `new_session_ticket`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct NewSessionTicket < 'i > {
         pub ticket_lifetime : u32 ,
         pub ticket_age_add : u32 ,
@@ -1974,7 +1974,7 @@ verus! {
     }
 
     # [doc = "data type for `encrypted_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum EncryptedExtensionExtensionData < 'i > {
         ServerName (Empty < 'i >) ,
         MaxFragmentLength (MaxFragmentLength) ,
@@ -2017,7 +2017,7 @@ verus! {
     }
 
     # [doc = "data type for `encrypted_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct EncryptedExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -2042,7 +2042,7 @@ verus! {
     }
 
     # [doc = "data type for `encrypted_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct EncryptedExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < EncryptedExtension < 'i > > ,
@@ -2064,7 +2064,7 @@ verus! {
     }
 
     # [doc = "data type for `opaque_1_ffffff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque1Ffffff < 'i > {
         pub l : u32 ,
         pub data : & 'i [u8] ,
@@ -2091,7 +2091,7 @@ verus! {
 
 
     # [doc = "data type for `certificate_status`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct CertificateStatus < 'i > {
         pub status_type : u8 ,
         pub response : OcspResponse < 'i > ,
@@ -2113,7 +2113,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_extension_extension_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum CertificateExtensionExtensionData < 'i > {
         StatusRequest (CertificateStatus < 'i >) ,
         SignedCertificateTimeStamp (SignedCertificateTimestampList < 'i >) ,
@@ -2138,7 +2138,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateExtension < 'i > {
         pub extension_type : ExtensionType ,
         pub ext_len : u16 ,
@@ -2163,7 +2163,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < CertificateExtension < 'i > > ,
@@ -2185,7 +2185,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_entry_opaque`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateEntryOpaque < 'i > {
         pub cert_data : Opaque1Ffffff < 'i > ,
         pub extensions : CertificateExtensions < 'i > ,
@@ -2207,7 +2207,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateList < 'i > {
         pub l : u32 ,
         pub list : Vec < CertificateEntryOpaque < 'i > > ,
@@ -2229,7 +2229,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct Certificate < 'i > {
         pub certificate_request_context : Opaque0Ff < 'i > ,
         pub certificate_list : CertificateList < 'i > ,
@@ -2251,7 +2251,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_request_extensions`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateRequestExtensions < 'i > {
         pub l : u16 ,
         pub list : Vec < CertificateRequestExtension < 'i > > ,
@@ -2273,7 +2273,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_request`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateRequest < 'i > {
         pub certificate_request_context : Opaque0Ff < 'i > ,
         pub extensions : CertificateRequestExtensions < 'i > ,
@@ -2295,7 +2295,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_verify`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct CertificateVerify < 'i > {
         pub algorithm : SignatureScheme ,
         pub signature : Opaque0Ffff < 'i > ,
@@ -2317,7 +2317,7 @@ verus! {
     }
 
     # [doc = "data type for `finished`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum Finished < 'i > {
         Variant1 (& 'i [u8]) ,
         Variant2 (& 'i [u8]) ,
@@ -2384,7 +2384,7 @@ verus! {
     }
 
     # [doc = "data type for `key_update`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct KeyUpdate {
         pub request_update : KeyUpdateRequest ,
     }
@@ -2403,7 +2403,7 @@ verus! {
     }
 
     # [doc = "data type for `handshake_msg`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub enum HandshakeMsg < 'i > {
         ClientHello (ClientHello < 'i >) ,
         ServerHello (ShOrHrr < 'i >) ,
@@ -2449,7 +2449,7 @@ verus! {
     }
 
     # [doc = "data type for `handshake`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct Handshake < 'i > {
         pub msg_type : HandshakeType ,
         pub length : u32 ,
@@ -2474,7 +2474,7 @@ verus! {
     }
 
     # [doc = "data type for `zero_byte`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct ZeroByte {
         pub zero : u8 ,
     }
@@ -2493,7 +2493,7 @@ verus! {
     }
 
     # [doc = "data type for `padding_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct PaddingExtension {
         pub l : u16 ,
         pub padding : Vec < ZeroByte > ,
@@ -2515,7 +2515,7 @@ verus! {
     }
 
     # [doc = "data type for `extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Extension < 'i > {
         pub extension_type : ExtensionType ,
         pub extension_data : Opaque0Ffff < 'i > ,
@@ -2537,7 +2537,7 @@ verus! {
     }
 
     # [doc = "data type for `client_cert_type_server_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct ClientCertTypeServerExtension {
         pub client_certificate_type : CertificateType ,
     }
@@ -2595,7 +2595,7 @@ verus! {
     }
 
     # [doc = "data type for `tls_plaintext`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct TlsPlaintext < 'i > {
         pub content_type : ContentType ,
         pub legacy_record_version : ProtocolVersion ,
@@ -2708,7 +2708,7 @@ verus! {
 
 
     # [doc = "data type for `srtp_protection_profiles`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct SrtpProtectionProfiles < 'i > {
         pub l : u16 ,
         pub list : Vec < SrtpProtectionProfile < 'i > > ,
@@ -2730,7 +2730,7 @@ verus! {
     }
 
     # [doc = "data type for `use_srtp_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct UseSrtpData < 'i > {
         pub profiles : SrtpProtectionProfiles < 'i > ,
         pub srtp_mki : Opaque0Ff < 'i > ,
@@ -2757,7 +2757,7 @@ verus! {
 
 
     # [doc = "data type for `opaque_2_ffff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque2Ffff < 'i > {
         pub l : u16 ,
         pub data : & 'i [u8] ,
@@ -2779,7 +2779,7 @@ verus! {
     }
 
     # [doc = "data type for `alert`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Alert {
         pub level : AlertLevel ,
         pub description : AlertDescription ,
@@ -2801,7 +2801,7 @@ verus! {
     }
 
     # [doc = "data type for `server_cert_type_server_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct ServerCertTypeServerExtension {
         pub server_certificate_type : CertificateType ,
     }
@@ -2868,7 +2868,7 @@ verus! {
     }
 
     # [doc = "data type for `heartbeat_extension`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct HeartbeatExtension {
         pub mode : HeartbeatMode ,
     }
@@ -2924,7 +2924,7 @@ verus! {
     }
 
     # [doc = "data type for `ec_point_format_list`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct EcPointFormatList {
         pub l : u8 ,
         pub list : Vec < EcPointFormat > ,
@@ -2946,7 +2946,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_entry_data`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum CertificateEntryData < 'i > {
         X509 (Opaque1Ffffff < 'i >) ,
         RawPublicKey (Opaque1Ffffff < 'i >) ,
@@ -2971,7 +2971,7 @@ verus! {
     }
 
     # [doc = "data type for `certificate_entry`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone)]
     pub struct CertificateEntry < 'i > {
         pub data : CertificateEntryData < 'i > ,
         pub extensions : CertificateExtensions < 'i > ,
@@ -2993,7 +2993,7 @@ verus! {
     }
 
     # [doc = "data type for `tls_ciphertext`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct TlsCiphertext < 'i > {
         pub opaque_type : ContentType ,
         pub version : ProtocolVersion ,
@@ -3018,7 +3018,7 @@ verus! {
     }
 
     # [doc = "data type for `opaque_0_ffffff`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Opaque0Ffffff < 'i > {
         pub l : u32 ,
         pub data : & 'i [u8] ,
@@ -3043,6 +3043,7 @@ verus! {
     // Format Specifications
     // ============================================================
     # [doc = "named format combinator for `alert_level`."]
+    # [derive (Clone , Copy)]
     pub struct AlertLevelFmt ;
 
     pub type AlertLevelFmtSpec = Named < Mapped < Refined < U8 , PredFnSpec < u8 >> , FnSpecMapper < AlertLevelInner , AlertLevelSpec >> > ;
@@ -3074,6 +3075,7 @@ verus! {
 
 
     # [doc = "named format combinator for `empty`."]
+    # [derive (Clone , Copy)]
     pub struct EmptyFmt ;
 
     pub type EmptyFmtSpec = Named < Fixed < 0 > > ;
@@ -3086,6 +3088,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_0_ffff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque0FfffFmt ;
 
     pub type Opaque0FfffFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque0FfffInner , Opaque0FfffSpec >> > ;
@@ -3121,14 +3124,20 @@ verus! {
 
 
     # [doc = "named format combinator for `ocsp_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct OcspExtensionsFmt ;
-    pub type OcspExtensionsFmtSpec = Opaque0FfffFmtSpec ;
+
+    pub type OcspExtensionsFmtSpec = Named < Opaque0FfffFmt > ;
+
     # [doc = "specification constructor for `ocsp_extensions`."]
     pub open spec fn ocsp_extensions_fmt () -> OcspExtensionsFmtSpec {
-        opaque_0_ffff_fmt ()
+        Named ("ocsp_extensions" ,
+        Opaque0FfffFmt)
     }
 
+
     # [doc = "named format combinator for `extension_type`."]
+    # [derive (Clone , Copy)]
     pub struct ExtensionTypeFmt ;
 
     pub type ExtensionTypeFmtSpec = Named < Mapped < Choice < Refined < U16Be , PredFnSpec < u16 >> , Refined < U16Be , PredFnSpec < u16 >> > , FnSpecMapper < ExtensionTypeInner , ExtensionTypeSpec >> > ;
@@ -3215,6 +3224,7 @@ verus! {
 
 
     # [doc = "named format combinator for `signature_scheme`."]
+    # [derive (Clone , Copy)]
     pub struct SignatureSchemeFmt ;
 
     pub type SignatureSchemeFmtSpec = Named < Mapped < Choice < Refined < U16Be , PredFnSpec < u16 >> , Refined < U16Be , PredFnSpec < u16 >> > , FnSpecMapper < SignatureSchemeInner , SignatureSchemeSpec >> > ;
@@ -3285,6 +3295,7 @@ verus! {
 
 
     # [doc = "named format combinator for `signature_scheme_list`."]
+    # [derive (Clone , Copy)]
     pub struct SignatureSchemeListFmt ;
 
     pub type SignatureSchemeListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SignatureSchemeFmt > , usize > > , FnSpecMapper < SignatureSchemeListInner , SignatureSchemeListSpec >> > ;
@@ -3322,6 +3333,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_1_ffff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque1FfffFmt ;
 
     pub type Opaque1FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque1FfffInner , Opaque1FfffSpec >> > ;
@@ -3358,14 +3370,20 @@ verus! {
 
 
     # [doc = "named format combinator for `distinguished_name`."]
+    # [derive (Clone , Copy)]
     pub struct DistinguishedNameFmt ;
-    pub type DistinguishedNameFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type DistinguishedNameFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `distinguished_name`."]
     pub open spec fn distinguished_name_fmt () -> DistinguishedNameFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("distinguished_name" ,
+        Opaque1FfffFmt)
     }
 
+
     # [doc = "named format combinator for `certificate_authorities_extension`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateAuthoritiesExtensionFmt ;
 
     pub type CertificateAuthoritiesExtensionFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < DistinguishedNameFmt > , usize > > , FnSpecMapper < CertificateAuthoritiesExtensionInner , CertificateAuthoritiesExtensionSpec >> > ;
@@ -3403,14 +3421,20 @@ verus! {
 
 
     # [doc = "named format combinator for `responder_id`."]
+    # [derive (Clone , Copy)]
     pub struct ResponderIdFmt ;
-    pub type ResponderIdFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type ResponderIdFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `responder_id`."]
     pub open spec fn responder_id_fmt () -> ResponderIdFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("responder_id" ,
+        Opaque1FfffFmt)
     }
 
+
     # [doc = "named format combinator for `responder_id_list`."]
+    # [derive (Clone , Copy)]
     pub struct ResponderIdListFmt ;
 
     pub type ResponderIdListFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < ResponderIdFmt > , usize > > , FnSpecMapper < ResponderIdListInner , ResponderIdListSpec >> > ;
@@ -3447,6 +3471,7 @@ verus! {
 
 
     # [doc = "named format combinator for `oscp_status_request`."]
+    # [derive (Clone , Copy)]
     pub struct OscpStatusRequestFmt ;
 
     pub type OscpStatusRequestFmtSpec = Named < Mapped < Pair < ResponderIdListFmt , OcspExtensionsFmt > , FnSpecMapper < OscpStatusRequestInner , OscpStatusRequestSpec >> > ;
@@ -3482,6 +3507,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_status_request`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateStatusRequestFmt ;
 
     pub type CertificateStatusRequestFmtSpec = Named < Mapped < Pair < Const < U8 , u8 > , OscpStatusRequestFmt > , FnSpecMapper < CertificateStatusRequestInner , CertificateStatusRequestSpec >> > ;
@@ -3518,14 +3544,20 @@ verus! {
 
 
     # [doc = "named format combinator for `serialized_sct`."]
+    # [derive (Clone , Copy)]
     pub struct SerializedSctFmt ;
-    pub type SerializedSctFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type SerializedSctFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `serialized_sct`."]
     pub open spec fn serialized_sct_fmt () -> SerializedSctFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("serialized_sct" ,
+        Opaque1FfffFmt)
     }
 
+
     # [doc = "named format combinator for `signed_certificate_timestamp_list`."]
+    # [derive (Clone , Copy)]
     pub struct SignedCertificateTimestampListFmt ;
 
     pub type SignedCertificateTimestampListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SerializedSctFmt > , usize > > , FnSpecMapper < SignedCertificateTimestampListInner , SignedCertificateTimestampListSpec >> > ;
@@ -3563,6 +3595,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_1_ff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque1FfFmt ;
 
     pub type Opaque1FfFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < Opaque1FfInner , Opaque1FfSpec >> > ;
@@ -3599,6 +3632,7 @@ verus! {
 
 
     # [doc = "named format combinator for `oid_filter`."]
+    # [derive (Clone , Copy)]
     pub struct OidFilterFmt ;
 
     pub type OidFilterFmtSpec = Named < Mapped < Pair < Opaque1FfFmt , Opaque0FfffFmt > , FnSpecMapper < OidFilterInner , OidFilterSpec >> > ;
@@ -3634,6 +3668,7 @@ verus! {
 
 
     # [doc = "named format combinator for `oid_filter_extension`."]
+    # [derive (Clone , Copy)]
     pub struct OidFilterExtensionFmt ;
 
     pub type OidFilterExtensionFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < OidFilterFmt > , usize > > , FnSpecMapper < OidFilterExtensionInner , OidFilterExtensionSpec >> > ;
@@ -3670,6 +3705,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_request_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateRequestExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -3721,6 +3757,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_request_extension`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateRequestExtensionFmt ;
 
     pub type CertificateRequestExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateRequestExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateRequestExtensionInner , CertificateRequestExtensionSpec >> > ;
@@ -3766,6 +3803,7 @@ verus! {
 
 
     # [doc = "named format combinator for `name_type`."]
+    # [derive (Clone , Copy)]
     pub struct NameTypeFmt ;
 
     pub type NameTypeFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < NameTypeInner , NameTypeSpec >> > ;
@@ -3802,6 +3840,7 @@ verus! {
 
 
     # [doc = "named format combinator for `session_id`."]
+    # [derive (Clone , Copy)]
     pub struct SessionIdFmt ;
 
     pub type SessionIdFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < SessionIdInner , SessionIdSpec >> > ;
@@ -3838,6 +3877,7 @@ verus! {
 
 
     # [doc = "named format combinator for `cipher_suite`."]
+    # [derive (Clone , Copy)]
     pub struct CipherSuiteFmt ;
 
     pub type CipherSuiteFmtSpec = Named < Mapped < Choice < Refined < U16Be , PredFnSpec < u16 >> , Refined < U16Be , PredFnSpec < u16 >> > , FnSpecMapper < CipherSuiteInner , CipherSuiteSpec >> > ;
@@ -3882,6 +3922,7 @@ verus! {
 
 
     # [doc = "named format combinator for `protocol_version`."]
+    # [derive (Clone , Copy)]
     pub struct ProtocolVersionFmt ;
 
     pub type ProtocolVersionFmtSpec = Named < Mapped < Choice < Refined < U16Be , PredFnSpec < u16 >> , Refined < U16Be , PredFnSpec < u16 >> > , FnSpecMapper < ProtocolVersionInner , ProtocolVersionSpec >> > ;
@@ -3926,22 +3967,33 @@ verus! {
 
 
     # [doc = "named format combinator for `supported_versions_server`."]
+    # [derive (Clone , Copy)]
     pub struct SupportedVersionsServerFmt ;
-    pub type SupportedVersionsServerFmtSpec = ProtocolVersionFmtSpec ;
+
+    pub type SupportedVersionsServerFmtSpec = Named < ProtocolVersionFmt > ;
+
     # [doc = "specification constructor for `supported_versions_server`."]
     pub open spec fn supported_versions_server_fmt () -> SupportedVersionsServerFmtSpec {
-        protocol_version_fmt ()
+        Named ("supported_versions_server" ,
+        ProtocolVersionFmt)
     }
+
 
     # [doc = "named format combinator for `cookie`."]
+    # [derive (Clone , Copy)]
     pub struct CookieFmt ;
-    pub type CookieFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type CookieFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `cookie`."]
     pub open spec fn cookie_fmt () -> CookieFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("cookie" ,
+        Opaque1FfffFmt)
     }
 
+
     # [doc = "named format combinator for `named_group`."]
+    # [derive (Clone , Copy)]
     pub struct NamedGroupFmt ;
 
     pub type NamedGroupFmtSpec = Named < Mapped < Choice < Refined < U16Be , PredFnSpec < u16 >> , Refined < U16Be , PredFnSpec < u16 >> > , FnSpecMapper < NamedGroupInner , NamedGroupSpec >> > ;
@@ -4040,6 +4092,7 @@ verus! {
 
 
     # [doc = "named format combinator for `hello_retry_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct HelloRetryExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -4082,6 +4135,7 @@ verus! {
 
 
     # [doc = "named format combinator for `hello_retry_extension`."]
+    # [derive (Clone , Copy)]
     pub struct HelloRetryExtensionFmt ;
 
     pub type HelloRetryExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < HelloRetryExtensionExtensionDataFmt , usize > > > , FnSpecMapper < HelloRetryExtensionInner , HelloRetryExtensionSpec >> > ;
@@ -4127,6 +4181,7 @@ verus! {
 
 
     # [doc = "named format combinator for `hello_retry_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct HelloRetryExtensionsFmt ;
 
     pub type HelloRetryExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < HelloRetryExtensionFmt > , usize > > , FnSpecMapper < HelloRetryExtensionsInner , HelloRetryExtensionsSpec >> > ;
@@ -4164,6 +4219,7 @@ verus! {
 
 
     # [doc = "named format combinator for `hello_retry_request`."]
+    # [derive (Clone , Copy)]
     pub struct HelloRetryRequestFmt ;
 
     pub type HelloRetryRequestFmtSpec = Named < Mapped < Pair < SessionIdFmt , Pair < CipherSuiteFmt , Pair < Const < U8 , u8 > , HelloRetryExtensionsFmt > > > , FnSpecMapper < HelloRetryRequestInner , HelloRetryRequestSpec >> > ;
@@ -4210,6 +4266,7 @@ verus! {
 
 
     # [doc = "named format combinator for `pre_shared_key_server_extension`."]
+    # [derive (Clone , Copy)]
     pub struct PreSharedKeyServerExtensionFmt ;
 
     pub type PreSharedKeyServerExtensionFmtSpec = Named < Mapped < U16Be , FnSpecMapper < PreSharedKeyServerExtensionInner , PreSharedKeyServerExtensionSpec >> > ;
@@ -4240,6 +4297,7 @@ verus! {
 
 
     # [doc = "named format combinator for `key_share_entry`."]
+    # [derive (Clone , Copy)]
     pub struct KeyShareEntryFmt ;
 
     pub type KeyShareEntryFmtSpec = Named < Mapped < Bind < NamedGroupFmt , spec_fn (NamedGroupSpec) -> Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > > , FnSpecMapper < KeyShareEntryInner , KeyShareEntrySpec >> > ;
@@ -4281,6 +4339,7 @@ verus! {
 
 
     # [doc = "named format combinator for `sever_hello_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct SeverHelloExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -4323,6 +4382,7 @@ verus! {
 
 
     # [doc = "named format combinator for `sever_hello_extension`."]
+    # [derive (Clone , Copy)]
     pub struct SeverHelloExtensionFmt ;
 
     pub type SeverHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < SeverHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < SeverHelloExtensionInner , SeverHelloExtensionSpec >> > ;
@@ -4368,6 +4428,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct ServerExtensionsFmt ;
 
     pub type ServerExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SeverHelloExtensionFmt > , usize > > , FnSpecMapper < ServerExtensionsInner , ServerExtensionsSpec >> > ;
@@ -4405,6 +4466,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_hello`."]
+    # [derive (Clone , Copy)]
     pub struct ServerHelloFmt ;
 
     pub type ServerHelloFmtSpec = Named < Mapped < Pair < SessionIdFmt , Pair < CipherSuiteFmt , Pair < Const < U8 , u8 > , ServerExtensionsFmt > > > , FnSpecMapper < ServerHelloInner , ServerHelloSpec >> > ;
@@ -4451,6 +4513,7 @@ verus! {
 
 
     # [doc = "named format combinator for `sh_or_hrr_payload`."]
+    # [derive (Clone , Copy)]
     pub struct ShOrHrrPayloadFmt < 'i > {
         pub random : & 'i [u8] ,
     }
@@ -4486,6 +4549,7 @@ verus! {
 
 
     # [doc = "named format combinator for `sh_or_hrr`."]
+    # [derive (Clone , Copy)]
     pub struct ShOrHrrFmt ;
 
     pub type ShOrHrrFmtSpec = Named < Mapped < Pair < Const < U16Be , u16 > , Bind < Fixed < 32 > , spec_fn (Seq < u8 >) -> ShOrHrrPayloadFmtSpec > > , FnSpecMapper < ShOrHrrInner , ShOrHrrSpec >> > ;
@@ -4527,6 +4591,7 @@ verus! {
 
 
     # [doc = "named format combinator for `handshake_type`."]
+    # [derive (Clone , Copy)]
     pub struct HandshakeTypeFmt ;
 
     pub type HandshakeTypeFmtSpec = Named < Mapped < Refined < U8 , PredFnSpec < u8 >> , FnSpecMapper < HandshakeTypeInner , HandshakeTypeSpec >> > ;
@@ -4574,6 +4639,7 @@ verus! {
 
 
     # [doc = "named format combinator for `cipher_suite_list`."]
+    # [derive (Clone , Copy)]
     pub struct CipherSuiteListFmt ;
 
     pub type CipherSuiteListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CipherSuiteFmt > , usize > > , FnSpecMapper < CipherSuiteListInner , CipherSuiteListSpec >> > ;
@@ -4611,22 +4677,33 @@ verus! {
 
 
     # [doc = "named format combinator for `host_name`."]
+    # [derive (Clone , Copy)]
     pub struct HostNameFmt ;
-    pub type HostNameFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type HostNameFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `host_name`."]
     pub open spec fn host_name_fmt () -> HostNameFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("host_name" ,
+        Opaque1FfffFmt)
     }
+
 
     # [doc = "named format combinator for `unknown_name`."]
+    # [derive (Clone , Copy)]
     pub struct UnknownNameFmt ;
-    pub type UnknownNameFmtSpec = Opaque1FfffFmtSpec ;
+
+    pub type UnknownNameFmtSpec = Named < Opaque1FfffFmt > ;
+
     # [doc = "specification constructor for `unknown_name`."]
     pub open spec fn unknown_name_fmt () -> UnknownNameFmtSpec {
-        opaque_1_ffff_fmt ()
+        Named ("unknown_name" ,
+        Opaque1FfffFmt)
     }
 
+
     # [doc = "named format combinator for `server_name_name`."]
+    # [derive (Clone , Copy)]
     pub struct ServerNameNameFmt {
         pub name_type : NameType ,
     }
@@ -4662,6 +4739,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_name`."]
+    # [derive (Clone , Copy)]
     pub struct ServerNameFmt ;
 
     pub type ServerNameFmtSpec = Named < Mapped < Bind < NameTypeFmt , spec_fn (NameTypeSpec) -> ServerNameNameFmt > , FnSpecMapper < ServerNameInner , ServerNameSpec >> > ;
@@ -4700,6 +4778,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_name_list`."]
+    # [derive (Clone , Copy)]
     pub struct ServerNameListFmt ;
 
     pub type ServerNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ServerNameFmt > , usize > > , FnSpecMapper < ServerNameListInner , ServerNameListSpec >> > ;
@@ -4737,6 +4816,7 @@ verus! {
 
 
     # [doc = "named format combinator for `named_group_list`."]
+    # [derive (Clone , Copy)]
     pub struct NamedGroupListFmt ;
 
     pub type NamedGroupListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NamedGroupFmt > , usize > > , FnSpecMapper < NamedGroupListInner , NamedGroupListSpec >> > ;
@@ -4774,14 +4854,20 @@ verus! {
 
 
     # [doc = "named format combinator for `protocol_name`."]
+    # [derive (Clone , Copy)]
     pub struct ProtocolNameFmt ;
-    pub type ProtocolNameFmtSpec = Opaque1FfFmtSpec ;
+
+    pub type ProtocolNameFmtSpec = Named < Opaque1FfFmt > ;
+
     # [doc = "specification constructor for `protocol_name`."]
     pub open spec fn protocol_name_fmt () -> ProtocolNameFmtSpec {
-        opaque_1_ff_fmt ()
+        Named ("protocol_name" ,
+        Opaque1FfFmt)
     }
 
+
     # [doc = "named format combinator for `protocol_name_list`."]
+    # [derive (Clone , Copy)]
     pub struct ProtocolNameListFmt ;
 
     pub type ProtocolNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ProtocolNameFmt > , usize > > , FnSpecMapper < ProtocolNameListInner , ProtocolNameListSpec >> > ;
@@ -4819,6 +4905,7 @@ verus! {
 
 
     # [doc = "named format combinator for `supported_versions_client`."]
+    # [derive (Clone , Copy)]
     pub struct SupportedVersionsClientFmt ;
 
     pub type SupportedVersionsClientFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < ProtocolVersionFmt > , usize > > , FnSpecMapper < SupportedVersionsClientInner , SupportedVersionsClientSpec >> > ;
@@ -4856,6 +4943,7 @@ verus! {
 
 
     # [doc = "named format combinator for `key_share_client_hello`."]
+    # [derive (Clone , Copy)]
     pub struct KeyShareClientHelloFmt ;
 
     pub type KeyShareClientHelloFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < KeyShareEntryFmt > , usize > > , FnSpecMapper < KeyShareClientHelloInner , KeyShareClientHelloSpec >> > ;
@@ -4892,6 +4980,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_key_exchange_mode`."]
+    # [derive (Clone , Copy)]
     pub struct PskKeyExchangeModeFmt ;
 
     pub type PskKeyExchangeModeFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < PskKeyExchangeModeInner , PskKeyExchangeModeSpec >> > ;
@@ -4930,6 +5019,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_key_exchange_modes`."]
+    # [derive (Clone , Copy)]
     pub struct PskKeyExchangeModesFmt ;
 
     pub type PskKeyExchangeModesFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < PskKeyExchangeModeFmt > , usize > > , FnSpecMapper < PskKeyExchangeModesInner , PskKeyExchangeModesSpec >> > ;
@@ -4967,6 +5057,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_identity`."]
+    # [derive (Clone , Copy)]
     pub struct PskIdentityFmt ;
 
     pub type PskIdentityFmtSpec = Named < Mapped < Pair < Opaque1FfffFmt , U32Be > , FnSpecMapper < PskIdentityInner , PskIdentitySpec >> > ;
@@ -5002,6 +5093,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_identities`."]
+    # [derive (Clone , Copy)]
     pub struct PskIdentitiesFmt ;
 
     pub type PskIdentitiesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskIdentityFmt > , usize > > , FnSpecMapper < PskIdentitiesInner , PskIdentitiesSpec >> > ;
@@ -5039,6 +5131,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_binder_entry`."]
+    # [derive (Clone , Copy)]
     pub struct PskBinderEntryFmt ;
 
     pub type PskBinderEntryFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < PskBinderEntryInner , PskBinderEntrySpec >> > ;
@@ -5075,6 +5168,7 @@ verus! {
 
 
     # [doc = "named format combinator for `psk_binder_entries`."]
+    # [derive (Clone , Copy)]
     pub struct PskBinderEntriesFmt ;
 
     pub type PskBinderEntriesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskBinderEntryFmt > , usize > > , FnSpecMapper < PskBinderEntriesInner , PskBinderEntriesSpec >> > ;
@@ -5112,6 +5206,7 @@ verus! {
 
 
     # [doc = "named format combinator for `offered_psks`."]
+    # [derive (Clone , Copy)]
     pub struct OfferedPsksFmt ;
 
     pub type OfferedPsksFmtSpec = Named < Mapped < Pair < PskIdentitiesFmt , PskBinderEntriesFmt > , FnSpecMapper < OfferedPsksInner , OfferedPsksSpec >> > ;
@@ -5147,6 +5242,7 @@ verus! {
 
 
     # [doc = "named format combinator for `pre_shared_key_client_extension`."]
+    # [derive (Clone , Copy)]
     pub struct PreSharedKeyClientExtensionFmt ;
 
     pub type PreSharedKeyClientExtensionFmtSpec = Named < Mapped < OfferedPsksFmt , FnSpecMapper < PreSharedKeyClientExtensionInner , PreSharedKeyClientExtensionSpec >> > ;
@@ -5177,6 +5273,7 @@ verus! {
 
 
     # [doc = "named format combinator for `max_fragment_length`."]
+    # [derive (Clone , Copy)]
     pub struct MaxFragmentLengthFmt ;
 
     pub type MaxFragmentLengthFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < MaxFragmentLengthInner , MaxFragmentLengthSpec >> > ;
@@ -5219,6 +5316,7 @@ verus! {
 
 
     # [doc = "named format combinator for `heartbeat_mode`."]
+    # [derive (Clone , Copy)]
     pub struct HeartbeatModeFmt ;
 
     pub type HeartbeatModeFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < HeartbeatModeInner , HeartbeatModeSpec >> > ;
@@ -5257,6 +5355,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_type`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateTypeFmt ;
 
     pub type CertificateTypeFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < CertificateTypeInner , CertificateTypeSpec >> > ;
@@ -5295,6 +5394,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_cert_type_client_extension`."]
+    # [derive (Clone , Copy)]
     pub struct ClientCertTypeClientExtensionFmt ;
 
     pub type ClientCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , usize > > , FnSpecMapper < ClientCertTypeClientExtensionInner , ClientCertTypeClientExtensionSpec >> > ;
@@ -5332,6 +5432,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_cert_type_client_extension`."]
+    # [derive (Clone , Copy)]
     pub struct ServerCertTypeClientExtensionFmt ;
 
     pub type ServerCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , usize > > , FnSpecMapper < ServerCertTypeClientExtensionInner , ServerCertTypeClientExtensionSpec >> > ;
@@ -5369,6 +5470,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_hello_extension_rest`."]
+    # [derive (Clone , Copy)]
     pub struct ClientHelloExtensionRestFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -5432,6 +5534,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_hello_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct ClientHelloExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -5496,6 +5599,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_hello_extension`."]
+    # [derive (Clone , Copy)]
     pub struct ClientHelloExtensionFmt ;
 
     pub type ClientHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < ClientHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < ClientHelloExtensionInner , ClientHelloExtensionSpec >> > ;
@@ -5541,6 +5645,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct ClientExtensionsFmt ;
 
     pub type ClientExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ClientHelloExtensionFmt > , usize > > , FnSpecMapper < ClientExtensionsInner , ClientExtensionsSpec >> > ;
@@ -5578,6 +5683,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_hello`."]
+    # [derive (Clone , Copy)]
     pub struct ClientHelloFmt ;
 
     pub type ClientHelloFmtSpec = Named < Mapped < Pair < Const < U16Be , u16 > , Pair < Fixed < 32 > , Pair < SessionIdFmt , Pair < CipherSuiteListFmt , Pair < Opaque1FfFmt , ClientExtensionsFmt > > > > > , FnSpecMapper < ClientHelloInner , ClientHelloSpec >> > ;
@@ -5634,6 +5740,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_0_ff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque0FfFmt ;
 
     pub type Opaque0FfFmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < Opaque0FfInner , Opaque0FfSpec >> > ;
@@ -5669,6 +5776,7 @@ verus! {
 
 
     # [doc = "named format combinator for `early_data_indication_new_session_ticket`."]
+    # [derive (Clone , Copy)]
     pub struct EarlyDataIndicationNewSessionTicketFmt ;
 
     pub type EarlyDataIndicationNewSessionTicketFmtSpec = Named < Mapped < U32Be , FnSpecMapper < EarlyDataIndicationNewSessionTicketInner , EarlyDataIndicationNewSessionTicketSpec >> > ;
@@ -5699,6 +5807,7 @@ verus! {
 
 
     # [doc = "named format combinator for `new_session_ticket_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct NewSessionTicketExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -5735,6 +5844,7 @@ verus! {
 
 
     # [doc = "named format combinator for `new_session_ticket_extension`."]
+    # [derive (Clone , Copy)]
     pub struct NewSessionTicketExtensionFmt ;
 
     pub type NewSessionTicketExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < NewSessionTicketExtensionExtensionDataFmt , usize > > > , FnSpecMapper < NewSessionTicketExtensionInner , NewSessionTicketExtensionSpec >> > ;
@@ -5780,6 +5890,7 @@ verus! {
 
 
     # [doc = "named format combinator for `new_session_ticket_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct NewSessionTicketExtensionsFmt ;
 
     pub type NewSessionTicketExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NewSessionTicketExtensionFmt > , usize > > , FnSpecMapper < NewSessionTicketExtensionsInner , NewSessionTicketExtensionsSpec >> > ;
@@ -5817,6 +5928,7 @@ verus! {
 
 
     # [doc = "named format combinator for `new_session_ticket`."]
+    # [derive (Clone , Copy)]
     pub struct NewSessionTicketFmt ;
 
     pub type NewSessionTicketFmtSpec = Named < Mapped < Pair < U32Be , Pair < U32Be , Pair < Opaque0FfFmt , Pair < Opaque1FfffFmt , NewSessionTicketExtensionsFmt > > > > , FnSpecMapper < NewSessionTicketInner , NewSessionTicketSpec >> > ;
@@ -5867,6 +5979,7 @@ verus! {
 
 
     # [doc = "named format combinator for `encrypted_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct EncryptedExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -5924,6 +6037,7 @@ verus! {
 
 
     # [doc = "named format combinator for `encrypted_extension`."]
+    # [derive (Clone , Copy)]
     pub struct EncryptedExtensionFmt ;
 
     pub type EncryptedExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < EncryptedExtensionExtensionDataFmt , usize > > > , FnSpecMapper < EncryptedExtensionInner , EncryptedExtensionSpec >> > ;
@@ -5969,6 +6083,7 @@ verus! {
 
 
     # [doc = "named format combinator for `encrypted_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct EncryptedExtensionsFmt ;
 
     pub type EncryptedExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < EncryptedExtensionFmt > , usize > > , FnSpecMapper < EncryptedExtensionsInner , EncryptedExtensionsSpec >> > ;
@@ -6005,6 +6120,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_1_ffffff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque1FfffffFmt ;
 
     pub type Opaque1FfffffFmtSpec = Named < Mapped < Bind < Refined < U24Be , PredFnSpec < u32 >> , spec_fn (u32) -> Varied < usize > > , FnSpecMapper < Opaque1FfffffInner , Opaque1FfffffSpec >> > ;
@@ -6041,14 +6157,20 @@ verus! {
 
 
     # [doc = "named format combinator for `ocsp_response`."]
+    # [derive (Clone , Copy)]
     pub struct OcspResponseFmt ;
-    pub type OcspResponseFmtSpec = Opaque1FfffffFmtSpec ;
+
+    pub type OcspResponseFmtSpec = Named < Opaque1FfffffFmt > ;
+
     # [doc = "specification constructor for `ocsp_response`."]
     pub open spec fn ocsp_response_fmt () -> OcspResponseFmtSpec {
-        opaque_1_ffffff_fmt ()
+        Named ("ocsp_response" ,
+        Opaque1FfffffFmt)
     }
 
+
     # [doc = "named format combinator for `certificate_status`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateStatusFmt ;
 
     pub type CertificateStatusFmtSpec = Named < Mapped < Pair < Const < U8 , u8 > , OcspResponseFmt > , FnSpecMapper < CertificateStatusInner , CertificateStatusSpec >> > ;
@@ -6085,6 +6207,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_extension_extension_data`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateExtensionExtensionDataFmt {
         pub ext_len : u16 ,
         pub extension_type : ExtensionType ,
@@ -6124,6 +6247,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_extension`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateExtensionFmt ;
 
     pub type CertificateExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateExtensionInner , CertificateExtensionSpec >> > ;
@@ -6169,6 +6293,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateExtensionsFmt ;
 
     pub type CertificateExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateExtensionFmt > , usize > > , FnSpecMapper < CertificateExtensionsInner , CertificateExtensionsSpec >> > ;
@@ -6205,6 +6330,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_entry_opaque`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateEntryOpaqueFmt ;
 
     pub type CertificateEntryOpaqueFmtSpec = Named < Mapped < Pair < Opaque1FfffffFmt , CertificateExtensionsFmt > , FnSpecMapper < CertificateEntryOpaqueInner , CertificateEntryOpaqueSpec >> > ;
@@ -6240,6 +6366,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_list`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateListFmt ;
 
     pub type CertificateListFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> ExactLen < RepeatTillEnd < CertificateEntryOpaqueFmt > , usize > > , FnSpecMapper < CertificateListInner , CertificateListSpec >> > ;
@@ -6276,6 +6403,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateFmt ;
 
     pub type CertificateFmtSpec = Named < Mapped < Pair < Opaque0FfFmt , CertificateListFmt > , FnSpecMapper < CertificateInner , CertificateSpec >> > ;
@@ -6311,6 +6439,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_request_extensions`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateRequestExtensionsFmt ;
 
     pub type CertificateRequestExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateRequestExtensionFmt > , usize > > , FnSpecMapper < CertificateRequestExtensionsInner , CertificateRequestExtensionsSpec >> > ;
@@ -6348,6 +6477,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_request`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateRequestFmt ;
 
     pub type CertificateRequestFmtSpec = Named < Mapped < Pair < Opaque0FfFmt , CertificateRequestExtensionsFmt > , FnSpecMapper < CertificateRequestInner , CertificateRequestSpec >> > ;
@@ -6383,6 +6513,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_verify`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateVerifyFmt ;
 
     pub type CertificateVerifyFmtSpec = Named < Mapped < Pair < SignatureSchemeFmt , Opaque0FfffFmt > , FnSpecMapper < CertificateVerifyInner , CertificateVerifySpec >> > ;
@@ -6418,6 +6549,7 @@ verus! {
 
 
     # [doc = "named format combinator for `finished`."]
+    # [derive (Clone , Copy)]
     pub struct FinishedFmt {
         pub size : u32 ,
     }
@@ -6465,6 +6597,7 @@ verus! {
 
 
     # [doc = "named format combinator for `key_update_request`."]
+    # [derive (Clone , Copy)]
     pub struct KeyUpdateRequestFmt ;
 
     pub type KeyUpdateRequestFmtSpec = Named < Mapped < Refined < U8 , PredFnSpec < u8 >> , FnSpecMapper < KeyUpdateRequestInner , KeyUpdateRequestSpec >> > ;
@@ -6496,6 +6629,7 @@ verus! {
 
 
     # [doc = "named format combinator for `key_update`."]
+    # [derive (Clone , Copy)]
     pub struct KeyUpdateFmt ;
 
     pub type KeyUpdateFmtSpec = Named < Mapped < KeyUpdateRequestFmt , FnSpecMapper < KeyUpdateInner , KeyUpdateSpec >> > ;
@@ -6526,6 +6660,7 @@ verus! {
 
 
     # [doc = "named format combinator for `handshake_msg`."]
+    # [derive (Clone , Copy)]
     pub struct HandshakeMsgFmt {
         pub length : u32 ,
         pub msg_type : HandshakeType ,
@@ -6589,6 +6724,7 @@ verus! {
 
 
     # [doc = "named format combinator for `handshake`."]
+    # [derive (Clone , Copy)]
     pub struct HandshakeFmt ;
 
     pub type HandshakeFmtSpec = Named < Mapped < Bind < HandshakeTypeFmt , spec_fn (HandshakeTypeSpec) -> Bind < U24Be , spec_fn (u32) -> ExactLen < HandshakeMsgFmt , usize > > > , FnSpecMapper < HandshakeInner , HandshakeSpec >> > ;
@@ -6634,6 +6770,7 @@ verus! {
 
 
     # [doc = "named format combinator for `zero_byte`."]
+    # [derive (Clone , Copy)]
     pub struct ZeroByteFmt ;
 
     pub type ZeroByteFmtSpec = Named < Mapped < Const < U8 , u8 > , FnSpecMapper < ZeroByteInner , ZeroByteSpec >> > ;
@@ -6665,6 +6802,7 @@ verus! {
 
 
     # [doc = "named format combinator for `padding_extension`."]
+    # [derive (Clone , Copy)]
     pub struct PaddingExtensionFmt {
         pub ext_len : u16 ,
     }
@@ -6703,6 +6841,7 @@ verus! {
 
 
     # [doc = "named format combinator for `extension`."]
+    # [derive (Clone , Copy)]
     pub struct ExtensionFmt ;
 
     pub type ExtensionFmtSpec = Named < Mapped < Pair < ExtensionTypeFmt , Opaque0FfffFmt > , FnSpecMapper < ExtensionInner , ExtensionSpec >> > ;
@@ -6738,6 +6877,7 @@ verus! {
 
 
     # [doc = "named format combinator for `client_cert_type_server_extension`."]
+    # [derive (Clone , Copy)]
     pub struct ClientCertTypeServerExtensionFmt ;
 
     pub type ClientCertTypeServerExtensionFmtSpec = Named < Mapped < CertificateTypeFmt , FnSpecMapper < ClientCertTypeServerExtensionInner , ClientCertTypeServerExtensionSpec >> > ;
@@ -6768,6 +6908,7 @@ verus! {
 
 
     # [doc = "named format combinator for `content_type`."]
+    # [derive (Clone , Copy)]
     pub struct ContentTypeFmt ;
 
     pub type ContentTypeFmtSpec = Named < Mapped < Refined < U8 , PredFnSpec < u8 >> , FnSpecMapper < ContentTypeInner , ContentTypeSpec >> > ;
@@ -6805,6 +6946,7 @@ verus! {
 
 
     # [doc = "named format combinator for `tls_plaintext`."]
+    # [derive (Clone , Copy)]
     pub struct TlsPlaintextFmt ;
 
     pub type TlsPlaintextFmtSpec = Named < Mapped < Pair < ContentTypeFmt , Pair < ProtocolVersionFmt , Opaque0FfffFmt > > , FnSpecMapper < TlsPlaintextInner , TlsPlaintextSpec >> > ;
@@ -6845,6 +6987,7 @@ verus! {
 
 
     # [doc = "named format combinator for `alert_description`."]
+    # [derive (Clone , Copy)]
     pub struct AlertDescriptionFmt ;
 
     pub type AlertDescriptionFmtSpec = Named < Mapped < Refined < U8 , PredFnSpec < u8 >> , FnSpecMapper < AlertDescriptionInner , AlertDescriptionSpec >> > ;
@@ -6926,6 +7069,7 @@ verus! {
 
 
     # [doc = "named format combinator for `srtp_protection_profile`."]
+    # [derive (Clone , Copy)]
     pub struct SrtpProtectionProfileFmt ;
 
     pub type SrtpProtectionProfileFmtSpec = Named < Fixed < 2 > > ;
@@ -6938,6 +7082,7 @@ verus! {
 
 
     # [doc = "named format combinator for `srtp_protection_profiles`."]
+    # [derive (Clone , Copy)]
     pub struct SrtpProtectionProfilesFmt ;
 
     pub type SrtpProtectionProfilesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SrtpProtectionProfileFmt > , usize > > , FnSpecMapper < SrtpProtectionProfilesInner , SrtpProtectionProfilesSpec >> > ;
@@ -6975,6 +7120,7 @@ verus! {
 
 
     # [doc = "named format combinator for `use_srtp_data`."]
+    # [derive (Clone , Copy)]
     pub struct UseSrtpDataFmt ;
 
     pub type UseSrtpDataFmtSpec = Named < Mapped < Pair < SrtpProtectionProfilesFmt , Opaque0FfFmt > , FnSpecMapper < UseSrtpDataInner , UseSrtpDataSpec >> > ;
@@ -7010,6 +7156,7 @@ verus! {
 
 
     # [doc = "named format combinator for `finished_opaque`."]
+    # [derive (Clone , Copy)]
     pub struct FinishedOpaqueFmt {
         pub digest_size : u32 ,
     }
@@ -7024,6 +7171,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_2_ffff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque2FfffFmt ;
 
     pub type Opaque2FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque2FfffInner , Opaque2FfffSpec >> > ;
@@ -7060,6 +7208,7 @@ verus! {
 
 
     # [doc = "named format combinator for `alert`."]
+    # [derive (Clone , Copy)]
     pub struct AlertFmt ;
 
     pub type AlertFmtSpec = Named < Mapped < Pair < AlertLevelFmt , AlertDescriptionFmt > , FnSpecMapper < AlertInner , AlertSpec >> > ;
@@ -7095,6 +7244,7 @@ verus! {
 
 
     # [doc = "named format combinator for `server_cert_type_server_extension`."]
+    # [derive (Clone , Copy)]
     pub struct ServerCertTypeServerExtensionFmt ;
 
     pub type ServerCertTypeServerExtensionFmtSpec = Named < Mapped < CertificateTypeFmt , FnSpecMapper < ServerCertTypeServerExtensionInner , ServerCertTypeServerExtensionSpec >> > ;
@@ -7125,14 +7275,20 @@ verus! {
 
 
     # [doc = "named format combinator for `unknown_extension`."]
+    # [derive (Clone , Copy)]
     pub struct UnknownExtensionFmt ;
-    pub type UnknownExtensionFmtSpec = Opaque0FfffFmtSpec ;
+
+    pub type UnknownExtensionFmtSpec = Named < Opaque0FfffFmt > ;
+
     # [doc = "specification constructor for `unknown_extension`."]
     pub open spec fn unknown_extension_fmt () -> UnknownExtensionFmtSpec {
-        opaque_0_ffff_fmt ()
+        Named ("unknown_extension" ,
+        Opaque0FfffFmt)
     }
 
+
     # [doc = "named format combinator for `digest_size`."]
+    # [derive (Clone , Copy)]
     pub struct DigestSizeFmt ;
 
     pub type DigestSizeFmtSpec = Named < Mapped < Choice < Refined < U24Be , PredFnSpec < u32 >> , Refined < U24Be , PredFnSpec < u32 >> > , FnSpecMapper < DigestSizeInner , DigestSizeSpec >> > ;
@@ -7179,6 +7335,7 @@ verus! {
 
 
     # [doc = "named format combinator for `heartbeat_extension`."]
+    # [derive (Clone , Copy)]
     pub struct HeartbeatExtensionFmt ;
 
     pub type HeartbeatExtensionFmtSpec = Named < Mapped < HeartbeatModeFmt , FnSpecMapper < HeartbeatExtensionInner , HeartbeatExtensionSpec >> > ;
@@ -7209,6 +7366,7 @@ verus! {
 
 
     # [doc = "named format combinator for `ec_point_format`."]
+    # [derive (Clone , Copy)]
     pub struct EcPointFormatFmt ;
 
     pub type EcPointFormatFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < EcPointFormatInner , EcPointFormatSpec >> > ;
@@ -7249,6 +7407,7 @@ verus! {
 
 
     # [doc = "named format combinator for `ec_point_format_list`."]
+    # [derive (Clone , Copy)]
     pub struct EcPointFormatListFmt ;
 
     pub type EcPointFormatListFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < EcPointFormatFmt > , usize > > , FnSpecMapper < EcPointFormatListInner , EcPointFormatListSpec >> > ;
@@ -7286,6 +7445,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_entry_data`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateEntryDataFmt {
         pub cert_type : CertificateType ,
     }
@@ -7324,6 +7484,7 @@ verus! {
 
 
     # [doc = "named format combinator for `certificate_entry`."]
+    # [derive (Clone , Copy)]
     pub struct CertificateEntryFmt {
         pub cert_type : CertificateType ,
     }
@@ -7364,6 +7525,7 @@ verus! {
 
 
     # [doc = "named format combinator for `tls_ciphertext`."]
+    # [derive (Clone , Copy)]
     pub struct TlsCiphertextFmt ;
 
     pub type TlsCiphertextFmtSpec = Named < Mapped < Pair < ContentTypeFmt , Pair < ProtocolVersionFmt , Opaque0FfffFmt > > , FnSpecMapper < TlsCiphertextInner , TlsCiphertextSpec >> > ;
@@ -7404,6 +7566,7 @@ verus! {
 
 
     # [doc = "named format combinator for `opaque_0_ffffff`."]
+    # [derive (Clone , Copy)]
     pub struct Opaque0FfffffFmt ;
 
     pub type Opaque0FfffffFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> Varied < usize > > , FnSpecMapper < Opaque0FfffffInner , Opaque0FfffffSpec >> > ;

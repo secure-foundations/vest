@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `a_typed_choose`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum ATypedChoose {
     X(u8),
     Y(u16),
@@ -88,7 +88,7 @@ impl SelfView for ATypedOpenEnum {
 }
 
 # [doc = "data type for `a_non_dependent_choose`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum ANonDependentChoose {
     Variant1(u8),
     Variant2(u8),
@@ -117,7 +117,7 @@ impl DeepView for ANonDependentChoose {
 }
 
 # [doc = "data type for `a_regular_choose`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum ARegularChoose {
     A(u8),
     B(u16),
@@ -308,7 +308,7 @@ impl SelfView for AnOpenEnum {
 }
 
 # [doc = "data type for `a_typed_choose_with_default`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum ATypedChooseWithDefault<'i> {
     P(u8),
     Q(u16),
@@ -342,7 +342,7 @@ impl<'i> DeepView for ATypedChooseWithDefault<'i> {
 }
 
 # [doc = "data type for `a_choose_with_default`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum AChooseWithDefault<'i> {
     A(u8),
     B(u16),
@@ -377,6 +377,7 @@ impl<'i> DeepView for AChooseWithDefault<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `a_typed_choose`."]
+# [derive (Clone , Copy)]
 pub struct ATypedChooseFmt {
     pub e: ATypedClosedEnum,
 }
@@ -418,6 +419,7 @@ pub open spec fn a_typed_choose_fmt(e: ATypedClosedEnumSpec) -> ATypedChooseFmtS
 }
 
 # [doc = "named format combinator for `a_typed_open_enum`."]
+# [derive (Clone , Copy)]
 pub struct ATypedOpenEnumFmt;
 
 pub type ATypedOpenEnumFmtSpec = Named<
@@ -464,6 +466,7 @@ pub open spec fn a_typed_open_enum_fmt() -> ATypedOpenEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `a_non_dependent_choose`."]
+# [derive (Clone , Copy)]
 pub struct ANonDependentChooseFmt;
 
 pub type ANonDependentChooseFmtSpec = Named<
@@ -508,6 +511,7 @@ pub open spec fn a_non_dependent_choose_fmt() -> ANonDependentChooseFmtSpec {
 }
 
 # [doc = "named format combinator for `a_regular_choose`."]
+# [derive (Clone , Copy)]
 pub struct ARegularChooseFmt {
     pub e: AClosedEnum,
 }
@@ -549,6 +553,7 @@ pub open spec fn a_regular_choose_fmt(e: AClosedEnumSpec) -> ARegularChooseFmtSp
 }
 
 # [doc = "named format combinator for `a_mixed_typed_enum`."]
+# [derive (Clone , Copy)]
 pub struct AMixedTypedEnumFmt;
 
 pub type AMixedTypedEnumFmtSpec = Named<
@@ -585,6 +590,7 @@ pub open spec fn a_mixed_typed_enum_fmt() -> AMixedTypedEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `a_closed_enum`."]
+# [derive (Clone , Copy)]
 pub struct AClosedEnumFmt;
 
 pub type AClosedEnumFmtSpec = Named<
@@ -621,6 +627,7 @@ pub open spec fn a_closed_enum_fmt() -> AClosedEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `a_typed_closed_enum`."]
+# [derive (Clone , Copy)]
 pub struct ATypedClosedEnumFmt;
 
 pub type ATypedClosedEnumFmtSpec = Named<
@@ -660,6 +667,7 @@ pub open spec fn a_typed_closed_enum_fmt() -> ATypedClosedEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `an_open_enum`."]
+# [derive (Clone , Copy)]
 pub struct AnOpenEnumFmt;
 
 pub type AnOpenEnumFmtSpec = Named<
@@ -706,6 +714,7 @@ pub open spec fn an_open_enum_fmt() -> AnOpenEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `a_typed_choose_with_default`."]
+# [derive (Clone , Copy)]
 pub struct ATypedChooseWithDefaultFmt {
     pub e: ATypedOpenEnum,
 }
@@ -759,6 +768,7 @@ pub open spec fn a_typed_choose_with_default_fmt(
 }
 
 # [doc = "named format combinator for `a_choose_with_default`."]
+# [derive (Clone , Copy)]
 pub struct AChooseWithDefaultFmt {
     pub e: AnOpenEnum,
 }

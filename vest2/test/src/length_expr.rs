@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `header`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Header {
     pub len: u16,
     pub flags: u8,
@@ -45,7 +45,7 @@ pub type HeaderAlias = Header;
 pub type HeaderAliasSpec = HeaderSpec;
 
 # [doc = "data type for `divide`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Divide<'i> {
     pub chunks: &'i [u8],
 }
@@ -66,7 +66,7 @@ impl<'i> DeepView for Divide<'i> {
 }
 
 # [doc = "data type for `fixed_choice`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum FixedChoice {
     Variant1(u16),
     Default(u16),
@@ -92,7 +92,7 @@ impl DeepView for FixedChoice {
 }
 
 # [doc = "data type for `simple_sub`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct SimpleSub<'i> {
     pub data: &'i [u8],
 }
@@ -113,7 +113,7 @@ impl<'i> DeepView for SimpleSub<'i> {
 }
 
 # [doc = "data type for `alias_size`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct AliasSize<'i> {
     pub bytes: &'i [u8],
 }
@@ -134,7 +134,7 @@ impl<'i> DeepView for AliasSize<'i> {
 }
 
 # [doc = "data type for `multi_arith`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MultiArith<'i> {
     pub body: &'i [u8],
 }
@@ -155,7 +155,7 @@ impl<'i> DeepView for MultiArith<'i> {
 }
 
 # [doc = "data type for `size_arith`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct SizeArith<'i> {
     pub bytes: &'i [u8],
 }
@@ -176,7 +176,7 @@ impl<'i> DeepView for SizeArith<'i> {
 }
 
 # [doc = "data type for `payload_with_header`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct PayloadWithHeader<'i> {
     pub data: &'i [u8],
 }
@@ -197,7 +197,7 @@ impl<'i> DeepView for PayloadWithHeader<'i> {
 }
 
 # [doc = "data type for `mixed_const`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct MixedConst<'i> {
     pub data: &'i [u8],
 }
@@ -223,7 +223,7 @@ pub type ChoiceTag<'i> = &'i [u8];
 pub type ChoiceTagSpec = Seq<u8>;
 
 # [doc = "data type for `named_size`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct NamedSize<'i> {
     pub bytes: &'i [u8],
 }
@@ -244,7 +244,7 @@ impl<'i> DeepView for NamedSize<'i> {
 }
 
 # [doc = "data type for `choice_format_size`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct ChoiceFormatSize<'i> {
     pub bytes: &'i [u8],
 }
@@ -270,7 +270,7 @@ pub type HeaderBytes = Header;
 pub type HeaderBytesSpec = HeaderSpec;
 
 # [doc = "data type for `multiply`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Multiply<'i> {
     pub items: &'i [u8],
 }
@@ -291,7 +291,7 @@ impl<'i> DeepView for Multiply<'i> {
 }
 
 # [doc = "data type for `choice_arrays_folded_body`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum ChoiceArraysFoldedBody {
     Variant1(u8),
     Variant2(u16),
@@ -326,7 +326,7 @@ impl DeepView for ChoiceArraysFoldedBody {
 }
 
 # [doc = "data type for `choice_arrays_folded`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct ChoiceArraysFolded<'i> {
     pub tag: ChoiceTag<'i>,
     pub body: ChoiceArraysFoldedBody,
@@ -349,7 +349,7 @@ impl<'i> DeepView for ChoiceArraysFolded<'i> {
 }
 
 # [doc = "data type for `paren_expr`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct ParenExpr<'i> {
     pub data: &'i [u8],
 }
@@ -370,7 +370,7 @@ impl<'i> DeepView for ParenExpr<'i> {
 }
 
 # [doc = "data type for `reinterpret_size`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct ReinterpretSize<'i> {
     pub bytes: &'i [u8],
 }
@@ -391,7 +391,7 @@ impl<'i> DeepView for ReinterpretSize<'i> {
 }
 
 # [doc = "data type for `primitive_sizes`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct PrimitiveSizes<'i> {
     pub byte: &'i [u8],
     pub word: &'i [u8],
@@ -417,6 +417,7 @@ impl<'i> DeepView for PrimitiveSizes<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `header`."]
+# [derive (Clone , Copy)]
 pub struct HeaderFmt;
 
 pub type HeaderFmtSpec = Named<
@@ -449,16 +450,18 @@ pub open spec fn header_fmt() -> HeaderFmtSpec {
 }
 
 # [doc = "named format combinator for `header_alias`."]
+# [derive (Clone , Copy)]
 pub struct HeaderAliasFmt;
 
-pub type HeaderAliasFmtSpec = HeaderFmtSpec;
+pub type HeaderAliasFmtSpec = Named<HeaderFmt>;
 
 # [doc = "specification constructor for `header_alias`."]
 pub open spec fn header_alias_fmt() -> HeaderAliasFmtSpec {
-    header_fmt()
+    Named("header_alias", HeaderFmt)
 }
 
 # [doc = "named format combinator for `divide`."]
+# [derive (Clone , Copy)]
 pub struct DivideFmt {
     pub total: u32,
 }
@@ -488,6 +491,7 @@ pub open spec fn divide_fmt(total: u32) -> DivideFmtSpec {
 }
 
 # [doc = "named format combinator for `fixed_choice`."]
+# [derive (Clone , Copy)]
 pub struct FixedChoiceFmt {
     pub tag: u8,
 }
@@ -526,6 +530,7 @@ pub open spec fn fixed_choice_fmt(tag: u8) -> FixedChoiceFmtSpec {
 }
 
 # [doc = "named format combinator for `simple_sub`."]
+# [derive (Clone , Copy)]
 pub struct SimpleSubFmt {
     pub len: u16,
 }
@@ -557,6 +562,7 @@ pub open spec fn simple_sub_fmt(len: u16) -> SimpleSubFmtSpec {
 }
 
 # [doc = "named format combinator for `alias_size`."]
+# [derive (Clone , Copy)]
 pub struct AliasSizeFmt;
 
 pub type AliasSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<AliasSizeInner, AliasSizeSpec>>>;
@@ -584,6 +590,7 @@ pub open spec fn alias_size_fmt() -> AliasSizeFmtSpec {
 }
 
 # [doc = "named format combinator for `multi_arith`."]
+# [derive (Clone , Copy)]
 pub struct MultiArithFmt {
     pub total: u32,
     pub hdr_len: u8,
@@ -616,6 +623,7 @@ pub open spec fn multi_arith_fmt(total: u32, hdr_len: u8) -> MultiArithFmtSpec {
 }
 
 # [doc = "named format combinator for `size_arith`."]
+# [derive (Clone , Copy)]
 pub struct SizeArithFmt;
 
 pub type SizeArithFmtSpec = Named<Mapped<Fixed<4>, FnSpecMapper<SizeArithInner, SizeArithSpec>>>;
@@ -643,6 +651,7 @@ pub open spec fn size_arith_fmt() -> SizeArithFmtSpec {
 }
 
 # [doc = "named format combinator for `payload_with_header`."]
+# [derive (Clone , Copy)]
 pub struct PayloadWithHeaderFmt {
     pub hdr: Header,
 }
@@ -674,6 +683,7 @@ pub open spec fn payload_with_header_fmt(hdr: HeaderSpec) -> PayloadWithHeaderFm
 }
 
 # [doc = "named format combinator for `mixed_const`."]
+# [derive (Clone , Copy)]
 pub struct MixedConstFmt {
     pub len: u16,
 }
@@ -705,6 +715,7 @@ pub open spec fn mixed_const_fmt(len: u16) -> MixedConstFmtSpec {
 }
 
 # [doc = "named format combinator for `choice_tag`."]
+# [derive (Clone , Copy)]
 pub struct ChoiceTagFmt;
 
 pub type ChoiceTagFmtSpec = Named<Fixed<2>>;
@@ -715,6 +726,7 @@ pub open spec fn choice_tag_fmt() -> ChoiceTagFmtSpec {
 }
 
 # [doc = "named format combinator for `named_size`."]
+# [derive (Clone , Copy)]
 pub struct NamedSizeFmt;
 
 pub type NamedSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<NamedSizeInner, NamedSizeSpec>>>;
@@ -742,6 +754,7 @@ pub open spec fn named_size_fmt() -> NamedSizeFmtSpec {
 }
 
 # [doc = "named format combinator for `choice_format_size`."]
+# [derive (Clone , Copy)]
 pub struct ChoiceFormatSizeFmt;
 
 pub type ChoiceFormatSizeFmtSpec = Named<
@@ -771,6 +784,7 @@ pub open spec fn choice_format_size_fmt() -> ChoiceFormatSizeFmtSpec {
 }
 
 # [doc = "named format combinator for `header_bytes`."]
+# [derive (Clone , Copy)]
 pub struct HeaderBytesFmt;
 
 pub type HeaderBytesFmtSpec = Named<ExactLen<HeaderFmt, usize>>;
@@ -781,6 +795,7 @@ pub open spec fn header_bytes_fmt() -> HeaderBytesFmtSpec {
 }
 
 # [doc = "named format combinator for `multiply`."]
+# [derive (Clone , Copy)]
 pub struct MultiplyFmt {
     pub count: u16,
     pub size: u8,
@@ -811,6 +826,7 @@ pub open spec fn multiply_fmt(count: u16, size: u8) -> MultiplyFmtSpec {
 }
 
 # [doc = "named format combinator for `choice_arrays_folded_body`."]
+# [derive (Clone , Copy)]
 pub struct ChoiceArraysFoldedBodyFmt<'i> {
     pub tag: ChoiceTag<'i>,
 }
@@ -857,6 +873,7 @@ pub open spec fn choice_arrays_folded_body_fmt(
 }
 
 # [doc = "named format combinator for `choice_arrays_folded`."]
+# [derive (Clone , Copy)]
 pub struct ChoiceArraysFoldedFmt;
 
 pub type ChoiceArraysFoldedFmtSpec = Named<
@@ -889,6 +906,7 @@ pub open spec fn choice_arrays_folded_fmt() -> ChoiceArraysFoldedFmtSpec {
 }
 
 # [doc = "named format combinator for `paren_expr`."]
+# [derive (Clone , Copy)]
 pub struct ParenExprFmt {
     pub a: u16,
     pub b: u8,
@@ -922,6 +940,7 @@ pub open spec fn paren_expr_fmt(a: u16, b: u8, c: u8) -> ParenExprFmtSpec {
 }
 
 # [doc = "named format combinator for `reinterpret_size`."]
+# [derive (Clone , Copy)]
 pub struct ReinterpretSizeFmt;
 
 pub type ReinterpretSizeFmtSpec = Named<
@@ -951,6 +970,7 @@ pub open spec fn reinterpret_size_fmt() -> ReinterpretSizeFmtSpec {
 }
 
 # [doc = "named format combinator for `primitive_sizes`."]
+# [derive (Clone , Copy)]
 pub struct PrimitiveSizesFmt;
 
 pub type PrimitiveSizesFmtSpec = Named<

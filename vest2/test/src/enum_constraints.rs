@@ -97,7 +97,7 @@ impl SelfView for MyEnum {
 }
 
 # [doc = "data type for `typed_enum_constraints`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct TypedEnumConstraints {
     pub foo: MyTypedEnum,
     pub bar: MyTypedEnum,
@@ -132,7 +132,7 @@ impl DeepView for TypedEnumConstraints {
 }
 
 # [doc = "data type for `enum_constraints`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct EnumConstraints {
     pub foo: MyEnum,
     pub bar: MyEnum,
@@ -167,6 +167,7 @@ impl DeepView for EnumConstraints {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `my_typed_enum`."]
+# [derive (Clone , Copy)]
 pub struct MyTypedEnumFmt;
 
 pub type MyTypedEnumFmtSpec = Named<
@@ -203,6 +204,7 @@ pub open spec fn my_typed_enum_fmt() -> MyTypedEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `my_enum`."]
+# [derive (Clone , Copy)]
 pub struct MyEnumFmt;
 
 pub type MyEnumFmtSpec = Named<
@@ -239,6 +241,7 @@ pub open spec fn my_enum_fmt() -> MyEnumFmtSpec {
 }
 
 # [doc = "named format combinator for `typed_enum_constraints`."]
+# [derive (Clone , Copy)]
 pub struct TypedEnumConstraintsFmt;
 
 pub type TypedEnumConstraintsFmtSpec = Named<
@@ -292,6 +295,7 @@ pub open spec fn typed_enum_constraints_fmt() -> TypedEnumConstraintsFmtSpec {
 }
 
 # [doc = "named format combinator for `enum_constraints`."]
+# [derive (Clone , Copy)]
 pub struct EnumConstraintsFmt;
 
 pub type EnumConstraintsFmtSpec = Named<

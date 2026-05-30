@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `generic_header`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct GenericHeader {
     pub next_type: u8,
     pub reserved: u8,
@@ -46,7 +46,7 @@ impl DeepView for GenericHeader {
 }
 
 # [doc = "data type for `outer_header`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct OuterHeader {
     pub magic: u32,
     pub inner: GenericHeader,
@@ -69,7 +69,7 @@ impl DeepView for OuterHeader {
 }
 
 # [doc = "data type for `payload_with_header`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct PayloadWithHeader<'i> {
     pub hdr: GenericHeader,
     pub body: &'i [u8],
@@ -92,7 +92,7 @@ impl<'i> DeepView for PayloadWithHeader<'i> {
 }
 
 # [doc = "data type for `deep_nested`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct DeepNested<'i> {
     pub outer: OuterHeader,
     pub data: &'i [u8],
@@ -115,7 +115,7 @@ impl<'i> DeepView for DeepNested<'i> {
 }
 
 # [doc = "data type for `combined_example`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CombinedExample<'i> {
     pub header: GenericHeader,
     pub body: &'i [u8],
@@ -141,6 +141,7 @@ impl<'i> DeepView for CombinedExample<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `generic_header`."]
+# [derive (Clone , Copy)]
 pub struct GenericHeaderFmt;
 
 pub type GenericHeaderFmtSpec = Named<
@@ -173,6 +174,7 @@ pub open spec fn generic_header_fmt() -> GenericHeaderFmtSpec {
 }
 
 # [doc = "named format combinator for `outer_header`."]
+# [derive (Clone , Copy)]
 pub struct OuterHeaderFmt;
 
 pub type OuterHeaderFmtSpec = Named<
@@ -202,6 +204,7 @@ pub open spec fn outer_header_fmt() -> OuterHeaderFmtSpec {
 }
 
 # [doc = "named format combinator for `payload_with_header`."]
+# [derive (Clone , Copy)]
 pub struct PayloadWithHeaderFmt;
 
 pub type PayloadWithHeaderFmtSpec = Named<
@@ -237,6 +240,7 @@ pub open spec fn payload_with_header_fmt() -> PayloadWithHeaderFmtSpec {
 }
 
 # [doc = "named format combinator for `deep_nested`."]
+# [derive (Clone , Copy)]
 pub struct DeepNestedFmt;
 
 pub type DeepNestedFmtSpec = Named<
@@ -273,6 +277,7 @@ pub open spec fn deep_nested_fmt() -> DeepNestedFmtSpec {
 }
 
 # [doc = "named format combinator for `combined_example`."]
+# [derive (Clone , Copy)]
 pub struct CombinedExampleFmt {
     pub total_len: u32,
 }

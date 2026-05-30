@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `script`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Script<'i> {
     pub l: u64,
     pub data: &'i [u8],
@@ -40,7 +40,7 @@ impl<'i> DeepView for Script<'i> {
 }
 
 # [doc = "data type for `txout`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Txout<'i> {
     pub value: u64,
     pub script_pubkey: Script<'i>,
@@ -63,7 +63,7 @@ impl<'i> DeepView for Txout<'i> {
 }
 
 # [doc = "data type for `outpoint`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Outpoint<'i> {
     pub hash: &'i [u8],
     pub index: u32,
@@ -86,7 +86,7 @@ impl<'i> DeepView for Outpoint<'i> {
 }
 
 # [doc = "data type for `script_sig`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct ScriptSig<'i> {
     pub l: u64,
     pub data: &'i [u8],
@@ -109,7 +109,7 @@ impl<'i> DeepView for ScriptSig<'i> {
 }
 
 # [doc = "data type for `witness_component`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct WitnessComponent<'i> {
     pub l: u64,
     pub data: &'i [u8],
@@ -132,7 +132,7 @@ impl<'i> DeepView for WitnessComponent<'i> {
 }
 
 # [doc = "data type for `witness`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct Witness<'i> {
     pub count: u64,
     pub data: Vec<WitnessComponent<'i>>,
@@ -155,7 +155,7 @@ impl<'i> DeepView for Witness<'i> {
 }
 
 # [doc = "data type for `txin`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct Txin<'i> {
     pub previous_output: Outpoint<'i>,
     pub script_sig: ScriptSig<'i>,
@@ -184,7 +184,7 @@ impl<'i> DeepView for Txin<'i> {
 }
 
 # [doc = "data type for `lock_time`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum LockTime {
     BlockNo(u32),
     Timestamp(u32),
@@ -210,7 +210,7 @@ impl DeepView for LockTime {
 }
 
 # [doc = "data type for `tx_nonsegwit`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct TxNonsegwit<'i> {
     pub txins: Vec<Txin<'i>>,
     pub txout_count: u64,
@@ -242,7 +242,7 @@ impl<'i> DeepView for TxNonsegwit<'i> {
 }
 
 # [doc = "data type for `tx_segwit`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct TxSegwit<'i> {
     pub flag: u8,
     pub txin_count: u64,
@@ -286,7 +286,7 @@ impl<'i> DeepView for TxSegwit<'i> {
 }
 
 # [doc = "data type for `tx_rem`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub enum TxRem<'i> {
     Variant1(TxSegwit<'i>),
     Default(TxNonsegwit<'i>),
@@ -312,7 +312,7 @@ impl<'i> DeepView for TxRem<'i> {
 }
 
 # [doc = "data type for `tx`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct Tx<'i> {
     pub version: u32,
     pub txin_count: u64,
@@ -341,7 +341,7 @@ impl<'i> DeepView for Tx<'i> {
 }
 
 # [doc = "data type for `block`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct Block<'i> {
     pub version: u32,
     pub prev_block: &'i [u8],
@@ -388,6 +388,7 @@ impl<'i> DeepView for Block<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `script`."]
+# [derive (Clone , Copy)]
 pub struct ScriptFmt;
 
 pub type ScriptFmtSpec = Named<
@@ -420,6 +421,7 @@ pub open spec fn script_fmt() -> ScriptFmtSpec {
 }
 
 # [doc = "named format combinator for `txout`."]
+# [derive (Clone , Copy)]
 pub struct TxoutFmt;
 
 pub type TxoutFmtSpec = Named<Mapped<Pair<U64Le, ScriptFmt>, FnSpecMapper<TxoutInner, TxoutSpec>>>;
@@ -447,6 +449,7 @@ pub open spec fn txout_fmt() -> TxoutFmtSpec {
 }
 
 # [doc = "named format combinator for `outpoint`."]
+# [derive (Clone , Copy)]
 pub struct OutpointFmt;
 
 pub type OutpointFmtSpec = Named<
@@ -476,6 +479,7 @@ pub open spec fn outpoint_fmt() -> OutpointFmtSpec {
 }
 
 # [doc = "named format combinator for `script_sig`."]
+# [derive (Clone , Copy)]
 pub struct ScriptSigFmt;
 
 pub type ScriptSigFmtSpec = Named<
@@ -508,6 +512,7 @@ pub open spec fn script_sig_fmt() -> ScriptSigFmtSpec {
 }
 
 # [doc = "named format combinator for `witness_component`."]
+# [derive (Clone , Copy)]
 pub struct WitnessComponentFmt;
 
 pub type WitnessComponentFmtSpec = Named<
@@ -540,6 +545,7 @@ pub open spec fn witness_component_fmt() -> WitnessComponentFmtSpec {
 }
 
 # [doc = "named format combinator for `witness`."]
+# [derive (Clone , Copy)]
 pub struct WitnessFmt;
 
 pub type WitnessFmtSpec = Named<
@@ -575,6 +581,7 @@ pub open spec fn witness_fmt() -> WitnessFmtSpec {
 }
 
 # [doc = "named format combinator for `txin`."]
+# [derive (Clone , Copy)]
 pub struct TxinFmt;
 
 pub type TxinFmtSpec = Named<
@@ -604,6 +611,7 @@ pub open spec fn txin_fmt() -> TxinFmtSpec {
 }
 
 # [doc = "named format combinator for `lock_time`."]
+# [derive (Clone , Copy)]
 pub struct LockTimeFmt;
 
 pub type LockTimeFmtSpec = Named<
@@ -643,6 +651,7 @@ pub open spec fn lock_time_fmt() -> LockTimeFmtSpec {
 }
 
 # [doc = "named format combinator for `tx_nonsegwit`."]
+# [derive (Clone , Copy)]
 pub struct TxNonsegwitFmt {
     pub txin_count: u64,
 }
@@ -686,6 +695,7 @@ pub open spec fn tx_nonsegwit_fmt(txin_count: u64) -> TxNonsegwitFmtSpec {
 }
 
 # [doc = "named format combinator for `tx_segwit`."]
+# [derive (Clone , Copy)]
 pub struct TxSegwitFmt;
 
 pub type TxSegwitFmtSpec = Named<
@@ -772,6 +782,7 @@ pub open spec fn tx_segwit_fmt() -> TxSegwitFmtSpec {
 }
 
 # [doc = "named format combinator for `tx_rem`."]
+# [derive (Clone , Copy)]
 pub struct TxRemFmt {
     pub txin_count: u64,
 }
@@ -810,6 +821,7 @@ pub open spec fn tx_rem_fmt(txin_count: u64) -> TxRemFmtSpec {
 }
 
 # [doc = "named format combinator for `tx`."]
+# [derive (Clone , Copy)]
 pub struct TxFmt;
 
 pub type TxFmtSpec = Named<
@@ -842,6 +854,7 @@ pub open spec fn tx_fmt() -> TxFmtSpec {
 }
 
 # [doc = "named format combinator for `block`."]
+# [derive (Clone , Copy)]
 pub struct BlockFmt;
 
 pub type BlockFmtSpec = Named<

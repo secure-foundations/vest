@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `opaque_u16`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct OpaqueU16<'i> {
     pub l: u16,
     pub data: &'i [u8],
@@ -50,7 +50,7 @@ pub type ResponderId<'i> = OpaqueU16<'i>;
 pub type ResponderIdSpec = OpaqueU16Spec;
 
 # [doc = "data type for `responder_id_list`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct ResponderIdList<'i> {
     pub l: u16,
     pub list: Vec<ResponderId<'i>>,
@@ -73,7 +73,7 @@ impl<'i> DeepView for ResponderIdList<'i> {
 }
 
 # [doc = "data type for `repeat_dyn`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone)]
 pub struct RepeatDyn<'i> {
     pub l: u64,
     pub data: Vec<ResponderIdList<'i>>,
@@ -99,6 +99,7 @@ impl<'i> DeepView for RepeatDyn<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `opaque_u16`."]
+# [derive (Clone , Copy)]
 pub struct OpaqueU16Fmt;
 
 pub type OpaqueU16FmtSpec = Named<
@@ -134,6 +135,7 @@ pub open spec fn opaque_u16_fmt() -> OpaqueU16FmtSpec {
 }
 
 # [doc = "named format combinator for `repeat_fix`."]
+# [derive (Clone , Copy)]
 pub struct RepeatFixFmt;
 
 pub type RepeatFixFmtSpec = Named<Array<32, U16Le>>;
@@ -144,16 +146,18 @@ pub open spec fn repeat_fix_fmt() -> RepeatFixFmtSpec {
 }
 
 # [doc = "named format combinator for `responder_id`."]
+# [derive (Clone , Copy)]
 pub struct ResponderIdFmt;
 
-pub type ResponderIdFmtSpec = OpaqueU16FmtSpec;
+pub type ResponderIdFmtSpec = Named<OpaqueU16Fmt>;
 
 # [doc = "specification constructor for `responder_id`."]
 pub open spec fn responder_id_fmt() -> ResponderIdFmtSpec {
-    opaque_u16_fmt()
+    Named("responder_id", OpaqueU16Fmt)
 }
 
 # [doc = "named format combinator for `responder_id_list`."]
+# [derive (Clone , Copy)]
 pub struct ResponderIdListFmt;
 
 pub type ResponderIdListFmtSpec = Named<
@@ -192,6 +196,7 @@ pub open spec fn responder_id_list_fmt() -> ResponderIdListFmtSpec {
 }
 
 # [doc = "named format combinator for `repeat_dyn`."]
+# [derive (Clone , Copy)]
 pub struct RepeatDynFmt;
 
 pub type RepeatDynFmtSpec = Named<

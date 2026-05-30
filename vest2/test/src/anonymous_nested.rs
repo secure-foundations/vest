@@ -17,7 +17,7 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `capture_param_and_local_x_a_payload`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum CaptureParamAndLocalXAPayload<'i> {
     C(&'i [u8]),
     D(&'i [u8]),
@@ -47,7 +47,7 @@ impl<'i> DeepView for CaptureParamAndLocalXAPayload<'i> {
 }
 
 # [doc = "data type for `capture_param_and_local_x_a`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureParamAndLocalXA<'i> {
     pub len: u8,
     pub payload: CaptureParamAndLocalXAPayload<'i>,
@@ -70,7 +70,7 @@ impl<'i> DeepView for CaptureParamAndLocalXA<'i> {
 }
 
 # [doc = "data type for `capture_param_and_local_x_b_y`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum CaptureParamAndLocalXBY {
     Variant1(u8),
     Default(u16),
@@ -100,7 +100,7 @@ impl DeepView for CaptureParamAndLocalXBY {
 }
 
 # [doc = "data type for `capture_param_and_local_x_b`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureParamAndLocalXB {
     pub tag: u8,
     pub y: CaptureParamAndLocalXBY,
@@ -123,7 +123,7 @@ impl DeepView for CaptureParamAndLocalXB {
 }
 
 # [doc = "data type for `capture_param_and_local_x`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum CaptureParamAndLocalX<'i> {
     A(CaptureParamAndLocalXA<'i>),
     B(CaptureParamAndLocalXB),
@@ -149,7 +149,7 @@ impl<'i> DeepView for CaptureParamAndLocalX<'i> {
 }
 
 # [doc = "data type for `nested_inner_choice_x_a`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum NestedInnerChoiceXA {
     C(u8),
     D(u16),
@@ -175,7 +175,7 @@ impl DeepView for NestedInnerChoiceXA {
 }
 
 # [doc = "data type for `nested_inner_struct_v`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct NestedInnerStructV<'i> {
     pub x: u8,
     pub y: &'i [u8],
@@ -198,7 +198,7 @@ impl<'i> DeepView for NestedInnerStructV<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload_body_choice1`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1<'i> {
     pub count: u8,
     pub items: &'i [u8],
@@ -224,7 +224,7 @@ impl<'i> DeepView for CaptureOuterAndLocalPayloadBodyChoice1<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload_body`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum CaptureOuterAndLocalPayloadBody<'i> {
     Variant1(&'i [u8]),
     Default(CaptureOuterAndLocalPayloadBodyChoice1<'i>),
@@ -257,7 +257,7 @@ impl<'i> DeepView for CaptureOuterAndLocalPayloadBody<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureOuterAndLocalPayload<'i> {
     pub tag: u8,
     pub body: CaptureOuterAndLocalPayloadBody<'i>,
@@ -280,7 +280,7 @@ impl<'i> DeepView for CaptureOuterAndLocalPayload<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureOuterAndLocal<'i> {
     pub frame_len: u8,
     pub payload: CaptureOuterAndLocalPayload<'i>,
@@ -306,7 +306,7 @@ impl<'i> DeepView for CaptureOuterAndLocal<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper_value_choice0`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0<'i> {
     pub len: u8,
     pub bytes: &'i [u8],
@@ -332,7 +332,7 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapperValueChoice0<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper_value`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum CaptureLocalInAnonStructWrapperValue<'i> {
     Variant1(CaptureLocalInAnonStructWrapperValueChoice0<'i>),
     Default(u16),
@@ -365,7 +365,7 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapperValue<'i> {
 }
 
 # [doc = "data type for `nested_inner_choice_x`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub enum NestedInnerChoiceX {
     A(NestedInnerChoiceXA),
     B(u32),
@@ -391,7 +391,7 @@ impl DeepView for NestedInnerChoiceX {
 }
 
 # [doc = "data type for `nested_inner_choice`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct NestedInnerChoice {
     pub x: NestedInnerChoiceX,
 }
@@ -412,7 +412,7 @@ impl DeepView for NestedInnerChoice {
 }
 
 # [doc = "data type for `capture_param_and_local`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureParamAndLocal<'i> {
     pub x: CaptureParamAndLocalX<'i>,
 }
@@ -433,7 +433,7 @@ impl<'i> DeepView for CaptureParamAndLocal<'i> {
 }
 
 # [doc = "data type for `nested_inner_struct`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct NestedInnerStruct<'i> {
     pub len: u32,
     pub v: NestedInnerStructV<'i>,
@@ -494,7 +494,7 @@ impl SelfView for COrD {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureLocalInAnonStructWrapper<'i> {
     pub tag: u8,
     pub value: CaptureLocalInAnonStructWrapperValue<'i>,
@@ -520,7 +520,7 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapper<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct`."]
-# [derive (Debug , PartialEq , Eq)]
+# [derive (Debug , PartialEq , Eq , Clone , Copy)]
 pub struct CaptureLocalInAnonStruct<'i> {
     pub wrapper: CaptureLocalInAnonStructWrapper<'i>,
 }
@@ -582,6 +582,7 @@ impl SelfView for AOrB {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `capture_param_and_local_x_a_payload`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalXAPayloadFmt {
     pub choice2: COrD,
     pub len: u8,
@@ -627,6 +628,7 @@ pub open spec fn capture_param_and_local_x_a_payload_fmt(
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_a`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalXAFmt {
     pub choice2: COrD,
 }
@@ -663,6 +665,7 @@ pub open spec fn capture_param_and_local_x_a_fmt(
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_b_y`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalXBYFmt {
     pub tag: u8,
 }
@@ -701,6 +704,7 @@ pub open spec fn capture_param_and_local_x_b_y_fmt(tag: u8) -> CaptureParamAndLo
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_b`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalXBFmt;
 
 pub type CaptureParamAndLocalXBFmtSpec = Named<
@@ -733,6 +737,7 @@ pub open spec fn capture_param_and_local_x_b_fmt() -> CaptureParamAndLocalXBFmtS
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalXFmt {
     pub choice1: AOrB,
     pub choice2: COrD,
@@ -778,6 +783,7 @@ pub open spec fn capture_param_and_local_x_fmt(
 }
 
 # [doc = "named format combinator for `nested_inner_choice_x_a`."]
+# [derive (Clone , Copy)]
 pub struct NestedInnerChoiceXAFmt {
     pub choice2: COrD,
 }
@@ -816,6 +822,7 @@ pub open spec fn nested_inner_choice_x_a_fmt(choice2: COrDSpec) -> NestedInnerCh
 }
 
 # [doc = "named format combinator for `nested_inner_struct_v`."]
+# [derive (Clone , Copy)]
 pub struct NestedInnerStructVFmt;
 
 pub type NestedInnerStructVFmtSpec = Named<
@@ -845,6 +852,7 @@ pub open spec fn nested_inner_struct_v_fmt() -> NestedInnerStructVFmtSpec {
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload_body_choice1`."]
+# [derive (Clone , Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1Fmt;
 
 pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named<
@@ -882,6 +890,7 @@ pub open spec fn capture_outer_and_local_payload_body_choice1_fmt() -> CaptureOu
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload_body`."]
+# [derive (Clone , Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyFmt {
     pub frame_len: u8,
     pub tag: u8,
@@ -929,6 +938,7 @@ pub open spec fn capture_outer_and_local_payload_body_fmt(
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload`."]
+# [derive (Clone , Copy)]
 pub struct CaptureOuterAndLocalPayloadFmt {
     pub frame_len: u8,
 }
@@ -965,6 +975,7 @@ pub open spec fn capture_outer_and_local_payload_fmt(
 }
 
 # [doc = "named format combinator for `capture_outer_and_local`."]
+# [derive (Clone , Copy)]
 pub struct CaptureOuterAndLocalFmt;
 
 pub type CaptureOuterAndLocalFmtSpec = Named<
@@ -1004,6 +1015,7 @@ pub open spec fn capture_outer_and_local_fmt() -> CaptureOuterAndLocalFmtSpec {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value_choice0`."]
+# [derive (Clone , Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0Fmt;
 
 pub type CaptureLocalInAnonStructWrapperValueChoice0FmtSpec = Named<
@@ -1041,6 +1053,7 @@ pub open spec fn capture_local_in_anon_struct_wrapper_value_choice0_fmt() -> Cap
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value`."]
+# [derive (Clone , Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueFmt {
     pub tag: u8,
 }
@@ -1089,6 +1102,7 @@ pub open spec fn capture_local_in_anon_struct_wrapper_value_fmt(
 }
 
 # [doc = "named format combinator for `nested_inner_choice_x`."]
+# [derive (Clone , Copy)]
 pub struct NestedInnerChoiceXFmt {
     pub choice1: AOrB,
     pub choice2: COrD,
@@ -1134,6 +1148,7 @@ pub open spec fn nested_inner_choice_x_fmt(
 }
 
 # [doc = "named format combinator for `nested_inner_choice`."]
+# [derive (Clone , Copy)]
 pub struct NestedInnerChoiceFmt {
     pub choice1: AOrB,
     pub choice2: COrD,
@@ -1169,6 +1184,7 @@ pub open spec fn nested_inner_choice_fmt(
 }
 
 # [doc = "named format combinator for `capture_param_and_local`."]
+# [derive (Clone , Copy)]
 pub struct CaptureParamAndLocalFmt {
     pub choice1: AOrB,
     pub choice2: COrD,
@@ -1207,6 +1223,7 @@ pub open spec fn capture_param_and_local_fmt(
 }
 
 # [doc = "named format combinator for `nested_inner_struct`."]
+# [derive (Clone , Copy)]
 pub struct NestedInnerStructFmt;
 
 pub type NestedInnerStructFmtSpec = Named<
@@ -1239,6 +1256,7 @@ pub open spec fn nested_inner_struct_fmt() -> NestedInnerStructFmtSpec {
 }
 
 # [doc = "named format combinator for `c_or_d`."]
+# [derive (Clone , Copy)]
 pub struct COrDFmt;
 
 pub type COrDFmtSpec = Named<
@@ -1273,6 +1291,7 @@ pub open spec fn c_or_d_fmt() -> COrDFmtSpec {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper`."]
+# [derive (Clone , Copy)]
 pub struct CaptureLocalInAnonStructWrapperFmt;
 
 pub type CaptureLocalInAnonStructWrapperFmtSpec = Named<
@@ -1307,6 +1326,7 @@ pub open spec fn capture_local_in_anon_struct_wrapper_fmt() -> CaptureLocalInAno
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct`."]
+# [derive (Clone , Copy)]
 pub struct CaptureLocalInAnonStructFmt;
 
 pub type CaptureLocalInAnonStructFmtSpec = Named<
@@ -1339,6 +1359,7 @@ pub open spec fn capture_local_in_anon_struct_fmt() -> CaptureLocalInAnonStructF
 }
 
 # [doc = "named format combinator for `a_or_b`."]
+# [derive (Clone , Copy)]
 pub struct AOrBFmt;
 
 pub type AOrBFmtSpec = Named<

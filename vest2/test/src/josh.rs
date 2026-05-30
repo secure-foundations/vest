@@ -120,7 +120,7 @@ verus! {
     }
 
     # [doc = "data type for `mydata`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Mydata < 'i > {
         pub foo : & 'i [u8] ,
         pub bar : & 'i [u8] ,
@@ -142,7 +142,7 @@ verus! {
     }
 
     # [doc = "data type for `tst_mydata`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub enum TstMydata < 'i > {
         C0 (Mydata < 'i >) ,
         C1 (Mydata < 'i >) ,
@@ -254,7 +254,7 @@ verus! {
     }
 
     # [doc = "data type for `tst`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct Tst < 'i > {
         pub tag : TstTag ,
         pub mydata : TstMydata < 'i > ,
@@ -276,7 +276,7 @@ verus! {
     }
 
     # [doc = "data type for `pair_stress`."]
-    # [derive (Debug , PartialEq , Eq)]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
     pub struct PairStress {
         pub f1 : u8 ,
         pub f2 : u16 ,
@@ -349,6 +349,7 @@ verus! {
     // Format Specifications
     // ============================================================
     # [doc = "named format combinator for `tst_tag`."]
+    # [derive (Clone , Copy)]
     pub struct TstTagFmt ;
 
     pub type TstTagFmtSpec = Named < Mapped < Choice < Refined < U8 , PredFnSpec < u8 >> , Refined < U8 , PredFnSpec < u8 >> > , FnSpecMapper < TstTagInner , TstTagSpec >> > ;
@@ -445,6 +446,7 @@ verus! {
 
 
     # [doc = "named format combinator for `mydata`."]
+    # [derive (Clone , Copy)]
     pub struct MydataFmt ;
 
     pub type MydataFmtSpec = Named < Mapped < Pair < Fixed < 2 > , Fixed < 2 > > , FnSpecMapper < MydataInner , MydataSpec >> > ;
@@ -480,6 +482,7 @@ verus! {
 
 
     # [doc = "named format combinator for `tst_mydata`."]
+    # [derive (Clone , Copy)]
     pub struct TstMydataFmt {
         pub tag : TstTag ,
     }
@@ -605,6 +608,7 @@ verus! {
 
 
     # [doc = "named format combinator for `tst`."]
+    # [derive (Clone , Copy)]
     pub struct TstFmt ;
 
     pub type TstFmtSpec = Named < Mapped < Bind < TstTagFmt , spec_fn (TstTagSpec) -> TstMydataFmt > , FnSpecMapper < TstInner , TstSpec >> > ;
@@ -643,6 +647,7 @@ verus! {
 
 
     # [doc = "named format combinator for `pair_stress`."]
+    # [derive (Clone , Copy)]
     pub struct PairStressFmt ;
 
     pub type PairStressFmtSpec = Named < Mapped < Pair < U8 , Pair < U16Le , Pair < U32Le , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , U8 > > > > > > > > > > > > > > > > > , FnSpecMapper < PairStressInner , PairStressSpec >> > ;
