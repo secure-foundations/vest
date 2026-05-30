@@ -7,11 +7,12 @@ use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Alt, Bind, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
     Choice, Cond, Const, DepCombinator, Eof, Fixed, Implicit, KVFormat, Mapped, Repeat, Sum,
-    TVLeaf, TVOr, Tagged, Tail, U16Le, U32Le, Varied, U8,
+    TVLeaf, TVOr, Tail, U16Le, U32Le, Varied, WithPrefixTag, U8,
 };
 use crate::core::{proof::*, spec::*};
 use crate::Never;
 use vstd::prelude::*;
+use WithPrefixTag as Tagged;
 
 verus! {
 

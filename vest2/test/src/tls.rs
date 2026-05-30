@@ -1,5 +1,10 @@
 # ! [allow (warnings)] use vest_lib2 :: combinators :: mapped :: spec :: * ;
 use vest_lib2 :: combinators :: * ;
+use vest_lib2 :: core :: exec :: {
+    DeepEq ,
+    SelfView
+}
+;
 use vest_lib2 :: core :: exec :: input :: {
     InputBuf ,
     InputSlice
@@ -15,6 +20,7 @@ use vest_lib2 :: core :: {
 ;
 use vest_lib2 :: primitives :: btcvarint :: VarInt ;
 use vest_lib2 :: primitives :: leb128 :: ULeb128 ;
+use vest_lib2 :: macros :: impl_self_view_for ;
 use vstd :: prelude :: * ;
 verus! {
     // ============================================================
@@ -36,6 +42,20 @@ verus! {
                 AlertLevel :: Warning => AlertLevelSpec :: Warning ,
                 AlertLevel :: Fatal => AlertLevelSpec :: Fatal ,
             }
+        }
+    }
+    impl DeepEq for AlertLevel {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for AlertLevel {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -139,6 +159,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for ExtensionType {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for ExtensionType {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `signature_scheme`."]
     # [repr (u16)]
@@ -190,6 +224,20 @@ verus! {
                 SignatureScheme :: RSA_PSS_PSS_SHA512 => SignatureSchemeSpec :: RSA_PSS_PSS_SHA512 ,
                 SignatureScheme :: Unknown (v) => SignatureSchemeSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for SignatureScheme {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for SignatureScheme {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -508,6 +556,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for NameType {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for NameType {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `session_id`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -557,6 +619,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for CipherSuite {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for CipherSuite {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `protocol_version`."]
     # [repr (u16)]
@@ -582,6 +658,20 @@ verus! {
                 ProtocolVersion :: TLSv1_3 => ProtocolVersionSpec :: TLSv1_3 ,
                 ProtocolVersion :: Unknown (v) => ProtocolVersionSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for ProtocolVersion {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for ProtocolVersion {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -673,6 +763,20 @@ verus! {
                 NamedGroup :: Ffdhe8192 => NamedGroupSpec :: Ffdhe8192 ,
                 NamedGroup :: Unknown (v) => NamedGroupSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for NamedGroup {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for NamedGroup {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -1007,6 +1111,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for HandshakeType {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for HandshakeType {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `cipher_suite_list`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -1219,6 +1337,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for PskKeyExchangeMode {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for PskKeyExchangeMode {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `psk_key_exchange_modes`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -1395,6 +1527,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for MaxFragmentLength {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for MaxFragmentLength {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `heartbeat_mode`."]
     # [repr (u8)]
@@ -1416,6 +1562,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for HeartbeatMode {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for HeartbeatMode {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `certificate_type`."]
     # [repr (u8)]
@@ -1435,6 +1595,20 @@ verus! {
                 CertificateType :: RawPublicKey => CertificateTypeSpec :: RawPublicKey ,
                 CertificateType :: Unknown (v) => CertificateTypeSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for CertificateType {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for CertificateType {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -2194,6 +2368,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for KeyUpdateRequest {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for KeyUpdateRequest {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `key_update`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -2391,6 +2579,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for ContentType {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for ContentType {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `tls_plaintext`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -2483,6 +2685,20 @@ verus! {
                 AlertDescription :: CertificateRequired => AlertDescriptionSpec :: CertificateRequired ,
                 AlertDescription :: NoApplicationProtocol => AlertDescriptionSpec :: NoApplicationProtocol ,
             }
+        }
+    }
+    impl DeepEq for AlertDescription {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for AlertDescription {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -2636,6 +2852,20 @@ verus! {
             }
         }
     }
+    impl DeepEq for DigestSize {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for DigestSize {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
 
     # [doc = "data type for `heartbeat_extension`."]
     # [derive (Debug , PartialEq , Eq)]
@@ -2676,6 +2906,20 @@ verus! {
                 EcPointFormat :: AnsiX962CompressedChar2 => EcPointFormatSpec :: AnsiX962CompressedChar2 ,
                 EcPointFormat :: Unknown (v) => EcPointFormatSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for EcPointFormat {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for EcPointFormat {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -4218,7 +4462,7 @@ verus! {
         Named ("sh_or_hrr_payload" ,
         Mapped {
             inner : match random {
-                x if x == seq ! [207u8 , 33u8 , 173u8 , 116u8 , 229u8 , 154u8 , 97u8 , 17u8 , 190u8 , 29u8 , 140u8 , 2u8 , 30u8 , 101u8 , 184u8 , 145u8 , 194u8 , 162u8 , 17u8 , 22u8 , 122u8 , 187u8 , 140u8 , 94u8 , 7u8 , 158u8 , 9u8 , 226u8 , 200u8 , 168u8 , 51u8 , 156u8] => Sum :: Inl (HelloRetryRequestFmt) ,
+                x if x == [0xcfu8 , 0x21u8 , 0xadu8 , 0x74u8 , 0xe5u8 , 0x9au8 , 0x61u8 , 0x11u8 , 0xbeu8 , 0x1du8 , 0x8cu8 , 0x02u8 , 0x1eu8 , 0x65u8 , 0xb8u8 , 0x91u8 , 0xc2u8 , 0xa2u8 , 0x11u8 , 0x16u8 , 0x7au8 , 0xbbu8 , 0x8cu8 , 0x5eu8 , 0x07u8 , 0x9eu8 , 0x09u8 , 0xe2u8 , 0xc8u8 , 0xa8u8 , 0x33u8 , 0x9cu8] . deep_view () => Sum :: Inl (HelloRetryRequestFmt) ,
                 _ => Sum :: Inr (ServerHelloFmt) ,
             }
             ,
@@ -8698,7 +8942,7 @@ verus! {
 
         impl < 'i > SpecParser for ShOrHrrPayloadFmt < 'i > {
             type PVal = ShOrHrrPayloadSpec ;
-            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            open spec fn spec_parse (& self ,
             ibuf : Seq < u8 >) -> Option < (int ,
             Self :: PVal) > {
                 sh_or_hrr_payload_fmt (self . random . deep_view ()) . spec_parse (ibuf)
@@ -8706,14 +8950,14 @@ verus! {
         }
         impl < 'i > Consistency for ShOrHrrPayloadFmt < 'i > {
             type Val = ShOrHrrPayloadSpec ;
-            # [verifier :: opaque] open spec fn consistent (& self ,
+            open spec fn consistent (& self ,
             v : Self :: Val) -> bool {
                 sh_or_hrr_payload_fmt (self . random . deep_view ()) . consistent (v)
             }
         }
         impl < 'i > SpecSerializerDps for ShOrHrrPayloadFmt < 'i > {
             type SValue = ShOrHrrPayloadSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            open spec fn spec_serialize_dps (& self ,
             v : Self :: SValue ,
             obuf : Seq < u8 >) -> Seq < u8 > {
                 sh_or_hrr_payload_fmt (self . random . deep_view ()) . spec_serialize_dps (v ,
@@ -8722,14 +8966,14 @@ verus! {
         }
         impl < 'i > SpecSerializer for ShOrHrrPayloadFmt < 'i > {
             type SVal = ShOrHrrPayloadSpec ;
-            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            open spec fn spec_serialize (& self ,
             v : Self :: SVal) -> Seq < u8 > {
                 sh_or_hrr_payload_fmt (self . random . deep_view ()) . spec_serialize (v)
             }
         }
         impl < 'i > SpecByteLen for ShOrHrrPayloadFmt < 'i > {
             type T = ShOrHrrPayloadSpec ;
-            # [verifier :: opaque] open spec fn byte_len (& self ,
+            open spec fn byte_len (& self ,
             v : Self :: T) -> nat {
                 sh_or_hrr_payload_fmt (self . random . deep_view ()) . byte_len (v)
             }
@@ -25809,360 +26053,3751 @@ verus! {
     // ============================================================
     // Executable Implementations
     // ============================================================
-    // TODO(execs): emit Parser / Serializer / Prepare impls for AlertLevel
+    impl < 'i > Parser < & 'i [u8] > for AlertLevelFmt {
+        type PT = AlertLevel ;
 
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Empty
+            reveal (< AlertLevelFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        1 => AlertLevel :: Warning ,
+        2 => AlertLevel :: Fatal ,
+        _ => return Err (ParseError :: invalid_tag ()) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EmptyFmt {
+        type PT = Empty < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EmptyFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Fixed :: < 0 >) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque0FfffFmt {
+        type PT = Opaque0Ffff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque0FfffFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque0Ffff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OcspExtensionsFmt {
+        type PT = OcspExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OcspExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque0FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ExtensionTypeFmt {
+        type PT = ExtensionType ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ExtensionTypeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U16Be . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => ExtensionType :: ServerName ,
+        1 => ExtensionType :: MaxFragmentLength ,
+        5 => ExtensionType :: StatusRequest ,
+        10 => ExtensionType :: SupportedGroups ,
+        11 => ExtensionType :: ECPointFormats ,
+        13 => ExtensionType :: SignatureAlgorithms ,
+        14 => ExtensionType :: UseSRTP ,
+        15 => ExtensionType :: Heartbeat ,
+        16 => ExtensionType :: ApplicationLayerProtocolNegotiation ,
+        18 => ExtensionType :: SignedCertificateTimeStamp ,
+        19 => ExtensionType :: ClientCertificateType ,
+        20 => ExtensionType :: ServerCertificateType ,
+        21 => ExtensionType :: Padding ,
+        22 => ExtensionType :: EncryptThenMac ,
+        23 => ExtensionType :: ExtendedMasterSecret ,
+        35 => ExtensionType :: SessionTicket ,
+        41 => ExtensionType :: PreSharedKey ,
+        42 => ExtensionType :: EarlyData ,
+        43 => ExtensionType :: SupportedVersions ,
+        44 => ExtensionType :: Cookie ,
+        45 => ExtensionType :: PskKeyExchangeModes ,
+        47 => ExtensionType :: CertificateAuthorities ,
+        48 => ExtensionType :: OidFilters ,
+        49 => ExtensionType :: PostHandshakeAuth ,
+        50 => ExtensionType :: SignatureAlgorithmsCert ,
+        51 => ExtensionType :: KeyShare ,
+        x => ExtensionType :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SignatureSchemeFmt {
+        type PT = SignatureScheme ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SignatureSchemeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U16Be . parse (& rest) ? ;
+            let enum_val = match v {
+        257 => SignatureScheme :: RSA_PKCS1_MD5 ,
+        513 => SignatureScheme :: RSA_PKCS1_SHA1 ,
+        259 => SignatureScheme :: ECDSA_MD5 ,
+        515 => SignatureScheme :: ECDSA_SHA1 ,
+        1025 => SignatureScheme :: RSA_PKCS1_SHA256 ,
+        1281 => SignatureScheme :: RSA_PKCS1_SHA384 ,
+        1537 => SignatureScheme :: RSA_PKCS1_SHA512 ,
+        1027 => SignatureScheme :: ECDSA_SECP256R1_SHA256 ,
+        1283 => SignatureScheme :: ECDSA_SECP384R1_SHA384 ,
+        1539 => SignatureScheme :: ECDSA_SECP521R1_SHA512 ,
+        2052 => SignatureScheme :: RSA_PSS_RSAE_SHA256 ,
+        2053 => SignatureScheme :: RSA_PSS_RSAE_SHA384 ,
+        2054 => SignatureScheme :: RSA_PSS_RSAE_SHA512 ,
+        2055 => SignatureScheme :: ED25519 ,
+        2056 => SignatureScheme :: ED448 ,
+        2057 => SignatureScheme :: RSA_PSS_PSS_SHA256 ,
+        2058 => SignatureScheme :: RSA_PSS_PSS_SHA384 ,
+        2059 => SignatureScheme :: RSA_PSS_PSS_SHA512 ,
+        x => SignatureScheme :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SignatureSchemeListFmt {
+        type PT = SignatureSchemeList ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SignatureSchemeListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65534) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (SignatureSchemeFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = SignatureSchemeList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque1FfffFmt {
+        type PT = Opaque1Ffff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque1FfffFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque1Ffff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for DistinguishedNameFmt {
+        type PT = DistinguishedName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< DistinguishedNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateAuthoritiesExtensionFmt {
+        type PT = CertificateAuthoritiesExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateAuthoritiesExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 3 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (DistinguishedNameFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateAuthoritiesExtension {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ResponderIdFmt {
+        type PT = ResponderId < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ResponderIdFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ResponderIdListFmt {
+        type PT = ResponderIdList < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ResponderIdListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (ResponderIdFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ResponderIdList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OscpStatusRequestFmt {
+        type PT = OscpStatusRequest < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OscpStatusRequestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , responder_id_list) = (ResponderIdListFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , extensions) = (OcspExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = OscpStatusRequest {
+        responder_id_list ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateStatusRequestFmt {
+        type PT = CertificateStatusRequest < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateStatusRequestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , status_type) = (Const (U8 , 1)) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , request) = (OscpStatusRequestFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateStatusRequest {
+        status_type ,
+        request
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SerializedSctFmt {
+        type PT = SerializedSct < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SerializedSctFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SignedCertificateTimestampListFmt {
+        type PT = SignedCertificateTimestampList < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SignedCertificateTimestampListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (SerializedSctFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = SignedCertificateTimestampList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque1FfFmt {
+        type PT = Opaque1Ff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque1FfFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque1Ff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OidFilterFmt {
+        type PT = OidFilter < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OidFilterFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , certificate_extension_oid) = (Opaque1FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , certificate_extension_values) = (Opaque0FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = OidFilter {
+        certificate_extension_oid ,
+        certificate_extension_values
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OidFilterExtensionFmt {
+        type PT = OidFilterExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OidFilterExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (OidFilterFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = OidFilterExtension {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateRequestExtensionExtensionDataFmt {
+        type PT = CertificateRequestExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateRequestExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: SignatureAlgorithms => {
+            let (n ,
+            v) = (SignatureSchemeListFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: SignatureAlgorithms (v))
+        }
+        ,
+        ExtensionType :: CertificateAuthorities => {
+            let (n ,
+            v) = (CertificateAuthoritiesExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: CertificateAuthorities (v))
+        }
+        ,
+        ExtensionType :: SignatureAlgorithmsCert => {
+            let (n ,
+            v) = (SignatureSchemeListFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: SignatureAlgorithmsCert (v))
+        }
+        ,
+        ExtensionType :: StatusRequest => {
+            let (n ,
+            v) = (CertificateStatusRequestFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: StatusRequest (v))
+        }
+        ,
+        ExtensionType :: SignedCertificateTimeStamp => {
+            let (n ,
+            v) = (SignedCertificateTimestampListFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: SignedCertificateTimeStamp (v))
+        }
+        ,
+        ExtensionType :: OidFilters => {
+            let (n ,
+            v) = (OidFilterExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: OidFilters (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            CertificateRequestExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateRequestExtensionFmt {
+        type PT = CertificateRequestExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateRequestExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , CertificateRequestExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = CertificateRequestExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NameTypeFmt {
+        type PT = NameType ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NameTypeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => NameType :: HostName ,
+        x => NameType :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SessionIdFmt {
+        type PT = SessionId < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SessionIdFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 0 && l <= 32) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , id) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = SessionId {
+        l ,
+        id
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CipherSuiteFmt {
+        type PT = CipherSuite ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CipherSuiteFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U16Be . parse (& rest) ? ;
+            let enum_val = match v {
+        4865 => CipherSuite :: TLS_AES_128_GCM_SHA256 ,
+        4866 => CipherSuite :: TLS_AES_256_GCM_SHA384 ,
+        4867 => CipherSuite :: TLS_CHACHA20_POLY1305_SHA256 ,
+        4868 => CipherSuite :: TLS_AES_128_CCM_SHA256 ,
+        4869 => CipherSuite :: TLS_AES_128_CCM_8_SHA256 ,
+        x => CipherSuite :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ProtocolVersionFmt {
+        type PT = ProtocolVersion ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ProtocolVersionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U16Be . parse (& rest) ? ;
+            let enum_val = match v {
+        768 => ProtocolVersion :: SSLv3 ,
+        769 => ProtocolVersion :: TLSv1_0 ,
+        770 => ProtocolVersion :: TLSv1_1 ,
+        771 => ProtocolVersion :: TLSv1_2 ,
+        772 => ProtocolVersion :: TLSv1_3 ,
+        x => ProtocolVersion :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SupportedVersionsServerFmt {
+        type PT = SupportedVersionsServer ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SupportedVersionsServerFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (ProtocolVersionFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CookieFmt {
+        type PT = Cookie < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CookieFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NamedGroupFmt {
+        type PT = NamedGroup ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NamedGroupFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U16Be . parse (& rest) ? ;
+            let enum_val = match v {
+        1 => NamedGroup :: Sect163k1 ,
+        2 => NamedGroup :: Sect163r1 ,
+        3 => NamedGroup :: Sect163r2 ,
+        4 => NamedGroup :: Sect193r1 ,
+        5 => NamedGroup :: Sect193r2 ,
+        6 => NamedGroup :: Sect233k1 ,
+        7 => NamedGroup :: Sect233r1 ,
+        8 => NamedGroup :: Sect239k1 ,
+        9 => NamedGroup :: Sect283k1 ,
+        10 => NamedGroup :: Sect283r1 ,
+        11 => NamedGroup :: Sect409k1 ,
+        12 => NamedGroup :: Sect409r1 ,
+        13 => NamedGroup :: Sect571k1 ,
+        14 => NamedGroup :: Sect571r1 ,
+        15 => NamedGroup :: Secp160k1 ,
+        16 => NamedGroup :: Secp160r1 ,
+        17 => NamedGroup :: Secp160r2 ,
+        18 => NamedGroup :: Secp192k1 ,
+        19 => NamedGroup :: Secp192r1 ,
+        20 => NamedGroup :: Secp224k1 ,
+        21 => NamedGroup :: Secp224r1 ,
+        22 => NamedGroup :: Secp256k1 ,
+        23 => NamedGroup :: Secp256r1 ,
+        24 => NamedGroup :: Secp384r1 ,
+        25 => NamedGroup :: Secp521r1 ,
+        29 => NamedGroup :: X25519 ,
+        30 => NamedGroup :: X448 ,
+        256 => NamedGroup :: Ffdhe2048 ,
+        257 => NamedGroup :: Ffdhe3072 ,
+        258 => NamedGroup :: Ffdhe4096 ,
+        259 => NamedGroup :: Ffdhe6144 ,
+        260 => NamedGroup :: Ffdhe8192 ,
+        x => NamedGroup :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HelloRetryExtensionExtensionDataFmt {
+        type PT = HelloRetryExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HelloRetryExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: SupportedVersions => {
+            let (n ,
+            v) = (SupportedVersionsServerFmt) . parse (& rest) ? ;
+            (n ,
+            HelloRetryExtensionExtensionData :: SupportedVersions (v))
+        }
+        ,
+        ExtensionType :: Cookie => {
+            let (n ,
+            v) = (CookieFmt) . parse (& rest) ? ;
+            (n ,
+            HelloRetryExtensionExtensionData :: Cookie (v))
+        }
+        ,
+        ExtensionType :: KeyShare => {
+            let (n ,
+            v) = (NamedGroupFmt) . parse (& rest) ? ;
+            (n ,
+            HelloRetryExtensionExtensionData :: KeyShare (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            HelloRetryExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HelloRetryExtensionFmt {
+        type PT = HelloRetryExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HelloRetryExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , HelloRetryExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = HelloRetryExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HelloRetryExtensionsFmt {
+        type PT = HelloRetryExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HelloRetryExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 6 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (HelloRetryExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = HelloRetryExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HelloRetryRequestFmt {
+        type PT = HelloRetryRequest < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HelloRetryRequestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , legacy_session_id_echo) = (SessionIdFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , cipher_suite) = (CipherSuiteFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , legacy_compression_method) = (Const (U8 , 0)) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let (n4 , extensions) = (HelloRetryExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n4);
+            let total_n = n1 + n2 + n3 + n4;
+            let final_v = HelloRetryRequest {
+        legacy_session_id_echo ,
+        cipher_suite ,
+        legacy_compression_method ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PreSharedKeyServerExtensionFmt {
+        type PT = PreSharedKeyServerExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PreSharedKeyServerExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , selected_identity) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = PreSharedKeyServerExtension {
+        selected_identity
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for KeyShareEntryFmt {
+        type PT = KeyShareEntry < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< KeyShareEntryFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , group) = (NamedGroupFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n2);
+            let (n3 , key_exchange) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = KeyShareEntry {
+        group ,
+        l ,
+        key_exchange
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SeverHelloExtensionExtensionDataFmt {
+        type PT = SeverHelloExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SeverHelloExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: PreSharedKey => {
+            let (n ,
+            v) = (PreSharedKeyServerExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            SeverHelloExtensionExtensionData :: PreSharedKey (v))
+        }
+        ,
+        ExtensionType :: SupportedVersions => {
+            let (n ,
+            v) = (SupportedVersionsServerFmt) . parse (& rest) ? ;
+            (n ,
+            SeverHelloExtensionExtensionData :: SupportedVersions (v))
+        }
+        ,
+        ExtensionType :: KeyShare => {
+            let (n ,
+            v) = (KeyShareEntryFmt) . parse (& rest) ? ;
+            (n ,
+            SeverHelloExtensionExtensionData :: KeyShare (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            SeverHelloExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SeverHelloExtensionFmt {
+        type PT = SeverHelloExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SeverHelloExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , SeverHelloExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = SeverHelloExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerExtensionsFmt {
+        type PT = ServerExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 6 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (SeverHelloExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ServerExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerHelloFmt {
+        type PT = ServerHello < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerHelloFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , legacy_session_id_echo) = (SessionIdFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , cipher_suite) = (CipherSuiteFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , legacy_compression_method) = (Const (U8 , 0)) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let (n4 , extensions) = (ServerExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n4);
+            let total_n = n1 + n2 + n3 + n4;
+            let final_v = ServerHello {
+        legacy_session_id_echo ,
+        cipher_suite ,
+        legacy_compression_method ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ShOrHrrPayloadFmt < 'i > {
+        type PT = ShOrHrrPayload < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ShOrHrrPayloadFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . random {
+        x if x . deep_eq (& [0xcf , 0x21 , 0xad , 0x74 , 0xe5 , 0x9a , 0x61 , 0x11 , 0xbe , 0x1d , 0x8c , 0x02 , 0x1e , 0x65 , 0xb8 , 0x91 , 0xc2 , 0xa2 , 0x11 , 0x16 , 0x7a , 0xbb , 0x8c , 0x5e , 0x07 , 0x9e , 0x09 , 0xe2 , 0xc8 , 0xa8 , 0x33 , 0x9c]) => {
+            let (n ,
+            v) = (HelloRetryRequestFmt) . parse (& rest) ? ;
+            (n ,
+            ShOrHrrPayload :: Variant1 (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (ServerHelloFmt) . parse (& rest) ? ;
+            (n ,
+            ShOrHrrPayload :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ShOrHrrFmt {
+        type PT = ShOrHrr < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ShOrHrrFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , legacy_version) = (Const (U16Be , 771)) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , random) = (Fixed :: < 32 >) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , payload) = (ShOrHrrPayloadFmt {
+        random : random
+    }
+    ) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = ShOrHrr {
+        legacy_version ,
+        random ,
+        payload
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HandshakeTypeFmt {
+        type PT = HandshakeType ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HandshakeTypeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        1 => HandshakeType :: ClientHello ,
+        2 => HandshakeType :: ServerHello ,
+        4 => HandshakeType :: NewSessionTicket ,
+        5 => HandshakeType :: EndOfEarlyData ,
+        8 => HandshakeType :: EncryptedExtensions ,
+        11 => HandshakeType :: Certificate ,
+        13 => HandshakeType :: CertificateRequest ,
+        15 => HandshakeType :: CertificateVerify ,
+        20 => HandshakeType :: Finished ,
+        24 => HandshakeType :: KeyUpdate ,
+        _ => return Err (ParseError :: invalid_tag ()) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CipherSuiteListFmt {
+        type PT = CipherSuiteList ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CipherSuiteListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65534) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CipherSuiteFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CipherSuiteList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HostNameFmt {
+        type PT = HostName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HostNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for UnknownNameFmt {
+        type PT = UnknownName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< UnknownNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerNameNameFmt {
+        type PT = ServerNameName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerNameNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . name_type {
+        NameType :: HostName => {
+            let (n ,
+            v) = (HostNameFmt) . parse (& rest) ? ;
+            (n ,
+            ServerNameName :: HostName (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (UnknownNameFmt) . parse (& rest) ? ;
+            (n ,
+            ServerNameName :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerNameFmt {
+        type PT = ServerName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , name_type) = (NameTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , name) = (ServerNameNameFmt {
+        name_type : name_type
+    }
+    ) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ServerName {
+        name_type ,
+        name
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerNameListFmt {
+        type PT = ServerNameList < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerNameListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (ServerNameFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ServerNameList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NamedGroupListFmt {
+        type PT = NamedGroupList ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NamedGroupListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (NamedGroupFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = NamedGroupList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ProtocolNameFmt {
+        type PT = ProtocolName < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ProtocolNameFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ProtocolNameListFmt {
+        type PT = ProtocolNameList < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ProtocolNameListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (ProtocolNameFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ProtocolNameList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SupportedVersionsClientFmt {
+        type PT = SupportedVersionsClient ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SupportedVersionsClientFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 254) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (ProtocolVersionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = SupportedVersionsClient {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for KeyShareClientHelloFmt {
+        type PT = KeyShareClientHello < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< KeyShareClientHelloFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (KeyShareEntryFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = KeyShareClientHello {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskKeyExchangeModeFmt {
+        type PT = PskKeyExchangeMode ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskKeyExchangeModeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => PskKeyExchangeMode :: PSK_KE ,
+        1 => PskKeyExchangeMode :: PSK_DHE_KE ,
+        x => PskKeyExchangeMode :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskKeyExchangeModesFmt {
+        type PT = PskKeyExchangeModes ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskKeyExchangeModesFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (PskKeyExchangeModeFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PskKeyExchangeModes {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskIdentityFmt {
+        type PT = PskIdentity < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskIdentityFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , identity) = (Opaque1FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , obfuscated_ticket_age) = (U32Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PskIdentity {
+        identity ,
+        obfuscated_ticket_age
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskIdentitiesFmt {
+        type PT = PskIdentities < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskIdentitiesFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 7 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (PskIdentityFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PskIdentities {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskBinderEntryFmt {
+        type PT = PskBinderEntry < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskBinderEntryFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 32 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , entries) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PskBinderEntry {
+        l ,
+        entries
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PskBinderEntriesFmt {
+        type PT = PskBinderEntries < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PskBinderEntriesFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 33 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (PskBinderEntryFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PskBinderEntries {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OfferedPsksFmt {
+        type PT = OfferedPsks < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OfferedPsksFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , identities) = (PskIdentitiesFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , binders) = (PskBinderEntriesFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = OfferedPsks {
+        identities ,
+        binders
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PreSharedKeyClientExtensionFmt {
+        type PT = PreSharedKeyClientExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PreSharedKeyClientExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , offers) = (OfferedPsksFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = PreSharedKeyClientExtension {
+        offers
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for MaxFragmentLengthFmt {
+        type PT = MaxFragmentLength ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< MaxFragmentLengthFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        1 => MaxFragmentLength :: Pow2_9 ,
+        2 => MaxFragmentLength :: Pow2_10 ,
+        3 => MaxFragmentLength :: Pow2_11 ,
+        4 => MaxFragmentLength :: Pow2_12 ,
+        x => MaxFragmentLength :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HeartbeatModeFmt {
+        type PT = HeartbeatMode ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HeartbeatModeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        1 => HeartbeatMode :: PeerAllowedToSend ,
+        2 => HeartbeatMode :: PeerNotAllowedToSend ,
+        x => HeartbeatMode :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateTypeFmt {
+        type PT = CertificateType ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateTypeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => CertificateType :: X509 ,
+        2 => CertificateType :: RawPublicKey ,
+        x => CertificateType :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientCertTypeClientExtensionFmt {
+        type PT = ClientCertTypeClientExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientCertTypeClientExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateTypeFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ClientCertTypeClientExtension {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerCertTypeClientExtensionFmt {
+        type PT = ServerCertTypeClientExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerCertTypeClientExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateTypeFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ServerCertTypeClientExtension {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientHelloExtensionRestFmt {
+        type PT = ClientHelloExtensionRest < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientHelloExtensionRestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: MaxFragmentLength => {
+            let (n ,
+            v) = (MaxFragmentLengthFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: MaxFragmentLength (v))
+        }
+        ,
+        ExtensionType :: Heartbeat => {
+            let (n ,
+            v) = (HeartbeatModeFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: Heartbeat (v))
+        }
+        ,
+        ExtensionType :: SignedCertificateTimeStamp => {
+            let (n ,
+            v) = (SignedCertificateTimestampListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: SignedCertificateTimeStamp (v))
+        }
+        ,
+        ExtensionType :: ClientCertificateType => {
+            let (n ,
+            v) = (ClientCertTypeClientExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: ClientCertificateType (v))
+        }
+        ,
+        ExtensionType :: ServerCertificateType => {
+            let (n ,
+            v) = (ServerCertTypeClientExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: ServerCertificateType (v))
+        }
+        ,
+        ExtensionType :: Padding => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: Padding (v))
+        }
+        ,
+        ExtensionType :: Cookie => {
+            let (n ,
+            v) = (CookieFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: Cookie (v))
+        }
+        ,
+        ExtensionType :: CertificateAuthorities => {
+            let (n ,
+            v) = (CertificateAuthoritiesExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: CertificateAuthorities (v))
+        }
+        ,
+        ExtensionType :: OidFilters => {
+            let (n ,
+            v) = (OidFilterExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: OidFilters (v))
+        }
+        ,
+        ExtensionType :: SignatureAlgorithmsCert => {
+            let (n ,
+            v) = (SignatureSchemeListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: SignatureAlgorithmsCert (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionRest :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientHelloExtensionExtensionDataFmt {
+        type PT = ClientHelloExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientHelloExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: ServerName => {
+            let (n ,
+            v) = (ServerNameListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: ServerName (v))
+        }
+        ,
+        ExtensionType :: SignatureAlgorithms => {
+            let (n ,
+            v) = (SignatureSchemeListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: SignatureAlgorithms (v))
+        }
+        ,
+        ExtensionType :: SupportedGroups => {
+            let (n ,
+            v) = (NamedGroupListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: SupportedGroups (v))
+        }
+        ,
+        ExtensionType :: StatusRequest => {
+            let (n ,
+            v) = (CertificateStatusRequestFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: StatusRequest (v))
+        }
+        ,
+        ExtensionType :: ApplicationLayerProtocolNegotiation => {
+            let (n ,
+            v) = (ProtocolNameListFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: ApplicationLayerProtocolNegotiation (v))
+        }
+        ,
+        ExtensionType :: SupportedVersions => {
+            let (n ,
+            v) = (SupportedVersionsClientFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: SupportedVersions (v))
+        }
+        ,
+        ExtensionType :: KeyShare => {
+            let (n ,
+            v) = (KeyShareClientHelloFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: KeyShare (v))
+        }
+        ,
+        ExtensionType :: PskKeyExchangeModes => {
+            let (n ,
+            v) = (PskKeyExchangeModesFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: PskKeyExchangeModes (v))
+        }
+        ,
+        ExtensionType :: PreSharedKey => {
+            let (n ,
+            v) = (PreSharedKeyClientExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: PreSharedKey (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (ClientHelloExtensionRestFmt {
+                ext_len : self . ext_len ,
+                extension_type : self . extension_type
+            }
+            ) . parse (& rest) ? ;
+            (n ,
+            ClientHelloExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientHelloExtensionFmt {
+        type PT = ClientHelloExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientHelloExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , ClientHelloExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = ClientHelloExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientExtensionsFmt {
+        type PT = ClientExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 8 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (ClientHelloExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = ClientExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientHelloFmt {
+        type PT = ClientHello < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientHelloFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , legacy_version) = (Const (U16Be , 771)) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , random) = (Fixed :: < 32 >) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , legacy_session_id) = (SessionIdFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let (n4 , cipher_suites) = (CipherSuiteListFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n4);
+            let (n5 , legacy_compression_methods) = (Opaque1FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n5);
+            let (n6 , extensions) = (ClientExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n6);
+            let total_n = n1 + n2 + n3 + n4 + n5 + n6;
+            let final_v = ClientHello {
+        legacy_version ,
+        random ,
+        legacy_session_id ,
+        cipher_suites ,
+        legacy_compression_methods ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque0FfFmt {
+        type PT = Opaque0Ff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque0FfFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque0Ff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EarlyDataIndicationNewSessionTicketFmt {
+        type PT = EarlyDataIndicationNewSessionTicket ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EarlyDataIndicationNewSessionTicketFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , max_early_data_size) = (U32Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = EarlyDataIndicationNewSessionTicket {
+        max_early_data_size
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NewSessionTicketExtensionExtensionDataFmt {
+        type PT = NewSessionTicketExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NewSessionTicketExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: EarlyData => {
+            let (n ,
+            v) = (EarlyDataIndicationNewSessionTicketFmt) . parse (& rest) ? ;
+            (n ,
+            NewSessionTicketExtensionExtensionData :: EarlyData (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            NewSessionTicketExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NewSessionTicketExtensionFmt {
+        type PT = NewSessionTicketExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NewSessionTicketExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , NewSessionTicketExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = NewSessionTicketExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NewSessionTicketExtensionsFmt {
+        type PT = NewSessionTicketExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NewSessionTicketExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 0 && l <= 65534) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (NewSessionTicketExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = NewSessionTicketExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for NewSessionTicketFmt {
+        type PT = NewSessionTicket < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< NewSessionTicketFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , ticket_lifetime) = (U32Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ticket_age_add) = (U32Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , ticket_nonce) = (Opaque0FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let (n4 , ticket) = (Opaque1FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n4);
+            let (n5 , extensions) = (NewSessionTicketExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n5);
+            let total_n = n1 + n2 + n3 + n4 + n5;
+            let final_v = NewSessionTicket {
+        ticket_lifetime ,
+        ticket_age_add ,
+        ticket_nonce ,
+        ticket ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EncryptedExtensionExtensionDataFmt {
+        type PT = EncryptedExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EncryptedExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: ServerName => {
+            let (n ,
+            v) = (EmptyFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: ServerName (v))
+        }
+        ,
+        ExtensionType :: MaxFragmentLength => {
+            let (n ,
+            v) = (MaxFragmentLengthFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: MaxFragmentLength (v))
+        }
+        ,
+        ExtensionType :: SupportedGroups => {
+            let (n ,
+            v) = (NamedGroupListFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: SupportedGroups (v))
+        }
+        ,
+        ExtensionType :: Heartbeat => {
+            let (n ,
+            v) = (HeartbeatModeFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: Heartbeat (v))
+        }
+        ,
+        ExtensionType :: ApplicationLayerProtocolNegotiation => {
+            let (n ,
+            v) = (ProtocolNameListFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: ApplicationLayerProtocolNegotiation (v))
+        }
+        ,
+        ExtensionType :: ClientCertificateType => {
+            let (n ,
+            v) = (ClientCertTypeClientExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: ClientCertificateType (v))
+        }
+        ,
+        ExtensionType :: ServerCertificateType => {
+            let (n ,
+            v) = (ServerCertTypeClientExtensionFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: ServerCertificateType (v))
+        }
+        ,
+        ExtensionType :: EarlyData => {
+            let (n ,
+            v) = (EmptyFmt) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: EarlyData (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            EncryptedExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EncryptedExtensionFmt {
+        type PT = EncryptedExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EncryptedExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , EncryptedExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = EncryptedExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EncryptedExtensionsFmt {
+        type PT = EncryptedExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EncryptedExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (EncryptedExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = EncryptedExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque1FfffffFmt {
+        type PT = Opaque1Ffffff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque1FfffffFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U24Be) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 16777215) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque1Ffffff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for OcspResponseFmt {
+        type PT = OcspResponse < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< OcspResponseFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque1FfffffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateStatusFmt {
+        type PT = CertificateStatus < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateStatusFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , status_type) = (Const (U8 , 1)) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , response) = (OcspResponseFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateStatus {
+        status_type ,
+        response
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateExtensionExtensionDataFmt {
+        type PT = CertificateExtensionExtensionData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateExtensionExtensionDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . extension_type {
+        ExtensionType :: StatusRequest => {
+            let (n ,
+            v) = (CertificateStatusFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateExtensionExtensionData :: StatusRequest (v))
+        }
+        ,
+        ExtensionType :: SignedCertificateTimeStamp => {
+            let (n ,
+            v) = (SignedCertificateTimestampListFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateExtensionExtensionData :: SignedCertificateTimeStamp (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+            (n ,
+            CertificateExtensionExtensionData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateExtensionFmt {
+        type PT = CertificateExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , extension_data) = (ExactLen ((ext_len as usize) , CertificateExtensionExtensionDataFmt {
+        ext_len : ext_len ,
+        extension_type : extension_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = CertificateExtension {
+        extension_type ,
+        ext_len ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateExtensionsFmt {
+        type PT = CertificateExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateEntryOpaqueFmt {
+        type PT = CertificateEntryOpaque < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateEntryOpaqueFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , cert_data) = (Opaque1FfffffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , extensions) = (CertificateExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateEntryOpaque {
+        cert_data ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateListFmt {
+        type PT = CertificateList < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U24Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateEntryOpaqueFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateFmt {
+        type PT = Certificate < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , certificate_request_context) = (Opaque0FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , certificate_list) = (CertificateListFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Certificate {
+        certificate_request_context ,
+        certificate_list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateRequestExtensionsFmt {
+        type PT = CertificateRequestExtensions < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateRequestExtensionsFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateRequestExtensionFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateRequestExtensions {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateRequestFmt {
+        type PT = CertificateRequest < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateRequestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , certificate_request_context) = (Opaque0FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , extensions) = (CertificateRequestExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateRequest {
+        certificate_request_context ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateVerifyFmt {
+        type PT = CertificateVerify < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateVerifyFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , algorithm) = (SignatureSchemeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , signature) = (Opaque0FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateVerify {
+        algorithm ,
+        signature
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for FinishedFmt {
+        type PT = Finished < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< FinishedFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . size {
+        12 => {
+            let (n ,
+            v) = (Fixed :: < 12 >) . parse (& rest) ? ;
+            (n ,
+            Finished :: Variant1 (v))
+        }
+        ,
+        20 => {
+            let (n ,
+            v) = (Fixed :: < 20 >) . parse (& rest) ? ;
+            (n ,
+            Finished :: Variant2 (v))
+        }
+        ,
+        32 => {
+            let (n ,
+            v) = (Fixed :: < 32 >) . parse (& rest) ? ;
+            (n ,
+            Finished :: Variant3 (v))
+        }
+        ,
+        48 => {
+            let (n ,
+            v) = (Fixed :: < 48 >) . parse (& rest) ? ;
+            (n ,
+            Finished :: Variant4 (v))
+        }
+        ,
+        64 => {
+            let (n ,
+            v) = (Fixed :: < 64 >) . parse (& rest) ? ;
+            (n ,
+            Finished :: Variant5 (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Varied ((self . size as usize))) . parse (& rest) ? ;
+            (n ,
+            Finished :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for KeyUpdateRequestFmt {
+        type PT = KeyUpdateRequest ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< KeyUpdateRequestFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => KeyUpdateRequest :: UpdateNotRequested ,
+        1 => KeyUpdateRequest :: UpdateRequested ,
+        _ => return Err (ParseError :: invalid_tag ()) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for KeyUpdateFmt {
+        type PT = KeyUpdate ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< KeyUpdateFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , request_update) = (KeyUpdateRequestFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = KeyUpdate {
+        request_update
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HandshakeMsgFmt {
+        type PT = HandshakeMsg < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HandshakeMsgFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . msg_type {
+        HandshakeType :: ClientHello => {
+            let (n ,
+            v) = (ClientHelloFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: ClientHello (v))
+        }
+        ,
+        HandshakeType :: ServerHello => {
+            let (n ,
+            v) = (ShOrHrrFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: ServerHello (v))
+        }
+        ,
+        HandshakeType :: NewSessionTicket => {
+            let (n ,
+            v) = (NewSessionTicketFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: NewSessionTicket (v))
+        }
+        ,
+        HandshakeType :: EndOfEarlyData => {
+            let (n ,
+            v) = (EmptyFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: EndOfEarlyData (v))
+        }
+        ,
+        HandshakeType :: EncryptedExtensions => {
+            let (n ,
+            v) = (EncryptedExtensionsFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: EncryptedExtensions (v))
+        }
+        ,
+        HandshakeType :: Certificate => {
+            let (n ,
+            v) = (CertificateFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: Certificate (v))
+        }
+        ,
+        HandshakeType :: CertificateRequest => {
+            let (n ,
+            v) = (CertificateRequestFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: CertificateRequest (v))
+        }
+        ,
+        HandshakeType :: CertificateVerify => {
+            let (n ,
+            v) = (CertificateVerifyFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: CertificateVerify (v))
+        }
+        ,
+        HandshakeType :: Finished => {
+            let (n ,
+            v) = (FinishedFmt {
+                size : self . length
+            }
+            ) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: Finished (v))
+        }
+        ,
+        HandshakeType :: KeyUpdate => {
+            let (n ,
+            v) = (KeyUpdateFmt) . parse (& rest) ? ;
+            (n ,
+            HandshakeMsg :: KeyUpdate (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HandshakeFmt {
+        type PT = Handshake < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HandshakeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , msg_type) = (HandshakeTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , length) = (U24Be) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , msg) = (ExactLen ((length as usize) , HandshakeMsgFmt {
+        length : length ,
+        msg_type : msg_type
+    }
+    )) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = Handshake {
+        msg_type ,
+        length ,
+        msg
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ZeroByteFmt {
+        type PT = ZeroByte ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ZeroByteFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , zero) = (Const (U8 , 0)) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = ZeroByte {
+        zero
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for PaddingExtensionFmt {
+        type PT = PaddingExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PaddingExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , padding) = (ExactLen ((l as usize) , Star (ZeroByteFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = PaddingExtension {
+        l ,
+        padding
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ExtensionFmt {
+        type PT = Extension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , extension_type) = (ExtensionTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , extension_data) = (Opaque0FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Extension {
+        extension_type ,
+        extension_data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ClientCertTypeServerExtensionFmt {
+        type PT = ClientCertTypeServerExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ClientCertTypeServerExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , client_certificate_type) = (CertificateTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = ClientCertTypeServerExtension {
+        client_certificate_type
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ContentTypeFmt {
+        type PT = ContentType ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ContentTypeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => ContentType :: Invalid ,
+        20 => ContentType :: ChangeCipherSpec ,
+        21 => ContentType :: Alert ,
+        22 => ContentType :: Handshake ,
+        23 => ContentType :: ApplicationData ,
+        _ => return Err (ParseError :: invalid_tag ()) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for TlsPlaintextFmt {
+        type PT = TlsPlaintext < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< TlsPlaintextFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , content_type) = (ContentTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , legacy_record_version) = (ProtocolVersionFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , fragment) = (Opaque0FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = TlsPlaintext {
+        content_type ,
+        legacy_record_version ,
+        fragment
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for AlertDescriptionFmt {
+        type PT = AlertDescription ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< AlertDescriptionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => AlertDescription :: CloseNotify ,
+        10 => AlertDescription :: UnexpectedMessage ,
+        20 => AlertDescription :: BadRecordMac ,
+        22 => AlertDescription :: RecordOverflow ,
+        40 => AlertDescription :: HandshakeFailure ,
+        42 => AlertDescription :: BadCertificate ,
+        43 => AlertDescription :: UnsupportedCertificate ,
+        44 => AlertDescription :: CertificateRevoked ,
+        45 => AlertDescription :: CertificateExpired ,
+        46 => AlertDescription :: CertificateUnknown ,
+        47 => AlertDescription :: IllegalParameter ,
+        48 => AlertDescription :: UnknownCA ,
+        49 => AlertDescription :: AccessDenied ,
+        50 => AlertDescription :: DecodeError ,
+        51 => AlertDescription :: DecryptError ,
+        70 => AlertDescription :: ProtocolVersion ,
+        71 => AlertDescription :: InsufficientSecurity ,
+        80 => AlertDescription :: InternalError ,
+        86 => AlertDescription :: InappropriateFallback ,
+        90 => AlertDescription :: UserCanceled ,
+        109 => AlertDescription :: MissingExtension ,
+        110 => AlertDescription :: UnsupportedExtension ,
+        112 => AlertDescription :: UnrecognizedName ,
+        113 => AlertDescription :: BadCertificateStatusResponse ,
+        115 => AlertDescription :: UnknownPSKIdentity ,
+        116 => AlertDescription :: CertificateRequired ,
+        120 => AlertDescription :: NoApplicationProtocol ,
+        _ => return Err (ParseError :: invalid_tag ()) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SrtpProtectionProfileFmt {
+        type PT = SrtpProtectionProfile < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SrtpProtectionProfileFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Fixed :: < 2 >) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for SrtpProtectionProfilesFmt {
+        type PT = SrtpProtectionProfiles < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< SrtpProtectionProfilesFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (SrtpProtectionProfileFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = SrtpProtectionProfiles {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for UseSrtpDataFmt {
+        type PT = UseSrtpData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< UseSrtpDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , profiles) = (SrtpProtectionProfilesFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , srtp_mki) = (Opaque0FfFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = UseSrtpData {
+        profiles ,
+        srtp_mki
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for FinishedOpaqueFmt {
+        type PT = FinishedOpaque < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< FinishedOpaqueFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Varied ((self . digest_size as usize))) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque2FfffFmt {
+        type PT = Opaque2Ffff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque2FfffFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U16Be) . parse (& rest) ? ;
+            if ! (l >= 2 && l <= 65535) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque2Ffff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for AlertFmt {
+        type PT = Alert ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< AlertFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , level) = (AlertLevelFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , description) = (AlertDescriptionFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Alert {
+        level ,
+        description
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for ServerCertTypeServerExtensionFmt {
+        type PT = ServerCertTypeServerExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< ServerCertTypeServerExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , server_certificate_type) = (CertificateTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = ServerCertTypeServerExtension {
+        server_certificate_type
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for UnknownExtensionFmt {
+        type PT = UnknownExtension < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< UnknownExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = (Opaque0FfffFmt) . parse (ibuf) ? ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for DigestSizeFmt {
+        type PT = DigestSize ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< DigestSizeFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U24Be . parse (& rest) ? ;
+            let enum_val = match v {
+        12 => DigestSize :: Hash12 ,
+        20 => DigestSize :: Hash20 ,
+        32 => DigestSize :: Sha256 ,
+        48 => DigestSize :: Sha384 ,
+        64 => DigestSize :: Sha512 ,
+        16777215 => DigestSize :: Max ,
+        x => DigestSize :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for HeartbeatExtensionFmt {
+        type PT = HeartbeatExtension ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< HeartbeatExtensionFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , mode) = (HeartbeatModeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+            let final_v = HeartbeatExtension {
+        mode
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EcPointFormatFmt {
+        type PT = EcPointFormat ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EcPointFormatFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => EcPointFormat :: Uncompressed ,
+        1 => EcPointFormat :: AnsiX962CompressedPrime ,
+        2 => EcPointFormat :: AnsiX962CompressedChar2 ,
+        x => EcPointFormat :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for EcPointFormatListFmt {
+        type PT = EcPointFormatList ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< EcPointFormatListFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U8) . parse (& rest) ? ;
+            if ! (l >= 1 && l <= 255) {
+        return Err (ParseError :: predicate_failed ()) ;
+    }
+            let rest = rest.skip(n1);
+            let (n2 , list) = (ExactLen ((l as usize) , Star (EcPointFormatFmt))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = EcPointFormatList {
+        l ,
+        list
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateEntryDataFmt {
+        type PT = CertificateEntryData < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateEntryDataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . cert_type {
+        CertificateType :: X509 => {
+            let (n ,
+            v) = (Opaque1FfffffFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateEntryData :: X509 (v))
+        }
+        ,
+        CertificateType :: RawPublicKey => {
+            let (n ,
+            v) = (Opaque1FfffffFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateEntryData :: RawPublicKey (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Opaque1FfffffFmt) . parse (& rest) ? ;
+            (n ,
+            CertificateEntryData :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for CertificateEntryFmt {
+        type PT = CertificateEntry < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< CertificateEntryFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , data) = (CertificateEntryDataFmt {
+        cert_type : self . cert_type
+    }
+    ) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , extensions) = (CertificateExtensionsFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = CertificateEntry {
+        data ,
+        extensions
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for TlsCiphertextFmt {
+        type PT = TlsCiphertext < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< TlsCiphertextFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , opaque_type) = (ContentTypeFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , version) = (ProtocolVersionFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , encrypted_record) = (Opaque0FfffFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+            let final_v = TlsCiphertext {
+        opaque_type ,
+        version ,
+        encrypted_record
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
+
+
+    impl < 'i > Parser < & 'i [u8] > for Opaque0FfffffFmt {
+        type PT = Opaque0Ffffff < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< Opaque0FfffffFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , l) = (U24Be) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Opaque0Ffffff {
+        l ,
+        data
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
 
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque0Ffff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OcspExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ExtensionType
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SignatureScheme
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SignatureSchemeList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque1Ffff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for DistinguishedName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateAuthoritiesExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ResponderId
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ResponderIdList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OscpStatusRequest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateStatusRequest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SerializedSct
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SignedCertificateTimestampList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque1Ff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OidFilter
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OidFilterExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateRequestExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateRequestExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NameType
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SessionId
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CipherSuite
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ProtocolVersion
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SupportedVersionsServer
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Cookie
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NamedGroup
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HelloRetryExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HelloRetryExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HelloRetryExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HelloRetryRequest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PreSharedKeyServerExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for KeyShareEntry
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SeverHelloExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SeverHelloExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerHello
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ShOrHrrPayload
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ShOrHrr
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HandshakeType
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CipherSuiteList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HostName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for UnknownName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerNameName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerNameList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NamedGroupList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ProtocolName
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ProtocolNameList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SupportedVersionsClient
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for KeyShareClientHello
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskKeyExchangeMode
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskKeyExchangeModes
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskIdentity
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskIdentities
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskBinderEntry
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PskBinderEntries
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OfferedPsks
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PreSharedKeyClientExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for MaxFragmentLength
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HeartbeatMode
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateType
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientCertTypeClientExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerCertTypeClientExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientHelloExtensionRest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientHelloExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientHelloExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientHello
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque0Ff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EarlyDataIndicationNewSessionTicket
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NewSessionTicketExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NewSessionTicketExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NewSessionTicketExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for NewSessionTicket
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EncryptedExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EncryptedExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EncryptedExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque1Ffffff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for OcspResponse
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateStatus
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateExtensionExtensionData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateEntryOpaque
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Certificate
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateRequestExtensions
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateRequest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateVerify
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Finished
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for KeyUpdateRequest
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for KeyUpdate
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HandshakeMsg
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Handshake
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ZeroByte
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PaddingExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Extension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ClientCertTypeServerExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ContentType
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for TlsPlaintext
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for AlertDescription
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SrtpProtectionProfile
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for SrtpProtectionProfiles
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for UseSrtpData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for FinishedOpaque
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque2Ffff
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Alert
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for ServerCertTypeServerExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for UnknownExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for DigestSize
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for HeartbeatExtension
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EcPointFormat
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for EcPointFormatList
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateEntryData
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for CertificateEntry
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for TlsCiphertext
-
-
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Opaque0Ffffff
 }
 

@@ -14,7 +14,7 @@ block = {
 tx = {
   version: u32,
   @txin_count: btc_varint,
-  rest: choose(@txin_count) {
+  rem: choose(@txin_count) {
     0 => tx_segwit,
     _ => tx_nonsegwit(@txin_count),
   },

@@ -3,11 +3,13 @@ use crate::combinators::disjoint::*;
 use crate::combinators::implicit::*;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tagged, Tail,
-    U16Le, U32Le, U8,
+    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tail, U16Le,
+    U32Le, WithPrefixTag, U8,
 };
+
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
+use WithPrefixTag as Tagged;
 
 verus! {
 

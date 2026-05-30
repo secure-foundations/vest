@@ -3,7 +3,7 @@ use crate::combinators::choice::spec::*;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
-    Alt, Choice, Const, Dispatch, Fixed, Mapped, Refined, Sum, Tagged, U16Le, U32Le, U8,
+    Alt, Choice, Const, Dispatch, Fixed, Mapped, Refined, Sum, U16Le, U32Le, WithPrefixTag, U8,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::pervasive::*;
@@ -169,7 +169,7 @@ proof fn test_alt_flexible_length_encoding() {
     reveal(disjoint_domains);
     let not_81 = Refined(U8, |value: u8| value != 0x81u8);
     let short_form = not_81;
-    let long_form = Tagged(U8, 0x81u8, not_81);
+    let long_form = WithPrefixTag(U8, 0x81u8, not_81);
     let alt_parser = Alt::<_, _, false>(long_form, short_form);
     assert(alt_parser.unambiguous());
 

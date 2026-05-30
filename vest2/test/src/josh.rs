@@ -1,5 +1,10 @@
 # ! [allow (warnings)] use vest_lib2 :: combinators :: mapped :: spec :: * ;
 use vest_lib2 :: combinators :: * ;
+use vest_lib2 :: core :: exec :: {
+    DeepEq ,
+    SelfView
+}
+;
 use vest_lib2 :: core :: exec :: input :: {
     InputBuf ,
     InputSlice
@@ -15,6 +20,7 @@ use vest_lib2 :: core :: {
 ;
 use vest_lib2 :: primitives :: btcvarint :: VarInt ;
 use vest_lib2 :: primitives :: leb128 :: ULeb128 ;
+use vest_lib2 :: macros :: impl_self_view_for ;
 use vstd :: prelude :: * ;
 verus! {
     // ============================================================
@@ -96,6 +102,20 @@ verus! {
                 TstTag :: C30 => TstTagSpec :: C30 ,
                 TstTag :: Unknown (v) => TstTagSpec :: Unknown (v) ,
             }
+        }
+    }
+    impl DeepEq for TstTag {
+        fn deep_eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
+        }
+    }
+    impl SelfView for TstTag {
+        proof fn self_view (& self) {
+        }
+        fn eq (& self ,
+        other : & Self) -> bool {
+            * self == * other
         }
     }
 
@@ -1463,18 +1483,432 @@ verus! {
     // ============================================================
     // Executable Implementations
     // ============================================================
-    // TODO(execs): emit Parser / Serializer / Prepare impls for TstTag
+    impl < 'i > Parser < & 'i [u8] > for TstTagFmt {
+        type PT = TstTag ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< TstTagFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = U8 . parse (& rest) ? ;
+            let enum_val = match v {
+        0 => TstTag :: C0 ,
+        1 => TstTag :: C1 ,
+        2 => TstTag :: C2 ,
+        3 => TstTag :: C3 ,
+        4 => TstTag :: C4 ,
+        5 => TstTag :: C5 ,
+        6 => TstTag :: C6 ,
+        7 => TstTag :: C7 ,
+        8 => TstTag :: C8 ,
+        9 => TstTag :: C9 ,
+        10 => TstTag :: C10 ,
+        11 => TstTag :: C11 ,
+        12 => TstTag :: C12 ,
+        13 => TstTag :: C13 ,
+        14 => TstTag :: C14 ,
+        15 => TstTag :: C15 ,
+        16 => TstTag :: C16 ,
+        17 => TstTag :: C17 ,
+        18 => TstTag :: C18 ,
+        19 => TstTag :: C19 ,
+        20 => TstTag :: C20 ,
+        21 => TstTag :: C21 ,
+        22 => TstTag :: C22 ,
+        23 => TstTag :: C23 ,
+        24 => TstTag :: C24 ,
+        25 => TstTag :: C25 ,
+        26 => TstTag :: C26 ,
+        27 => TstTag :: C27 ,
+        28 => TstTag :: C28 ,
+        29 => TstTag :: C29 ,
+        30 => TstTag :: C30 ,
+        x => TstTag :: Unknown (x) ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
+            Ok((n, enum_val))
+        }
+    }
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Mydata
+
+    impl < 'i > Parser < & 'i [u8] > for MydataFmt {
+        type PT = Mydata < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< MydataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , foo) = (Fixed :: < 2 >) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , bar) = (Fixed :: < 2 >) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Mydata {
+        foo ,
+        bar
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for TstMydata
+
+    impl < 'i > Parser < & 'i [u8] > for TstMydataFmt {
+        type PT = TstMydata < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< TstMydataFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n , v) = match self . tag {
+        TstTag :: C0 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C0 (v))
+        }
+        ,
+        TstTag :: C1 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C1 (v))
+        }
+        ,
+        TstTag :: C2 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C2 (v))
+        }
+        ,
+        TstTag :: C3 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C3 (v))
+        }
+        ,
+        TstTag :: C4 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C4 (v))
+        }
+        ,
+        TstTag :: C5 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C5 (v))
+        }
+        ,
+        TstTag :: C6 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C6 (v))
+        }
+        ,
+        TstTag :: C7 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C7 (v))
+        }
+        ,
+        TstTag :: C8 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C8 (v))
+        }
+        ,
+        TstTag :: C9 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C9 (v))
+        }
+        ,
+        TstTag :: C10 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C10 (v))
+        }
+        ,
+        TstTag :: C11 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C11 (v))
+        }
+        ,
+        TstTag :: C12 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C12 (v))
+        }
+        ,
+        TstTag :: C13 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C13 (v))
+        }
+        ,
+        TstTag :: C14 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C14 (v))
+        }
+        ,
+        TstTag :: C15 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C15 (v))
+        }
+        ,
+        TstTag :: C16 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C16 (v))
+        }
+        ,
+        TstTag :: C17 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C17 (v))
+        }
+        ,
+        TstTag :: C18 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C18 (v))
+        }
+        ,
+        TstTag :: C19 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C19 (v))
+        }
+        ,
+        TstTag :: C20 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C20 (v))
+        }
+        ,
+        TstTag :: C21 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C21 (v))
+        }
+        ,
+        TstTag :: C22 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C22 (v))
+        }
+        ,
+        TstTag :: C23 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C23 (v))
+        }
+        ,
+        TstTag :: C24 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C24 (v))
+        }
+        ,
+        TstTag :: C25 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C25 (v))
+        }
+        ,
+        TstTag :: C26 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C26 (v))
+        }
+        ,
+        TstTag :: C27 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C27 (v))
+        }
+        ,
+        TstTag :: C28 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C28 (v))
+        }
+        ,
+        TstTag :: C29 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C29 (v))
+        }
+        ,
+        TstTag :: C30 => {
+            let (n ,
+            v) = (MydataFmt) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: C30 (v))
+        }
+        ,
+        _ => {
+            let (n ,
+            v) = (Tail) . parse (& rest) ? ;
+            (n ,
+            TstMydata :: Default (v))
+        }
+        ,
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
+            Ok((n, v))
+        }
+    }
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for Tst
+
+    impl < 'i > Parser < & 'i [u8] > for TstFmt {
+        type PT = Tst < 'i > ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< TstFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , tag) = (TstTagFmt) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , mydata) = (TstMydataFmt {
+        tag : tag
+    }
+    ) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+            let final_v = Tst {
+        tag ,
+        mydata
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
 
 
-    // TODO(execs): emit Parser / Serializer / Prepare impls for PairStress
+
+    impl < 'i > Parser < & 'i [u8] > for PairStressFmt {
+        type PT = PairStress ;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
+            reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1 , f1) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n1);
+            let (n2 , f2) = (U16Le) . parse (& rest) ? ;
+            let rest = rest.skip(n2);
+            let (n3 , f3) = (U32Le) . parse (& rest) ? ;
+            let rest = rest.skip(n3);
+            let (n4 , f4) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n4);
+            let (n5 , f5) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n5);
+            let (n6 , f6) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n6);
+            let (n7 , f7) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n7);
+            let (n8 , f8) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n8);
+            let (n9 , f9) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n9);
+            let (n10 , f10) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n10);
+            let (n11 , f11) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n11);
+            let (n12 , f12) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n12);
+            let (n13 , f13) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n13);
+            let (n14 , f14) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n14);
+            let (n15 , f15) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n15);
+            let (n16 , f16) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n16);
+            let (n17 , f17) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n17);
+            let (n18 , f18) = (U8) . parse (& rest) ? ;
+            let rest = rest.skip(n18);
+            let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10 + n11 + n12 + n13 + n14 + n15 + n16 + n17 + n18;
+            let final_v = PairStress {
+        f1 ,
+        f2 ,
+        f3 ,
+        f4 ,
+        f5 ,
+        f6 ,
+        f7 ,
+        f8 ,
+        f9 ,
+        f10 ,
+        f11 ,
+        f12 ,
+        f13 ,
+        f14 ,
+        f15 ,
+        f16 ,
+        f17 ,
+        f18
+    }
+    ;
+            assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+            Ok((total_n, final_v))
+        }
+    }
+
 }
 

@@ -1,9 +1,10 @@
 use crate::asn1::BerBool;
 use crate::combinators::{
-    Bind, Choice, Eof, Pair, Repeat, RepeatTillEnd, Star, Sum, Tagged, U16Le, Varied, U8,
+    Bind, Choice, Eof, Pair, Repeat, RepeatTillEnd, Star, Sum, U16Le, Varied, WithPrefixTag, U8,
 };
 use crate::core::spec::*;
 use vstd::prelude::*;
+use WithPrefixTag as Tagged;
 
 verus! {
 
