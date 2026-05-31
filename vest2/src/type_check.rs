@@ -1115,21 +1115,6 @@ fn check_combinator_invocation<'ast>(
             for (arg, param_defn) in zip(args, combinator_sig.param_defns) {
                 match (arg, param_defn) {
                     (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
-                        fn resolve_up_to_enums<'ast>(
-                            comb: CombinatorInner<'ast>,
-                        ) -> CombinatorInner<'ast> {
-                            match comb {
-                                CombinatorInner::Enum(
-                                    EnumCombinator::Exhaustive { enums, span }
-                                    | EnumCombinator::NonExhaustive { enums, span },
-                                ) => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
-                                    combinator: resolve_enum_type(&enums),
-                                    constraint: None,
-                                    span: span.clone(),
-                                }),
-                                l => l.clone(),
-                            }
-                        }
                         let arg_combinator = resolve_dependent_id(
                             depend_id,
                             param_defns,
@@ -1137,17 +1122,15 @@ fn check_combinator_invocation<'ast>(
                             global_ctx,
                             source,
                         )?;
-                        let left = resolve_up_to_enums(arg_combinator.clone());
-                        let right =
-                            resolve_up_to_enums(global_ctx.resolve_alias(combinator).clone());
-                        if left != right {
+                        let expected = global_ctx.resolve_alias(combinator);
+                        if !combinator_types_compatible(arg_combinator, expected, global_ctx) {
                             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                 .with_message("argument type mismatch")
                                 .with_label(
                                     Label::new((source.0, span_as_range(span)))
                                         .with_message(format!(
                                             "Expected {}, got {}",
-                                            combinator, left
+                                            combinator, arg_combinator
                                         ))
                                         .with_color(Color::Red),
                                 )
@@ -1608,6 +1591,217 @@ fn check_combinator_is_unsigned_int(
                 .unwrap();
             Err(VestError::TypeError)
         }
+    }
+}
+
+fn int_combinator_bounds(combinator: &IntCombinator) -> Option<(i128, i128)> {
+    match combinator {
+        IntCombinator::Signed(8) => Some((i8::MIN as i128, i8::MAX as i128)),
+        IntCombinator::Signed(16) => Some((i16::MIN as i128, i16::MAX as i128)),
+        IntCombinator::Signed(32) => Some((i32::MIN as i128, i32::MAX as i128)),
+        IntCombinator::Signed(64) => Some((i64::MIN as i128, i64::MAX as i128)),
+        IntCombinator::Unsigned(8) => Some((u8::MIN as i128, u8::MAX as i128)),
+        IntCombinator::Unsigned(16) => Some((u16::MIN as i128, u16::MAX as i128)),
+        IntCombinator::Unsigned(24) => Some((0, 0xFF_FFFF)),
+        IntCombinator::Unsigned(32) => Some((u32::MIN as i128, u32::MAX as i128)),
+        IntCombinator::Unsigned(64) | IntCombinator::BtcVarint | IntCombinator::ULEB128 => {
+            Some((0, u64::MAX as i128))
+        }
+        _ => None,
+    }
+}
+
+fn normalize_intervals(mut intervals: Vec<(i128, i128)>) -> Vec<(i128, i128)> {
+    if intervals.is_empty() {
+        return intervals;
+    }
+    intervals.sort_unstable_by_key(|(start, end)| (*start, *end));
+    let mut merged: Vec<(i128, i128)> = Vec::with_capacity(intervals.len());
+    for (start, end) in intervals {
+        if let Some((_, last_end)) = merged.last_mut() {
+            if start <= *last_end + 1 {
+                *last_end = (*last_end).max(end);
+                continue;
+            }
+        }
+        merged.push((start, end));
+    }
+    merged
+}
+
+fn complement_intervals(domain: (i128, i128), intervals: &[(i128, i128)]) -> Vec<(i128, i128)> {
+    let (domain_start, domain_end) = domain;
+    let mut out = Vec::new();
+    let mut cursor = domain_start;
+    for (start, end) in intervals.iter().copied() {
+        if cursor < start {
+            out.push((cursor, start - 1));
+        }
+        cursor = end.saturating_add(1);
+        if cursor > domain_end {
+            break;
+        }
+    }
+    if cursor <= domain_end {
+        out.push((cursor, domain_end));
+    }
+    out
+}
+
+fn constraint_elem_intervals(
+    elem: &ConstraintElem<'_>,
+    domain: (i128, i128),
+) -> Vec<(i128, i128)> {
+    let (domain_start, domain_end) = domain;
+    let interval = match elem {
+        ConstraintElem::Range { start, end, .. } => {
+            (start.unwrap_or(domain_start), end.unwrap_or(domain_end))
+        }
+        ConstraintElem::Single { elem, .. } => (*elem, *elem),
+    };
+    let start = interval.0.max(domain_start);
+    let end = interval.1.min(domain_end);
+    if start <= end {
+        vec![(start, end)]
+    } else {
+        vec![]
+    }
+}
+
+fn int_constraint_intervals(
+    combinator: &IntCombinator,
+    constraint: Option<&IntConstraint<'_>>,
+) -> Option<Vec<(i128, i128)>> {
+    let domain = int_combinator_bounds(combinator)?;
+    let intervals = match constraint {
+        None => vec![domain],
+        Some(IntConstraint::Single { elem, .. }) => constraint_elem_intervals(elem, domain),
+        Some(IntConstraint::Set(elems)) => elems
+            .iter()
+            .flat_map(|elem| constraint_elem_intervals(elem, domain))
+            .collect(),
+        Some(IntConstraint::Neg(inner)) => {
+            let inner = int_constraint_intervals(combinator, Some(inner.as_ref()))?;
+            complement_intervals(domain, &inner)
+        }
+    };
+    Some(normalize_intervals(intervals))
+}
+
+fn int_constraint_is_subset(
+    combinator: &IntCombinator,
+    arg: Option<&IntConstraint<'_>>,
+    expected: Option<&IntConstraint<'_>>,
+) -> bool {
+    let Some(arg_intervals) = int_constraint_intervals(combinator, arg) else {
+        return arg == expected;
+    };
+    let Some(expected_intervals) = int_constraint_intervals(combinator, expected) else {
+        return arg == expected;
+    };
+
+    let mut j = 0usize;
+    for (a_start, a_end) in arg_intervals {
+        while j < expected_intervals.len() && expected_intervals[j].1 < a_start {
+            j += 1;
+        }
+        if j == expected_intervals.len() {
+            return false;
+        }
+        let (e_start, e_end) = expected_intervals[j];
+        if e_start > a_start || e_end < a_end {
+            return false;
+        }
+    }
+    true
+}
+
+fn enum_variants<'ast>(enum_comb: &EnumCombinator<'ast>) -> HashSet<String> {
+    match enum_comb {
+        EnumCombinator::Exhaustive { enums, .. } | EnumCombinator::NonExhaustive { enums, .. } => {
+            enums.iter().map(|e| e.name.name.clone()).collect()
+        }
+    }
+}
+
+fn enum_constraint_variants<'ast>(
+    enum_comb: &EnumCombinator<'ast>,
+    constraint: Option<&EnumConstraint<'ast>>,
+) -> HashSet<String> {
+    let universe = enum_variants(enum_comb);
+    match constraint {
+        None => universe,
+        Some(EnumConstraint::Single { elem, .. }) => HashSet::from([elem.name.clone()]),
+        Some(EnumConstraint::Set(vs)) => vs.iter().map(|v| v.name.clone()).collect(),
+        Some(EnumConstraint::Neg(inner)) => {
+            let inner = enum_constraint_variants(enum_comb, Some(inner.as_ref()));
+            universe.difference(&inner).cloned().collect()
+        }
+    }
+}
+
+fn resolve_constraint_enum_target<'ast>(
+    combinator: &ConstraintEnumCombinator<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+) -> Option<&'ast EnumCombinator<'ast>> {
+    global_ctx
+        .combinators
+        .iter()
+        .find(|sig| sig.name == combinator.combinator.func)
+        .and_then(|sig| match &sig.resolved_combinator {
+            CombinatorInner::Enum(enum_comb) => Some(enum_comb),
+            _ => None,
+        })
+}
+
+fn combinator_types_compatible<'ast>(
+    arg: &CombinatorInner<'ast>,
+    expected: &CombinatorInner<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+) -> bool {
+    if arg == expected {
+        return true;
+    }
+    match (arg, expected) {
+        (
+            CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                combinator: arg_comb,
+                constraint: arg_constraint,
+                ..
+            }),
+            CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                combinator: expected_comb,
+                constraint: expected_constraint,
+                ..
+            }),
+        ) => {
+            arg_comb == expected_comb
+                && int_constraint_is_subset(
+                    arg_comb,
+                    arg_constraint.as_ref(),
+                    expected_constraint.as_ref(),
+                )
+        }
+        (CombinatorInner::Enum(arg_enum), CombinatorInner::Enum(expected_enum)) => arg_enum == expected_enum,
+        (CombinatorInner::ConstraintEnum(arg_ce), CombinatorInner::Enum(expected_enum)) => {
+            resolve_constraint_enum_target(arg_ce, global_ctx)
+                .is_some_and(|arg_enum| arg_enum == expected_enum)
+        }
+        (CombinatorInner::ConstraintEnum(arg_ce), CombinatorInner::ConstraintEnum(expected_ce)) => {
+            match (
+                resolve_constraint_enum_target(arg_ce, global_ctx),
+                resolve_constraint_enum_target(expected_ce, global_ctx),
+            ) {
+                (Some(arg_enum), Some(expected_enum)) if arg_enum == expected_enum => {
+                    let arg_set = enum_constraint_variants(arg_enum, Some(&arg_ce.constraint));
+                    let expected_set =
+                        enum_constraint_variants(expected_enum, Some(&expected_ce.constraint));
+                    arg_set.is_subset(&expected_set)
+                }
+                _ => false,
+            }
+        }
+        _ => false,
     }
 }
 
