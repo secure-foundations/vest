@@ -1,4 +1,6 @@
-use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
+use super::common::{
+    int_literal, render_ts, syn_usize, Analysis, CodeWriter, FormatNames, TypeMode,
+};
 use crate::vestir::{
     self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, ConstraintElem,
     ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, IntCombinator, LengthExpr,
@@ -90,15 +92,15 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) -> String {
         let info = self.info(name);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
         let fmt_ident = format_ident!("{}", info.names.fmt);
+        let inner_ident = info.names.spec_ctor_ident();
         let top_value_ty = self.nominal_type(name, TypeMode::Spec);
         let wrapper_generics = self.wrapper_generics(param_defns);
         let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
 
         self.gen_derived_spec_impls(
             &fmt_ident,
-            &fmt_fn_ident,
+            &inner_ident,
             &wrapper_generics,
             &wrapper_call_args,
             &top_value_ty,
@@ -165,21 +167,25 @@ impl<'a> Analysis<'a> {
     ) -> String {
         let info = self.info(name);
         let fmt_spec_ident = format_ident!("{}Spec", info.names.fmt);
-        let fmt_fn_ident = format_ident!("{}", info.names.fmt_fn);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let inner_ident = info.names.spec_ctor_ident();
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
         let named_ty = quote! { Named<#raw_ty> };
         let named_expr = quote! { Named(#name, #raw_expr) };
         let spec_params = self.spec_param_list(param_defns);
         let ctor_doc = format!("specification constructor for `{}`.", name);
+        let wrapper_generics = self.wrapper_generics(param_defns);
 
         let mut out = CodeWriter::new();
         out.push_multiline(render_ts(quote! { pub type #fmt_spec_ident = #named_ty; }));
         out.blank_line();
         out.push_multiline(render_ts(quote! {
-            #[doc = #ctor_doc]
-            pub open spec fn #fmt_fn_ident(#(#spec_params),*) -> #fmt_spec_ident {
-                #named_expr
+            impl #wrapper_generics #fmt_ident #wrapper_generics {
+                #[doc = #ctor_doc]
+                pub open spec fn #inner_ident(#(#spec_params),*) -> #fmt_spec_ident {
+                    #named_expr
+                }
             }
         }));
         out.finish()
@@ -188,7 +194,7 @@ impl<'a> Analysis<'a> {
     fn gen_derived_spec_impls(
         &self,
         fmt_ident: &proc_macro2::Ident,
-        fmt_fn_ident: &proc_macro2::Ident,
+        inner_ident: &proc_macro2::Ident,
         wrapper_generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
@@ -205,16 +211,15 @@ impl<'a> Analysis<'a> {
 
                 #opaque
                 open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-                    #fmt_fn_ident(#(#wrapper_call_args),*).spec_parse(ibuf)
+                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_parse(ibuf)
                 }
             }
 
             impl #wrapper_generics Consistency for #fmt_ident #wrapper_generics {
                 type Val = #top_value_ty;
 
-                #opaque
                 open spec fn consistent(&self, v: Self::Val) -> bool {
-                    #fmt_fn_ident(#(#wrapper_call_args),*).consistent(v)
+                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).consistent(v)
                 }
             }
 
@@ -223,7 +228,7 @@ impl<'a> Analysis<'a> {
 
                 #opaque
                 open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-                    #fmt_fn_ident(#(#wrapper_call_args),*).spec_serialize_dps(v, obuf)
+                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_serialize_dps(v, obuf)
                 }
             }
 
@@ -232,7 +237,7 @@ impl<'a> Analysis<'a> {
 
                 #opaque
                 open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-                    #fmt_fn_ident(#(#wrapper_call_args),*).spec_serialize(v)
+                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_serialize(v)
                 }
             }
 
@@ -241,7 +246,7 @@ impl<'a> Analysis<'a> {
 
                 #opaque
                 open spec fn byte_len(&self, v: Self::T) -> nat {
-                    #fmt_fn_ident(#(#wrapper_call_args),*).byte_len(v)
+                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).byte_len(v)
                 }
             }
         })
@@ -282,12 +287,13 @@ impl<'a> Analysis<'a> {
         let info = self.info(&invocation.func);
         let fmt_ident = format_ident!("{}", info.names.fmt);
         let ty_ident = format_ident!("{}Spec", info.names.fmt);
+        let inner_ident = info.names.spec_ctor_ident();
+        let ctor_ident = info.names.wrapper_ctor_ident();
         let needs_lifetime = self
             .param_defns_for(&invocation.func)
             .iter()
             .any(|p| self.param_needs_lifetime(p));
         let expr = if needs_lifetime {
-            let fn_ident = format_ident!("{}", info.names.fmt_fn);
             let args = invocation
                 .args
                 .iter()
@@ -295,26 +301,18 @@ impl<'a> Analysis<'a> {
                     Param::Dependent(name) => path_tokens(name),
                 })
                 .collect::<Vec<_>>();
-            quote! { #fn_ident(#(#args),*) }
+            quote! { #fmt_ident::#inner_ident(#(#args),*) }
         } else if invocation.args.is_empty() {
             quote! { #fmt_ident }
         } else {
-            let fields = self.param_defns_for(&invocation.func);
-            let field_inits = fields
+            let args = invocation
+                .args
                 .iter()
-                .zip(invocation.args.iter())
-                .map(|(param, arg)| match (param, arg) {
-                    (ParamDefn::Dependent { name, .. }, Param::Dependent(arg_name)) => {
-                        let field_ident = format_ident!("{}", name);
-                        if arg_name == name {
-                            quote! { #field_ident }
-                        } else {
-                            let arg = path_tokens(arg_name);
-                            quote! { #field_ident: #arg }
-                        }
-                    }
-                });
-            quote! { #fmt_ident { #(#field_inits),* } }
+                .map(|arg| match arg {
+                    Param::Dependent(arg_name) => path_tokens(arg_name),
+                })
+                .collect::<Vec<_>>();
+            quote! { #fmt_ident::#ctor_ident(#(#args),*) }
         };
 
         RenderedSpec::new(
@@ -709,17 +707,14 @@ impl<'a> Analysis<'a> {
             }
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let info = self.info(name);
-                let ty_ident = format_ident!("{}", info.names.fmt);
-                let fn_ident = format_ident!("{}", info.names.fmt_fn);
+                let fmt_ident = format_ident!("{}", info.names.fmt);
+                let ty_ident = format_ident!("{}Spec", info.names.fmt);
+                let inner_ident = info.names.spec_ctor_ident();
                 let value_ty = self.nominal_type(name, TypeMode::Spec);
                 let value_expr = quote! { arbitrary() };
                 ConstRendered {
                     ty: quote! { #ty_ident },
-                    expr: if info.needs_lifetime {
-                        quote! { #fn_ident() }
-                    } else {
-                        quote! { #ty_ident }
-                    },
+                    expr: quote! { #fmt_ident::#inner_ident() },
                     value_ty,
                     value_expr,
                 }
@@ -1258,12 +1253,13 @@ impl<'a> Analysis<'a> {
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let info = self.info(name);
                 let ty_ident = format_ident!("{}Spec", info.names.fmt);
-                let fn_ident = format_ident!("{}", info.names.fmt_fn);
+                let fmt_ident = format_ident!("{}", info.names.fmt);
+                let inner_ident = info.names.spec_ctor_ident();
                 let value_ty = self.nominal_type(name, TypeMode::Spec);
                 let value_expr = quote! { arbitrary() };
                 ConstRendered {
                     ty: quote! { #ty_ident },
-                    expr: quote! { #fn_ident() },
+                    expr: quote! { #fmt_ident::#inner_ident() },
                     value_ty,
                     value_expr,
                 }
@@ -1575,9 +1571,52 @@ impl<'a> Analysis<'a> {
             .iter()
             .map(|param| match param {
                 ParamDefn::Dependent { name, combinator } => {
-                    let field_ident = format_ident!("{}", name);
+                    let field_ident = FormatNames::wrapper_field_ident(name);
                     let ty = self.render_inner_type(combinator, TypeMode::Exec, true);
-                    quote! { pub #field_ident: #ty }
+                    quote! { #field_ident: #ty }
+                }
+            })
+            .collect::<Vec<_>>();
+        let accessors = param_defns
+            .iter()
+            .map(|param| match param {
+                ParamDefn::Dependent { name, combinator } => {
+                    let field_ident = FormatNames::wrapper_field_ident(name);
+                    let accessor_ident = FormatNames::wrapper_accessor_ident(name);
+                    let spec_ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                    quote! {
+                        pub closed spec fn #accessor_ident(&self) -> #spec_ty {
+                            self.#field_ident.deep_view()
+                        }
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+        let invariant_terms = param_defns
+            .iter()
+            .filter_map(|param| match param {
+                ParamDefn::Dependent { name, combinator } => {
+                    let field_ident = FormatNames::wrapper_field_ident(name);
+                    match self.ctx.resolve_alias(combinator) {
+                        Combinator::ConstraintInt(c) => c.constraint.as_ref().map(|constraint| {
+                            self.render_int_constraint(
+                                constraint,
+                                &c.combinator,
+                                quote! { self.#field_ident },
+                            )
+                        }),
+                        Combinator::ConstraintEnum(c) => Some(self.render_enum_constraint(
+                            &c.constraint,
+                            &self.nominal_type(&c.combinator.func, TypeMode::Spec),
+                            quote! { self.#field_ident },
+                        )),
+                        Combinator::Invocation(invocation) => {
+                            let rendered = self.render_invocation_spec(&invocation);
+                            let expr = rendered.expr;
+                            Some(quote! { #expr.consistent(self.#field_ident.deep_view()) })
+                        }
+                        _ => None,
+                    }
                 }
             })
             .collect::<Vec<_>>();
@@ -1588,11 +1627,55 @@ impl<'a> Analysis<'a> {
                 pub struct #fmt_ident;
             })
         } else {
+            let invariant = if invariant_terms.is_empty() {
+                quote! { true }
+            } else {
+                quote! { #(#invariant_terms)&&* }
+            };
+            let ctor_ident = info.names.wrapper_ctor_ident();
+            let ctor_params = param_defns
+                .iter()
+                .map(|param| match param {
+                    ParamDefn::Dependent { name, combinator } => {
+                        let ident = format_ident!("{}", name);
+                        let ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                        quote! { #ident: #ty }
+                    }
+                })
+                .collect::<Vec<_>>();
+            let ctor_inits = param_defns
+                .iter()
+                .map(|param| match param {
+                    ParamDefn::Dependent { name, .. } => {
+                        let ident = format_ident!("{}", name);
+                        quote! { #ident }
+                    }
+                })
+                .collect::<Vec<_>>();
+            let ctor = if !lifetime.is_empty() {
+                quote! {}
+            } else {
+                quote! {
+                    pub closed spec fn #ctor_ident(#(#ctor_params),*) -> Self {
+                        #fmt_ident { #(#ctor_inits),* }
+                    }
+                }
+            };
             render_ts(quote! {
                 #[doc = #doc]
                 #[derive(Clone, Copy)]
                 pub struct #fmt_ident #lifetime {
                     #(#fields,)*
+                }
+
+                impl #lifetime #fmt_ident #lifetime {
+                    #[verifier::type_invariant]
+                    spec fn wf(&self) -> bool {
+                        #invariant
+                    }
+
+                    #(#accessors)*
+                    #ctor
                 }
             })
         }

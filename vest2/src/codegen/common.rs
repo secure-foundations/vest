@@ -7,7 +7,7 @@ use crate::vestir::{
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct FormatNames {
@@ -17,7 +17,24 @@ pub(crate) struct FormatNames {
     pub(crate) spec: String,
     pub(crate) inner: String,
     pub(crate) fmt: String,
-    pub(crate) fmt_fn: String,
+}
+
+impl FormatNames {
+    pub(crate) fn spec_ctor_ident(&self) -> proc_macro2::Ident {
+        format_ident!("spec_inner")
+    }
+
+    pub(crate) fn wrapper_ctor_ident(&self) -> proc_macro2::Ident {
+        format_ident!("spec")
+    }
+
+    pub(crate) fn wrapper_field_ident(name: &str) -> proc_macro2::Ident {
+        format_ident!("{}", name)
+    }
+
+    pub(crate) fn wrapper_accessor_ident(name: &str) -> proc_macro2::Ident {
+        format_ident!("{}_spec", name)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -656,11 +673,203 @@ impl<'a> Analysis<'a> {
             .iter()
             .map(|param| match param {
                 ParamDefn::Dependent { name, .. } => {
-                    let ident = format_ident!("{}", name);
-                    quote! { self.#ident.deep_view() }
+                    let accessor = FormatNames::wrapper_accessor_ident(name);
+                    quote! { self.#accessor() }
                 }
             })
             .collect()
+    }
+
+    pub(crate) fn named_formats_reachable_from_param_defns(
+        &self,
+        param_defns: &[ParamDefn],
+    ) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut seen = HashSet::new();
+        for param in param_defns {
+            match param {
+                ParamDefn::Dependent { combinator, .. } => {
+                    self.collect_named_formats_from_combinator(combinator, &mut out, &mut seen);
+                }
+            }
+        }
+        out
+    }
+
+    pub(crate) fn named_formats_reachable_from_combinator(
+        &self,
+        combinator: &Combinator,
+    ) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut seen = HashSet::new();
+        self.collect_named_formats_from_combinator(combinator, &mut out, &mut seen);
+        out
+    }
+
+    fn collect_named_formats_from_const(
+        &self,
+        combinator: &ConstCombinator,
+        out: &mut Vec<String>,
+        seen: &mut HashSet<String>,
+    ) {
+        match self.ctx.resolve_const(combinator) {
+            ConstCombinator::ConstBytes(_) | ConstCombinator::ConstInt(_) => {}
+            ConstCombinator::ConstEnum(enum_comb) => {
+                self.collect_named_formats_from_invocation(&enum_comb.combinator, out, seen);
+            }
+            ConstCombinator::ConstCombinatorInvocation(name) => {
+                self.collect_named_format_by_name(name, out, seen);
+            }
+        }
+    }
+
+    fn collect_named_formats_from_invocation(
+        &self,
+        invocation: &CombinatorInvocation,
+        out: &mut Vec<String>,
+        seen: &mut HashSet<String>,
+    ) {
+        self.collect_named_format_by_name(&invocation.func, out, seen);
+        for arg in &invocation.args {
+            match arg {
+                vestir::Param::Dependent(_) => {}
+            }
+        }
+    }
+
+    fn collect_named_format_by_name(
+        &self,
+        name: &str,
+        out: &mut Vec<String>,
+        seen: &mut HashSet<String>,
+    ) {
+        if !seen.insert(name.to_string()) {
+            return;
+        }
+        out.push(name.to_string());
+        if let Some(def) = self.definition_for(name) {
+            self.collect_named_formats_from_definition(def, out, seen);
+        }
+    }
+
+    fn collect_named_formats_from_definition(
+        &self,
+        def: &Definition,
+        out: &mut Vec<String>,
+        seen: &mut HashSet<String>,
+    ) {
+        match def {
+            Definition::StructDef {
+                param_defns,
+                combinator,
+                ..
+            } => {
+                for param in param_defns {
+                    match param {
+                        ParamDefn::Dependent { combinator, .. } => {
+                            self.collect_named_formats_from_combinator(combinator, out, seen);
+                        }
+                    }
+                }
+                for field in &combinator.0 {
+                    match field {
+                        StructField::Const { combinator, .. } => {
+                            self.collect_named_formats_from_const(combinator, out, seen);
+                        }
+                        StructField::Dependent { combinator, .. }
+                        | StructField::Ordinary { combinator, .. } => {
+                            self.collect_named_formats_from_combinator(combinator, out, seen);
+                        }
+                    }
+                }
+            }
+            Definition::ChoiceDef {
+                param_defns,
+                combinator,
+                ..
+            } => {
+                for param in param_defns {
+                    match param {
+                        ParamDefn::Dependent { combinator, .. } => {
+                            self.collect_named_formats_from_combinator(combinator, out, seen);
+                        }
+                    }
+                }
+                for branch in self.choice_branches(combinator) {
+                    self.collect_named_formats_from_combinator(branch, out, seen);
+                }
+            }
+            Definition::EnumDef { param_defns, .. } => {
+                for param in param_defns {
+                    match param {
+                        ParamDefn::Dependent { combinator, .. } => {
+                            self.collect_named_formats_from_combinator(combinator, out, seen);
+                        }
+                    }
+                }
+            }
+            Definition::CombinatorDef {
+                param_defns,
+                combinator,
+                ..
+            } => {
+                for param in param_defns {
+                    match param {
+                        ParamDefn::Dependent { combinator, .. } => {
+                            self.collect_named_formats_from_combinator(combinator, out, seen);
+                        }
+                    }
+                }
+                self.collect_named_formats_from_combinator(combinator, out, seen);
+            }
+            Definition::ConstCombinatorDef {
+                const_combinator, ..
+            } => {
+                self.collect_named_formats_from_const(const_combinator, out, seen);
+            }
+            Definition::Endianess(_) => {}
+        }
+    }
+
+    fn collect_named_formats_from_combinator(
+        &self,
+        combinator: &Combinator,
+        out: &mut Vec<String>,
+        seen: &mut HashSet<String>,
+    ) {
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::ConstraintInt(_) => {}
+            Combinator::ConstraintEnum(enum_comb) => {
+                self.collect_named_formats_from_invocation(&enum_comb.combinator, out, seen);
+            }
+            Combinator::Wrap(wrap) => {
+                for combinator in &wrap.prior {
+                    self.collect_named_formats_from_const(combinator, out, seen);
+                }
+                self.collect_named_formats_from_combinator(&wrap.combinator, out, seen);
+                for combinator in &wrap.post {
+                    self.collect_named_formats_from_const(combinator, out, seen);
+                }
+            }
+            Combinator::Vec(vec_comb) => {
+                let vestir::VecCombinator::Vec(inner) = vec_comb;
+                self.collect_named_formats_from_combinator(inner, out, seen);
+            }
+            Combinator::Array(array_comb) => {
+                self.collect_named_formats_from_combinator(&array_comb.combinator, out, seen);
+            }
+            Combinator::Bytes(_) | Combinator::Tail(_) => {}
+            Combinator::Option(opt) => {
+                self.collect_named_formats_from_combinator(&opt.0, out, seen);
+            }
+            Combinator::Invocation(invocation) => {
+                self.collect_named_formats_from_invocation(&invocation, out, seen);
+            }
+            Combinator::AndThen(lhs, rhs) => {
+                self.collect_named_formats_from_combinator(&lhs, out, seen);
+                self.collect_named_formats_from_combinator(&rhs, out, seen);
+            }
+        }
     }
 
     pub(crate) fn param_needs_lifetime(&self, param: &ParamDefn) -> bool {
@@ -993,7 +1202,6 @@ pub(crate) fn format_names(name: &str) -> FormatNames {
         spec: format!("{camel}Spec"),
         inner: format!("{camel}Inner"),
         fmt: format!("{camel}Fmt"),
-        fmt_fn: format!("{name}_fmt"),
     }
 }
 

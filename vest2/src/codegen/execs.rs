@@ -12,6 +12,64 @@ use quote::{format_ident, quote};
 // ============================================================
 
 impl<'a> Analysis<'a> {
+    fn consistency_reveal_ty(&self, name: &str) -> TokenStream {
+        let fmt_ident = format_ident!("{}", self.info(name).names.fmt);
+        quote! { #fmt_ident }
+    }
+
+    fn consistency_reveal_lines(&self, names: &[String]) -> Vec<String> {
+        names
+            .iter()
+            .map(|name| {
+                let ty = self.consistency_reveal_ty(name);
+                render_ts(quote! { reveal(<#ty as Consistency>::consistent); })
+            })
+            .collect()
+    }
+
+    fn named_invocation_root<'b>(
+        &self,
+        combinator: &'b Combinator,
+    ) -> Option<&'b vestir::CombinatorInvocation> {
+        match combinator {
+            Combinator::Invocation(invocation) => Some(invocation),
+            Combinator::ConstraintEnum(c) => Some(&c.combinator),
+            _ => None,
+        }
+    }
+
+    fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
+        if param_defns.is_empty() {
+            return;
+        }
+        let reveal_lines = self
+            .consistency_reveal_lines(&self.named_formats_reachable_from_param_defns(param_defns));
+        w.block("proof", |w| {
+            w.line("use_type_invariant(self);");
+            for line in reveal_lines {
+                w.line(line);
+            }
+        });
+        w.blank_line();
+    }
+
+    fn named_parse_soundness_bridge(&self, combinator: &Combinator) -> Option<TokenStream> {
+        let invocation = self.named_invocation_root(combinator)?;
+        let reveal_lines =
+            self.consistency_reveal_lines(&self.named_formats_reachable_from_combinator(
+                &Combinator::Invocation(invocation.clone()),
+            ));
+        let reveal_tokens = reveal_lines
+            .iter()
+            .map(|line| line.parse::<TokenStream>().unwrap())
+            .collect::<Vec<_>>();
+        Some(quote! {
+            proof {
+                #(#reveal_tokens)*
+            }
+        })
+    }
+
     fn resolve_dep(&self, name: &str, param_defns: &[ParamDefn]) -> TokenStream {
         let base = name.split('.').next().unwrap();
         let is_param = param_defns.iter().any(|p| match p {
@@ -178,6 +236,9 @@ impl<'a> Analysis<'a> {
                         w.line(
                             "broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;",
                         );
+                        w.line(
+                            "broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;",
+                        );
                         w.blank_line();
                         let reveal_line = render_ts(quote! {
                             reveal(<#fmt_ident as SpecParser>::spec_parse);
@@ -186,6 +247,7 @@ impl<'a> Analysis<'a> {
                         w.line("let _ = ibuf.len();");
                         w.line("let rest = *ibuf;");
                         w.blank_line();
+                        self.emit_param_invariant_opening(w, param_defns);
                         emit_parser(w);
                     },
                 );
@@ -329,6 +391,9 @@ impl<'a> Analysis<'a> {
                                 return Err(ParseError::predicate_failed());
                             }
                         }));
+                    }
+                    if let Some(bridge) = self.named_parse_soundness_bridge(combinator) {
+                        w.line(render_ts(bridge));
                     }
                     w.line(format!("let rest = rest.skip({});", n_var));
                     if i == fields.len() - 1 {
@@ -564,20 +629,24 @@ impl<'a> Analysis<'a> {
                             quote! {}
                         };
                         if pat == "_" {
+                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 _ => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
+                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
                         } else {
                             let pat_ident = format_ident!("{}", pat);
                             let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 #enum_ty::#pat_ident => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
+                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -602,19 +671,25 @@ impl<'a> Analysis<'a> {
                             quote! {}
                         };
                     match pat {
-                        None => quote! {
-                            _ => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        },
+                        None => {
+                            let bridge = self.named_parse_soundness_bridge(combinator);
+                            quote! {
+                                _ => {
+                                    let (n, v) = (#fmt_expr).parse(&rest)?;
+                                    #check
+                                    #bridge
+                                    (n, #exec_ident::#variant_ident(v))
+                                },
+                            }
+                        }
                         Some(elem) => {
                             let pat_ts = self.int_constraint_elem_exec_pat(elem);
+                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 #pat_ts => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
+                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -639,19 +714,25 @@ impl<'a> Analysis<'a> {
                             quote! {}
                         };
                     match pat {
-                        ConstArray::Wildcard => quote! {
-                            _ => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        },
+                        ConstArray::Wildcard => {
+                            let bridge = self.named_parse_soundness_bridge(combinator);
+                            quote! {
+                                _ => {
+                                    let (n, v) = (#fmt_expr).parse(&rest)?;
+                                    #check
+                                    #bridge
+                                    (n, #exec_ident::#variant_ident(v))
+                                },
+                            }
+                        }
                         _ => {
                             let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
+                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 x if x.deep_eq(&#pat_expr) => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
+                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -697,16 +778,24 @@ impl<'a> Analysis<'a> {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, false);
                     if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
+                        let bridge = self.named_parse_soundness_bridge(combinator);
                         chain = quote! {
                             match (#fmt_expr).parse(&rest) {
-                                Ok((n, va)) if #pred => Ok((n, #exec_ident::#variant_ident(va))),
+                                Ok((n, va)) if #pred => {
+                                    #bridge
+                                    Ok((n, #exec_ident::#variant_ident(va)))
+                                },
                                 _ => #chain,
                             }
                         };
                     } else {
+                        let bridge = self.named_parse_soundness_bridge(combinator);
                         chain = quote! {
                             match (#fmt_expr).parse(&rest) {
-                                Ok((n, va)) => Ok((n, #exec_ident::#variant_ident(va))),
+                                Ok((n, va)) => {
+                                    #bridge
+                                    Ok((n, #exec_ident::#variant_ident(va)))
+                                },
                                 _ => #chain,
                             }
                         };
@@ -954,6 +1043,9 @@ impl<'a> Analysis<'a> {
         w.line(render_ts(quote! {
             let (n, v) = (#fmt_expr).parse(ibuf)?;
         }));
+        if let Some(bridge) = self.named_parse_soundness_bridge(combinator) {
+            w.line(render_ts(bridge));
+        }
         if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
             w.line(render_ts(quote! {
                 if !(#pred) {
