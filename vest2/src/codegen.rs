@@ -45,7 +45,13 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
         &proofs,
     ));
     body.blank_line();
-    body.push_multiline(render_section("Executable Implementations", &execs));
+    // body.push_multiline(render_section("Executable Implementations", &execs));
+    body.push_multiline(render_nested_section(
+        "Executable Implementations",
+        "exec_impls",
+        "use super::*;\n",
+        &execs,
+    ));
 
     let mut out = CodeWriter::new();
     out.push_multiline(prelude());
