@@ -1146,7 +1146,7 @@ impl<'a> Analysis<'a> {
             if exhaustive {
                 quote! { #spec_ident::#ident => #value, }
             } else {
-                quote! { #spec_ident::#ident => Sum::Inl(#value), }
+                quote! { #spec_ident::#ident => L(#value), }
             }
         });
 
@@ -1160,11 +1160,11 @@ impl<'a> Analysis<'a> {
         } else {
             quote! {
                 match parsed {
-                    Sum::Inl(x) => match x {
+                    L(x) => match x {
                         #(#exhaustive_forward_arms)*
                         _ => arbitrary(),
                     },
-                    Sum::Inr(x) => #spec_ident::Unknown(x),
+                    R(x) => #spec_ident::Unknown(x),
                 }
             }
         };
@@ -1178,7 +1178,7 @@ impl<'a> Analysis<'a> {
             quote! {
                 match value {
                     #(#exhaustive_reverse_arms)*
-                    #spec_ident::Unknown(x) => Sum::Inr(x),
+                    #spec_ident::Unknown(x) => R(x),
                 }
             }
         };
@@ -1785,10 +1785,10 @@ fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> TokenStream {
         return leaf_pat;
     }
     if idx == 0 {
-        quote! { Sum::Inl(#leaf_pat) }
+        quote! { L(#leaf_pat) }
     } else {
         let rest = sum_pattern(idx - 1, total - 1, leaf_pat);
-        quote! { Sum::Inr(#rest) }
+        quote! { R(#rest) }
     }
 }
 
@@ -1797,10 +1797,10 @@ fn sum_injection(idx: usize, total: usize, leaf_expr: TokenStream) -> TokenStrea
         return leaf_expr;
     }
     if idx == 0 {
-        quote! { Sum::Inl(#leaf_expr) }
+        quote! { L(#leaf_expr) }
     } else {
         let rest = sum_injection(idx - 1, total - 1, leaf_expr);
-        quote! { Sum::Inr(#rest) }
+        quote! { R(#rest) }
     }
 }
 

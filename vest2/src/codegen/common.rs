@@ -352,6 +352,8 @@ pub(crate) fn prelude() -> String {
         #![allow(warnings)]
         use vest_lib2::combinators::mapped::spec::*;
         use vest_lib2::combinators::*;
+        use Sum::Inl as L;
+        use Sum::Inr as R;
         use vest_lib2::core::exec::{DeepEq, SelfView};
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
         use vest_lib2::core::exec::parser::*;
