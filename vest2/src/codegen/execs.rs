@@ -12,62 +12,14 @@ use quote::{format_ident, quote};
 // ============================================================
 
 impl<'a> Analysis<'a> {
-    fn consistency_reveal_ty(&self, name: &str) -> TokenStream {
-        let fmt_ident = format_ident!("{}", self.info(name).names.fmt);
-        quote! { #fmt_ident }
-    }
-
-    fn consistency_reveal_lines(&self, names: &[String]) -> Vec<String> {
-        names
-            .iter()
-            .map(|name| {
-                let ty = self.consistency_reveal_ty(name);
-                render_ts(quote! { reveal(<#ty as Consistency>::consistent); })
-            })
-            .collect()
-    }
-
-    fn named_invocation_root<'b>(
-        &self,
-        combinator: &'b Combinator,
-    ) -> Option<&'b vestir::CombinatorInvocation> {
-        match combinator {
-            Combinator::Invocation(invocation) => Some(invocation),
-            Combinator::ConstraintEnum(c) => Some(&c.combinator),
-            _ => None,
-        }
-    }
-
     fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
         if param_defns.is_empty() {
             return;
         }
-        let reveal_lines = self
-            .consistency_reveal_lines(&self.named_formats_reachable_from_param_defns(param_defns));
         w.block("proof", |w| {
             w.line("use_type_invariant(self);");
-            for line in reveal_lines {
-                w.line(line);
-            }
         });
         w.blank_line();
-    }
-
-    fn named_parse_soundness_bridge(&self, combinator: &Combinator) -> Option<TokenStream> {
-        let invocation = self.named_invocation_root(combinator)?;
-        let reveal_lines =
-            self.consistency_reveal_lines(&self.named_formats_reachable_from_combinator(
-                &Combinator::Invocation(invocation.clone()),
-            ));
-        let reveal_tokens = reveal_lines
-            .iter()
-            .map(|line| line.parse::<TokenStream>().unwrap())
-            .collect::<Vec<_>>();
-        Some(quote! {
-            proof {
-                #(#reveal_tokens)*
-            }
-        })
     }
 
     fn resolve_dep(&self, name: &str, param_defns: &[ParamDefn]) -> TokenStream {
@@ -181,8 +133,8 @@ impl<'a> Analysis<'a> {
         name: &str,
         param_defns: &[ParamDefn],
         emit_parser: impl Fn(&mut CodeWriter),
-        emit_serializer: impl Fn(&mut CodeWriter),
-        emit_prepare: impl Fn(&mut CodeWriter),
+        _emit_serializer: impl Fn(&mut CodeWriter),
+        _emit_prepare: impl Fn(&mut CodeWriter),
     ) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
@@ -193,7 +145,7 @@ impl<'a> Analysis<'a> {
         let fmt_has_lt = param_lt.to_string().contains("'i");
 
         // Determine lifetimes for the impl blocks
-        let (parser_lt, parser_self_lt, pt_lt) = if needs_lt {
+        let (parser_lt, _parser_self_lt, pt_lt) = if needs_lt {
             (quote! { 'i }, quote! { <'i> }, quote! { <'i> })
         } else {
             (quote! {}, quote! {}, quote! {})
@@ -233,9 +185,7 @@ impl<'a> Analysis<'a> {
                 w.block(
                     "fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>",
                     |w| {
-                        w.line(
-                            "broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;",
-                        );
+                        w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
                         w.line(
                             "broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;",
                         );
@@ -391,9 +341,6 @@ impl<'a> Analysis<'a> {
                                 return Err(ParseError::predicate_failed());
                             }
                         }));
-                    }
-                    if let Some(bridge) = self.named_parse_soundness_bridge(combinator) {
-                        w.line(render_ts(bridge));
                     }
                     w.line(format!("let rest = rest.skip({});", n_var));
                     if i == fields.len() - 1 {
@@ -629,24 +576,20 @@ impl<'a> Analysis<'a> {
                             quote! {}
                         };
                         if pat == "_" {
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 _ => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
                         } else {
                             let pat_ident = format_ident!("{}", pat);
                             let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 #enum_ty::#pat_ident => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -672,24 +615,20 @@ impl<'a> Analysis<'a> {
                         };
                     match pat {
                         None => {
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 _ => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
                         }
                         Some(elem) => {
                             let pat_ts = self.int_constraint_elem_exec_pat(elem);
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 #pat_ts => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -715,24 +654,20 @@ impl<'a> Analysis<'a> {
                         };
                     match pat {
                         ConstArray::Wildcard => {
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 _ => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
                         }
                         _ => {
                             let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
-                            let bridge = self.named_parse_soundness_bridge(combinator);
                             quote! {
                                 x if x.deep_eq(&#pat_expr) => {
                                     let (n, v) = (#fmt_expr).parse(&rest)?;
                                     #check
-                                    #bridge
                                     (n, #exec_ident::#variant_ident(v))
                                 },
                             }
@@ -778,22 +713,18 @@ impl<'a> Analysis<'a> {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, false);
                     if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
-                        let bridge = self.named_parse_soundness_bridge(combinator);
                         chain = quote! {
                             match (#fmt_expr).parse(&rest) {
                                 Ok((n, va)) if #pred => {
-                                    #bridge
                                     Ok((n, #exec_ident::#variant_ident(va)))
                                 },
                                 _ => #chain,
                             }
                         };
                     } else {
-                        let bridge = self.named_parse_soundness_bridge(combinator);
                         chain = quote! {
                             match (#fmt_expr).parse(&rest) {
                                 Ok((n, va)) => {
-                                    #bridge
                                     Ok((n, #exec_ident::#variant_ident(va)))
                                 },
                                 _ => #chain,
@@ -1043,9 +974,6 @@ impl<'a> Analysis<'a> {
         w.line(render_ts(quote! {
             let (n, v) = (#fmt_expr).parse(ibuf)?;
         }));
-        if let Some(bridge) = self.named_parse_soundness_bridge(combinator) {
-            w.line(render_ts(bridge));
-        }
         if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
             w.line(render_ts(quote! {
                 if !(#pred) {
