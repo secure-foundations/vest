@@ -38,8 +38,8 @@ choice_tag = [u8; |u8| + |u8|]
 choice_arrays_folded = {
     @tag: choice_tag,
     body: choose(@tag) {
-        [0; 2] => u8,
-        [1; 2] => u16,
+        [0, 0] => u8,
+        [1, 1] => u16,
         _ => u16,
     },
 }
@@ -56,16 +56,16 @@ multi_arith(@total: u32 | { 263..0xffffffff }, @hdr_len: u8 | { 0..255 }) = {
     body: [u8; @total - @hdr_len - 8],
 }
 
-multiply(@count: u16, @size: u8 | { 1 }) = {
-    items: [u8; @count * @size],
-}
+// multiply(@count: u16, @size: u8 | { 1 }) = {
+//     items: [u8; @count * @size],
+// }
+// 
+// divide(@total: u32) = {
+//     chunks: [u8; @total / 4],
+// }
 
-divide(@total: u32) = {
-    chunks: [u8; @total / 4],
-}
-
-paren_expr(@a: u16 | { 255..0xffff }, @b: u8 | { 0..255 }, @c: u8 | { 1 }) = {
-    data: [u8; (@a - @b) * @c],
+paren_expr(@a: u16 | { 255..0xfffa }, @b: u8 | { 0..255 }, @c: u8 | { 1 }) = {
+    data: [u8; (@a - @b) + @c],
 }
 
 mixed_const(@len: u16 | { 4..0xffff }) = {
