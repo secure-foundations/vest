@@ -437,24 +437,14 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn render_value_type(
-        &self,
-        combinator: &Combinator,
-        mode: TypeMode,
-        top_level: bool,
-    ) -> TokenStream {
+    pub(crate) fn render_value_type(&self, combinator: &Combinator, mode: TypeMode) -> TokenStream {
         match combinator {
-            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode, top_level),
-            _ => self.render_inner_type(combinator, mode, top_level),
+            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode),
+            _ => self.render_inner_type(combinator, mode),
         }
     }
 
-    pub(crate) fn render_inner_type(
-        &self,
-        inner: &Combinator,
-        mode: TypeMode,
-        top_level: bool,
-    ) -> TokenStream {
+    pub(crate) fn render_inner_type(&self, inner: &Combinator, mode: TypeMode) -> TokenStream {
         if let Combinator::Invocation(invocation) = inner {
             return self.invocation_value_type(invocation, mode);
         }
@@ -467,17 +457,17 @@ impl<'a> Analysis<'a> {
                 self.invocation_value_type(combinator, mode)
             }
             Combinator::Wrap(WrapCombinator { combinator, .. }) => {
-                self.render_value_type(combinator, mode, top_level)
+                self.render_value_type(combinator, mode)
             }
             Combinator::Vec(VecCombinator::Vec(combinator)) => {
-                let inner_ty = self.render_value_type(combinator, mode, false);
+                let inner_ty = self.render_value_type(combinator, mode);
                 match mode {
                     TypeMode::Exec => quote! { Vec<#inner_ty> },
                     TypeMode::Spec => quote! { Seq<#inner_ty> },
                 }
             }
             Combinator::Array(ArrayCombinator { combinator, len }) => {
-                let inner_ty = self.render_value_type(combinator, mode, false);
+                let inner_ty = self.render_value_type(combinator, mode);
                 match (mode, self.eval_const_length_expr(len)) {
                     (TypeMode::Exec, Some(n)) => {
                         let n = syn_usize(n);
@@ -492,11 +482,11 @@ impl<'a> Analysis<'a> {
                 TypeMode::Spec => quote! { Seq<u8> },
             },
             Combinator::Option(OptionCombinator(combinator)) => {
-                let inner_ty = self.render_value_type(combinator, mode, false);
+                let inner_ty = self.render_value_type(combinator, mode);
                 quote! { Option<#inner_ty> }
             }
             Combinator::Invocation(invocation) => self.invocation_value_type(invocation, mode),
-            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode, top_level),
+            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode),
         }
     }
 
@@ -534,7 +524,7 @@ impl<'a> Analysis<'a> {
                 }
                 StructField::Dependent { combinator, .. }
                 | StructField::Ordinary { combinator, .. } => {
-                    retained.push(self.render_value_type(combinator, mode, true));
+                    retained.push(self.render_value_type(combinator, mode));
                 }
             }
         }
@@ -586,15 +576,15 @@ impl<'a> Analysis<'a> {
         match &choice_comb.choices {
             Choices::Enums(branches) => branches
                 .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode, true))
+                .map(|(_, combinator)| self.render_value_type(combinator, mode))
                 .collect(),
             Choices::Ints(branches) => branches
                 .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode, true))
+                .map(|(_, combinator)| self.render_value_type(combinator, mode))
                 .collect(),
             Choices::Arrays(branches) => branches
                 .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode, true))
+                .map(|(_, combinator)| self.render_value_type(combinator, mode))
                 .collect(),
         }
     }
@@ -989,6 +979,70 @@ impl<'a> Analysis<'a> {
             Combinator::Option(OptionCombinator(inner)) => self.combinator_is_copyable(inner),
             Combinator::Invocation(invocation) => self.is_copyable(&invocation.func),
             Combinator::AndThen(_, rhs) => self.combinator_is_copyable(rhs),
+        }
+    }
+
+    pub(crate) fn is_selfview(&self, name: &str) -> bool {
+        let def = self.defs.iter().find(|d| d.name() == Some(name));
+        match def {
+            Some(Definition::StructDef { combinator, .. }) => {
+                combinator.0.iter().all(|field| match field {
+                    StructField::Const { combinator, .. } => {
+                        self.const_combinator_is_selfview(combinator)
+                    }
+                    StructField::Dependent { combinator, .. }
+                    | StructField::Ordinary { combinator, .. } => {
+                        self.combinator_is_selfview(combinator)
+                    }
+                })
+            }
+            Some(Definition::ChoiceDef { combinator, .. }) => match &combinator.choices {
+                Choices::Enums(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
+                Choices::Ints(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
+                Choices::Arrays(branches) => branches
+                    .iter()
+                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
+            },
+            Some(Definition::EnumDef { .. }) => true,
+            Some(Definition::CombinatorDef { combinator, .. }) => {
+                self.combinator_is_selfview(combinator)
+            }
+            Some(Definition::ConstCombinatorDef {
+                const_combinator, ..
+            }) => self.const_combinator_is_selfview(const_combinator),
+            _ => true,
+        }
+    }
+
+    pub(crate) fn combinator_is_selfview(&self, combinator: &Combinator) -> bool {
+        if !self.combinator_is_copyable(combinator) {
+            return false;
+        }
+        match self.ctx.resolve_alias(combinator) {
+            Combinator::ConstraintInt(_) => true,
+            Combinator::ConstraintEnum(_) => true,
+            Combinator::Wrap(wrap) => self.combinator_is_selfview(&wrap.combinator),
+            Combinator::Vec(_) => false,
+            Combinator::Array(arr) => {
+                self.eval_const_length_expr(&arr.len).is_some()
+                    && self.combinator_is_selfview(&arr.combinator)
+            }
+            Combinator::Bytes(_) | Combinator::Tail(_) => false,
+            Combinator::Option(OptionCombinator(inner)) => self.combinator_is_selfview(inner),
+            Combinator::Invocation(invocation) => self.is_selfview(&invocation.func),
+            Combinator::AndThen(_, rhs) => self.combinator_is_selfview(rhs),
+        }
+    }
+
+    pub(crate) fn const_combinator_is_selfview(&self, combinator: &ConstCombinator) -> bool {
+        match self.ctx.resolve_const(combinator) {
+            ConstCombinator::ConstBytes(_) => false,
+            ConstCombinator::ConstInt(_) | ConstCombinator::ConstEnum(_) => true,
+            ConstCombinator::ConstCombinatorInvocation(name) => self.is_selfview(name),
         }
     }
 }

@@ -49,8 +49,8 @@ impl<'a> Analysis<'a> {
                 &doc,
             );
         }
-        let exec_ty = self.render_value_type(combinator, TypeMode::Exec, true);
-        let spec_ty = self.render_value_type(combinator, TypeMode::Spec, true);
+        let exec_ty = self.render_value_type(combinator, TypeMode::Exec);
+        let spec_ty = self.render_value_type(combinator, TypeMode::Spec);
         self.emit_exec_spec_aliases(
             &exec_ident,
             &spec_ident,
@@ -84,30 +84,57 @@ impl<'a> Analysis<'a> {
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
+        let self_view = self.is_selfview(name);
+        let spec_derive = if self_view {
+            quote! { #[verifier::ext_equal] }
+        } else {
+            quote! {}
+        };
         let exec_struct = quote! {
             #derives
+            #spec_derive
             pub struct #exec_ident #exec_lifetime {
                 #(#exec_fields,)*
             }
         };
-        let spec_struct = quote! {
-            #[verifier::ext_equal]
-            pub struct #spec_ident {
-                #(#spec_fields,)*
+        let spec_struct = if self_view {
+            quote! {
+                pub type #spec_ident = #exec_ident;
+            }
+        } else {
+            quote! {
+                #[verifier::ext_equal]
+                pub struct #spec_ident {
+                    #(#spec_fields,)*
+                }
             }
         };
-        let deep_view_fields = self.struct_deep_view_fields(struct_comb);
+        let deep_view_impl = if self_view {
+            quote! {
+                impl DeepView for #exec_ident {
+                    type V = Self;
+                    open spec fn deep_view(&self) -> Self::V {
+                        *self
+                    }
+                }
+            }
+        } else {
+            let deep_view_fields = self.struct_deep_view_fields(struct_comb);
+            quote! {
+                impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
+                    type V = #spec_ident;
+                    open spec fn deep_view(&self) -> Self::V {
+                        #spec_ident { #(#deep_view_fields,)* }
+                    }
+                }
+            }
+        };
         render_ts(quote! {
             #[doc = #doc]
             #exec_struct
             #spec_struct
             pub type #inner_ident = #inner_ty;
-            impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
-                type V = #spec_ident;
-                open spec fn deep_view(&self) -> Self::V {
-                    #spec_ident { #(#deep_view_fields,)* }
-                }
-            }
+            #deep_view_impl
         })
     }
 
@@ -144,35 +171,68 @@ impl<'a> Analysis<'a> {
                 let ident = format_ident!("{}", name);
                 quote! { #ident(#ty) }
             });
-        let deep_view_arms = variant_names.iter().map(|name| {
-            let ident = format_ident!("{}", name);
-            quote! { #exec_ident::#ident(v) => #spec_ident::#ident(v.deep_view()), }
-        });
         let doc = format!("data type for `{}`.", names.dsl);
         let derives = if self.is_copyable(name) {
             quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
-        render_ts(quote! {
-            #[doc = #doc]
+        let self_view = self.is_selfview(name);
+        let spec_derive = if self_view {
+            quote! { #[verifier::ext_equal] }
+        } else {
+            quote! {}
+        };
+        let exec_enum = quote! {
             #derives
+            #spec_derive
             pub enum #exec_ident #exec_lifetime {
                 #(#exec_variants,)*
             }
-            #[verifier::ext_equal]
-            pub enum #spec_ident {
-                #(#spec_variants,)*
+        };
+        let spec_enum = if self_view {
+            quote! {
+                pub type #spec_ident = #exec_ident;
             }
-            pub type #inner_ident = #inner_ty;
-            impl #exec_generics DeepView for #exec_ident #exec_generics {
-                type V = #spec_ident;
-                open spec fn deep_view(&self) -> Self::V {
-                    match self {
-                        #(#deep_view_arms)*
+        } else {
+            quote! {
+                #[verifier::ext_equal]
+                pub enum #spec_ident {
+                    #(#spec_variants,)*
+                }
+            }
+        };
+        let deep_view_impl = if self_view {
+            quote! {
+                impl #exec_generics DeepView for #exec_ident #exec_generics {
+                    type V = Self;
+                    open spec fn deep_view(&self) -> Self::V {
+                        *self
                     }
                 }
             }
+        } else {
+            let deep_view_arms = variant_names.iter().map(|name| {
+                let ident = format_ident!("{}", name);
+                quote! { #exec_ident::#ident(v) => #spec_ident::#ident(v.deep_view()), }
+            });
+            quote! {
+                impl #exec_generics DeepView for #exec_ident #exec_generics {
+                    type V = #spec_ident;
+                    open spec fn deep_view(&self) -> Self::V {
+                        match self {
+                            #(#deep_view_arms)*
+                        }
+                    }
+                }
+            }
+        };
+        render_ts(quote! {
+            #[doc = #doc]
+            #exec_enum
+            #spec_enum
+            pub type #inner_ident = #inner_ty;
+            #deep_view_impl
         })
     }
 
@@ -202,25 +262,6 @@ impl<'a> Analysis<'a> {
         } else {
             quote! { Unknown(#repr_ty), }
         };
-        let deep_view_match = if exhaustive {
-            variants
-                .iter()
-                .map(|variant| {
-                    let ident = format_ident!("{}", variant.name);
-                    quote! { #exec_ident::#ident => #spec_ident::#ident, }
-                })
-                .collect::<Vec<_>>()
-        } else {
-            let mut arms = variants
-                .iter()
-                .map(|variant| {
-                    let ident = format_ident!("{}", variant.name);
-                    quote! { #exec_ident::#ident => #spec_ident::#ident, }
-                })
-                .collect::<Vec<_>>();
-            arms.push(quote! { #exec_ident::Unknown(v) => #spec_ident::Unknown(v), });
-            arms
-        };
         let doc = format!("data type for `{}`.", names.dsl);
         render_ts(quote! {
             #[doc = #doc]
@@ -233,11 +274,9 @@ impl<'a> Analysis<'a> {
             pub type #spec_ident = #exec_ident;
             pub type #inner_ident = #inner_ty;
             impl DeepView for #exec_ident {
-                type V = #spec_ident;
+                type V = Self;
                 open spec fn deep_view(&self) -> Self::V {
-                    match *self {
-                        #(#deep_view_match)*
-                    }
+                    *self
                 }
             }
             impl DeepEq for #exec_ident {
@@ -292,7 +331,7 @@ impl<'a> Analysis<'a> {
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let ident = format_ident!("{}", label);
-                    let ty = self.render_value_type(combinator, mode, true);
+                    let ty = self.render_value_type(combinator, mode);
                     quote! { pub #ident: #ty }
                 }
             })

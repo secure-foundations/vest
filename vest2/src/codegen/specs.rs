@@ -286,47 +286,39 @@ impl<'a> Analysis<'a> {
     fn render_invocation_spec(&self, invocation: &vestir::CombinatorInvocation) -> RenderedSpec {
         let info = self.info(&invocation.func);
         let fmt_ident = format_ident!("{}", info.names.fmt);
-        let ty_ident = format_ident!("{}Spec", info.names.fmt);
-        let inner_ident = info.names.spec_ctor_ident();
+        let fmt_ident_inner = format_ident!("{}Spec", info.names.fmt);
+        let ctor_inner_ident = info.names.spec_ctor_ident();
         let ctor_ident = info.names.wrapper_ctor_ident();
-        let needs_lifetime = self
+        let args = invocation
+            .args
+            .iter()
+            .map(|arg| match arg {
+                Param::Dependent(name) => path_tokens(name),
+            })
+            .collect::<Vec<_>>();
+        // see if all params are "self view"
+        let can_use_wrapper_fmt = self
             .param_defns_for(&invocation.func)
             .iter()
-            .any(|p| self.param_needs_lifetime(p));
-        let expr = if needs_lifetime {
-            let args = invocation
-                .args
-                .iter()
-                .map(|arg| match arg {
-                    Param::Dependent(name) => path_tokens(name),
-                })
-                .collect::<Vec<_>>();
-            quote! { #fmt_ident::#inner_ident(#(#args),*) }
-        } else if invocation.args.is_empty() {
+            .all(|p| match p {
+                ParamDefn::Dependent { combinator, .. } => self.combinator_is_selfview(combinator),
+            });
+        let expr = if args.is_empty() {
             quote! { #fmt_ident }
-        } else {
-            let args = invocation
-                .args
-                .iter()
-                .map(|arg| match arg {
-                    Param::Dependent(arg_name) => path_tokens(arg_name),
-                })
-                .collect::<Vec<_>>();
+        } else if can_use_wrapper_fmt {
             quote! { #fmt_ident::#ctor_ident(#(#args),*) }
+        } else {
+            quote! { #fmt_ident::#ctor_inner_ident(#(#args),*) }
         };
 
         RenderedSpec::new(
-            if needs_lifetime {
-                quote! { #ty_ident }
-            } else {
+            if args.is_empty() || can_use_wrapper_fmt {
                 quote! { #fmt_ident }
+            } else {
+                quote! { #fmt_ident_inner }
             },
             expr,
-            self.render_value_type(
-                &Combinator::Invocation(invocation.clone()),
-                TypeMode::Spec,
-                true,
-            ),
+            self.render_value_type(&Combinator::Invocation(invocation.clone()), TypeMode::Spec),
             true,
         )
     }
@@ -692,7 +684,6 @@ impl<'a> Analysis<'a> {
                 let enum_ty = self.render_value_type(
                     &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
-                    true,
                 );
                 let inner_ty = inner.ty;
                 let inner_expr = inner.expr;
@@ -1237,7 +1228,6 @@ impl<'a> Analysis<'a> {
                 let enum_ty = self.render_value_type(
                     &Combinator::Invocation(enum_comb.combinator.clone()),
                     TypeMode::Spec,
-                    true,
                 );
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
@@ -1548,7 +1538,7 @@ impl<'a> Analysis<'a> {
             .map(|param| match param {
                 ParamDefn::Dependent { name, combinator } => {
                     let ident = format_ident!("{}", name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                    let ty = self.render_inner_type(combinator, TypeMode::Spec);
                     quote! { #ident: #ty }
                 }
             })
@@ -1572,7 +1562,7 @@ impl<'a> Analysis<'a> {
             .map(|param| match param {
                 ParamDefn::Dependent { name, combinator } => {
                     let field_ident = FormatNames::wrapper_field_ident(name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Exec, true);
+                    let ty = self.render_inner_type(combinator, TypeMode::Exec);
                     quote! { #field_ident: #ty }
                 }
             })
@@ -1583,7 +1573,7 @@ impl<'a> Analysis<'a> {
                 ParamDefn::Dependent { name, combinator } => {
                     let field_ident = FormatNames::wrapper_field_ident(name);
                     let accessor_ident = FormatNames::wrapper_accessor_ident(name);
-                    let spec_ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                    let spec_ty = self.render_inner_type(combinator, TypeMode::Spec);
                     quote! {
                         pub closed spec fn #accessor_ident(&self) -> #spec_ty {
                             self.#field_ident.deep_view()
@@ -1638,7 +1628,7 @@ impl<'a> Analysis<'a> {
                 .map(|param| match param {
                     ParamDefn::Dependent { name, combinator } => {
                         let ident = format_ident!("{}", name);
-                        let ty = self.render_inner_type(combinator, TypeMode::Spec, true);
+                        let ty = self.render_inner_type(combinator, TypeMode::Exec);
                         quote! { #ident: #ty }
                     }
                 })
@@ -1652,14 +1642,11 @@ impl<'a> Analysis<'a> {
                     }
                 })
                 .collect::<Vec<_>>();
-            let ctor = if !lifetime.is_empty() {
-                quote! {}
-            } else {
-                quote! {
+            let ctor = quote! {
                     pub closed spec fn #ctor_ident(#(#ctor_params),*) -> Self {
                         #fmt_ident { #(#ctor_inits),* }
                     }
-                }
+
             };
             render_ts(quote! {
                 #[doc = #doc]
