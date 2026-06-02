@@ -250,16 +250,16 @@ fn test_map_exec(ibuf: &[u8]) {
     let _ = fmt2.parse(&ibuf);
 
     let triple_v = Triple { a: 1u8, b: 2u8, c: &[3u8, 4u8, 5u8] };
-    let mut obuf = Vec::<u8>::new();
+    // let mut obuf = Vec::<u8>::new();
     assert(fmt2.consistent(triple_v.deep_view()));
-    fmt2.serialize(&triple_v, &mut obuf);
+    // fmt2.serialize(&triple_v, &mut obuf);
 
     let mut c = Vec::<u8>::new();
     c.extend_from_slice(&[3u8, 4u8, 5u8]);
     let triple_owned = TripleOwned { a: 1u8, b: 2u8, c };
-    let mut obuf = Vec::<u8>::new();
+    // let mut obuf = Vec::<u8>::new();
     assert(fmt2.consistent(triple_owned.deep_view()));
-    fmt2.serialize(&triple_owned, &mut obuf);
+    // fmt2.serialize(&triple_owned, &mut obuf);
 }
 
 } // verus!

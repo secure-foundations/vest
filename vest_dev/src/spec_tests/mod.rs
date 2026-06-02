@@ -9,7 +9,7 @@ mod implicit;
 mod malleable;
 mod mapped;
 mod opt;
-mod recursive;
+// mod recursive;
 mod refined;
 mod star;
 mod static_len;

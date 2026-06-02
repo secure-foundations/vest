@@ -1,10 +1,10 @@
 use crate::asn1::BerBool;
 use crate::combinators::{
-    Bind, Choice, Eof, Pair, Repeat, RepeatTillEnd, Star, Sum, U16Le, Varied, WithPrefixTag, U8,
+    Bind, Choice, Eof, Pair, PrefixTagged, Repeat, RepeatTillEnd, Star, Sum, U16Le, Varied, U8,
 };
 use crate::core::spec::*;
 use vstd::prelude::*;
-use WithPrefixTag as Tagged;
+use PrefixTagged as Tagged;
 
 verus! {
 
@@ -15,12 +15,17 @@ type DemoFmt2 = Pair<
     Choice<Tagged<U8, U16Le>, RepeatTillEnd<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>>,
 >;
 
+
+
 proof fn test_value_byte_len_demo() {
     let fmt: DemoFmt1 = Pair(BerBool, Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(U16Le)));
     let fmt2: DemoFmt2 = Pair(
         BerBool,
         Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(Bind(U16Le, |x| Varied(x)))),
     );
+
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
 
     let tagged_v = (false, Sum::Inl(0x3456u16));
     let repeated_v = (true, Sum::Inr(seq![0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16]));

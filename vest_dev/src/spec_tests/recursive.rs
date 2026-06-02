@@ -213,7 +213,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
 //         };
 //         let combinator = Mapped {
 //             inner: Choice(
-//                 WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, spec_fns)),
+//                 PrefixTagged(U8, 0x7Du8, PrefixTagged(U16Le, 0x7Bu16, spec_fns)),
 //                 Const(U8, 0x00u8),
 //             ),
 //             mapper: NestedBracesMapper,
@@ -243,7 +243,7 @@ pub open spec fn p_nested_braces(input: Seq<u8>) -> Option<(int, NestedBracesT)>
         };
     Mapped {
         inner: Choice(
-            WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, parse_fn)),
+            PrefixTagged(U8, 0x7Du8, PrefixTagged(U16Le, 0x7Bu16, parse_fn)),
             Const(U8, 0x00u8),
         ),
         mapper: NestedBracesMapper,
@@ -263,7 +263,7 @@ pub open spec fn s_nested_braces(v: NestedBracesT, buf: Seq<u8>) -> Seq<u8>
         };
     Mapped {
         inner: Choice(
-            WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U16Le, 0x7Bu16, serialize_fn)),
+            PrefixTagged(U8, 0x7Du8, PrefixTagged(U16Le, 0x7Bu16, serialize_fn)),
             Const(U8, 0x00u8),
         ),
         mapper: NestedBracesMapper,
@@ -290,7 +290,7 @@ pub trait ProductiveParser: SpecParser {
 //         };
 //     Mapped {
 //         inner: Choice(
-//             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, serializable_fn)),
+//             PrefixTagged(U8, 0x7Du8, PrefixTagged(U8, 0x7Bu8, serializable_fn)),
 //             Const(U8, 0x00u8),
 //         ),
 //         mapper: NestedBracesMapper,
@@ -309,7 +309,7 @@ pub trait ProductiveParser: SpecParser {
 //     };
 //     Mapped {
 //         inner: Choice(
-//             WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, lemma_fn)),
+//             PrefixTagged(U8, 0x7Du8, PrefixTagged(U8, 0x7Bu8, lemma_fn)),
 //             Const(U8, 0x00u8),
 //         ),
 //         mapper: NestedBracesMapper,

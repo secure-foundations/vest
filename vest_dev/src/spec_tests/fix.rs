@@ -87,13 +87,13 @@ impl<'s> fns::Map<&'s NestedBracesT> for NestedBracesMapRev {
 // pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
 pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> {
     Mapped {
-        inner: Choice(WithSuffixTag(U8, 0x7Du8, WithPrefixTag(U8, 0x7Bu8, rec)), Const(U8, 0x00u8)),
+        inner: Choice(SuffixTagged(PrefixTagged(U8, 0x7Bu8, rec), U8, 0x7Du8), Const(U8, 0x00u8)),
         mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
     }
 }
 
 type NestedBracesBodyComb<Rec> = Mapped<
-    Choice<WithSuffixTag<U8, WithPrefixTag<U8, Rec>>, Const<U8, u8>>,
+    Choice<SuffixTagged<PrefixTagged<U8, Rec>, U8>, Const<U8, u8>>,
     BiMap<NestedBracesMap, NestedBracesMapRev>,
 >;
 
@@ -155,17 +155,17 @@ impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
         _param: &(),
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &'s NestedBracesT,
+        v: &&'s NestedBracesT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&(), &'s NestedBracesT, &mut Vec<u8>) {
+    ) where Exec: Fn(&(), &&'s NestedBracesT, &mut Vec<u8>) {
         match v {
             NestedBracesT::Eps => {
-                U8.ex_serialize(0x00u8, obuf);
+                U8.ex_serialize(&0x00u8, obuf);
             },
             NestedBracesT::Brace(inner) => {
-                U8.ex_serialize(0x7Bu8, obuf);
-                exec_rec(&(), inner, obuf);
-                U8.ex_serialize(0x7Du8, obuf);
+                U8.ex_serialize(&0x7Bu8, obuf);
+                exec_rec(&(), &&**inner, obuf);
+                U8.ex_serialize(&0x7Du8, obuf);
             },
         }
     }
@@ -298,7 +298,7 @@ impl<'s> fns::Map<&'s TaggedChainT> for TaggedChainMapRev {
 }
 
 type TaggedChainBodyComb<Rec> = Mapped<
-    Choice<Cond<WithPrefixTag<U8, Bind<U8, Rec>>>, Cond<Const<U8, u8>>>,
+    Choice<Cond<PrefixTagged<U8, Bind<U8, Rec>>>, Cond<Const<U8, u8>>>,
     BiMap<TaggedChainMap, TaggedChainMapRev>,
 >;
 
@@ -319,7 +319,7 @@ impl SpecRecBody for TaggedChainBody {
             inner: Choice(
                 Cond(
                     current_tag != 0u8,
-                    WithPrefixTag(U8, current_tag, Bind(U8, |next_tag: u8| rec(next_tag))),
+                    PrefixTagged(U8, current_tag, Bind(U8, |next_tag: u8| rec(next_tag))),
                 ),
                 Cond(current_tag == 0u8, Const(U8, 0x00u8)),
             ),
@@ -373,17 +373,17 @@ impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
         current_tag: &u8,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &'s TaggedChainT,
+        v: &&'s TaggedChainT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&u8, &'s TaggedChainT, &mut Vec<u8>) {
+    ) where Exec: Fn(&u8, &&'s TaggedChainT, &mut Vec<u8>) {
         match v {
             TaggedChainT::End => {
-                U8.ex_serialize(0x00u8, obuf);
+                U8.ex_serialize(&0x00u8, obuf);
             },
             TaggedChainT::Step(next_tag, tail) => {
-                U8.ex_serialize(*current_tag, obuf);
-                U8.ex_serialize(*next_tag, obuf);
-                exec_rec(next_tag, tail, obuf);
+                U8.ex_serialize(current_tag, obuf);
+                U8.ex_serialize(next_tag, obuf);
+                exec_rec(next_tag, &&**tail, obuf);
             },
         }
     }
@@ -565,7 +565,7 @@ fn tagged_chain_exec_parse_serialize() {
     assert!(matches!(prepared, Ok(len) if len == input.len()));
     let len = prepared.unwrap();
     let mut serialized = Vec::with_capacity(len);
-    fmt.serialize(&parsed_value, &mut serialized);
+    fmt.serialize(&&parsed_value, &mut serialized);
     println!(
         "tagged-chain parsed value: {:?}, serialized buf: {:X?}",
         parsed_value, serialized

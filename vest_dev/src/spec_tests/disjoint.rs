@@ -62,6 +62,8 @@ proof fn test_disjointness_optional_chain() {
 
 proof fn test_choice_with_repeat() {
     reveal(disjoint_domains);
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as Consistency>::consistent);
     let tag1 = Const(U8, 1u8);
     let tag2 = Const(U8, 2u8);
     let eof = Eof;

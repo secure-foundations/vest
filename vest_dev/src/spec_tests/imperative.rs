@@ -72,7 +72,7 @@ impl<'i> DeepView for BtcTx<'i> {
 
 pub open spec fn btc_tx_fmt() -> Named<
     Mapped<
-        WithPrefixTag<
+        PrefixTagged<
             U8,
             Bind<
                 U8,
@@ -91,7 +91,7 @@ pub open spec fn btc_tx_fmt() -> Named<
     #[verusfmt::skip]
     Named("btc_tx", Mapped{
         inner:
-            WithPrefixTag(U8, 1u8,
+            PrefixTagged(U8, 1u8,
             Bind(U8, |txin_count: u8|
             Pair(Varied(txin_count),
             Bind(Refined(U8, |x: u8| x == txin_count), |txout_count: u8|
@@ -274,19 +274,19 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
     }
 }
 
-impl<'i> Serializer<&'i BtcTx<'i>> for TxSegwitFmt {
-    fn ex_serialize(&self, v: &'i BtcTx<'i>, obuf: &mut Vec<u8>) {
+impl<'i> Serializer<BtcTx<'i>> for TxSegwitFmt {
+    fn ex_serialize(&self, v: &BtcTx<'i>, obuf: &mut Vec<u8>) {
         reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
 
         let ghost old_obuf = obuf@;
         let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
-        U8.ex_serialize(1u8, obuf);
-        U8.ex_serialize(*txin_cnt, obuf);
+        U8.ex_serialize(&1u8, obuf);
+        U8.ex_serialize(txin_cnt, obuf);
         Varied(*txin_cnt).ex_serialize(txin, obuf);
-        U8.ex_serialize(*txout_cnt, obuf);
-        RepeatN(*txout_cnt, U16Le).ex_serialize(txout, obuf);
-        RepeatN(*txin_cnt, U16Le).ex_serialize(witness, obuf);
-        U8.ex_serialize(*locktime, obuf);
+        U8.ex_serialize(txout_cnt, obuf);
+        RepeatN(*txout_cnt, U16Le).ex_serialize(&txout.as_slice(), obuf);
+        RepeatN(*txin_cnt, U16Le).ex_serialize(&witness.as_slice(), obuf);
+        U8.ex_serialize(locktime, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -556,8 +556,8 @@ impl<'i> Parser<&'i [u8]> for MsgTyFmt {
     }
 }
 
-impl<'i> Serializer<&'i MsgTy> for MsgTyFmt {
-    fn ex_serialize(&self, v: &'i MsgTy, obuf: &mut Vec<u8>) {
+impl<'i> Serializer<MsgTy> for MsgTyFmt {
+    fn ex_serialize(&self, v: &MsgTy, obuf: &mut Vec<u8>) {
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
         let ghost old_obuf = obuf@;
         let tag = match v {
@@ -566,7 +566,7 @@ impl<'i> Serializer<&'i MsgTy> for MsgTyFmt {
             MsgTy::TYPE3 => 3u8,
             MsgTy::TYPE4 => 4u8,
         };
-        U8.ex_serialize(tag, obuf);
+        U8.ex_serialize(&tag, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -986,8 +986,8 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
     }
 }
 
-impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
-    fn ex_serialize(&self, v: &'i TLVMsg<'i>, obuf: &mut Vec<u8>) {
+impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
+    fn ex_serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
         reveal(<TLVFmt as SpecSerializer>::spec_serialize);
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
@@ -1022,8 +1022,8 @@ impl<'i> Serializer<&'i TLVMsg<'i>> for TLVFmt {
         proof {
             TLVPayloadFmt { tag }.lemma_serialize_len(v.deep_view());
         }
-        let payload_len = payload_buf.len();
-        U8.ex_serialize(payload_len as u8, obuf);
+        let payload_len = payload_buf.len() as u8;
+        U8.ex_serialize(&payload_len, obuf);
         obuf.extend_from_slice(&payload_buf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
@@ -1087,13 +1087,13 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
     }
 }
 
-impl<'i> Serializer<&'i TLVMsg<'i>> for TLVPayloadFmt {
-    fn ex_serialize(&self, v: &'i TLVMsg<'i>, obuf: &mut Vec<u8>) {
+impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
+    fn ex_serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
 
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
-            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(*v, obuf),
+            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(v, obuf),
             (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(v, obuf),
             (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.ex_serialize(v, obuf),
             (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.ex_serialize(v, obuf),

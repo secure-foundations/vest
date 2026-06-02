@@ -6,17 +6,19 @@ use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::tuple::Pair;
 use crate::combinators::{disjoint::*, Alt, Bind, Empty, Refined, RepeatN, Void, VoidTag};
 use crate::combinators::{
-    Choice, Cond, Const, DepCombinator, Eof, Fixed, Implicit, KVFormat, Mapped, Repeat, Sum,
-    TVLeaf, TVOr, Tail, U16Le, U32Le, Varied, WithPrefixTag, U8,
+    Choice, Cond, Const, DepCombinator, Eof, Fixed, Implicit, KVFormat, Mapped, PrefixTagged,
+    Repeat, Star, Sum, TVLeaf, TVOr, Tail, U16Le, U32Le, Varied, U8,
 };
 use crate::core::{proof::*, spec::*};
 use crate::Never;
 use vstd::prelude::*;
-use WithPrefixTag as Tagged;
+use PrefixTagged as Tagged;
 
 verus! {
 
 broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+
 
 proof fn test_dependent_varied_u8() {
     let fmt = Implicit(U8, VLData());
@@ -108,6 +110,10 @@ proof fn test_dependent_n_consecutive_lengths_values() {
 }
 
 proof fn test_dependent_simple_tlv() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     reveal(disjoint_domains);
     // tlv = {
     //   @tag: u16
@@ -212,6 +218,10 @@ impl DepCombinator for TLVRest {
 }
 
 proof fn test_dependent_complex_tlv() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     reveal(disjoint_domains);
     // tlv = {
     //   @tag: u8

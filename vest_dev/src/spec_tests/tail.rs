@@ -3,17 +3,19 @@ use crate::combinators::disjoint::*;
 use crate::combinators::implicit::*;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, Repeat, RepeatTillEnd, Tail, U16Le,
-    U32Le, WithPrefixTag, U8,
+    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, PrefixTagged, Repeat, RepeatTillEnd,
+    Star, Tail, U16Le, U32Le, U8,
 };
 
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
-use WithPrefixTag as Tagged;
+use PrefixTagged as Tagged;
 
 verus! {
 
 broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+
 
 proof fn test_tail_compose() {
     let c = Pair(U8, Tail);
@@ -56,6 +58,12 @@ proof fn test_chain_end_with_tailopt() {
         ),
     );
 
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
+
     assert(c.consistent(v));
     assert(c.unambiguous());
     c.theorem_serialize_parse_roundtrip(v);
@@ -80,6 +88,12 @@ proof fn test_chain_end_with_tailrepeat() {
         0x11u8,
         (seq![0x22u8, 0x33u8, 0x44u8], (None::<u8>, (seq![], seq![0x99u32, 0xffu32]))),
     );
+
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
 
     assert(c.consistent(v));
     assert(c.unambiguous());

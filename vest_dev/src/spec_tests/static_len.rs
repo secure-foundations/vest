@@ -1,12 +1,12 @@
 use crate::asn1::{BerBool, DerBool};
 use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{
-    Array, Cond, Const, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded, Refined,
-    Terminated, U16Le, U32Be, U32Le, WithPrefixTag, U8,
+    Array, Cond, Const, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded,
+    PrefixTagged, Refined, Terminated, U16Le, U32Be, U32Le, U8,
 };
 use crate::core::spec::*;
 use vstd::prelude::*;
-use WithPrefixTag as Tagged;
+use PrefixTagged as Tagged;
 
 verus! {
 

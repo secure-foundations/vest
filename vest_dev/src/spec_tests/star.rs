@@ -1,4 +1,4 @@
-use crate::combinators::{Array, Const, Refined, Repeat, RepeatN, U16Le, U8};
+use crate::combinators::{Array, Const, Refined, Repeat, RepeatN, Star, U16Le, U8};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
@@ -6,7 +6,14 @@ verus! {
 
 broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
+
+
 proof fn test_repeat_roundtrip_basic() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     reveal(disjoint_domains);
     let inner = Refined(U8, |x: u8| x != 0xFFu8);
     // let inner = Const(U8, 0xAAu8);
@@ -25,6 +32,11 @@ proof fn test_repeat_roundtrip_basic() {
 }
 
 proof fn test_repeat_roundtrip_empty() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     let inner = Const(U8, 0xAAu8);
     let term = Const(U8, 0xFFu8);
     let rep = Repeat(inner, term);
@@ -52,6 +64,11 @@ proof fn test_repeat_needs_distinct_terminator() {
 }
 
 proof fn test_repeat_with_tuple_inner() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     let inner = Const(U16Le, 0x1234u16);
     let term = Const(U16Le, 0xFFFFu16);
     let rep = Repeat(inner, term);
@@ -67,6 +84,11 @@ proof fn test_repeat_with_tuple_inner() {
 }
 
 proof fn test_repeatn_roundtrip_basic() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     let inner = Refined(U8, |x: u8| x < 0x80u8);
     let rep = RepeatN(3u8, inner);
     let v: Seq<u8> = seq![0x00u8, 0x01u8, 0x02u8];
@@ -80,6 +102,11 @@ proof fn test_repeatn_roundtrip_basic() {
 }
 
 proof fn test_array_roundtrip_basic() {
+    reveal(<Star::<_> as SpecParser>::spec_parse);
+    reveal(<Star::<_> as SpecSerializerDps>::spec_serialize_dps);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
+    reveal(<Star::<_> as Consistency>::consistent);
+    reveal(<Star::<_> as SpecByteLen>::byte_len);
     let inner = Refined(U8, |x: u8| x != 0xFFu8);
     let arr = Array::<3, _>(inner);
     let v: Seq<u8> = seq![0x10u8, 0x20u8, 0x30u8];
