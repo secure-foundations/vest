@@ -1,5 +1,5 @@
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
-use crate::combinators::{Alt, Mapped, Refined, PrefixTagged, U16Le, U32Le, U64Le, U8};
+use crate::combinators::{Alt, Mapped, PrefixTagged, Refined, U16Le, U32Le, U64Le, U8};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::{exec::*, proof::*, spec::*};
 use vstd::prelude::*;
@@ -370,23 +370,29 @@ impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
 }
 
 impl<const MINIMAL: bool> Serializer<u64> for VarInt<MINIMAL> {
-    fn ex_serialize(&self, v: u64, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
         let ghost old_obuf = obuf@;
 
-        match v {
+        match *v {
             0..0xFD => {
-                U8.ex_serialize(v as u8, obuf);
+                let val = *v as u8;
+                U8.ex_serialize(&val, obuf);
             },
             0xFD..=0xFFFF => {
-                U8.ex_serialize(VARINT_TAG_U16, obuf);
-                U16Le.ex_serialize(v as u16, obuf);
+                let tag = VARINT_TAG_U16;
+                let val = *v as u16;
+                U8.ex_serialize(&tag, obuf);
+                U16Le.ex_serialize(&val, obuf);
             },
             0x1_0000..=0xFFFF_FFFF => {
-                U8.ex_serialize(VARINT_TAG_U32, obuf);
-                U32Le.ex_serialize(v as u32, obuf);
+                let tag = VARINT_TAG_U32;
+                let val = *v as u32;
+                U8.ex_serialize(&tag, obuf);
+                U32Le.ex_serialize(&val, obuf);
             },
             _ => {
-                U8.ex_serialize(VARINT_TAG_U64, obuf);
+                let tag = VARINT_TAG_U64;
+                U8.ex_serialize(&tag, obuf);
                 U64Le.ex_serialize(v, obuf);
             },
         }

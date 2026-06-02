@@ -37,7 +37,6 @@ pub trait SelfView: DeepEq<V = Self> + Sized {
     ;
 }
 
-
 #[verifier::external_body]
 #[inline(always)]
 pub fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
@@ -77,6 +76,5 @@ impl DeepEq for Vec<u8> {
         }
     }
 }
-
 
 } // verus!

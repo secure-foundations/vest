@@ -52,12 +52,13 @@ pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
         param: &Self::EP,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: ST,
+        v: &ST,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&Self::EP, ST, &mut Vec<u8>)
+    ) where Exec: Fn(&Self::EP, &ST, &mut Vec<u8>)
         requires
-            forall|pp: &Self::EP, vv: ST, out: &mut Vec<u8>| call_requires(exec_rec, (pp, vv, out)),
-            forall|pp: &Self::EP, vv: ST, out: &mut Vec<u8>|
+            forall|pp: &Self::EP, vv: &ST, out: &mut Vec<u8>|
+                call_requires(exec_rec, (pp, vv, out)),
+            forall|pp: &Self::EP, vv: &ST, out: &mut Vec<u8>|
                 call_ensures(exec_rec, (pp, vv, out), ()) ==> final(out)@ == out@ + spec_rec(
                     pp.deep_view(),
                 ).3(vv.deep_view()),
@@ -143,7 +144,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.parse_body(param, Ghost(spec_callback), exec_callback, ibuf)
     }
 
-    fn serialize_gas<ST>(&self, gas: usize, param: &Param, v: ST, obuf: &mut Vec<u8>) where
+    fn serialize_gas<ST>(&self, gas: usize, param: &Param, v: &ST, obuf: &mut Vec<u8>) where
         ST: DeepView<V = Body::T>,
         Param: DeepView<V = Body::Param>,
         Body: SerializerRecBody<ST, EP = Param>,
@@ -156,7 +157,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             ),
         decreases gas,
     {
-        let exec_callback = |pp: &Param, vv: ST, oo: &mut Vec<u8>| -> ()
+        let exec_callback = |pp: &Param, vv: &ST, oo: &mut Vec<u8>| -> ()
             ensures
                 final(oo)@ == old(oo)@ + Self::spec_serialize_callback(gas as nat, pp.deep_view())(
                     vv.deep_view(),
@@ -231,7 +232,7 @@ impl<ST, const LIMIT: usize, Body, Param> Serializer<ST> for super::FixWith<
     Param: DeepView<V = Body::Param>,
     Body: SerializerRecBody<ST, EP = Param>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         self.serialize_gas(LIMIT, &self.1, v, obuf)
     }
 }

@@ -13,7 +13,7 @@ pub mod length;
 
 use crate::{
     combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, Tail, TryMap, PrefixTagged, U8,
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, PrefixTagged, Tail, TryMap, U8,
     },
     core::proof::{Leaf, LeafNonMalleable},
 };

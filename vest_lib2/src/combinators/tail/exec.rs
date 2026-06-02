@@ -1,4 +1,4 @@
-use crate::combinators::{Eof, Optional, Pair, Repeat, Star};
+use crate::combinators::{Eof, Opt, Optional, Pair, Repeat, Star};
 use crate::core::exec::{
     input::InputBuf,
     parser::{PResult, Parser},
@@ -26,8 +26,8 @@ impl<I: InputBuf> Parser<I> for super::Tail {
 }
 
 impl<'s> Serializer<&'s [u8]> for super::Tail {
-    fn ex_serialize(&self, v: &'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
+    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(*v);
     }
 }
 
@@ -63,7 +63,7 @@ impl<I: InputBuf> Parser<I> for super::Eof {
 }
 
 impl Serializer<()> for super::Eof {
-    fn ex_serialize(&self, _v: (), _obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
     }
 }
 
@@ -165,8 +165,8 @@ impl<A, AST> Serializer<&[AST]> for super::RepeatTillEnd<A> where
     A: Serializer<AST> + Copy,
     AST: DeepView<V = A::SVal> + Copy,
  {
-    fn ex_serialize(&self, v: &[AST], obuf: &mut Vec<u8>) {
-        Repeat(self.0, super::Eof).ex_serialize((v, ()), obuf);
+    fn ex_serialize(&self, v: &&[AST], obuf: &mut Vec<u8>) {
+        Star(self.0).ex_serialize(v, obuf);
     }
 }
 
@@ -199,10 +199,10 @@ impl<A, AST> Prepare<&[AST]> for super::RepeatTillEnd<A> where
 
 impl<A, AST> Serializer<Option<AST>> for super::OptionalEnd<A> where
     A: Serializer<AST>,
-    AST: DeepView<V = A::SVal>,
+    AST: DeepView<V = A::SVal> + Copy,
  {
-    fn ex_serialize(&self, v: Option<AST>, obuf: &mut Vec<u8>) {
-        Optional(&self.0, super::Eof).ex_serialize((v, ()), obuf);
+    fn ex_serialize(&self, v: &Option<AST>, obuf: &mut Vec<u8>) {
+        Opt(&self.0).ex_serialize(v, obuf);
     }
 }
 

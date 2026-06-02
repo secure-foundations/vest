@@ -171,8 +171,8 @@ impl Parser<&[u8]> for super::U8 {
 }
 
 impl Serializer<u8> for super::U8 {
-    fn ex_serialize(&self, v: u8, obuf: &mut Vec<u8>) {
-        obuf.push(v);
+    fn ex_serialize(&self, v: &u8, obuf: &mut Vec<u8>) {
+        obuf.push(*v);
     }
 }
 
@@ -213,8 +213,8 @@ impl Parser<&[u8]> for super::U16Le {
 }
 
 impl Serializer<u16> for super::U16Le {
-    fn ex_serialize(&self, v: u16, obuf: &mut Vec<u8>) {
-        let bytes = u16_to_le_bytes(v);
+    fn ex_serialize(&self, v: &u16, obuf: &mut Vec<u8>) {
+        let bytes = u16_to_le_bytes(*v);
 
         obuf.extend_from_slice(&bytes);
     }
@@ -257,8 +257,8 @@ impl Parser<&[u8]> for super::U16Be {
 }
 
 impl Serializer<u16> for super::U16Be {
-    fn ex_serialize(&self, v: u16, obuf: &mut Vec<u8>) {
-        let bytes = u16_to_be_bytes(v);
+    fn ex_serialize(&self, v: &u16, obuf: &mut Vec<u8>) {
+        let bytes = u16_to_be_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -300,8 +300,8 @@ impl Parser<&[u8]> for super::U24Le {
 }
 
 impl Serializer<u32> for super::U24Le {
-    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
-        let bytes = u24_to_le_bytes(v);
+    fn ex_serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+        let bytes = u24_to_le_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -347,8 +347,8 @@ impl Parser<&[u8]> for super::U24Be {
 }
 
 impl Serializer<u32> for super::U24Be {
-    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
-        let bytes = u24_to_be_bytes(v);
+    fn ex_serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+        let bytes = u24_to_be_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -394,8 +394,8 @@ impl Parser<&[u8]> for super::U32Le {
 }
 
 impl Serializer<u32> for super::U32Le {
-    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
-        let bytes = u32_to_le_bytes(v);
+    fn ex_serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+        let bytes = u32_to_le_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -437,8 +437,8 @@ impl Parser<&[u8]> for super::U32Be {
 }
 
 impl Serializer<u32> for super::U32Be {
-    fn ex_serialize(&self, v: u32, obuf: &mut Vec<u8>) {
-        let bytes = u32_to_be_bytes(v);
+    fn ex_serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+        let bytes = u32_to_be_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -489,8 +489,8 @@ impl Parser<&[u8]> for super::U64Le {
 }
 
 impl Serializer<u64> for super::U64Le {
-    fn ex_serialize(&self, v: u64, obuf: &mut Vec<u8>) {
-        let bytes = u64_to_le_bytes(v);
+    fn ex_serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
+        let bytes = u64_to_le_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }
@@ -541,8 +541,8 @@ impl Parser<&[u8]> for super::U64Be {
 }
 
 impl Serializer<u64> for super::U64Be {
-    fn ex_serialize(&self, v: u64, obuf: &mut Vec<u8>) {
-        let bytes = u64_to_be_bytes(v);
+    fn ex_serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
+        let bytes = u64_to_be_bytes(*v);
         obuf.extend_from_slice(&bytes);
     }
 }

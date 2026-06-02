@@ -72,17 +72,17 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 impl<Inner, M, MRev, ST> Serializer<ST> for super::Mapped<Inner, BiMap<M, MRev>> where
     ST: DeepView,
     M: SpecMap<Input = Inner::SVal, Output = ST::V>,
-    MRev: Map<ST, Input = M::Output, Output = M::Input>,
-    Inner: Serializer<<MRev as Map<ST>>::O>,
+    MRev: for <'s>Map<&'s ST, Input = M::Output, Output = M::Input>,
+    Inner: for <'s>Serializer<<MRev as Map<&'s ST>>::O>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         let inner_v = self.mapper.1.map(v);
         proof {
             assert(self.spec_serialize(v.deep_view()) == self.inner.spec_serialize(
                 inner_v.deep_view(),
             ));
         }
-        self.inner.ex_serialize(inner_v, obuf);
+        self.inner.ex_serialize(&inner_v, obuf);
     }
 }
 

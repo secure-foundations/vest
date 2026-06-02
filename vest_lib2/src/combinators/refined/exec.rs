@@ -56,7 +56,7 @@ impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
     A: Serializer<ST>,
     PredFn: SpecPred<A::SVal>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
 }
@@ -99,7 +99,7 @@ impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     I: InputBuf,
     Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
     Inner::PVal: SelfView,
-    // Inner::PVal: DeepView<V = Inner::PVal> + PartialEq + Structural,
+// Inner::PVal: DeepView<V = Inner::PVal> + PartialEq + Structural,
  {
     type PT = Inner::PVal;
 
@@ -121,7 +121,7 @@ impl<Inner, ST> Serializer<ST> for super::Const<Inner, ST> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST, SVal = ST>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
 }
@@ -158,8 +158,8 @@ impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inne
 }
 
 impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn ex_serialize(&self, v: [u8; N], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(&v);
+    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 
@@ -252,7 +252,7 @@ impl<Tg, Of, ST> Serializer<ST> for super::PrefixTagged<Tg, Of> where
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
@@ -342,7 +342,7 @@ impl<Of, Tg, ST> Serializer<ST> for super::SuffixTagged<Of, Tg> where
     ST: DeepView<V = Of::SVal>,
     Of: Serializer<ST>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),

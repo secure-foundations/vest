@@ -32,7 +32,7 @@ impl<Inner, ST> Serializer<ST> for super::Cond<Inner> where
     ST: DeepView<V = Inner::SVal>,
     Inner: Serializer<ST>,
  {
-    fn ex_serialize(&self, v: ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
         self.1.ex_serialize(v, obuf);
     }
 }

@@ -243,7 +243,7 @@ pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: 
             assert(vs.take(i + 1) == vs.take(i as int).push(vs[i as int]));
             assert(vs.take(i as int).push(vs[i as int]).drop_last() == vs.take(i as int));
         }
-        inner.ex_serialize(values[i], obuf);
+        inner.ex_serialize(&values[i], obuf);
     }
 }
 
@@ -346,9 +346,9 @@ impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
-    fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
-        serialize_slice(&self.0, v, obuf);
+        serialize_slice(&self.0, *v, obuf);
     }
 }
 
@@ -385,7 +385,7 @@ impl<A, B, AST, BST> Serializer<(&[AST], BST)> for super::Repeat<A, B> where
     AST: DeepView<V = A::SVal> + Copy,
     BST: DeepView<V = B::SVal>,
  {
-    fn ex_serialize(&self, v: (&[AST], BST), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(&[AST], BST), obuf: &mut Vec<u8>) {
         crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
     }
 }
@@ -428,8 +428,8 @@ impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> wher
     InnerST: DeepView<V = Inner::SVal> + Copy,
     N: AsLen,
  {
-    fn ex_serialize(&self, v: &[InnerST], obuf: &mut Vec<u8>) {
-        serialize_slice(&self.1, v, obuf);
+    fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
+        serialize_slice(&self.1, *v, obuf);
     }
 }
 
@@ -473,8 +473,8 @@ impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<
     Inner: Serializer<InnerST>,
     InnerST: DeepView<V = Inner::SVal> + Copy,
  {
-    fn ex_serialize(&self, v: &[InnerST; N], obuf: &mut Vec<u8>) {
-        serialize_slice(&self.0, v.as_slice(), obuf);
+    fn ex_serialize(&self, v: &&[InnerST; N], obuf: &mut Vec<u8>) {
+        serialize_slice(&self.0, (*v).as_slice(), obuf);
     }
 }
 

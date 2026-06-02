@@ -108,7 +108,7 @@ pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
 pub use recursive::FixWith;
-pub use refined::{Const, Refined, PrefixTagged, SuffixTagged};
+pub use refined::{Const, PrefixTagged, Refined, SuffixTagged};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;

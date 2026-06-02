@@ -63,15 +63,17 @@ impl<A, B, BVal, AVal, const CHECK: bool> Serializer<AVal> for super::Terminated
     CHECK,
 > where
     AVal: DeepView<V = A::SVal>,
-    BVal: SelfView + Copy,
+    BVal: SelfView,
     A: Serializer<AVal>,
     B: Serializer<BVal, SVal = BVal>,
  {
-    fn ex_serialize(&self, v: AVal, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &AVal, obuf: &mut Vec<u8>) {
         proof {
             self.b_val.self_view();
         }
-        Pair(&self.a, &self.b).ex_serialize((v, self.b_val), obuf);
+        // Pair(&self.a, &self.b).ex_serialize(&(*v, self.b_val), obuf);
+        self.a.ex_serialize(v, obuf);
+        self.b.ex_serialize(&self.b_val, obuf);
     }
 }
 

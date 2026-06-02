@@ -256,8 +256,8 @@ macro_rules! with_deep_view_and_mapper {
     };
 }
 
-use vstd::prelude::*;
 use crate::core::exec::{DeepEq, SelfView};
+use vstd::prelude::*;
 
 #[doc(hidden)]
 #[macro_export]

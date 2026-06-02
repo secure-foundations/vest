@@ -33,7 +33,7 @@ impl<A, ST> Serializer<Option<ST>> for super::Opt<A> where
     ST: DeepView<V = A::SVal>,
     A: Serializer<ST>,
  {
-    fn ex_serialize(&self, v: Option<ST>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &Option<ST>, obuf: &mut Vec<u8>) {
         match v {
             Some(vv) => self.0.ex_serialize(vv, obuf),
             None => {},
@@ -93,7 +93,7 @@ impl<A, B, STA, STB> Serializer<(Option<STA>, STB)> for super::Optional<A, B> wh
     A: Serializer<STA>,
     B: Serializer<STB>,
  {
-    fn ex_serialize(&self, v: (Option<STA>, STB), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(Option<STA>, STB), obuf: &mut Vec<u8>) {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).ex_serialize(v, obuf);
     }
 }
