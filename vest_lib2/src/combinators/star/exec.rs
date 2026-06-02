@@ -227,7 +227,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 
 pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: &mut Vec<u8>) where
     Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal> + Copy,
+    InnerST: DeepView<V = Inner::SVal>,
 
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
@@ -344,7 +344,7 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
 
 impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
     Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal> + Copy,
+    InnerST: DeepView<V = Inner::SVal>,
  {
     fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
@@ -382,7 +382,7 @@ impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
 impl<A, B, AST, BST> Serializer<(&[AST], BST)> for super::Repeat<A, B> where
     A: Serializer<AST> + Copy,
     B: Serializer<BST> + Copy,
-    AST: DeepView<V = A::SVal> + Copy,
+    AST: DeepView<V = A::SVal>,
     BST: DeepView<V = B::SVal>,
  {
     fn ex_serialize(&self, v: &(&[AST], BST), obuf: &mut Vec<u8>) {
@@ -425,7 +425,7 @@ impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
 
 impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> where
     Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal> + Copy,
+    InnerST: DeepView<V = Inner::SVal>,
     N: AsLen,
  {
     fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
@@ -471,7 +471,7 @@ impl<Inner, N, InnerST> Prepare<&[InnerST]> for super::RepeatN<Inner, N> where
 
 impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<N, Inner> where
     Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal> + Copy,
+    InnerST: DeepView<V = Inner::SVal>,
  {
     fn ex_serialize(&self, v: &&[InnerST; N], obuf: &mut Vec<u8>) {
         serialize_slice(&self.0, (*v).as_slice(), obuf);
