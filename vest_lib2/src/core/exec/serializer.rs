@@ -6,7 +6,7 @@ use vstd::prelude::*;
 
 verus! {
 
-pub trait Serializer<T>: SpecSerializer<SVal = T::V> where T: DeepView {
+pub trait Serializer<T>: SpecSerializer<SVal = T::V> where T: DeepView + ?Sized {
     fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>)
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),

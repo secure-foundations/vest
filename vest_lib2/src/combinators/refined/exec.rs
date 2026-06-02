@@ -157,11 +157,11 @@ impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inne
     }
 }
 
-impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
-    }
-}
+// impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
+//     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+//         obuf.extend_from_slice(v);
+//     }
+// }
 
 impl<const N: usize> Compliance<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     fn check_compliance(&self, v: [u8; N]) -> (yes: bool) {

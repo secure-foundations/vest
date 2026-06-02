@@ -284,8 +284,9 @@ impl<'i> Serializer<BtcTx<'i>> for TxSegwitFmt {
         U8.ex_serialize(txin_cnt, obuf);
         Varied(*txin_cnt).ex_serialize(txin, obuf);
         U8.ex_serialize(txout_cnt, obuf);
-        RepeatN(*txout_cnt, U16Le).ex_serialize(&txout.as_slice(), obuf);
-        RepeatN(*txin_cnt, U16Le).ex_serialize(&witness.as_slice(), obuf);
+        RepeatN(*txout_cnt, U16Le).ex_serialize(txout, obuf);
+        RepeatN(*txin_cnt, U16Le).ex_serialize(witness, obuf);
+
         U8.ex_serialize(locktime, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
@@ -1094,7 +1095,7 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
             (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(v, obuf),
-            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(v, obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(*v, obuf),
             (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.ex_serialize(v, obuf),
             (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.ex_serialize(v, obuf),
             _ => {},

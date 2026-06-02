@@ -24,9 +24,15 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
     }
 }
 
-impl<'s, const N: usize> Serializer<&'s [u8]> for super::Fixed<N> {
-    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(*v);
+impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
+    fn ex_serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
+    }
+}
+
+impl<const N: usize> Serializer<[u8; N]> for super::Fixed<N> {
+    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 
@@ -65,9 +71,9 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     }
 }
 
-impl<'s, Len: AsLen> Serializer<&'s [u8]> for super::Varied<Len> {
-    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(*v);
+impl<Len: AsLen> Serializer<[u8]> for super::Varied<Len> {
+    fn ex_serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 
@@ -138,7 +144,7 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
 
 impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
     Len: AsLen,
-    T: DeepView,
+    T: DeepView + ?Sized,
     Inner: Serializer<T>,
  {
     fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
