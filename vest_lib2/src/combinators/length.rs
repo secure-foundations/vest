@@ -79,4 +79,22 @@ impl AsLen for u64 {
     }
 }
 
+impl<T: AsLen> AsLen for &T {
+    open spec fn as_nat(self) -> nat {
+        (*self).as_nat()
+    }
+
+    fn get(self) -> (len: usize) {
+        (*self).get()
+    }
+
+    open spec fn as_self(n: nat) -> Self {
+        &T::as_self(n)
+    }
+
+    proof fn lemma_lossless_casting(v: Self) {
+        T::lemma_lossless_casting(*v);
+    }
+}
+
 } // verus!

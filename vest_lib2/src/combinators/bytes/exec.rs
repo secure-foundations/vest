@@ -30,12 +30,11 @@ impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> Serializer<[u8; N]> for super::Fixed<N> {
-    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
-    }
-}
-
+// impl<const N: usize> Serializer<[u8; N]> for super::Fixed<N> {
+//     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+//         obuf.extend_from_slice(v);
+//     }
+// }
 impl<'s, const N: usize> Compliance<&'s [u8]> for super::Fixed<N> {
     fn check_compliance(&self, v: &'s [u8]) -> (yes: bool) {
         v.len() == N
